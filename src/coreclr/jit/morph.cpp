@@ -11115,8 +11115,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             srcLclNum     = srcLclVarTree->GetLclNum();
             if (src->OperGet() == GT_LCL_FLD)
             {
-                srcFldSeq    = src->AsLclFld()->GetFieldSeq();
-                srcLclOffset = src->AsLclFld()->GetLclOffs();
+                srcFldSeq = src->AsLclFld()->GetFieldSeq();
             }
         }
         else if (src->OperIsIndir())
@@ -11124,9 +11123,6 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             if (src->AsOp()->gtOp1->IsLocalAddrExpr(this, &srcLclVarTree, &srcFldSeq))
             {
                 srcLclNum = srcLclVarTree->GetLclNum();
-
-                srcLclVar    = &lvaTable[srcLclNum];
-                srcLclOffset = srcLclVarTree->GetLclOffs();
             }
             else
             {
@@ -11136,7 +11132,8 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
         if (srcLclNum != BAD_VAR_NUM)
         {
-            srcLclVar = &lvaTable[srcLclNum];
+            srcLclOffset = srcLclVarTree->GetLclOffs();
+            srcLclVar    = &lvaTable[srcLclNum];
 
             if (srcLclVar->lvPromoted && blockWidthIsConst)
             {
@@ -11684,23 +11681,15 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     else
                     {
                         assert(dstAddrClone == nullptr);
-                        assert((destLclOffset == 0) || (destFldSeq != 0));
+                        assert((destLclOffset == 0) || (destFldSeq != nullptr));
                         // If the dst was a struct type field "B" in a struct "A" then we add
                         // add offset of ("B" in "A") + current offset in "B".
-                        unsigned summOffset = destLclOffset + srcFieldOffset;
-                        dstFld              = gtNewLclFldNode(destLclNum, srcType, summOffset);
-                        FieldSeqNode* dstFldFldSeq;
-                        if (destFldSeq == nullptr)
-                        {
-                            dstFldFldSeq = curFieldSeq;
-                        }
-                        else
-                        {
-                            dstFldFldSeq = GetFieldSeqStore()->Append(destFldSeq, curFieldSeq);
-                        }
+                        unsigned summOffset        = destLclOffset + srcFieldOffset;
+                        dstFld                     = gtNewLclFldNode(destLclNum, srcType, summOffset);
+                        FieldSeqNode* dstFldFldSeq = GetFieldSeqStore()->Append(destFldSeq, curFieldSeq);
                         dstFld->AsLclFld()->SetFieldSeq(dstFldFldSeq);
 
-                        // TODO-1stClassStructs: remove this and implement storing to a field in a enreg struct.
+                        // TODO-1stClassStructs: remove this and implement storing to a field in a struct in a reg.
                         lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_LocalField));
                     }
 
@@ -11821,17 +11810,9 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                             assert((srcLclOffset == 0) || (srcFldSeq != 0));
                             // If the src was a struct type field "B" in a struct "A" then we add
                             // add offset of ("B" in "A") + current offset in "B".
-                            unsigned summOffset = srcLclOffset + fldOffset;
-                            srcFld              = gtNewLclFldNode(srcLclNum, destType, summOffset);
-                            FieldSeqNode* srcFldFldSeq;
-                            if (srcFldSeq == nullptr)
-                            {
-                                srcFldFldSeq = curFieldSeq;
-                            }
-                            else
-                            {
-                                srcFldFldSeq = GetFieldSeqStore()->Append(srcFldSeq, curFieldSeq);
-                            }
+                            unsigned summOffset        = srcLclOffset + fldOffset;
+                            srcFld                     = gtNewLclFldNode(srcLclNum, destType, summOffset);
+                            FieldSeqNode* srcFldFldSeq = GetFieldSeqStore()->Append(srcFldSeq, curFieldSeq);
                             srcFld->AsLclFld()->SetFieldSeq(srcFldFldSeq);
                             // TODO-1stClassStructs: remove this and implement reading a field from a struct in a reg.
                             lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DNER_LocalField));
@@ -11894,7 +11875,7 @@ _Done:
 // fgMorphCanUseLclFldForCopy: check if we can access LclVar2 using LclVar1's fields.
 //
 // Arguments:
-//    lclNum1 - a promoted lclVar that is used in fieldwise asignment;
+//    lclNum1 - a promoted lclVar that is used in fieldwise assignment;
 //    lclNum2 - the local variable on the other side of ASG, can be BAD_VAR_NUM.
 //
 // Return Value:
