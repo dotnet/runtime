@@ -11,7 +11,7 @@
     <RuntimesToInclude Condition="'$(RuntimesToInclude)' != ''" Include="$(RuntimesToInclude)" />
     <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
     <SymbolsPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.symbols.nupkg" />
-    <AllPackagesFilePath Include="$(LibrariesAllConfigShippingPackagesDir)*.nupkg" Exclude="@(SymbolsPackages)" Condition="'$(SymbolsPackages)' != ''">
+    <AllPackagesFilePath Include="$(LibrariesAllConfigShippingPackagesDir)*.nupkg" Exclude="@(SymbolsPackages)" Condition="Exists('$(LibrariesAllConfigShippingPackagesDir)')">
       <PackageName>$([System.IO.Path]::GetFileNameWithoutExtension('%(Identity)').Substring(0, $([System.IO.Path]::GetFileNameWithoutExtension('%(Identity)').IndexOf('.$(MajorVersion)'))))</PackageName>   
       <PackagePath>%(Identity)</PackagePath>
     </AllPackagesFilePath>
