@@ -6,7 +6,7 @@
     <TestName>System.Buffers.Tests</TestName>
     <TestRootDir>$(HELIX_WORKITEM_ROOT)</TestRootDir>
     <BundleDir>$(TestRootDir)</BundleDir>
-    <WasmSrcPath>$(HELIX_CORRELATION_PAYLOAD)/wasm-source/</WasmSrcPath>
+    <WasmSrcPath>$(HELIX_CORRELATION_PAYLOAD)/build/microsoft.netcore.app.runtime.browser-wasm/</WasmSrcPath>
     <WasmNativeLibPath>$(TestRootDir)/publish/</WasmNativeLibPath>
     <IntermediateOutputPath>$(HELIX_WORKITEM_ROOT)\obj</IntermediateOutputPath>
 
