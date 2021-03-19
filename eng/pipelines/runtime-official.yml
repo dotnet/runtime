@@ -105,10 +105,12 @@ stages:
       - Android_arm64
       - MacCatalyst_x64
       - MacCatalyst_arm64
-      - tvOS_x64
+      - tvOSSimulator_x64
+      - tvOSSimulator_arm64
       - tvOS_arm64
-      - iOS_x64
-      - iOS_x86
+      - iOSSimulator_x64
+      - iOSSimulator_x86
+      - iOSSimulator_arm64
       - iOS_arm
       - iOS_arm64
       - OSX_x64
@@ -125,7 +127,7 @@ stages:
       # - windows_arm
       # - windows_arm64
       jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig)
         nameSuffix: AllSubsets_Mono
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -141,8 +143,8 @@ stages:
       platforms:
       - Android_x64
       - Browser_wasm
-      - tvOS_x64
-      - iOS_x64
+      - tvOS_arm64
+      - iOS_arm64
 
   #
   # Build Mono release AOT cross-compilers

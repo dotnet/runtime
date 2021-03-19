@@ -4698,7 +4698,7 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
                 }
                 else
                 {
-                    instrDescAlign *alignInstrToAdj = alignInstr, *prevAlignInstr = nullptr;
+                    instrDescAlign* alignInstrToAdj = alignInstr;
                     for (; alignInstrToAdj != nullptr && alignInstrToAdj->idaIG == alignInstr->idaIG;
                          alignInstrToAdj = alignInstrToAdj->idaNext)
                     {
@@ -4807,14 +4807,7 @@ void emitter::emitLoopAlignAdjustments()
     unsigned short estimatedPaddingNeeded = emitComp->opts.compJitAlignPaddingLimit;
     unsigned short alignmentBoundary      = emitComp->opts.compJitAlignLoopBoundary;
 
-    if (emitComp->opts.compJitAlignLoopAdaptive)
-    {
-        // For adaptive, adjust the loop size depending on the alignment boundary
-        int maxBlocksAllowedForLoop = genLog2((unsigned)alignmentBoundary) - 1;
-    }
-
     unsigned        alignBytesRemoved = 0;
-    unsigned        loopSize          = 0;
     unsigned        loopIGOffset      = 0;
     instrDescAlign* alignInstr        = emitAlignList;
 
@@ -6555,7 +6548,6 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         {
             JITDUMP("  section %u, size %u, block relative addr\n", secNum++, dscSize);
 
-            unsigned  elemSize = 4;
             size_t    numElems = dscSize / 4;
             unsigned* uDst     = (unsigned*)dst;
             insGroup* labFirst = (insGroup*)emitCodeGetCookie(emitComp->fgFirstBB);
@@ -7010,10 +7002,11 @@ void emitter::emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize)
     assert(!emitFullGCinfo);
 
     unsigned offs = emitCurCodeOffs(codePos);
-    unsigned regs = (emitThisGCrefRegs | emitThisByrefRegs) & ~RBM_INTRET;
     callDsc* call;
 
 #ifdef JIT32_GCENCODER
+    unsigned regs = (emitThisGCrefRegs | emitThisByrefRegs) & ~RBM_INTRET;
+
     // The JIT32 GCInfo encoder allows us to (as the comment previously here said):
     // "Bail if this is a totally boring call", but the GCInfoEncoder/Decoder interface
     // requires a definition for every call site, so we skip these "early outs" when we're

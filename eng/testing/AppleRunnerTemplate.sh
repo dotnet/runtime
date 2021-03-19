@@ -18,12 +18,14 @@ fi
 
 if [[ "$TARGET_OS" == "MacCatalyst" ]]; then TARGET=maccatalyst; fi
 
-if [[ "$TARGET_OS" == "iOS" && "$TARGET_ARCH" == "x86" ]]; then TARGET=ios-simulator-32; fi
-if [[ "$TARGET_OS" == "iOS" && "$TARGET_ARCH" == "x64" ]]; then TARGET=ios-simulator-64; fi
+if [[ "$TARGET_OS" == "iOSSimulator" && "$TARGET_ARCH" == "x86" ]]; then TARGET=ios-simulator-32; fi
+if [[ "$TARGET_OS" == "iOSSimulator" && "$TARGET_ARCH" == "x64" ]]; then TARGET=ios-simulator-64; fi
+if [[ "$TARGET_OS" == "iOSSimulator" && "$TARGET_ARCH" == "arm64" ]]; then TARGET=ios-simulator-64; fi
 if [[ "$TARGET_OS" == "iOS" && "$TARGET_ARCH" == "arm" ]]; then TARGET=ios-device; fi
 if [[ "$TARGET_OS" == "iOS" && "$TARGET_ARCH" == "arm64" ]]; then TARGET=ios-device; fi
 
-if [[ "$TARGET_OS" == "tvOS" && "$TARGET_ARCH" == "x64" ]]; then TARGET=tvos-simulator; fi
+if [[ "$TARGET_OS" == "tvOSSimulator" && "$TARGET_ARCH" == "x64" ]]; then TARGET=tvos-simulator; fi
+if [[ "$TARGET_OS" == "tvOSSimulator" && "$TARGET_ARCH" == "arm64" ]]; then TARGET=tvos-simulator; fi
 if [[ "$TARGET_OS" == "tvOS" && "$TARGET_ARCH" == "arm64" ]]; then TARGET=tvos-device; fi
 
 # "Release" in SCHEME_SDK is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)

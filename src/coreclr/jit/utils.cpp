@@ -1792,8 +1792,47 @@ bool MethodSet::IsActiveMethod(const char* methodName, int methodHash)
     return false;
 }
 
+//------------------------------------------------------------------------
+// CachedCyclesPerSecond - Return the cached value of CycleTimer::CyclesPerSecond().
+//
+// Calling CycleTimer::CyclesPerSecond() can be expensive: it runs a loop of non-empty
+// code to compute its value. So call it once and cache the result.
+//
+double CachedCyclesPerSecond()
+{
+    static volatile LONG s_CachedCyclesPerSecondInitialized = 0;
+    static double        s_CachedCyclesPerSecond            = 0.0;
+    static CritSecObject s_CachedCyclesPerSecondLock;
+
+    if (s_CachedCyclesPerSecondInitialized == 1)
+    {
+        return s_CachedCyclesPerSecond;
+    }
+
+    // It wasn't initialized yet, so initialize it. There might be a race,
+    // so lock the update.
+
+    CritSecHolder cachedCyclesPerSecondLock(s_CachedCyclesPerSecondLock);
+
+    if (s_CachedCyclesPerSecondInitialized == 1)
+    {
+        // Someone else initialized it first.
+        return s_CachedCyclesPerSecond;
+    }
+
+    s_CachedCyclesPerSecond = CycleTimer::CyclesPerSecond();
+
+    LONG originalInitializedValue = InterlockedCompareExchange(&s_CachedCyclesPerSecondInitialized, 1, 0);
+    if (originalInitializedValue == 1)
+    {
+        // This is unexpected; the critical section should have protected us.
+    }
+
+    return s_CachedCyclesPerSecond;
+}
+
 #ifdef FEATURE_JIT_METHOD_PERF
-CycleCount::CycleCount() : cps(CycleTimer::CyclesPerSecond())
+CycleCount::CycleCount() : cps(CachedCyclesPerSecond())
 {
 }
 

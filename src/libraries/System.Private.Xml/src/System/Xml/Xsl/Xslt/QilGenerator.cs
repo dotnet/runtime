@@ -196,13 +196,14 @@ namespace System.Xml.Xsl.Xslt
             }
 
             // Create list of all early bound objects
-            Dictionary<string, Type?> scriptClasses = compiler.Scripts.ScriptClasses;
+            Scripts.TrimSafeDictionary scriptClasses = compiler.Scripts.ScriptClasses;
             List<EarlyBoundInfo> ebTypes = new List<EarlyBoundInfo>(scriptClasses.Count);
-            foreach (KeyValuePair<string, Type?> pair in scriptClasses)
+            foreach (string key in scriptClasses.Keys)
             {
-                if (pair.Value != null)
+                Type? value = scriptClasses[key];
+                if (value != null)
                 {
-                    ebTypes.Add(new EarlyBoundInfo(pair.Key, pair.Value));
+                    ebTypes.Add(new EarlyBoundInfo(key, value));
                 }
             }
 

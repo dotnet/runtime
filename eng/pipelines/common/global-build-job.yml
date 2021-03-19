@@ -117,6 +117,16 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
+    - ${{ if eq(parameters.nameSuffix, 'Browser_wasm_Windows') }}:
+      # Update machine certs
+      - task: PowerShell@2
+        displayName: Update machine certs
+        inputs:
+          filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
+
+      - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+        displayName: Install native dependencies
+
     # Build
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam)
       displayName: Build product
