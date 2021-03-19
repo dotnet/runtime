@@ -123,7 +123,7 @@ namespace System
         private static readonly TransitionTime s_daylightRuleMarker = TransitionTime.CreateFixedDateRule(DateTime.MinValue.AddMilliseconds(2), 1, 1);
 
         // Truncate the date and the time to Milliseconds precision
-        private static DateTime GetTimeOnly(DateTime input) => new DateTime((input.TimeOfDay.Ticks / TimeSpan.TicksPerMillisecond) * TimeSpan.TicksPerMillisecond);
+        private static DateTime GetTimeOnlyInMillisecondsPrecision(DateTime input) => new DateTime((input.TimeOfDay.Ticks / TimeSpan.TicksPerMillisecond) * TimeSpan.TicksPerMillisecond);
 
         /// <summary>
         /// Returns a cloned array of AdjustmentRule objects
@@ -143,7 +143,7 @@ namespace System
 
             for (int i = 0; i < _adjustmentRules.Length; i++)
             {
-                AdjustmentRule? rule = _adjustmentRules[i];
+                AdjustmentRule rule = _adjustmentRules[i];
 
                 if (rule.NoDaylightTransitions &&
                     rule.DaylightTransitionStart != s_daylightRuleMarker &&
@@ -166,8 +166,10 @@ namespace System
 
                 if (start.Year == end.Year || !rule.NoDaylightTransitions)
                 {
-                    TransitionTime startTransition = rule.NoDaylightTransitions ? TransitionTime.CreateFixedDateRule(GetTimeOnly(start), start.Month, start.Day) : rule.DaylightTransitionStart;
-                    TransitionTime endTransition   = rule.NoDaylightTransitions ? TransitionTime.CreateFixedDateRule(GetTimeOnly(end), end.Month, end.Day) : rule.DaylightTransitionEnd;
+                    // If the rule is covering only one year then the start and end transitions would occure in that year, we don't need to split the rule.
+                    // Also, rule.NoDaylightTransitions be false in case the rule was created from a POSIX time zone string and having a DST transition. We can represent this in one rule too
+                    TransitionTime startTransition = rule.NoDaylightTransitions ? TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(start), start.Month, start.Day) : rule.DaylightTransitionStart;
+                    TransitionTime endTransition   = rule.NoDaylightTransitions ? TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(end), end.Month, end.Day) : rule.DaylightTransitionEnd;
                     rulesList.Add(AdjustmentRule.CreateAdjustmentRule(start.Date, end.Date, rule.DaylightDelta, startTransition, endTransition, rule.BaseUtcOffsetDelta));
                 }
                 else
@@ -183,8 +185,8 @@ namespace System
 
                     // Add the first rule.
                     DateTime endForFirstRule = new DateTime(start.Year + 1, 1, 1).AddMilliseconds(-1); // At the end of the first year
-                    TransitionTime startTransition = TransitionTime.CreateFixedDateRule(GetTimeOnly(start), start.Month, start.Day);
-                    TransitionTime endTransition = TransitionTime.CreateFixedDateRule(GetTimeOnly(endForFirstRule), endForFirstRule.Month, endForFirstRule.Day);
+                    TransitionTime startTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(start), start.Month, start.Day);
+                    TransitionTime endTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(endForFirstRule), endForFirstRule.Month, endForFirstRule.Day);
                     rulesList.Add(AdjustmentRule.CreateAdjustmentRule(start.Date, endForFirstRule.Date, rule.DaylightDelta, startTransition, endTransition, rule.BaseUtcOffsetDelta));
 
                     // Check if there is range of years between the start and the end years
@@ -193,15 +195,15 @@ namespace System
                         // Add the middle rule.
                         DateTime middleYearStart = new DateTime(start.Year + 1, 1, 1);
                         DateTime middleYearEnd   = new DateTime(end.Year, 1, 1).AddMilliseconds(-1);
-                        startTransition = TransitionTime.CreateFixedDateRule(GetTimeOnly(middleYearStart), middleYearStart.Month, middleYearStart.Day);
-                        endTransition = TransitionTime.CreateFixedDateRule(GetTimeOnly(middleYearEnd), middleYearEnd.Month, middleYearEnd.Day);
+                        startTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(middleYearStart), middleYearStart.Month, middleYearStart.Day);
+                        endTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(middleYearEnd), middleYearEnd.Month, middleYearEnd.Day);
                         rulesList.Add(AdjustmentRule.CreateAdjustmentRule(middleYearStart.Date, middleYearEnd.Date, rule.DaylightDelta, startTransition, endTransition, rule.BaseUtcOffsetDelta));
                     }
 
                     // Add the end rule.
                     DateTime endYearStart = new DateTime(end.Year, 1, 1); // At the beginning of the last year
-                    startTransition = TransitionTime.CreateFixedDateRule(GetTimeOnly(endYearStart), endYearStart.Month, endYearStart.Day);
-                    endTransition = TransitionTime.CreateFixedDateRule(GetTimeOnly(end), end.Month, end.Day);
+                    startTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(endYearStart), endYearStart.Month, endYearStart.Day);
+                    endTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(end), end.Month, end.Day);
                     rulesList.Add(AdjustmentRule.CreateAdjustmentRule(endYearStart.Date, end.Date, rule.DaylightDelta, startTransition, endTransition, rule.BaseUtcOffsetDelta));
                 }
             }
