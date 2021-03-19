@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>LibraryTest</PackageId>
+    <Version>1.0.0</Version>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <RepositoryUrl>https://github.com/thaystg/runtime.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <EnableSourceLink>true</EnableSourceLink>
+    <RepositoryCommit>f53c3c8402b956126cccef81a3caa01815ef1161</RepositoryCommit>
+    <IncludeSymbols>true</IncludeSymbols>
+    <DebugType>embedded</DebugType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <DeterministicSourcePaths>true</DeterministicSourcePaths>
+    <DisableSourceLink>false</DisableSourceLink>
+  </PropertyGroup>
+</Project>
