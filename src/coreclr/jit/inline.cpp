@@ -1472,7 +1472,7 @@ void InlineStrategy::DumpDataContents(FILE* file)
     unsigned __int64 compCycles               = m_Compiler->getInlineCycleCount();
     if (compCycles > 0)
     {
-        double countsPerSec      = CycleTimer::CyclesPerSecond();
+        double countsPerSec      = CachedCyclesPerSecond();
         double counts            = (double)compCycles;
         microsecondsSpentJitting = (unsigned)((counts / countsPerSec) * 1000 * 1000);
     }
@@ -1567,7 +1567,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     unsigned __int64 compCycles               = m_Compiler->getInlineCycleCount();
     if (compCycles > 0)
     {
-        double countsPerSec      = CycleTimer::CyclesPerSecond();
+        double countsPerSec      = CachedCyclesPerSecond();
         double counts            = (double)compCycles;
         microsecondsSpentJitting = (unsigned)((counts / countsPerSec) * 1000 * 1000);
     }
