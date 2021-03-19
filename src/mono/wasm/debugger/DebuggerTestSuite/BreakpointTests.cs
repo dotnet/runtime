@@ -288,7 +288,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task BreakpointUsingSourceLink()
+        public async Task GetSourceUsingSourceLink()
         {
             var bp = await SetBreakpointInMethod("debugger-test-with-source-link.dll", "DebuggerTests.ClassToBreak", "TestBreakpoint", 0);
             var pause_location = await EvaluateAndCheck(
