@@ -14,7 +14,7 @@
     <SkipEmccVersionCheck>true</SkipEmccVersionCheck>
   </PropertyGroup>
 
-  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(HELIX_CORRELATION_PAYLOAD)\MonoAOTCompiler" />
 
   <Import Project="$(HELIX_CORRELATION_PAYLOAD)\build\wasm\WasmApp.props" />
   <Import Project="$(HELIX_CORRELATION_PAYLOAD)\build\wasm\WasmApp.targets" />
