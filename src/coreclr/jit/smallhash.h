@@ -32,7 +32,7 @@ struct HashTableInfo<TKey*>
     static unsigned GetHashCode(const TKey* key)
     {
         // Shift off bits that are not likely to be significant
-        size_t keyval = reinterpret_cast<size_t>(key) >> ConstLog2<__alignof(TKey)>::value;
+        size_t keyval = reinterpret_cast<size_t>(key) >> IntegralLog2(__alignof(TKey));
 
         // Truncate and return the result
         return static_cast<unsigned>(keyval);
@@ -627,7 +627,7 @@ class SmallHashTable final : public HashTableBase<TKey, TValue, TKeyInfo, TAlloc
 
     enum : unsigned
     {
-        RoundedNumInlineBuckets = 1 << ConstLog2<NumInlineBuckets>::value
+        RoundedNumInlineBuckets = 1 << IntegralLog2(NumInlineBuckets)
     };
 
     typename TBase::Bucket m_inlineBuckets[RoundedNumInlineBuckets];

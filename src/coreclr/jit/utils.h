@@ -71,34 +71,16 @@ inline IteratorPair<TIterator> MakeIteratorPair(TIterator begin, TIterator end)
     return IteratorPair<TIterator>(begin, end);
 }
 
-// Recursive template definition to calculate the base-2 logarithm
-// of a constant value.
-template <unsigned val, unsigned acc = 0>
-struct ConstLog2
+// Calculates the base-2 logarithm of an integer. Can be used for compile-time constants.
+constexpr int IntegralLog2(unsigned value, unsigned accumulator = 0)
 {
-    enum
+    if (value == 0 || value == 1)
     {
-        value = ConstLog2<val / 2, acc + 1>::value
-    };
-};
+        return accumulator;
+    }
 
-template <unsigned acc>
-struct ConstLog2<0, acc>
-{
-    enum
-    {
-        value = acc
-    };
-};
-
-template <unsigned acc>
-struct ConstLog2<1, acc>
-{
-    enum
-    {
-        value = acc
-    };
-};
+    return IntegralLog2(value / 2, accumulator + 1);
+}
 
 inline const char* dspBool(bool b)
 {
