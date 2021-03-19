@@ -16,8 +16,8 @@
 
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
-  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\wasm-build\build\WasmApp.props" />
-  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\wasm-build\build\WasmApp.targets" />
+  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\build\wasm\WasmApp.props" />
+  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\build\wasm\WasmApp.targets" />
   <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
