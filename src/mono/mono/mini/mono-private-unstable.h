@@ -22,7 +22,7 @@ typedef struct {
 			const char *path;
 		} name;
 		struct {
-			const char *data;
+			char *data;
 			uint32_t data_len;
 		} data;
 	} runtimeconfig;

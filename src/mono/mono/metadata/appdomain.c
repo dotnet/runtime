@@ -95,9 +95,9 @@ static int n_appctx_props;
 static char **appctx_keys;
 static char **appctx_values;
 
-static int n_runtimeconfig_json_props;
-static char **runtimeconfig_json_keys;
-static char **runtimeconfig_json_values;
+static MonovmRuntimeConfigArguments *runtime_config_arg;
+static MonovmRuntimeConfigArgumentsCleanup runtime_config_cleanup_fn;
+static void *runtime_config_user_data;
 
 static const char *
 mono_check_corlib_version_internal (void);
@@ -1243,16 +1243,23 @@ void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values)
 {
 	n_appctx_props = nprops;
-	appctx_keys = (char**)keys;
-	appctx_values = (char**)values;
+	appctx_keys = g_new0 (char*, n_appctx_props);
+	appctx_values = g_new0 (char*, n_appctx_props);
+
+	for (int i = 0; i < n_appctx_props; ++i) {
+		appctx_keys [i] = g_new0 (char, strlen (keys [i]));
+		appctx_values [i] = g_new0 (char, strlen (values [i]));
+		strcpy(appctx_keys [i], keys [i]);
+		strcpy(appctx_values [i], values [i]);
+	}
 }
 
 void
-mono_runtime_register_runtimeconfig_json_properties (int nprops, const char **keys,  const char **values)
+mono_runtime_register_runtimeconfig_json_properties (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void *user_data)
 {
-	n_runtimeconfig_json_props = nprops;
-	runtimeconfig_json_keys = (char**)keys;
-	runtimeconfig_json_values = (char**)values;
+	runtime_config_arg = arg;
+	runtime_config_cleanup_fn = cleanup_fn;
+	runtime_config_user_data = user_data;
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE (appctx, "System", "AppContext")
@@ -1263,11 +1270,11 @@ mono_runtime_install_appctx_properties (void)
 {
 	ERROR_DECL (error);
 	gpointer args [3];
+	int n_runtimeconfig_json_props;
 	int n_total_props;
-	char **total_keys_raw;
-	char **total_values_raw;
 	gunichar2 **total_keys;
 	gunichar2 **total_values;
+	char *buffer;
 
 	MonoMethod *setup = mono_class_get_method_from_name_checked (mono_class_get_appctx_class (), "Setup", 3, 0, error);
 	g_assert (setup);
@@ -1275,26 +1282,41 @@ mono_runtime_install_appctx_properties (void)
 	// FIXME: TRUSTED_PLATFORM_ASSEMBLIES is very large
 
 	// Combine and convert properties
+	buffer = runtime_config_arg->runtimeconfig.data.data;
+	n_runtimeconfig_json_props = mono_metadata_decode_value((const char*)buffer, (const char **)&buffer);
+
 	n_total_props = n_appctx_props + n_runtimeconfig_json_props;
-	total_keys_raw = g_new0 (char*, n_total_props);
-	total_values_raw = g_new0 (char*, n_total_props);;
 	total_keys = g_new0 (gunichar2*, n_total_props);
 	total_values = g_new0 (gunichar2*, n_total_props);
+
 	for (int i = 0; i < n_appctx_props; ++i) {
-		total_keys_raw [i] = g_new0 (char, strlen (appctx_keys [i]));
-		total_values_raw [i] = (char *) malloc (sizeof (char) * (strlen (appctx_values [i]))); // g_new0 doesn't work well with TRUSTED_PLATFORM_ASSEMBLIES's value
-		strcpy(total_keys_raw [i], appctx_keys [i]);
-		strcpy(total_values_raw [i], appctx_values [i]);
+		total_keys [i] = g_utf8_to_utf16 (appctx_keys [i], strlen (appctx_keys [i]), NULL, NULL, NULL);
+		total_values [i] = g_utf8_to_utf16 (appctx_values [i], strlen (appctx_values [i]), NULL, NULL, NULL);
 	}
+	
 	for (int i = 0; i < n_runtimeconfig_json_props; ++i) {
-		total_keys_raw [i + n_appctx_props] = g_new0 (char, strlen (runtimeconfig_json_keys [i]));
-		total_values_raw [i + n_appctx_props] = g_new0 (char, strlen (runtimeconfig_json_values [i]));
-		strcpy(total_keys_raw [i + n_appctx_props], runtimeconfig_json_keys [i]);
-		strcpy(total_values_raw [i + n_appctx_props], runtimeconfig_json_values [i]);
-	}
-	for (int i = 0; i < n_total_props; ++i) {
-		total_keys [i] = g_utf8_to_utf16 (total_keys_raw [i], strlen (total_keys_raw [i]), NULL, NULL, NULL);
-		total_values [i] = g_utf8_to_utf16 (total_values_raw [i], strlen (total_values_raw [i]), NULL, NULL, NULL);
+		int str_len;
+		char *property_key;
+		char *property_value;
+
+		str_len = mono_metadata_decode_value((const char*)buffer, (const char **)&buffer);
+		property_key = g_new0 (char, str_len + 1);
+		strncpy (property_key, buffer, str_len);
+		property_key [str_len] = '\0';
+		buffer += str_len;
+
+		total_keys [i + n_appctx_props] = g_utf8_to_utf16 (property_key, strlen (property_key), NULL, NULL, NULL);
+
+		str_len = mono_metadata_decode_value((const char*)buffer, (const char **)&buffer);
+		property_value = g_new0 (char, str_len + 1);
+		strncpy (property_value, buffer, str_len);
+		property_value [str_len] = '\0';
+		buffer += str_len;
+
+		total_values [i + n_appctx_props] = g_utf8_to_utf16 (property_value, strlen (property_value), NULL, NULL, NULL);
+		
+		g_free (property_key);
+		g_free (property_value);
 	}
 
 	/* internal static unsafe void Setup(char** pNames, char** pValues, int count) */
@@ -1305,20 +1327,27 @@ mono_runtime_install_appctx_properties (void)
 	mono_runtime_invoke_checked (setup, NULL, args, error);
 	mono_error_assert_ok (error);
 
+	// Call user defined cleanup function
+	if (runtime_config_cleanup_fn)
+		(*runtime_config_cleanup_fn) (runtime_config_arg, runtime_config_user_data);
+
 	/* No longer needed */
 	for (int i = 0; i < n_total_props; ++i) {
-		g_free (total_keys_raw [i]);
-		g_free (total_values_raw [i]);
 		g_free (total_keys [i]);
 		g_free (total_values [i]);
 	}
-	g_free (total_keys_raw);
-	g_free (total_values_raw);
 	g_free (total_keys);
 	g_free (total_values);
+	for (int i = 0; i < n_appctx_props; ++i) {
+		g_free (appctx_keys [i]);
+		g_free (appctx_values [i]);
+	}
+	g_free (appctx_keys);
+	g_free (appctx_values);
 
 	appctx_keys = NULL;
 	appctx_values = NULL;
-	runtimeconfig_json_keys = NULL;
-	runtimeconfig_json_values = NULL;
+	runtime_config_arg = NULL;
+	runtime_config_cleanup_fn = NULL;
+	runtime_config_user_data = NULL;
 }
