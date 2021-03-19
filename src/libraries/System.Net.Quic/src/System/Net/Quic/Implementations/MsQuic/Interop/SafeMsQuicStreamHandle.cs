@@ -9,11 +9,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         public override bool IsInvalid => handle == IntPtr.Zero;
 
-        private SafeMsQuicStreamHandle() : base(IntPtr.Zero, ownsHandle: true)
-        {
-        }
+        private SafeMsQuicStreamHandle()
+            : base(IntPtr.Zero, ownsHandle: true)
+        { }
 
-        public SafeMsQuicStreamHandle(IntPtr streamHandle) : this()
+        public SafeMsQuicStreamHandle(IntPtr streamHandle)
+            : this()
         {
             SetHandle(streamHandle);
         }

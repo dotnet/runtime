@@ -13,7 +13,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             : base(IntPtr.Zero, ownsHandle: true)
         { }
 
-        public SafeMsQuicConnectionHandle(IntPtr connectionHandle) : this()
+        public SafeMsQuicConnectionHandle(IntPtr connectionHandle)
+            : this()
         {
             SetHandle(connectionHandle);
         }

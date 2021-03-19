@@ -30,12 +30,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
             catch
             {
-                Destroy(ref handles, ref buffers);
+                Return(ref handles, ref buffers);
                 throw;
             }
         }
 
-        public static void Destroy(ref MemoryHandle[]? handles, ref QuicBuffer[]? buffers)
+        public static void Return(ref MemoryHandle[]? handles, ref QuicBuffer[]? buffers)
         {
             if (handles is MemoryHandle[] notNullHandles)
             {

@@ -133,7 +133,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             finally
             {
-                MsQuicAlpnHelper.Destroy(ref handles, ref buffers);
+                MsQuicAlpnHelper.Return(ref handles, ref buffers);
             }
 
             QuicExceptionHelpers.ThrowIfFailed(status, "ListenerStart failed.");

@@ -122,7 +122,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             var cfg = new RegistrationConfig
             {
                 AppName = ".NET",
-                ExecutionProfile = (uint)QUIC_EXECUTION_PROFILE.QUIC_EXECUTION_PROFILE_LOW_LATENCY
+                ExecutionProfile = QUIC_EXECUTION_PROFILE.QUIC_EXECUTION_PROFILE_LOW_LATENCY
             };
 
             status = RegistrationOpenDelegate(ref cfg, out SafeMsQuicRegistrationHandle handle);
@@ -134,29 +134,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal static MsQuicApi Api => _api ??= new MsQuicApi();
 
         internal static bool IsQuicSupported => true;
-
-        //static MsQuicApi()
-        //{
-        //    // MsQuicOpen will succeed even if the platform will not support it. It will then fail with unspecified
-        //    // platform-specific errors in subsequent callbacks. For now, check for the minimum build we've tested it on.
-
-        //    // TODO:
-        //    // - Hopefully, MsQuicOpen will perform this check for us and give us a consistent error code.
-        //    // - Otherwise, dial this in to reflect actual minimum requirements and add some sort of platform
-        //    //   error code mapping when creating exceptions.
-
-        //    // TODO: try to initialize TLS 1.3 in SslStream.
-
-        //    try
-        //    {
-        //        Api = new MsQuicApi();
-        //        IsQuicSupported = true;
-        //    }
-        //    catch (NotSupportedException)
-        //    {
-        //        IsQuicSupported = false;
-        //    }
-        //}
 
         internal MsQuicNativeMethods.RegistrationOpenDelegate RegistrationOpenDelegate { get; }
         internal MsQuicNativeMethods.RegistrationCloseDelegate RegistrationCloseDelegate { get; }

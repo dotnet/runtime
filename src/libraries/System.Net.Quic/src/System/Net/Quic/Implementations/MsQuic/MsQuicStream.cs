@@ -366,7 +366,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
         {
-            uint status = MsQuicApi.Api.StreamShutdownDelegate(_state.Handle, flags, (ulong)errorCode);
+            uint status = MsQuicApi.Api.StreamShutdownDelegate(_state.Handle, flags, errorCode);
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamShutdown failed.");
         }
 

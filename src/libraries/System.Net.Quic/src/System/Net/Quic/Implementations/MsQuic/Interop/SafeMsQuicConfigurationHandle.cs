@@ -16,9 +16,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         public override bool IsInvalid => handle == IntPtr.Zero;
 
-        private SafeMsQuicConfigurationHandle() : base(IntPtr.Zero, ownsHandle: true)
-        {
-        }
+        private SafeMsQuicConfigurationHandle()
+            : base(IntPtr.Zero, ownsHandle: true)
+        { }
 
         protected override bool ReleaseHandle()
         {
@@ -92,7 +92,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
             finally
             {
-                MsQuicAlpnHelper.Destroy(ref handles, ref buffers);
+                MsQuicAlpnHelper.Return(ref handles, ref buffers);
             }
 
             QuicExceptionHelpers.ThrowIfFailed(status, "ConfigurationOpen failed.");

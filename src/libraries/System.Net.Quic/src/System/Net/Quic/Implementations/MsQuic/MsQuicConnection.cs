@@ -27,7 +27,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private GCHandle _stateHandle;
         private bool _disposed;
 
-        private readonly IPEndPoint? _localEndPoint;
+        private IPEndPoint? _localEndPoint;
         private readonly EndPoint _remoteEndPoint;
         private SslApplicationProtocol _negotiatedAlpnProtocol;
 
@@ -42,7 +42,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             public readonly TaskCompletionSource<uint> ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
             public readonly TaskCompletionSource<uint> ShutdownTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            public IPEndPoint? LocalEndPoint;
             public bool Connected;
             public long AbortErrorCode = -1;
 
@@ -106,7 +105,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override IPEndPoint? LocalEndPoint => _localEndPoint ?? _state.LocalEndPoint;
+        internal override IPEndPoint? LocalEndPoint => _localEndPoint;
 
         internal override EndPoint RemoteEndPoint => _remoteEndPoint;
 
@@ -121,9 +120,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 // Connected will already be true for connections accepted from a listener.
 
                 SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
-                state.LocalEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
 
                 Debug.Assert(state.Connection != null);
+                state.Connection._localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
                 state.Connection.SetNegotiatedAlpn(connectionEvent.Data.Connected.NegotiatedAlpn, connectionEvent.Data.Connected.NegotiatedAlpnLength);
                 state.Connection = null;
 
@@ -366,7 +365,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
-            _state.Handle.Dispose();
+            _state?.Handle?.Dispose();
             if (_stateHandle.IsAllocated) _stateHandle.Free();
             _disposed = true;
         }

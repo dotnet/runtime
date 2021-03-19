@@ -357,7 +357,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct ConnectionEventDataShutdownInitiatedByPeer
         {
-            internal ulong ErrorCode;
+            internal long ErrorCode;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -501,13 +501,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataPeerSendAborted
         {
-            internal ulong ErrorCode;
+            internal long ErrorCode;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataPeerReceiveAborted
         {
-            internal ulong ErrorCode;
+            internal long ErrorCode;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -519,7 +519,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Explicit)]
         internal struct StreamEventDataUnion
         {
-            //Mana: missing START_COMPLETE
+            // TODO: missing START_COMPLETE
             [FieldOffset(0)]
             internal StreamEventDataReceive Receive;
 
@@ -642,7 +642,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint StreamShutdownDelegate(
             SafeMsQuicStreamHandle stream,
             QUIC_STREAM_SHUTDOWN_FLAGS flags,
-            ulong errorCode);
+            long errorCode);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamSendDelegate(
