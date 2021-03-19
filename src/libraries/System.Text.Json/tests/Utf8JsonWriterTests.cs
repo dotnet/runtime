@@ -492,7 +492,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(InvalidEscapingTestData))]
-        public unsafe void WriteStringInvalidCharacter(char replacementChar, JavaScriptEncoder encoder, bool requiresEscaping)
+        public unsafe void WriteStringInvalidCharacter(char replacementChar, JavaScriptEncoder encoder)
         {
             var writerOptions = new JsonWriterOptions { Encoder = encoder };
             var random = new Random(42);
@@ -516,13 +516,33 @@ namespace System.Text.Json.Tests
                     sourceUtf8[i] = 0xC3;   // Invalid, first byte of a 2-byte utf-8 character
 
                     ReadOnlyMemory<byte> written = WriteStringHelper(writerOptions, source);
-                    // Some encoders don't escape replacement character
-                    Assert.Equal(requiresEscaping ? i + 1 : -1, written.Span.IndexOf((byte)'\\'));  // Account for the start quote
+                    Assert.True(BeginsWithReplacementCharacter(written.Span.Slice(i + 1))); // +1 to account for starting quote
 
                     written = WriteUtf8StringHelper(writerOptions, sourceUtf8);
-                    // Some encoders don't escape replacement character
-                    Assert.Equal(requiresEscaping ? i + 1 : -1, written.Span.IndexOf((byte)'\\'));  // Account for the start quote
+                    Assert.True(BeginsWithReplacementCharacter(written.Span.Slice(i + 1))); // +1 to account for starting quote
                 }
+            }
+
+            static bool BeginsWithReplacementCharacter(ReadOnlySpan<byte> span)
+            {
+                // Returns true if the span contains the literal UTF-8 representation of the U+FFFD replacement
+                // character or the "\uFFFD" JSON-escaped representation of the replacement character.
+                // Account for the fact that an encoder might write a literal replacement character or its
+                // escaped representation, and both forms are equally valid.
+
+                if (span.StartsWith(new byte[] { 0xEF, 0xBF, 0xBD })) { return true; } // literal U+FFFD (as UTF-8)
+                if (span.Length >= 6)
+                {
+                    if (span[0] == (byte)'\\' && span[1] == (byte)'u'
+                        && (span[2] == 'F' || span[2] == 'f')
+                        && (span[3] == 'F' || span[3] == 'f')
+                        && (span[4] == 'F' || span[4] == 'f')
+                        && (span[5] == 'D' || span[5] == 'd'))
+                    {
+                        return true; // "\uFFFD" representation
+                    }
+                }
+                return false; // unknown
             }
         }
 
@@ -532,17 +552,17 @@ namespace System.Text.Json.Tests
             {
                 return new List<object[]>
                 {
-                    new object[] { '\uD801', JavaScriptEncoder.Default, true },         // Invalid, high surrogate alone
-                    new object[] { '\uDC01', JavaScriptEncoder.Default, true },         // Invalid, low surrogate alone
+                    new object[] { '\uD801', JavaScriptEncoder.Default },         // Invalid, high surrogate alone
+                    new object[] { '\uDC01', JavaScriptEncoder.Default },         // Invalid, low surrogate alone
 
-                    new object[] { '\uD801', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
-                    new object[] { '\uDC01', JavaScriptEncoder.UnsafeRelaxedJsonEscaping, false },
+                    new object[] { '\uD801', JavaScriptEncoder.UnsafeRelaxedJsonEscaping },
+                    new object[] { '\uDC01', JavaScriptEncoder.UnsafeRelaxedJsonEscaping },
 
-                    new object[] { '\uD801', JavaScriptEncoder.Create(UnicodeRanges.All), false },
-                    new object[] { '\uDC01', JavaScriptEncoder.Create(UnicodeRanges.All), false },
+                    new object[] { '\uD801', JavaScriptEncoder.Create(UnicodeRanges.All) },
+                    new object[] { '\uDC01', JavaScriptEncoder.Create(UnicodeRanges.All) },
 
-                    new object[] { '\uD801', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin), true },
-                    new object[] { '\uDC01', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin), true },
+                    new object[] { '\uD801', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin) },
+                    new object[] { '\uDC01', JavaScriptEncoder.Create(UnicodeRanges.BasicLatin) },
                 };
             }
         }

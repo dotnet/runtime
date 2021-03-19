@@ -3696,7 +3696,6 @@ void Compiler::optUnrollLoops()
         incr = incr->AsOp()->gtOp2;
 
         GenTree* init = initStmt->GetRootNode();
-        GenTree* test = testStmt->GetRootNode();
 
         /* Make sure everything looks ok */
         if ((init->gtOper != GT_ASG) || (init->AsOp()->gtOp1->gtOper != GT_LCL_VAR) ||
