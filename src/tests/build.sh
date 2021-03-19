@@ -159,7 +159,7 @@ precompile_coreroot_fx()
     fi
 
     local outputDir="$__TestIntermediatesDir/crossgen.out"
-    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$outputDir\" --large-bubble --release --nocleanup --target-arch $__BuildArch -dop $__NumProc"
+    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$outputDir\" --release --nocleanup --target-arch $__BuildArch -dop $__NumProc"
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
         crossgenCmd="$crossgenCmd --composite"
