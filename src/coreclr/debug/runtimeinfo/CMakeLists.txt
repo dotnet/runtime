@@ -30,7 +30,9 @@ function(generate_module_index Target ModuleIndexFile)
 endfunction(generate_module_index)
 
 generate_module_index(coreclr ${CMAKE_CURRENT_BINARY_DIR}/runtimemoduleindex.h)
-add_dependencies(runtimeinfo inject_debug_resources_coreclr)
+if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
+    add_dependencies(runtimeinfo inject_debug_resources_coreclr)
+endif()
 
 if (NOT (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM) AND CLR_CMAKE_HOST_ARCH_AMD64))
     generate_module_index(mscordaccore ${CMAKE_CURRENT_BINARY_DIR}/dacmoduleindex.h)
