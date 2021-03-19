@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 
 #define INIT_LOCALS(name, ...) \
     enum { __VA_ARGS__, count_##name }; \
@@ -29,6 +30,8 @@
 
 static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len);
 
+static void SkipWhitespace(const uint8_t** buffer, int32_t* len);
+
 // Handles both DER and PEM formats
 jobject /*X509Certificate*/ AndroidCryptoNative_X509Decode(const uint8_t* buf, int32_t len)
 {
@@ -37,6 +40,11 @@ jobject /*X509Certificate*/ AndroidCryptoNative_X509Decode(const uint8_t* buf, i
 
     jobject ret = NULL;
     INIT_LOCALS(loc, bytes, stream, certType, certFactory)
+
+    // Android doesn't support whitespace before a PEM block.
+    // Since no whitespace character ASCII encodings overlap with the start of the DER binary encoding,
+    // we will skip the whitespace at the start of the block.
+    SkipWhitespace(&buf, &len);
 
     // byte[] bytes = new byte[] { ... }
     // InputStream stream = new ByteArrayInputStream(bytes);
@@ -211,6 +219,11 @@ PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t* buf, i
     // The generateCertificate method used for the X509 DER/PEM check will succeed for some
     // PKCS7 blobs, so it is done after the PKCS7 check.
 
+    // Android doesn't support whitespace before a PEM block.
+    // Since no whitespace character ASCII encodings overlap with the start of the DER binary encoding,
+    // we will skip the whitespace at the start of the block.
+    SkipWhitespace(&buf, &len);
+
     // byte[] bytes = new byte[] { ... }
     // InputStream stream = new ByteArrayInputStream(bytes);
     loc[bytes] = (*env)->NewByteArray(env, len);
@@ -286,4 +299,16 @@ static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, 
 
     (*env)->GetByteArrayRegion(env, source, 0, bytesLen, (jbyte*)dest);
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+}
+
+static void SkipWhitespace(const uint8_t** buffer, int32_t* len)
+{
+    assert(buffer != NULL && *buffer != NULL);
+    assert(*len >= 0);
+    while(isspace((char)**buffer) && *len > 0)
+    {
+        *buffer += 1;
+        *len -= 1;
+    }
+    LOG_DEBUG("Next character is a '%c'", **buffer);
 }
