@@ -109,8 +109,15 @@ extern jmethodID g_CertPathGetEncoded;
 
 // java/security/cert/X509Certificate
 extern jclass    g_X509CertClass;
+extern jmethodID g_X509CertEquals;
 extern jmethodID g_X509CertGetEncoded;
 extern jmethodID g_X509CertGetPublicKey;
+
+// java/security/interfaces/DSAKey
+extern jclass    g_DSAKeyClass;
+
+// java/security/interfaces/ECKey
+extern jclass    g_ECKeyClass;
 
 // java/security/interfaces/RSAKey
 extern jclass    g_RSAKeyClass;
@@ -132,6 +139,27 @@ extern jmethodID g_keyPairGenGetInstanceMethod;
 extern jmethodID g_keyPairGenInitializeMethod;
 extern jmethodID g_keyPairGenInitializeWithParamsMethod;
 extern jmethodID g_keyPairGenGenKeyPairMethod;
+
+// java/security/KeyStore
+extern jclass    g_KeyStoreClass;
+extern jmethodID g_KeyStoreGetInstance;
+extern jmethodID g_KeyStoreAliases;
+extern jmethodID g_KeyStoreContainsAlias;
+extern jmethodID g_KeyStoreDeleteEntry;
+extern jmethodID g_KeyStoreGetCertificate;
+extern jmethodID g_KeyStoreGetEntry;
+extern jmethodID g_KeyStoreLoad;
+extern jmethodID g_KeyStoreSetCertificateEntry;
+extern jmethodID g_KeyStoreSetKeyEntry;
+
+// java/security/KeyStore$PrivateKeyEntry
+extern jclass    g_PrivateKeyEntryClass;
+extern jmethodID g_PrivateKeyEntryGetCertificate;
+extern jmethodID g_PrivateKeyEntryGetPrivateKey;
+
+// java/security/KeyStore$TrustedCertificateEntry
+extern jclass    g_TrustedCertificateEntryClass;
+extern jmethodID g_TrustedCertificateEntryGetTrustedCertificate;
 
 // java/security/Signature
 extern jclass    g_SignatureClass;
@@ -262,6 +290,11 @@ extern jmethodID g_CollectionSize;
 // java/util/Date
 extern jclass    g_DateClass;
 extern jmethodID g_DateGetTime;
+
+// java/util/Enumeration
+extern jclass    g_Enumeration;
+extern jmethodID g_EnumerationHasMoreElements;
+extern jmethodID g_EnumerationNextElement;
 
 // java/util/Iterator
 extern jclass    g_IteratorClass;

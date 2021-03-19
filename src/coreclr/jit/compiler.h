@@ -5890,6 +5890,8 @@ private:
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
     GenTree* fgMorphConst(GenTree* tree);
 
+    bool fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2);
+
     GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
     GenTree* fgMorphCommutative(GenTreeOp* tree);
 
