@@ -11,12 +11,12 @@
     <RuntimesToInclude Condition="'$(RuntimesToInclude)' != ''" Include="$(RuntimesToInclude)" />
     <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
     <SymbolsPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.symbols.nupkg" />
-    <AllPackagesFilePath Include="$(LibrariesAllConfigShippingPackagesDir)*.nupkg" Exclude="@(SymbolsPackages)">
+    <AllPackagesFilePath Include="$(LibrariesAllConfigShippingPackagesDir)*.nupkg" Exclude="@(SymbolsPackages)" Condition="'$(SymbolsPackages)' != ''">
       <PackageName>$([System.IO.Path]::GetFileNameWithoutExtension('%(Identity)').Substring(0, $([System.IO.Path]::GetFileNameWithoutExtension('%(Identity)').IndexOf('.$(MajorVersion)'))))</PackageName>   
       <PackagePath>%(Identity)</PackagePath>
     </AllPackagesFilePath>
     <AllPackages Include="@(AllPackagesFilePath->'%(PackageName)')" />
-    
+
     <ExcludePackages Condition="'$(PackagesToTest)' != ''" Include="@(AllPackages)" Exclude="@(PackagesToTest)" />
     <TestPackages Include="@(AllPackages)" Exclude="@(ExcludePackages)"/>
     <TestPackagesPath Include="@(TestPackages->'%(PackagePath)')" />
