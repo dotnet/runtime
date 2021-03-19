@@ -16,10 +16,10 @@ namespace System.Text.Encodings.Web
             Debug.Assert(AdvSimd.Arm64.IsSupported);
             Debug.Assert(BitConverter.IsLittleEndian);
 
-            var vec0xF = Vector128.Create((byte)0xF);
-            var vecPowersOfTwo = Vector128.Create(1, 2, 4, 8, 16, 32, 64, 128, 0, 0, 0, 0, 0, 0, 0, 0);
-            var vecPairwiseAddNibbleBitmask = Vector128.Create((ushort)0xF00F).AsByte(); // little endian only
-            var allowedCodePoints = _allowedAsciiCodePoints.AsVector;
+            Vector128<byte> vec0xF = Vector128.Create((byte)0xF);
+            Vector128<byte> vecPowersOfTwo = Vector128.Create(1, 2, 4, 8, 16, 32, 64, 128, 0, 0, 0, 0, 0, 0, 0, 0);
+            Vector128<byte> vecPairwiseAddNibbleBitmask = Vector128.Create((ushort)0xF00F).AsByte(); // little endian only
+            Vector128<byte> allowedCodePoints = _allowedAsciiCodePoints.AsVector;
             ulong resultScalar;
 
             nuint i = 0;
@@ -150,10 +150,10 @@ namespace System.Text.Encodings.Web
             Debug.Assert(AdvSimd.Arm64.IsSupported);
             Debug.Assert(BitConverter.IsLittleEndian);
 
-            var vec0xF = Vector128.Create((byte)0xF);
-            var vecPowersOfTwo = Vector128.Create(1, 2, 4, 8, 16, 32, 64, 128, 0, 0, 0, 0, 0, 0, 0, 0);
-            var vecPairwiseAddNibbleBitmask = Vector128.Create((ushort)0xF00F).AsByte(); // little endian only
-            var allowedCodePoints = _allowedAsciiCodePoints.AsVector;
+            Vector128<byte> vec0xF = Vector128.Create((byte)0xF);
+            Vector128<byte> vecPowersOfTwo = Vector128.Create(1, 2, 4, 8, 16, 32, 64, 128, 0, 0, 0, 0, 0, 0, 0, 0);
+            Vector128<byte> vecPairwiseAddNibbleBitmask = Vector128.Create((ushort)0xF00F).AsByte(); // little endian only
+            Vector128<byte> allowedCodePoints = _allowedAsciiCodePoints.AsVector;
             ulong resultScalar;
 
             nuint i = 0;

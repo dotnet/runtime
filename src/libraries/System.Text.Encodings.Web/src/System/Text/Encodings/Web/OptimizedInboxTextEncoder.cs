@@ -350,7 +350,7 @@ namespace System.Text.Encodings.Web
 #if NETCOREAPP
             if (Ssse3.IsSupported
 #if NET5_0_OR_GREATER
-                || AdvSimd.Arm64.IsSupported
+                || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
 #endif
                 )
             {
@@ -361,7 +361,7 @@ namespace System.Text.Encodings.Web
                     {
                         nuint asciiBytesSkippedNInt;
 #if NET5_0_OR_GREATER
-                        if (AdvSimd.Arm64.IsSupported)
+                        if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                         {
                             asciiBytesSkippedNInt = GetIndexOfFirstByteToEncodeAdvSimd64(pData, (uint)dataOriginalLength);
                         }
@@ -428,7 +428,7 @@ namespace System.Text.Encodings.Web
                     idx = GetIndexOfFirstCharToEncodeSsse3(pData, lengthInChars);
                 }
 #if NET5_0_OR_GREATER
-                else if (AdvSimd.Arm64.IsSupported)
+                else if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                 {
                     idx = GetIndexOfFirstCharToEncodeAdvSimd64(pData, lengthInChars);
                 }
