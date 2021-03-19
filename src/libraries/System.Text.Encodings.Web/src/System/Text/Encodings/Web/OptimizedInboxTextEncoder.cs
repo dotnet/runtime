@@ -9,6 +9,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 #endif
 
+#if NET5_0_OR_GREATER
+using System.Runtime.Intrinsics.Arm;
+#endif
+
 namespace System.Text.Encodings.Web
 {
     /// <summary>
@@ -344,14 +348,29 @@ namespace System.Text.Encodings.Web
             int dataOriginalLength = data.Length;
 
 #if NETCOREAPP
-            if (Ssse3.IsSupported)
+            if (Ssse3.IsSupported
+#if NET5_0_OR_GREATER
+                || AdvSimd.Arm64.IsSupported
+#endif
+                )
             {
                 int asciiBytesSkipped;
                 unsafe
                 {
                     fixed (byte* pData = data)
                     {
-                        nuint asciiBytesSkippedNInt = GetIndexOfFirstByteToEncodeSsse3(pData, (uint)dataOriginalLength);
+                        nuint asciiBytesSkippedNInt;
+#if NET5_0_OR_GREATER
+                        if (AdvSimd.Arm64.IsSupported)
+                        {
+                            asciiBytesSkippedNInt = GetIndexOfFirstByteToEncodeAdvSimd64(pData, (uint)dataOriginalLength);
+                        }
+                        else
+#endif
+                        {
+                            Debug.Assert(Ssse3.IsSupported, "#ifdef was ill-formed.");
+                            asciiBytesSkippedNInt = GetIndexOfFirstByteToEncodeSsse3(pData, (uint)dataOriginalLength);
+                        }
                         Debug.Assert(0 <= asciiBytesSkippedNInt && asciiBytesSkippedNInt <= (uint)dataOriginalLength);
                         asciiBytesSkipped = (int)asciiBytesSkippedNInt;
                     }
@@ -408,6 +427,12 @@ namespace System.Text.Encodings.Web
                 {
                     idx = GetIndexOfFirstCharToEncodeSsse3(pData, lengthInChars);
                 }
+#if NET5_0_OR_GREATER
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    idx = GetIndexOfFirstCharToEncodeAdvSimd64(pData, lengthInChars);
+                }
+#endif
                 Debug.Assert(0 <= idx && idx <= lengthInChars);
 #endif
 
