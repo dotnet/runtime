@@ -1216,11 +1216,10 @@ namespace System
             int p = UInt32ToDecChars(buffer.Slice(0, bufferLength), (uint)(-value), digits);
             Debug.Assert(p == sNegative.Length);
 
-            for (int i = sNegative.Length - 1; i >= 0; i--)
+            for (int i = 0; i < sNegative.Length && i < buffer.Length; i++)
             {
-                buffer[--p] = sNegative[i];
+                buffer[i] = sNegative[i];
             }
-            Debug.Assert(p == 0);
 
             return result;
         }
@@ -1244,11 +1243,10 @@ namespace System
             int p = UInt32ToDecChars(destination.Slice(0, bufferLength), (uint)(-value), digits);
             Debug.Assert(p == sNegative.Length);
 
-            for (int i = sNegative.Length - 1; i >= 0; i--)
+            for (int i = 0; i < sNegative.Length && i < destination.Length; i++)
             {
-                destination[--p] = sNegative[i];
+                destination[i] = sNegative[i];
             }
-            Debug.Assert(p == 0);
 
             return true;
         }
@@ -1479,11 +1477,10 @@ namespace System
             p = UInt32ToDecChars(buffer.Slice(0, p), Low32(value), digits);
             Debug.Assert(p == sNegative.Length);
 
-            for (int i = sNegative.Length - 1; i >= 0; i--)
+            for (int i = 0; i < sNegative.Length && i < buffer.Length; i++)
             {
-                buffer[--p] = sNegative[i];
+                buffer[i] = sNegative[i];
             }
-            Debug.Assert(p == 0);
 
             return result;
         }
@@ -1517,11 +1514,10 @@ namespace System
             p = UInt32ToDecChars(destination.Slice(0, p), Low32(value), digits);
             Debug.Assert(p == sNegative.Length);
 
-            for (int i = sNegative.Length - 1; i >= 0; i--)
+            for (int i = 0; i < sNegative.Length && i < destination.Length; i++)
             {
-                destination[--p] = sNegative[i];
+                destination[i] = sNegative[i];
             }
-            Debug.Assert(p == 0);
 
             return true;
         }
