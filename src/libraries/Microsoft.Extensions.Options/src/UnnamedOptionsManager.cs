@@ -17,9 +17,6 @@ namespace Microsoft.Extensions.Options
             _lazy = new Lazy<TOptions>(() => factory.Create(Options.DefaultName));
         }
 
-        /// <summary>
-        /// The default configured <typeparamref name="TOptions"/> instance, equivalent to Get(Options.DefaultName).
-        /// </summary>
         public TOptions Value => _lazy.Value;
     }
 }
