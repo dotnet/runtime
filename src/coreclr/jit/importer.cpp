@@ -4323,7 +4323,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_RET_EXPR))
                 {
                     GenTreeCall* call = impStackTop().val->AsRetExpr()->gtInlineCandidate->AsCall();
-                    if (call->gtFlags & CORINFO_FLG_JIT_INTRINSIC)
+                    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
                     {
                         if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Threading_Thread_get_CurrentThread)
                         {
@@ -4458,10 +4458,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+
+            case NI_System_Array_Clone:
             case NI_System_Collections_Generic_Comparer_get_Default:
             case NI_System_Collections_Generic_EqualityComparer_get_Default:
+            case NI_System_Object_MemberwiseClone:
+            case NI_System_Threading_Thread_get_CurrentThread:
             {
-                // Flag for later handling during devirtualization.
+                // Flag for later handling.
                 isSpecial = true;
                 break;
             }
