@@ -1247,8 +1247,8 @@ mono_runtime_register_appctx_properties (int nprops, const char **keys,  const c
 	appctx_values = g_new0 (char*, n_appctx_props);
 
 	for (int i = 0; i < n_appctx_props; ++i) {
-		appctx_keys [i] = g_new0 (char, strlen (keys [i]));
-		appctx_values [i] = g_new0 (char, strlen (values [i]));
+		appctx_keys [i] = g_new0 (char, strlen (keys [i]) + 1);
+		appctx_values [i] = g_new0 (char, strlen (values [i]) + 1);
 		strcpy(appctx_keys [i], keys [i]);
 		strcpy(appctx_values [i], values [i]);
 	}
@@ -1270,7 +1270,7 @@ mono_runtime_install_appctx_properties (void)
 {
 	ERROR_DECL (error);
 	gpointer args [3];
-	int n_runtimeconfig_json_props;
+	int n_runtimeconfig_json_props = 0;
 	int n_total_props;
 	gunichar2 **total_keys;
 	gunichar2 **total_values;
@@ -1282,8 +1282,10 @@ mono_runtime_install_appctx_properties (void)
 	// FIXME: TRUSTED_PLATFORM_ASSEMBLIES is very large
 
 	// Combine and convert properties
-	buffer = runtime_config_arg->runtimeconfig.data.data;
-	n_runtimeconfig_json_props = mono_metadata_decode_value((const char*)buffer, (const char **)&buffer);
+	if (runtime_config_arg){
+		buffer = runtime_config_arg->runtimeconfig.data.data;
+		n_runtimeconfig_json_props = mono_metadata_decode_value((const char*)buffer, (const char **)&buffer);
+	}
 
 	n_total_props = n_appctx_props + n_runtimeconfig_json_props;
 	total_keys = g_new0 (gunichar2*, n_total_props);
@@ -1293,7 +1295,7 @@ mono_runtime_install_appctx_properties (void)
 		total_keys [i] = g_utf8_to_utf16 (appctx_keys [i], strlen (appctx_keys [i]), NULL, NULL, NULL);
 		total_values [i] = g_utf8_to_utf16 (appctx_values [i], strlen (appctx_values [i]), NULL, NULL, NULL);
 	}
-	
+
 	for (int i = 0; i < n_runtimeconfig_json_props; ++i) {
 		int str_len;
 		char *property_key;
@@ -1347,7 +1349,9 @@ mono_runtime_install_appctx_properties (void)
 
 	appctx_keys = NULL;
 	appctx_values = NULL;
-	runtime_config_arg = NULL;
-	runtime_config_cleanup_fn = NULL;
-	runtime_config_user_data = NULL;
+	if (runtime_config_arg){
+		runtime_config_arg = NULL;
+		runtime_config_cleanup_fn = NULL;
+		runtime_config_user_data = NULL;
+	}
 }
