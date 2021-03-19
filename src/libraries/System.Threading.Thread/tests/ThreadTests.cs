@@ -169,6 +169,7 @@ namespace System.Threading.Threads.Tests
         [InlineData("MTAMain.exe", "SetApartmentStateTest")]
         [InlineData("DefaultApartmentStateMain.exe", "GetApartmentStateTest")]
         [InlineData("DefaultApartmentStateMain.exe", "SetApartmentStateTest")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public static void ApartmentState_AttributePresent(string appName, string testName)
         {
             var psi = new ProcessStartInfo();

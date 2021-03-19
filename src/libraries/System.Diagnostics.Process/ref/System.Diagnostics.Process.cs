@@ -108,15 +108,29 @@ namespace System.Diagnostics
         public static System.Diagnostics.Process[] GetProcesses(string machineName) { throw null; }
         public static System.Diagnostics.Process[] GetProcessesByName(string? processName) { throw null; }
         public static System.Diagnostics.Process[] GetProcessesByName(string? processName, string machineName) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public void Kill() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public void Kill(bool entireProcessTree) { }
         public static void LeaveDebugMode() { }
         protected void OnExited() { }
         public void Refresh() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public bool Start() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Diagnostics.Process? Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Diagnostics.Process Start(string fileName) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Diagnostics.Process Start(string fileName, string arguments) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Diagnostics.Process Start(string fileName, System.Collections.Generic.IEnumerable<string> arguments) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]

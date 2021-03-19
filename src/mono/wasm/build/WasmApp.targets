@@ -194,15 +194,13 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_BeforeWasmBuildApp">
+  <Target Name="_BeforeWasmBuildApp" DependsOnTargets="_SetWasmBuildNativeDefaults">
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <Error Condition="@(WasmAssembliesToBundle->Count()) == 0" Text="WasmAssembliesToBundle item is empty. No assemblies to process" />
 
     <PropertyGroup>
       <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
-      <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$(OutputPath)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
@@ -222,6 +220,34 @@
     <ItemGroup>
       <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="_SetWasmBuildNativeDefaults">
+    <PropertyGroup>
+      <_IsEMSDKMissing Condition="'$(EMSDK_PATH)' == '' or !Exists('$(EMSDK_PATH)')">true</_IsEMSDKMissing>
+    </PropertyGroup>
+
+    <!-- if already set, maybe by a user projects, then a missing emsdk is an error -->
+    <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+           Text="Cannot find emscripten sdk, required for building native files. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
+
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+           Text="Cannot find emscripten sdk, required for AOT'ing assemblies. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
+
+    <PropertyGroup>
+      <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
+    </PropertyGroup>
+
+    <!-- If we want to default to true, and sdk is missing, then just warn, and set it to false -->
+    <Warning Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+             Text="Cannot find emscripten sdk, required for building native files. %24(EMSDK_PATH)=$(EMSDK_PATH). Skipping native relinking" />
+
+    <PropertyGroup>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'">false</WasmBuildNative>
+    </PropertyGroup>
   </Target>
 
   <Target Name="_WasmCoreBuild" BeforeTargets="WasmBuildApp" DependsOnTargets="$(WasmBuildAppDependsOn)" />
@@ -278,8 +304,8 @@
     </ReadLinesFromFile>
 
     <PropertyGroup>
+      <EmccFlags>$(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
       <EmccFlags Condition="'$(_WasmDevel)' == 'true'">-O0 $(EmccFlags)</EmccFlags>
-      <EmccFlags>$(EmccFlags) $(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
       <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
       <EmccFlags Condition="'$(InvariantGlobalization)' == 'true'">$(EmccFlags) -DINVARIANT_GLOBALIZATION=1</EmccFlags>
@@ -401,7 +427,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <FileWrites Include="$(WasmRunV8ScriptPath)" />
     </ItemGroup>
 
-    <Exec Command="chmod a+x $(WasmRunV8ScriptPath)" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunV8ScriptPath)" />
   </Target>
 
   <Target Name="_CheckEmccIsExpectedVersion">

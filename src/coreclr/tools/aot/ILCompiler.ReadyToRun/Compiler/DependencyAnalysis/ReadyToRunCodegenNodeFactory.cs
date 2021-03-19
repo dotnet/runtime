@@ -570,6 +570,9 @@ namespace ILCompiler.DependencyAnalysis
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestMetadata, ManifestMetadataTable, ManifestMetadataTable);
             Resolver.SetModuleIndexLookup(ManifestMetadataTable.ModuleToIndex);
 
+            ManifestAssemblyMvidHeaderNode mvidTableNode = new ManifestAssemblyMvidHeaderNode(ManifestMetadataTable);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestAssemblyMvids, mvidTableNode, mvidTableNode);
+
             AssemblyTableNode assemblyTable = null;
 
             if (CompilationModuleGroup.IsCompositeBuildMode)
