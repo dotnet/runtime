@@ -6,9 +6,11 @@
 #include <glib.h>
 #include "mono/component/component.h"
 #include "mono/component/hot_reload.h"
+#include "mono/metadata/class-internals.h"
 #include "mono/metadata/components.h"
 #include "mono/utils/mono-dl.h"
 #include "mono/utils/mono-logger-internals.h"
+#include "mono/utils/mono-path.h"
 
 typedef MonoComponent * (*MonoComponentInitFn) (void);
 
@@ -18,7 +20,7 @@ static GSList *loaded_components;
 /* One static per component */
 static MonoComponentHotReload *hot_reload;
 
-static MonoComponentInitFn
+static MonoComponent*
 get_component (const char *component_name, MonoDl **component_lib);
 
 void
@@ -59,9 +61,9 @@ mono_components_cleanup (void)
 }
 
 static char*
-component_library_name (const char *component)
+component_library_base_name (const char *component)
 {
-	return g_strdup_printf ("mono-component-%s%s", component, MONO_SOLIB_EXT);
+	return g_strdup_printf ("mono-component-%s", component);
 }
 
 static char*
@@ -70,23 +72,67 @@ component_init_name (const char *component)
 	return g_strdup_printf ("mono_component_%s_init", component);
 }
 
-MonoComponentInitFn
-get_component (const char *component_name, MonoDl **lib_out)
+static char *
+components_dir (void)
 {
-	char *component_lib = component_library_name (component_name);
-	char *error_msg = NULL;
-	MonoComponentInitFn result = NULL;
-	MonoDl *lib = mono_dl_open (component_lib, MONO_DL_EAGER, &error_msg);
-	if (!lib) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s not found: %s", component_name, error_msg);
-		g_free (error_msg);
-		g_free (component_lib);
-		goto done;
+	static char *dir = NULL;
+	if (!dir) {
+		/* FIXME: this is right for self-contained apps, but if we're
+		 * started by a host, the components are next to
+		 * libmonosgen-2.0.so, not next to the host app.
+		 */
+		char buf[4096];
+		if (mono_dl_get_executable_path (buf, sizeof(buf)) != -1) {
+			char *resolvedname = mono_path_resolve_symlinks (buf);
+			dir = g_path_get_dirname (resolvedname);
+			g_free (resolvedname);
+		}
 	}
+	return dir;
+}
+
+static MonoDl*
+try_load (const char* dir, const char *component_name, const char* component_base_lib)
+{
+	MonoDl *lib = NULL;
+	void *iter = NULL;
+	char *path = NULL;
+	while ((path = mono_dl_build_path (dir, component_base_lib, &iter)) && !lib) {
+		char *error_msg = NULL;
+		lib = mono_dl_open (path, MONO_DL_EAGER, &error_msg);
+		if (!lib) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s not found: %s", component_name, error_msg);
+			g_free (error_msg);
+			continue;
+		}
+	}
+	if (lib)
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s found at %s", component_name, path);
+	g_free (path);
+	return lib;
+}
+
+static MonoComponentInitFn
+load_component (const char *component_name, MonoDl **lib_out)
+{
+	char *component_base_lib = component_library_base_name (component_name);
+	MonoComponentInitFn result = NULL;
+
+	/* FIXME: just copy what mono_profiler_load does, assuming it works */
+
+	/* FIXME: do I need to provide a path? */
+	MonoDl *lib = NULL;
+	lib = try_load (components_dir (), component_name, component_base_lib);
+	if (!lib)
+		lib = try_load (NULL, component_name, component_base_lib);
+
+	g_free (component_base_lib);
+	if (!lib)
+		goto done;
 
 	char *component_init = component_init_name (component_name);
 	gpointer sym = NULL;
-	error_msg = mono_dl_symbol (lib, component_init, &sym);
+	char *error_msg = mono_dl_symbol (lib, component_init, &sym);
 	if (error_msg) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s library does not have symbol %s: %s", component_name, component_init, error_msg);
 		g_free (error_msg);
@@ -94,8 +140,17 @@ get_component (const char *component_name, MonoDl **lib_out)
 		goto done;
 	}
 
-	result = sym;
+	result = (MonoComponentInitFn)sym;
 	*lib_out = lib;
 done:
 	return result;
+}
+
+MonoComponent*
+get_component (const char *component_name, MonoDl **lib_out)
+{
+	MonoComponentInitFn initfn = load_component (component_name, lib_out);
+	if (!initfn)
+		return NULL;
+	return initfn();
 }
