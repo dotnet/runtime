@@ -334,7 +334,7 @@ public:
     }
 
     // Returns the value number for zero of the given "typ".
-    // It has an unreached() for a "typ" that has no zero value, such as TYP_BYREF.
+    // It has an unreached() for a "typ" that has no zero value, such as TYP_VOID.
     ValueNum VNZeroForType(var_types typ);
 
     // Returns the value number for one of the given "typ".

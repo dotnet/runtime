@@ -14885,7 +14885,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     i1 >>= (i2 & 0x1f);
                     break;
                 case GT_RSZ:
-                    /* logical shift -> make it unsigned to not propagate the sign bit */
+                    // logical shift -> make it unsigned to not propagate the sign bit.
                     i1 = UINT32(i1) >> (i2 & 0x1f);
                     break;
                 case GT_ROL:
@@ -15205,7 +15205,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                     if (tree->gtOverflow() && lval2 != 0)
                     {
-
                         if (tree->IsUnsigned())
                         {
                             UINT64 ultemp = ltemp;
