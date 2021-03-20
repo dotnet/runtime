@@ -8138,12 +8138,21 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             if (tree->gtFlags & GTF_IND_INVARIANT)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
-                tree->gtVNPair =
-                    ValueNumPair(vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, ValueNumStore::VNForROH(),
-                                                         addrNvnp.GetLiberal()),
-                                 vnStore->VNForMapSelect(VNK_Conservative, TYP_REF, ValueNumStore::VNForROH(),
-                                                         addrNvnp.GetConservative()));
-                tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+
+                if (addr->OperIs(GT_CNS_INT) && addr->IsIconHandle(GTF_ICON_STR_HDL))
+                {
+                    tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_StrCns, addrNvnp);
+                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+                }
+                else
+                {
+                    tree->gtVNPair =
+                        ValueNumPair(vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, ValueNumStore::VNForROH(),
+                                                             addrNvnp.GetLiberal()),
+                                     vnStore->VNForMapSelect(VNK_Conservative, TYP_REF, ValueNumStore::VNForROH(),
+                                                             addrNvnp.GetConservative()));
+                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+                }
             }
             else if (isVolatile)
             {
