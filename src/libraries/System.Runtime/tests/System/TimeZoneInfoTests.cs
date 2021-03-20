@@ -1819,6 +1819,69 @@ namespace System.Tests
             Assert.Equal(offset, s_casablancaTz.GetUtcOffset(dt));
         }
 
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Windows)]
+        public static void TestSplittingRulesWhenReported()
+        {
+            // This test confirm we are splitting the rules which span multiple years on Linux
+            // we use "America/Los_Angeles" which has the rule covering 2/9/1942 to 8/14/1945
+            // with daylight transition by 01:00:00. This rule should be split into 3 rules:
+            //      - rule 1 from 2/9/1942 to 12/31/1942
+            //      - rule 2 from 1/1/1943 to 12/31/1944
+            //      - rule 3 from 1/1/1945 to 8/14/1945
+            TimeZoneInfo.AdjustmentRule[] rules = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific).GetAdjustmentRules();
+
+            bool ruleEncountered = false;
+            for (int i = 0; i < rules.Length; i++)
+            {
+                if (rules[i].DateStart == new DateTime(1942, 2, 9))
+                {
+                    Assert.True(i + 2 <= rules.Length - 1);
+                    TimeSpan daylightDelta = TimeSpan.FromHours(1);
+
+                    // DateStart                  : 2/9/1942 12:00:00 AM (Unspecified)
+                    // DateEnd                    : 12/31/1942 12:00:00 AM (Unspecified)
+                    // DaylightDelta              : 01:00:00
+                    // DaylightTransitionStart    : ToD:02:00:00 M:2, D:9, W:1, DoW:Sunday, FixedDate:True
+                    // DaylightTransitionEnd      : ToD:23:59:59.9990000 M:12, D:31, W:1, DoW:Sunday, FixedDate:True
+
+                    Assert.Equal(new DateTime(1942, 12, 31), rules[i].DateEnd);
+                    Assert.Equal(daylightDelta, rules[i].DaylightDelta);
+                    Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 2, 0, 0), 2, 9), rules[i].DaylightTransitionStart);
+                    Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 23, 59, 59, 999), 12, 31), rules[i].DaylightTransitionEnd);
+
+                    // DateStart                  : 1/1/1943 12:00:00 AM (Unspecified)
+                    // DateEnd                    : 12/31/1944 12:00:00 AM (Unspecified)
+                    // DaylightDelta              : 01:00:00
+                    // DaylightTransitionStart    : ToD:00:00:00 M:1, D:1, W:1, DoW:Sunday, FixedDate:True
+                    // DaylightTransitionEnd      : ToD:23:59:59.9990000 M:12, D:31, W:1, DoW:Sunday, FixedDate:True
+
+                    Assert.Equal(new DateTime(1943, 1, 1), rules[i + 1].DateStart);
+                    Assert.Equal(new DateTime(1944, 12, 31), rules[i + 1].DateEnd);
+                    Assert.Equal(daylightDelta, rules[i + 1].DaylightDelta);
+                    Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 0, 0, 0), 1, 1), rules[i + 1].DaylightTransitionStart);
+                    Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 23, 59, 59, 999), 12, 31), rules[i + 1].DaylightTransitionEnd);
+
+                    // DateStart                  : 1/1/1945 12:00:00 AM (Unspecified)
+                    // DateEnd                    : 8/14/1945 12:00:00 AM (Unspecified)
+                    // DaylightDelta              : 01:00:00
+                    // DaylightTransitionStart    : ToD:00:00:00 M:1, D:1, W:1, DoW:Sunday, FixedDate:True
+                    // DaylightTransitionEnd      : ToD:15:59:59.9990000 M:8, D:14, W:1, DoW:Sunday, FixedDate:True
+
+                    Assert.Equal(new DateTime(1945, 1, 1), rules[i + 2].DateStart);
+                    Assert.Equal(new DateTime(1945, 8, 14), rules[i + 2].DateEnd);
+                    Assert.Equal(daylightDelta, rules[i + 2].DaylightDelta);
+                    Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 0, 0, 0), 1, 1), rules[i + 2].DaylightTransitionStart);
+                    Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 15, 59, 59, 999), 8, 14), rules[i + 2].DaylightTransitionEnd);
+
+                    ruleEncountered = true;
+                    break;
+                }
+            }
+
+            Assert.True(ruleEncountered, "The 1942 rule of America/Los_Angeles not found.");
+        }
+
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Linux will use local mean time for DateTimes before standard time came into effect.
         // in 1996 Europe/Lisbon changed from standard time to DST without changing the UTC offset
