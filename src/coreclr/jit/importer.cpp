@@ -4458,7 +4458,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-
             case NI_System_Array_Clone:
             case NI_System_Collections_Generic_Comparer_get_Default:
             case NI_System_Collections_Generic_EqualityComparer_get_Default:
