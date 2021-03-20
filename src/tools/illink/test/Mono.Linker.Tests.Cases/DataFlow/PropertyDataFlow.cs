@@ -269,6 +269,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				set { PropertyWithExistingAttributes_Field = value; }
 			}
 
+			[RecognizedReflectionAccessPattern]
 			public void TestPropertyWithIndexerWithMatchingAnnotations ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)] Type myType)
 			{
 				var propclass = new PropertyWithIndexer ();
