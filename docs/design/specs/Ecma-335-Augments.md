@@ -540,7 +540,7 @@ the interface.
 
   * If the current class is not abstract and there are any interface methods that still have
     empty slots (i.e. slots with empty lists) for this class and all classes in its inheritance
-    chain, then the program is invalid. 
+    chain, then the program is invalid.
 
 ### II.12.2.1, Interface implementation examples (page 159)
 
@@ -603,7 +603,7 @@ virtual static method (paragraph *II.10.3*).
 (Edit the paragraph "Correctness:" second from the bottom of page 316:)
 
 The `constrained.` prefix will be immediately followed by a `ldftn`, `call` or `callvirt`
-instruction. *thisType* shall be a valid `typedef`, `typeref`, or `typespec` metadata token. 
+instruction. *thisType* shall be a valid `typedef`, `typeref`, or `typespec` metadata token.
 
 (Edit the paragraph "Verifiability" at the bottom of page 316:)
 
@@ -624,7 +624,7 @@ The metadata token carries sufficient information to determine whether the call 
 (non-virtual or virtual) method, an instance method, a virtual instance method, or a global function. In all of
 these cases the destination address is determined entirely from the metadata token. (Contrast this with the
 `callvirt` instruction for calling virtual instance methods, where the destination address also depends upon
-the exact type of the instance reference pushed before the `callvirt`; see below.) 
+the exact type of the instance reference pushed before the `callvirt`; see below.)
 
 (Edit numbered list in the middle of the page 342):
 
