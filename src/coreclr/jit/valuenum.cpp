@@ -9607,7 +9607,7 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_STRCNS:
-            vnf = VNF_StrCns;
+            vnf = VNF_LazyStrCns;
             break;
 
         case CORINFO_HELP_CHKCASTCLASS:
