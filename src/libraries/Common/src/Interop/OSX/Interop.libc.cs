@@ -22,7 +22,6 @@ internal static partial class Interop
             public const ushort ATTR_BIT_MAP_COUNT = 5;
             public const uint ATTR_CMN_CRTIME = 0x00000200;
             public const uint ATTR_CMN_MODTIME = 0x00000400;
-            public const uint ATTR_CMN_ACCTIME = 0x00001000;
         }
 
         [DllImport(Libraries.libc, EntryPoint = "setattrlist", SetLastError = true)]

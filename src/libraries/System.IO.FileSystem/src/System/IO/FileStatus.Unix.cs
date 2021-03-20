@@ -197,7 +197,7 @@ namespace System.IO
             // Updating the mtime, causes the ctime to be set to 'now'. So, on platforms that don't store a
             // CreationTime, GetCreationTime will return the value that was previously set (when that value
             // wasn't in the future).
-            SetLastWriteTime_StandardUnixImpl(path, time);
+            SetLastWriteTime(path, time);
         }
 
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -208,7 +208,7 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileStatus.ATime, _fileStatus.ATimeNsec);
         }
 
-        private void SetLastAccessTime_StandardUnixImpl(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: true);
+        internal void SetLastAccessTime(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: true);
 
         internal DateTimeOffset GetLastWriteTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {

@@ -9,6 +9,5 @@ namespace System.IO
     {
         internal void SetCreationTime(string path, DateTimeOffset time) => SetCreationTime_StandardUnixImpl(path, time);
         internal void SetLastWriteTime(string path, DateTimeOffset time) => SetLastWriteTime_StandardUnixImpl(path, time);
-        internal void SetLastAccessTime(string path, DateTimeOffset time) => SetLastAccessTime_StandardUnixImpl(path, time);
     }
 }

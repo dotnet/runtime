@@ -16,8 +16,6 @@ namespace System.IO
             if (time < creationTime) SetCreationTime(path, creationTime);
         }
 
-        internal void SetLastAccessTime(string path, DateTimeOffset time) => SetTimeOnFile(path, time, Interop.libc.AttrList.ATTR_CMN_ACCTIME);
-
         private unsafe void SetTimeOnFile(string path, DateTimeOffset time, uint commonAttr)
         {
             Interop.Sys.TimeSpec timeSpec = default;
@@ -54,10 +52,6 @@ namespace System.IO
                 else if (commonAttr == Interop.libc.AttrList.ATTR_CMN_MODTIME)
                 {
                     SetLastWriteTime_StandardUnixImpl(path, time);
-                }
-                else if (commonAttr == Interop.libc.AttrList.ATTR_CMN_ACCTIME)
-                {
-                    SetLastAccessTime_StandardUnixImpl(path, time);
                 }
             }
             else
