@@ -78,25 +78,11 @@ namespace Internal.Cryptography.Pal
 
                 if (!_isValid)
                 {
-                    // There is no way to bypass time, trusted root, name, or policy constraint
-                    // validation on Android. It will not build any chain without these all
-                    // being valid.
-                    X509VerificationFlags[] unsupportedFlags = new X509VerificationFlags[]
-                    {
-                        X509VerificationFlags.IgnoreNotTimeValid,
-                        X509VerificationFlags.AllowUnknownCertificateAuthority,
-                        X509VerificationFlags.IgnoreInvalidName,
-                        X509VerificationFlags.IgnoreInvalidPolicy,
-                    };
-                    foreach (X509VerificationFlags unsupported in unsupportedFlags)
-                    {
-                        if ((flags & unsupported) == unsupported)
-                        {
-                            exception = new PlatformNotSupportedException(SR.Format(SR.Chain_VerificationFlagNotSupported, unsupported));
-                            return default(bool?);
-                        }
-                    }
-
+                    // There is no way to bypass certain validation - time, trusted root, name,
+                    // policy constraint - on Android. It will not build any chain without these
+                    // all being valid. This will be an empty chain with PartialChain status.
+                    Debug.Assert(ChainElements!.Length == 0);
+                    Debug.Assert(ChainStatus!.Length > 0 && (ChainStatus[0].Status & X509ChainStatusFlags.PartialChain) == X509ChainStatusFlags.PartialChain);
                     return false;
                 }
 
@@ -117,6 +103,10 @@ namespace Internal.Cryptography.Pal
                         extraCerts.Add(extraCert.Pal.Handle);
                     }
                 }
+
+                Debug.Assert(
+                    trustMode == X509ChainTrustMode.System || trustMode == X509ChainTrustMode.CustomRootTrust,
+                    "Unsupported trust mode. Only System and CustomRootTrust are currently handled");
 
                 List<IntPtr> customTrustCerts = new List<IntPtr>();
                 bool useCustomRootTrust = trustMode == X509ChainTrustMode.CustomRootTrust;
@@ -193,19 +183,8 @@ namespace Internal.Cryptography.Pal
 
                 if (revocationMode != X509RevocationMode.NoCheck)
                 {
-                    if (revocationFlag == X509RevocationFlag.EntireChain)
-                    {
-                        throw new NotImplementedException($"{nameof(Evaluate)} (X509RevocationFlag.{revocationFlag})");
-                    }
-
                     if (!Interop.AndroidCrypto.X509ChainSupportsRevocationOptions())
                     {
-                        if (revocationFlag == X509RevocationFlag.EndCertificateOnly)
-                        {
-                            // No way to specfiy end certificate only if revocation options are not available
-                            throw new PlatformNotSupportedException(SR.Format(SR.Chain_SettingNotSupported, $"{nameof(X509RevocationFlag)}.{nameof(X509RevocationFlag.EndCertificateOnly)}"));
-                        }
-
                         // Defaults to offline when revocation options are not available
                         if (revocationMode == X509RevocationMode.Online)
                         {

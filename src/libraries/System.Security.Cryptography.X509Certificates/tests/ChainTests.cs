@@ -840,8 +840,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             //
             // These certificates have been hard-coded to enable the scenario on
             // netstandard.
-            byte[] endEntityBytes = Encoding.ASCII.GetBytes(
-@"-----BEGIN CERTIFICATE-----
+            byte[] endEntityBytes = Encoding.ASCII.GetBytes(@"
+-----BEGIN CERTIFICATE-----
 MIIC6DCCAdCgAwIBAgIQAKjmD7+TWUwQN2ucajn9kTANBgkqhkiG9w0BAQsFADAXMRUwEwYDVQQD
 EwxJbnRlcm1lZGlhdGUwHhcNMTkwMzAzMjM1NzA3WhcNMTkwNjAzMjM1NzA3WjAVMRMwEQYDVQQD
 EwpFbmQtRW50aXR5MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxTybBkpMdQ8IeL1C
@@ -857,8 +857,8 @@ MPmiZicaNlXPVO9vyW4s6J23+kol6X8K2rnVht9jagfnOQ990Ux2xXGyDGM4I0pvW1Zo4vid/eli
 psHHsU9xg0o7L2WXD5qYhD2JCQIVWNRmRZCf1luWlKqUaqWWONMJ44hk8Md+ohxpyCRmbtLRZPzd
 wlkQzPsc9A==
 -----END CERTIFICATE-----");
-            byte[] intermediateBytes = Encoding.ASCII.GetBytes(
-@"-----BEGIN CERTIFICATE-----
+            byte[] intermediateBytes = Encoding.ASCII.GetBytes(@"
+-----BEGIN CERTIFICATE-----
 MIIC1DCCAbygAwIBAgIPRoY1rB2tMVJeYB4GILkNMA0GCSqGSIb3DQEBCwUAMBQxEjAQBgNVBAMT
 CVRlc3QgUm9vdDAeFw0xOTAyMTgyMzU3MDdaFw0yMDAyMTgyMzU3MDdaMBcxFTATBgNVBAMTDElu
 dGVybWVkaWF0ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALxYzEN6nYvQ0TOg/jOF
@@ -873,8 +873,8 @@ CY0IMP8pCHUZH9OX/K0N9L+GItqlBK8G4grJ4o43da2x9L0hIrdauPadaGcJalf8k1ymhJ4VDj7t
 ueuTl2qTtbBh015GuEld61EBXSBLIUqwOAeFYrNJbC4J2mXgnLTWC380cBf5KWeSdjLYgk2sZ1V4
 FKKQecZIhxdlDGzMAbbmEV+2EqS+As2C7+y4dkpG4nnbQe/4AFr8vekHdrI=
 -----END CERTIFICATE-----");
-            byte[] rootBytes = Encoding.ASCII.GetBytes(
-@"-----BEGIN CERTIFICATE-----
+            byte[] rootBytes = Encoding.ASCII.GetBytes(@"
+-----BEGIN CERTIFICATE-----
 MIICyjCCAbKgAwIBAgIIKKt3K3rRbvQwDQYJKoZIhvcNAQELBQAwFDESMBAGA1UEAxMJVGVzdCBS
 b290MB4XDTE5MDIwNDIzNTcwN1oXDTIxMDIwNDIzNTcwN1owFDESMBAGA1UEAxMJVGVzdCBSb290
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiM7tv4YvqmWYGF1vbeM2cQWV1NVBxKU4

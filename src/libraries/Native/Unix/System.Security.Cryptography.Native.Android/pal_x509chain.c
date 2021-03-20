@@ -434,6 +434,11 @@ int32_t AndroidCryptoNative_X509ChainValidate(X509ChainContext* ctx,
     (*env)->CallVoidMethod(env, params, g_PKIXBuilderParametersSetRevocationEnabled, checkRevocation);
     if (checkRevocation)
     {
+        if (revocationFlag == X509RevocationFlag_EntireChain)
+        {
+            LOG_INFO("Treating revocation flag 'EntireChain' as 'ExcludeRoot'. Revocation will not be checked for the root certificate.");
+        }
+
         if (AndroidCryptoNative_X509ChainSupportsRevocationOptions())
         {
             // PKIXRevocationChecker checker = validator.getRevocationChecker();
@@ -451,8 +456,10 @@ int32_t AndroidCryptoNative_X509ChainValidate(X509ChainContext* ctx,
         }
         else
         {
-            // TODO: [AndroidCrypto] Handle options
-            // Security.setProperty("oscp.enable", isOnline);
+            if (revocationFlag == X509RevocationFlag_EndCertificateOnly)
+            {
+                LOG_INFO("Treating revocation flag 'EndCertificateOnly' as 'ExcludeRoot'. Revocation will be checked for non-end certificates.");
+            }
         }
     }
 
