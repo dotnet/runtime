@@ -13,12 +13,12 @@ namespace System.Net
 {
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
-        private const int InitialBufferSize = 2048;
         // mapped from OSX error codes
         private const int OSStatus_writErr = -20;
         private const int OSStatus_readErr = -19;
-        private const int OSStatus_noErr =0;
+        private const int OSStatus_noErr = 0;
         private const int OSStatus_errSSLWouldBlock = -9803;
+        private const int InitialBufferSize = 2048;
         private SafeSslHandle _sslContext;
         private Interop.AppleCrypto.SSLReadFunc _readCallback;
         private Interop.AppleCrypto.SSLWriteFunc _writeCallback;
