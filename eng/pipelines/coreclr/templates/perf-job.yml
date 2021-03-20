@@ -123,7 +123,7 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(librariesDownloadDir)/LinuxMonoAOT
-          artifactFileName: LinuxMonoAOT.tar.gz
+          artifactFileName: LinuxMonoAOT${{ parameters.archType }}.tar.gz
           artifactName: LinuxMonoAOT
           displayName: AOT Mono Artifacts
 

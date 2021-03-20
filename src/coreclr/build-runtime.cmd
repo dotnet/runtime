@@ -211,6 +211,9 @@ if %__TotalSpecifiedBuildArch% GTR 1 (
     goto Usage
 )
 
+set __ProcessorArch=%PROCESSOR_ARCHITEW6432%
+if "%__ProcessorArch%"=="" set __ProcessorArch=%PROCESSOR_ARCHITECTURE%
+
 if %__BuildArchX64%==1      set __BuildArch=x64
 if %__BuildArchX86%==1 (
     set __BuildArch=x86
@@ -223,7 +226,7 @@ if %__BuildArchArm%==1 (
 )
 if %__BuildArchArm64%==1 (
     set __BuildArch=arm64
-    set __CrossArch=x64
+    if /i not "%__ProcessorArch%"=="ARM64" set __CrossArch=x64
 )
 
 set /A __TotalSpecifiedBuildType=__BuildTypeDebug + __BuildTypeChecked + __BuildTypeRelease
@@ -254,7 +257,7 @@ REM Determine if this is a cross-arch build. Only do cross-arch build if we're a
 if %__SkipCrossArchNative% EQU 0 (
     if %__BuildNative% EQU 1 (
         if /i "%__BuildArch%"=="arm64" (
-            set __BuildCrossArchNative=1
+            if defined __CrossArch set __BuildCrossArchNative=1
         )
         if /i "%__BuildArch%"=="arm" (
             set __BuildCrossArchNative=1
@@ -599,7 +602,9 @@ if %__BuildNative% EQU 1 (
     )
     if /i "%__BuildArch%" == "arm64" (
         set __VCBuildArch=x86_arm64
-        set ___CrossBuildDefine="-DCLR_CMAKE_CROSS_ARCH=1" "-DCLR_CMAKE_CROSS_HOST_ARCH=%__CrossArch%"
+        if defined __CrossArch (
+            set ___CrossBuildDefine="-DCLR_CMAKE_CROSS_ARCH=1" "-DCLR_CMAKE_CROSS_HOST_ARCH=%__CrossArch%"
+        )
     )
 
     echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!

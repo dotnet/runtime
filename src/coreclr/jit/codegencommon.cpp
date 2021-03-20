@@ -4682,6 +4682,12 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
+        if (varDsc->lvIsTemp && !varDsc->HasGCPtr())
+        {
+            varDsc->lvMustInit = 0;
+            continue;
+        }
+
         if (compiler->info.compInitMem || varDsc->HasGCPtr() || varDsc->lvMustInit)
         {
             if (varDsc->lvTracked)
@@ -4728,8 +4734,7 @@ void CodeGen::genCheckUseBlockInit()
                 unless they are untracked GC type or structs that contain GC pointers */
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-            if ((!varDsc->lvTracked || (varDsc->lvType == TYP_STRUCT)) && varDsc->lvOnFrame &&
-                (!varDsc->lvIsTemp || varDsc->HasGCPtr()))
+            if ((!varDsc->lvTracked || (varDsc->lvType == TYP_STRUCT)) && varDsc->lvOnFrame)
             {
 
                 varDsc->lvMustInit = true;
