@@ -8139,7 +8139,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
 
-                if (addr->OperIs(GT_CNS_INT) && addr->IsIconHandle(GTF_ICON_STR_HDL))
+                // Is it a string literal? (it's always non-null)
+                if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_STR_HDL))
                 {
                     tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_StrCns, addrNvnp);
                     tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
