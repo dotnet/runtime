@@ -427,25 +427,26 @@ namespace Microsoft.Extensions.Primitives
         public int IndexOf(char c, int start, int count)
         {
             int offset = Offset + start;
-            int index = -1;
 
-            if (HasValue)
+            if (start < 0 || (uint)offset > (uint)Buffer.Length)
             {
-                if (start < 0 || (uint)offset > (uint)Buffer.Length)
-                {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-                }
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+            }
 
-                if (count < 0)
-                {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
-                }
+            if (count < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
+            }
 
-                index = AsSpan().Slice(start, count).IndexOf(c);
-                if (index != -1)
-                {
-                    index -= Offset;
-                }
+            if (!HasValue)
+            {
+                return -1;
+            }
+
+            int index = AsSpan().Slice(start, count).IndexOf(c);
+            if (index != -1)
+            {
+                index += start;
             }
 
             return index;
