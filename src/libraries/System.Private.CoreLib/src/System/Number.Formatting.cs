@@ -1216,7 +1216,7 @@ namespace System
             int p = UInt32ToDecChars(buffer, (uint)(-value), digits);
             Debug.Assert(p == sNegative.Length);
 
-            for (int i = 0; i < sNegative.Length && i < buffer.Length; i++)
+            for (int i = 0; i < sNegative.Length && i < buffer.Length; i++)//&& i < buffer.Length Only to elide bounds check
             {
                 buffer[i] = sNegative[i];
             }
@@ -1243,7 +1243,7 @@ namespace System
             int p = UInt32ToDecChars(destination.Slice(0, bufferLength), (uint)(-value), digits);
             Debug.Assert(p == sNegative.Length);
 
-            for (int i = 0; i < sNegative.Length && i < destination.Length; i++)
+            for (int i = 0; i < sNegative.Length && i < destination.Length; i++)//&& i < destination.Length Only to elide bounds check
             {
                 destination[i] = sNegative[i];
             }
@@ -1477,7 +1477,7 @@ namespace System
             p = UInt32ToDecChars(buffer.Slice(0, p), Low32(value), digits);
             Debug.Assert(p == sNegative.Length);
 
-            for (int i = 0; i < sNegative.Length && i < buffer.Length; i++)
+            for (int i = 0; i < sNegative.Length && i < buffer.Length; i++)//&& i < buffer.Length Only to elide bounds check
             {
                 buffer[i] = sNegative[i];
             }
@@ -1514,7 +1514,7 @@ namespace System
             p = UInt32ToDecChars(destination.Slice(0, p), Low32(value), digits);
             Debug.Assert(p == sNegative.Length);
 
-            for (int i = 0; i < sNegative.Length && i < destination.Length; i++)
+            for (int i = 0; i < sNegative.Length && i < destination.Length; i++)//&& i < destination.Length Only to elide bounds check
             {
                 destination[i] = sNegative[i];
             }
