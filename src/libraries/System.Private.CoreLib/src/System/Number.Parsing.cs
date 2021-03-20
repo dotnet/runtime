@@ -2010,7 +2010,7 @@ namespace System
         private static bool TrailingZeros(ReadOnlySpan<char> value, int index)
         {
             // For compatibility, we need to allow trailing zeros at the end of a number string
-            for (int i = index; (uint)i < (uint)value.Length; i++)
+            for (int i = index; i < value.Length; i++)
             {
                 if (value[i] != '\0')
                 {
