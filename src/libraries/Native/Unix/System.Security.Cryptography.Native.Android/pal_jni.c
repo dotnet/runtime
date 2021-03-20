@@ -90,6 +90,12 @@ jmethodID g_sslCtxGetDefaultSslParamsMethod;
 jclass    g_GCMParameterSpecClass;
 jmethodID g_GCMParameterSpecCtor;
 
+// java/security/interfaces/DSAKey
+jclass    g_DSAKeyClass;
+
+// java/security/interfaces/ECKey
+jclass    g_ECKeyClass;
+
 // java/security/interfaces/RSAKey
 jclass    g_RSAKeyClass;
 jmethodID g_RSAKeyGetModulus;
@@ -114,11 +120,23 @@ jmethodID g_keyPairGenGenKeyPairMethod;
 // java/security/KeyStore
 jclass    g_KeyStoreClass;
 jmethodID g_KeyStoreGetInstance;
+jmethodID g_KeyStoreAliases;
+jmethodID g_KeyStoreContainsAlias;
+jmethodID g_KeyStoreDeleteEntry;
+jmethodID g_KeyStoreGetCertificate;
+jmethodID g_KeyStoreGetEntry;
 jmethodID g_KeyStoreLoad;
+jmethodID g_KeyStoreSetCertificateEntry;
+jmethodID g_KeyStoreSetKeyEntry;
 
-// java/security/Security
-jclass    g_Security;
-jmethodID g_SecuritySetProperty;
+// java/security/KeyStore$PrivateKeyEntry
+jclass    g_PrivateKeyEntryClass;
+jmethodID g_PrivateKeyEntryGetCertificate;
+jmethodID g_PrivateKeyEntryGetPrivateKey;
+
+// java/security/KeyStore$TrustedCertificateEntry
+jclass    g_TrustedCertificateEntryClass;
+jmethodID g_TrustedCertificateEntryGetTrustedCertificate;
 
 // java/security/Signature
 jclass    g_SignatureClass;
@@ -205,6 +223,7 @@ jmethodID g_TrustAnchorGetTrustedCert;
 
 // java/security/cert/X509Certificate
 jclass    g_X509CertClass;
+jmethodID g_X509CertEquals;
 jmethodID g_X509CertGetEncoded;
 jmethodID g_X509CertGetPublicKey;
 
@@ -336,6 +355,11 @@ jmethodID g_CollectionSize;
 jclass    g_DateClass;
 jmethodID g_DateCtor;
 jmethodID g_DateGetTime;
+
+// java/util/Enumeration
+jclass    g_Enumeration;
+jmethodID g_EnumerationHasMoreElements;
+jmethodID g_EnumerationNextElement;
 
 // java/util/HashSet
 jclass    g_HashSetClass;
@@ -725,12 +749,17 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_TrustAnchorGetTrustedCert =   GetMethod(env, false, g_TrustAnchorClass, "getTrustedCert", "()Ljava/security/cert/X509Certificate;");
 
     g_X509CertClass =           GetClassGRef(env, "java/security/cert/X509Certificate");
+    g_X509CertEquals =          GetMethod(env, false, g_X509CertClass, "equals", "(Ljava/lang/Object;)Z");
     g_X509CertGetEncoded =      GetMethod(env, false, g_X509CertClass, "getEncoded", "()[B");
     g_X509CertGetPublicKey =    GetMethod(env, false, g_X509CertClass, "getPublicKey", "()Ljava/security/PublicKey;");
 
     g_X509CertSelectorClass =           GetClassGRef(env, "java/security/cert/X509CertSelector");
     g_X509CertSelectorCtor =            GetMethod(env, false, g_X509CertSelectorClass, "<init>", "()V");
     g_X509CertSelectorSetCertificate =  GetMethod(env, false, g_X509CertSelectorClass, "setCertificate", "(Ljava/security/cert/X509Certificate;)V");
+
+    g_DSAKeyClass = GetClassGRef(env, "java/security/interfaces/DSAKey");
+
+    g_ECKeyClass =  GetClassGRef(env, "java/security/interfaces/ECKey");
 
     g_RSAKeyClass =                    GetClassGRef(env, "java/security/interfaces/RSAKey");
     g_RSAKeyGetModulus =               GetMethod(env, false, g_RSAKeyClass, "getModulus", "()Ljava/math/BigInteger;");
@@ -749,9 +778,23 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_keyPairGenInitializeWithParamsMethod = GetMethod(env, false, g_keyPairGenClass, "initialize", "(Ljava/security/spec/AlgorithmParameterSpec;)V");
     g_keyPairGenGenKeyPairMethod =           GetMethod(env, false, g_keyPairGenClass, "genKeyPair", "()Ljava/security/KeyPair;");
 
-    g_KeyStoreClass =       GetClassGRef(env, "java/security/KeyStore");
-    g_KeyStoreGetInstance = GetMethod(env, true, g_KeyStoreClass, "getInstance", "(Ljava/lang/String;)Ljava/security/KeyStore;");
-    g_KeyStoreLoad =        GetMethod(env, false, g_KeyStoreClass, "load", "(Ljava/io/InputStream;[C)V");
+    g_KeyStoreClass =               GetClassGRef(env, "java/security/KeyStore");
+    g_KeyStoreGetInstance =         GetMethod(env, true, g_KeyStoreClass, "getInstance", "(Ljava/lang/String;)Ljava/security/KeyStore;");
+    g_KeyStoreAliases =             GetMethod(env, false, g_KeyStoreClass, "aliases", "()Ljava/util/Enumeration;");
+    g_KeyStoreContainsAlias =       GetMethod(env, false, g_KeyStoreClass, "containsAlias", "(Ljava/lang/String;)Z");
+    g_KeyStoreDeleteEntry =         GetMethod(env, false, g_KeyStoreClass, "deleteEntry", "(Ljava/lang/String;)V");
+    g_KeyStoreGetCertificate =      GetMethod(env, false, g_KeyStoreClass, "getCertificate", "(Ljava/lang/String;)Ljava/security/cert/Certificate;");
+    g_KeyStoreGetEntry =            GetMethod(env, false, g_KeyStoreClass, "getEntry", "(Ljava/lang/String;Ljava/security/KeyStore$ProtectionParameter;)Ljava/security/KeyStore$Entry;");
+    g_KeyStoreLoad =                GetMethod(env, false, g_KeyStoreClass, "load", "(Ljava/io/InputStream;[C)V");
+    g_KeyStoreSetCertificateEntry = GetMethod(env, false, g_KeyStoreClass, "setCertificateEntry", "(Ljava/lang/String;Ljava/security/cert/Certificate;)V");
+    g_KeyStoreSetKeyEntry =         GetMethod(env, false, g_KeyStoreClass, "setKeyEntry", "(Ljava/lang/String;Ljava/security/Key;[C[Ljava/security/cert/Certificate;)V");
+
+    g_PrivateKeyEntryClass =            GetClassGRef(env, "java/security/KeyStore$PrivateKeyEntry");
+    g_PrivateKeyEntryGetCertificate =   GetMethod(env, false, g_PrivateKeyEntryClass, "getCertificate", "()Ljava/security/cert/Certificate;");
+    g_PrivateKeyEntryGetPrivateKey =    GetMethod(env, false, g_PrivateKeyEntryClass, "getPrivateKey", "()Ljava/security/PrivateKey;");
+
+    g_TrustedCertificateEntryClass =                    GetClassGRef(env, "java/security/KeyStore$TrustedCertificateEntry");
+    g_TrustedCertificateEntryGetTrustedCertificate =    GetMethod(env, false, g_TrustedCertificateEntryClass, "getTrustedCertificate", "()Ljava/security/cert/Certificate;");
 
     g_SignatureClass =                 GetClassGRef(env, "java/security/Signature");
     g_SignatureGetInstance =           GetMethod(env, true, g_SignatureClass, "getInstance", "(Ljava/lang/String;)Ljava/security/Signature;");
@@ -862,6 +905,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_DateClass =   GetClassGRef(env, "java/util/Date");
     g_DateCtor =    GetMethod(env, false, g_DateClass, "<init>", "(J)V");
     g_DateGetTime = GetMethod(env, false, g_DateClass, "getTime", "()J");
+
+    g_Enumeration =                 GetClassGRef(env, "java/util/Enumeration");
+    g_EnumerationHasMoreElements =  GetMethod(env, false, g_Enumeration, "hasMoreElements", "()Z");
+    g_EnumerationNextElement =      GetMethod(env, false, g_Enumeration, "nextElement", "()Ljava/lang/Object;");
 
     g_HashSetClass =            GetClassGRef(env, "java/util/HashSet");
     g_HashSetCtorWithCapacity = GetMethod(env, false, g_HashSetClass, "<init>", "(I)V");

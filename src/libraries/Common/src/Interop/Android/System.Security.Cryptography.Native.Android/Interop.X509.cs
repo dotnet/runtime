@@ -89,6 +89,7 @@ internal static partial class Interop
             DSA,
             EC,
             RSA,
+            UnknownAlgorithm = -1,
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509PublicKey")]

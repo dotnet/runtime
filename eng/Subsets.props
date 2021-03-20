@@ -40,7 +40,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultCoreClrSubsets>clr.runtime+clr.jit+clr.alljits+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets>clr.runtime+clr.jit+clr.alljits+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
@@ -70,13 +70,14 @@
     <_subset>+$(_subset.Trim('+'))+</_subset>
 
     <ClrRuntimeBuildSubsets></ClrRuntimeBuildSubsets>
-    <ClrDefaultRuntimeBuildSubsets>ClrRuntimeSubset=true;ClrJitSubset=true</ClrDefaultRuntimeBuildSubsets>
+    <ClrDefaultRuntimeBuildSubsets>ClrRuntimeSubset=true;ClrJitSubset=true;ClrILToolsSubset=true</ClrDefaultRuntimeBuildSubsets>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- CoreClr -->
     <SubsetName Include="Clr" Description="The CoreCLR runtime, LinuxDac, CoreLib (+ native), tools and packages." />
     <SubsetName Include="Clr.DacTools" Description="Managed tools that support building a runtime that supports debugging (such as DacTableGen)." />
+    <SubsetName Include="Clr.ILTools" Description="The CoreCLR IL tools." />
     <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime." />
     <SubsetName Include="Clr.PalTests" Description="The CoreCLR PAL tests." />
     <SubsetName Include="Clr.PalTestList" Description="Generate the list of the CoreCLR PAL tests. When using the command line, use Clr.PalTests instead." />
@@ -165,6 +166,10 @@
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrAllJitsSubset=true;ClrJitSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
+  <PropertyGroup Condition="$(_subset.Contains('+clr.iltools+'))">
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrILToolsSubset=true</ClrRuntimeBuildSubsets>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != ''">
     <ProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets)" Category="clr" />
   </ItemGroup>
@@ -207,7 +212,7 @@
   </ItemGroup>
 
   <!-- Mono sets -->
-  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">
+  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">
     <ProjectToBuild Include="$(MonoProjectRoot)llvm\llvm-init.proj" Category="mono" />
   </ItemGroup>
 

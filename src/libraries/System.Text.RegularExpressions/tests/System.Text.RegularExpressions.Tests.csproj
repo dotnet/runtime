@@ -4,9 +4,6 @@
     <!-- xUnit2008 is about regexes and isn't appropriate in the test project for regexes -->
     <NoWarn>$(NoWarn);xUnit2008</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
-    <!-- ActiveIssue XUnit crashes on Apple Silicon
-        https://github.com/dotnet/runtime/issues/49110 -->
-    <IgnoreForCI Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' ">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />

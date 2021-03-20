@@ -72,6 +72,7 @@ set __BuildJit=1
 set __BuildPALTests=0
 set __BuildAllJits=1
 set __BuildRuntime=1
+set __BuildILTools=1
 set __CrossArch=
 set __CrossArch2=
 set __CrossOS=0
@@ -158,6 +159,7 @@ if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!pro
 if /i "%1" == "-skipjit"             (set __BuildJit=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipalljits"         (set __BuildAllJits=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipruntime"         (set __BuildRuntime=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skipiltools"         (set __BuildILTools=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -209,6 +211,9 @@ if %__TotalSpecifiedBuildArch% GTR 1 (
     goto Usage
 )
 
+set __ProcessorArch=%PROCESSOR_ARCHITEW6432%
+if "%__ProcessorArch%"=="" set __ProcessorArch=%PROCESSOR_ARCHITECTURE%
+
 if %__BuildArchX64%==1      set __BuildArch=x64
 if %__BuildArchX86%==1 (
     set __BuildArch=x86
@@ -221,7 +226,7 @@ if %__BuildArchArm%==1 (
 )
 if %__BuildArchArm64%==1 (
     set __BuildArch=arm64
-    set __CrossArch=x64
+    if /i not "%__ProcessorArch%"=="ARM64" set __CrossArch=x64
 )
 
 set /A __TotalSpecifiedBuildType=__BuildTypeDebug + __BuildTypeChecked + __BuildTypeRelease
@@ -252,7 +257,7 @@ REM Determine if this is a cross-arch build. Only do cross-arch build if we're a
 if %__SkipCrossArchNative% EQU 0 (
     if %__BuildNative% EQU 1 (
         if /i "%__BuildArch%"=="arm64" (
-            set __BuildCrossArchNative=1
+            if defined __CrossArch set __BuildCrossArchNative=1
         )
         if /i "%__BuildArch%"=="arm" (
             set __BuildCrossArchNative=1
@@ -416,7 +421,7 @@ if NOT DEFINED PYTHON (
     goto ExitWithError
 )
 
-set __CMakeClrBuildSubsetArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=%__BuildJit%" "-DCLR_CMAKE_BUILD_SUBSET_ALLJITS=%__BuildAllJits%" "-DCLR_CMAKE_BUILD_SUBSET_RUNTIME=%__BuildRuntime%"
+set __CMakeClrBuildSubsetArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=%__BuildJit%" "-DCLR_CMAKE_BUILD_SUBSET_ALLJITS=%__BuildAllJits%" "-DCLR_CMAKE_BUILD_SUBSET_RUNTIME=%__BuildRuntime%" "-DCLR_CMAKE_BUILD_SUBSET_ILTOOLS=%__BuildILTools%"
 
 REM =========================================================================================
 REM ===
@@ -597,7 +602,9 @@ if %__BuildNative% EQU 1 (
     )
     if /i "%__BuildArch%" == "arm64" (
         set __VCBuildArch=x86_arm64
-        set ___CrossBuildDefine="-DCLR_CMAKE_CROSS_ARCH=1" "-DCLR_CMAKE_CROSS_HOST_ARCH=%__CrossArch%"
+        if defined __CrossArch (
+            set ___CrossBuildDefine="-DCLR_CMAKE_CROSS_ARCH=1" "-DCLR_CMAKE_CROSS_HOST_ARCH=%__CrossArch%"
+        )
     )
 
     echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!

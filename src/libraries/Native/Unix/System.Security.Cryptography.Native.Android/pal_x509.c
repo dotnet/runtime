@@ -244,13 +244,13 @@ void* AndroidCryptoNative_X509PublicKey(jobject /*X509Certificate*/ cert, PAL_Ke
     switch (algorithm)
     {
         case PAL_EC:
-            keyHandle = AndroidCryptoNative_NewEcKeyFromPublicKey(env, key);
+            keyHandle = AndroidCryptoNative_NewEcKeyFromKeys(env, key, NULL /*privateKey*/);
             break;
         case PAL_DSA:
-            keyHandle = AndroidCryptoNative_CreateKeyPair(env, key, NULL);
+            keyHandle = AndroidCryptoNative_CreateKeyPair(env, key, NULL /*privateKey*/);
             break;
         case PAL_RSA:
-            keyHandle = AndroidCryptoNative_NewRsaFromPublicKey(env, key);
+            keyHandle = AndroidCryptoNative_NewRsaFromKeys(env, key, NULL /*privateKey*/);
             break;
         default:
             keyHandle = NULL;

@@ -45,6 +45,7 @@ namespace System.Tests
 
         [Fact]
         [PlatformSpecific(~TestPlatforms.Browser)] // throws pNSE
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TargetFrameworkTest()
         {
             const int ExpectedExitCode = 0;
@@ -209,6 +210,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void ProcessExit_Called()
         {
             string path = GetTestFilePath();

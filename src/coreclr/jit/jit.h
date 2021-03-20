@@ -26,25 +26,6 @@
 #define ZERO 0
 
 #ifdef _MSC_VER
-// These don't seem useful, so turning them off is no big deal
-#pragma warning(disable : 4065) // "switch statement contains 'default' but no 'case' labels" (happens due to #ifdefs)
-#pragma warning(disable : 4510) // can't generate default constructor
-#pragma warning(disable : 4511) // can't generate copy constructor
-#pragma warning(disable : 4512) // can't generate assignment constructor
-#pragma warning(disable : 4610) // user defined constructor required
-#pragma warning(disable : 4211) // nonstandard extension used (char name[0] in structs)
-#pragma warning(disable : 4127) // conditional expression constant
-#pragma warning(disable : 4201) // "nonstandard extension used : nameless struct/union"
-
-// Depending on the code base, you may want to not disable these
-#pragma warning(disable : 4245) // assigning signed / unsigned
-#pragma warning(disable : 4146) // unary minus applied to unsigned
-
-#pragma warning(disable : 4100) // unreferenced formal parameter
-#pragma warning(disable : 4291) // new operator without delete (only in emitX86.cpp)
-#endif
-
-#ifdef _MSC_VER
 #define CHECK_STRUCT_PADDING 0 // Set this to '1' to enable warning C4820 "'bytes' bytes padding added after
                                // construct 'member_name'" on interesting structs/classes
 #else
