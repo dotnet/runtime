@@ -364,6 +364,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Android)] // Android does not support AIA fetching
         public static void TestInvalidAia()
         {
             using (RSA key = RSA.Create())

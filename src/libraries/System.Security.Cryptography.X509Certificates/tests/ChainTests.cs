@@ -289,11 +289,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             MultipleCalls
         }
 
+        public static IEnumerable<object[]> BuildChainCustomTrustStoreData()
+        {
+            if (!PlatformDetection.IsAndroid)
+            {
+                // Android doesn't support an empty custom root
+                yield return new object[] { false, X509ChainStatusFlags.UntrustedRoot, BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot };
+            }
+
+            yield return new object[] { true, X509ChainStatusFlags.NoError, BuildChainCustomTrustStoreTestArguments.UntrustedIntermediateTrustedRoot };
+            yield return new object[] { true, X509ChainStatusFlags.NoError, BuildChainCustomTrustStoreTestArguments.TrustedIntermediateTrustedRoot };
+            yield return new object[] { true, X509ChainStatusFlags.NoError, BuildChainCustomTrustStoreTestArguments.MultipleCalls };
+        }
+
         [Theory]
-        [InlineData(false, X509ChainStatusFlags.UntrustedRoot, BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot)]
-        [InlineData(true, X509ChainStatusFlags.NoError, BuildChainCustomTrustStoreTestArguments.UntrustedIntermediateTrustedRoot)]
-        [InlineData(true, X509ChainStatusFlags.NoError, BuildChainCustomTrustStoreTestArguments.TrustedIntermediateTrustedRoot)]
-        [InlineData(true, X509ChainStatusFlags.NoError, BuildChainCustomTrustStoreTestArguments.MultipleCalls)]
+        [PlatformSpecific(~TestPlatforms.Android)] // Test relies on AIA fetching, which Android does not support
+        [MemberData(nameof(BuildChainCustomTrustStoreData))]
         public static void BuildChainCustomTrustStore(
             bool chainBuildsSuccessfully,
             X509ChainStatusFlags chainFlags,
@@ -313,38 +324,68 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 using (var chainHolderTest = new ChainHolder())
                 {
-                    X509Chain chainTest = chainHolderTest.Chain;
-                    chainTest.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                    chainTest.ChainPolicy.VerificationTime = microsoftDotCom.NotBefore.AddSeconds(1);
-                    chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-
-                    switch (testArguments)
-                    {
-                        case BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot:
-                            chainTest.ChainPolicy.ExtraStore.Add(rootCert);
-                            break;
-                        case BuildChainCustomTrustStoreTestArguments.UntrustedIntermediateTrustedRoot:
-                            chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
-                            break;
-                        case BuildChainCustomTrustStoreTestArguments.TrustedIntermediateTrustedRoot:
-                            chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
-                            break;
-                        case BuildChainCustomTrustStoreTestArguments.MultipleCalls:
-                            chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
-                            chainTest.Build(microsoftDotCom);
-                            chainHolderTest.DisposeChainElements();
-                            chainTest.ChainPolicy.CustomTrustStore.Remove(rootCert);
-                            chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.System;
-                            break;
-                        default:
-                            throw new InvalidDataException();
-                    }
-
-                    Assert.Equal(chainBuildsSuccessfully, chainTest.Build(microsoftDotCom));
-                    Assert.Equal(3, chainTest.ChainElements.Count);
-                    Assert.Equal(chainFlags, chainTest.AllStatusFlags());
+                    BuildChainCustomTrustStoreImpl(chainHolderTest, rootCert, microsoftDotCom, chainBuildsSuccessfully, chainFlags, testArguments);
                 }
             }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Android)]
+        [MemberData(nameof(BuildChainCustomTrustStoreData))]
+        public static void BuildChainCustomTrustStore_Android(
+            bool chainBuildsSuccessfully,
+            X509ChainStatusFlags chainFlags,
+            BuildChainCustomTrustStoreTestArguments testArguments)
+        {
+            using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+            using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
+            using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
+            using (var chainHolder = new ChainHolder())
+            {
+                // Fetching is not supported on Android, so we need to add intermediate to the extra store
+                chainHolder.Chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
+                BuildChainCustomTrustStoreImpl(chainHolder, microsoftDotComRoot, microsoftDotCom, chainBuildsSuccessfully, chainFlags, testArguments);
+            }
+        }
+
+        private static void BuildChainCustomTrustStoreImpl(
+            ChainHolder chainHolder,
+            X509Certificate2 rootCert,
+            X509Certificate2 endCert,
+            bool chainBuildsSuccessfully,
+            X509ChainStatusFlags chainFlags,
+            BuildChainCustomTrustStoreTestArguments testArguments)
+        {
+            X509Chain chainTest = chainHolder.Chain;
+            chainTest.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+            chainTest.ChainPolicy.VerificationTime = endCert.NotBefore.AddSeconds(1);
+            chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+
+            switch (testArguments)
+            {
+                case BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot:
+                    chainTest.ChainPolicy.ExtraStore.Add(rootCert);
+                    break;
+                case BuildChainCustomTrustStoreTestArguments.UntrustedIntermediateTrustedRoot:
+                    chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
+                    break;
+                case BuildChainCustomTrustStoreTestArguments.TrustedIntermediateTrustedRoot:
+                    chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
+                    break;
+                case BuildChainCustomTrustStoreTestArguments.MultipleCalls:
+                    chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
+                    chainTest.Build(endCert);
+                    chainHolder.DisposeChainElements();
+                    chainTest.ChainPolicy.CustomTrustStore.Remove(rootCert);
+                    chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.System;
+                    break;
+                default:
+                    throw new InvalidDataException();
+            }
+
+            Assert.Equal(chainBuildsSuccessfully, chainTest.Build(endCert));
+            Assert.Equal(3, chainTest.ChainElements.Count);
+            Assert.Equal(chainFlags, chainTest.AllStatusFlags());
         }
 
         [Fact]
@@ -916,6 +957,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Android)] // Chain building on Android fails with an empty subject
         public static void ChainWithEmptySubject()
         {
             using (var cert = new X509Certificate2(TestData.EmptySubjectCertificate))
