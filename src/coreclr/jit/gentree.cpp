@@ -14790,66 +14790,28 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                 case GT_ADD:
                     itemp = i1 + i2;
-                    if (tree->gtOverflow())
+                    if (tree->gtOverflow() && CheckedOps::IntAddOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
                     {
-                        if (tree->IsUnsigned())
-                        {
-                            if (INT64(UINT32(itemp)) != INT64(UINT32(i1)) + INT64(UINT32(i2)))
-                            {
-                                goto INT_OVF;
-                            }
-                        }
-                        else
-                        {
-                            if (INT64(INT32(itemp)) != INT64(INT32(i1)) + INT64(INT32(i2)))
-                            {
-                                goto INT_OVF;
-                            }
-                        }
+                        goto INT_OVF;
                     }
                     i1       = itemp;
                     fieldSeq = GetFieldSeqStore()->Append(op1->AsIntCon()->gtFieldSeq, op2->AsIntCon()->gtFieldSeq);
                     break;
                 case GT_SUB:
                     itemp = i1 - i2;
-                    if (tree->gtOverflow())
+                    if (tree->gtOverflow() && CheckedOps::IntSubOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
                     {
-                        if (tree->IsUnsigned())
-                        {
-                            if (INT64(UINT32(itemp)) != ((INT64)((UINT32)i1) - (INT64)((UINT32)i2)))
-                            {
-                                goto INT_OVF;
-                            }
-                        }
-                        else
-                        {
-                            if (INT64(INT32(itemp)) != INT64(INT32(i1)) - INT64(INT32(i2)))
-                            {
-                                goto INT_OVF;
-                            }
-                        }
+                        goto INT_OVF;
                     }
                     i1 = itemp;
                     break;
                 case GT_MUL:
                     itemp = i1 * i2;
-                    if (tree->gtOverflow())
+                    if (tree->gtOverflow() && CheckedOps::IntMulOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
                     {
-                        if (tree->IsUnsigned())
-                        {
-                            if (INT64(UINT32(itemp)) != ((INT64)((UINT32)i1) * (INT64)((UINT32)i2)))
-                            {
-                                goto INT_OVF;
-                            }
-                        }
-                        else
-                        {
-                            if (INT64(INT32(itemp)) != INT64(INT32(i1)) * INT64(INT32(i2)))
-                            {
-                                goto INT_OVF;
-                            }
-                        }
+                        goto INT_OVF;
                     }
+
                     // For the very particular case of the "constant array index" pseudo-field, we
                     // assume that multiplication is by the field width, and preserves that field.
                     // This could obviously be made more robust by a more complicated set of annotations...
@@ -15146,108 +15108,28 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                 case GT_ADD:
                     ltemp = lval1 + lval2;
-
-                LNG_ADD_CHKOVF:
-                    // For the SIGNED case - If there is one positive and one negative operand, there can be no overflow.
-                    // If both are positive, the result has to be positive, and similary for negatives.
-                    //
-                    // For the UNSIGNED case - If a UINT32 operand is bigger than the result then OVF.
-
-                    if (tree->gtOverflow())
+                    if (tree->gtOverflow() && CheckedOps::LongAddOverflows(lval1, lval2, tree->IsUnsigned()))
                     {
-                        if (tree->IsUnsigned())
-                        {
-                            if ((UINT64(lval1) > UINT64(ltemp)) || (UINT64(lval2) > UINT64(ltemp)))
-                            {
-                                goto LNG_OVF;
-                            }
-                        }
-                        else if (((lval1 < 0) == (lval2 < 0)) && ((lval1 < 0) != (ltemp < 0)))
-                        {
-                            goto LNG_OVF;
-                        }
+                        goto LNG_OVF;
                     }
                     lval1 = ltemp;
                     break;
 
                 case GT_SUB:
                     ltemp = lval1 - lval2;
-                    if (tree->gtOverflow())
+                    if (tree->gtOverflow() && CheckedOps::LongSubOverflows(lval1, lval2, tree->IsUnsigned()))
                     {
-                        if (tree->IsUnsigned())
-                        {
-                            if (UINT64(lval2) > UINT64(lval1))
-                            {
-                                goto LNG_OVF;
-                            }
-                        }
-                        else
-                        {
-                            // If both operands are +ve or both are -ve, there can be no
-                            // overflow. Else use the logic for : lval1 + (-lval2).
-
-                            if ((lval1 < 0) != (lval2 < 0))
-                            {
-                                if (lval2 == INT64_MIN)
-                                {
-                                    goto LNG_OVF;
-                                }
-                                lval2 = -lval2;
-                                goto LNG_ADD_CHKOVF;
-                            }
-                        }
+                        goto LNG_OVF;
                     }
                     lval1 = ltemp;
                     break;
 
                 case GT_MUL:
                     ltemp = lval1 * lval2;
-
-                    if (tree->gtOverflow() && lval2 != 0)
+                    if (tree->gtOverflow() && CheckedOps::LongMulOverflows(lval1, lval2, tree->IsUnsigned()))
                     {
-                        if (tree->IsUnsigned())
-                        {
-                            UINT64 ultemp = ltemp;
-                            UINT64 ulval1 = lval1;
-                            UINT64 ulval2 = lval2;
-                            if ((ultemp / ulval2) != ulval1)
-                            {
-                                goto LNG_OVF;
-                            }
-                        }
-                        else
-                        {
-                            // This does a multiply and then reverses it.  This test works great except for MIN_INT *
-                            //-1.  In that case we mess up the sign on ltmp.  Make sure to double check the sign.
-                            // if either is 0, then no overflow.
-                            if (lval1 != 0) // lval2 checked above.
-                            {
-                                if (((lval1 < 0) == (lval2 < 0)) && (ltemp < 0))
-                                {
-                                    goto LNG_OVF;
-                                }
-                                if (((lval1 < 0) != (lval2 < 0)) && (ltemp > 0))
-                                {
-                                    goto LNG_OVF;
-                                }
-
-                                // TODO-Amd64-Unix: Remove the code that disables optimizations for this method when the
-                                // clang
-                                // optimizer is fixed and/or the method implementation is refactored in a simpler code.
-                                // There is a bug in the clang-3.5 optimizer. The issue is that in release build the
-                                // optimizer is mistyping (or just wrongly decides to use 32 bit operation for a corner
-                                // case of MIN_LONG) the args of the (ltemp / lval2) to int (it does a 32 bit div
-                                // operation instead of 64 bit.). For the case of lval1 and lval2 equal to MIN_LONG
-                                // (0x8000000000000000) this results in raising a SIGFPE.
-                                // Optimizations disabled for now. See compiler.h.
-                                if ((ltemp / lval2) != lval1)
-                                {
-                                    goto LNG_OVF;
-                                }
-                            }
-                        }
+                        goto LNG_OVF;
                     }
-
                     lval1 = ltemp;
                     break;
 

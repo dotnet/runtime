@@ -773,4 +773,18 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 
 double CachedCyclesPerSecond();
 
+namespace CheckedOps
+{
+const bool Unsigned = true;
+const bool Signed   = false;
+
+bool IntAddOverflows(int32_t firstAddend, int32_t secondAddend, bool unsignedAdd);
+bool IntSubOverflows(int32_t minuend, int32_t subtrahend, bool unsignedSub);
+bool IntMulOverflows(int32_t firstFactor, int32_t secondFactor, bool unsignedMul);
+
+bool LongAddOverflows(int64_t firstAddend, int64_t secondAddend, bool unsignedAddition);
+bool LongSubOverflows(int64_t minuend, int64_t subtrahend, bool unsignedSubtraction);
+bool LongMulOverflows(int64_t firstFactor, int64_t secondFactor, bool unsignedMultiplication);
+}
+
 #endif // _UTILS_H_

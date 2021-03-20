@@ -2585,3 +2585,165 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/)
 }
 #endif
 }
+
+namespace CheckedOps
+{
+bool IntAddOverflows(int32_t firstAddend, int32_t secondAddend, bool unsignedAdd)
+{
+    int32_t result = firstAddend + secondAddend;
+
+    if (unsignedAdd)
+    {
+        if ((int64_t)(uint32_t)result != ((int64_t)(uint32_t)firstAddend + (int64_t)(uint32_t)secondAddend))
+        {
+            return true;
+        }
+    }
+    else if ((int64_t)result != ((int64_t)firstAddend + (int64_t)secondAddend))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool IntSubOverflows(int32_t minuend, int32_t subtrahend, bool unsignedSub)
+{
+    int32_t result = minuend - subtrahend;
+
+    if (unsignedSub)
+    {
+        if ((int64_t)(uint32_t)result != ((int64_t)(uint32_t)minuend - (int64_t)(uint32_t)subtrahend))
+        {
+            return true;
+        }
+    }
+    else if ((int64_t)(int32_t)result != ((int64_t)minuend - (int64_t)subtrahend))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool IntMulOverflows(int32_t firstFactor, int32_t secondFactor, bool unsignedMul)
+{
+    int32_t result = firstFactor * secondFactor;
+
+    if (unsignedMul)
+    {
+        if ((int64_t)(uint32_t)result != ((int64_t)(uint32_t)firstFactor * (int64_t)(uint32_t)secondFactor))
+        {
+            return true;
+        }
+    }
+    else if ((int64_t)(int32_t)result != ((int64_t)firstFactor * (int64_t)secondFactor))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool LongAddOverflows(int64_t firstAddend, int64_t secondAddend, bool unsignedAdd)
+{
+    int64_t result = firstAddend + secondAddend;
+
+    // For the SIGNED case - If there is one positive and one negative operand, there can be no overflow.
+    // If both are positive, the result has to be positive, and similary for negatives.
+    // For the UNSIGNED case - If a UINT32 operand is bigger than the result then OVF.
+    if (unsignedAdd)
+    {
+        if (((uint64_t)firstAddend > (uint64_t)result) || ((uint64_t)secondAddend > (uint64_t)result))
+        {
+            return true;
+        }
+    }
+    else if (((firstAddend < 0) == (secondAddend < 0)) && ((firstAddend < 0) != (result < 0)))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool LongSubOverflows(int64_t minuend, int64_t subtrahend, bool unsignedSub)
+{
+    int64_t result = minuend - subtrahend;
+
+    if (unsignedSub)
+    {
+        if ((uint64_t)subtrahend > (uint64_t)minuend)
+        {
+            return true;
+        }
+    }
+    else
+    {
+        // If both operands are positive or negative, there can be no
+        // overflow. Else use the logic for : minuend + (-subtrahend).
+        if ((minuend < 0) != (subtrahend < 0))
+        {
+            if (subtrahend == INT64_MIN)
+            {
+                return true;
+            }
+
+            return LongAddOverflows(minuend, -subtrahend, unsignedSub);
+        }
+    }
+
+    return false;
+}
+
+bool LongMulOverflows(int64_t firstFactor, int64_t secondFactor, bool unsignedMul)
+{
+    int64_t result = firstFactor * secondFactor;
+
+    // No overflow can occur if either of the operands is 0.
+    if (firstFactor == 0 || secondFactor == 0)
+    {
+        return false;
+    }
+
+    if (unsignedMul)
+    {
+        if (((uint64_t)result / (uint64_t)secondFactor) != (uint64_t)firstFactor)
+        {
+            return true;
+        }
+    }
+    else
+    {
+        // This does a multiply and then reverses it.
+        // This test works great except for MIN_INT * -1.
+        // In that case we mess up the sign on the result.  Make sure to double check the sign.
+        // if either is 0, then no overflow.
+
+        if (((firstFactor < 0) == (secondFactor < 0)) && (result < 0))
+        {
+            return true;
+        }
+        if (((firstFactor < 0) != (secondFactor < 0)) && (result > 0))
+        {
+            return true;
+        }
+
+        // TODO-Amd64-Unix: Remove the code that disables optimizations for this method when the
+        // clang
+        // optimizer is fixed and/or the method implementation is refactored in a simpler code.
+        // There is a bug in the clang-3.5 optimizer. The issue is that in release build the
+        // optimizer is mistyping (or just wrongly decides to use 32 bit operation for a corner
+        // case of MIN_LONG) the args of the (result / secondFactor) to int (it does a 32 bit div
+        // operation instead of 64 bit.). For the case of firstFactor and secondFactor equal to MIN_LONG
+        // (0x8000000000000000) this results in raising a SIGFPE.
+        // Optimizations disabled for now. See compiler.h.
+        if ((result / secondFactor) != firstFactor)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+}
