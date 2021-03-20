@@ -423,28 +423,10 @@ The algorithm is amended as follows:
 
 ## Static Interface Methods
 
-This WIP section is intended to specify ECMA standard changes implied by the static interface methods. For the reference ECMA spec, I have used
+Follow proposed changes to the ECMA standard pertaining to static interface methods. The quotations and page numbers refer to
+version 6 from June 2012 available at:
 
 https://www.ecma-international.org/publications-and-standards/standards/ecma-335/
-
-(6th edition, June 2012), please let me know if I should look at a different version. It also kind of sucks that we cannot reference the ECMA spec
-dynamically via some hyperlinks - I assume there's no online version of the spec that would support referring to the individual sections and such.
-
-Based on initial audit I believe changes potentially need to be made at least to the following sections:
-
-* Virtual methods (I.8.4.4, page 25)
-* Inheritance and overriding (II.9.9, page 135)
-* Constraints on generic parameters (II.9.11, page 137)
-* Introducing and overriding virtual methods (II.10.3, page 147)
-* Semantics of interfaces (II.12, page 157)
-* Interface implementation examples (II.12.2.1, page 159)
-* Defining, referencing and calling methods (II.15, page 177)
-* constrained. - (prefix) invoke a member on a value of a variable type (III.2.1, page 316)
-* call - call a method (III.3.19, page 342)
-* ldftn - load method pointer (III.3.41, page 366)
-
-We could use the "interface implementation examples" section to outline some positive and negative examples that can be also used as a basis for
-testing.
 
 ### I.8.4.4, Virtual Methods
 
@@ -462,7 +444,7 @@ method.
 Member inheritance is defined in Partition I, in “Member Inheritance”. (Overriding and hiding are also
 defined in that partition, in “Hiding, overriding, and layout”.) This definition is extended, in an obvious
 manner, in the presence of generics. Specifically, in order to determine whether a member hides (for
-static or instance members) or overrides (for instance virtual methods) a member from a base class or interface,
+static or instance members) or overrides (for virtual instance methods) a member from a base class or interface,
 simply substitute each generic parameter with its generic argument, and compare the resulting member
 signatures. [*Example*: The following illustrates this point:
 
@@ -486,19 +468,167 @@ accessed/called via the generic parameter unless it is first boxed (see Partitio
 
 ### II.10.3 Introducing and overriding virtual methods
 
-For now I don't see any particular formulation in this section that would need amending. We may want to mention virtual static
-interface methods as a somewhat specific case.
+(Change first paragraph)
+
+A virtual method of a base type is overridden by providing a direct implementation of the method
+(using a method definition, see paragraph II.15.4) and not specifying it to be newslot (paragraph II.15.4.2.3). An existing
+method body can also be used to implement a given instance or static virtual declaration using the .override directive
+(paragraph II.10.3.2).
+
+### II.10.3.2 The .override directive
+
+(Change first paragraph)
+
+The .override directive specifies that a virtual method shall be implemented (overridden), in this type,
+by a virtual instance method with a different name or a non-virtual static method, but with the same signature.
+This directive can be used to provide an implementation for a virtual method inherited from a base class, or
+a virtual method specified in an interface implemented by this type. The .override directive specifies a Method
+Implementation (MethodImpl) in the metadata (§II.15.1.4).
+
+(Change the third and fourth paragraph on page 148, the second and third one below the table)
+
+The first *TypeSpec::MethodName* pair specifies the virtual method that is being overridden, and shall
+be either an inherited virtual method or a virtual method on an interface that the current type
+implements. The remaining information specifies the virtual instance or non-virtual static method that
+provides the implementation.
+
+While the syntax specified here (as well as the actual metadata format (paragraph II.22.27) allows any virtual
+method to be used to provide an implementation, a conforming program shall provide a virtual instance method
+actually implemented directly on the type or a static method implemented on the type or on a base type.
 
 ### II.12 Semantics of Interfaces
 
 (Add to the end of the 1st paragraph)
 
 Interfaces may define static virtual methods that get resolved at runtime based on actual types involved.
+These static virtual methods must be marked as abstract in the defining interfaces.
 
 ### II.12.2 Implementing virtual methods on interfaces
 
-For now I'm stuck in this complex section, I would welcome initial feedback as to whether what I've shared so far makes any sense.
+(Edit 8th paragraph at page 158, the first unindented one below the bullet list, by
+basically clarifying that "public virtual methods" only refer to "public virtual instance methods"):
 
-Thanks
+The VES shall use the following algorithm to determine the appropriate implementation of an
+interface's virtual abstract methods on the open form of the class:
 
-Tomas
+* Create an interface table that has an empty list for each virtual method defined by
+the interface.
+
+* If the interface is an explicit interface of this class:
+
+  * If the class defines any public virtual instance methods whose name and signature
+    match a virtual method on the interface, then add these to the list for that
+    method, in type declaration order (see above). [*Note*: For an example where
+    the order is relevant, see Case 6 in paragraph 12.2.1. *end Note*]
+
+  * If there are any public virtual instance methods available on this class (directly or inherited)
+    having the same name and signature as the interface method, and whose generic type
+    parameters do not exactly match any methods in the existing list for that interface
+    method for this class or any class in its inheritance chain, then add them (in **type
+    declaration order**) to the list for the corresponding methods on the interface.
+
+  * If there are multiple methods with the same name, signature and generic type
+    parameters, only the last such method in **method declaration order** is added to the
+    list. [Note: For an example of duplicate methods, see Case 4 in paragraph 12.2.1. *end Note*]
+
+  * Apply all MethodImpls that are specified for this class, placing explicitly specified
+    virtual methods into the interface list for this method, in place of those inherited or
+    chosen by name matching that have identical generic type parameters. If there are
+    multiple methods for the same interface method (i.e. with different generic type
+    parameters), place them in the list in **type declaration order** of the associated
+    interfaces.
+
+  * If the current class is not abstract and there are any interface methods that still have
+    empty slots (i.e. slots with empty lists) for this class and all classes in its inheritance
+    chain, then the program is invalid. 
+
+### II.12.2.1, Interface implementation examples (page 159)
+
+**TODO**
+
+### II.15.2 Static, Instance and Virtual Methods (page 177)
+
+(Clarify first paragraph)
+
+Static methods are methods that are associated with a type, not with its instances. For
+static virtual methods, the particular method to call is determined via a type lookup
+based on the `constrained.` IL instruction prefix or on generic type constraints but
+the call itself doesn't involve any instance or `this` pointer.
+
+### II.22.26, MethodDef: 0x06
+
+(Edit bulleted section "This contains informative text only" starting at the bottom of page
+233):
+
+Edit section *7.b*: Static | Virtual | !Abstract
+
+(Add new section 41 after the last section 40:)
+
+* 41. If the owner of this method is not an interface, then if Flags.Static is 1 then Flags.Virtual must be 0.
+
+### II.22.27, MethodImpl: 0x19
+
+(Edit bulleted section "This contains informative text only" at the top of the page 237)
+
+Edit section 7: The method indexed by *MethodBody* shall be non-virtual if the method indexed
+by MethodDeclaration is static. Otherwise it shall be virtual.
+
+### III.2.1, constrained. - (prefix) invoke a member on a value of a variable type (page 316)
+
+(Change the section title to:)
+
+III.2.1, constrained. - (prefix) invoke an instance or static method or load method pointer to a variable type
+
+(Change the "Stack transition" section below the initial assembly format table to a table as follows:)
+
+| Prefix and instruction pair | Stack Transition
+| constrained. *thisType* callvirt *method* | ..., ptr, arg1, ... argN -> ..., ptr, arg1, ... argN
+| constrained. *implementorType* call *method* | ..., arg1, ... argN -> ..., arg1, ... argN
+| constrained. *implementorType* ldftn *method* | ..., ftn -> ..., ftn
+
+(Replace the first "Description" paragraph below the "Stack Transition" section as follows:)
+
+The `constrained.` prefix is permitted only on a `callvirt`, `call`
+or `ldftn` instruction. When followed by the `callvirt` instruction,
+the type of *ptr* must be a managed pointer (&) to *thisType*. The constrained prefix is designed
+to allow `callvirt` instructions to be made in a uniform way independent of whether
+*thisType* is a value type or a reference type.
+
+When followed by the `call` instruction or the `ldftn` instruction,
+the method must refer to a virtual static method defined on an interface. The behavior of the
+`constrained.` prefix is to change the method that the `call` or `ldftn`
+instruction refers to to be the method on `implementorType` which implements the
+virtual static method (paragraph *II.10.3*).
+
+(Edit the paragraph "Correctness:" second from the bottom of page 316:)
+
+The `constrained.` prefix will be immediately followed by a `ldftn`, `call` or `callvirt`
+instruction. *thisType* shall be a valid `typedef`, `typeref`, or `typespec` metadata token. 
+
+(Edit the paragraph "Verifiability" at the bottom of page 316:)
+
+For the `callvirt` instruction, the `ptr` argument will be a managed pointer (`&`) to `thisType`.
+In addition all the normal verification rules of the `callvirt` instruction apply after the `ptr`
+transformation as described above. This is equivalent to requiring that a boxed `thisType` must be
+a subclass of the class `method` belongs to.
+
+The `implementorType` must be constrained to implement the interface that is the owning type of
+the method. If the `constrained.` prefix is applied to a `call` or `ldftn` instruction,
+`method` must be a virtual static method.
+
+### III.3.19, call - call a method (page 342)
+
+(Edit 2nd Description paragraph:)
+
+The metadata token carries sufficient information to determine whether the call is to a static
+(non-virtual or virtual) method, an instance method, a virtual instance method, or a global function. In all of
+these cases the destination address is determined entirely from the metadata token. (Contrast this with the
+`callvirt` instruction for calling virtual instance methods, where the destination address also depends upon
+the exact type of the instance reference pushed before the `callvirt`; see below.) 
+
+(Edit numbered list in the middle of the page 342):
+
+Bullet 2: It is valid to call a virtual method using `call` (rather than `callvirt`); this indicates that
+the method is to be resolved using the class specified by method rather than as
+specified dynamically from the object being invoked. This is used, for example, to
+compile calls to “methods on `base`” (i.e., the statically known parent class) or to virtual static methods.
