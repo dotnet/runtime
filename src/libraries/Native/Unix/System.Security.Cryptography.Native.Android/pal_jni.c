@@ -193,6 +193,7 @@ jclass    g_PKIXBuilderParametersClass;
 jmethodID g_PKIXBuilderParametersCtor;
 jmethodID g_PKIXBuilderParametersAddCertStore;
 jmethodID g_PKIXBuilderParametersAddCertPathChecker;
+jmethodID g_PKIXBuilderParametersSetCertPathCheckers;
 jmethodID g_PKIXBuilderParametersSetDate;
 jmethodID g_PKIXBuilderParametersSetRevocationEnabled;
 jmethodID g_PKIXBuilderParametersSetTrustAnchors;
@@ -722,6 +723,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_PKIXBuilderParametersCtor =                   GetMethod(env, false, g_PKIXBuilderParametersClass, "<init>", "(Ljava/security/KeyStore;Ljava/security/cert/CertSelector;)V");
     g_PKIXBuilderParametersAddCertStore =           GetMethod(env, false, g_PKIXBuilderParametersClass, "addCertStore", "(Ljava/security/cert/CertStore;)V");
     g_PKIXBuilderParametersAddCertPathChecker =     GetMethod(env, false, g_PKIXBuilderParametersClass, "addCertPathChecker", "(Ljava/security/cert/PKIXCertPathChecker;)V");
+    g_PKIXBuilderParametersSetCertPathCheckers =    GetMethod(env, false, g_PKIXBuilderParametersClass, "setCertPathCheckers", "(Ljava/util/List;)V");
     g_PKIXBuilderParametersSetDate =                GetMethod(env, false, g_PKIXBuilderParametersClass, "setDate", "(Ljava/util/Date;)V");
     g_PKIXBuilderParametersSetRevocationEnabled =   GetMethod(env, false, g_PKIXBuilderParametersClass, "setRevocationEnabled", "(Z)V");
     g_PKIXBuilderParametersSetTrustAnchors =        GetMethod(env, false, g_PKIXBuilderParametersClass, "setTrustAnchors", "(Ljava/util/Set;)V");

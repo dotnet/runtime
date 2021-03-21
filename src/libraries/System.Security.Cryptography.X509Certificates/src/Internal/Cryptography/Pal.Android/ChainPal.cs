@@ -202,6 +202,7 @@ namespace Internal.Cryptography.Pal
                 List<X509ChainStatus>[] statuses = new List<X509ChainStatus>[certs.Length];
 
                 int firstErrorIndex = -1;
+                int firstRevocationErrorIndex = -1;
                 Dictionary<int, List<X509ChainStatus>> errorsByIndex = GetStatusByIndex(_chainContext);
                 foreach (int index in errorsByIndex.Keys)
                 {
@@ -212,6 +213,10 @@ namespace Internal.Cryptography.Pal
                     {
                         statuses[index] = errorsByIndex[index];
                         firstErrorIndex = Math.Max(index, firstErrorIndex);
+                        if (errorsByIndex[index].Exists(s => s.Status == X509ChainStatusFlags.Revoked || s.Status == X509ChainStatusFlags.RevocationStatusUnknown))
+                        {
+                            firstRevocationErrorIndex = Math.Max(index, firstRevocationErrorIndex);
+                        }
                     }
                 }
 
@@ -224,36 +229,29 @@ namespace Internal.Cryptography.Pal
                         Status = X509ChainStatusFlags.PartialChain,
                         StatusInformation = SR.Chain_PartialChain,
                     };
-                    for (int i = firstErrorIndex - 1; i >= 0; i--)
-                    {
-                        if (statuses[i] == null)
-                        {
-                            statuses[i] = new List<X509ChainStatus>();
-                        }
+                    AddStatusFromIndexToEndCertificate(firstErrorIndex - 1, partialChainStatus, statuses, overallStatus);
+                }
 
-                        statuses[i].Add(partialChainStatus);
-                    }
+                if (firstRevocationErrorIndex > 0)
+                {
+                    // Assign RevocationStatusUnknown to everything from the first revocation error to the end certificate
+                    X509ChainStatus revocationUnknownStatus = new X509ChainStatus
+                    {
+                        Status = X509ChainStatusFlags.RevocationStatusUnknown,
+                        StatusInformation = SR.Chain_RevocationStatusUnknown,
+                    };
+                    AddStatusFromIndexToEndCertificate(firstRevocationErrorIndex - 1, revocationUnknownStatus, statuses, overallStatus);
                 }
 
                 if (!IsPolicyMatch(certs, applicationPolicy, certificatePolicy))
                 {
+                    // Assign NotValidForUsage to everything
                     X509ChainStatus policyFailStatus = new X509ChainStatus
                     {
                         Status = X509ChainStatusFlags.NotValidForUsage,
                         StatusInformation = SR.Chain_NoPolicyMatch,
                     };
-
-                    for (int i = 0; i < statuses.Length; i++)
-                    {
-                        if (statuses[i] == null)
-                        {
-                            statuses[i] = new List<X509ChainStatus>();
-                        }
-
-                        statuses[i].Add(policyFailStatus);
-                    }
-
-                    overallStatus.Add(policyFailStatus);
+                    AddStatusFromIndexToEndCertificate(statuses.Length - 1, policyFailStatus, statuses, overallStatus);
                 }
 
                 X509ChainElement[] elements = new X509ChainElement[certs.Length];
@@ -265,6 +263,28 @@ namespace Internal.Cryptography.Pal
 
                 ChainElements = elements;
                 ChainStatus = overallStatus.ToArray();
+            }
+
+            private static void AddStatusFromIndexToEndCertificate(
+                int index,
+                X509ChainStatus statusToSet,
+                List<X509ChainStatus>[] statuses,
+                List<X509ChainStatus> overallStatus)
+            {
+                if (!overallStatus.Exists(s => s.Status == statusToSet.Status))
+                {
+                    overallStatus.Add(statusToSet);
+                }
+
+                for (int i = index; i >= 0; i--)
+                {
+                    if (statuses[i] == null)
+                    {
+                        statuses[i] = new List<X509ChainStatus>();
+                    }
+
+                    statuses[i].Add(statusToSet);
+                }
             }
 
             private static Dictionary<int, List<X509ChainStatus>> GetStatusByIndex(SafeX509ChainContextHandle ctx)

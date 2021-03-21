@@ -112,6 +112,9 @@
   <data name="Chain_PartialChain" xml:space="preserve">
     <value>The certificate chain is incomplete.</value>
   </data>
+  <data name="Chain_RevocationStatusUnknown" xml:space="preserve">
+    <value>The certificate's revocation status could not be determined.</value>
+  </data>
   <data name="Chain_SettingNotSupported" xml:space="preserve">
     <value>The certificate chain setting '{0}' is not supported on this platform.</value>
   </data>

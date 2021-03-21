@@ -145,6 +145,7 @@ extern jclass    g_PKIXBuilderParametersClass;
 extern jmethodID g_PKIXBuilderParametersCtor;
 extern jmethodID g_PKIXBuilderParametersAddCertStore;
 extern jmethodID g_PKIXBuilderParametersAddCertPathChecker;
+extern jmethodID g_PKIXBuilderParametersSetCertPathCheckers;
 extern jmethodID g_PKIXBuilderParametersSetDate;
 extern jmethodID g_PKIXBuilderParametersSetRevocationEnabled;
 extern jmethodID g_PKIXBuilderParametersSetTrustAnchors;
