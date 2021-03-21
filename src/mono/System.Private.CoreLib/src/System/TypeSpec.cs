@@ -652,7 +652,7 @@ namespace System
             get { return new TypeSpecTypeName(this, true); }
         }
 
-        private class TypeSpecTypeName : TypeNames.ATypeName, ITypeName
+        private sealed class TypeSpecTypeName : TypeNames.ATypeName, ITypeName
         {
             private readonly TypeSpec ts;
             private readonly bool want_modifiers;

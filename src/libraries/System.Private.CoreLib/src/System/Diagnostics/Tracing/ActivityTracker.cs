@@ -300,7 +300,7 @@ namespace System.Diagnostics.Tracing
         /// the 'list of live parents' which indicate of those ancestors, which are alive (if they
         /// are not marked dead they are alive).
         /// </summary>
-        private class ActivityInfo
+        private sealed class ActivityInfo
         {
             public ActivityInfo(string name, long uniqueId, ActivityInfo? creator, Guid activityIDToRestore, EventActivityOptions options)
             {

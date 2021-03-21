@@ -643,7 +643,7 @@ namespace System.Reflection.Emit
             scout.m_methodHandle = method.m_methodHandle.Value;
         }
 
-        private class DestroyScout
+        private sealed class DestroyScout
         {
             internal RuntimeMethodHandleInternal m_methodHandle;
 

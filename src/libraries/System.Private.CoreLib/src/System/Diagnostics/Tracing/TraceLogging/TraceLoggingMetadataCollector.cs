@@ -313,7 +313,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private class Impl
+        private sealed class Impl
         {
             internal readonly List<FieldMetadata> fields = new List<FieldMetadata>();
             internal short scratchSize;

@@ -136,7 +136,7 @@ namespace System.Threading
             }
         }
 
-        private class WaitThreadNode
+        private sealed class WaitThreadNode
         {
             public WaitThread Thread { get; }
             public WaitThreadNode? Next { get; set; }
