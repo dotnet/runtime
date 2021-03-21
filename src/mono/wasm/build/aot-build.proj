@@ -9,12 +9,15 @@
     <WasmSrcPath>$(HELIX_CORRELATION_PAYLOAD)/build/microsoft.netcore.app.runtime.browser-wasm/</WasmSrcPath>
     <WasmNativeLibPath>$(TestRootDir)/publish/</WasmNativeLibPath>
     <IntermediateOutputPath>$(HELIX_WORKITEM_ROOT)\obj</IntermediateOutputPath>
-
+    <WasmAppBuilderTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)/build/WasmAppBuilder/WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+    <MonoAOTCompilerTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)/build/MonoAOTCompiler/MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(HELIX_CORRELATION_PAYLOAD)/build/microsoft.netcore.app.runtime.browser-wasm/runtimes/browser-wasm/</MicrosoftNetCoreAppRuntimePackRidDir>
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
     <SkipEmccVersionCheck>true</SkipEmccVersionCheck>
+    <MonoAotCrossCompilerPath>$(MicrosoftNETCoreAppRuntimePackRidDir)native/cross/browser-wasm/mono-aot-cross</MonoAotCrossCompilerPath>
   </PropertyGroup>
 
-  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(HELIX_CORRELATION_PAYLOAD)\MonoAOTCompiler" />
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
   <Import Project="$(HELIX_CORRELATION_PAYLOAD)\build\wasm\WasmApp.props" />
   <Import Project="$(HELIX_CORRELATION_PAYLOAD)\build\wasm\WasmApp.targets" />
