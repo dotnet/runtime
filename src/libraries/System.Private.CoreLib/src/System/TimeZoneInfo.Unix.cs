@@ -26,7 +26,8 @@ namespace System
         private const string GmtId = "GMT";
 
         // Some time zones may give better display names using their location names rather than their generic name.
-        private const string ZonesThatUseLocationName =
+        // We can update this list as need arises.
+        private const string ZonesThatUseLocationName = "\n" +
             "Europe/Minsk\n" +      // Prefer "Belarus Time" over "Moscow Standard Time (Minsk)"
             "Europe/Moscow\n" +     // Prefer "Moscow Time" over "Moscow Standard Time"
             "Europe/Simferopol\n" + // Prefer "Simferopol Time" over "Moscow Standard Time (Simferopol)"
@@ -200,7 +201,7 @@ namespace System
             }
 
             // Also use location names in some special cases.  (See the list at the top of this file.)
-            if (ZonesThatUseLocationName.Contains(timeZoneId, StringComparison.OrdinalIgnoreCase))
+            if (ZonesThatUseLocationName.Contains($"\n{timeZoneId}\n", StringComparison.OrdinalIgnoreCase))
             {
                 displayName = $"{baseOffsetText} {genericLocationName}";
                 return;
