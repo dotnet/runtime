@@ -147,7 +147,7 @@ namespace System.Threading
         /// <summary>
         /// A thread pool wait thread.
         /// </summary>
-        internal class WaitThread
+        internal sealed class WaitThread
         {
             /// <summary>
             /// The wait handles registered on this wait thread.

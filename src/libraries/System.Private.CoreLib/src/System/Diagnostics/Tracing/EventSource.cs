@@ -5127,7 +5127,7 @@ namespace System.Diagnostics.Tracing
     /// one EventListener (although EventDispatcher does not 'remember' the EventSource it is
     /// associated with.
     /// </summary>
-    internal class EventDispatcher
+    internal sealed class EventDispatcher
     {
         internal EventDispatcher(EventDispatcher? next, bool[]? eventEnabled, EventListener listener)
         {
@@ -5181,7 +5181,7 @@ namespace System.Diagnostics.Tracing
     /// ManifestBuilder is designed to isolate the details of the message of the event from the
     /// rest of EventSource.  This one happens to create XML.
     /// </summary>
-    internal class ManifestBuilder
+    internal sealed class ManifestBuilder
     {
         /// <summary>
         /// Build a manifest for 'providerName' with the given GUID, which will be packaged into 'dllName'.

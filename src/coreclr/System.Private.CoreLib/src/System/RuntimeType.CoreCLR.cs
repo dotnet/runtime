@@ -134,7 +134,7 @@ namespace System
             }
         }
 
-        internal class RuntimeTypeCache
+        internal sealed class RuntimeTypeCache
         {
             private const int MAXNAMELEN = 1024;
 

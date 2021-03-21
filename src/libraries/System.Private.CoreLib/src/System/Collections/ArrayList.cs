@@ -2686,7 +2686,7 @@ namespace System.Collections
             }
         }
 
-        internal class ArrayListDebugView
+        internal sealed class ArrayListDebugView
         {
             private readonly ArrayList _arrayList;
 

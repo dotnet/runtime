@@ -1519,7 +1519,7 @@ namespace System.Collections
         }
 
         // internal debug view class for hashtable
-        internal class HashtableDebugView
+        internal sealed class HashtableDebugView
         {
             private readonly Hashtable _hashtable;
 
