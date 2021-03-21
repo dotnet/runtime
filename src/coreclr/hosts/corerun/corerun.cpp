@@ -146,18 +146,6 @@ static bool try_get_export(pal::mod_t mod, const char* symbol, void** fptr)
     return false;
 }
 
-static const char* get_envvar_as_boolean(const char_t* var, bool def = false)
-{
-    string_t val = pal::getenv(var);
-    if (val.empty())
-        val = def ? W("1") : W("0");
-
-    // CoreCLR expects strings "true" and "false" instead of "1" and "0".
-    return (val.compare(W("1")) == 0 || val.compare(W("true")) == 0 || val.compare(W("TRUE")) == 0)
-        ? "true"
-        : "false";
-}
-
 class logger_t final
 {
     const char* _exePath;
