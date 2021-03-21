@@ -186,7 +186,9 @@ public:
         return PTR_CGCDescSeries(PTR_size_t(PTR_CGCDesc(this))-1)-1;
     }
 
-    // Returns number of immediate pointers this object has.
+    // Returns number of immediate pointers this object has. It should match the number of
+    // pointers enumerated by go_through_object_cl macro. The implementation shape has intentional
+    // similarity with the go_through_object family of macros.
     // size is only used if you have an array of value types.
 #ifndef DACCESS_COMPILE
     static size_t GetNumPointers (MethodTable* pMT, size_t ObjectSize, size_t NumComponents)
