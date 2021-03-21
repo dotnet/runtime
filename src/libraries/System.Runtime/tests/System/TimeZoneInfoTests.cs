@@ -2331,6 +2331,9 @@ namespace System.Tests
             }
         }
 
+        private const string IanaAbbreviationPattern = @"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$";
+        private static readonly Regex s_IanaAbbreviationRegex = new Regex(IanaAbbreviationPattern);
+
         [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
@@ -2339,12 +2342,16 @@ namespace System.Tests
             if (timeZone.Id == TimeZoneInfo.Utc.Id || timeZone.StandardName == TimeZoneInfo.Utc.StandardName)
             {
                 // UTC's display name is always the string "(UTC) " and the same text as the standard name.
-                Assert.Equal($"(UTC) {timeZone.StandardName}", timeZone.DisplayName);
+                Assert.True(timeZone.DisplayName == $"(UTC) {timeZone.StandardName}",
+                    $"Id: \"{timeZone.Id}\", Expected DisplayName: \"(UTC) {timeZone.StandardName}\", Actual DisplayName: \"{timeZone.DisplayName}\"");
 
                 // All aliases of UTC should have the same names as UTC itself
-                Assert.Equal(TimeZoneInfo.Utc.DisplayName, timeZone.DisplayName);
-                Assert.Equal(TimeZoneInfo.Utc.StandardName, timeZone.StandardName);
-                Assert.Equal(TimeZoneInfo.Utc.DaylightName, timeZone.DaylightName);
+                Assert.True(timeZone.DisplayName == TimeZoneInfo.Utc.DisplayName,
+                    $"Id: \"{timeZone.Id}\", Expected DisplayName: \"{TimeZoneInfo.Utc.DisplayName}\", Actual DisplayName: \"{timeZone.DisplayName}\"");
+                Assert.True(timeZone.StandardName == TimeZoneInfo.Utc.StandardName,
+                    $"Id: \"{timeZone.Id}\", Expected StandardName: \"{TimeZoneInfo.Utc.StandardName}\", Actual StandardName: \"{timeZone.StandardName}\"");
+                Assert.True(timeZone.DaylightName == TimeZoneInfo.Utc.DaylightName,
+                    $"Id: \"{timeZone.Id}\", Expected DaylightName: \"{TimeZoneInfo.Utc.DaylightName}\", Actual DaylightName: \"{timeZone.DaylightName}\"");
             }
             else if (PlatformDetection.IsBrowser)
             {
@@ -2352,18 +2359,21 @@ namespace System.Tests
 
                 // The display name will be the offset plus the ID.
                 // The offset is checked separately in TimeZoneInfo_DisplayNameStartsWithOffset
-                Assert.EndsWith(" " + timeZone.Id, timeZone.DisplayName);
+                Assert.True(timeZone.DisplayName.EndsWith(" " + timeZone.Id),
+                    $"Id: \"{timeZone.Id}\", DisplayName should have ended with the ID, Actual DisplayName: \"{timeZone.DisplayName}\"");
 
                 // Match any valid IANA time zone abbreviation, including numeric forms
-                Assert.Matches(@"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$", timeZone.StandardName);
-                Assert.Matches(@"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$", timeZone.DaylightName);
+                Assert.True(s_IanaAbbreviationRegex.IsMatch(timeZone.StandardName),
+                     $"Id: \"{timeZone.Id}\", StandardName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual StandardName: \"{timeZone.StandardName}\"");
+                Assert.True(s_IanaAbbreviationRegex.IsMatch(timeZone.DaylightName),
+                     $"Id: \"{timeZone.Id}\", DaylightName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual DaylightName: \"{timeZone.DaylightName}\"");
             }
             else
             {
                 // All we can really say generically here is that they aren't empty.
-                Assert.NotEmpty(timeZone.DisplayName);
-                Assert.NotEmpty(timeZone.StandardName);
-                Assert.NotEmpty(timeZone.DaylightName);
+                Assert.False(string.IsNullOrWhiteSpace(timeZone.DisplayName), $"Id: \"{timeZone.Id}\", DisplayName should not have been empty.");
+                Assert.False(string.IsNullOrWhiteSpace(timeZone.StandardName), $"Id: \"{timeZone.Id}\", StandardName should not have been empty.");
+                Assert.False(string.IsNullOrWhiteSpace(timeZone.DaylightName), $"Id: \"{timeZone.Id}\", DaylightName should not have been empty.");
             }
         }
 
