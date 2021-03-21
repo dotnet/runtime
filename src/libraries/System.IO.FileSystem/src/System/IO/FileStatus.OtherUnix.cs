@@ -8,6 +8,6 @@ namespace System.IO
     internal partial struct FileStatus
     {
         internal void SetCreationTime(string path, DateTimeOffset time) => SetCreationTime_StandardUnixImpl(path, time);
-        internal void SetLastWriteTime(string path, DateTimeOffset time) => SetLastWriteTime_StandardUnixImpl(path, time);
+        private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime) => SetAccessOrWriteTime_StandardUnixImpl(path, time, isAccessTime);
     }
 }

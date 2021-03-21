@@ -197,7 +197,7 @@ namespace System.IO
             // Updating the mtime, causes the ctime to be set to 'now'. So, on platforms that don't store a
             // CreationTime, GetCreationTime will return the value that was previously set (when that value
             // wasn't in the future).
-            SetLastWriteTime(path, time);
+            SetAccessOrWriteTime_StandardUnixImpl(path, time, isAccessTime: false);
         }
 
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -218,21 +218,26 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileStatus.MTime, _fileStatus.MTimeNsec);
         }
 
-        private void SetLastWriteTime_StandardUnixImpl(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: false);
+        internal void SetLastWriteTime(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: false);
 
         private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
         {
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick).ToLocalTime();
         }
 
-        private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
+        private unsafe void SetAccessOrWriteTime_StandardUnixImpl(string path, DateTimeOffset time, bool isAccessTime)
         {
             // Used for access time or as a fallback on OSX, used always on other Unix platforms.
 
             // force a refresh so that we have an up-to-date times for values not being overwritten
-            _fileStatusInitialized = -1;
+            Invalidate();
             EnsureStatInitialized(path);
+            SetAccessOrWriteTimeImpl(path, time, isAccessTime);
+            Invalidate();
+        }
 
+        private unsafe void SetAccessOrWriteTimeImpl(string path, DateTimeOffset time, bool isAccessTime)
+        {
             // we use utimes()/utimensat() to set the accessTime and writeTime
             Interop.Sys.TimeSpec* buf = stackalloc Interop.Sys.TimeSpec[2];
 
@@ -264,7 +269,6 @@ namespace System.IO
             }
 #endif
             Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
-            _fileStatusInitialized = -1;
         }
 
         internal long GetLength(ReadOnlySpan<char> path, bool continueOnError = false)

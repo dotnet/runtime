@@ -7,16 +7,7 @@ namespace System.IO
 {
     internal partial struct FileStatus
     {
-        internal void SetCreationTime(string path, DateTimeOffset time) => SetTimeOnFile(path, time, Interop.libc.AttrList.ATTR_CMN_CRTIME);
-
-        internal void SetLastWriteTime(string path, DateTimeOffset time)
-        {
-            var creationTime = GetCreationTime(path);
-            SetTimeOnFile(path, time, Interop.libc.AttrList.ATTR_CMN_MODTIME);
-            if (time < creationTime) SetCreationTime(path, creationTime);
-        }
-
-        private unsafe void SetTimeOnFile(string path, DateTimeOffset time, uint commonAttr)
+        internal unsafe void SetCreationTime(string path, DateTimeOffset time)
         {
             Interop.Sys.TimeSpec timeSpec = default;
 
@@ -32,7 +23,7 @@ namespace System.IO
             Interop.libc.AttrList attrList = default;
             attrList.bitmapCount = Interop.libc.AttrList.ATTR_BIT_MAP_COUNT;
             attrList.reserved = 0;
-            attrList.commonAttr = commonAttr;
+            attrList.commonAttr = Interop.libc.AttrList.ATTR_CMN_CRTIME;
             attrList.dirAttr = 0;
             attrList.fileAttr = 0;
             attrList.forkAttr = 0;
@@ -45,14 +36,30 @@ namespace System.IO
             bool succeeded = Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), Interop.libc.FSOPT_NOFOLLOW) == 0;
             if (!succeeded)
             {
-                if (commonAttr == Interop.libc.AttrList.ATTR_CMN_CRTIME)
-                {
-                    SetCreationTime_StandardUnixImpl(path, time);
-                }
-                else if (commonAttr == Interop.libc.AttrList.ATTR_CMN_MODTIME)
-                {
-                    SetLastWriteTime_StandardUnixImpl(path, time);
-                }
+                SetCreationTime_StandardUnixImpl(path, time);
+            }
+            else
+            {
+                Invalidate();
+            }
+        }
+
+        private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
+        {
+            // Force an update so GetCreationTime is up-to-date.
+            Invalidate();
+            EnsureStatInitialized(path);
+
+            // Get the creation time here in case the modification time is less than it.
+            var creationTime = GetCreationTime(path);
+
+            SetAccessOrWriteTimeImpl(path, time, isAccessTime);
+
+            if ((isAccessTime ? GetLastWriteTime(path) : time) < creationTime)
+            {
+                // In this case, the creation time is moved back to the modification time on OSX.
+                // So this code makes sure that the creation time is not changed when it shouldn't be.
+                SetCreationTime(path, creationTime);
             }
             else
             {
