@@ -111,12 +111,13 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void SettingUpdatesPropertiesOnSymlink()
         {
-            // This test is currently consistent with the Windows behavior of setting the
-            // times on the symlink itself. It is needed as on OSX for example, the default
-            // for most APIs is to follow the symlink to completion and set the time on
-            // that entry instead (eg. the setattrlist will do this without the flag set).
+            // This test makes sure that the times are set on the symlink itself.
+            // It is needed as on OSX for example, the default for most APIs is
+            // to follow the symlink to completion and set the time on that entry
+            // instead (eg. the setattrlist will do this without the flag set).
             T item = CreateSymlinkToItem(GetExistingItem());
 
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>

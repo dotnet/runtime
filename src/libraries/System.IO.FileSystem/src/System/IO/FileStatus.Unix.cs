@@ -227,7 +227,7 @@ namespace System.IO
 
         private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
         {
-            // Only used as a fallback on OSX, used always on other Unix platforms.
+            // Used for access time or as a fallback on OSX, used always on other Unix platforms.
 
             // force a refresh so that we have an up-to-date times for values not being overwritten
             _fileStatusInitialized = -1;
