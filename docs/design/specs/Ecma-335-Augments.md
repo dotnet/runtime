@@ -581,9 +581,10 @@ III.2.1, constrained. - (prefix) invoke an instance or static method or load met
 
 (Change the "Stack transition" section below the initial assembly format table to a table as follows:)
 
-| Prefix and instruction pair | Stack Transition
-| constrained. *thisType* callvirt *method* | ..., ptr, arg1, ... argN -> ..., ptr, arg1, ... argN
-| constrained. *implementorType* call *method* | ..., arg1, ... argN -> ..., arg1, ... argN
+| Prefix and instruction pair                   | Stack Transition
+|:----------------------------------------------|:----------------
+| constrained. *thisType* callvirt *method*     | ..., ptr, arg1, ... argN -> ..., ptr, arg1, ... argN
+| constrained. *implementorType* call *method*  | ..., arg1, ... argN -> ..., arg1, ... argN
 | constrained. *implementorType* ldftn *method* | ..., ftn -> ..., ftn
 
 (Replace the first "Description" paragraph below the "Stack Transition" section as follows:)
