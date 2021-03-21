@@ -8143,7 +8143,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_STR_HDL))
                 {
                     tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_StrCns, addrNvnp);
-                    assert(addrXvnp == vnStore->VNForEmptyExcSet());
+                    assert(addrXvnp.BothEqual() && (addrXvnp.GetLiberal() == ValueNumStore::VNForEmptyExcSet()));
                 }
                 else
                 {
