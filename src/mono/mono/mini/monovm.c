@@ -230,32 +230,6 @@ monovm_initialize (int propertyCount, const char **propertyKeys, const char **pr
 int
 monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void *user_data)
 {
-	switch (arg->kind) {
-	case 0: {
-		MonoFileMap *map;
-		void *ret_handle;
-		char *buffer;
-
-		map = mono_file_map_open (arg->runtimeconfig.name.path);
-		g_assert (map);
-		arg->runtimeconfig.data.data_len = (uint32_t)mono_file_map_size (map);
-		g_assert (arg->runtimeconfig.data.data_len > 0);
-		buffer = (char*)mono_file_map (arg->runtimeconfig.data.data_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (map), 0, &ret_handle);
-		g_assert (buffer);
-
-		arg->runtimeconfig.data.data = g_new0 (char, arg->runtimeconfig.data.data_len);
-		memcpy (arg->runtimeconfig.data.data, buffer, sizeof(char) * arg->runtimeconfig.data.data_len);
-
-		mono_file_unmap (map, ret_handle);
-		mono_file_map_close (map);
-		break;
-	}
-	case 1: 
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-
 	mono_runtime_register_runtimeconfig_json_properties (arg, cleanup_fn, user_data);
 	return 0;
 }
