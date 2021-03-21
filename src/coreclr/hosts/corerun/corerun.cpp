@@ -57,15 +57,6 @@ namespace envvar
 
     // Variable used to preload a mock hostpolicy for testing.
     const char_t* mockHostPolicy = W("MOCK_HOSTPOLICY");
-
-    // Name of the environment variable controlling server GC.
-    // If set to 1, server GC is enabled on startup. If 0, server GC is
-    // disabled. Server GC is off by default.
-    const char_t* serverGc = W("COMPlus_gcServer");
-
-    // Environment variable for setting whether or not to use Concurrent GC.
-    // On by default.
-    const char_t* concurrentGc = W("COMPlus_gcConcurrent");
 }
 
 static void wait_for_debugger()
@@ -190,7 +181,7 @@ public:
     , _argv{ argv }
     { }
 
-    void dump_details(FILE* fd = stderr)
+    void dump_details(FILE* fd = stdout)
     {
         // Using std::fprintf since values have been converted to UTF-8.
         std::fprintf(fd, "Exe path: %s\n", _exePath);
@@ -308,8 +299,6 @@ static int run(const configuration& config)
     pal::string_utf8_t app_path_utf8 = pal::convert_to_utf8(std::move(app_path));
     pal::string_utf8_t app_path_ni_utf8 = pal::convert_to_utf8(std::move(app_path_ni));
     pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str());
-    const char* enable_server_gc = get_envvar_as_boolean(envvar::serverGc);
-    const char* enable_concurrent_gc = get_envvar_as_boolean(envvar::concurrentGc, true /* default */);
 
     // Allowed property names:
     //
@@ -330,8 +319,6 @@ static int run(const configuration& config)
         "APP_PATHS",
         "APP_NI_PATHS",
         "NATIVE_DLL_SEARCH_DIRECTORIES",
-        "System.GC.Server",
-        "System.GC.Concurrent",
     };
 
     const char* propertyValues[] =
@@ -344,10 +331,6 @@ static int run(const configuration& config)
         app_path_ni_utf8.c_str(),
         // NATIVE_DLL_SEARCH_DIRECTORIES
         native_search_dirs_utf8.c_str(),
-        // System.GC.Server
-        enable_server_gc,
-        // System.GC.Concurrent
-        enable_concurrent_gc,
     };
 
     int propertyCount = (int)(sizeof(propertyKeys) / sizeof(propertyKeys[0]));
