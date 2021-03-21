@@ -102,6 +102,22 @@ namespace System.Tests
             emptyDelegate.DynamicInvoke(null);
         }
 
+        private class SomeCustomConstantAttribute : CustomConstantAttribute
+        {
+            public static object Do(object o) => o;
+          
+            public override object Value => "SomeValue";
+        }
+
+        private delegate object ObjectDelegateWithSomeCustomConstantAttribute([SomeCustomConstant] object o);
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/49806")]
+        public static void DynamicInvoke_MissingTypeForCustomConstantAttribute_Succeeds()
+        {
+            Assert.Equal("SomeValue", (string)(new ObjectDelegateWithSomeCustomConstantAttribute(SomeCustomConstantAttribute.Do).DynamicInvoke(Type.Missing)));
+        }
+
         [Fact]
         public static void DynamicInvoke_MissingTypeForDefaultParameter_Succeeds()
         {
