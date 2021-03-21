@@ -25,6 +25,19 @@ namespace System
         private const string FallbackCultureName = "en-US";
         private const string GmtId = "GMT";
 
+        // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
+        // Hard-coded because we need to treat all aliases of UTC the same even when ICU is not available,
+        // or when we get "GMT" returned from older ICU versions.  (This list is not likely to change.)
+        private const string UtcAliases = "\n" +
+            "Etc/UTC\n" +
+            "Etc/UCT\n" +
+            "Etc/Universal\n" +
+            "Etc/Zulu\n" +
+            "UCT\n" +
+            "UTC\n" +
+            "Universal\n" +
+            "Zulu\n";
+
         // Some time zones may give better display names using their location names rather than their generic name.
         // We can update this list as need arises.
         private const string ZonesThatUseLocationName = "\n" +
@@ -36,6 +49,19 @@ namespace System
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
+            _id = id;
+
+            // Handle UTC and its aliases
+            if (UtcAliases.Contains($"\n{_id}\n", StringComparison.OrdinalIgnoreCase))
+            {
+                _standardDisplayName = GetUtcStandardDisplayName();
+                _daylightDisplayName = _standardDisplayName;
+                _displayName = $"(UTC) {_standardDisplayName}";
+                _baseUtcOffset = TimeSpan.Zero;
+                _adjustmentRules = Array.Empty<AdjustmentRule>();
+                return;
+            }
+
             TZifHead t;
             DateTime[] dts;
             byte[] typeOfLocalTime;
@@ -49,9 +75,6 @@ namespace System
 
             // parse the raw TZif bytes; this method can throw ArgumentException when the data is malformed.
             TZif_ParseRaw(data, out t, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out StandardTime, out GmtTime, out futureTransitionsPosixFormat);
-
-            _id = id;
-            _baseUtcOffset = TimeSpan.Zero;
 
             // find the best matching baseUtcOffset and display strings based on the current utcNow value.
             // NOTE: read the Standard and Daylight display strings from the tzfile now in case they can't be loaded later
@@ -127,16 +150,8 @@ namespace System
             // The algorithm used below should avoid duplicating the same words while still achieving the
             // goal of providing a unique, discoverable, and intuitive name.
 
-            string? utcStandardName = GetUtcStandardDisplayName();
-            if (standardName == utcStandardName)
-            {
-                // This gives the display name for UTC and all of its aliases (Etc/UTC, Universal, etc.)
-                displayName = $"(UTC) {utcStandardName}";
-                return;
-            }
-
             // Get the base offset to prefix in front of the time zone.
-            // Only UTC and its aliases have "(UTC)" per above.  All other zones include an offset, even if it's zero.
+            // Only UTC and its aliases have "(UTC)", handled earlier.  All other zones include an offset, even if it's zero.
             string baseOffsetText = $"(UTC{(baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{baseUtcOffset:hh\\:mm})";
 
             // Try to get the generic name for this time zone.
