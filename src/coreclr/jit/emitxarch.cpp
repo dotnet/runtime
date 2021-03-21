@@ -2709,7 +2709,7 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 
     while (insAlignCount)
     {
-        emitLoopAlign();
+        emitLoopAlign(MAX_ENCODED_SIZE);
         insAlignCount--;
     }
     emitLoopAlign(lastInsAlignSize);

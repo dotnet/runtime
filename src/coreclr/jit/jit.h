@@ -755,6 +755,8 @@ private:
 
 #ifdef TARGET_XARCH
 #define FEATURE_LOOP_ALIGN 1
+#else
+#define FEATURE_LOOP_ALIGN 0
 #endif
 
 #define CLFLG_MAXOPT                                                                                                   \
