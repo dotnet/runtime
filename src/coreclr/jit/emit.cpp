@@ -5755,6 +5755,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                        emitOffsAdj, newOffsAdj);
             }
         }
+        // Make it noisy in DEBUG if these don't match. In release, the noway_assert below checks the
+        // fatal condition.
+        assert(emitOffsAdj == newOffsAdj);
 #endif // DEBUG_EMIT
 
         // We can't have over-estimated the adjustment, or we might have underestimated a jump distance.
