@@ -584,12 +584,19 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             foreach (KeyValuePair<string, string> sourceLinkDocument in sourceLinkMappings)
             {
-                var keyTrim = sourceLinkDocument.Key.TrimEnd('*');
+                string key = sourceLinkDocument.Key;
+
+                if (Path.GetFileName(key) != "*")
+                {
+                    continue;
+                }
+
+                string keyTrim = key.TrimEnd('*');
+
                 if (document.StartsWith(keyTrim, StringComparison.OrdinalIgnoreCase))
                 {
-                    string urlToReplace = sourceLinkDocument.Value.TrimEnd('*');
-                    string docUrlPart = document.Replace(keyTrim, urlToReplace);
-                    return new Uri(docUrlPart);
+                    string docUrlPart = document.Replace(keyTrim, "");
+                    return new Uri(sourceLinkDocument.Value.TrimEnd('*') + docUrlPart);
                 }
             }
 
