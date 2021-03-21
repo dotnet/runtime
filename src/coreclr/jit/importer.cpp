@@ -19775,7 +19775,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                         return;
                     }
                 }
-                else if (genTypeSize(sigType) < EA_PTRSIZE)
+                else if (genTypeSize(sigType) < TARGET_POINTER_SIZE)
                 {
                     // Narrowing cast.
                     if (inlArgNode->OperIs(GT_LCL_VAR))

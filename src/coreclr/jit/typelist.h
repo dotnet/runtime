@@ -3,7 +3,7 @@
 
 #define GCS EA_GCREF
 #define BRS EA_BYREF
-#define PS EA_PTRSIZE
+#define PS TARGET_POINTER_SIZE
 #define PST (TARGET_POINTER_SIZE / sizeof(int))
 
 #ifdef TARGET_64BIT
