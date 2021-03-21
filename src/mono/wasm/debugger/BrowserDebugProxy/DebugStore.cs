@@ -586,7 +586,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 string key = sourceLinkDocument.Key;
 
-                if (Path.GetFileName(key) != "*")
+                if (!key.EndsWith("*"))
                 {
                     continue;
                 }
