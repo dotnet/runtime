@@ -3331,7 +3331,7 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
 
 //----------------------------------------------------------------------------------------
 //  EvalUsingMathIdentity
-//                   - Attempts to evaluate 'func' by using mathimatical identities
+//                   - Attempts to evaluate 'func' by using mathematical identities
 //                     that can be applied to 'func'.
 //
 // Arguments:
