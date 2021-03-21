@@ -246,6 +246,11 @@ public:
         return unsigned(vnf) > VNF_Boundary || GenTreeOpIsLegalVNFunc(static_cast<genTreeOps>(vnf));
     }
 
+    // Returns "true" iff "vnf" is one of:
+    // VNF_ADD_OVF, VNF_SUB_OVF, VNF_MUL_OVF,
+    // VNF_ADD_UN_OVF, VNF_SUB_UN_OVF, VNF_MUL_UN_OVF.
+    static bool VNFuncIsOverflowArithmetic(VNFunc vnf);
+
     // Returns the arity of "vnf".
     static unsigned VNFuncArity(VNFunc vnf);
 

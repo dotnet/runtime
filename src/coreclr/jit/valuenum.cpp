@@ -363,6 +363,17 @@ VNFunc GetVNFuncForNode(GenTree* node)
     return VNFunc(node->OperGet());
 }
 
+bool ValueNumStore::VNFuncIsOverflowArithmetic(VNFunc vnf)
+{
+    static_assert_no_msg(VNF_ADD_OVF + 1 == VNF_SUB_OVF);
+    static_assert_no_msg(VNF_SUB_OVF + 1 == VNF_MUL_OVF);
+    static_assert_no_msg(VNF_MUL_OVF + 1 == VNF_ADD_UN_OVF);
+    static_assert_no_msg(VNF_ADD_UN_OVF + 1 == VNF_SUB_UN_OVF);
+    static_assert_no_msg(VNF_SUB_UN_OVF + 1 == VNF_MUL_UN_OVF);
+
+    return VNF_ADD_OVF <= vnf && vnf <= VNF_MUL_UN_OVF;
+}
+
 unsigned ValueNumStore::VNFuncArity(VNFunc vnf)
 {
     // Read the bit field out of the table...
@@ -734,6 +745,55 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
 
             default:
                 // For any other value of 'oper', we will assert below
+                break;
+        }
+    }
+    else // must be a VNF_ function
+    {
+        switch (vnf)
+        {
+            // Here we handle those that are the same for all integer types.
+            case VNF_ADD_OVF:
+            case VNF_ADD_UN_OVF:
+                if (sizeof(T) == 8)
+                {
+                    assert(!CheckedOps::LongAddOverflows(v0, v1, vnf == VNF_ADD_UN_OVF));
+                }
+                else
+                {
+                    assert(!CheckedOps::IntAddOverflows(INT32(v0), INT32(v1), vnf == VNF_ADD_UN_OVF));
+                }
+
+                return v0 + v1;
+
+            case VNF_SUB_OVF:
+            case VNF_SUB_UN_OVF:
+                if (sizeof(T) == 8)
+                {
+                    assert(!CheckedOps::LongSubOverflows(v0, v1, vnf == VNF_SUB_UN_OVF));
+                }
+                else
+                {
+                    assert(!CheckedOps::IntSubOverflows(INT32(v0), INT32(v1), vnf == VNF_SUB_UN_OVF));
+                }
+
+                return v0 - v1;
+
+            case VNF_MUL_OVF:
+            case VNF_MUL_UN_OVF:
+                if (sizeof(T) == 8)
+                {
+                    assert(!CheckedOps::LongMulOverflows(v0, v1, vnf == VNF_MUL_UN_OVF));
+                }
+                else
+                {
+                    assert(!CheckedOps::IntMulOverflows(INT32(v0), INT32(v1), vnf == VNF_MUL_UN_OVF));
+                }
+
+                return v0 * v1;
+
+            default:
+                // For any other value of 'vnf', we will assert below
                 break;
         }
     }
@@ -3206,18 +3266,63 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
             return dividend != badDividend;
         }
     }
-    else
+
+    // Is this a checked operation that will always throw an exception?
+    if (VNFuncIsOverflowArithmetic(func))
     {
-        switch (func)
+        if (typ == TYP_INT)
         {
-            // Is this a checked operation that will always throw an exception?
-            case VNF_ADD_OVF:
-            case VNF_SUB_OVF:
-            case VNF_MUL_OVF:
-            case VNF_ADD_UN_OVF:
-            case VNF_SUB_UN_OVF:
-            case VNF_MUL_UN_OVF:
-                return false;
+            int op1 = ConstantValue<int>(arg0VN);
+            int op2 = ConstantValue<int>(arg1VN);
+
+            switch (func)
+            {
+                case VNF_ADD_OVF:
+                    return !CheckedOps::IntAddOverflows(op1, op2, CheckedOps::Signed);
+                case VNF_SUB_OVF:
+                    return !CheckedOps::IntSubOverflows(op1, op2, CheckedOps::Signed);
+                case VNF_MUL_OVF:
+                    return !CheckedOps::IntMulOverflows(op1, op2, CheckedOps::Signed);
+                case VNF_ADD_UN_OVF:
+                    return !CheckedOps::IntAddOverflows(op1, op2, CheckedOps::Unsigned);
+                case VNF_SUB_UN_OVF:
+                    return !CheckedOps::IntSubOverflows(op1, op2, CheckedOps::Unsigned);
+                case VNF_MUL_UN_OVF:
+                    return !CheckedOps::IntMulOverflows(op1, op2, CheckedOps::Unsigned);
+                default:
+                    assert(!"Unexpected checked operation in VNEvalShouldFold");
+                    return false;
+            }
+        }
+        else if (typ == TYP_LONG)
+        {
+            INT64 op1 = ConstantValue<INT64>(arg0VN);
+            INT64 op2 = ConstantValue<INT64>(arg1VN);
+
+            switch (func)
+            {
+                case VNF_ADD_OVF:
+                    return !CheckedOps::LongAddOverflows(op1, op2, CheckedOps::Signed);
+                case VNF_SUB_OVF:
+                    return !CheckedOps::LongSubOverflows(op1, op2, CheckedOps::Signed);
+                case VNF_MUL_OVF:
+                    return !CheckedOps::LongMulOverflows(op1, op2, CheckedOps::Signed);
+                case VNF_ADD_UN_OVF:
+                    return !CheckedOps::LongAddOverflows(op1, op2, CheckedOps::Unsigned);
+                case VNF_SUB_UN_OVF:
+                    return !CheckedOps::LongSubOverflows(op1, op2, CheckedOps::Unsigned);
+                case VNF_MUL_UN_OVF:
+                    return !CheckedOps::LongMulOverflows(op1, op2, CheckedOps::Unsigned);
+                default:
+                    assert(!"Unexpected checked operation in VNEvalShouldFold");
+                    return false;
+            }
+        }
+        else
+        {
+            // TODO-Review: what about TYP_BYREF?
+            assert(!"Unexpected type in VNEvalShouldFold for overflow arithmetic");
+            return false;
         }
     }
 
@@ -7498,9 +7603,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             // Now that we've labeled the assignment as a whole, we don't care about exceptions.
             rhsVNPair = vnStore->VNPNormalPair(rhsVNPair);
 
-            // Record the exeception set for this 'tree' in vnExcSet.
-            // First we'll record the exeception set for the rhs and
-            // later we will union in the exeception set for the lhs
+            // Record the exception set for this 'tree' in vnExcSet.
+            // First we'll record the exception set for the rhs and
+            // later we will union in the exception set for the lhs.
             //
             ValueNum vnExcSet;
 
@@ -10110,7 +10215,7 @@ void Compiler::fgValueNumberAddExceptionSetForDivision(GenTree* tree)
 //
 // Return Value:
 //               - The tree's gtVNPair is updated to include the VNF_OverflowExc
-//                 exception set.
+//                 exception set, except for constant VNs and those produced from identities.
 //
 void Compiler::fgValueNumberAddExceptionSetForOverflow(GenTree* tree)
 {
@@ -10118,31 +10223,53 @@ void Compiler::fgValueNumberAddExceptionSetForOverflow(GenTree* tree)
 
     // We should only be dealing with an Overflow checking ALU operation.
     VNFunc vnf = GetVNFuncForNode(tree);
-    assert((vnf >= VNF_ADD_OVF) && (vnf <= VNF_MUL_UN_OVF));
+    assert(ValueNumStore::VNFuncIsOverflowArithmetic(vnf));
 
-    // Unpack, Norm,Exc for the tree's VN
-    //
-    ValueNumPair vnpTreeNorm;
-    ValueNumPair vnpTreeExc;
+    ValueNumKind vnKinds[2] = {VNK_Liberal, VNK_Conservative};
+    for (ValueNumKind vnKind : vnKinds)
+    {
+        ValueNum vn = tree->GetVN(vnKind);
 
-    vnStore->VNPUnpackExc(tree->gtVNPair, &vnpTreeNorm, &vnpTreeExc);
+        // Unpack Norm, Exc for the current VN.
+        ValueNum vnNorm;
+        ValueNum vnExcSet;
+        vnStore->VNUnpackExc(vn, &vnNorm, &vnExcSet);
+
+        // Don't add exceptions if the normal VN represents a constant.
+        // We only fold to constant VNs for operations that provably cannot overflow.
+        if (vnStore->IsVNConstant(vnNorm))
+        {
+            continue;
+        }
+
+        // Don't add exceptions if the tree's normal VN has been derived from an identity.
+        // This takes care of x + 0 == x, 0 + x == x, x - 0 == x, x * 1 == x, 1 * x == x.
+        // The x - x == 0 and x * 0 == 0, 0 * x == 0 cases are handled by the "IsVNConstant" check above.
+        if ((vnNorm == vnStore->VNNormalValue(tree->gtGetOp1()->GetVN(vnKind))) ||
+            (vnNorm == vnStore->VNNormalValue(tree->gtGetOp2()->GetVN(vnKind))))
+        {
+            // TODO-Review: would it be acceptable to make ValueNumStore::EvalUsingMathIdentity
+            // public just to assert here?
+            continue;
+        }
 
 #ifdef DEBUG
-    // The normal value number function should be the same overflow checking ALU operation as 'vnf'
-    VNFuncApp treeNormFuncApp;
-    assert(vnStore->GetVNFunc(vnpTreeNorm.GetLiberal(), &treeNormFuncApp) && (treeNormFuncApp.m_func == vnf));
+        // The normal value number function should now be the same overflow checking ALU operation as 'vnf'.
+        VNFuncApp normFuncApp;
+        assert(vnStore->GetVNFunc(vnNorm, &normFuncApp) && (normFuncApp.m_func == vnf));
 #endif // DEBUG
 
-    // Overflow-checking operations add an overflow exception
-    // The normal result is used as the input argument for the OverflowExc
-    ValueNumPair overflowExcSet =
-        vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_OverflowExc, vnpTreeNorm));
+        // Overflow-checking operations add an overflow exception.
+        // The normal result is used as the input argument for the OverflowExc.
+        ValueNum vnOverflowExc = vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_OverflowExc, vnNorm));
 
-    // Combine the new Overflow exception with the original exception set of tree
-    ValueNumPair newExcSet = vnStore->VNPExcSetUnion(vnpTreeExc, overflowExcSet);
+        // Combine the new Overflow exception with the original exception set.
+        vnExcSet = vnStore->VNExcSetUnion(vnExcSet, vnOverflowExc);
 
-    // Updated VN for tree, it now includes Overflow exception
-    tree->gtVNPair = vnStore->VNPWithExc(vnpTreeNorm, newExcSet);
+        // Update the VN to include the Overflow exception.
+        ValueNum newVN = vnStore->VNWithExc(vnNorm, vnExcSet);
+        tree->SetVN(vnKind, newVN);
+    }
 }
 
 //--------------------------------------------------------------------------------

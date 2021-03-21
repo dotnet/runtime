@@ -152,8 +152,6 @@ ValueNumFuncDef(LE_UN, 2, false, false, false)
 ValueNumFuncDef(GE_UN, 2, false, false, false)
 ValueNumFuncDef(GT_UN, 2, false, false, false)
 
-// currently we don't constant fold the next six
-
 ValueNumFuncDef(ADD_OVF, 2, true, false, false)     // overflow checking operations
 ValueNumFuncDef(SUB_OVF, 2, false, false, false)
 ValueNumFuncDef(MUL_OVF, 2, true, false, false)
