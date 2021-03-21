@@ -788,4 +788,12 @@ int local_BIO_up_ref(BIO *bio)
 
     return CRYPTO_add_lock(&bio->references, 1, CRYPTO_LOCK_BIO, __FILE__, __LINE__) > 1;
 }
+
+int32_t local_RSA_pkey_ctx_ctrl(EVP_PKEY_CTX* ctx, int32_t optype, int32_t cmd, int32_t p1, void* p2)
+{
+    // On OpenSSL 1.0.2 there aren't two different identifiers for RSA,
+    // so just pass the request on th EVP_PKEY_CTX_ctrl with the only identifier defined.
+    return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA, optype, cmd, p1, p2);
+}
+
 #endif
