@@ -1253,8 +1253,6 @@ mono_runtime_register_appctx_properties (int nprops, const char **keys,  const c
 	appctx_values = g_new0 (char *, n_appctx_props);
 
 	for (int i = 0; i < nprops; ++i) {
-		appctx_keys [i] = g_new0 (char, strlen (keys [i]) + 1);
-		appctx_values [i] = g_new0 (char, strlen (values [i]) + 1);
 		appctx_keys [i] = g_strdup (keys [i]);
 		appctx_values [i] = g_strdup (values [i]);
 	}
