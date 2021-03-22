@@ -95,12 +95,12 @@ namespace Internal.Cryptography.Pal
                 X509Certificate2Collection customTrustStore,
                 X509ChainTrustMode trustMode)
             {
-                List<IntPtr> extraCerts = new List<IntPtr>() { cert.Handle };
+                List<SafeHandle> extraCertHandles = new List<SafeHandle>() { ((AndroidCertificatePal)cert).SafeHandle };
                 if (extraStore != null)
                 {
                     foreach (X509Certificate2 extraCert in extraStore)
                     {
-                        extraCerts.Add(extraCert.Pal.Handle);
+                        extraCertHandles.Add(((AndroidCertificatePal)extraCert.Pal).SafeHandle);
                     }
                 }
 
@@ -108,45 +108,78 @@ namespace Internal.Cryptography.Pal
                     trustMode == X509ChainTrustMode.System || trustMode == X509ChainTrustMode.CustomRootTrust,
                     "Unsupported trust mode. Only System and CustomRootTrust are currently handled");
 
-                List<IntPtr> customTrustCerts = new List<IntPtr>();
+                List<SafeHandle> customTrustCertHandles = new List<SafeHandle>();
                 bool useCustomRootTrust = trustMode == X509ChainTrustMode.CustomRootTrust;
                 if (useCustomRootTrust && customTrustStore != null)
                 {
                     foreach (X509Certificate2 custom in customTrustStore)
                     {
-                        IntPtr certHandle = custom.Pal.Handle;
+                        SafeHandle certHandle = ((AndroidCertificatePal)custom.Pal).SafeHandle;
                         if (custom.SubjectName.RawData.ContentsEqual(custom.IssuerName.RawData))
                         {
                             // Add self-issued certs to custom root trust cert
-                            customTrustCerts.Add(certHandle);
+                            customTrustCertHandles.Add(certHandle);
                         }
                         else
                         {
                             // Add non-self-issued certs to extra certs
-                            extraCerts.Add(certHandle);
+                            extraCertHandles.Add(certHandle);
                         }
                     }
                 }
 
-                IntPtr[] extraArray = extraCerts.ToArray();
-                _chainContext = Interop.AndroidCrypto.X509ChainCreateContext(
-                    ((AndroidCertificatePal)cert).SafeHandle,
-                    extraArray,
-                    extraArray.Length);
-
-                if (useCustomRootTrust)
+                int extraIdx = 0;
+                int customIdx = 0;
+                try
                 {
-                    // Android does not support an empty set of trust anchors
-                    if (customTrustCerts.Count == 0)
+                    IntPtr[] extraCerts = new IntPtr[extraCertHandles.Count];
+                    for (extraIdx = 0; extraIdx < extraCertHandles.Count; extraIdx++)
                     {
-                        throw new PlatformNotSupportedException(SR.Chain_EmptyCustomTrustNotSupported);
+                        SafeHandle handle = extraCertHandles[extraIdx];
+                        bool addedRef = false;
+                        handle.DangerousAddRef(ref addedRef);
+                        extraCerts[extraIdx] = handle.DangerousGetHandle();
                     }
 
-                    IntPtr[] customTrustArray = customTrustCerts.ToArray();
-                    int res = Interop.AndroidCrypto.X509ChainSetCustomTrustStore(_chainContext, customTrustArray, customTrustArray.Length);
-                    if (res != 1)
+                    _chainContext = Interop.AndroidCrypto.X509ChainCreateContext(
+                        ((AndroidCertificatePal)cert).SafeHandle,
+                        extraCerts,
+                        extraCerts.Length);
+
+                    if (useCustomRootTrust)
                     {
-                        throw new CryptographicException();
+                        // Android does not support an empty set of trust anchors
+                        if (customTrustCertHandles.Count == 0)
+                        {
+                            throw new PlatformNotSupportedException(SR.Chain_EmptyCustomTrustNotSupported);
+                        }
+
+                        IntPtr[] customTrustCerts = new IntPtr[customTrustCertHandles.Count];
+                        for (customIdx = 0; customIdx < customTrustCertHandles.Count; customIdx++)
+                        {
+                            SafeHandle handle = customTrustCertHandles[customIdx];
+                            bool addedRef = false;
+                            handle.DangerousAddRef(ref addedRef);
+                            customTrustCerts[customIdx] = handle.DangerousGetHandle();
+                        }
+
+                        int res = Interop.AndroidCrypto.X509ChainSetCustomTrustStore(_chainContext, customTrustCerts, customTrustCerts.Length);
+                        if (res != 1)
+                        {
+                            throw new CryptographicException();
+                        }
+                    }
+                }
+                finally
+                {
+                    for (extraIdx -= 1; extraIdx >= 0; extraIdx--)
+                    {
+                        extraCertHandles[extraIdx].DangerousRelease();
+                    }
+
+                    for (customIdx -= 1; customIdx >= 0; customIdx--)
+                    {
+                        customTrustCertHandles[customIdx].DangerousRelease();
                     }
                 }
             }
@@ -206,7 +239,12 @@ namespace Internal.Cryptography.Pal
                 Dictionary<int, List<X509ChainStatus>> errorsByIndex = GetStatusByIndex(_chainContext);
                 foreach (int index in errorsByIndex.Keys)
                 {
-                    overallStatus.AddRange(errorsByIndex[index]);
+                    List<X509ChainStatus> errors = errorsByIndex[index];
+                    for (int i = 0; i < errors.Count; i++)
+                    {
+                        X509ChainStatus status = errors[i];
+                        AddUniqueStatus(overallStatus, ref status);
+                    }
 
                     // -1 indicates that error is not tied to a specific index
                     if (index != -1)
@@ -229,7 +267,7 @@ namespace Internal.Cryptography.Pal
                         Status = X509ChainStatusFlags.PartialChain,
                         StatusInformation = SR.Chain_PartialChain,
                     };
-                    AddStatusFromIndexToEndCertificate(firstErrorIndex - 1, partialChainStatus, statuses, overallStatus);
+                    AddStatusFromIndexToEndCertificate(firstErrorIndex - 1, ref partialChainStatus, statuses, overallStatus);
                 }
 
                 if (firstRevocationErrorIndex > 0)
@@ -240,7 +278,7 @@ namespace Internal.Cryptography.Pal
                         Status = X509ChainStatusFlags.RevocationStatusUnknown,
                         StatusInformation = SR.Chain_RevocationStatusUnknown,
                     };
-                    AddStatusFromIndexToEndCertificate(firstRevocationErrorIndex - 1, revocationUnknownStatus, statuses, overallStatus);
+                    AddStatusFromIndexToEndCertificate(firstRevocationErrorIndex - 1, ref revocationUnknownStatus, statuses, overallStatus);
                 }
 
                 if (!IsPolicyMatch(certs, applicationPolicy, certificatePolicy))
@@ -251,7 +289,7 @@ namespace Internal.Cryptography.Pal
                         Status = X509ChainStatusFlags.NotValidForUsage,
                         StatusInformation = SR.Chain_NoPolicyMatch,
                     };
-                    AddStatusFromIndexToEndCertificate(statuses.Length - 1, policyFailStatus, statuses, overallStatus);
+                    AddStatusFromIndexToEndCertificate(statuses.Length - 1, ref policyFailStatus, statuses, overallStatus);
                 }
 
                 X509ChainElement[] elements = new X509ChainElement[certs.Length];
@@ -267,15 +305,11 @@ namespace Internal.Cryptography.Pal
 
             private static void AddStatusFromIndexToEndCertificate(
                 int index,
-                X509ChainStatus statusToSet,
+                ref X509ChainStatus statusToSet,
                 List<X509ChainStatus>[] statuses,
                 List<X509ChainStatus> overallStatus)
             {
-                if (!overallStatus.Exists(s => s.Status == statusToSet.Status))
-                {
-                    overallStatus.Add(statusToSet);
-                }
-
+                AddUniqueStatus(overallStatus, ref statusToSet);
                 for (int i = index; i >= 0; i--)
                 {
                     if (statuses[i] == null)
@@ -283,7 +317,17 @@ namespace Internal.Cryptography.Pal
                         statuses[i] = new List<X509ChainStatus>();
                     }
 
-                    statuses[i].Add(statusToSet);
+                    AddUniqueStatus(statuses[i], ref statusToSet);
+                }
+            }
+
+            private static void AddUniqueStatus(List<X509ChainStatus> list, ref X509ChainStatus status)
+            {
+                X509ChainStatusFlags statusFlags = status.Status;
+                string statusInfo = status.StatusInformation;
+                if (!list.Exists(s => s.Status == statusFlags && s.StatusInformation == statusInfo))
+                {
+                    list.Add(status);
                 }
             }
 
