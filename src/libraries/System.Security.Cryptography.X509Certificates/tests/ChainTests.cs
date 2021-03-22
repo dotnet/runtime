@@ -974,7 +974,6 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
                         Assert.Equal(X509ChainStatusFlags.PartialChain, allFlags);
                         Assert.Equal(0, chain.ChainElements.Count);
                         Assert.False(valid, $"Chain should not be valid");
-                        chainHolder.DisposeChainElements();
                     }
                     else
                     {
