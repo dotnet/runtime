@@ -221,7 +221,7 @@ function(add_component componentName)
   if (${componentIndex} EQUAL -1)
     list (APPEND definedComponents "${componentName}")
     add_custom_target("${componentTargetName}"
-      COMMAND "${CMAKE_COMMAND}" "-DCMAKE_INSTALL_COMPONENT=${componentName}" -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
+      COMMAND "${CMAKE_COMMAND}" "-DCMAKE_INSTALL_COMPONENT=${componentName}" "-DBUILD_TYPE=$<CONFIG>" -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
       ${exclude_from_all_flag})
     set_property(GLOBAL PROPERTY CLR_CMAKE_COMPONENTS ${definedComponents})
   endif()
@@ -385,7 +385,6 @@ function(install_clr)
   endif()
 
   foreach(targetName ${INSTALL_CLR_TARGETS})
-    message("${targetName} is part of ${INSTALL_CLR_COMPONENT} component")
     if (NOT "${INSTALL_CLR_COMPONENT}" STREQUAL "${targetName}")
       get_property(definedComponents GLOBAL PROPERTY CLR_CMAKE_COMPONENTS)
       list(FIND definedComponents "${INSTALL_CLR_COMPONENT}" componentIdx)
