@@ -11,7 +11,7 @@ namespace System.IO.Strategies
 {
     internal sealed class SyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
-        internal SyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access) : base(handle, access)
+        internal SyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share) : base(handle, access, share)
         {
         }
 

@@ -13,8 +13,8 @@ namespace System.IO.Strategies
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
-        internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access)
-            : base(handle, access)
+        internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
+            : base(handle, access, share)
         {
         }
 

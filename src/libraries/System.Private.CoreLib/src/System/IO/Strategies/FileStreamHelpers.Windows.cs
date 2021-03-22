@@ -19,7 +19,7 @@ namespace System.IO.Strategies
         private const int ERROR_HANDLE_EOF = 38;
         private const int ERROR_IO_PENDING = 997;
 
-        private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
         {
             if (UseLegacyStrategy)
             {
@@ -27,8 +27,8 @@ namespace System.IO.Strategies
             }
 
             WindowsFileStreamStrategy strategy = isAsync
-                ? new AsyncWindowsFileStreamStrategy(handle, access)
-                : new SyncWindowsFileStreamStrategy(handle, access);
+                ? new AsyncWindowsFileStreamStrategy(handle, access, share)
+                : new SyncWindowsFileStreamStrategy(handle, access, share);
 
             return EnableBufferingIfNeeded(strategy, bufferSize);
         }

@@ -27,16 +27,16 @@ namespace System.IO.Strategies
 
         protected long _filePosition;
         private long _appendStart; // When appending, prevent overwriting file.
-        private long? _length;
+        private long _length = -1; // When the FileStream blocks the handle (_share <= FileShare.Read) keep file length in-memory, negative means that hasn't been fetched.
 
-        internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access)
+        internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
         {
             InitFromHandle(handle, access, out _canSeek, out _isPipe);
 
             // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
             // but we can't as they're readonly.
             _access = access;
-            _share = FileStream.DefaultShare;
+            _share = share;
 
             // As the handle was passed in, we must set the handle field at the very end to
             // avoid the finalizer closing the handle when we throw errors.
@@ -77,15 +77,15 @@ namespace System.IO.Strategies
 
         public unsafe sealed override long Length => _share > FileShare.Read ?
             FileStreamHelpers.GetFileLength(_fileHandle, _path) :
-            _length ??= FileStreamHelpers.GetFileLength(_fileHandle, _path);
+            _length < 0 ? _length = FileStreamHelpers.GetFileLength(_fileHandle, _path) : _length;
 
         protected void UpdateLengthOnChangePosition()
         {
             // Do not update the cached length if the file can be written somewhere else
-            // or if the length has not been queried.
-            if (_share > FileShare.Read || _length is null)
+            // or if the length hasn't been fetched.
+            if (_share > FileShare.Read || _length < 0)
             {
-                Debug.Assert(_length is null);
+                Debug.Assert(_length < 0);
                 return;
             }
 
