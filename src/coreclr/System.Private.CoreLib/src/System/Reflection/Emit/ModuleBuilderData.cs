@@ -6,7 +6,7 @@ namespace System.Reflection.Emit
     // This is a package private class. This class hold all of the managed
     // data member for ModuleBuilder. Note that what ever data members added to
     // this class cannot be accessed from the EE.
-    internal class ModuleBuilderData
+    internal sealed class ModuleBuilderData
     {
         public const string MultiByteValueClass = "$ArrayType$";
 
