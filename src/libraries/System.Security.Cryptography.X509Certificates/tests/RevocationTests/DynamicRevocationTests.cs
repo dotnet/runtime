@@ -25,24 +25,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 X509ChainStatusFlags.RevocationStatusUnknown | X509ChainStatusFlags.OfflineRevocation;
 
         // Android will stop checking after the first revocation error, so any revoked certificates
-        // after will have PartialChain and RevocationStatusUnknown instead of Revoked
+        // after will have RevocationStatusUnknown instead of Revoked
         private static readonly X509ChainStatusFlags ThisOsRevokedWithPreviousRevocationError =
                 PlatformDetection.IsAndroid ?
-                X509ChainStatusFlags.PartialChain | X509ChainStatusFlags.RevocationStatusUnknown :
+                X509ChainStatusFlags.RevocationStatusUnknown :
                 X509ChainStatusFlags.Revoked;
 
-        // Android will stop checking after the first revocation error, so any revoked certificates
-        // after will have PartialChain and RevocationStatusUnknown instead of RevocationStatusUnknown
-        private static readonly X509ChainStatusFlags ThisOsRevocationStatusUnknownWithPreviousRevocationError =
-                PlatformDetection.IsAndroid ?
-                X509ChainStatusFlags.PartialChain | X509ChainStatusFlags.RevocationStatusUnknown :
-                ThisOsRevocationStatusUnknown;
-
         // Android will stop checking after the first revocation error, so any non-revoked certificates
-        // after will have PartialChain and RevocationStatusUnknown instead of NoError
+        // after will have RevocationStatusUnknown instead of NoError
         private static readonly X509ChainStatusFlags ThisOsNoErrorWithPreviousRevocationError =
                 PlatformDetection.IsAndroid ?
-                X509ChainStatusFlags.PartialChain | X509ChainStatusFlags.RevocationStatusUnknown :
+                X509ChainStatusFlags.RevocationStatusUnknown :
                 X509ChainStatusFlags.NoError;
 
         private delegate void RunSimpleTest(
@@ -608,7 +601,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         chain,
                         rootStatus: issuerExtraProblems,
                         issrStatus: issuerExtraProblems | X509ChainStatusFlags.Revoked,
-                        leafStatus: leafProblems | ThisOsRevocationStatusUnknownWithPreviousRevocationError);
+                        leafStatus: leafProblems | ThisOsRevocationStatusUnknown);
 
                     Assert.False(chainBuilt, "Chain built with ExcludeRoot.");
                     holder.DisposeChainElements();
@@ -1446,8 +1439,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 AssertChainStatus(
                     chain,
                     rootStatus: X509ChainStatusFlags.Revoked,
-                    issrStatus: ThisOsRevocationStatusUnknownWithPreviousRevocationError,
-                    leafStatus: ThisOsRevocationStatusUnknownWithPreviousRevocationError);
+                    issrStatus: ThisOsRevocationStatusUnknown,
+                    leafStatus: ThisOsRevocationStatusUnknown);
 
                 Assert.False(chainBuilt, $"Chain built under {chain.ChainPolicy.RevocationFlag}");
             }
@@ -1459,7 +1452,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     chain,
                     rootStatus: X509ChainStatusFlags.NoError,
                     issrStatus: X509ChainStatusFlags.Revoked,
-                    leafStatus: ThisOsRevocationStatusUnknownWithPreviousRevocationError);
+                    leafStatus: ThisOsRevocationStatusUnknown);
 
                 Assert.False(chainBuilt, $"Chain built under {chain.ChainPolicy.RevocationFlag}");
             }

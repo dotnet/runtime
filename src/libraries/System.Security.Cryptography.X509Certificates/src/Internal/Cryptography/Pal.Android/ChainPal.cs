@@ -214,19 +214,8 @@ namespace Internal.Cryptography.Pal
                     return;
                 }
 
-                if (revocationMode != X509RevocationMode.NoCheck)
-                {
-                    if (!Interop.AndroidCrypto.X509ChainSupportsRevocationOptions())
-                    {
-                        // Defaults to offline when revocation options are not available
-                        if (revocationMode == X509RevocationMode.Online)
-                        {
-                            throw new NotImplementedException($"{nameof(Evaluate)} (X509RevocationMode.{revocationMode})");
-                        }
-                    }
-                }
-
-                int res = Interop.AndroidCrypto.X509ChainValidate(_chainContext, revocationMode, revocationFlag);
+                byte checkedRevocation;
+                int res = Interop.AndroidCrypto.X509ChainValidate(_chainContext, revocationMode, revocationFlag, out checkedRevocation);
                 if (res != 1)
                     throw new CryptographicException();
 
@@ -234,7 +223,10 @@ namespace Internal.Cryptography.Pal
                 List<X509ChainStatus> overallStatus = new List<X509ChainStatus>();
                 List<X509ChainStatus>[] statuses = new List<X509ChainStatus>[certs.Length];
 
-                int firstErrorIndex = -1;
+                // Android will stop checking after the first error it hits, so we track the first
+                // instances of revocation and non-revocation errors to fix-up the status of elements
+                // beyond the first error
+                int firstNonRevocationErrorIndex = -1;
                 int firstRevocationErrorIndex = -1;
                 Dictionary<int, List<X509ChainStatus>> errorsByIndex = GetStatusByIndex(_chainContext);
                 foreach (int index in errorsByIndex.Keys)
@@ -250,24 +242,26 @@ namespace Internal.Cryptography.Pal
                     if (index != -1)
                     {
                         statuses[index] = errorsByIndex[index];
-                        firstErrorIndex = Math.Max(index, firstErrorIndex);
                         if (errorsByIndex[index].Exists(s => s.Status == X509ChainStatusFlags.Revoked || s.Status == X509ChainStatusFlags.RevocationStatusUnknown))
                         {
                             firstRevocationErrorIndex = Math.Max(index, firstRevocationErrorIndex);
                         }
+                        else
+                        {
+                            firstNonRevocationErrorIndex = Math.Max(index, firstNonRevocationErrorIndex);
+                        }
                     }
                 }
 
-                // Android will stop checking after the first error it hits, so we explicitly
-                // assign PartialChain to everything from the first error to the end certificate
-                if (firstErrorIndex > 0)
+                if (firstNonRevocationErrorIndex > 0)
                 {
+                    // Assign PartialChain to everything from the first non-revocation error to the end certificate
                     X509ChainStatus partialChainStatus = new X509ChainStatus
                     {
                         Status = X509ChainStatusFlags.PartialChain,
                         StatusInformation = SR.Chain_PartialChain,
                     };
-                    AddStatusFromIndexToEndCertificate(firstErrorIndex - 1, ref partialChainStatus, statuses, overallStatus);
+                    AddStatusFromIndexToEndCertificate(firstNonRevocationErrorIndex - 1, ref partialChainStatus, statuses, overallStatus);
                 }
 
                 if (firstRevocationErrorIndex > 0)
@@ -279,6 +273,18 @@ namespace Internal.Cryptography.Pal
                         StatusInformation = SR.Chain_RevocationStatusUnknown,
                     };
                     AddStatusFromIndexToEndCertificate(firstRevocationErrorIndex - 1, ref revocationUnknownStatus, statuses, overallStatus);
+                }
+
+                if (revocationMode != X509RevocationMode.NoCheck && checkedRevocation == 0)
+                {
+                    // Revocation checking was requested, but not performed (due to basic validation failing)
+                    // Assign RevocationStatusUnknown to everything
+                    X509ChainStatus revocationUnknownStatus = new X509ChainStatus
+                    {
+                        Status = X509ChainStatusFlags.RevocationStatusUnknown,
+                        StatusInformation = SR.Chain_RevocationStatusUnknown,
+                    };
+                    AddStatusFromIndexToEndCertificate(statuses.Length - 1, ref revocationUnknownStatus, statuses, overallStatus);
                 }
 
                 if (!IsPolicyMatch(certs, applicationPolicy, certificatePolicy))
@@ -355,12 +361,7 @@ namespace Internal.Cryptography.Pal
             private static X509ChainStatus ValidationErrorToChainStatus(Interop.AndroidCrypto.ValidationError error)
             {
                 X509ChainStatusFlags statusFlags = (X509ChainStatusFlags)error.Status;
-                if (statusFlags == X509ChainStatusFlags.NoError)
-                {
-                    // Android returns NoError as the error status when it cannot determine the status
-                    // We just map that to partial chain.
-                    statusFlags = X509ChainStatusFlags.PartialChain;
-                }
+                Debug.Assert(statusFlags != X509ChainStatusFlags.NoError);
 
                 return new X509ChainStatus
                 {

@@ -62,11 +62,6 @@ PALEXPORT int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainCont
                                                                    jobject* /*X509Certificate[]*/ customTrustStore,
                                                                    int32_t customTrustStoreLen);
 
-/*
-Return whether or not revocation options are supported.
-*/
-PALEXPORT bool AndroidCryptoNative_X509ChainSupportsRevocationOptions(void);
-
 // Matches managed X509RevocationMode enum
 enum
 {
@@ -90,4 +85,5 @@ Validate a certificate path.
 */
 PALEXPORT int32_t AndroidCryptoNative_X509ChainValidate(X509ChainContext* chain,
                                                         PAL_X509RevocationMode revocationMode,
-                                                        PAL_X509RevocationFlag revocationFlag);
+                                                        PAL_X509RevocationFlag revocationFlag,
+                                                        bool* checkedRevocation);

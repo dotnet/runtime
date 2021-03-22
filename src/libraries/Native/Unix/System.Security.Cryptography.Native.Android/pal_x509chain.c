@@ -240,8 +240,8 @@ enum
 static PAL_X509ChainStatusFlags ChainStatusFromValidatorExceptionReason(JNIEnv* env, jobject reason)
 {
     int value = (*env)->CallIntMethod(env, reason, g_EnumOrdinal);
-    if (g_CertPathExceptionBasicReasonClass != NULL
-        && (*env)->IsInstanceOf(env, reason, g_CertPathExceptionBasicReasonClass))
+    if (g_CertPathExceptionBasicReasonClass != NULL &&
+        (*env)->IsInstanceOf(env, reason, g_CertPathExceptionBasicReasonClass))
     {
         switch (value)
         {
@@ -301,6 +301,10 @@ static void PopulateValidationError(JNIEnv* env, jobject error, bool isRevocatio
             chainStatus = ChainStatusFromValidatorExceptionReason(env, reason);
             (*env)->DeleteLocalRef(env, reason);
         }
+    }
+    else
+    {
+        chainStatus = isRevocationError ? PAL_X509ChainRevocationStatusUnknown : PAL_X509ChainPartialChain;
     }
 
     jobject message = (*env)->CallObjectMethod(env, error, g_ThrowableGetMessage);
@@ -400,7 +404,7 @@ int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainContext* ctx,
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-bool AndroidCryptoNative_X509ChainSupportsRevocationOptions(void)
+static bool X509ChainSupportsRevocationOptions(void)
 {
     return g_CertPathValidatorGetRevocationChecker != NULL && g_PKIXRevocationCheckerClass != NULL;
 }
@@ -440,8 +444,7 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
                                       X509ChainContext* ctx,
                                       jobject /*CertPathValidator*/ validator,
                                       PAL_X509RevocationMode revocationMode,
-                                      PAL_X509RevocationFlag revocationFlag,
-                                      bool hadErrorsWithoutRevocation)
+                                      PAL_X509RevocationFlag revocationFlag)
 {
     assert(ctx != NULL);
     assert(validator != NULL);
@@ -480,7 +483,7 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
         else
         {
             certPathToUse = ctx->certPath;
-            if (AndroidCryptoNative_X509ChainSupportsRevocationOptions())
+            if (X509ChainSupportsRevocationOptions())
             {
                 // Only add the ONLY_END_ENTITY if we are not just checking the trust anchor. If ONLY_END_ENTITY is
                 // specified, revocation checking will skip the trust anchor even if it is the only certificate.
@@ -509,7 +512,7 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
     }
 
     jobject params = ctx->params;
-    if (AndroidCryptoNative_X509ChainSupportsRevocationOptions())
+    if (X509ChainSupportsRevocationOptions())
     {
         // PKIXRevocationChecker checker = validator.getRevocationChecker();
         loc[checker] = (*env)->CallObjectMethod(env, validator, g_CertPathValidatorGetRevocationChecker);
@@ -532,21 +535,12 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
     loc[result] = (*env)->CallObjectMethod(env, validator, g_CertPathValidatorValidate, certPathToUse, params);
     if (TryGetJNIException(env, &loc[ex], false /*printException*/))
     {
-        if (hadErrorsWithoutRevocation)
+        if (ctx->revocationErrorList == NULL)
         {
-            // Failed without revocation checking - we don't know for sure if these errors were from revocation checking
-            (*env)->CallBooleanMethod(env, ctx->errorList, g_ArrayListAdd, loc[ex]);
+            ctx->revocationErrorList = ToGRef(env, (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor));
         }
-        else
-        {
-            // Succeeded without revocation checking - errors must be from revocation checking
-            if (ctx->revocationErrorList == NULL)
-            {
-                ctx->revocationErrorList = ToGRef(env, (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor));
-            }
 
-            (*env)->CallBooleanMethod(env, ctx->revocationErrorList, g_ArrayListAdd, loc[ex]);
-        }
+        (*env)->CallBooleanMethod(env, ctx->revocationErrorList, g_ArrayListAdd, loc[ex]);
     }
 
     ret = SUCCESS;
@@ -558,11 +552,14 @@ cleanup:
 
 int32_t AndroidCryptoNative_X509ChainValidate(X509ChainContext* ctx,
                                               PAL_X509RevocationMode revocationMode,
-                                              PAL_X509RevocationFlag revocationFlag)
+                                              PAL_X509RevocationFlag revocationFlag,
+                                              bool* checkedRevocation)
 {
     assert(ctx != NULL);
+    assert(checkedRevocation != NULL);
     JNIEnv* env = GetJNIEnv();
 
+    *checkedRevocation = false;
     int32_t ret = FAIL;
     INIT_LOCALS(loc, validatorType, validator, result, ex);
 
@@ -576,16 +573,15 @@ int32_t AndroidCryptoNative_X509ChainValidate(X509ChainContext* ctx,
     // PKIXCertPathValidatorResult result = (PKIXCertPathValidatorResult)validator.validate(certPath, params);
     loc[result] =
         (*env)->CallObjectMethod(env, loc[validator], g_CertPathValidatorValidate, ctx->certPath, ctx->params);
-    bool hadErrorsWithoutRevocation = TryGetJNIException(env, &loc[ex], false /*printException*/);
-    if (hadErrorsWithoutRevocation)
+    if (TryGetJNIException(env, &loc[ex], false /*printException*/))
     {
         (*env)->CallBooleanMethod(env, ctx->errorList, g_ArrayListAdd, loc[ex]);
+        ret = SUCCESS;
     }
-
-    if (revocationMode != X509RevocationMode_NoCheck)
+    else if (revocationMode != X509RevocationMode_NoCheck)
     {
-        ret = ValidateWithRevocation(
-            env, ctx, loc[validator], revocationMode, revocationFlag, hadErrorsWithoutRevocation);
+        ret = ValidateWithRevocation(env, ctx, loc[validator], revocationMode, revocationFlag);
+        *checkedRevocation = true;
     }
     else
     {
