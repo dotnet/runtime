@@ -5613,18 +5613,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
 
-#if defined(DEBUG) || defined(LATE_DISASM)
-    const char* classNamePtr;
-
-    info.compMethodName = eeGetMethodName(info.compMethodHnd, &classNamePtr);
-    unsigned len        = (unsigned)roundUp(strlen(classNamePtr) + 1);
-    info.compClassName  = getAllocator(CMK_DebugOnly).allocate<char>(len);
-    strcpy_s((char*)info.compClassName, len, classNamePtr);
-
-    info.compFullName  = eeGetMethodFullName(info.compMethodHnd);
-    info.compPerfScore = 0.0;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
-
 #ifdef DEBUG
     if (!compIsForInlining())
     {
