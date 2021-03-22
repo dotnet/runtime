@@ -18,8 +18,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-
-    internal class EvaluateExpression
+    internal static class EvaluateExpression
     {
         private class FindVariableNMethodCall : CSharpSyntaxWalker
         {

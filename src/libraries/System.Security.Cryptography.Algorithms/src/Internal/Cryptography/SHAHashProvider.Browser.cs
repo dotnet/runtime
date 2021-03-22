@@ -959,7 +959,7 @@ namespace Internal.Cryptography
         }
 
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/utils.cs
-        private sealed class SHAUtils
+        private static class SHAUtils
         {
             // digits == number of DWORDs
             public static unsafe void DWORDFromBigEndian(uint* x, int digits, byte* block)

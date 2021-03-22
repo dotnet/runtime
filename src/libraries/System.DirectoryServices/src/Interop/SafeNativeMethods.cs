@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.Interop
 {
-    internal class SafeNativeMethods
+    internal static class SafeNativeMethods
     {
         [DllImport(ExternDll.Oleaut32, PreserveSig = false)]
         public static extern void VariantClear(IntPtr pObject);
