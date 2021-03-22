@@ -1394,7 +1394,7 @@ runtimeconfig_json_read_props (const char *ptr, const char **endp, int nprops, g
 
 		dest_keys [i] = g_utf8_to_utf16 (property_key, strlen (property_key), NULL, NULL, NULL);
 
-		str_len = mono_metadata_decode_value(ptr, &ptr);
+		str_len = mono_metadata_decode_value (ptr, &ptr);
 		property_value = g_new0 (char, str_len + 1);
 		strncpy (property_value, ptr, str_len);
 		property_value [str_len] = '\0';
