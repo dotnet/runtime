@@ -389,15 +389,6 @@ namespace System.IO.Strategies
             if (r == 0)
             {
                 errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-
-                if (syncUsingOverlapped && errorCode == Interop.Errors.ERROR_HANDLE_EOF)
-                {
-                    // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfile#synchronization-and-file-position :
-                    // "If lpOverlapped is not NULL, then when a synchronous read operation reaches the end of a file,
-                    // ReadFile returns FALSE and GetLastError returns ERROR_HANDLE_EOF"
-                    return numBytesWritten;
-                }
-
                 return -1;
             }
             else
