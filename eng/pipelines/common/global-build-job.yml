@@ -86,10 +86,6 @@ jobs:
         ${{ if ne(parameters.enableRichCodeNavigation, true) }}:
           value: ''
 
-      - ${{ if eq(parameters.osGroup, 'Android') }}:
-        - name: ANDROID_OPENSSL_AAR
-          value: /tmp/openssl-android
-
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 

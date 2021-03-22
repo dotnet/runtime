@@ -66,12 +66,8 @@ jobs:
     platforms:
     - Android_x86
     - Android_x64
-    - Android_arm
     - iOSSimulator_x64
     variables:
-      # disable using OpenSSL
-      - name: ANDROID_OPENSSL_AAR
-        value: ''
       # map dependencies variables to local variables
       - name: librariesContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
@@ -107,10 +103,8 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Android_arm64
+    - Android_arm
     variables:
-      # disable using OpenSSL
-      - name: ANDROID_OPENSSL_AAR
-        value: ''
       # map dependencies variables to local variables
       - name: librariesContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
@@ -234,9 +228,6 @@ jobs:
     - Android_x64
     #- Android_arm64  # disabled due to https://github.com/dotnet/runtime/issues/47850
     variables:
-      # disable using OpenSSL
-      - name: ANDROID_OPENSSL_AAR
-        value: ''
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
           value: pr/dotnet/runtime/$(Build.SourceBranch)
