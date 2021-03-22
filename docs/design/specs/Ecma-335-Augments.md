@@ -672,7 +672,7 @@ float pair`. In both cases the actual type parameter of the `PrintFancyTypeName`
 implements the `IFancyTypeName` interface and its virtual static method `GetFancyTypeName`.
 
 **Note**: Please note that `DerivedFancyClass` implements the `IFancyTypeName.GetFancyTypeName`
-method via its base class `FancyTypeName`. While implementing the static interface method in a
+method via its base class `FancyClass`. While implementing the static interface method in a
 base class is fine, this design proposal doesn't address implementing static interface methods
 in the interfaces themselves or in derived interfaces akin to default interface support.
 
