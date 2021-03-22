@@ -20,7 +20,7 @@
     <SystemReflectionMetadataVersion>5.0.0</SystemReflectionMetadataVersion>
     <MicrosoftBuildFrameworkVersion>16.10.0-preview-21112-04</MicrosoftBuildFrameworkVersion>
     <MicrosoftBuildUtilitiesCoreVersion>16.10.0-preview-21112-04</MicrosoftBuildUtilitiesCoreVersion>
-    <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21160.7</MicrosoftDotNetApiCompatVersion>
+    <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21167.3</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetCodeAnalysisVersion>6.0.0-beta.21105.12</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.9.0-4.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpWorkspacesVersion>3.7.0</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
