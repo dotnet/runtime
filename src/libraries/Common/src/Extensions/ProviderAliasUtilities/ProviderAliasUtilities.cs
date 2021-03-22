@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -13,16 +14,24 @@ namespace Microsoft.Extensions.Logging
 
         internal static string GetAlias(Type providerType)
         {
-            foreach (CustomAttributeData attributeData in CustomAttributeData.GetCustomAttributes(providerType))
+            IList<CustomAttributeData> attributes = CustomAttributeData.GetCustomAttributes(providerType);
+
+            for (int i = 0; i < attributes.Count; i++)
             {
+                CustomAttributeData attributeData = attributes[i];
                 if (attributeData.AttributeType.FullName == AliasAttibuteTypeFullName)
                 {
-                    foreach (CustomAttributeTypedArgument arg in attributeData.ConstructorArguments)
+                    if (attributeData.ConstructorArguments.Count == 0)
                     {
-                        Debug.Assert(arg.ArgumentType == typeof(string));
-
-                        return arg.Value?.ToString();
+                        // Maybe the user defined their own ProviderAliasAttribute?
+                        continue;
                     }
+
+                    CustomAttributeTypedArgument arg = attributeData.ConstructorArguments[0];
+
+                    Debug.Assert(arg.ArgumentType == typeof(string));
+
+                    return arg.Value?.ToString();
                 }
             }
 
