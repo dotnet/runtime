@@ -1249,7 +1249,7 @@ void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values)
 {
 	n_appctx_props = nprops;
-	appctx_keys = g_new0 (char*, n_appctx_props);
+	appctx_keys = g_new0 (char *, n_appctx_props);
 	appctx_values = g_new0 (char*, n_appctx_props);
 
 	for (int i = 0; i < nprops; ++i) {
