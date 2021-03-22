@@ -866,7 +866,7 @@ public:
                                                //             alignment of 1 byte)
 #define GTF_IND_INVARIANT           0x01000000 // GT_IND   -- the target is invariant (a prejit indirection)
 #define GTF_IND_ARR_INDEX           0x00800000 // GT_IND   -- the indirection represents an (SZ) array index
-#define GTF_IND_NONNULL             0x00200000 // GT_IND   -- the indirection never returns null (zero)
+#define GTF_IND_NONNULL             0x00400000 // GT_IND   -- the indirection never returns null (zero)
 
 #define GTF_IND_FLAGS \
     (GTF_IND_VOLATILE | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF |          \
