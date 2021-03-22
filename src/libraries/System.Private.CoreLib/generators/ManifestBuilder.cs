@@ -53,6 +53,8 @@ namespace Generators
 
             keywordTab = keywordMap;
             taskTab = taskMap;
+            
+            
         }
 
         public void AddOpcode(string name, int value)
@@ -63,6 +65,11 @@ namespace Generators
         public void AddTask(string name, int value)
         {
             taskTab ??= new Dictionary<int, string>();
+            if (taskTab.ContainsValue(name))
+            {
+                return;
+            }
+
             taskTab[value] = name;
         }
 
