@@ -15,7 +15,7 @@ namespace System.ComponentModel
         /// This class contains all the reflection information for a
         /// given type.
         /// </summary>
-        private class ReflectedTypeData
+        private sealed class ReflectedTypeData
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             private readonly Type _type;

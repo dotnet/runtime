@@ -276,7 +276,7 @@ namespace System.Linq.Parallel
         ///
         /// The order key is a dummy value since we are unordered.
         /// </summary>
-        private class GroupJoinHashLookup : GroupJoinHashLookup<THashKey, TElement, ListChunk<TElement>, int>
+        private sealed class GroupJoinHashLookup : GroupJoinHashLookup<THashKey, TElement, ListChunk<TElement>, int>
         {
             private const int OrderKey = unchecked((int)0xdeadbeef);
 
@@ -384,7 +384,7 @@ namespace System.Linq.Parallel
         ///
         /// The order key is wrapped so that empty lists can be treated as less than all non-empty lists.
         /// </summary>
-        private class OrderedGroupJoinHashLookup : GroupJoinHashLookup<THashKey, TElement, GroupKeyData, Pair<bool, TOrderKey>>
+        private sealed class OrderedGroupJoinHashLookup : GroupJoinHashLookup<THashKey, TElement, GroupKeyData, Pair<bool, TOrderKey>>
         {
             internal OrderedGroupJoinHashLookup(HashLookup<THashKey, GroupKeyData> lookup)
                 : base(lookup)
@@ -407,7 +407,7 @@ namespace System.Linq.Parallel
         /// <summary>
         /// A structure to hold both the elements that match a hash key and an order key for the grouping.
         /// </summary>
-        private class GroupKeyData
+        private sealed class GroupKeyData
         {
             internal TOrderKey _orderKey;
             internal OrderedGroupByGrouping<THashKey, TOrderKey, TElement> _grouping;

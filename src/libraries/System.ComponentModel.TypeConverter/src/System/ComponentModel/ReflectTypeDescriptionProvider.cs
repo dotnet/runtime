@@ -96,7 +96,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Provides a way to create <see cref="TypeConverter"/> instances, and cache them where applicable.
         /// </summary>
-        private class IntrinsicTypeConverterData
+        private sealed class IntrinsicTypeConverterData
         {
             private readonly Func<Type, TypeConverter> _constructionFunc;
 

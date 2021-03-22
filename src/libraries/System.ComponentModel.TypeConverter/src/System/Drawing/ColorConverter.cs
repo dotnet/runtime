@@ -150,7 +150,7 @@ namespace System.Drawing
 
         public override bool GetStandardValuesSupported(ITypeDescriptorContext context) => true;
 
-        private class ColorComparer : IComparer<Color>
+        private sealed class ColorComparer : IComparer<Color>
         {
             public int Compare(Color left, Color right) => string.CompareOrdinal(left.Name, right.Name);
         }

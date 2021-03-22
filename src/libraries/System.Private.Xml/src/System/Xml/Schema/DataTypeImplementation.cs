@@ -716,7 +716,7 @@ namespace System.Xml.Schema
         private static readonly DatatypeImplementation s_yearMonthDuration = new Datatype_yearMonthDuration();
 
 
-        private class SchemaDatatypeMap : IComparable
+        private sealed class SchemaDatatypeMap : IComparable
         {
             private readonly string _name;
             private readonly DatatypeImplementation _type;
