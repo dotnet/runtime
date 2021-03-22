@@ -18,6 +18,7 @@
     <ExeExt Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExt>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
+    <EscapedQuoteW Condition="'$(OS)' == 'Windows_NT'">\&quot;</EscapedQuoteW>
     <CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</CoreClrFileName>
     <CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</CoreClrFileName>
     <CoreClrFileName Condition="'$(TargetsMacCatalyst)' == 'true'">libcoreclr.dylib</CoreClrFileName>
@@ -270,7 +271,7 @@
       <_MonoCMakeArgs Include="-DENABLE_LLVM_RUNTIME=1"/>
       <_MonoCFLAGS Include="-fexceptions"/>
       <_MonoCXXFLAGS Include="-fexceptions"/>
-      <_MonoCFLAGS Include="\&quot;-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'include'))\&quot;"/>
+      <_MonoCFLAGS Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'include'))$(EscapedQuoteW)"/>
     </ItemGroup>
     <!-- iOS/tvOS specific options -->
     <PropertyGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
