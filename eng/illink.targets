@@ -34,6 +34,7 @@
 
     <ILLinkSuppressionsXmlFilePrefix>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlFilePrefix>
     <ILLinkSuppressionsXmlFile>$(ILLinkSuppressionsXmlFilePrefix).xml</ILLinkSuppressionsXmlFile>
+    <ILLinkSuppressionsXmlFileLibraryBuild Condition="'$(ILLinkSuppressionsXmlFileLibraryBuild)' == '' and Exists('$(ILLinkSuppressionsXmlFile).LibraryBuild.xml')">$(ILLinkSuppressionsXmlFile).LibraryBuild.xml</ILLinkSuppressionsXmlFileLibraryBuild>
     <ILLinkSuppressionsConfigurationSpecificXmlFile>$(ILLinkSuppressionsXmlFilePrefix).$(Configuration).xml</ILLinkSuppressionsConfigurationSpecificXmlFile>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
@@ -42,6 +43,7 @@
 
   <ItemGroup>
     <None Include="$(ILLinkTrimXmlLibraryBuild)" Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''" />
+    <None Include="$(ILLinkSuppressionsXmlFileLibraryBuild)" Condition="'$(ILLinkSuppressionsXmlFileLibraryBuild)' != ''" />
     <None Include="@(ILLinkSubstitutionsXmls)" />
   </ItemGroup>
 
@@ -73,6 +75,8 @@
                             Include="$(ILLinkSuppressionsXmlFile)" />
     <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsConfigurationSpecificXmlFile)')"
                             Include="$(ILLinkSuppressionsConfigurationSpecificXmlFile)" />
+    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsXmlFileLibraryBuild)')"
+                            Include="$(ILLinkSuppressionsXmlFileLibraryBuild)" />
     <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)" TargetPath="%(FileName).$(AssemblyName).xml" />
   </ItemGroup>
 
@@ -229,6 +233,7 @@
       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- pass the non-embedded root xml file on the command line -->
       <ILLinkArgs Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">$(ILLinkArgs) -x "$(ILLinkTrimXmlLibraryBuild)"</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkSuppressionsXmlFileLibraryBuild)' != ''">$(ILLinkArgs) --link-attributes "$(ILLinkSuppressionsXmlFileLibraryBuild)"</ILLinkArgs>
       <!-- suppress warnings with the following codes:
            IL2008: Could not find type A specified in resource B
            IL2009: Could not find method A in type B specified in resource C
