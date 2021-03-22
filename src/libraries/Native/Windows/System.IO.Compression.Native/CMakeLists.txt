@@ -122,4 +122,4 @@ if (GEN_SHARED_LIB)
     install (FILES $<TARGET_PDB_FILE:System.IO.Compression.Native> DESTINATION .)
 endif()
 
-install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})
+install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
