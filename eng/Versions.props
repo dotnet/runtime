@@ -161,7 +161,7 @@
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>6.0.100-preview.2.21169.4</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-preview.3.21167.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-preview.4.21172.5</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- Mono LLVM -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>9.0.1-alpha.1.21165.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.21165.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
