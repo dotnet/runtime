@@ -649,7 +649,7 @@ class GenericPair<T> : IArithmetic<GenericPair<T>>, IMultiplicationBy<GenericPai
     }
 }
 
-class FancyFloatPair : GenericPair<T>, IFancyTypeName
+class FancyFloatPair : GenericPair<float>, IFancyTypeName
 {
     public static string IFancyTypeName.GetFancyTypeName() { return "I am the fancy float pair"; }
 }
@@ -667,7 +667,7 @@ void PrintFancyTypeName<T>()
 ```
 
 Calling `PrintFancyTypeName<DerivedFancyClass>()` should then output `I am the fancy class`
-to the console. Likewise, `PrintFancyClassName<FancyFloatPair>()` should output `I am the fancy
+to the console. Likewise, `PrintFancyTypeName<FancyFloatPair>()` should output `I am the fancy
 float pair`. In both cases the actual type parameter of the `PrintFancyTypeName` generic method
 implements the `IFancyTypeName` interface and its virtual static method `GetFancyTypeName`.
 
