@@ -79,7 +79,6 @@ list(APPEND __SharedLinkArgs /GUARD:CF)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 add_compile_options($<$<CONFIG:RELEASE>:/GL>)
-add_compile_options($<$<CONFIG:RELEASE>:/O1>)
 
 list(APPEND __LinkLibraries $<$<CONFIG:DEBUG>:libcmtd.lib>)
 list(APPEND __LinkLibraries $<$<CONFIG:RELEASE>:libcmt.lib>)
