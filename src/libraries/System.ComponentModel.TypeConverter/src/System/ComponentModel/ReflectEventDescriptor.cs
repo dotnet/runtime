@@ -319,7 +319,17 @@ namespace System.ComponentModel
 
                 if (_addMethod == null || _removeMethod == null)
                 {
-                    defined = GetDefinedEvent();
+                    Type start = _componentClass.BaseType;
+                    while (start != null && start != typeof(object))
+                    {
+                        BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+                        EventInfo test = start.GetEvent(_realEvent.Name, bindingFlags);
+                        if (test.GetAddMethod() != null)
+                        {
+                            defined = test;
+                            break;
+                        }
+                    }
                 }
 
                 if (defined != null)
@@ -355,26 +365,6 @@ namespace System.ComponentModel
             }
 
             _filledMethods = true;
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "_componentClass is annotated with All, but the trimmer is still warning on getting events on BaseType. https://github.com/mono/linker/issues/1882")]
-        private EventInfo GetDefinedEvent()
-        {
-            EventInfo defined = null;
-            Type start = _componentClass.BaseType;
-            while (start != null && start != typeof(object))
-            {
-                BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-                EventInfo test = start.GetEvent(_realEvent.Name, bindingFlags);
-                if (test.GetAddMethod() != null)
-                {
-                    defined = test;
-                    break;
-                }
-            }
-
-            return defined;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",

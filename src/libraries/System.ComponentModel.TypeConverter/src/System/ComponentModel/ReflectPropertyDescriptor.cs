@@ -400,8 +400,6 @@ namespace System.ComponentModel
         /// </summary>
         private MethodInfo SetMethodValue
         {
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-                Justification = "_componentClass is annotated with All, but the trimmer is still warning on getting properties on BaseType. https://github.com/mono/linker/issues/1882")]
             get
             {
                 if (!_state[s_bitSetQueried] && _state[s_bitSetOnDemand])
@@ -735,8 +733,6 @@ namespace System.ComponentModel
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "ReflectPropertyDescriptor ctors are all marked as RequiresUnreferencedCode because PropertyType can't be annotated as 'All'.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-                Justification = "_componentClass is annotated with All, but the trimmer is still warning on getting methods/properties on BaseType. https://github.com/mono/linker/issues/1882")]
         protected override void FillAttributes(IList attributes)
         {
             Debug.Assert(_componentClass != null, "Must have a component class for FillAttributes");
