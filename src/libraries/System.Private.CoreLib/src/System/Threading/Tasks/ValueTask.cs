@@ -57,7 +57,7 @@ namespace System.Threading.Tasks
     public readonly struct ValueTask : IEquatable<ValueTask>
     {
         /// <summary>A task canceled using `new CancellationToken(true)`. Lazily created only when first needed.</summary>
-        private static Task? s_canceledTask;
+        private static volatile Task? s_canceledTask;
 
         /// <summary>null if representing a successful synchronous completion, otherwise a <see cref="Task"/> or a <see cref="IValueTaskSource"/>.</summary>
         internal readonly object? _obj;
@@ -442,7 +442,7 @@ namespace System.Threading.Tasks
     public readonly struct ValueTask<TResult> : IEquatable<ValueTask<TResult>>
     {
         /// <summary>A task canceled using `new CancellationToken(true)`. Lazily created only when first needed.</summary>
-        private static Task<TResult>? s_canceledTask;
+        private static volatile Task<TResult>? s_canceledTask;
         /// <summary>null if <see cref="_result"/> has the result, otherwise a <see cref="Task{TResult}"/> or a <see cref="IValueTaskSource{TResult}"/>.</summary>
         internal readonly object? _obj;
         /// <summary>The result to be used if the operation completed successfully synchronously.</summary>
