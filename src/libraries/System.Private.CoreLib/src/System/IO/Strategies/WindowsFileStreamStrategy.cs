@@ -27,7 +27,7 @@ namespace System.IO.Strategies
 
         protected long _filePosition;
         private long _appendStart; // When appending, prevent overwriting file.
-        private long _length = -1; // When the handle blocks the file (_share <= FileShare.Read) keep file length in-memory, negative means that hasn't been fetched.
+        private long _length = -1; // When the file is locked for writes (_share <= FileShare.Read) cache file length in-memory, negative means that hasn't been fetched.
 
         internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
         {
@@ -75,7 +75,7 @@ namespace System.IO.Strategies
 
         public sealed override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        // When the handle blocks the file we can keep file length in memory
+        // When the file is locked for writes we can cache file length in memory
         // and avoid subsequent native calls which are expensive.
         public unsafe sealed override long Length => _share > FileShare.Read ?
             FileStreamHelpers.GetFileLength(_fileHandle, _path) :
@@ -83,7 +83,7 @@ namespace System.IO.Strategies
 
         protected void UpdateLengthOnChangePosition()
         {
-            // Do not update the cached length if the file is not blocked
+            // Do not update the cached length if the file is not locked
             // or if the length hasn't been fetched.
             if (_share > FileShare.Read || _length < 0)
             {
