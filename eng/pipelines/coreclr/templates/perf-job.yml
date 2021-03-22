@@ -124,7 +124,7 @@ jobs:
         parameters:
           unpackFolder: $(librariesDownloadDir)/LinuxMonoAOT
           artifactFileName: LinuxMonoAOT${{ parameters.archType }}.tar.gz
-          artifactName: LinuxMonoAOT
+          artifactName: LinuxMonoAOT${{ parameters.archType }}
           displayName: AOT Mono Artifacts
 
       - script: "mkdir -p $(librariesDownloadDir)/bin/aot/sgen;mkdir -p $(librariesDownloadDir)/bin/aot/pack;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/obj/mono/Linux.x64.Release/mono/* $(librariesDownloadDir)/bin/aot/sgen;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/* $(librariesDownloadDir)/bin/aot/pack"
