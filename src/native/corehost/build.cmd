@@ -130,7 +130,7 @@ if "%__RuntimeFlavor%" NEQ "Mono" (
     copy /B /Y "%__CoreClrArtifacts%\corehost\PDB\singlefilehost.pdb"  "%__CMakeBinDir%/corehost/PDB/"
 
     echo Embedding "%__CoreClrArtifacts%\mscordaccore.dll" into "%__CMakeBinDir%\corehost\singlefilehost.exe"
-    if /i "%__BuildArch%" == "x64"  (
+    if not exist "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" (
         "%__CoreClrArtifacts%\dactabletools\InjectResource.exe"     /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER
     ) else (
         "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER

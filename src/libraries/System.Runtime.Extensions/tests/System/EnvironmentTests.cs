@@ -83,6 +83,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void ProcessId_MatchesExpectedValue()
         {
             using RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => Console.WriteLine(Environment.ProcessId), new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } });
@@ -96,6 +97,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void ProcessPath_MatchesExpectedValue()
         {
             string expectedProcessPath = PlatformDetection.IsBrowser ? null : Process.GetCurrentProcess().MainModule.FileName;
@@ -265,6 +267,7 @@ namespace System.Tests
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void FailFast_ExceptionStackTrace_ArgumentException()
         {
             var psi = new ProcessStartInfo();
@@ -286,6 +289,7 @@ namespace System.Tests
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void FailFast_ExceptionStackTrace_StackOverflowException()
         {
             // Test using another type of exception
@@ -308,6 +312,7 @@ namespace System.Tests
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void FailFast_ExceptionStackTrace_InnerException()
         {
             // Test if inner exception details are also logged

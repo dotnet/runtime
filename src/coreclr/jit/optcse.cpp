@@ -409,7 +409,6 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     size_t   key;
     unsigned hval;
     CSEdsc*  hashDsc;
-    bool     isIntConstHash       = false;
     bool     enableSharedConstCSE = false;
     bool     isSharedConst        = false;
     int      configValue          = JitConfig.JitConstCSE();
@@ -2366,14 +2365,12 @@ public:
         // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
         BasicBlock::weight_t cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
 
-        bool      canEnregister = true;
-        unsigned  slotCount     = 1;
-        var_types cseLclVarTyp  = genActualType(candidate->Expr()->TypeGet());
+        bool     canEnregister = true;
+        unsigned slotCount     = 1;
         if (candidate->Expr()->TypeGet() == TYP_STRUCT)
         {
             // This is a non-enregisterable struct.
             canEnregister                  = false;
-            GenTree*             value     = candidate->Expr();
             CORINFO_CLASS_HANDLE structHnd = m_pCompiler->gtGetStructHandleIfPresent(candidate->Expr());
             if (structHnd == NO_CLASS_HANDLE)
             {

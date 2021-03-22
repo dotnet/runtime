@@ -3679,7 +3679,7 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
     if ((tree->gtGetOp1()->OperGet() == GT_ARR_BOUNDS_CHECK) &&
         ((tree->gtGetOp1()->gtFlags & GTF_ARR_BOUND_INBND) != 0))
     {
-        optRemoveRangeCheck(tree, stmt);
+        optRemoveCommaBasedRangeCheck(tree, stmt);
         return optAssertionProp_Update(tree, tree, stmt);
     }
     return nullptr;
@@ -4005,10 +4005,9 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
 
 /*****************************************************************************
  *
- *  Given a tree consisting of a comma node with a bounds check, remove any
- *  redundant bounds check that has already been checked in the program flow.
+ *  Given a tree with a bounds check, remove it if it has already been checked in the program flow.
  */
-GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree)
+GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
     if (optLocalAssertionProp)
     {
@@ -4126,12 +4125,23 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
+        if (arrBndsChk == stmt->GetRootNode())
+        {
+            // We have a top-level bounds check node.
+            // This can happen when trees are broken up due to inlining.
+            // optRemoveStandaloneRangeCheck will return the modified tree (side effects or a no-op).
+            GenTree* newTree = optRemoveStandaloneRangeCheck(arrBndsChk, stmt);
+
+            return optAssertionProp_Update(newTree, arrBndsChk, stmt);
+        }
 
         // Defer actually removing the tree until processing reaches its parent comma, since
-        // optRemoveRangeCheck needs to rewrite the whole comma tree.
+        // optRemoveCommaBasedRangeCheck needs to rewrite the whole comma tree.
         arrBndsChk->gtFlags |= GTF_ARR_BOUND_INBND;
+
         return nullptr;
     }
+
     return nullptr;
 }
 
@@ -4224,7 +4234,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_ARR_BOUNDS_CHECK:
-            return optAssertionProp_BndsChk(assertions, tree);
+            return optAssertionProp_BndsChk(assertions, tree, stmt);
 
         case GT_COMMA:
             return optAssertionProp_Comma(assertions, tree, stmt);

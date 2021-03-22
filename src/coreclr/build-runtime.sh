@@ -25,6 +25,7 @@ usage_list+=("-staticanalyzer: skip native image generation.")
 usage_list+=("-skipjit: skip building jit.")
 usage_list+=("-skipalljits: skip building crosstargetting jits.")
 usage_list+=("-skipruntime: skip building runtime.")
+usage_list+=("-skipiltools: skip building IL tools.")
 usage_list+=("-paltests: build the pal tests.")
 
 setup_dirs_local()
@@ -137,6 +138,10 @@ handle_arguments_local() {
             __BuildRuntime=0
             ;;
 
+        skipiltools|-skipiltools)
+            __BuildILTools=0
+            ;;
+
         paltests|-paltests)
             __BuildPALTests=1
             ;;
@@ -192,9 +197,11 @@ __UseNinja=0
 __VerboseBuild=0
 __ValidateCrossArg=1
 __CMakeArgs=""
+__BuildJit=1
 __BuildPALTests=0
 __BuildAllJits=1
 __BuildRuntime=1
+__BuildILTools=1
 
 source "$__ProjectRoot"/_build-commons.sh
 
@@ -247,7 +254,7 @@ restore_optdata
 
 # Build the coreclr (native) components.
 __CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize $__CMakeArgs"
-__CMakeArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=$__BuildJit -DCLR_CMAKE_BUILD_SUBSET_ALLJITS=$__BuildAllJits -DCLR_CMAKE_BUILD_SUBSET_RUNTIME=$__BuildRuntime $__CMakeArgs"
+__CMakeArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=$__BuildJit -DCLR_CMAKE_BUILD_SUBSET_ALLJITS=$__BuildAllJits -DCLR_CMAKE_BUILD_SUBSET_RUNTIME=$__BuildRuntime $__CMakeArgs -DCLR_CMAKE_BUILD_SUBSET_ILTOOLS=$__BuildILTools"
 __CMakeArgs="-DCLR_CMAKE_BUILD_TESTS=$__BuildPALTests $__CMakeArgs"
 
 if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
