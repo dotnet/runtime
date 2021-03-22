@@ -14,20 +14,36 @@
 
 typedef MonoComponent * (*MonoComponentInitFn) (void);
 
+#ifndef STATIC_COMPONENTS
 /* List of MonoDl* for each loaded component */
 static GSList *loaded_components;
+#endif
 
 /* One static per component */
 static MonoComponentHotReload *hot_reload;
 
+#ifndef STATIC_COMPONENTS
 static MonoComponent*
 get_component (const char *component_name, MonoDl **component_lib);
+#endif
 
 void
 mono_components_init (void)
 {
-#ifdef STATIC_LINK_COMPONENTS
+#ifdef STATIC_COMPONENTS
 	/* directly call each components init function */
+	/* TODO: support disabled components. 
+	 *
+	 * The issue here is that we need to do static linking, so if we don't
+	 * directly reference mono_component_<component_name>_init anywhere (ie
+	 * if we dlsym from RTLD_DEFAULT) the static linking of the final
+	 * binary won't actually include that symbol (unless we play
+	 * platform-specific linker tricks).
+	 *
+	 * So maybe we will need some API hook so that embedders need to call
+	 * to pass us the address of each component that isn't disabled.
+	 *
+	 */
 	hot_reload = mono_component_hot_reload_init ();
 #else
 	/* call get_component for each component and init it or its stubs and add it to loaded_components  */
@@ -53,7 +69,7 @@ mono_components_cleanup (void)
 		hot_reload->component.cleanup (&hot_reload->component);
 		hot_reload = NULL;
 	}
-#ifndef STATIC_LINK_COMPONENTS
+#ifndef STATIC_COMPONENTS
 	for (GSList *p = loaded_components; p != NULL; p = p->next) {
 		mono_dl_close ((MonoDl*)p->data);
 	}
@@ -61,15 +77,32 @@ mono_components_cleanup (void)
 }
 
 static char*
-component_library_base_name (const char *component)
-{
-	return g_strdup_printf ("mono-component-%s", component);
-}
-
-static char*
 component_init_name (const char *component)
 {
 	return g_strdup_printf ("mono_component_%s_init", component);
+}
+
+static gpointer
+load_component_entrypoint (MonoDl *lib, const char *component_name)
+{
+	char *component_init = component_init_name (component_name);
+	gpointer sym = NULL;
+	char *error_msg = mono_dl_symbol (lib, component_init, &sym);
+	if (error_msg) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s library does not have symbol %s: %s", component_name, component_init, error_msg);
+		g_free (error_msg);
+		g_free (component_init);
+		return NULL;
+	}
+	g_free (component_init);
+	return sym;
+}
+
+#ifndef STATIC_COMPONENTS
+static char*
+component_library_base_name (const char *component)
+{
+	return g_strdup_printf ("mono-component-%s", component);
 }
 
 static char *
@@ -130,15 +163,7 @@ load_component (const char *component_name, MonoDl **lib_out)
 	if (!lib)
 		goto done;
 
-	char *component_init = component_init_name (component_name);
-	gpointer sym = NULL;
-	char *error_msg = mono_dl_symbol (lib, component_init, &sym);
-	if (error_msg) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s library does not have symbol %s: %s", component_name, component_init, error_msg);
-		g_free (error_msg);
-		g_free (component_init);
-		goto done;
-	}
+	gpointer sym = load_component_entrypoint (lib, component_name);
 
 	result = (MonoComponentInitFn)sym;
 	*lib_out = lib;
@@ -154,3 +179,4 @@ get_component (const char *component_name, MonoDl **lib_out)
 		return NULL;
 	return initfn();
 }
+#endif

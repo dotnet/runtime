@@ -1058,3 +1058,5 @@
 
 #endif
 
+/* Enable static linking of mono runtime components */
+#cmakedefine STATIC_COMPONENTS

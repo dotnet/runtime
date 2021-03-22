@@ -37,6 +37,9 @@
     <MonoFileName Condition="'$(TargetsBrowser)' == 'true'">libmonosgen-2.0.a</MonoFileName>
     <MonoFileName Condition="'$(MonoFileName)' == ''">$(CoreClrFileName)</MonoFileName>
     <MonoStaticFileName Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">libmonosgen-2.0.a</MonoStaticFileName>
+    <SharedNativeLibrarySuffix Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">.dylib</SharedNativeLibrarySuffix>
+    <SharedNativeLibrarySuffix Condition="'$(TargetsWindows)' == 'true'">.dll</SharedNativeLibrarySuffix>
+    <SharedNativeLibrarySuffix Condition="'$(SharedNativeLibrarySuffix)' == ''">.so</SharedNativeLibrarySuffix>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <LibrariesTestConfig Condition="'$(LibrariesTestConfig)' == ''">$(Configuration)</LibrariesTestConfig>
     <CoreClrTestCoreRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(TargetOS).$(Platform).$(CoreClrTestConfig)', 'Tests', 'Core_Root'))</CoreClrTestCoreRoot>
@@ -72,6 +75,12 @@
     <MonoThreadSuspend Condition="'$(TargetsBrowser)' == 'true' and '$(MonoThreadSuspend)' == ''">preemptive</MonoThreadSuspend>
     <!-- all other platforms -->
     <MonoThreadSuspend Condition="'$(MonoThreadSuspend)' == ''">hybrid</MonoThreadSuspend>
+  </PropertyGroup>
+
+  <!-- How to build runtime components? Static or dynamic. -->
+  <PropertyGroup>
+    <!-- by default, do dynamic components -->
+    <MonoComponentsStatic Condition="'$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
@@ -396,6 +405,11 @@
       <_MonoCMakeArgs Include="-DENABLE_MSCORDBI=1" />
     </ItemGroup>
 
+    <!-- Components -->
+    <ItemGroup Condition="'$(MonoComponentsStatic)' == 'true'">
+      <_MonoCMakeArgs Include="-DSTATIC_COMPONENTS=1" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_MonoCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCFLAGS, ' ')"</_MonoCFLAGSOption>
       <_MonoCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCXXFLAGS, ' ')"</_MonoCXXFLAGSOption>
@@ -704,7 +718,7 @@
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="install_name_tool -id @rpath/$(MonoFileName) $(RuntimeBinDir)$(MonoFileName)" />
 
     <!-- change component rpaths to refer to @rpath/$(MonoFileName) instad of @rpath/libmonosgen-2.0.so -->
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="install_name_tool -change @rpath/libmonosgen-2.0.dylib @rpath/$(MonoFileName) $(RuntimeBinDir)libmono-component-*" />
+    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and Exists('libmono-component-*$(SharedNativeLibrarySuffix)')" Command="install_name_tool -change @rpath/libmonosgen-2.0.dylib @rpath/$(MonoFileName) $(RuntimeBinDir)libmono-component-*$(SharedNativeLibrarySuffix)" />
   </Target>
 
   <Target Name="CleanMono">
