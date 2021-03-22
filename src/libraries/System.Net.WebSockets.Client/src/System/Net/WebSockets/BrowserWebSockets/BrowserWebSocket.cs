@@ -399,7 +399,7 @@ namespace System.Net.WebSockets
         /// <param name="messageType">Message type.</param>
         /// <param name="endOfMessage">If set to <c>true</c> end of message.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        public override async Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
 
@@ -421,7 +421,7 @@ namespace System.Net.WebSockets
             {
                 _writeBuffer ??= new MemoryStream();
                 _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
-                return Task.CompletedTask;
+                return;
             }
 
             MemoryStream? writtenBuffer = _writeBuffer;
@@ -448,23 +448,34 @@ namespace System.Net.WebSockets
                         using (Uint8Array uint8Buffer = Uint8Array.From(buffer))
                         {
                             _innerWebSocket!.Invoke("send", uint8Buffer);
+                            await Task.Delay(1, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);;
+                            while ((int)_innerWebSocket.GetObjectProperty("bufferedAmount") != 0)
+                            {
+                                ThrowIfNotConnected();
+                                await Task.Delay(200, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
+                            }
                         }
                         break;
                     default:
                         string strBuffer = buffer.Array == null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
                         _innerWebSocket!.Invoke("send", strBuffer);
+                        await Task.Delay(1, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);;
+                        while ((int)_innerWebSocket.GetObjectProperty("bufferedAmount") != 0)
+                        {
+                            ThrowIfNotConnected();
+                            await Task.Delay(200, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
+                        }
                         break;
                 }
             }
             catch (Exception excb)
             {
-                return Task.FromException(new WebSocketException(WebSocketError.NativeError, excb));
+                throw new WebSocketException(WebSocketError.NativeError, excb);
             }
             finally
             {
                 writtenBuffer?.Dispose();
             }
-            return Task.CompletedTask;
         }
 
         // This method is registered by the CancellationTokenSource in the receive async method
