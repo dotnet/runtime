@@ -678,7 +678,7 @@ in the interfaces themselves or in derived interfaces akin to default interface 
 
 ```
 T Power<T>(T t, uint power)
-    where T : IMultiply<T>
+    where T : IMultiplication<T>
 {
     T result = T.One();
     T powerOfT = t;
