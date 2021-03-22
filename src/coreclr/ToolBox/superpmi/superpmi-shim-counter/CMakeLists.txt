@@ -61,8 +61,6 @@ else()
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_CPP_LIB}
     )
-
-    install (FILES $<TARGET_PDB_FILE:superpmi-shim-counter> DESTINATION PDB)
 endif(CLR_CMAKE_HOST_UNIX)
 
-install (PROGRAMS $<TARGET_FILE:superpmi-shim-counter> DESTINATION .)
+install_clr(TARGETS superpmi-shim-counter DESTINATIONS .)

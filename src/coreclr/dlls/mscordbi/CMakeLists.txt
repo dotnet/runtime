@@ -126,4 +126,4 @@ if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 # add the install targets
-install_clr(TARGETS mscordbi ADDITIONAL_DESTINATIONS sharedFramework COMPONENT runtime)
+install_clr(TARGETS mscordbi DESTINATIONS . sharedFramework COMPONENT runtime)

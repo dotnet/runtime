@@ -80,4 +80,4 @@ add_subdirectory(../../zap ../../zap)
 add_subdirectory(../../vm/crossgen ../../vm/crossgen)
 
 # add the install targets
-install_clr(TARGETS crossgen ADDITIONAL_DESTINATIONS sharedFramework COMPONENT runtime)
+install_clr(TARGETS crossgen DESTINATIONS . sharedFramework COMPONENT runtime)

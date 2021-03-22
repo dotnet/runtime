@@ -126,4 +126,4 @@ else()
   )
 endif(CLR_CMAKE_HOST_UNIX)
 
-install_clr(TARGETS ilasm COMPONENT iltools)
+install_clr(TARGETS ilasm DESTINATIONS . COMPONENT iltools)

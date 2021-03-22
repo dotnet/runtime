@@ -14,4 +14,4 @@ if (NOT (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TAR
 endif()
 
 # publish runtimeinfo lib
-install(TARGETS runtimeinfo DESTINATION lib)
+install_clr(TARGETS runtimeinfo DESTINATIONS lib COMPONENT runtime)

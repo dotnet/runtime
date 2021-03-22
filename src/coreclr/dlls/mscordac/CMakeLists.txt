@@ -199,7 +199,7 @@ if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 # add the install targets
-install_clr(TARGETS mscordaccore ADDITIONAL_DESTINATIONS sharedFramework COMPONENT runtime)
+install_clr(TARGETS mscordaccore DESTINATIONS . sharedFramework COMPONENT runtime)
 
 if(CLR_CMAKE_HOST_WIN32)
     set(LONG_NAME_HOST_ARCH ${CLR_CMAKE_HOST_ARCH})

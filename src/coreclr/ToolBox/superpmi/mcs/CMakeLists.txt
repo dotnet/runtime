@@ -66,7 +66,6 @@ else()
         ${STATIC_MT_CPP_LIB}
     )
 
-    install (FILES $<TARGET_PDB_FILE:mcs> DESTINATION PDB)
 endif(CLR_CMAKE_HOST_UNIX)
 
-install (TARGETS mcs DESTINATION .)
+install_clr(TARGETS mcs DESTINATIONS .)

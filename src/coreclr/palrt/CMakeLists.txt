@@ -17,4 +17,4 @@ add_library_clr(palrt
 )
 
 # Install the static PAL library for VS
-install (TARGETS palrt DESTINATION lib)
+install_clr(TARGETS palrt DESTINATIONS lib)

@@ -235,7 +235,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
-install_clr(TARGETS coreclr ADDITIONAL_DESTINATIONS sharedFramework COMPONENT runtime)
+install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
 
 # Enable profile guided optimization
 add_pgo(coreclr)
