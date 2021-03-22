@@ -4,27 +4,31 @@
 #include "pal_x509.h"
 
 #include "pal_eckey.h"
-#include "pal_rsa.h"
 #include "pal_misc.h"
+#include "pal_rsa.h"
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
-#include <ctype.h>
 
-#define INIT_LOCALS(name, ...) \
-    enum { __VA_ARGS__, count_##name }; \
-    jobject name[count_##name] = { 0 }; \
+#define INIT_LOCALS(name, ...)                                                                                         \
+    enum                                                                                                               \
+    {                                                                                                                  \
+        __VA_ARGS__,                                                                                                   \
+        count_##name                                                                                                   \
+    };                                                                                                                 \
+    jobject name[count_##name] = {0};
 
-#define RELEASE_LOCALS(name, env) \
-{ \
-    for (int i_##name = 0; i_##name < count_##name; ++i_##name) \
-    { \
-        jobject local = name[i_##name]; \
-        if (local != NULL) \
-            (*env)->DeleteLocalRef(env, local); \
-    } \
-} \
+#define RELEASE_LOCALS(name, env)                                                                                      \
+    {                                                                                                                  \
+        for (int i_##name = 0; i_##name < count_##name; ++i_##name)                                                    \
+        {                                                                                                              \
+            jobject local = name[i_##name];                                                                            \
+            if (local != NULL)                                                                                         \
+                (*env)->DeleteLocalRef(env, local);                                                                    \
+        }                                                                                                              \
+    }
 
 #define INSUFFICIENT_BUFFER -1
 
@@ -189,7 +193,8 @@ int32_t AndroidCryptoNative_X509ExportPkcs7(jobject* /*X509Certificate[]*/ certs
 
     // CertPath certPath = certFactory.generateCertPath(certList);
     // byte[] encoded = certPath.getEncoded("PKCS7");
-    loc[certPath] = (*env)->CallObjectMethod(env, loc[certFactory], g_CertFactoryGenerateCertPathFromList, loc[certList]);
+    loc[certPath] =
+        (*env)->CallObjectMethod(env, loc[certFactory], g_CertFactoryGenerateCertPathFromList, loc[certList]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     loc[pkcs7Type] = JSTRING("PKCS7");
     loc[encoded] = (*env)->CallObjectMethod(env, loc[certPath], g_CertPathGetEncoded, loc[pkcs7Type]);
@@ -232,7 +237,8 @@ PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t* buf, i
 
     // CertPath certPath = certFactory.generateCertPath(stream, "PKCS7");
     loc[pkcs7Type] = JSTRING("PKCS7");
-    loc[certPath] = (*env)->CallObjectMethod(env, loc[certFactory], g_CertFactoryGenerateCertPathFromStream, loc[stream], loc[pkcs7Type]);
+    loc[certPath] = (*env)->CallObjectMethod(
+        env, loc[certFactory], g_CertFactoryGenerateCertPathFromStream, loc[stream], loc[pkcs7Type]);
     if (!TryClearJNIExceptions(env))
     {
         ret = PAL_Pkcs7;
@@ -295,11 +301,6 @@ static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-static size_t min_size_t(size_t x, size_t y)
-{
-    return (x < y) ? x : y;
-}
-
 static void FindCertStart(const uint8_t** buffer, int32_t* len)
 {
     assert(buffer != NULL && *buffer != NULL);
@@ -318,23 +319,26 @@ static void FindCertStart(const uint8_t** buffer, int32_t* len)
     while (lengthLocal > 0)
     {
         const char pemHeader[] = "-----BEGIN ";
+        int32_t pemHeaderLength = (int32_t)(sizeof(pemHeader) - 1); // Exclude the null-terminator
         // Skip until we see the - that could start a PEM block.
-        while(lengthLocal > 0 && (!iscntrl(*bufferLocal) || isspace(*bufferLocal)) && *bufferLocal != pemHeader[0])
+        while (lengthLocal >= pemHeaderLength && (!iscntrl(*bufferLocal) || isspace(*bufferLocal)) &&
+               *bufferLocal != pemHeader[0])
         {
             bufferLocal += 1;
             lengthLocal -= 1;
         }
-        
-        if (lengthLocal == 0 || (iscntrl(*bufferLocal) && !isspace(*bufferLocal)))
+
+        if (lengthLocal < pemHeaderLength || (iscntrl(*bufferLocal) && !isspace(*bufferLocal)))
         {
-            // Either the buffer is empty or we encountered a control character that isn't whitespace.
-            // In the empty case, we didn't find the PEM header, so we can't skip to it.
+            // Either the buffer doesn't have enough space to contain a PEM header
+            // or we encountered a control character that isn't whitespace.
+            // In the insufficient size case, we didn't find the PEM header, so we can't skip to it.
             // In the control character case, we know that this isn't explanatory info since that needs to
             // all be printable or whitespace characters, not non-whitespace control characters.
             return;
         }
-        
-        if (memcmp(bufferLocal, pemHeader, min_size_t((size_t)lengthLocal, sizeof(pemHeader) - 1)) == 0)
+
+        if (memcmp(bufferLocal, pemHeader, (size_t)pemHeaderLength) == 0)
         {
             // We found the PEM header.
             *buffer = bufferLocal;
