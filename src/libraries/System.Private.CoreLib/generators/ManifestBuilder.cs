@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Globalization;
+using System.Numerics;
 using System.Text;
 
 using Microsoft.CodeAnalysis;
@@ -25,7 +26,7 @@ namespace Generators
         /// Build a manifest for 'providerName' with the given GUID, which will be packaged into 'dllName'.
         /// 'resources, is a resource manager.  If specified all messages are localized using that manager.
         /// </summary>
-        public ManifestBuilder(StringBuilder builder, string providerName, Guid providerGuid)
+        public ManifestBuilder(StringBuilder builder, string providerName, Guid providerGuid, Dictionary<ulong, string>? keywordMap, Dictionary<int, string>? taskMap)
         {
             this.providerName = providerName;
             this._builder = builder;
@@ -41,7 +42,7 @@ namespace Generators
             sb.AppendLine(" <instrumentation xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:win=\"http://manifests.microsoft.com/win/2004/08/windows/events\">");
             sb.AppendLine("  <events xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
             sb.Append("<provider name=\"").Append(providerName).
-               Append("\" guid=\"{{").Append(providerGuid.ToString()).Append("}}");
+               Append("\" guid=\"{").Append(providerGuid.ToString()).Append("}");
                /*
             if (dllName != null)
                 sb.Append("\" resourceFileName=\"").Append(dllName).Append("\" messageFileName=\"").Append(dllName);
@@ -49,6 +50,9 @@ namespace Generators
             string symbolsName = providerName.Replace("-", "").Replace('.', '_');  // Period and - are illegal replace them.
             sb.Append("\" symbol=\"").Append(symbolsName);
             sb.AppendLine("\">");
+
+            keywordTab = keywordMap;
+            taskTab = taskMap;
         }
 
         public void AddOpcode(string name, int value)
@@ -72,6 +76,26 @@ namespace Generators
             keywordTab ??= new Dictionary<ulong, string>();
             keywordTab[value] = name;
         }
+        public void AddMap(Dictionary<string, Dictionary<string, int>> ecMap)
+        {
+            maps ??= new Dictionary<string, Dictionary<string, int>>();
+
+            foreach (string enumName in ecMap.Keys)
+            {
+                if (!maps.ContainsKey(enumName))
+                {
+                    maps.Add(enumName, new Dictionary<string, int>());
+                    
+                    foreach (string fieldName in ecMap[enumName].Keys)
+                    {
+                        if (!maps[enumName].ContainsKey(fieldName))
+                        {
+                            maps[enumName][fieldName] = ecMap[enumName][fieldName];
+                        }
+                    }
+                }
+            }
+        }
 
         public void StartEvent(string eventName, EventAttribute eventAttribute)
         {
@@ -87,14 +111,15 @@ namespace Generators
             // at this point we add to the manifest's stringTab a message that is as-of-yet
             // "untranslated to manifest convention", b/c we don't have the number or position
             // of any byte[] args (which require string format index updates)
-            // WriteMessageAttrib(events, "event", eventName, eventAttribute.Message);
-/*
+            WriteMessageAttrib(events, "event", eventName, eventAttribute.Message);
+
             if (eventAttribute.Keywords != 0)
             {
                 events.Append(" keywords=\"");
                 AppendKeywords(events, (ulong)eventAttribute.Keywords, eventName);
                 events.Append('"');
             }
+            /*
             if (eventAttribute.Opcode != 0)
             {
                 events.Append(" opcode=\"").Append(GetOpcodeName(eventAttribute.Opcode, eventName)).Append('"');
@@ -109,7 +134,7 @@ namespace Generators
             {
                 events.Append(" channel=\"").Append(GetChannelName(eventAttribute.Channel, eventName, eventAttribute.Message)).Append('"');
             }
-*/
+            */
         }
 
         public void AddEventParameter(ITypeSymbol? type, string name)
@@ -353,11 +378,74 @@ namespace Generators
         public string CreateManifestString()
         {
             // TODO: Add maps, keywords, tasks, channels generation logic.
+            
+            Span<char> ulongHexScratch = stackalloc char[16]; // long enough for ulong.MaxValue formatted as hex
+            // Write out the tasks
+            if (taskTab != null)
+            {
+                sb.AppendLine(" <tasks>");
+                var sortedTasks = new List<int>(taskTab.Keys);
+                sortedTasks.Sort();
+                foreach (int task in sortedTasks)
+                {
+                    sb.Append("  <task");
+                    WriteNameAndMessageAttribs(sb, "task", taskTab[task]);
+                    sb.Append(" value=\"").Append(task).AppendLine("\"/>");
+                }
+                sb.AppendLine(" </tasks>");
+            }
+
+            // Write out the maps
+            sb.AppendLine(" <maps>");
+            foreach (string enumName in maps.Keys)
+            {
+                sb.Append("  <").Append("valueMap").Append(" name=\"").Append(enumName).AppendLine("\">");
+                foreach (string fieldName in maps[enumName].Keys)
+                {
+                    ulong hexValue = (ulong)Convert.ToInt64(maps[enumName][fieldName]);
+                    string hexValueFormatted = hexValue.ToString("x", CultureInfo.InvariantCulture);
+                    sb.Append("   <").Append("map value=\"0x").Append(hexValueFormatted).Append('"');
+                    WriteMessageAttrib(sb, "map", enumName + "." + fieldName, enumName);
+                    sb.AppendLine("/>");
+                }
+                sb.AppendLine("  </valueMap>");
+            }
+            sb.AppendLine(" </maps>");
+
+            // TODO: WRITE OUT OPCODE
+
+            // Write out the keywords
+            if (keywordTab != null)
+            {
+                sb.AppendLine(" <keywords>");
+                var sortedKeywords = new List<ulong>(keywordTab.Keys);
+                sortedKeywords.Sort();
+                foreach (ulong keyword in sortedKeywords)
+                {
+                    sb.Append("  <keyword");
+                    WriteNameAndMessageAttribs(sb, "keyword", keywordTab[keyword]);
+                    string hexValueFormatted = keyword.ToString("x", CultureInfo.InvariantCulture);
+                    sb.Append(" mask=\"0x").Append(hexValueFormatted).AppendLine("\"/>");
+                }
+                sb.AppendLine(" </keywords>");
+            }
+
+
             sb.AppendLine(" <events>");
             sb.Append(events.ToString());
             sb.AppendLine(" </events>");
+            sb.AppendLine(" <templates>");
             sb.Append(templates.ToString());
+            sb.AppendLine(" </templates>");
+
+            // TODO: StringTable? (localization)
+
             return sb.ToString();
+        }
+        private void WriteNameAndMessageAttribs(StringBuilder stringBuilder, string elementName, string name)
+        {
+            stringBuilder.Append(" name=\"").Append(name).Append('"');
+            WriteMessageAttrib(sb, elementName, name, name);
         }
         private void AppendKeywords(StringBuilder sb, ulong keywords, string eventName)
         {
@@ -724,7 +812,9 @@ namespace Generators
         // State we track between StartEvent and EndEvent.
         private string? eventName;               // Name of the event currently being processed.
         private int numParams;                  // keeps track of the number of args the event has.
-        private List<int>? byteArrArgIndices;   // keeps track of the index of each byte[] argument        
+        private List<int>? byteArrArgIndices;   // keeps track of the index of each byte[] argument
+
+        private Dictionary<string, Dictionary<string, int>> maps;
     }
 
     /// <summary>

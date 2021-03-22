@@ -22,12 +22,16 @@ namespace Generators
             private readonly CancellationToken _cancellationToken;
             private readonly Compilation _compilation;
             private readonly Action<Diagnostic> _reportDiagnostic;
+            private List<string> _debugStrings;
+
+            public List<string> GetDebugStrings() => _debugStrings;
 
             public Parser(Compilation compilation, Action<Diagnostic> reportDiagnostic, CancellationToken cancellationToken)
             {
                 _compilation = compilation;
                 _cancellationToken = cancellationToken;
                 _reportDiagnostic = reportDiagnostic;
+                _debugStrings = new List<string>();
             }
 
             public ITypeSymbol? GetStringTypeSymbol()
@@ -69,6 +73,7 @@ namespace Generators
                         }
 
                         bool autoGenerate = false;
+
                         foreach (AttributeListSyntax? cal in classDef.AttributeLists)
                         {
                             foreach (AttributeSyntax? ca in cal.Attributes)
@@ -171,6 +176,32 @@ namespace Generators
                             continue;
                         }
 
+                        // By now we have an eventSourceClass definition.
+                        // Parse class definition for any subclass definitions for EventSource (specifically Keyword and Task class)
+                        foreach (SyntaxNode child in classDef.ChildNodes())
+                        {
+                            if (child is ClassDeclarationSyntax classChild)
+                            {
+                                string classChildIdentifier = classChild.Identifier.ToString();
+                                
+                                // check if we care about this child class def
+                                // we only care about "Tasks" and "Keywords" classes.
+                                if (classChildIdentifier == "Tasks")
+                                {
+                                    eventSourceClass.TaskMap = GetTasksMap(classChild);
+                                }
+                                else if (classChildIdentifier == "Keywords")
+                                {
+                                    eventSourceClass.KeywordMap = GetKeywordsMap(classChild);
+                                }
+                                else
+                                {
+                                    // don't care about these
+                                    continue;
+                                }
+                            }
+                        }
+
                         results ??= new List<EventSourceClass>();
                         results.Add(eventSourceClass);
                     }
@@ -194,7 +225,7 @@ namespace Generators
                     string eventName;
                     string eventId = string.Empty;
                     string eventLevel = "4"; // default is Informational
-                    string eventKeywords = "0";
+                    string eventKeywords = "";
                     string opcode;
                     string task;
                     List<EventParameter>? parameters = null;
@@ -234,6 +265,7 @@ namespace Generators
                                             {
                                                 string? argName = attribArg.NameEquals!.Name.Identifier.ToString();
                                                 string? value = sm.GetConstantValue(attribArg.Expression, _cancellationToken).ToString();
+                                                debugStrings.Add($"{argName} - {value}");
                                                 switch (argName)
                                                 {
                                                     case "Name":
@@ -288,13 +320,15 @@ namespace Generators
                                                     continue;
                                                 }
                                                 
-                                                if (!maps.ContainsKey(yes.Type.ToDisplayString()))
+                                                if (!maps.ContainsKey(yes.Type.Name))
                                                 {
-                                                    maps.Add(yes.Type.ToDisplayString(), new Dictionary<string, int>());
+                                                    maps.Add(yes.Type.Name, new Dictionary<string, int>());
+                                                    maps[yes.Type.Name].Add(symbol.Name, recordedFieldCount);
+                                                    recordedFieldCount++;
                                                 }
-                                                else if (!maps[yes.Type.ToDisplayString()].ContainsKey(symbol.Name))
+                                                else if (!maps[yes.Type.Name].ContainsKey(symbol.Name))
                                                 {
-                                                    maps[yes.Type.ToDisplayString()].Add(symbol.Name, recordedFieldCount);
+                                                    maps[yes.Type.Name].Add(symbol.Name, recordedFieldCount);
                                                     recordedFieldCount++;
                                                 }
                                                 debugStrings.Add(symbol.ToDisplayString());
@@ -336,6 +370,71 @@ namespace Generators
                 }
                 return metadataTokens;
             }
+
+            private Dictionary<ulong, string> GetKeywordsMap(ClassDeclarationSyntax classDef)
+            {
+                Dictionary<ulong, string> map = new Dictionary<ulong, string>();
+
+                // grab the semantic model for the child class
+                SemanticModel smm = _compilation.GetSemanticModel(classDef.SyntaxTree);
+
+                foreach(SyntaxNode node in classDef.ChildNodes())
+                {
+                    // go over all field decl, and grab the variable names and values
+                    if (node is FieldDeclarationSyntax fieldSyntax)
+                    {
+                        foreach (var variable in fieldSyntax.Declaration.Variables)
+                        {
+                            ISymbol? fieldSymbol = smm.GetDeclaredSymbol(variable);
+
+                            // Do stuff with the symbol here
+                            if (fieldSymbol is null && variable.Initializer is null)
+                            {
+                                continue;
+                            }
+
+                            string? valStr = smm.GetConstantValue(variable.Initializer!.Value).ToString();
+                            ulong value = UInt64.Parse(valStr);
+
+                            map.Add(value, fieldSymbol!.Name);
+                        }
+                    }
+                }
+
+                return map;
+            }
+
+            private Dictionary<int, string> GetTasksMap(ClassDeclarationSyntax classDef)
+            {
+                Dictionary<int, string> map = new Dictionary<int, string>();
+
+                // grab the semantic model for the child class
+                SemanticModel smm = _compilation.GetSemanticModel(classDef.SyntaxTree);
+
+                foreach(SyntaxNode node in classDef.ChildNodes())
+                {
+                    // go over all field decl, and grab the variable names and values
+                    if (node is FieldDeclarationSyntax fieldSyntax)
+                    {
+                        foreach (var variable in fieldSyntax.Declaration.Variables)
+                        {
+                            ISymbol? fieldSymbol = smm.GetDeclaredSymbol(variable);
+
+                            // Do stuff with the symbol here
+                            if (fieldSymbol is null && variable.Initializer is null)
+                            {
+                                continue;
+                            }
+
+                            string? valStr = smm.GetConstantValue(variable.Initializer!.Value).ToString();
+                            int value = Int32.Parse(valStr);
+                            map.Add(value, fieldSymbol!.Name);
+                        }
+                    }
+                }
+                return map;
+            }
+
             public string GetFullMetadataName(ISymbol s) 
             {
                 if (s == null || IsRootNamespace(s))

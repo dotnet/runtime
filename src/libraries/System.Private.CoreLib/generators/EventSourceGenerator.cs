@@ -35,7 +35,7 @@ namespace Generators
 
         public void Initialize(GeneratorInitializationContext context)
         {
-            Debugger.Launch();
+            // Debugger.Launch();
             context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
         }
 
@@ -55,7 +55,7 @@ namespace Generators
             if (eventSources?.Length > 0 && stringTypeSymbol is not null)
             {
                 Emitter? e = new Emitter(context);
-                e.Emit(eventSources, context.CancellationToken, stringTypeSymbol);
+                e.Emit(eventSources, context.CancellationToken, stringTypeSymbol, p.GetDebugStrings());
             }
         }
 
@@ -131,6 +131,9 @@ namespace Generators
             public List<EventSourceEvent> Events = new List<EventSourceEvent>();
             public List<string> DebugStrings = new List<string>(); // TODO: REMOVE ME!!!
             public Dictionary<string, Dictionary<string, int>> Maps = new Dictionary<string, Dictionary<string,int>>();
+
+            public Dictionary<int, string>? TaskMap;
+            public Dictionary<ulong, string>? KeywordMap;
         }
 
         private class EventSourceEvent

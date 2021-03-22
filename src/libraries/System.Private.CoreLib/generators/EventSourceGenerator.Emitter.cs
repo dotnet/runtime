@@ -23,7 +23,7 @@ namespace Generators
 
             public Emitter(GeneratorExecutionContext context) => _context = context;
 
-            public void Emit(EventSourceClass[] eventSources, CancellationToken cancellationToken, ITypeSymbol stringTypeSymbol)
+            public void Emit(EventSourceClass[] eventSources, CancellationToken cancellationToken, ITypeSymbol stringTypeSymbol, List<string> debugStrings)
             {
                 File.WriteAllText(@"D:\sourcegen-manifest.txt", "Manifests\n");
                 File.WriteAllText(@"D:\sourcegen-debug.txt", "Debug Prints\n");
@@ -43,6 +43,11 @@ namespace Generators
                     _context.AddSource($"{ec.ClassName}.Generated", SourceText.From(_builder.ToString(), Encoding.UTF8));//, Encoding.UTF8));
 
                     _builder.Clear();
+                }
+
+                foreach (string str in debugStrings)
+                {
+                    File.AppendAllText(@"D:\sourcegen-debug.txt", str+"\n");
                 }
             }
 
@@ -118,7 +123,7 @@ namespace {ec.Namespace}
 
             private string MetadataForProvider(EventSourceClass ec, ITypeSymbol stringTypeSymbol)
             {
-                ManifestBuilder manifest = new ManifestBuilder(_builder, ec.Namespace + "." + ec.ClassName, ec.Guid, ec.Maps);
+                ManifestBuilder manifest = new ManifestBuilder(_builder, ec.Namespace + "." + ec.ClassName, ec.Guid, ec.KeywordMap, ec.TaskMap);
                                 // Add an entry unconditionally for event ID 0 which will be for a string message.
                 manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
                 manifest.AddEventParameter(stringTypeSymbol, "message");
@@ -131,6 +136,10 @@ namespace {ec.Namespace}
                     manifest.AddKeyword("Session1", (long)0x4000 << 32);
                     manifest.AddKeyword("Session0", (long)0x8000 << 32);
                 }
+
+                // add map
+                manifest.AddMap(ec.Maps);
+
                 foreach (EventSourceEvent evt in ec.Events)
                 {
                     EventAttribute eventAttribute = new EventAttribute(Int32.Parse(evt.Id));
@@ -138,7 +147,7 @@ namespace {ec.Namespace}
                     try
                     {
                         eventAttribute.Level = (EventLevel)(Int32.Parse(evt.Level));
-                        eventAttribute.Keywords = (EventKeywords)(1);
+                        eventAttribute.Keywords = (EventKeywords)(Int64.Parse(evt.Keywords));
                         eventAttribute.Version = 0; // TODO: FIX 
                     }
                     catch (Exception)
