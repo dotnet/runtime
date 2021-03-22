@@ -1386,7 +1386,7 @@ runtimeconfig_json_read_props (const char *ptr, const char **endp, int nprops, g
 		char *property_key;
 		char *property_value;
 
-		str_len = mono_metadata_decode_value(ptr, &ptr);
+		str_len = mono_metadata_decode_value (ptr, &ptr);
 		property_key = g_new0 (char, str_len + 1);
 		strncpy (property_key, ptr, str_len);
 		property_key [str_len] = '\0';
