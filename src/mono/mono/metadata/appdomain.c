@@ -1338,7 +1338,7 @@ mono_runtime_install_appctx_properties (void)
 
 	appctx_keys = NULL;
 	appctx_values = NULL;
-	if (runtime_config_arg){
+	if (runtime_config_arg) {
 		runtime_config_arg = NULL;
 		runtime_config_cleanup_fn = NULL;
 		runtime_config_user_data = NULL;
