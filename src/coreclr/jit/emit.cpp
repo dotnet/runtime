@@ -3747,6 +3747,14 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
 #endif // DEBUG_EMIT
 
+        // Add the shrinkage to the ongoing offset adjustment. This needs to happen during the
+        // processing of an instruction group, and not only at the beginning of an instruction
+        // group, or else the difference of IG sizes between debug and release builds can cause
+        // debug/non-debug asm diffs.
+        int offsShrinkage = estimatedSize - actualSize;
+        JITDUMP("Increasing size adj %d by %d => %d\n", emitOffsAdj, offsShrinkage, emitOffsAdj + offsShrinkage);
+        emitOffsAdj += offsShrinkage;
+
         /* The instruction size estimate wasn't accurate; remember this */
 
         ig->igFlags |= IGF_UPD_ISZ;
@@ -5273,6 +5281,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     emitCodeBlock = nullptr;
     emitConsBlock = nullptr;
 
+    emitOffsAdj = 0;
+
     /* Tell everyone whether we have fully interruptible code or not */
 
     emitFullyInt   = fullyInt;
@@ -5733,16 +5743,36 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
         /* Record the actual offset of the block, noting the difference */
 
-        emitOffsAdj = ig->igOffs - emitCurCodeOffs(cp);
-        assert(emitOffsAdj >= 0);
+        int newOffsAdj = ig->igOffs - emitCurCodeOffs(cp);
 
 #if DEBUG_EMIT
-        if ((emitOffsAdj != 0) && emitComp->verbose)
+#ifdef DEBUG
+        // Under DEBUG, only output under verbose flag.
+        if (emitComp->verbose)
+#endif // DEBUG
         {
-            printf("Block predicted offs = %08X, actual = %08X -> size adj = %d\n", ig->igOffs, emitCurCodeOffs(cp),
-                   emitOffsAdj);
+            if (newOffsAdj != 0)
+            {
+                printf("Block predicted offs = %08X, actual = %08X -> size adj = %d\n", ig->igOffs, emitCurCodeOffs(cp),
+                       newOffsAdj);
+            }
+            if (emitOffsAdj != newOffsAdj)
+            {
+                printf("Block expected size adj %d not equal to actual size adj %d (probably some instruction size was "
+                       "underestimated but not included in the running `emitOffsAdj` count)\n",
+                       emitOffsAdj, newOffsAdj);
+            }
         }
+        // Make it noisy in DEBUG if these don't match. In release, the noway_assert below checks the
+        // fatal condition.
+        assert(emitOffsAdj == newOffsAdj);
 #endif // DEBUG_EMIT
+
+        // We can't have over-estimated the adjustment, or we might have underestimated a jump distance.
+        noway_assert(emitOffsAdj <= newOffsAdj);
+
+        emitOffsAdj = newOffsAdj;
+        assert(emitOffsAdj >= 0);
 
         ig->igOffs = emitCurCodeOffs(cp);
         assert(IsCodeAligned(ig->igOffs));
