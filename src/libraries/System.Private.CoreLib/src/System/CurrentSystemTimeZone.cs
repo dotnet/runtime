@@ -22,7 +22,7 @@ using System.Globalization;
 namespace System
 {
     [Obsolete("System.CurrentSystemTimeZone has been deprecated.  Please investigate the use of System.TimeZoneInfo.Local instead.")]
-    internal class CurrentSystemTimeZone : TimeZone
+    internal sealed class CurrentSystemTimeZone : TimeZone
     {
         // Standard offset in ticks to the Universal time if
         // no daylight saving is in used.

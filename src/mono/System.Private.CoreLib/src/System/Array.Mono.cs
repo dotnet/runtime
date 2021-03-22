@@ -13,7 +13,7 @@ namespace System
     public partial class Array
     {
         [StructLayout(LayoutKind.Sequential)]
-        private class RawData
+        private sealed class RawData
         {
             public IntPtr Bounds;
             // The following is to prevent a mismatch between the managed and runtime

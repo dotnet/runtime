@@ -2006,10 +2006,13 @@ namespace System.Tests
 
         public static IEnumerable<object[]> UnsupportedEnum_TestData()
         {
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1) };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 2) };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1) };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 2) };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 1) };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 2) };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1) };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 2) };
+            }
         }
 
         [Theory]
