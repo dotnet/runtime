@@ -3,6 +3,7 @@
 
 using System.Formats.Asn1;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Test.Cryptography;
 using Xunit;
@@ -71,10 +72,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509ChainStatusFlags intermediateErrors,
             X509ChainStatusFlags rootErrors)
         {
+            string testName = $"{nameof(BuildInvalidSignatureTwice)} {endEntityErrors} {intermediateErrors} {rootErrors}";
             TestDataGenerator.MakeTestChain3(
                 out X509Certificate2 endEntityCert,
                 out X509Certificate2 intermediateCert,
-                out X509Certificate2 rootCert);
+                out X509Certificate2 rootCert,
+                testName: testName);
 
             X509Certificate2 TamperIfNeeded(X509Certificate2 input, X509ChainStatusFlags flags)
             {
@@ -405,10 +408,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             bool saveAllInCustomTrustStore,
             X509ChainStatusFlags chainFlags)
         {
+            string testName = $"{nameof(CustomRootTrustDoesNotTrustIntermediates)} {saveAllInCustomTrustStore} {chainFlags}";
             TestDataGenerator.MakeTestChain3(
                 out X509Certificate2 endEntityCert,
                 out X509Certificate2 intermediateCert,
-                out X509Certificate2 rootCert);
+                out X509Certificate2 rootCert,
+                testName: testName);
 
             using (endEntityCert)
             using (intermediateCert)
@@ -802,7 +807,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         private static void TestNameConstrainedChain(
             string intermediateNameConstraints,
             SubjectAlternativeNameBuilder endEntitySanBuilder,
-            Action<bool, X509Chain> body)
+            Action<bool, X509Chain> body,
+            [CallerMemberName] string testName = null)
         {
             X509Extension[] endEntityExtensions = new []
             {
@@ -832,7 +838,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 out X509Certificate2 intermediateCert,
                 out X509Certificate2 rootCert,
                 intermediateExtensions: intermediateExtensions,
-                endEntityExtensions: endEntityExtensions);
+                endEntityExtensions: endEntityExtensions,
+                testName: testName);
 
             using (endEntityCert)
             using (intermediateCert)
