@@ -98,7 +98,7 @@ void deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
     // before it uses the TPA. So putting the servicing entry into TPA is not enough, since runtime would
     // resolve it from the bundle first anyway. Disabling the file's entry in the bundle
     // ensures that the servicing entry in the TPA gets priority.
-    if (is_servicing && bundle::info_t::is_single_file_bundle())
+    if (is_servicing && bundle::info_t::is_single_file_bundle() && pal::file_exists(candidate.c_str()))
     {
         bundle::runner_t* app = bundle::runner_t::mutable_app();
         assert(!app->has_base(base));
