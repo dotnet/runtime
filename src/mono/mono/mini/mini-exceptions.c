@@ -2282,6 +2282,12 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 			*ctx = new_ctx;
 			continue;
 		case FRAME_TYPE_INTERP_ENTRY:
+			if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
+				/*
+				 * There might be AOTed frames above the intepreted frames which can handle the exception,
+				 * so stop first pass, the caller will rethrow the exception, starting the process again.
+				 */
+				return MONO_FIRST_PASS_UNHANDLED;
 			*ctx = new_ctx;
 			continue;
 		case FRAME_TYPE_INTERP:
