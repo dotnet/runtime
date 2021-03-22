@@ -263,7 +263,6 @@ namespace Generators
             }
             events.AppendLine("/>");
 
-/*
             if (byteArrArgIndices != null)
                 perEventByteArrayArgIndices[eventName] = byteArrArgIndices;
 
@@ -275,7 +274,6 @@ namespace Generators
                 msg = TranslateToManifestConvention(msg, eventName);
                 stringTab[prefixedEventName] = msg;
             }
-*/
         }
         private string TranslateToManifestConvention(string eventMessage, string evtName)
         {
@@ -459,8 +457,34 @@ namespace Generators
             sb.AppendLine(" <templates>");
             sb.Append(templates.ToString());
             sb.AppendLine(" </templates>");
+            sb.AppendLine("</provider>");
+            sb.AppendLine("</events>");
+            sb.AppendLine("</instrumentation>");
 
             // TODO: StringTable? (localization)
+            // Output the localization information.
+
+            /*
+            sb.AppendLine("<localization>");
+
+            var sortedStrings = new string[stringTab.Keys.Count];
+            stringTab.Keys.CopyTo(sortedStrings, 0);
+            Array.Sort<string>(sortedStrings, 0, sortedStrings.Length);
+
+            CultureInfo ci = CultureInfo.CurrentUICulture;
+            sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
+            sb.AppendLine("  <stringTable>");
+            foreach (string stringKey in sortedStrings)
+            {
+                string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
+                sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
+            }
+            sb.AppendLine("  </stringTable>");
+            sb.AppendLine(" </resources>");
+
+            sb.AppendLine("</localization>");
+            */
+            sb.AppendLine("</instrumentationManifest>");
 
             return sb.ToString();
         }

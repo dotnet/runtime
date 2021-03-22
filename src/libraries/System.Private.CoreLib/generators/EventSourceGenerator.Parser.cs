@@ -228,6 +228,7 @@ namespace Generators
                     string eventKeywords = "";
                     string opcode;
                     string task;
+                    string version = "0";
                     List<EventParameter>? parameters = null;
 
                     foreach (AttributeListSyntax? mal in method.AttributeLists)
@@ -282,6 +283,9 @@ namespace Generators
                                                         break;
                                                     case "Task":
                                                         task = value;
+                                                        break;
+                                                    case "Version":
+                                                        version = value;
                                                         break;
                                                     default:
                                                         break;
@@ -362,7 +366,8 @@ namespace Generators
                                     Id = eventId,
                                     Keywords = eventKeywords,
                                     Level = eventLevel,
-                                    Parameters = parameters
+                                    Parameters = parameters,
+                                    Version = version
                                 });
                             }
                         }

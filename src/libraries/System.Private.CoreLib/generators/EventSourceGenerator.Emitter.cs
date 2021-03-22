@@ -148,7 +148,7 @@ namespace {ec.Namespace}
                     {
                         eventAttribute.Level = (EventLevel)(Int32.Parse(evt.Level));
                         eventAttribute.Keywords = (EventKeywords)(Int64.Parse(evt.Keywords));
-                        eventAttribute.Version = 0; // TODO: FIX 
+                        eventAttribute.Version = (byte)(Int32.Parse(evt.Version));
                     }
                     catch (Exception)
                     {
