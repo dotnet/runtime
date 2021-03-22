@@ -56,8 +56,8 @@ namespace System.Threading.Tasks
     [StructLayout(LayoutKind.Auto)]
     public readonly struct ValueTask : IEquatable<ValueTask>
     {
-        /// <summary>A task canceled using `new CancellationToken(true)`.</summary>
-        private static readonly Task s_canceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
+        /// <summary>A task canceled using `new CancellationToken(true)`. Lazily created only when first needed.</summary>
+        private static Task? s_canceledTask;
 
         /// <summary>null if representing a successful synchronous completion, otherwise a <see cref="Task"/> or a <see cref="IValueTaskSource"/>.</summary>
         internal readonly object? _obj;
@@ -216,7 +216,8 @@ namespace System.Threading.Tasks
                             return task;
                         }
 
-                        return s_canceledTask;
+                        // Benign race condition to initialize cached task, as identity doesn't matter.
+                        return s_canceledTask ??= Task.FromCanceled(new CancellationToken(canceled: true));
                     }
                     else
                     {
@@ -602,13 +603,8 @@ namespace System.Threading.Tasks
                             return task;
                         }
 
-                        Task<TResult>? canceledTask = s_canceledTask;
-                        if (canceledTask == null)
-                        {
-                            // Benign race condition to initialize cached task, as identity doesn't matter.
-                            s_canceledTask = canceledTask = Task.FromCanceled<TResult>(new CancellationToken(true));
-                        }
-                        return canceledTask;
+                        // Benign race condition to initialize cached task, as identity doesn't matter.
+                        return s_canceledTask ??= Task.FromCanceled<TResult>(new CancellationToken(true));
                     }
                     else
                     {
