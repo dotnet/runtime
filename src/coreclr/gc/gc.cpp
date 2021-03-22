@@ -17649,36 +17649,45 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         }
     }
 
-    if (conserve_mem_setting != 0)
+    if ((conserve_mem_setting != 0) && (n >= (max_generation-1)))
     {
         float frag_limit = 1.0f - conserve_mem_setting / 10.0f;
 
 #ifdef MULTIPLE_HEAPS
         size_t loh_size = 0;
+        size_t gen2_size = 0;
         for (int hn = 0; hn < gc_heap::n_heaps; hn++)
         {
             gc_heap* hp = gc_heap::g_heaps[hn];
-            loh_size += hp->generation_sizes (hp->generation_of (loh_generation));
+            loh_size  += hp->generation_sizes (hp->generation_of (loh_generation));
+            gen2_size += hp->generation_sizes (hp->generation_of (max_generation));
         }
 #else
-        size_t loh_size = generation_sizes (generation_of (loh_generation));
+        size_t loh_size  = generation_sizes (generation_of (loh_generation));
+        size_t gen2_size = generation_sizes (generation_of (max_generation));
 #endif //MULTIPLE_HEAPS
         float loh_frag_ratio = 0.0f;
+        float combined_frag_ratio = 0.0f;
         if (loh_size != 0)
         {
-            size_t loh_frag = get_total_gen_fragmentation(loh_generation);
-            loh_frag_ratio = ((float)loh_frag) / (float)loh_size;
+            size_t loh_frag  = get_total_gen_fragmentation (loh_generation);
+            size_t gen2_frag = get_total_gen_fragmentation (max_generation);
+            loh_frag_ratio = (float)loh_frag / (float)loh_size;
+            combined_frag_ratio = (float)(gen2_frag + loh_frag) / (float)(gen2_size + loh_size);
         }
-        if (loh_frag_ratio > frag_limit)
+        if (combined_frag_ratio > frag_limit)
         {
-            dprintf(GTC_LOG, ("loh frag: %f > limit %f", loh_frag_ratio, frag_limit));
-            gc_data_global.gen_to_condemn_reasons.set_condition (gen_joined_limit_loh_frag);
+            dprintf (GTC_LOG, ("combined frag: %f > limit %f, loh frag: %f", combined_frag_ratio, frag_limit, loh_frag_ratio));
+            gc_data_global.gen_to_condemn_reasons.set_condition (gen_max_high_frag_p);
 
             n = max_generation;
             *blocking_collection_p = TRUE;
-            settings.loh_compaction = TRUE;
+            if (loh_frag_ratio > frag_limit)
+            {
+                settings.loh_compaction = TRUE;
 
-            dprintf(GTC_LOG, ("compacting LOH due to GCConserveMem setting"));
+                dprintf (GTC_LOG, ("compacting LOH due to GCConserveMem setting"));
+            }
         }
     }
 
