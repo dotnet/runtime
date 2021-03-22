@@ -108,9 +108,15 @@ namespace System.IO.Strategies
 
         internal sealed override bool IsPipe => _isPipe;
         // Flushing is the responsibility of BufferedFileStreamStrategy
-        // TODO: we might consider calling FileStreamHelpers.Seek(handle, _path, _filePosition, SeekOrigin.Begin);
-        // here to set the actual file offset
-        internal sealed override SafeFileHandle SafeFileHandle => _fileHandle;
+        internal sealed override SafeFileHandle SafeFileHandle
+        {
+            get
+            {
+                // Update the file offset in the handle before exposing it.
+                FileStreamHelpers.Seek(_fileHandle, _path, _filePosition, SeekOrigin.Begin);
+                return _fileHandle;
+            }
+        }
 
         // ReadByte and WriteByte methods are used only when the user has disabled buffering on purpose
         // their performance is going to be horrible
