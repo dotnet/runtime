@@ -1559,7 +1559,7 @@ namespace System
         {
             // Redundant test so we won't prejit remainder of this method
             // on platforms without SSE.
-            if (!Sse.IsSupported)
+            if (!Sse41.IsSupported)
             {
                 throw new PlatformNotSupportedException();
             }
