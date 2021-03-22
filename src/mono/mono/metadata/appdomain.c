@@ -126,7 +126,7 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 static void
 add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass);
 
-static const char*
+static const char *
 runtimeconfig_json_get_buffer (MonovmRuntimeConfigArguments *arg, MonoFileMap **file_map, gpointer *buf_handle);
 
 static void
