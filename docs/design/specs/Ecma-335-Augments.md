@@ -439,7 +439,7 @@ method.
 
 ### II.9.9, Inheritance and Overriding
 
-(Edit first paragraph by adding the word *virtual* to the parenthesized formulation *for **instance** virtual methods*)
+(Edit first paragraph by adding the word *virtual* to the parenthesized formulation *for virtual **instance** methods*)
 
 Member inheritance is defined in Partition I, in “Member Inheritance”. (Overriding and hiding are also
 defined in that partition, in “Hiding, overriding, and layout”.) This definition is extended, in an obvious
@@ -544,7 +544,184 @@ the interface.
 
 ### II.12.2.1, Interface implementation examples (page 159)
 
-**TODO**
+For now I'm inclined to add a completely separate section describing static interface
+methods to this paragraph. The existing example is already quite sophisticated and
+I think that expanding it even further with static interface methods would make it really
+confusing.
+
+(Add at the end of the section before the closing title "End informative text" at the bottom of page 161)
+
+**Static interface method examples**
+
+We use the following interfaces to demonstrate static interface method resolution:
+
+```
+interface IFancyTypeName
+{
+    static string GetFancyTypeName();
+}
+
+interface IAddition<T>
+{
+    static T Zero(); // Neutral element
+    static T Add(T a, T b);
+}
+
+interface IMultiplicationBy<T, TMultiplier>
+{
+    static T One(); // Neutral element
+    static T Multiply(T a, TMultiplier b);
+}
+
+interface IMultiplication<T> : IMultiplicationBy<T, T>
+{
+}
+
+interface IArithmetic<T> : IAddition<T>, IMultiplication<T>
+{
+}
+```
+
+We demonstrate the basic rules of static interface method resolution on several simple classes
+implementing these interfaces:
+
+```
+class FancyClass : IFancyTypeName
+{
+    public static string IFancyTypeName.GetFancyTypeName() { return "I am the fancy class"; }
+}
+
+class DerivedFancyClass : FancyClass
+{
+}
+
+class DoublePair : IArithmetic<DoublePair>, IMultiplicationBy<DoublePair, double>
+{
+    public double Component1;
+    public double Component2;
+
+    public DoublePair(double component1, double component2)
+    {
+        Component1 = component1;
+        Component2 = component2;
+    }
+
+    static DoublePair IAddition<DoublePair>.Add(DoublePair a, DoublePair b)
+    {
+        return new DoublePair(a.Component1 + b.Component1, a.Component2 + b.Component2);
+    }
+
+    static DoublePair IMultiplication<DoublePair>.Multiply(DoublePair a, DoublePair b)
+    {
+        return new DoublePair(a.Component1 * b.Component1, a.Component2 * b.Component2);
+    }
+
+    static DoublePair IMultiplicationBy<DoublePair, double>.Multiply(DoublePair a, double b)
+    {
+        return new DoublePair(a.Component1 * b, a.Component2 * b);
+    }
+}
+
+class GenericPair<T> : IArithmetic<GenericPair<T>>, IMultiplicationBy<GenericPair<T>, T>
+{
+    public T Component1;
+    public T Component2;
+
+    public GenericPair(T component1, T component2)
+    {
+        Component1 = component1;
+        Component2 = component2;
+    }
+
+    static GenericPair<T> IAddition<GenericPair<T>>.Add(GenericPair<T> a, GenericPair<T> b)
+    {
+        return new GenericPair<T>(a.Component1 + b.Component1, a.Component2 + b.Component2);
+    }
+
+    static GenericPair<T> IMultiplication<GenericPair<T>>.Multiply(GenericPair<T> a, GenericPair<T> b)
+    {
+        return new GenericPair<T>(a.Component1 * b.Component1, a.Component2 * b.Component2);
+    }
+
+    static GenericPair<T> IMultiplicationBy<GenericPair<T>, T>.Multiply(GenericPair<T> a, T b)
+    {
+        return new GenericPair<T>(a.Component1 * b, a.Component2 * b);
+    }
+}
+
+class FancyFloatPair : GenericPair<T>, IFancyTypeName
+{
+    public static string IFancyTypeName.GetFancyTypeName() { return "I am the fancy float pair"; }
+}
+```
+
+Given these types and their content we can now demonstrate the resolution and behavior of
+static interface methods on several simple algorithms:
+
+```
+void PrintFancyTypeName<T>()
+    where T : IFancyTypeName
+{
+    Console.WriteLine("My fancy name is: {0}", T.GetFancyTypeName());
+}
+```
+
+Calling `PrintFancyTypeName<DerivedFancyClass>()` should then output `I am the fancy class`
+to the console. Likewise, `PrintFancyClassName<FancyFloatPair>()` should output `I am the fancy
+float pair`. In both cases the actual type parameter of the `PrintFancyTypeName` generic method
+implements the `IFancyTypeName` interface and its virtual static method `GetFancyTypeName`.
+
+**Note**: Please note that `DerivedFancyClass` implements the `IFancyTypeName.GetFancyTypeName`
+method via its base class `FancyTypeName`. While implementing the static interface method in a
+base class is fine, this design proposal doesn't address implementing static interface methods
+in the interfaces themselves or in derived interfaces akin to default interface support.
+
+```
+T Power<T>(T t, uint power)
+    where T : IMultiply<T>
+{
+    T result = T.One();
+    T powerOfT = t;
+
+    while (power != 0)
+    {
+        if ((power & 1) != 0)
+        {
+            result = T.Multiply(result, powerOfT);
+        }
+        powerOfT = T.Multiply(powerOfT, powerOfT);
+        power >>= 1;
+    }
+}
+```
+
+This is an example of polymorphic math where the underlying operators can take arbitrary
+form based on the types involved - you can calculate an integral power of a byte or an int,
+of a float, a double, a complex number, a quaternion or a matrix without much distinction
+with regard to the underlying type, you just need to be able to carry out basic arithmetic
+operations.
+
+```
+T Exponential<T, TFloat>(T exponent) where
+    T : IArithmetic<T>,
+    T : IMultiplicationBy<T, TFloat>
+        
+{
+    T result = T.One();
+    T powerOfValue = exponent;
+    TFloat factorial = (TFloat)1.0;
+    const int NumberOfTermsInMacLaurinSeries = 6;
+    for (int term = 1; term <= NumberOfTermsInMacLaurinSeries; term++)
+    {
+        result = T.Add(result, (IMultiplicationBy<T, TFloat>)T.Multiply(T.powerOfValue, factorial));
+        factorial /= term;
+        powerOfValue = T.Multiply(powerOfValue, exponent);
+    }
+}
+```
+
+Another example of polymorphic maths calculating the exponential using the Taylor series,
+usable for calculating the exponential of a matrix.
 
 ### II.15.2 Static, Instance and Virtual Methods (page 177)
 
