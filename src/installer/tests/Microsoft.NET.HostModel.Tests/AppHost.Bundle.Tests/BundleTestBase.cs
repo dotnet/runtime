@@ -47,6 +47,7 @@ namespace AppHost.Bundle.Tests
             Version targetFrameworkVersion = null)
         {
             UseSingleFileSelfContainedHost(testFixture);
+            options |= BundleOptions.EnableCompression;
             return BundleHelper.BundleApp(testFixture, options, targetFrameworkVersion);
         }
 

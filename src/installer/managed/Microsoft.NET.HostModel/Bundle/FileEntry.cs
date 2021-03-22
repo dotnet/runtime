@@ -16,7 +16,7 @@ namespace Microsoft.NET.HostModel.Bundle
     /// * Offset     (Int64)
     /// * Size       (Int64)
     /// === present only in bundle version 3+
-    /// * CompressedSize   (Int64)
+    /// * CompressedSize   (Int64)  0 indicates No Compression
     /// </summary>
     public class FileEntry
     {

@@ -59,8 +59,13 @@ namespace Microsoft.NET.HostModel.Bundle
 
         private bool ShouldCompress(FileType type)
         {
-            // compression is not supported before bundle vesion 3
-            if (Target.BundleMajorVersion < 3)
+            // compression is not supported before bundle vesion 6
+            if (Target.BundleMajorVersion < 6)
+            {
+                return false;
+            }
+
+            if (!Options.HasFlag(BundleOptions.EnableCompression))
             {
                 return false;
             }

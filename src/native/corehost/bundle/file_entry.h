@@ -16,7 +16,7 @@ namespace bundle
     // Fixed size portion (file_entry_fixed_t)
     //   - Offset     
     //   - Size       
-    //   - CompressedSize  - only in bundleVersion 3+
+    //   - CompressedSize  - only in bundleVersion 6+
     //   - File Entry Type       
     // Variable Size portion
     //   - relative path (7-bit extension encoded length prefixed string)

@@ -32,7 +32,8 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             UseSingleFileSelfContainedHost(fixture);
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, options: BundleOptions.BundleNativeBinaries);
+            BundleOptions options = BundleOptions.EnableCompression | BundleOptions.BundleNativeBinaries;
+            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, options);
 
             // Verify expected files in the bundle directory
             var bundleDir = BundleHelper.GetBundleDir(fixture);
@@ -81,6 +82,7 @@ namespace AppHost.Bundle.Tests
 
             var fixture = sharedTestState.TestFixture.Copy();
             UseSingleFileSelfContainedHost(fixture);
+            bundleOptions |= BundleOptions.EnableCompression;
             var bundler = BundleHelper.BundleApp(fixture, out var singleFile, bundleOptions);
 
             // Run the bundled app (extract files to <path>)
@@ -111,7 +113,8 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             UseSingleFileSelfContainedHost(fixture);
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
+            BundleOptions options = BundleOptions.EnableCompression | BundleOptions.BundleNativeBinaries;
+            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, options);
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
@@ -161,7 +164,8 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             UseSingleFileSelfContainedHost(fixture);
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
+            BundleOptions options = BundleOptions.EnableCompression | BundleOptions.BundleNativeBinaries;
+            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, options);
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);

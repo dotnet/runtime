@@ -35,7 +35,6 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
-        [ActiveIssue("NYI, disable for now to work on the rest")]
         [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
@@ -61,6 +60,7 @@ namespace AppHost.Bundle.Tests
         {
             var fixture = sharedTestState.TestSelfContainedFixture.Copy();
             UseSingleFileSelfContainedHost(fixture);
+            options |= BundleOptions.EnableCompression;
             var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the bundled app (extract files)
@@ -78,6 +78,7 @@ namespace AppHost.Bundle.Tests
         {
             var fixture = sharedTestState.TestAppWithEmptyFileFixture.Copy();
             UseSingleFileSelfContainedHost(fixture);
+            options |= BundleOptions.EnableCompression;
             var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the app

@@ -39,7 +39,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
             if (FrameworkVersion.CompareTo(net60) >= 0)
             {
-                BundleMajorVersion = 3u;
+                BundleMajorVersion = 6u;
                 DefaultOptions = BundleOptions.None;
             }
             else if (FrameworkVersion.CompareTo(net50) >= 0)
