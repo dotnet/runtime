@@ -246,20 +246,7 @@ namespace System.Xml
 
         private static bool TextEquals(string str1, char[] str2, int str2Start, int str2Length)
         {
-            if (str1.Length != str2Length)
-            {
-                return false;
-            }
-
-            // use array.Length to eliminate the range check
-            for (int i = 0; i < str1.Length; i++)
-            {
-                if (str1[i] != str2[str2Start + i])
-                {
-                    return false;
-                }
-            }
-            return true;
+            return str1.AsSpan().Equals(str2.AsSpan(str2Start, str2Length), StringComparison.Ordinal);
         }
 
         private static int ComputeHash32(char[] key, int start, int len)
