@@ -1348,8 +1348,7 @@ mono_runtime_install_appctx_properties (void)
 static const char *
 runtimeconfig_json_get_buffer (MonovmRuntimeConfigArguments *arg, MonoFileMap **file_map, gpointer *buf_handle)
 {
-	if (arg != NULL)
-	{
+	if (arg != NULL) {
 		switch (arg->kind) {
 		case 0: {
 			char *buffer = NULL;
