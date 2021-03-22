@@ -19,7 +19,7 @@ namespace Microsoft.NET.HostModel.Bundle
     /// </summary>
     public class Bundler
     {
-        public const uint BundlerMajorVersion = 3;
+        public const uint BundlerMajorVersion = 6;
         public const uint BundlerMinorVersion = 0;
 
         private readonly string HostName;

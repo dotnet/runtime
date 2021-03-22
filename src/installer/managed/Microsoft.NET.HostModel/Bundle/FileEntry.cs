@@ -44,7 +44,8 @@ namespace Microsoft.NET.HostModel.Bundle
         {
             writer.Write(Offset);
             writer.Write(Size);
-            if (BundleMajorVersion >= 3)
+            // compression is used only in version 6.0+
+            if (BundleMajorVersion >= 6)
             {
                 writer.Write(CompressedSize);
             }
