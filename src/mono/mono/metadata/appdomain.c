@@ -1292,7 +1292,7 @@ mono_runtime_install_appctx_properties (void)
 
 	// Combine and convert properties
 	if (buffer)
-		n_runtimeconfig_json_props = mono_metadata_decode_value(buffer, &buffer);
+		n_runtimeconfig_json_props = mono_metadata_decode_value (buffer, &buffer);
 
 	n_total_props = n_appctx_props + n_runtimeconfig_json_props;
 	total_keys = g_new0 (gunichar2*, n_total_props);
