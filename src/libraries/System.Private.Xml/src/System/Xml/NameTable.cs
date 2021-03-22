@@ -246,7 +246,7 @@ namespace System.Xml
 
         private static bool TextEquals(string str1, char[] str2, int str2Start, int str2Length)
         {
-            return str1.AsSpan().Equals(str2.AsSpan(str2Start, str2Length), StringComparison.Ordinal);
+            return str1.AsSpan().SequenceEqual(str2.AsSpan(str2Start, str2Length));
         }
 
         private static int ComputeHash32(char[] key, int start, int len)
