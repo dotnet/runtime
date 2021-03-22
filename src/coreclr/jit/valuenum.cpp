@@ -8142,6 +8142,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 // Is this invariant indirect expected to always return a non-null value?
                 if ((tree->gtFlags & GTF_IND_NONNULL))
                 {
+                    assert(tree->gtFlags & GTF_IND_NONFAULTING);
                     tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_NonNullIndirect, addrNvnp);
                     if (addr->IsCnsIntOrI())
                     {
