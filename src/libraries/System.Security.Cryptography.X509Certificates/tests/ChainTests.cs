@@ -890,17 +890,18 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         [Fact]
         public static void BuildInvalidSignatureTwice()
         {
-            byte[] bytes = (byte[])TestData.MsCertificate.Clone();
+            byte[] bytes = (byte[])TestData.MicrosoftDotComSslCertBytes.Clone();
             bytes[bytes.Length - 1] ^= 0xFF;
 
             using (X509Certificate2 cert = new X509Certificate2(bytes))
+            using (X509Certificate2 intermediate = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             using (ChainHolder chainHolder = new ChainHolder())
             {
                 X509Chain chain = chainHolder.Chain;
                 chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
                 chain.ChainPolicy.VerificationFlags =
                     X509VerificationFlags.AllowUnknownCertificateAuthority;
-
+                chain.ChainPolicy.ExtraStore.Add(intermediate);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 int iter = 0;
