@@ -1774,6 +1774,7 @@ emit_arm64_intrinsics (
 			}
 			MonoInst *scalar = emit_simd_ins (cfg, ret_klass, OP_ARM64_SELECT_SCALAR, args [2]->dreg, args [3]->dreg);
 			MonoInst *ret = emit_simd_ins (cfg, ret_klass, opcode, args [0]->dreg, args [1]->dreg);
+			ret->inst_c1 = arg0_type;
 			ret->sreg3 = scalar->dreg;
 			return ret;
 		}
