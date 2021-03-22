@@ -303,89 +303,49 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~TestPlatforms.Android)] // Test relies on AIA fetching, which Android does not support
         [MemberData(nameof(BuildChainCustomTrustStoreData))]
         public static void BuildChainCustomTrustStore(
             bool chainBuildsSuccessfully,
             X509ChainStatusFlags chainFlags,
             BuildChainCustomTrustStoreTestArguments testArguments)
         {
-            using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
-            using (var chainHolderPrep = new ChainHolder())
-            {
-                X509Chain chainPrep = chainHolderPrep.Chain;
-                chainPrep.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                chainPrep.ChainPolicy.VerificationTime = microsoftDotCom.NotBefore.AddSeconds(1);
-
-                chainPrep.Build(microsoftDotCom);
-
-                Assert.True(chainPrep.ChainElements.Count >= 3, "Expected chain to build with root cert as third element");
-                X509Certificate2 rootCert = chainPrep.ChainElements[2].Certificate;
-
-                using (var chainHolderTest = new ChainHolder())
-                {
-                    BuildChainCustomTrustStoreImpl(chainHolderTest, rootCert, microsoftDotCom, chainBuildsSuccessfully, chainFlags, testArguments);
-                }
-            }
-        }
-
-        [Theory]
-        [PlatformSpecific(TestPlatforms.Android)]
-        [MemberData(nameof(BuildChainCustomTrustStoreData))]
-        public static void BuildChainCustomTrustStore_Android(
-            bool chainBuildsSuccessfully,
-            X509ChainStatusFlags chainFlags,
-            BuildChainCustomTrustStoreTestArguments testArguments)
-        {
-            using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
-            using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
-            using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
+            using (var endCert = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+            using (var issuerCert = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
+            using (var rootCert = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
             using (var chainHolder = new ChainHolder())
             {
-                // Fetching is not supported on Android, so we need to add intermediate to the extra store
-                chainHolder.Chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
-                BuildChainCustomTrustStoreImpl(chainHolder, microsoftDotComRoot, microsoftDotCom, chainBuildsSuccessfully, chainFlags, testArguments);
+                X509Chain chainTest = chainHolder.Chain;
+                chainTest.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chainTest.ChainPolicy.VerificationTime = endCert.NotBefore.AddSeconds(1);
+                chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chainTest.ChainPolicy.ExtraStore.Add(issuerCert);
+
+                switch (testArguments)
+                {
+                    case BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot:
+                        chainTest.ChainPolicy.ExtraStore.Add(rootCert);
+                        break;
+                    case BuildChainCustomTrustStoreTestArguments.UntrustedIntermediateTrustedRoot:
+                        chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
+                        break;
+                    case BuildChainCustomTrustStoreTestArguments.TrustedIntermediateTrustedRoot:
+                        chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
+                        break;
+                    case BuildChainCustomTrustStoreTestArguments.MultipleCalls:
+                        chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
+                        chainTest.Build(endCert);
+                        chainHolder.DisposeChainElements();
+                        chainTest.ChainPolicy.CustomTrustStore.Remove(rootCert);
+                        chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.System;
+                        break;
+                    default:
+                        throw new InvalidDataException();
+                }
+
+                Assert.Equal(chainBuildsSuccessfully, chainTest.Build(endCert));
+                Assert.Equal(3, chainTest.ChainElements.Count);
+                Assert.Equal(chainFlags, chainTest.AllStatusFlags());
             }
-        }
-
-        private static void BuildChainCustomTrustStoreImpl(
-            ChainHolder chainHolder,
-            X509Certificate2 rootCert,
-            X509Certificate2 endCert,
-            bool chainBuildsSuccessfully,
-            X509ChainStatusFlags chainFlags,
-            BuildChainCustomTrustStoreTestArguments testArguments)
-        {
-            X509Chain chainTest = chainHolder.Chain;
-            chainTest.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-            chainTest.ChainPolicy.VerificationTime = endCert.NotBefore.AddSeconds(1);
-            chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-
-            switch (testArguments)
-            {
-                case BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot:
-                    chainTest.ChainPolicy.ExtraStore.Add(rootCert);
-                    break;
-                case BuildChainCustomTrustStoreTestArguments.UntrustedIntermediateTrustedRoot:
-                    chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
-                    break;
-                case BuildChainCustomTrustStoreTestArguments.TrustedIntermediateTrustedRoot:
-                    chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
-                    break;
-                case BuildChainCustomTrustStoreTestArguments.MultipleCalls:
-                    chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
-                    chainTest.Build(endCert);
-                    chainHolder.DisposeChainElements();
-                    chainTest.ChainPolicy.CustomTrustStore.Remove(rootCert);
-                    chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.System;
-                    break;
-                default:
-                    throw new InvalidDataException();
-            }
-
-            Assert.Equal(chainBuildsSuccessfully, chainTest.Build(endCert));
-            Assert.Equal(3, chainTest.ChainElements.Count);
-            Assert.Equal(chainFlags, chainTest.AllStatusFlags());
         }
 
         [Fact]
@@ -504,16 +464,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // Ignore anything except NotTimeValid
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags & ~X509VerificationFlags.IgnoreNotTimeValid;
-
-                // Android doesn't support certain flags and will error if the chain is
-                // invalid and one of those flags is set.
-                if (PlatformDetection.IsAndroid)
-                {
-                    chain.ChainPolicy.VerificationFlags &= ~X509VerificationFlags.AllowUnknownCertificateAuthority;
-                    chain.ChainPolicy.VerificationFlags &= ~X509VerificationFlags.IgnoreInvalidName;
-                    chain.ChainPolicy.VerificationFlags &= ~X509VerificationFlags.IgnoreInvalidPolicy;
-                }
-
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.VerificationTime = verificationTime;
 
@@ -978,21 +928,23 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Android)]
         public static void BuildInvalidSignatureTwice()
         {
             byte[] bytes = (byte[])TestData.MsCertificate.Clone();
             bytes[bytes.Length - 1] ^= 0xFF;
 
+            using (X509Certificate2 microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
+            using (X509Certificate2 microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
             using (X509Certificate2 cert = new X509Certificate2(bytes))
             using (ChainHolder chainHolder = new ChainHolder())
             {
                 X509Chain chain = chainHolder.Chain;
                 chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
-                chain.ChainPolicy.VerificationFlags =
-                    X509VerificationFlags.AllowUnknownCertificateAuthority;
+                chain.AllowUnknownAuthorityOrAddSelfSignedToCustomTrust(microsoftDotComRoot);
 
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
+                chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
 
                 int iter = 0;
 
@@ -1014,6 +966,15 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
                         Assert.Equal(
                             X509ChainStatusFlags.PartialChain,
                             allFlags);
+                    }
+                    else if (OperatingSystem.IsAndroid())
+                    {
+                        // Android always validates signature as part of building a path,
+                        // so invalid signature comes back as PartialChain with no elements
+                        Assert.Equal(X509ChainStatusFlags.PartialChain, allFlags);
+                        Assert.Equal(0, chain.ChainElements.Count);
+                        Assert.False(valid, $"Chain should not be valid");
+                        chainHolder.DisposeChainElements();
                     }
                     else
                     {
@@ -1038,43 +999,6 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
 
                 CheckChain();
                 CheckChain();
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Android)]
-        public static void BuildInvalidSignatureTwice_Android()
-        {
-            byte[] bytes = (byte[])TestData.MicrosoftDotComSslCertBytes.Clone();
-            bytes[bytes.Length - 1] ^= 0xFF;
-
-            using (X509Certificate2 microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
-            using (X509Certificate2 microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
-            using (X509Certificate2 cert = new X509Certificate2(bytes))
-            using (ChainHolder chainHolder = new ChainHolder())
-            {
-                X509Chain chain = chainHolder.Chain;
-                chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
-
-                chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
-                chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
-                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-
-                CheckChain();
-                CheckChain();
-
-                void CheckChain()
-                {
-                    bool valid = chain.Build(cert);
-                    X509ChainStatusFlags allFlags = chain.AllStatusFlags();
-
-                    // Android always validates signature as part of building a path,
-                    // so invalid signature comes back as PartialChain with no elements
-                    Assert.Equal(X509ChainStatusFlags.PartialChain, allFlags);
-                    Assert.Equal(0, chain.ChainElements.Count);
-                    Assert.False(valid, $"Chain should not be valid");
-                    chainHolder.DisposeChainElements();
-                }
             }
         }
 

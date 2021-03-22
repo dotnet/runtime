@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [MemberData(nameof(AllViableRevocation))]
         public static void NothingRevoked(PkiOptions pkiOptions)
         {
-            bool usingCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl) || pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);// && !pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaOcsp);
+            bool usingCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl) || pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
             SimpleTest(
                 pkiOptions,
                 (root, intermediate, endEntity, holder, responder) =>
@@ -1375,8 +1375,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             if (PlatformDetection.IsAndroid)
             {
                 // Android stops validation at the first failure, so the end certificate would
-                // end up marked with PartialChain and RevocationStatusUnknown
-                chain.ChainPolicy.VerificationFlags |= X509VerificationFlags.AllowUnknownCertificateAuthority;
+                // end up marked with RevocationStatusUnknown
                 chain.ChainPolicy.VerificationFlags |= X509VerificationFlags.IgnoreEndRevocationUnknown;
             }
 
