@@ -6107,6 +6107,12 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, unsi
 
         // This indirection also is invariant.
         indNode->gtFlags |= GTF_IND_INVARIANT;
+
+        if (iconFlags == GTF_ICON_STR_HDL)
+        {
+            // String literals are never null
+            indNode->gtFlags |= GTF_IND_NONNULL;
+        }
     }
     return indNode;
 }
@@ -10249,6 +10255,12 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                     if (tree->gtFlags & GTF_IND_ASG_LHS)
                     {
                         printf("D"); // print a D for definition
+                        --msgLength;
+                        break;
+                    }
+                    if (tree->gtFlags & GTF_IND_NONNULL)
+                    {
+                        printf("@");
                         --msgLength;
                         break;
                     }

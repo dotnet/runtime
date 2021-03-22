@@ -9079,6 +9079,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_INVARIANT]");
                 }
+                if (tree->gtFlags & GTF_IND_NONNULL)
+                {
+                    chars += printf("[IND_NONNULL]");
+                }
                 break;
 
             case GT_CLS_VAR:

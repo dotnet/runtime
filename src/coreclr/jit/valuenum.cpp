@@ -8139,11 +8139,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
 
-                // Is it a string literal? (it's always non-null)
-                if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_STR_HDL))
+                // Is this invariant indirect expected to always return a non-null value?
+                if ((tree->gtFlags & GTF_IND_NONNULL))
                 {
-                    tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_StrCns, addrNvnp);
-                    assert(addrXvnp.BothEqual() && (addrXvnp.GetLiberal() == ValueNumStore::VNForEmptyExcSet()));
+                    tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_NonNullIndirect, addrNvnp);
+                    if (addr->IsCnsIntOrI())
+                    {
+                        assert(addrXvnp.BothEqual() && (addrXvnp.GetLiberal() == ValueNumStore::VNForEmptyExcSet()));
+                    }
+                    else
+                    {
+                        tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+                    }
                 }
                 else
                 {
