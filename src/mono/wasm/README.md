@@ -32,6 +32,8 @@ you are directly using the `dotnet build`, or `build.sh`.
 
 The latest engines can be installed with jsvu (JavaScript engine Version Updater https://github.com/GoogleChromeLabs/jsvu)
 
+### Mac
+
 * Install npm with brew:
 
 `brew install npm`
@@ -40,7 +42,7 @@ The latest engines can be installed with jsvu (JavaScript engine Version Updater
 
 `npm install jsvu -g`
 
-* Run jsvu:
+* Run jsvu and install `v8`, `SpiderMonkey`,or `JavaScriptCore` engines:
 
 `jsvu`
 
@@ -48,9 +50,25 @@ Add `~/.jsvu` to your `PATH`:
 
 `export PATH="${HOME}/.jsvu:${PATH}"`
 
+### Windows
+
+* Install node/npm from https://nodejs.org/en/ and add its npm and nodejs directories to the `PATH` environment variable
+
+* * Install jsvu with npm:
+
+`npm install jsvu -g`
+
+* Run jsvu and install `v8`, `SpiderMonkey`,or `JavaScriptCore` engines:
+
+`jsvu`
+
+* Add `~/.jsvu` to the `PATH` environment variable
+
 ## Libraries tests
 
 Library tests can be run with js engines: `v8`, `SpiderMonkey`,or `JavaScriptCore`:
+
+### Mac
 
 * `v8`: `make run-tests-v8-$(lib_name)`
 * SpiderMonkey: `make run-tests-sm-$(lib_name)`
@@ -58,6 +76,21 @@ Library tests can be run with js engines: `v8`, `SpiderMonkey`,or `JavaScriptCor
 * Or default: `make run-tests-$(lib_name)`. This runs the tests with `v8`.
 
 For example, for `System.Collections.Concurrent`: `make run-tests-v8-System.Collections.Concurrent`
+
+### Windows
+
+To run the libraries tests on windows, we have `RunTests` target. Without setting additional properties, it will run tests for all libraries on `V8` and `SpiderMonkey` engines:
+
+`dotnet build /t:RunTests wasm.proj`
+
+* `Library` property can be used to specify which library tests to run
+* `VESngine` property can be used to specify which engine to use
+
+For example to run tests for `System.Collections.Concurrent` on `V8` engine, use:
+
+`dotnet build /t:RunTests /p:Library="System.Collections.Concurrent" /p:VSEngine="v8" wasm.proj`
+
+### Browser tests
 
 Or they can be run with a browser (Chrome):
 
