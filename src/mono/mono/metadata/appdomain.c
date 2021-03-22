@@ -1255,8 +1255,8 @@ mono_runtime_register_appctx_properties (int nprops, const char **keys,  const c
 	for (int i = 0; i < nprops; ++i) {
 		appctx_keys [i] = g_new0 (char, strlen (keys [i]) + 1);
 		appctx_values [i] = g_new0 (char, strlen (values [i]) + 1);
-		strcpy(appctx_keys [i], keys [i]);
-		strcpy(appctx_values [i], values [i]);
+		appctx_keys [i] = g_strdup (keys [i]);
+		appctx_values [i] = g_strdup (values [i]);
 	}
 }
 
@@ -1277,9 +1277,9 @@ mono_runtime_install_appctx_properties (void)
 	ERROR_DECL (error);
 	gpointer args [3];
 	int n_runtimeconfig_json_props = 0;
-	int n_total_props;
-	gunichar2 **total_keys;
-	gunichar2 **total_values;
+	int n_combined_props;
+	gunichar2 **combined_keys;
+	gunichar2 **combined_values;
 	MonoFileMap *runtimeconfig_json_map = NULL;
 	gpointer runtimeconfig_json_map_handle = NULL;
 	const char *buffer_start = runtimeconfig_json_get_buffer (runtime_config_arg, &runtimeconfig_json_map, &runtimeconfig_json_map_handle);
@@ -1294,21 +1294,21 @@ mono_runtime_install_appctx_properties (void)
 	if (buffer)
 		n_runtimeconfig_json_props = mono_metadata_decode_value (buffer, &buffer);
 
-	n_total_props = n_appctx_props + n_runtimeconfig_json_props;
-	total_keys = g_new0 (gunichar2*, n_total_props);
-	total_values = g_new0 (gunichar2*, n_total_props);
+	n_combined_props = n_appctx_props + n_runtimeconfig_json_props;
+	combined_keys = g_new0 (gunichar2 *, n_combined_props);
+	combined_values = g_new0 (gunichar2 *, n_combined_props);
 
 	for (int i = 0; i < n_appctx_props; ++i) {
-		total_keys [i] = g_utf8_to_utf16 (appctx_keys [i], strlen (appctx_keys [i]), NULL, NULL, NULL);
-		total_values [i] = g_utf8_to_utf16 (appctx_values [i], strlen (appctx_values [i]), NULL, NULL, NULL);
+		combined_keys [i] = g_utf8_to_utf16 (appctx_keys [i], -1, NULL, NULL, NULL);
+		combined_values [i] = g_utf8_to_utf16 (appctx_values [i], -1, NULL, NULL, NULL);
 	}
 
-	runtimeconfig_json_read_props (buffer, &buffer, n_runtimeconfig_json_props, total_keys+n_appctx_props, total_values+n_appctx_props);
+	runtimeconfig_json_read_props (buffer, &buffer, n_runtimeconfig_json_props, combined_keys + n_appctx_props, combined_values + n_appctx_props);
 
 	/* internal static unsafe void Setup(char** pNames, char** pValues, int count) */
-	args [0] = total_keys;
-	args [1] = total_values;
-	args [2] = &n_total_props;
+	args [0] = combined_keys;
+	args [1] = combined_values;
+	args [2] = &n_combined_props;
 
 	mono_runtime_invoke_checked (setup, NULL, args, error);
 	mono_error_assert_ok (error);
@@ -1323,12 +1323,12 @@ mono_runtime_install_appctx_properties (void)
 		(*runtime_config_cleanup_fn) (runtime_config_arg, runtime_config_user_data);
 
 	/* No longer needed */
-	for (int i = 0; i < n_total_props; ++i) {
-		g_free (total_keys [i]);
-		g_free (total_values [i]);
+	for (int i = 0; i < n_combined_props; ++i) {
+		g_free (combined_keys [i]);
+		g_free (combined_values [i]);
 	}
-	g_free (total_keys);
-	g_free (total_values);
+	g_free (combined_keys);
+	g_free (combined_values);
 	for (int i = 0; i < n_appctx_props; ++i) {
 		g_free (appctx_keys [i]);
 		g_free (appctx_values [i]);
@@ -1382,27 +1382,14 @@ runtimeconfig_json_read_props (const char *ptr, const char **endp, int nprops, g
 {
 	for (int i = 0; i < nprops; ++i) {
 		int str_len;
-		char *property_key;
-		char *property_value;
 
 		str_len = mono_metadata_decode_value (ptr, &ptr);
-		property_key = g_new0 (char, str_len + 1);
-		strncpy (property_key, ptr, str_len);
-		property_key [str_len] = '\0';
+		dest_keys [i] = g_utf8_to_utf16 (ptr, str_len, NULL, NULL, NULL);
 		ptr += str_len;
-
-		dest_keys [i] = g_utf8_to_utf16 (property_key, strlen (property_key), NULL, NULL, NULL);
 
 		str_len = mono_metadata_decode_value (ptr, &ptr);
-		property_value = g_new0 (char, str_len + 1);
-		strncpy (property_value, ptr, str_len);
-		property_value [str_len] = '\0';
+		dest_values [i] = g_utf8_to_utf16 (ptr, str_len, NULL, NULL, NULL);
 		ptr += str_len;
-
-		dest_values [i] = g_utf8_to_utf16 (property_value, strlen (property_value), NULL, NULL, NULL);
-		
-		g_free (property_key);
-		g_free (property_value);
 	}
 
 	*endp = ptr;
