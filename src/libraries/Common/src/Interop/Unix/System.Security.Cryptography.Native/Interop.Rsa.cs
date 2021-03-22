@@ -43,22 +43,6 @@ internal static partial class Interop
             SafeRsaHandle rsa,
             RsaPadding padding);
 
-        internal static int RsaPrivateDecrypt(
-            int flen,
-            ReadOnlySpan<byte> from,
-            Span<byte> to,
-            SafeRsaHandle rsa,
-            RsaPadding padding) =>
-            RsaPrivateDecrypt(flen, ref MemoryMarshal.GetReference(from), ref MemoryMarshal.GetReference(to), rsa, padding);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaPrivateDecrypt")]
-        private static extern int RsaPrivateDecrypt(
-            int flen,
-            ref byte from,
-            ref byte to,
-            SafeRsaHandle rsa,
-            RsaPadding padding);
-
         internal static int RsaSignPrimitive(
             ReadOnlySpan<byte> from,
             Span<byte> to,
