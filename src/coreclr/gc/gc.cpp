@@ -3493,6 +3493,7 @@ void region_allocator::make_busy_block (uint32_t* index_start, uint32_t num_unit
 #ifdef _DEBUG
     dprintf (REGIONS_LOG, ("MBB[B: %Id] %d->%d", (size_t)num_units, (int)(index_start - region_map_start), (int)(index_start - region_map_start + num_units)));
 #endif //_DEBUG
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
     *index_start = num_units;
 }
 
@@ -3501,6 +3502,7 @@ void region_allocator::make_free_block (uint32_t* index_start, uint32_t num_unit
 #ifdef _DEBUG
     dprintf (REGIONS_LOG, ("MFB[F: %Id] %d->%d", (size_t)num_units, (int)(index_start - region_map_start), (int)(index_start - region_map_start + num_units)));
 #endif //_DEBUG
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
     *index_start = region_alloc_free_bit | num_units;
 }
 
@@ -3519,6 +3521,7 @@ void region_allocator::adjust_map (uint32_t* current_free_index_start,
 
 void region_allocator::print_map (const char* msg)
 {
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
 #ifdef _DEBUG
     const char* heap_type = "UH";
     dprintf (REGIONS_LOG, ("[%s]-----printing----%s", heap_type, msg));
@@ -3550,6 +3553,8 @@ uint8_t* region_allocator::allocate_end (uint32_t num_units)
 {
     uint8_t* alloc = NULL;
 
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
+
     if (global_region_used < global_region_end)
     {
         size_t end_remaining = global_region_end - global_region_used;
@@ -3568,6 +3573,8 @@ uint8_t* region_allocator::allocate_end (uint32_t num_units)
 
 uint8_t* region_allocator::allocate (uint32_t num_units)
 {
+    enter_spin_lock (&region_allocator_lock);
+
     uint32_t* current_index = region_map_start;
     uint32_t* end_index = region_map_end;
 
@@ -3607,6 +3614,9 @@ uint8_t* region_allocator::allocate (uint32_t num_units)
 
                 total_free_units -= num_units;
                 print_map ("alloc: found in free");
+
+                leave_spin_lock (&region_allocator_lock);
+
                 return region_address_of (current_free_index_start);
             }
         }
@@ -3647,6 +3657,8 @@ uint8_t* region_allocator::allocate (uint32_t num_units)
         dprintf (REGIONS_LOG, ("couldn't find memory at the end! only %Id bytes left", (global_region_end - global_region_used)));
     }
 
+    leave_spin_lock (&region_allocator_lock);
+
     return alloc;
 }
 
@@ -3685,6 +3697,8 @@ bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end)
 
 void region_allocator::delete_region (uint8_t* start)
 {
+    enter_spin_lock (&region_allocator_lock);
+
     assert (is_region_aligned (start));
 
     print_map ("before delete");
@@ -3710,6 +3724,8 @@ void region_allocator::delete_region (uint8_t* start)
 
     total_free_units += current_val;
     print_map ("after delete");
+
+    leave_spin_lock (&region_allocator_lock);
 }
 #endif //USE_REGIONS
 
