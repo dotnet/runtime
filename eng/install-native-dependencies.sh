@@ -46,6 +46,8 @@ elif [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
     if [ "$?" != "0" ]; then
         exit 1;
     fi
+elif [ "$1" = "Android" ]; then
+    # nothing to do here
 else
     echo "Must pass \"Linux\", \"Android\", \"tvOS\", \"iOS\" or \"OSX\" as first argument."
     exit 1
