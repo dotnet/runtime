@@ -102,6 +102,14 @@ namespace Generators
             this.eventName = eventName;
             this.numParams = 0;
             byteArrArgIndices = null;
+            string taskName = "";
+
+            // TODO: Add additional logic here for Start/Stop events
+            if (eventAttribute.Task == EventTask.None)
+            {
+                eventAttribute.Task = (EventTask)(0xFFFE - eventAttribute.EventId);
+                taskName = eventName;
+            }
             
             events.Append("  <event value=\"").Append(eventAttribute.EventId).
                  Append("\" version=\"").Append(eventAttribute.Version).
@@ -119,6 +127,15 @@ namespace Generators
                 AppendKeywords(events, (ulong)eventAttribute.Keywords, eventName);
                 events.Append('"');
             }
+
+            if (eventAttribute.Task != 0)
+            {
+                events.Append(" task=\"").Append(taskName).Append('"');
+
+                AddTask(taskName, (int)eventAttribute.Task);
+            }
+
+
             /*
             if (eventAttribute.Opcode != 0)
             {
