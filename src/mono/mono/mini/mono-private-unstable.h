@@ -45,7 +45,7 @@ MONO_API int
 monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues);
 
 MONO_API int 
-monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void* user_data);
+monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void *user_data);
 
 //#ifdef HOST_WASM
 typedef void* (*MonoWasmGetNativeToInterpTramp) (MonoMethod *method, void *extra_arg);
