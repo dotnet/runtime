@@ -306,15 +306,7 @@ namespace System.IO.Strategies
                     }
 
                     completionSource.ReleaseNativeResource();
-
-                    if (errorCode == ERROR_HANDLE_EOF)
-                    {
-                        ThrowHelper.ThrowEndOfFileException();
-                    }
-                    else
-                    {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
-                    }
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                 }
                 else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
                 {
