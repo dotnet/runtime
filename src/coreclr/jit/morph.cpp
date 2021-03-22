@@ -6520,6 +6520,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 if (isStaticReadOnlyInited)
                 {
                     JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
+
+                    // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
                     tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
                     tree->gtFlags &= ~GTF_ICON_INITCLASS;
                     addr->gtFlags = GTF_ICON_CONST_PTR;
