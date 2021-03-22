@@ -19,14 +19,9 @@ namespace Microsoft.Extensions.Logging
             for (int i = 0; i < attributes.Count; i++)
             {
                 CustomAttributeData attributeData = attributes[i];
-                if (attributeData.AttributeType.FullName == AliasAttibuteTypeFullName)
+                if (attributeData.AttributeType.FullName == AliasAttibuteTypeFullName &&
+                    attributeData.ConstructorArguments.Count > 0)
                 {
-                    if (attributeData.ConstructorArguments.Count == 0)
-                    {
-                        // Maybe the user defined their own ProviderAliasAttribute?
-                        continue;
-                    }
-
                     CustomAttributeTypedArgument arg = attributeData.ConstructorArguments[0];
 
                     Debug.Assert(arg.ArgumentType == typeof(string));
