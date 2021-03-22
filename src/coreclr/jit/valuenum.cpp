@@ -8146,11 +8146,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_NonNullIndirect, addrNvnp);
                     if (addr->IsCnsIntOrI())
                     {
-                        assert(addrXvnp.GetLiberal() == ValueNumStore::VNPForEmptyExcSet());
+                        assert(addrXvnp.BothEqual() && (addrXvnp.GetLiberal() == ValueNumStore::VNForEmptyExcSet()));
                     }
                     else
                     {
-                        tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+                        assert(false && "it's not expected to be hit at the moment, but can be allowed.");
+                        // tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                     }
                 }
                 else
