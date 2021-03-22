@@ -4,7 +4,9 @@
 // <spec>http://devdiv/Documents/Whidbey/CLR/CurrentSpecs/BCL/CodeDom%20Activation.doc</spec>
 //------------------------------------------------------------------------------
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Xsl.Runtime;
 
 namespace System.Xml.Xsl.Xslt
@@ -12,7 +14,7 @@ namespace System.Xml.Xsl.Xslt
     internal class Scripts
     {
         private readonly Compiler _compiler;
-        private readonly Dictionary<string, Type?> _nsToType = new Dictionary<string, Type?>();
+        private readonly TrimSafeDictionary _nsToType = new TrimSafeDictionary();
         private readonly XmlExtensionFunctionTable _extFuncs = new XmlExtensionFunctionTable();
 
         public Scripts(Compiler compiler)
@@ -20,7 +22,7 @@ namespace System.Xml.Xsl.Xslt
             _compiler = compiler;
         }
 
-        public Dictionary<string, Type?> ScriptClasses
+        public TrimSafeDictionary ScriptClasses
         {
             get { return _nsToType; }
         }
@@ -40,6 +42,30 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
             return null;
+        }
+
+        internal class TrimSafeDictionary
+        {
+            private readonly Dictionary<string, Type?> _backingDictionary = new Dictionary<string, Type?>();
+
+            public Type? this[string key]
+            {
+                [UnconditionalSuppressMessage("TrimAnalysis", "IL2073:MissingDynamicallyAccessedMembers",
+                    Justification = "The getter of the dictionary is not annotated to preserve the constructor, but the sources that are adding the items to " +
+                    "the dictionary are annotated so we can supress the message as we know the constructor will be preserved.")]
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                get => _backingDictionary[key];
+                [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+                set => _backingDictionary[key] = value;
+            }
+
+            public ICollection<string> Keys => _backingDictionary.Keys;
+
+            public int Count => _backingDictionary.Count;
+
+            public bool ContainsKey(string key) => _backingDictionary.ContainsKey(key);
+
+            public bool TryGetValue(string key, [MaybeNullWhen(false)] out Type? value) => _backingDictionary.TryGetValue(key, out value);
         }
     }
 }

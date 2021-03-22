@@ -371,15 +371,10 @@ namespace System.Xml.Xsl.XsltOld
 
             _scriptExtensions = new Hashtable(_stylesheet.ScriptObjectTypes.Count);
             {
-                foreach (DictionaryEntry entry in _stylesheet.ScriptObjectTypes)
+                // Scripts are not supported on stylesheets
+                if (_stylesheet.ScriptObjectTypes.Count > 0)
                 {
-                    string namespaceUri = (string)entry.Key;
-                    if (GetExtensionObject(namespaceUri) != null)
-                    {
-                        throw XsltException.Create(SR.Xslt_ScriptDub, namespaceUri);
-                    }
-                    _scriptExtensions.Add(namespaceUri, Activator.CreateInstance((Type)entry.Value!,
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, null, null));
+                    throw new PlatformNotSupportedException(SR.CompilingScriptsNotSupported);
                 }
             }
 

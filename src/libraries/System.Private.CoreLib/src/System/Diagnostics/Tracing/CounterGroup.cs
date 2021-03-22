@@ -16,7 +16,7 @@ namespace System.Diagnostics.Tracing
 #endif
 {
     [UnsupportedOSPlatform("browser")]
-    internal class CounterGroup
+    internal sealed class CounterGroup
     {
         private readonly EventSource _eventSource;
         private readonly List<DiagnosticCounter> _counters;

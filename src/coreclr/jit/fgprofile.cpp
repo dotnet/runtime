@@ -2445,7 +2445,10 @@ void EfficientEdgeCountReconstructor::Propagate()
 {
     // We don't expect mismatches or convergence failures.
     //
-    assert(!m_mismatch);
+
+    // Mismatches are currently expected as the flow for static pgo doesn't prevent them now.
+    //    assert(!m_mismatch);
+
     assert(!m_failedToConverge);
 
     // If any issues arose during reconstruction, don't set weights.

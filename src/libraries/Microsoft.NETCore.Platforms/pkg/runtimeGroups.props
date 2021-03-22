@@ -91,6 +91,17 @@
       <Versions>8;9;10;11;12;13</Versions>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="iossimulator">
+      <Parent>ios</Parent>
+      <Architectures>x86</Architectures>
+      <Versions>8;9;10</Versions>
+    </RuntimeGroup>
+    <RuntimeGroup Include="iossimulator">
+      <Parent>ios</Parent>
+      <Architectures>arm64;x64</Architectures>
+      <Versions>8;9;10;11;12;13</Versions>
+    </RuntimeGroup>
+
     <!-- linux mint includes major version in Include because Parent is different for each major -->
     <RuntimeGroup Include="linuxmint.17">
       <Parent>ubuntu.14.04</Parent>
@@ -206,6 +217,12 @@
 
     <RuntimeGroup Include="tvos">
       <Parent>unix</Parent>
+      <Architectures>arm64;x64</Architectures>
+      <Versions>10;11;12;13</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="tvossimulator">
+      <Parent>tvos</Parent>
       <Architectures>arm64;x64</Architectures>
       <Versions>10;11;12;13</Versions>
     </RuntimeGroup>

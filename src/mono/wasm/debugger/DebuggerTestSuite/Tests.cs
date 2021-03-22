@@ -826,60 +826,26 @@ namespace DebuggerTests
             Assert.DoesNotContain(source_location, scripts.Values);
         }
 
-        async Task LoadAssemblyDynamically(string asm_file, string pdb_file)
+        [Fact]
+        public async Task GetSourceUsingSourceLink()
         {
-            // Simulate loading an assembly into the framework
-            byte[] bytes = File.ReadAllBytes(asm_file);
-            string asm_base64 = Convert.ToBase64String(bytes);
+            var bp = await SetBreakpointInMethod("debugger-test-with-source-link.dll", "DebuggerTests.ClassToBreak", "TestBreakpoint", 0);
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method ('[debugger-test-with-source-link] DebuggerTests.ClassToBreak:TestBreakpoint'); }, 1);",
+                "dotnet://debugger-test-with-source-link.dll/test.cs",
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                "TestBreakpoint");
 
-            string pdb_base64 = null;
-            if (pdb_file != null)
+            var sourceToGet = JObject.FromObject(new
             {
-                bytes = File.ReadAllBytes(pdb_file);
-                pdb_base64 = Convert.ToBase64String(bytes);
-            }
-
-            var load_assemblies = JObject.FromObject(new
-            {
-                expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTest:LoadLazyAssembly', asm_b64, pdb_b64); }}"
+                scriptId = pause_location["callFrames"][0]["functionLocation"]["scriptId"].Value<string>()
             });
 
-            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
-            Assert.True(load_assemblies_res.IsOk);
+            var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
+            Assert.True(source.IsOk);
         }
 
-        [Fact]
-        public async Task BreakOnDebuggerBreak()
-        {
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test2.cs", 56, 4,
-                "BreakOnDebuggerBreakCommand");
-        }
-
-        [Fact]
-        public async Task BreakpointInAssemblyUsingTypeFromAnotherAssembly_BothDynamicallyLoaded()
-        {
-            int line = 7;
-            await SetBreakpoint(".*/library-dependency-debugger-test1.cs$", line, 0, use_regex: true);
-            await LoadAssemblyDynamically(
-                    Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test2.dll"),
-                    Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test2.pdb"));
-            await LoadAssemblyDynamically(
-                    Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test1.dll"),
-                    Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test1.pdb"));
-
-            var source_location = "dotnet://library-dependency-debugger-test1.dll/library-dependency-debugger-test1.cs";
-            Assert.Contains(source_location, scripts.Values);
-
-            var pause_location = await EvaluateAndCheck(
-               "window.setTimeout(function () { invoke_static_method('[library-dependency-debugger-test1] TestDependency:IntAdd', 5, 10); }, 1);",
-               source_location, line, 8,
-               "IntAdd");
-            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-            CheckNumber(locals, "a", 5);
-            CheckNumber(locals, "b", 10);
-        }
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }

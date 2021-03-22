@@ -53,7 +53,7 @@ public:
         , m_core_servicing(args.core_servicing)
         , m_is_framework_dependent(is_framework_dependent)
     {
-        int lowest_framework = m_fx_definitions.size() - 1;
+        int lowest_framework = static_cast<int>(m_fx_definitions.size()) - 1;
         int root_framework = -1;
         if (root_framework_rid_fallback_graph == nullptr)
         {

@@ -915,6 +915,9 @@ namespace Internal.TypeSystem
             if ((targetArch != TargetArchitecture.ARM) && (targetArch != TargetArchitecture.ARM64))
                 return NotHA;
 
+            if (type.Context.Target.Abi == TargetAbi.CoreRTArmel)
+                return NotHA;
+
             MetadataType metadataType = (MetadataType)type;
 
             // No HAs with explicit layout. There may be cases where explicit layout may be still

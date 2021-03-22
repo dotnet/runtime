@@ -12,7 +12,15 @@ namespace System.SpanTests
         [Fact]
         public static void Span_AsBytesUIntToByte()
         {
-            uint[] a = { 0x44332211, 0x88776655 };
+            uint[] a;
+            if (BitConverter.IsLittleEndian)
+            {
+                a = new uint[] { 0x44332211, 0x88776655 };
+            }
+            else
+            {
+                a = new uint[] { 0x11223344, 0x55667788 };
+            }
             Span<uint> span = new Span<uint>(a);
             Span<byte> asBytes = MemoryMarshal.AsBytes<uint>(span);
 

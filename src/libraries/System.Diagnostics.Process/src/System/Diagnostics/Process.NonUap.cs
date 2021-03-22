@@ -3,11 +3,14 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public void Kill(bool entireProcessTree)
         {
             if (!entireProcessTree)

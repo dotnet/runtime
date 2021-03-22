@@ -19,6 +19,7 @@ namespace System.ComponentModel
     public sealed class TypeDescriptor
     {
         internal const DynamicallyAccessedMemberTypes ReflectTypesDynamicallyAccessedMembers = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields;
+        internal const string EditorRequiresUnreferencedCode = "Editors registered in TypeDescriptor.AddEditorTable may be trimmed.";
 
         // Note: this is initialized at class load because we
         // lock on it for thread safety. It is used from nearly
@@ -167,6 +168,7 @@ namespace System.ComponentModel
         /// an editor table for the editor type, if one can be found.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static construtors trimmed.")]
         public static void AddEditorTable(Type editorBaseType, Hashtable table)
         {
             ReflectTypeDescriptionProvider.AddEditorTable(editorBaseType, table);
@@ -430,7 +432,11 @@ namespace System.ComponentModel
         /// a TypeDescriptionProvider object that is associated with the given
         /// data type. If it finds one, it will delegate the call to that object.
         /// </summary>
-        public static object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
+        public static object CreateInstance(
+            IServiceProvider provider,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
+            Type[] argTypes,
+            object[] args)
         {
             if (objectType == null)
             {
@@ -953,7 +959,7 @@ namespace System.ComponentModel
         /// Gets an editor with the specified base type for the
         /// specified component.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(EditorRequiresUnreferencedCode + " The Type of component cannot be statically discovered.")]
         public static object GetEditor(object component, Type editorBaseType)
         {
             return GetEditor(component, editorBaseType, false);
@@ -964,7 +970,7 @@ namespace System.ComponentModel
         /// specified component.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(EditorRequiresUnreferencedCode + " The Type of component cannot be statically discovered.")]
         public static object GetEditor(object component, Type editorBaseType, bool noCustomTypeDesc)
         {
             if (editorBaseType == null)
@@ -978,6 +984,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets an editor with the specified base type for the specified type.
         /// </summary>
+        [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
         public static object GetEditor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             Type editorBaseType)
@@ -2444,7 +2451,6 @@ namespace System.ComponentModel
             }
         }
 
-
         /// <summary>
         /// The RemoveAssociation method removes an association with an object.
         /// </summary>
@@ -2708,6 +2714,7 @@ namespace System.ComponentModel
                     return _handler.GetDefaultProperty(_instance);
                 }
 
+                [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
                 object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
                     return _handler.GetEditor(_instance, editorBaseType);
@@ -2919,10 +2926,12 @@ namespace System.ComponentModel
         {
             private readonly TypeDescriptionProvider _comNativeDescriptor;
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                Justification = "The trimmer can't find the ComNativeDescriptor type when System.Windows.Forms isn't available. " +
+                "When System.Windows.Forms is available, the type will be seen by the trimmer and the ctor will be preserved.")]
             public ComNativeDescriptorProxy()
             {
-                Assembly assembly = Assembly.Load("System.Windows.Forms");
-                Type realComNativeDescriptor = assembly.GetType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor", throwOnError: true);
+                Type realComNativeDescriptor = Type.GetType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms", throwOnError: true);
                 _comNativeDescriptor = (TypeDescriptionProvider)Activator.CreateInstance(realComNativeDescriptor);
             }
 
@@ -3012,6 +3021,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
+            [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
             object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
             {
                 if (editorBaseType == null)
@@ -3109,7 +3119,11 @@ namespace System.ComponentModel
             /// Implements CreateInstance. This just walks the linked list
             /// looking for someone who implements the call.
             /// </summary>
-            public override object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
+            public override object CreateInstance(
+                IServiceProvider provider,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
+                Type[] argTypes,
+                object[] args)
             {
                 if (objectType == null)
                 {
@@ -3398,7 +3412,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
+                [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
                 object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
                     if (editorBaseType == null)
@@ -3722,6 +3736,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
                 object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
                     if (editorBaseType == null)
