@@ -1397,6 +1397,11 @@ retry:
                     safe_switch_to_thread();
                 }
             }
+            else if (GCToEEInterface::GetThread() == nullptr)
+            {
+                // Server GC thread - calling WaitLongerNoInstru would cause deadlock
+                YieldProcessor();           // indicate to the processor that we are spinning
+            }
             else
             {
                 WaitLongerNoInstru(i);
@@ -1546,6 +1551,11 @@ retry:
                 }
                 else
                     GCToOSInterface::YieldThread(0);
+            }
+            else if (GCToEEInterface::GetThread() == nullptr)
+            {
+                // Server GC thread - calling WaitLonger would cause deadlock
+                YieldProcessor();           // indicate to the processor that we are spinning
             }
             else
             {
