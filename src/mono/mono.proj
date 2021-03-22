@@ -36,14 +36,14 @@
     <XcodeDir Condition="'$(XcodeDir)' == ''">/Applications/Xcode.app/Contents/Developer</XcodeDir>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
-    <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true' and ('$(OS)' != 'Windows_NT' or '$(BuildMonoAOTCrossCompilerOnly)' == 'true')">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsAndroid)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <MonoAOTEnableLLVM Condition="'$(TargetsiOS)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetstvOS)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsBrowser)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsAndroid)' == 'true'">true</MonoAOTEnableLLVM>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$([MSBuild]::NormalizePath('$(MonoObjDir)', 'cross', 'config.h'))</CrossConfigH>
-    <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true' and ('$(OS)' != 'Windows_NT' or '$(BuildMonoAOTCrossCompilerOnly)' == 'true')">true</MonoBundleLLVMOptimizer>
+    <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
     <MonoAOTBundleLLVMOptimizer Condition="'$(MonoAOTEnableLLVM)' == 'true'">true</MonoAOTBundleLLVMOptimizer>
     <MonoCCompiler>$(Compiler)</MonoCCompiler>
     <MonoCCompiler Condition="'$(MonoCCompiler)' == ''">clang</MonoCCompiler>
