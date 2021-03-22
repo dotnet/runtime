@@ -1547,6 +1547,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestTagObjects()
         {
             Activity activity = new Activity("TagObjects");
@@ -1607,6 +1608,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestGetTagItem()
         {
             Activity a = new Activity("GetTagItem");
@@ -1692,6 +1694,32 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(method);
             Assert.False(method.ReturnType.IsInterface);
             Assert.True(method.ReturnType.IsValueType);
+        }
+
+        [Fact]
+        public void TestParentTraceFlags()
+        {
+            Activity a = new Activity("ParentFlagsA");
+            a.SetIdFormat(ActivityIdFormat.W3C);
+            a.SetParentId(ActivityTraceId.CreateFromString("0123456789abcdef0123456789abcdef".AsSpan()), ActivitySpanId.CreateFromString("0123456789abcdef".AsSpan()), ActivityTraceFlags.Recorded);
+            Assert.Equal("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01", a.ParentId);
+
+            Activity b = new Activity("ParentFlagsB");
+            b.SetIdFormat(ActivityIdFormat.W3C);
+            b.SetParentId(ActivityTraceId.CreateFromString("0123456789abcdef0123456789abcdef".AsSpan()), ActivitySpanId.CreateFromString("0123456789abcdef".AsSpan()), ActivityTraceFlags.None);
+            b.ActivityTraceFlags = ActivityTraceFlags.Recorded; // Setting ActivityTraceFlags shouldn't affect the parent
+            Assert.Equal("00-0123456789abcdef0123456789abcdef-0123456789abcdef-00", b.ParentId);
+
+            using ActivitySource aSource = new ActivitySource("CheckParentTraceFlags");
+            using ActivityListener listener = new ActivityListener();
+            listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+            listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+            ActivitySource.AddActivityListener(listener);
+
+            ActivityContext parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded);
+            a = aSource.CreateActivity("WithContext", ActivityKind.Internal, parentContext, default, default, ActivityIdFormat.W3C);
+            Assert.NotNull(a);
+            Assert.Equal("00-" + parentContext.TraceId + "-" + parentContext.SpanId + "-01", a.ParentId);
         }
 
         [Fact]

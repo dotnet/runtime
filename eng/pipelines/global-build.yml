@@ -7,7 +7,7 @@ trigger: none
 pr:
   branches:
     include:
-    - master
+    - main
     - release/*.*
   paths:
     include:
@@ -43,6 +43,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: Runtime_Debug
       buildArgs: -c release -runtimeConfiguration debug
+      timeoutInMinutes: 90
 
 #
 # Build with Debug config and Release runtimeConfiguration
@@ -57,6 +58,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: Runtime_Release
       buildArgs: -c debug -runtimeConfiguration release
+      timeoutInMinutes: 90
 
 #
 # Build with RuntimeFlavor only. This excercise code paths where only Configuration is
@@ -72,6 +74,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: RuntimeFlavor_Mono
       buildArgs: /p:RuntimeFlavor=Mono
+      timeoutInMinutes: 90
 
 #
 # Build Mono + Libraries. This excercises the code path where we build libraries without
@@ -87,6 +90,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: Mono_Libraries
       buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
+      timeoutInMinutes: 90
 
 #
 # SourceBuild Build
@@ -100,3 +104,4 @@ jobs:
     jobParameters:
       nameSuffix: SourceBuild
       buildArgs: /p:DotNetBuildFromSource=true
+      timeoutInMinutes: 90

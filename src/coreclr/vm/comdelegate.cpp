@@ -1022,9 +1022,8 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
 FCIMPLEND
 
 // This method is called (in the late bound case only) once a target method has been decided on. All the consistency checks
-// (signature matching etc.) have been done at this point and the only major reason we could fail now is on security grounds
-// (someone trying to create a delegate over a method that's not visible to them for instance). This method will initialize the
-// delegate (wrapping it in a wrapper delegate if necessary). Upon return the delegate should be ready for invocation.
+// (signature matching etc.) have been done at this point, this method will simply initialize the delegate, with any required
+// wrapping. The delegate returned will be ready for invocation immediately.
 void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
                                OBJECTREF     *pRefFirstArg,
                                MethodDesc    *pTargetMethod,
@@ -1043,19 +1042,16 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     }
     CONTRACTL_END;
 
-    // We might have to wrap the delegate in a wrapper delegate depending on the the target method. The following local
-    // keeps track of the real (i.e. non-wrapper) delegate whether or not this is required.
+    // The delegate may be put into a wrapper delegate if our target method requires it. This local
+    // will always hold the real (un-wrapped) delegate.
     DELEGATEREF refRealDelegate = NULL;
     GCPROTECT_BEGIN(refRealDelegate);
 
-    // If we didn't wrap the real delegate in a wrapper delegate then the real delegate is the one passed in.
-    if (refRealDelegate == NULL)
-    {
-        if (NeedsWrapperDelegate(pTargetMethod))
-            refRealDelegate = CreateWrapperDelegate(*pRefThis, pTargetMethod);
-        else
-            refRealDelegate = *pRefThis;
-    }
+    // If needed, convert the delegate into a wrapper and get the real delegate within that.
+    if (NeedsWrapperDelegate(pTargetMethod))
+        refRealDelegate = CreateWrapperDelegate(*pRefThis, pTargetMethod);
+    else
+        refRealDelegate = *pRefThis;
 
     pTargetMethod->EnsureActive();
 
@@ -2602,11 +2598,6 @@ bool COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
     if (flags & DBF_StaticMethodOnly && !pTargetMethod->IsStatic())
         return false;
     if (flags & DBF_InstanceMethodOnly && pTargetMethod->IsStatic())
-        return false;
-
-    // we don't allow you to bind to methods on Nullable<T> because the unboxing stubs don't know how to
-    // handle this case.
-    if (!pTargetMethod->IsStatic() && Nullable::IsNullableType(pTargetMethod->GetMethodTable()))
         return false;
 
     // Get signatures for the delegate invoke and target methods.

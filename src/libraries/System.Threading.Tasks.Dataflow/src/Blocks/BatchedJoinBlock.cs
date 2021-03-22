@@ -72,9 +72,9 @@ namespace System.Threading.Tasks.Dataflow
             // messages, and thus when there may be a few stragglers we need to make a batch out of.
             Action createBatchAction = () =>
             {
-                if (_target1.Count > 0 || _target2.Count > 0)
+                if (_target1!.Count > 0 || _target2!.Count > 0)
                 {
-                    _source.AddMessage(Tuple.Create(_target1.GetAndEmptyMessages(), _target2.GetAndEmptyMessages()));
+                    _source.AddMessage(Tuple.Create(_target1.GetAndEmptyMessages(), _target2!.GetAndEmptyMessages()));
                 }
             };
 
@@ -329,9 +329,9 @@ namespace System.Threading.Tasks.Dataflow
             // messages, and thus when there may be a few stragglers we need to make a batch out of.
             Action createBatchAction = () =>
             {
-                if (_target1.Count > 0 || _target2.Count > 0 || _target3.Count > 0)
+                if (_target1!.Count > 0 || _target2!.Count > 0 || _target3!.Count > 0)
                 {
-                    _source.AddMessage(Tuple.Create(_target1.GetAndEmptyMessages(), _target2.GetAndEmptyMessages(), _target3.GetAndEmptyMessages()));
+                    _source.AddMessage(Tuple.Create(_target1.GetAndEmptyMessages(), _target2!.GetAndEmptyMessages(), _target3!.GetAndEmptyMessages()));
                 }
             };
 
@@ -598,7 +598,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                     bool consumed;
-                    messageValue = source.ConsumeMessage(messageHeader, this, out consumed);
+                    messageValue = source.ConsumeMessage(messageHeader, this, out consumed)!;
                     if (!consumed) return DataflowMessageStatus.NotAvailable;
                 }
                 _messages.Add(messageValue!);

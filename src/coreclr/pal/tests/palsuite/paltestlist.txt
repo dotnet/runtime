@@ -679,7 +679,6 @@ threading/SetEvent/test1/paltest_setevent_test1
 threading/SetEvent/test2/paltest_setevent_test2
 threading/SetEvent/test3/paltest_setevent_test3
 threading/SetEvent/test4/paltest_setevent_test4
-threading/SetThreadDescription/test1/paltest_setthreaddescription_test1
 threading/SwitchToThread/test1/paltest_switchtothread_test1
 threading/ThreadPriority/test1/paltest_threadpriority_test1
 threading/WaitForMultipleObjects/test1/paltest_waitformultipleobjects_test1

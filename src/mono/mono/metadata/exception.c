@@ -36,10 +36,6 @@ static MonoUnhandledExceptionFunc unhandled_exception_hook = NULL;
 static gpointer unhandled_exception_hook_data = NULL;
 
 static MonoExceptionHandle
-mono_exception_new_by_name_domain (MonoDomain *domain, MonoImage *image,
-				const char* name_space, const char *name, MonoError *error);
-
-static MonoExceptionHandle
 mono_exception_new_argument_internal (const char *type, const char *arg, const char *msg, MonoError *error);
 
 /**
@@ -56,7 +52,21 @@ mono_exception_new_argument_internal (const char *type, const char *arg, const c
 static MonoExceptionHandle
 mono_exception_new_by_name (MonoImage *image, const char *name_space, const char *name, MonoError *error)
 {
-	return mono_exception_new_by_name_domain (mono_domain_get (), image, name_space, name, error);
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoClass * const klass = mono_class_load_from_name (image, name_space, name);
+
+	MonoObjectHandle o = mono_object_new_handle (klass, error);
+	goto_if_nok (error, return_null);
+
+	mono_runtime_object_init_handle (o, error);
+	mono_error_assert_ok (error);
+
+	goto_if_ok (error, exit);
+return_null:
+	MONO_HANDLE_ASSIGN (o, NULL_HANDLE);
+exit:
+	HANDLE_FUNCTION_RETURN_REF (MonoException, MONO_HANDLE_CAST (MonoException, o));
 }
 
 /**
@@ -78,48 +88,6 @@ mono_exception_from_name (MonoImage *image, const char *name_space,
 }
 
 /**
- * mono_exception_new_by_name_domain:
- * \param domain Domain where the return object will be created.
- * \param image the Mono image where to look for the class
- * \param name_space the namespace for the class
- * \param name class name
- *
- * Creates an exception object of the given namespace/name class on
- * the given domain.
- *
- * \returns the initialized exception instance.
- */
-static MonoExceptionHandle
-mono_exception_new_by_name_domain (MonoDomain *domain, MonoImage *image,
-				 const char* name_space, const char *name, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER ();
-
-	MonoDomain * const caller_domain = mono_domain_get ();
-
-	MonoClass * const klass = mono_class_load_from_name (image, name_space, name);
-
-	MonoObjectHandle o = mono_object_new_handle (klass, error);
-	goto_if_nok (error, return_null);
-
-	if (domain != caller_domain)
-		mono_domain_set_internal_with_options (domain, TRUE);
-
-	mono_runtime_object_init_handle (o, error);
-	mono_error_assert_ok (error);
-
-	// Restore domain in success and error path.
-	if (domain != caller_domain)
-		mono_domain_set_internal_with_options (caller_domain, TRUE);
-
-	goto_if_ok (error, exit);
-return_null:
-	MONO_HANDLE_ASSIGN (o, NULL_HANDLE);
-exit:
-	HANDLE_FUNCTION_RETURN_REF (MonoException, MONO_HANDLE_CAST (MonoException, o));
-}
-
-/**
  * mono_exception_from_name_domain:
  * \param domain Domain where the return object will be created.
  * \param image the Mono image where to look for the class
@@ -137,7 +105,7 @@ mono_exception_from_name_domain (MonoDomain *domain, MonoImage *image,
 {
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
-	MonoExceptionHandle ret = mono_exception_new_by_name_domain (domain, image, name_space, name, error);
+	MonoExceptionHandle ret = mono_exception_new_by_name (image, name_space, name, error);
 	mono_error_assert_ok (error);
 	HANDLE_FUNCTION_RETURN_OBJ (ret);
 }
@@ -554,12 +522,11 @@ mono_get_exception_type_load (MonoString *class_name_raw, char *assembly_name)
 	HANDLE_FUNCTION_ENTER ();
 	MONO_HANDLE_DCL (MonoString, class_name);
 	MonoStringHandle s = NULL_HANDLE_STRING;
-	MonoDomain * const domain = mono_domain_get ();
 	if (assembly_name) {
 		s = mono_string_new_handle (assembly_name, error);
 		mono_error_assert_ok (error);
 	} else
-		s = mono_string_empty_handle (domain);
+		s = mono_string_empty_handle ();
 
 	MonoExceptionHandle ret = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System",
 								   "TypeLoadException", class_name, s, error);
@@ -1106,13 +1073,12 @@ static gboolean
 append_frame_and_continue (MonoMethod *method, gpointer ip, size_t native_offset, gboolean managed, gpointer user_data)
 {
 	MONO_ENTER_GC_UNSAFE;
-	MonoDomain *domain = mono_domain_get ();
 	AppendFrameData *data = (AppendFrameData *)user_data;
 
 	if (data->prefix)
 		g_string_append (data->text, data->prefix);
 	if (method) {
-		char *msg = mono_debug_print_stack_frame (method, native_offset, domain);
+		char *msg = mono_debug_print_stack_frame (method, native_offset, NULL);
 		g_string_append_printf (data->text, "%s\n", msg);
 		g_free (msg);
 	} else {
@@ -1180,7 +1146,7 @@ mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc)
 		MONO_HANDLE_ARRAY_GETVAL (ip, arr, gpointer, i);
 		MonoJitInfo *ji = mono_jit_info_table_find (domain, ip);
 		if (ji) {
-			char *msg = mono_debug_print_stack_frame (mono_jit_info_get_method (ji), (char*)ip - (char*)ji->code_start, domain);
+			char *msg = mono_debug_print_stack_frame (mono_jit_info_get_method (ji), (char*)ip - (char*)ji->code_start, NULL);
 			g_string_append_printf (text, "%s\n", msg);
 			g_free (msg);
 		} else {

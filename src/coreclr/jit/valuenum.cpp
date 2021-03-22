@@ -737,17 +737,6 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
                 break;
         }
     }
-    else // must be a VNF_ function
-    {
-        switch (vnf)
-        {
-            // Here we handle those that are the same for all integer types.
-
-            default:
-                // For any other value of 'vnf', we will assert below
-                break;
-        }
-    }
 
     noway_assert(!"Unhandled operation in EvalOpSpecialized<T> - binary");
     return v0;
@@ -787,6 +776,29 @@ int ValueNumStore::EvalComparison<double>(VNFunc vnf, double v0, double v1)
                 return v0 <= v1;
             default:
                 // For any other value of 'oper', we will assert below
+                break;
+        }
+    }
+    else // must be a VNF_ function
+    {
+        if (hasNanArg)
+        {
+            // unordered comparisons with NaNs always return true
+            return true;
+        }
+
+        switch (vnf)
+        {
+            case VNF_GT_UN:
+                return v0 > v1;
+            case VNF_GE_UN:
+                return v0 >= v1;
+            case VNF_LT_UN:
+                return v0 < v1;
+            case VNF_LE_UN:
+                return v0 <= v1;
+            default:
+                // For any other value of 'vnf', we will assert below
                 break;
         }
     }
@@ -835,8 +847,8 @@ int ValueNumStore::EvalComparison<float>(VNFunc vnf, float v0, float v1)
     {
         if (hasNanArg)
         {
-            // always returns true
-            return false;
+            // unordered comparisons with NaNs always return true
+            return true;
         }
 
         switch (vnf)
@@ -1922,18 +1934,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         bool      arg1IsFloating = varTypeIsFloating(arg1VNtyp);
 
         if (arg0IsFloating != arg1IsFloating)
-        {
-            canFold = false;
-        }
-
-        // NaNs are unordered wrt to other floats. While an ordered
-        // comparison would return false, an unordered comparison
-        // will return true if any operands are a NaN. We only perform
-        // ordered NaN comparison in EvalComparison.
-        if ((arg0IsFloating && (((arg0VNtyp == TYP_FLOAT) && _isnanf(GetConstantSingle(arg0VN))) ||
-                                ((arg0VNtyp == TYP_DOUBLE) && _isnan(GetConstantDouble(arg0VN))))) ||
-            (arg1IsFloating && (((arg1VNtyp == TYP_FLOAT) && _isnanf(GetConstantSingle(arg1VN))) ||
-                                ((arg1VNtyp == TYP_DOUBLE) && _isnan(GetConstantDouble(arg1VN))))))
         {
             canFold = false;
         }
@@ -3117,13 +3117,10 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
         // some VNF_ that we can evaluate
         switch (vnf)
         {
-            // Consider adding:
-            //   case VNF_GT_UN:
-            //   case VNF_GE_UN:
-            //   case VNF_LT_UN:
-            //   case VNF_LE_UN:
-            //
-
+            case VNF_GT_UN:
+            case VNF_GE_UN:
+            case VNF_LT_UN:
+            case VNF_LE_UN:
             case VNF_Cast:
                 // We can evaluate these.
                 return true;
@@ -8141,12 +8138,22 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             if (tree->gtFlags & GTF_IND_INVARIANT)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
-                tree->gtVNPair =
-                    ValueNumPair(vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, ValueNumStore::VNForROH(),
-                                                         addrNvnp.GetLiberal()),
-                                 vnStore->VNForMapSelect(VNK_Conservative, TYP_REF, ValueNumStore::VNForROH(),
-                                                         addrNvnp.GetConservative()));
-                tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+
+                // Is it a string literal? (it's always non-null)
+                if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_STR_HDL))
+                {
+                    tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_StrCns, addrNvnp);
+                    assert(addrXvnp.BothEqual() && (addrXvnp.GetLiberal() == ValueNumStore::VNForEmptyExcSet()));
+                }
+                else
+                {
+                    tree->gtVNPair =
+                        ValueNumPair(vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, ValueNumStore::VNForROH(),
+                                                             addrNvnp.GetLiberal()),
+                                     vnStore->VNForMapSelect(VNK_Conservative, TYP_REF, ValueNumStore::VNForROH(),
+                                                             addrNvnp.GetConservative()));
+                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+                }
             }
             else if (isVolatile)
             {
@@ -9601,7 +9608,7 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_STRCNS:
-            vnf = VNF_StrCns;
+            vnf = VNF_LazyStrCns;
             break;
 
         case CORINFO_HELP_CHKCASTCLASS:

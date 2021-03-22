@@ -8,6 +8,7 @@
     <ArchiveName>dotnet-apphost-pack</ArchiveName>
     <InstallerName>dotnet-apphost-pack</InstallerName>
     <VSInsertionShortComponentName>NetCore.AppHostPack</VSInsertionShortComponentName>
+    <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</OverridePackageId>
   </PropertyGroup>
 
   <!--

@@ -64,8 +64,6 @@ typedef struct {
 	 * Not valid if ASYNC_CONTEXT is true.
 	 */
 	MonoMethod *actual_method;
-	/* The domain containing the code executed by this frame */
-	MonoDomain *domain;
 	/* Whenever method is a user level method */
 	gboolean managed;
 	/*

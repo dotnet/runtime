@@ -42,7 +42,7 @@ static jobject GetMessageDigestInstance(JNIEnv* env, intptr_t type)
     else
         return NULL;
 
-    jobject mdObj = (*env)->CallStaticObjectMethod(env, g_mdClass, g_mdGetInstanceMethod, mdName);
+    jobject mdObj = (*env)->CallStaticObjectMethod(env, g_mdClass, g_mdGetInstance, mdName);
     (*env)->DeleteLocalRef(env, mdName);
 
     return CheckJNIExceptions(env) ? FAIL : mdObj;
@@ -61,7 +61,7 @@ int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourc
 
     jbyteArray bytes = (*env)->NewByteArray(env, sourceSize);
     (*env)->SetByteArrayRegion(env, bytes, 0, sourceSize, (jbyte*) source);
-    jbyteArray hashedBytes = (jbyteArray)(*env)->CallObjectMethod(env, mdObj, g_mdDigestMethod, bytes);
+    jbyteArray hashedBytes = (jbyteArray)(*env)->CallObjectMethod(env, mdObj, g_mdDigestWithInputBytes, bytes);
     assert(hashedBytes && "MessageDigest.digest(...) was not expected to return null");
 
     jsize hashedBytesLen = (*env)->GetArrayLength(env, hashedBytes);
@@ -83,50 +83,62 @@ jobject CryptoNative_EvpMdCtxCreate(intptr_t type)
 
 int32_t CryptoNative_EvpDigestReset(jobject ctx, intptr_t type)
 {
-    if (!ctx)
-        return FAIL;
+    assert(ctx != NULL);
 
     JNIEnv* env = GetJNIEnv();
-    (*env)->CallVoidMethod(env, ctx, g_mdResetMethod);
+    (*env)->CallVoidMethod(env, ctx, g_mdReset);
 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 int32_t CryptoNative_EvpDigestUpdate(jobject ctx, void* d, int32_t cnt)
 {
-    if (!ctx)
-        return FAIL;
-
+    assert(ctx != NULL);
     JNIEnv* env = GetJNIEnv();
 
     jbyteArray bytes = (*env)->NewByteArray(env, cnt);
     (*env)->SetByteArrayRegion(env, bytes, 0, cnt, (jbyte*) d);
-    (*env)->CallVoidMethod(env, ctx, g_mdUpdateMethod, bytes);
+    (*env)->CallVoidMethod(env, ctx, g_mdUpdate, bytes);
     (*env)->DeleteLocalRef(env, bytes);
 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-int32_t CryptoNative_EvpDigestFinalEx(jobject ctx, uint8_t* md, uint32_t* s)
+static int32_t DigestFinal(JNIEnv* env, jobject ctx, uint8_t* md, uint32_t* s)
 {
-    return CryptoNative_EvpDigestCurrent(ctx, md, s);
-}
-
-int32_t CryptoNative_EvpDigestCurrent(jobject ctx, uint8_t* md, uint32_t* s)
-{
-    if (!ctx)
-        return FAIL;
-
-    JNIEnv* env = GetJNIEnv();
-
-    jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx, g_mdDigestCurrentMethodId);
+    // ctx.digest();
+    jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx, g_mdDigest);
     assert(bytes && "digest() was not expected to return null");
     jsize bytesLen = (*env)->GetArrayLength(env, bytes);
     *s = (uint32_t)bytesLen;
     (*env)->GetByteArrayRegion(env, bytes, 0, bytesLen, (jbyte*) md);
     (*env)->DeleteLocalRef(env, bytes);
-
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+}
+
+int32_t CryptoNative_EvpDigestFinalEx(jobject ctx, uint8_t* md, uint32_t* s)
+{
+    assert(ctx != NULL);
+
+    JNIEnv* env = GetJNIEnv();
+    return DigestFinal(env, ctx, md, s);
+}
+
+int32_t CryptoNative_EvpDigestCurrent(jobject ctx, uint8_t* md, uint32_t* s)
+{
+    assert(ctx != NULL);
+
+    JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+
+    // ctx.clone();
+    jobject clone = (*env)->CallObjectMethod(env, ctx, g_mdClone);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = DigestFinal(env, clone, md, s);
+
+cleanup:
+    (*env)->DeleteLocalRef(env, clone);
+    return ret;
 }
 
 void CryptoNative_EvpMdCtxDestroy(jobject ctx)

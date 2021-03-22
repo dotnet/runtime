@@ -230,14 +230,19 @@ void GenTree::InitNodeSize()
     // Now set all of the appropriate entries to 'large'
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-// clang-format off
-#if defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
-    // On ARM32, ARM64 and System V for struct returning
-    // there is code that does GT_ASG-tree.CopyObj call.
-    // CopyObj is a large node and the GT_ASG is small, which triggers an exception.
-    GenTree::s_gtNodeSizes[GT_ASG]              = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_RETURN]           = TREE_NODE_SZ_LARGE;
-#endif // defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
+    // clang-format off
+    if (GlobalJitOptions::compFeatureHfa
+#if defined(UNIX_AMD64_ABI)
+        || true
+#endif // defined(UNIX_AMD64_ABI)
+        )
+    {
+        // On ARM32, ARM64 and System V for struct returning
+        // there is code that does GT_ASG-tree.CopyObj call.
+        // CopyObj is a large node and the GT_ASG is small, which triggers an exception.
+        GenTree::s_gtNodeSizes[GT_ASG]              = TREE_NODE_SZ_LARGE;
+        GenTree::s_gtNodeSizes[GT_RETURN]           = TREE_NODE_SZ_LARGE;
+    }
 
     GenTree::s_gtNodeSizes[GT_CALL]             = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_CAST]             = TREE_NODE_SZ_LARGE;
@@ -1203,6 +1208,38 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     }
 
     return true;
+}
+
+//--------------------------------------------------------------------------
+// ResetArgInfo: The argument info needs to be reset so it can be recomputed based on some change
+// in conditions, such as changing the return type of a call due to giving up on doing a tailcall.
+// If there is no fgArgInfo computed yet for this call, then there is nothing to reset.
+//
+void GenTreeCall::ResetArgInfo()
+{
+    if (fgArgInfo == nullptr)
+    {
+        return;
+    }
+
+    // We would like to just set `fgArgInfo = nullptr`. But `fgInitArgInfo()` not
+    // only sets up fgArgInfo, it also adds non-standard args to the IR, and we need
+    // to remove that extra IR so it doesn't get added again.
+    //
+    // NOTE: this doesn't handle all possible cases. There might be cases where we
+    // should be removing non-standard arg IR but currently aren't.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if !defined(TARGET_X86)
+    if (IsVirtualStub())
+    {
+        JITDUMP("Removing VSD non-standard arg [%06u] to prepare for re-morphing call [%06u]\n",
+                Compiler::dspTreeID(gtCallArgs->GetNode()), gtTreeID);
+        gtCallArgs = gtCallArgs->GetNext();
+    }
+#endif // !defined(TARGET_X86)
+
+    fgArgInfo = nullptr;
 }
 
 #if !defined(FEATURE_PUT_STRUCT_ARG_STK)
@@ -3316,7 +3353,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2;
                     costEx = 1;
                 }
-                else if (codeGen->validImmForInstr(INS_mov, conVal) && codeGen->validImmForInstr(INS_mvn, conVal))
+                else if (codeGen->validImmForInstr(INS_mov, conVal) || codeGen->validImmForInstr(INS_mvn, conVal))
                 {
                     // Uses mov or mvn
                     costSz = 4;
@@ -3483,7 +3520,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 break;
 
             case GT_CNS_DBL:
+            {
                 level = 0;
+#if defined(TARGET_XARCH)
                 /* We use fldz and fld1 to load 0.0 and 1.0, but all other  */
                 /* floating point constants are loaded using an indirection */
                 if ((*((__int64*)&(tree->AsDblCon()->gtDconVal)) == 0) ||
@@ -3497,7 +3536,36 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = IND_COST_EX;
                     costSz = 4;
                 }
-                break;
+#elif defined(TARGET_ARM)
+                var_types targetType = tree->TypeGet();
+                if (targetType == TYP_FLOAT)
+                {
+                    costEx = 1 + 2;
+                    costSz = 2 + 4;
+                }
+                else
+                {
+                    assert(targetType == TYP_DOUBLE);
+                    costEx = 1 + 4;
+                    costSz = 2 + 8;
+                }
+#elif defined(TARGET_ARM64)
+                if ((*((__int64*)&(tree->AsDblCon()->gtDconVal)) == 0) ||
+                    emitter::emitIns_valid_imm_for_fmov(tree->AsDblCon()->gtDconVal))
+                {
+                    costEx = 1;
+                    costSz = 1;
+                }
+                else
+                {
+                    costEx = IND_COST_EX;
+                    costSz = 4;
+                }
+#else
+#error "Unknown TARGET"
+#endif
+            }
+            break;
 
             case GT_LCL_VAR:
                 level = 1;
@@ -6231,6 +6299,15 @@ GenTree* Compiler::gtNewOneConNode(var_types type)
             break;
     }
     return one;
+}
+
+GenTreeLclVar* Compiler::gtNewStoreLclVar(unsigned dstLclNum, GenTree* src)
+{
+    GenTreeLclVar* store = new (this, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, src->TypeGet(), dstLclNum);
+    store->gtOp1         = src;
+    store->gtFlags       = (src->gtFlags & GTF_COMMON_MASK);
+    store->gtFlags |= GTF_VAR_DEF | GTF_ASG;
+    return store;
 }
 
 #ifdef FEATURE_SIMD
@@ -10030,9 +10107,7 @@ void Compiler::gtDispCommonEndLine(GenTree* tree)
 
 void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z __in_opt const char* msg, bool isLIR)
 {
-    bool printPointer = true; // always true..
-    bool printFlags   = true; // always true..
-    bool printCost    = true; // always true..
+    bool printFlags = true; // always true..
 
     int msgLength = 25;
 
@@ -16892,8 +16967,6 @@ bool GenTree::isContained() const
     // They can only produce a result if the child is a SIMD equality comparison.
     else if (OperKind() & GTK_RELOP)
     {
-        // We have to cast away const-ness since AsOp() method is non-const.
-        const GenTree* childNode = AsOp()->gtGetOp1();
         assert(isMarkedContained == false);
     }
 
@@ -17185,8 +17258,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, Fie
             //
             // The CSE could be a pointer to a boxed struct
             //
-            GenTreeLclVarCommon* lclVar = AsLclVarCommon();
-            ValueNum             vn     = gtVNPair.GetLiberal();
+            ValueNum vn = gtVNPair.GetLiberal();
             if (vn != ValueNumStore::NoVN)
             {
                 // Is the ValueNum a MapSelect involving a SharedStatic helper?
@@ -17781,7 +17853,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         case GT_CALL:
         {
             GenTreeCall* call = tree->AsCall();
-            if (call->gtFlags & CORINFO_FLG_JIT_INTRINSIC)
+            if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
             {
                 NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
                 if ((ni == NI_System_Array_Clone) || (ni == NI_System_Object_MemberwiseClone))

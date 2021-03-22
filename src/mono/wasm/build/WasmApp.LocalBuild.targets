@@ -58,6 +58,16 @@
     <Error Condition="'$(RuntimeSrcDir)' != '' and '$(RuntimeConfig)' == ''"
            Text="%24(RuntimeSrcDir) is set, but %24(RuntimeConfig) is not" />
 
+    <PropertyGroup>
+      <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', 'browser-wasm'))</MicrosoftNetCoreAppRuntimePackRidDir>
+      <MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidDir), 'native', 'cross', $(RuntimeIdentifier), 'mono-aot-cross'))</MonoAotCrossCompilerPath>
+      <MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(MonoAotCrossCompilerPath).exe</MonoAotCrossCompilerPath>
+
+      <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
+      <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
+      <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
+    </PropertyGroup>
+
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')"
            Text="Cannot find runtime pack at $(MicrosoftNetCoreAppRuntimePackRidDir). Make sure you have the correct %24(RuntimeConfig) set" />
 

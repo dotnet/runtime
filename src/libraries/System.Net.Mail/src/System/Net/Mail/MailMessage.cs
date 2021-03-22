@@ -426,17 +426,15 @@ namespace System.Net.Mail
                     part = new MimeMultiPart(MimeMultiPartType.Mixed);
                     part.Parts.Add(viewsPart);
 
-                    MimeMultiPart attachmentsPart = new MimeMultiPart(MimeMultiPartType.Mixed);
                     foreach (Attachment attachment in Attachments)
                     {
                         if (attachment != null)
                         {
                             //ensure we can read from the stream.
                             attachment.PrepareForSending(allowUnicode);
-                            attachmentsPart.Parts.Add(attachment.MimePart);
+                            part.Parts.Add(attachment.MimePart);
                         }
                     }
-                    part.Parts.Add(attachmentsPart);
                     _message.Content = part;
                 }
                 // If there is no Attachement, AND only "1" Alternate View AND !!no body!!

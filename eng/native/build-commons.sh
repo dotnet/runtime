@@ -50,14 +50,14 @@ check_prereqs()
 
     if [[ "$__HostOS" == "OSX" ]]; then
         # Check presence of pkg-config on the path
-        command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+        command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
 
         if ! pkg-config openssl ; then
             # We export the proper PKG_CONFIG_PATH where openssl was installed by Homebrew
             # It's important to _export_ it since build-commons.sh is sourced by other scripts such as build-native.sh
-            export PKG_CONFIG_PATH=/usr/local/opt/openssl@1.1/lib/pkgconfig:/usr/local/opt/openssl/lib/pkgconfig
+            export PKG_CONFIG_PATH=$(brew --prefix)/opt/openssl@1.1/lib/pkgconfig:$(brew --prefix)/opt/openssl/lib/pkgconfig
             # We try again with the PKG_CONFIG_PATH in place, if pkg-config still can't find OpenSSL, exit with an error, cmake won't find OpenSSL either
-            pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+            pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
         fi
     fi
 
@@ -462,10 +462,10 @@ fi
 if [[ "$__BuildArch" == wasm ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == iOS ]]; then
+elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == tvOS ]]; then
+elif [[ "$__TargetOS" == tvOS || "$__TargetOS" == tvOSSimulator ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == Android ]]; then

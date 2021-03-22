@@ -15,17 +15,11 @@ for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
 
 set "__TestDir=%__RepoRootDir%\src\tests"
 
-call %__RepoRootDir%\src\coreclr\setup_vs_tools.cmd
+call %__RepoRootDir%\eng\native\init-vs-env.cmd
 if NOT '%ERRORLEVEL%' == '0' exit /b 1
 
-if defined VS160COMNTOOLS (
-    set "__VSToolsRoot=%VS160COMNTOOLS%"
-    set "__VCToolsRoot=%VS160COMNTOOLS%\..\..\VC\Auxiliary\Build"
-    set __VSVersion=vs2019
-) else if defined VS150COMNTOOLS (
-    set "__VSToolsRoot=%VS150COMNTOOLS%"
-    set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
-    set __VSVersion=vs2017
+if defined VCINSTALLDIR (
+    set "__VCToolsRoot=%VCINSTALLDIR%Auxiliary\Build"
 )
 
 :: Set the default arguments for build
@@ -60,8 +54,6 @@ set __CreatePdb=
 set __CopyNativeTestBinaries=0
 set __CopyNativeProjectsAfterCombinedTestBuild=true
 set __SkipGenerateLayout=0
-set __LocalCoreFXConfig=%__BuildType%
-set __SkipFXRestoreArg=
 set __GenerateLayoutOnly=0
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
@@ -219,12 +211,6 @@ echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildA
 call                                 "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
 @if defined _echo @echo on
 
-if not defined VSINSTALLDIR (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: VSINSTALLDIR variable not defined.
-    exit /b 1
-)
-if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
-
 set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
 call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
 
@@ -284,7 +270,6 @@ powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\
   %__RepoRootDir%\src\tests\build.proj -warnAsError:0 /t:BatchRestorePackages /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
-  %__SkipFXRestoreArg%^
   !__Logging! %__CommonMSBuildArgs% %__PriorityArg% %__BuildNeedTargetArg% %__UnprocessedBuildArgs%
 
 if errorlevel 1 (
@@ -307,10 +292,6 @@ if defined __SkipManaged goto SkipManagedBuild
 
 echo %__MsgPrefix%Starting the Managed Tests Build
 
-if not defined VSINSTALLDIR (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/tree/master/docs/workflow for build instructions.
-    exit /b 1
-)
 set __AppendToLog=false
 set __BuildLogRootName=Tests_Managed
 set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log
@@ -349,7 +330,6 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__UnprocessedBuildArgs!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:CopyNativeProjectBinaries=!__CopyNativeProjectsAfterCombinedTestBuild!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:__SkipPackageRestore=true
-        set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__SkipFXRestoreArg!
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
@@ -364,7 +344,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
             goto     :Exit_Failure
         )
     ) else (
-        set __MSBuildBuildArgs=!__RepoRootDir!\src\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__BuildNeedTargetArg! !__SkipFXRestoreArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
+        set __MSBuildBuildArgs=!__RepoRootDir!\src\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__BuildNeedTargetArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
@@ -390,7 +370,7 @@ if "%__CopyNativeTestBinaries%" == "1" goto :SkipManagedBuild
 REM Check that we've built about as many tests as we expect. This is primarily intended to prevent accidental changes that cause us to build
 REM drastically fewer Pri-1 tests than expected.
 echo %__MsgPrefix%Check the managed tests build
-echo Running: dotnet msbuild %__RepoRootDir%\src\tests\run.proj /t:CheckTestBuild /nodeReuse:false /p:CLRTestPriorityToBuild=%__Priority% %__SkipFXRestoreArg% %__msbuildArgs% %__unprocessedBuildArgs%
+echo Running: dotnet msbuild %__RepoRootDir%\src\tests\run.proj /t:CheckTestBuild /nodeReuse:false /p:CLRTestPriorityToBuild=%__Priority% %__msbuildArgs% %__unprocessedBuildArgs%
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
     %__RepoRootDir%\src\tests\run.proj /t:CheckTestBuild /nodeReuse:false /p:CLRTestPriorityToBuild=%__Priority% %__msbuildArgs% %__unprocessedBuildArgs%
 if errorlevel 1 (
@@ -439,7 +419,6 @@ powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng
   %__RepoRootDir%\src\tests\run.proj /t:CreateTestOverlay /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
-  %__SkipFXRestoreArg%^
   !__Logging! %__CommonMSBuildArgs% %__PriorityArg% %__BuildNeedTargetArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Create Test Overlay failed. Refer to the build log files for details:
@@ -481,7 +460,7 @@ if %%__Mono%%==1 (
 )
 
 REM Build wrappers using the local SDK's msbuild. As we move to arcade, the other builds should be moved away from run.exe as well.
-call "%__RepoRootDir%\dotnet.cmd" msbuild %__RepoRootDir%\src\tests\run.proj /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=%__TestBuildMode% !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__SkipFXRestoreArg% %__UnprocessedBuildArgs% /p:RuntimeFlavor=%RuntimeFlavor%
+call "%__RepoRootDir%\dotnet.cmd" msbuild %__RepoRootDir%\src\tests\run.proj /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=%__TestBuildMode% !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__UnprocessedBuildArgs% /p:RuntimeFlavor=%RuntimeFlavor%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: XUnit wrapper build failed. Refer to the build log files for details:
     echo     %__BuildLog%
@@ -571,14 +550,6 @@ echo allTargets: Build managed tests for all target platforms.
 echo -verbose: enables detailed file logging for the msbuild tasks into the msbuild log file.
 exit /b 1
 
-:NoDIA
-echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
-Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
-Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
-Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
-may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
-exit /b 1
-
 :PrecompileFX
 
 set "__CrossgenOutputDir=%__TestIntermediatesDir%\crossgen.out"
@@ -592,7 +563,7 @@ if defined __CreatePdb (
 if defined __CompositeBuildMode (
     set __CrossgenCmd=%__CrossgenCmd% --composite
 ) else (
-    set __CrossgenCmd=%__CrossgenCmd% --large-bubble --crossgen2-parallelism 1
+    set __CrossgenCmd=%__CrossgenCmd% --crossgen2-parallelism 1
 )
 
 set __CrossgenDir=%__BinDir%

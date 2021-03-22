@@ -116,7 +116,7 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	g_assert (aname->name);
 	/* alc might be a user ALC - we get here from alc.LoadFromAssemblyName(), but we should load TPA assemblies into the default alc */
 	MonoAssemblyLoadContext *default_alc;
-	default_alc = mono_domain_default_alc (mono_alc_domain (alc));
+	default_alc = mono_alc_get_default ();
 
 	basename = g_strconcat (aname->name, ".dll", (const char*)NULL); /* TODO: make sure CoreCLR never needs to load .exe files */
 
@@ -223,6 +223,14 @@ monovm_initialize (int propertyCount, const char **propertyKeys, const char **pr
 	 */
 	mono_loader_set_strict_assembly_name_check (TRUE);
 
+	return 0;
+}
+
+// Initialize monovm with properties set by runtimeconfig.json. Primarily used by mobile targets.
+int
+monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void *user_data)
+{
+	mono_runtime_register_runtimeconfig_json_properties (arg, cleanup_fn, user_data);
 	return 0;
 }
 

@@ -1401,8 +1401,6 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
         unsigned   fieldVarNum = varDsc->lvFieldLclStart + multiRegIndex;
         LclVarDsc* fldVarDsc   = compiler->lvaGetDesc(fieldVarNum);
         assert(fldVarDsc->lvLRACandidate);
-        bool isInReg      = fldVarDsc->lvIsInReg() && reg != REG_NA;
-        bool isInMemory   = !isInReg || fldVarDsc->lvLiveInOutOfHndlr;
         bool isFieldDying = lcl->IsLastUse(multiRegIndex);
 
         if (fldVarDsc->GetRegNum() == REG_STK)
@@ -1507,8 +1505,6 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
             {
                 reg = lcl->AsLclVar()->GetRegNumByIdx(i);
             }
-            bool isInReg      = fldVarDsc->lvIsInReg() && reg != REG_NA;
-            bool isInMemory   = !isInReg || fldVarDsc->lvLiveInOutOfHndlr;
             bool isFieldDying = lcl->IsLastUse(i);
 
             if (fldVarDsc->GetRegNum() == REG_STK)
@@ -1841,20 +1837,33 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 
     // Evaluate each of the GT_FIELD_LIST items into their register
     // and store their register into the outgoing argument area.
-    unsigned argOffset = putArgStk->getArgOffset();
+    const unsigned argOffset = putArgStk->getArgOffset();
     for (GenTreeFieldList::Use& use : putArgStk->gtOp1->AsFieldList()->Uses())
     {
         GenTree* nextArgNode = use.GetNode();
         genConsumeReg(nextArgNode);
 
-        regNumber reg  = nextArgNode->GetRegNum();
-        var_types type = nextArgNode->TypeGet();
-        emitAttr  attr = emitTypeSize(type);
+        regNumber reg             = nextArgNode->GetRegNum();
+        var_types type            = use.GetType();
+        unsigned  thisFieldOffset = argOffset + use.GetOffset();
 
-        // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
-        // argument area.
-        unsigned thisFieldOffset = argOffset + use.GetOffset();
-        GetEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset);
+// Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
+// argument area.
+
+#if defined(FEATURE_SIMD) && defined(OSX_ARM64_ABI)
+        // storing of TYP_SIMD12 (i.e. Vector3) argument.
+        if (type == TYP_SIMD12)
+        {
+            // Need an additional integer register to extract upper 4 bytes from data.
+            regNumber tmpReg = nextArgNode->GetSingleTempReg();
+            GetEmitter()->emitStoreSIMD12ToLclOffset(outArgVarNum, thisFieldOffset, reg, tmpReg);
+        }
+        else
+#endif // FEATURE_SIMD && OSX_ARM64_ABI
+        {
+            emitAttr attr = emitTypeSize(type);
+            GetEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset);
+        }
 
 // We can't write beyond the arg area unless this is a tail call, in which case we use
 // the first stack arg as the base of the incoming arg area.
@@ -1867,7 +1876,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         }
 #endif
 
-        assert((thisFieldOffset + EA_SIZE_IN_BYTES(attr)) <= areaSize);
+        assert((thisFieldOffset + genTypeSize(type)) <= areaSize);
 #endif
     }
 }

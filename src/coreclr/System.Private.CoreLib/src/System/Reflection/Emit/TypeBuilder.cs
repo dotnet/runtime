@@ -19,7 +19,7 @@ namespace System.Reflection.Emit
         }
 
         #region Declarations
-        private class CustAttr
+        private sealed class CustAttr
         {
             private readonly ConstructorInfo? m_con;
             private readonly byte[]? m_binaryAttribute;
@@ -912,7 +912,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetNestedType(name, bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -938,7 +938,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetEvents(bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             if (!IsCreated())

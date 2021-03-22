@@ -1,6 +1,10 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
+  <PropertyGroup>
+    <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes> <!-- Justification: System.Security.Cryptography.RSA.Create() throws PNSE on wasm -->
+  </PropertyGroup>
+
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="RSAXmlTest.cs" />
   </ItemGroup>

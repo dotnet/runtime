@@ -19,7 +19,7 @@
     <ExternalsProject Include="externals.csproj" />
     <ProjectReference Include="@(ExternalsProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
-    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"/>
+    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'"/>
     <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'Android'" />
     <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="'$(TargetOS)' == 'Browser'" />
   </ItemGroup>
@@ -57,10 +57,10 @@
           Outputs="$(MicrosoftNetCoreAppRuntimePackDir)data\PlatformManifest.txt"
           Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFile)"
-                              PackageId="$(SharedFrameworkName).Runtime.$(PackageRID)"
+                              PackageId="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(PackageRID)"
                               PackageVersion="$(ProductVersion)"
                               PlatformManifestFile="$(MicrosoftNetCoreAppRuntimePackDir)data\PlatformManifest.txt"
-                              PreferredPackages="$(SharedFrameworkName).Runtime.$(PackageRID)"
+                              PreferredPackages="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(PackageRID)"
                               PermitDllAndExeFilesLackingFileVersion="true" />
   </Target>
 
@@ -72,10 +72,10 @@
           Outputs="$(MicrosoftNetCoreAppRefPackDataDir)PlatformManifest.txt"
           Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFile)"
-                              PackageId="$(SharedFrameworkName).Ref"
+                              PackageId="$(MicrosoftNetCoreAppFrameworkName).Ref"
                               PackageVersion="$(ProductVersion)"
                               PlatformManifestFile="$(MicrosoftNetCoreAppRefPackDataDir)PlatformManifest.txt"
-                              PreferredPackages="$(SharedFrameworkName).Ref"
+                              PreferredPackages="$(MicrosoftNetCoreAppFrameworkName).Ref"
                               PermitDllAndExeFilesLackingFileVersion="true" />
   </Target>
 
@@ -84,7 +84,7 @@
   <Target Name="GenerateTestSharedFrameworkAssets"
           AfterTargets="BuildExternalsProject"
           Inputs="$(NETCoreAppTestSharedFrameworkPath)*.*"
-          Outputs="$(NETCoreAppTestSharedFrameworkPath)$(SharedFrameworkName).deps.json"
+          Outputs="$(NETCoreAppTestSharedFrameworkPath)$(MicrosoftNetCoreAppFrameworkName).deps.json"
           Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
     <!-- Shared framework deps file generation. Produces a test shared-framework deps file. -->
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NETCoreAppTestSharedFrameworkPath)"
@@ -129,7 +129,7 @@
       <FrameworkListRootAttribute Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
       <FrameworkListRootAttribute Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />
       <FrameworkListRootAttribute Include="TargetFrameworkVersion" Value="$(NetCoreAppCurrentVersion)" />
-      <FrameworkListRootAttribute Include="FrameworkName" Value="$(SharedFrameworkName)" />
+      <FrameworkListRootAttribute Include="FrameworkName" Value="$(MicrosoftNetCoreAppFrameworkName)" />
     </ItemGroup>
 
     <CreateFrameworkListFile Files="@(RuntimePackLibFile);@(RuntimePackNativeFile)"

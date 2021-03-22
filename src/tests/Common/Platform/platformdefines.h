@@ -54,7 +54,14 @@ typedef HANDLE THREAD_ID;
 
 typedef char16_t WCHAR;
 typedef unsigned int DWORD;
+
+#ifdef OBJC_TESTS
+// The Objective-C headers define the BOOL type to be unsigned char or bool.
+// As a result, we can't redefine it here. So instead, define WINBOOL to be int-sized.
+typedef int WINBOOL;
+#else
 typedef int BOOL;
+#endif
 typedef WCHAR *LPWSTR, *PWSTR;
 typedef const WCHAR *LPCWSTR, *PCWSTR;
 

@@ -8886,6 +8886,12 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	return ctx->gregs [reg];
 }
 
+host_mgreg_t *
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	return &ctx->gregs [reg];
+}
+
 void
 mono_arch_context_set_int_reg (MonoContext *ctx, int reg, host_mgreg_t val)
 {
@@ -8936,7 +8942,7 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 
 	if (ji->from_aot) {
 		guint32 native_offset = ip - (guint8*)ji->code_start;
-		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), (guint8 *)ji->code_start);
+		SeqPointInfo *info = mono_arch_get_seq_point_info ((guint8 *)ji->code_start);
 
 		g_assert (info->bp_addrs [native_offset] == 0);
 		info->bp_addrs [native_offset] = mini_get_breakpoint_trampoline ();
@@ -8960,7 +8966,7 @@ mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 
 	if (ji->from_aot) {
 		guint32 native_offset = ip - (guint8*)ji->code_start;
-		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), (guint8 *)ji->code_start);
+		SeqPointInfo *info = mono_arch_get_seq_point_info ((guint8 *)ji->code_start);
 
 		info->bp_addrs [native_offset] = NULL;
 	} else {
@@ -9041,7 +9047,7 @@ mono_arch_skip_single_step (MonoContext *ctx)
  * point implementation in AOTed code.
  */
 SeqPointInfo*
-mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+mono_arch_get_seq_point_info (guint8 *code)
 {
 	SeqPointInfo *info;
 	MonoJitInfo *ji;

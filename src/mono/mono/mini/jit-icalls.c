@@ -59,12 +59,12 @@ mono_ldftn (MonoMethod *method)
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
 		addr = mono_compile_method_checked (method, error);
 	else
-		addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE, error);
+		addr = mono_create_jump_trampoline (method, FALSE, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
-	return mono_create_ftnptr (mono_domain_get (), addr);
+	return mono_create_ftnptr (addr);
 }
 
 static void*
@@ -806,7 +806,6 @@ gpointer
 mono_class_static_field_address (MonoClassField *field)
 {
 	ERROR_DECL (error);
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoVTable *vtable;
 	gpointer addr;
 	
@@ -830,10 +829,8 @@ mono_class_static_field_address (MonoClassField *field)
 
 	if (field->offset == -1) {
 		/* Special static */
-		g_assert (domain->special_static_fields);
-		mono_domain_lock (domain);
-		addr = g_hash_table_lookup (domain->special_static_fields, field);
-		mono_domain_unlock (domain);
+		addr = mono_special_static_field_get_offset (field, error);
+		mono_error_assert_ok (error);
 		addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	} else {
 		addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
@@ -1369,7 +1366,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		/*
 		 * Calling a non-vtype method with a vtype receiver, has to box.
 		 */
-		*this_arg = mono_value_box_checked (mono_domain_get (), klass, mp, error);
+		*this_arg = mono_value_box_checked (klass, mp, error);
 	} else if (m_class_is_valuetype (klass)) {
 		if (is_iface) {
 			/*
@@ -1554,7 +1551,7 @@ MonoObject*
 mono_get_assembly_object (MonoImage *image)
 {
 	ICALL_ENTRY();
-	MonoObjectHandle result = MONO_HANDLE_CAST (MonoObject, mono_assembly_get_object_handle (mono_domain_get (), image->assembly, error));
+	MonoObjectHandle result = MONO_HANDLE_CAST (MonoObject, mono_assembly_get_object_handle (image->assembly, error));
 	ICALL_RETURN_OBJ (result);
 }
 
@@ -1563,7 +1560,7 @@ mono_get_method_object (MonoMethod *method)
 {
 	ERROR_DECL (error);
 	MonoObject * result;
-	result = (MonoObject*)mono_method_get_object_checked (mono_domain_get (), method, method->klass, error);
+	result = (MonoObject*)mono_method_get_object_checked (method, method->klass, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }
@@ -1602,6 +1599,14 @@ mono_throw_not_supported ()
 {
 	ERROR_DECL (error);
 	mono_error_set_generic_error (error, "System", "NotSupportedException", "");
+	mono_error_set_pending_exception (error);
+}
+
+void
+mono_throw_platform_not_supported ()
+{
+	ERROR_DECL (error);
+	mono_error_set_generic_error (error, "System", "PlatformNotSupportedException", "");
 	mono_error_set_pending_exception (error);
 }
 

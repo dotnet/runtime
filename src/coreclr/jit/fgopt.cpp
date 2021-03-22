@@ -2323,7 +2323,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 {
                     newEdge2Max = BB_ZERO_WEIGHT;
                 }
-                edge2->setEdgeWeights(newEdge2Min, newEdge2Max);
+                edge2->setEdgeWeights(newEdge2Min, newEdge2Max, bDest);
             }
         }
 
@@ -2354,12 +2354,12 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
     {
         case BBJ_COND:
         case BBJ_SWITCH:
-        case BBJ_THROW:
 
             /* can never happen */
-            noway_assert(!"Conditional, switch, or throw block with empty body!");
+            noway_assert(!"Conditional or switch block with empty body!");
             break;
 
+        case BBJ_THROW:
         case BBJ_CALLFINALLY:
         case BBJ_RETURN:
         case BBJ_EHCATCHRET:
@@ -2687,8 +2687,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
     //
     if (block->NumSucc(this) == 1)
     {
-        // Use BBJ_ALWAYS for a switch with only a default clause, or with only one unique successor.
-        BasicBlock* uniqueSucc = jmpTab[0];
+// Use BBJ_ALWAYS for a switch with only a default clause, or with only one unique successor.
 
 #ifdef DEBUG
         if (verbose)

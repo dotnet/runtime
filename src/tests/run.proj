@@ -101,7 +101,7 @@ $(_XunitEpilog)
 
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
-    <RuntimeFrameworkVersion Condition="'$(__SkipFXRestore)' != 'true'">$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
     <RunAnalyzers>false</RunAnalyzers>
  </PropertyGroup>
 
@@ -388,6 +388,20 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" />
       <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
     </ItemGroup>
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64'">
+      <MonoAotOption Include="mattr=crc" />
+      <MonoAotOption Include="mattr=crypto" />
+      <MonoAotOption Include="mattr=neon" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'x64'">
+      <!--
+      <MonoAotOption Include="mattr=sse4.2" />
+      <MonoAotOption Include="mattr=popcnt" />
+      <MonoAotOption Include="mattr=lzcnt" />
+      <MonoAotOption Include="mattr=bmi" />
+      <MonoAotOption Include="mattr=bmi2" />
+      -->
+    </ItemGroup>
     <PropertyGroup>
       <MonoAotOptions>@(MonoAotOption->'%(Identity)', ',')</MonoAotOptions>
       <MonoPath Condition="'$(CROSSCOMPILE)' != ''">$(CORE_ROOT)</MonoPath>
@@ -473,7 +487,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         ProjectName="$(Category)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         StripDebugSymbols="$(StripDebugSymbols)"
-        SourceDir="$(BuildDir)"
+        AppDir="$(BuildDir)"
         OutputDir="$(AppDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />

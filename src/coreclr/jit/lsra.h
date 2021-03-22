@@ -510,9 +510,6 @@ public:
     void tinyDump();
 #endif // DEBUG
 
-    // RefPosition   * getNextRefPosition();
-    // LsraLocation    getNextRefLocation();
-
     // DATA
 
     // interval to which this register is currently allocated.
@@ -988,7 +985,7 @@ private:
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
-    void buildRefPositionsForNode(GenTree* tree, BasicBlock* block, LsraLocation loc);
+    void buildRefPositionsForNode(GenTree* tree, LsraLocation loc);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
@@ -1500,23 +1497,10 @@ private:
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 #if defined(TARGET_AMD64)
-    static bool varTypeNeedsPartialCalleeSave(var_types type)
-    {
-        return (type == TYP_SIMD32);
-    }
     static const var_types LargeVectorSaveType = TYP_SIMD16;
 #elif defined(TARGET_ARM64)
-    static bool varTypeNeedsPartialCalleeSave(var_types type)
-    {
-        // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
-        // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
-        return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
-    }
-    static const var_types LargeVectorSaveType = TYP_DOUBLE;
-#else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
-#error("Unknown target architecture for FEATURE_SIMD")
+    static const var_types LargeVectorSaveType  = TYP_DOUBLE;
 #endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
-
     // Set of large vector (TYP_SIMD32 on AVX) variables.
     VARSET_TP largeVectorVars;
     // Set of large vector (TYP_SIMD32 on AVX) variables to consider for callee-save registers.

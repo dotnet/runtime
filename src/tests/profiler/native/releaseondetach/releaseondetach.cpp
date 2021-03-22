@@ -3,22 +3,9 @@
 
 #include "releaseondetach.h"
 
-#ifdef WIN32
-#include <Windows.h>
-#else // WIN32
-#include <dlfcn.h>
-#include <iostream>
-#include <fstream>
-#include <string>
+#include <thread>
 
-using std::string;
-using std::ifstream;
-using std::getline;
-
-#ifdef __APPLE__
-#include <mach-o/dyld.h>
-#endif // __APPLE__
-#endif // WIN32
+using std::thread;
 
 ReleaseOnDetach *ReleaseOnDetach::Instance;
 
@@ -26,7 +13,8 @@ ReleaseOnDetach::ReleaseOnDetach() :
     _dispenser(NULL),
     _failures(0),
     _detachSucceeded(false),
-    _doneFlag(NULL)
+    _callback(NULL),
+    _callbackSet()
 {
     ReleaseOnDetach::Instance = this;
 }
@@ -51,10 +39,20 @@ ReleaseOnDetach::~ReleaseOnDetach()
 
     fflush(stdout);
 
-    if (_doneFlag != NULL)
+
+    _callbackSet.Wait();
+
+
+    thread callbackThread([&]()
     {
-        *_doneFlag = true;
-    }
+        // The destructor will be called from the profiler detach thread, which causes
+        // some crst order asserts if we call back in to managed code. Spin up
+        // a new thread to avoid that.
+        pCorProfilerInfo->InitializeCurrentThread();
+        _callback();
+    });
+
+    callbackThread.join();
 }
 
 GUID ReleaseOnDetach::GetClsid()
@@ -113,7 +111,7 @@ HRESULT ReleaseOnDetach::ProfilerAttachComplete()
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE ReleaseOnDetach::ProfilerDetachSucceeded()
+HRESULT ReleaseOnDetach::ProfilerDetachSucceeded()
 {
     SHUTDOWNGUARD();
 
@@ -122,7 +120,14 @@ HRESULT STDMETHODCALLTYPE ReleaseOnDetach::ProfilerDetachSucceeded()
     return S_OK;
 }
 
-extern "C" EXPORT void STDMETHODCALLTYPE PassBoolToProfiler(void *boolPtr)
+void ReleaseOnDetach::SetCallback(ProfilerCallback callback)
 {
-    ReleaseOnDetach::Instance->SetBoolPtr(boolPtr);
+    assert(callback != NULL);
+    _callback = callback;
+    _callbackSet.Signal();
+}
+
+extern "C" EXPORT void STDMETHODCALLTYPE PassCallbackToProfiler(ProfilerCallback callback)
+{
+    ReleaseOnDetach::Instance->SetCallback(callback);
 }

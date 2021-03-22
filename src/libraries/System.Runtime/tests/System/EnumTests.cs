@@ -127,17 +127,31 @@ namespace System.Tests
             T result;
             if (!ignoreCase)
             {
+                Assert.True(Enum.TryParse(value.AsSpan(), out result));
+                Assert.Equal(expected, result);
+
                 Assert.True(Enum.TryParse(value, out result));
                 Assert.Equal(expected, result);
 
+
+                Assert.Equal(expected, Enum.Parse(expected.GetType(), value.AsSpan()));
                 Assert.Equal(expected, Enum.Parse(expected.GetType(), value));
+
+                Assert.Equal(expected, Enum.Parse<T>(value.AsSpan()));
                 Assert.Equal(expected, Enum.Parse<T>(value));
             }
+
+            Assert.True(Enum.TryParse(value.AsSpan(), ignoreCase, out result));
+            Assert.Equal(expected, result);
 
             Assert.True(Enum.TryParse(value, ignoreCase, out result));
             Assert.Equal(expected, result);
 
+
+            Assert.Equal(expected, Enum.Parse(expected.GetType(), value.AsSpan(), ignoreCase));
             Assert.Equal(expected, Enum.Parse(expected.GetType(), value, ignoreCase));
+
+            Assert.Equal(expected, Enum.Parse<T>(value.AsSpan(), ignoreCase));
             Assert.Equal(expected, Enum.Parse<T>(value, ignoreCase));
         }
 
@@ -238,10 +252,16 @@ namespace System.Tests
                     Assert.False(Enum.TryParse(enumType, value, out result));
                     Assert.Equal(default(object), result);
 
+                    if (value != null)
+                        Assert.Throws(exceptionType, () => Enum.Parse<T>(value.AsSpan()));
+
                     Assert.Throws(exceptionType, () => Enum.Parse<T>(value));
                 }
                 else
                 {
+                    if (value != null)
+                        Assert.Throws(exceptionType, () => Enum.TryParse(enumType, value.AsSpan(), out result));
+
                     Assert.Throws(exceptionType, () => Enum.TryParse(enumType, value, out result));
                     Assert.Equal(default(object), result);
                 }
@@ -252,10 +272,16 @@ namespace System.Tests
                 Assert.False(Enum.TryParse(enumType, value, ignoreCase, out result));
                 Assert.Equal(default(object), result);
 
+                if (value != null)
+                    Assert.Throws(exceptionType, () => Enum.Parse<T>(value.AsSpan(), ignoreCase));
+
                 Assert.Throws(exceptionType, () => Enum.Parse<T>(value, ignoreCase));
             }
             else
             {
+                if (value != null)
+                    Assert.Throws(exceptionType, () => Enum.TryParse(enumType, value.AsSpan(), ignoreCase, out result));
+
                 Assert.Throws(exceptionType, () => Enum.TryParse(enumType, value, ignoreCase, out result));
                 Assert.Equal(default(object), result);
             }
@@ -1980,10 +2006,13 @@ namespace System.Tests
 
         public static IEnumerable<object[]> UnsupportedEnum_TestData()
         {
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1) };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 2) };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1) };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 2) };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 1) };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 2) };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1) };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 2) };
+            }
         }
 
         [Theory]

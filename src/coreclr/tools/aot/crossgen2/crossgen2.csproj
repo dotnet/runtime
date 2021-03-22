@@ -61,10 +61,14 @@
 
     <TargetOSComponent>unix</TargetOSComponent>
     <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
-    <TargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(TargetArchitecture)</TargetSpec>
-    <CrossTargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(CrossHostArch)</CrossTargetSpec>
 
-    <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitecture)$(LibSuffix)</JitInterfaceLibraryName>
+    <TargetArchitectureForSharedLibraries>$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
+    <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitecture)'=='armel'">arm</TargetArchitectureForSharedLibraries>
+
+    <TargetSpec>$(TargetOSComponent)_$(TargetArchitectureForSharedLibraries)_$(TargetArchitectureForSharedLibraries)</TargetSpec>
+    <CrossTargetSpec>$(TargetOSComponent)_$(TargetArchitectureForSharedLibraries)_$(CrossHostArch)</CrossTargetSpec>
+
+    <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(LibSuffix)</JitInterfaceLibraryName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -72,13 +76,13 @@
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
-     />
+      />
 
-    <Content Include="$(RuntimeBinDir)$(NativeArchFolder)$(LibPrefix)clrjit_*_$(TargetArchitecture)$(LibSuffix)"
+    <Content Include="$(RuntimeBinDir)$(NativeArchFolder)$(LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(LibSuffix)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
-     />
+      />
   </ItemGroup>
 
   <!-- On windows we can re-use the clrjit.dll produced in the build for aot compilation. On Linux
@@ -89,9 +93,39 @@
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)"
-     />
+      />
 
     <Content Include="$(RuntimeBinDir)/pgort*.dll"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="%(FileName)%(Extension)"
+      Condition="'$(PgoInstrument)' != ''"
+      />
+
+    <PackageReference Include="Microsoft.DiaSymReader.Native"
+      Version="$(MicrosoftDiaSymReaderNativeVersion)"
+      IsImplicitlyDefined="true"
+      ExcludeAssets="all"
+      GeneratePathProperty="true"
+      />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+    <!-- DiaSymReader for the host architecture, which is used for cross-compilation -->
+    <DiaSymReaderCrossArch>$(CrossHostArch)</DiaSymReaderCrossArch>
+    <DiaSymReaderCrossArch Condition="'$(CrossHostArch)' == 'x64'">amd64</DiaSymReaderCrossArch>
+    <DiaSymReaderCrossArchFileName>Microsoft.DiaSymReader.Native.$(DiaSymReaderCrossArch).dll</DiaSymReaderCrossArchFileName>
+    <DiaSymReaderCrossArchPath>$(PkgMicrosoft_DiaSymReader_Native)\runtimes\win\native\$(DiaSymReaderCrossArchFileName)</DiaSymReaderCrossArchPath>
+
+    <!-- DiaSymReader for the target architecture, which is placed into the package -->
+    <DiaSymReaderTargetArch>$(TargetArchitecture)</DiaSymReaderTargetArch>
+    <DiaSymReaderTargetArch Condition="'$(TargetArchitecture)' == 'x64'">amd64</DiaSymReaderTargetArch>
+    <DiaSymReaderTargetArchFileName>Microsoft.DiaSymReader.Native.$(DiaSymReaderTargetArch).dll</DiaSymReaderTargetArchFileName>
+    <DiaSymReaderTargetArchPath>$(PkgMicrosoft_DiaSymReader_Native)\runtimes\win\native\$(DiaSymReaderTargetArchFileName)</DiaSymReaderTargetArchPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <Content Include="$(DiaSymReaderTargetArchPath)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
@@ -99,15 +133,18 @@
   </ItemGroup>
 
   <Target Name="CreateCrossTargetingPackage" AfterTargets="Build" Condition="'$(CrossHostArch)' != ''">
-
     <PropertyGroup>
       <CrossPackageFolder>$(RuntimeBinDir)$(CrossHostArch)\crossgen2</CrossPackageFolder>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageFile Include="$(RuntimeBinDir)crossgen2\*"
-        Exclude="$(RuntimeBinDir)crossgen2\$(JitInterfaceLibraryName);$(RuntimeBinDir)crossgen2\$(LibPrefix)clrjit_*$(LibSuffix)" />
+      <!-- The list of files specific to the target architecture, which we need to replace -->
+      <TargetArchSpecificFiles Include="$(JitInterfaceLibraryName);$(LibPrefix)clrjit_*$(LibSuffix)" />
+      <TargetArchSpecificFiles Include="$(DiaSymReaderTargetArchFileName)" Condition="'$(TargetOS)' == 'windows'" />
+
+      <PackageFile Include="$(RuntimeBinDir)crossgen2\*" Exclude="@(TargetArchSpecificFiles->'$(RuntimeBinDir)crossgen2\%(Identity)')" />
       <PackageFile Include="$(RuntimeBinDir)$(CrossHostArch)\$(LibPrefix)jitinterface_$(CrossHostArch)$(LibSuffix)" />
+      <PackageFile Include="$(DiaSymReaderCrossArchPath)" Condition="'$(TargetOS)' == 'windows'" />
     </ItemGroup>
 
     <MakeDir Directories="$(CrossPackageFolder)" />

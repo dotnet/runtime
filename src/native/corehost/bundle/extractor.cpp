@@ -14,8 +14,8 @@ pal::string_t& extractor_t::extraction_dir()
     if (m_extraction_dir.empty())
     {
         // Compute the final extraction location as:
-        // m_extraction_dir = $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/<id>/...	
-        //	
+        // m_extraction_dir = $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/<id>/...
+        //
         // If DOTNET_BUNDLE_EXTRACT_BASE_DIR is not set in the environment, 
         // a default is choosen within the temporary directory.
 
@@ -103,9 +103,9 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
 {
     FILE* file = create_extraction_file(entry.relative_path());
     reader.set_offset(entry.offset());
-    size_t size = entry.size();
-
-    if (fwrite(reader, 1, size, file) != size)
+    int64_t size = entry.size();
+    size_t cast_size = to_size_t_dbgchecked(size);
+    if (fwrite(reader, 1, cast_size, file) != cast_size)
     {
         trace::error(_X("Failure extracting contents of the application bundle."));
         trace::error(_X("I/O failure when writing extracted files."));

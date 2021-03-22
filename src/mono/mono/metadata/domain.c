@@ -42,8 +42,6 @@
 #include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/runtime.h>
-#include <mono/metadata/w32mutex.h>
-#include <mono/metadata/w32semaphore.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/threads.h>
@@ -62,9 +60,6 @@
 	if (info) \
 		mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
 } while (FALSE)
-
-#define GET_APPCONTEXT() NULL
-#define SET_APPCONTEXT(x)
 
 static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
@@ -117,92 +112,6 @@ get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image);
 
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
-
-static LockFreeMempool*
-lock_free_mempool_new (void)
-{
-	return g_new0 (LockFreeMempool, 1);
-}
-
-static void
-lock_free_mempool_free (LockFreeMempool *mp)
-{
-	LockFreeMempoolChunk *chunk, *next;
-
-	chunk = mp->chunks;
-	while (chunk) {
-		next = (LockFreeMempoolChunk *)chunk->prev;
-		mono_vfree (chunk, mono_pagesize (), MONO_MEM_ACCOUNT_DOMAIN);
-		chunk = next;
-	}
-	g_free (mp);
-}
-
-/*
- * This is async safe
- */
-static LockFreeMempoolChunk*
-lock_free_mempool_chunk_new (LockFreeMempool *mp, int len)
-{
-	LockFreeMempoolChunk *chunk, *prev;
-	int size;
-
-	size = mono_pagesize ();
-	while (size - sizeof (LockFreeMempoolChunk) < len)
-		size += mono_pagesize ();
-	chunk = (LockFreeMempoolChunk *)mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_DOMAIN);
-	g_assert (chunk);
-	chunk->mem = (guint8 *)ALIGN_PTR_TO ((char*)chunk + sizeof (LockFreeMempoolChunk), 16);
-	chunk->size = ((char*)chunk + size) - (char*)chunk->mem;
-	chunk->pos = 0;
-
-	/* Add to list of chunks lock-free */
-	while (TRUE) {
-		prev = mp->chunks;
-		if (mono_atomic_cas_ptr ((volatile gpointer*)&mp->chunks, chunk, prev) == prev)
-			break;
-	}
-	chunk->prev = prev;
-
-	return chunk;
-}
-
-/*
- * This is async safe
- */
-static gpointer
-lock_free_mempool_alloc0 (LockFreeMempool *mp, guint size)
-{
-	LockFreeMempoolChunk *chunk;
-	gpointer res;
-	int oldpos;
-
-	// FIXME: Free the allocator
-
-	size = ALIGN_TO (size, 8);
-	chunk = mp->current;
-	if (!chunk) {
-		chunk = lock_free_mempool_chunk_new (mp, size);
-		mono_memory_barrier ();
-		/* Publish */
-		mp->current = chunk;
-	}
-
-	/* The code below is lock-free, 'chunk' is shared state */
-	oldpos = mono_atomic_fetch_add_i32 (&chunk->pos, size);
-	if (oldpos + size > chunk->size) {
-		chunk = lock_free_mempool_chunk_new (mp, size);
-		g_assert (chunk->pos + size <= chunk->size);
-		res = chunk->mem;
-		chunk->pos += size;
-		mono_memory_barrier ();
-		mp->current = chunk;
-	} else {
-		res = (char*)chunk->mem + oldpos;
-	}
-
-	return res;
-}
 
 gboolean
 mono_string_equal_internal (MonoString *s1, MonoString *s2)
@@ -386,7 +295,7 @@ mono_domain_create (void)
   
 	if (!domain_gc_desc) {
 		unsigned int i, bit = 0;
-		for (i = G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_OBJECT); i < G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_GC_TRACKED); i += sizeof (gpointer)) {
+		for (i = G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_OBJECT); i <= G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_LAST_OBJECT); i += sizeof (gpointer)) {
 			bit = i / sizeof (gpointer);
 			domain_gc_bitmap [bit / 32] |= (gsize) 1 << (bit % 32);
 		}
@@ -401,28 +310,14 @@ mono_domain_create (void)
 
 	domain->domain = NULL;
 	domain->friendly_name = NULL;
-	domain->search_path = NULL;
 
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
-	domain->lock_free_mp = lock_free_mempool_new ();
-	domain->env = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Environment Variable Table");
 	domain->domain_assemblies = NULL;
-	mono_jit_code_hash_init (&domain->jit_code_hash);
-	domain->ldstr_table = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain String Pool Table");
-	domain->num_jit_info_table_duplicates = 0;
-	domain->jit_info_table = mono_jit_info_table_new (domain);
-	domain->jit_info_free_queue = NULL;
-	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	domain->ftnptrs_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	mono_coop_mutex_init_recursive (&domain->lock);
 
 	mono_coop_mutex_init_recursive (&domain->assemblies_lock);
-	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
-	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
-
-	mono_coop_mutex_init (&domain->alcs_lock);
 
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);
@@ -432,8 +327,6 @@ mono_domain_create (void)
 	mono_atomic_inc_i32 (&mono_perfcounters->loader_appdomains);
 	mono_atomic_inc_i32 (&mono_perfcounters->loader_total_appdomains);
 #endif
-
-	mono_alc_create_default (domain);
 
 	MONO_PROFILER_RAISE (domain_loaded, (domain));
 	
@@ -471,11 +364,8 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
-	mono_w32handle_namespace_init ();
 #endif
 
-	mono_w32mutex_init ();
-	mono_w32semaphore_init ();
 	mono_w32event_init ();
 	mono_w32file_init ();
 
@@ -507,6 +397,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	domain = mono_domain_create ();
 	mono_root_domain = domain;
 
+	mono_alcs_init ();
+	mono_jit_info_tables_init ();
+
 	SET_APPDOMAIN (domain);
 
 #if defined(ENABLE_EXPERIMENT_null)
@@ -524,7 +417,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		runtimes = get_runtimes_from_exe (exe_filename, &exe_image);
 #ifdef HOST_WIN32
 		if (!exe_image) {
-			exe_image = mono_assembly_open_from_bundle (mono_domain_default_alc (domain), exe_filename, NULL, NULL);
+			exe_image = mono_assembly_open_from_bundle (mono_alc_get_default (domain), exe_filename, NULL, NULL);
 			if (!exe_image)
 				exe_image = mono_image_open (exe_filename, NULL);
 		}
@@ -867,7 +760,6 @@ mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exce
 		return;
 
 	SET_APPDOMAIN (domain);
-	SET_APPCONTEXT (domain->default_context);
 
 	if (migrate_exception) {
 		thread = mono_thread_internal_current ();
@@ -920,10 +812,7 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 void
 mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
 {
-	if (!mono_runtime_get_no_exec () && !domain->entry_assembly && assembly) {
-
-		domain->entry_assembly = assembly;
-	}
+	mono_runtime_ensure_entry_assembly (assembly);
 }
 
 /**
@@ -936,7 +825,7 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 {
 	MonoAssembly *result;
 	MONO_ENTER_GC_UNSAFE;
-	result = mono_domain_assembly_open_internal (domain, mono_domain_default_alc (domain), name);
+	result = mono_domain_assembly_open_internal (domain, mono_alc_get_default (), name);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -965,7 +854,7 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 
 	// On netcore, this is necessary because we check the AppContext.BaseDirectory property as part of the assembly lookup algorithm
 	// AppContext.BaseDirectory can sometimes fall back to checking the location of the entry_assembly, which should be non-null
-	mono_domain_ensure_entry_assembly (domain, ass);
+	mono_runtime_ensure_entry_assembly (ass);
 
 	return ass;
 }
@@ -1037,51 +926,12 @@ mono_domain_get_friendly_name (MonoDomain *domain)
 	return domain->friendly_name;
 }
 
-/*
- * mono_domain_alloc:
- *
- * LOCKING: Acquires the default memory manager lock.
- */
-gpointer
-(mono_domain_alloc) (MonoDomain *domain, guint size)
-{
-	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
-
-	return mono_mem_manager_alloc (memory_manager, size);
-}
-
-/*
- * mono_domain_alloc0:
- *
- * LOCKING: Acquires the default memory manager lock.
- */
-gpointer
-(mono_domain_alloc0) (MonoDomain *domain, guint size)
-{
-	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
-
-	return mono_mem_manager_alloc0 (memory_manager, size);
-}
-
-gpointer
-(mono_domain_alloc0_lock_free) (MonoDomain *domain, guint size)
-{
-	return lock_free_mempool_alloc0 (domain->lock_free_mp, size);
-}
-
 /**
  * mono_context_set:
  */
 void 
 mono_context_set (MonoAppContext * new_context)
 {
-	SET_APPCONTEXT (new_context);
-}
-
-void
-mono_context_set_handle (MonoAppContextHandle new_context)
-{
-	SET_APPCONTEXT (MONO_HANDLE_RAW (new_context));
 }
 
 /**
@@ -1092,18 +942,7 @@ mono_context_set_handle (MonoAppContextHandle new_context)
 MonoAppContext * 
 mono_context_get (void)
 {
-	return GET_APPCONTEXT ();
-}
-
-/**
- * mono_context_get_handle:
- *
- * Returns: the current Mono Application Context.
- */
-MonoAppContextHandle
-mono_context_get_handle (void)
-{
-	return MONO_HANDLE_NEW (MonoAppContext, GET_APPCONTEXT ());
+	return NULL;
 }
 
 /**
@@ -1408,7 +1247,7 @@ get_runtimes_from_exe (const char *file, MonoImage **out_image)
 	GSList *runtimes = NULL;
 	
 	/* Look for a runtime with the exact version */
-	image = mono_assembly_open_from_bundle (mono_domain_default_alc (mono_domain_get ()), file, NULL, NULL);
+	image = mono_assembly_open_from_bundle (mono_alc_get_default (), file, NULL, NULL);
 
 	if (image == NULL)
 		image = mono_image_open (file, NULL);
@@ -1470,10 +1309,4 @@ mono_domain_get_assemblies (MonoDomain *domain)
 	}
 	mono_domain_assemblies_unlock (domain);
 	return assemblies;
-}
-
-MonoAssemblyLoadContext *
-mono_domain_default_alc (MonoDomain *domain)
-{
-	return domain->default_alc;
 }
