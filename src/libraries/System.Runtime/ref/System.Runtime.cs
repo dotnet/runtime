@@ -6007,7 +6007,7 @@ namespace System.Diagnostics.CodeAnalysis
         public string? Message { get { throw null; } set { } }
         public string? Url { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class RequiresUnreferencedCodeAttribute : System.Attribute
     {
         public RequiresUnreferencedCodeAttribute(string message) { }
