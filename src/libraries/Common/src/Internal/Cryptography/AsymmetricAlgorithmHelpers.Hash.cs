@@ -23,7 +23,7 @@ namespace Internal.Cryptography
             Debug.Assert(offset >= 0 && offset <= data.Length - count);
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
-#if NETCOREAPP && !NETCOREAPP3_0
+#if NET5_0_OR_GREATER
             ReadOnlySpan<byte> source = data.AsSpan(offset, count);
 
             if (hashAlgorithm == HashAlgorithmName.MD5)
@@ -79,7 +79,7 @@ namespace Internal.Cryptography
             // The classes that call us are sealed and their base class has checked this already.
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
-#if NETCOREAPP && !NETCOREAPP3_0
+#if NET5_0_OR_GREATER
             if (hashAlgorithm == HashAlgorithmName.MD5)
             {
                 return MD5.TryHashData(source, destination, out bytesWritten);
