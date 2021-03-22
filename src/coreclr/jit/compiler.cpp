@@ -1467,6 +1467,8 @@ void Compiler::compShutdown()
             fclose(jitTimeLogFile);
         }
     }
+
+    JitTimer::Shutdown();
 #endif // FEATURE_JIT_METHOD_PERF
 
 #if COUNT_AST_OPERS
@@ -2762,8 +2764,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (!altJitConfig || opts.altJit)
     {
-        LPCWSTR dumpIRFormat = nullptr;
-
         // We should only enable 'verboseDump' when we are actually compiling a matching method
         // and not enable it when we are just considering inlining a matching method.
         //
@@ -2830,11 +2830,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     // Profile data
     //
-    fgPgoSchema                  = nullptr;
-    fgPgoData                    = nullptr;
-    fgPgoSchemaCount             = 0;
-    fgPgoQueryResult             = E_FAIL;
-    fgProfileData_ILSizeMismatch = false;
+    fgPgoSchema      = nullptr;
+    fgPgoData        = nullptr;
+    fgPgoSchemaCount = 0;
+    fgPgoQueryResult = E_FAIL;
+    fgPgoFailReason  = nullptr;
+
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         fgPgoQueryResult = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema,
@@ -2846,12 +2847,22 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         //
         // We will discard the IBC data in this case
         //
-        if (FAILED(fgPgoQueryResult) && (fgPgoSchema != nullptr))
+        if (FAILED(fgPgoQueryResult))
         {
-            fgProfileData_ILSizeMismatch = true;
-            fgPgoData                    = nullptr;
-            fgPgoSchema                  = nullptr;
+            fgPgoFailReason = (fgPgoSchema != nullptr) ? "No matching PGO data" : "No PGO data";
+            fgPgoData       = nullptr;
+            fgPgoSchema     = nullptr;
         }
+        // Optionally, discard the profile data.
+        //
+        else if (JitConfig.JitDisablePGO() != 0)
+        {
+            fgPgoFailReason  = "PGO data available, but JitDisablePGO != 0";
+            fgPgoQueryResult = E_FAIL;
+            fgPgoData        = nullptr;
+            fgPgoSchema      = nullptr;
+        }
+
 #ifdef DEBUG
         // A successful result implies a non-NULL fgPgoSchema
         //
@@ -3241,10 +3252,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 
     GlobalJitOptions::compFeatureHfa = !opts.compUseSoftFP;
-#elif defined(ARM_SOFTFP)
+#elif defined(ARM_SOFTFP) && defined(TARGET_ARM)
     // Armel is unconditionally enabled in the JIT. Verify that the VM side agrees.
     assert(jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));
-#elif TARGET_ARM
+#elif defined(TARGET_ARM)
     assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));
 #endif // CONFIGURABLE_ARM_ABI
 
@@ -3364,9 +3375,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             printf("OPTIONS: optimized using profile data\n");
         }
 
-        if (fgProfileData_ILSizeMismatch)
+        if (fgPgoFailReason != nullptr)
         {
-            printf("OPTIONS: discarded IBC profile data due to mismatch in ILSize\n");
+            printf("OPTIONS: %s\n", fgPgoFailReason);
         }
 
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
@@ -7581,7 +7592,7 @@ void Compiler::compDispCallArgStats(FILE* fout)
 CritSecObject       CompTimeSummaryInfo::s_compTimeSummaryLock;
 CompTimeSummaryInfo CompTimeSummaryInfo::s_compTimeSummary;
 #if MEASURE_CLRAPI_CALLS
-double JitTimer::s_cyclesPerSec = CycleTimer::CyclesPerSecond();
+double JitTimer::s_cyclesPerSec = CachedCyclesPerSecond();
 #endif
 #endif // FEATURE_JIT_METHOD_PERF
 
@@ -7776,7 +7787,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
         return;
     }
     // Otherwise...
-    double countsPerSec = CycleTimer::CyclesPerSecond();
+    double countsPerSec = CachedCyclesPerSecond();
     if (countsPerSec == 0.0)
     {
         fprintf(f, "Processor does not have a high-frequency timer.\n");
@@ -8170,6 +8181,10 @@ void JitTimer::CLRApiCallLeave(unsigned apix)
 
 CritSecObject JitTimer::s_csvLock;
 
+// It's expensive to constantly open and close the file, so open it once and close it
+// when the process exits. This should be accessed under the s_csvLock.
+FILE* JitTimer::s_csvFile = nullptr;
+
 LPCWSTR Compiler::JitTimeLogCsv()
 {
     LPCWSTR jitTimeLogCsv = JitConfig.JitTimeLogCsv();
@@ -8186,40 +8201,45 @@ void JitTimer::PrintCsvHeader()
 
     CritSecHolder csvLock(s_csvLock);
 
-    FILE* fp = _wfopen(jitTimeLogCsv, W("a"));
-    if (fp != nullptr)
+    if (s_csvFile == nullptr)
+    {
+        s_csvFile = _wfopen(jitTimeLogCsv, W("a"));
+    }
+    if (s_csvFile != nullptr)
     {
         // Seek to the end of the file s.t. `ftell` doesn't lie to us on Windows
-        fseek(fp, 0, SEEK_END);
+        fseek(s_csvFile, 0, SEEK_END);
 
         // Write the header if the file is empty
-        if (ftell(fp) == 0)
+        if (ftell(s_csvFile) == 0)
         {
-            fprintf(fp, "\"Method Name\",");
-            fprintf(fp, "\"Assembly or SPMI Index\",");
-            fprintf(fp, "\"IL Bytes\",");
-            fprintf(fp, "\"Basic Blocks\",");
-            fprintf(fp, "\"Min Opts\",");
-            fprintf(fp, "\"Loops Cloned\",");
+            fprintf(s_csvFile, "\"Method Name\",");
+            fprintf(s_csvFile, "\"Assembly or SPMI Index\",");
+            fprintf(s_csvFile, "\"IL Bytes\",");
+            fprintf(s_csvFile, "\"Basic Blocks\",");
+            fprintf(s_csvFile, "\"Min Opts\",");
+            fprintf(s_csvFile, "\"Loops\",");
+            fprintf(s_csvFile, "\"Loops Cloned\",");
 
             for (int i = 0; i < PHASE_NUMBER_OF; i++)
             {
-                fprintf(fp, "\"%s\",", PhaseNames[i]);
+                fprintf(s_csvFile, "\"%s\",", PhaseNames[i]);
                 if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
                 {
-                    fprintf(fp, "\"Node Count After %s\",", PhaseNames[i]);
+                    fprintf(s_csvFile, "\"Node Count After %s\",", PhaseNames[i]);
                 }
             }
 
-            InlineStrategy::DumpCsvHeader(fp);
+            InlineStrategy::DumpCsvHeader(s_csvFile);
 
-            fprintf(fp, "\"Executable Code Bytes\",");
-            fprintf(fp, "\"GC Info Bytes\",");
-            fprintf(fp, "\"Total Bytes Allocated\",");
-            fprintf(fp, "\"Total Cycles\",");
-            fprintf(fp, "\"CPS\"\n");
+            fprintf(s_csvFile, "\"Executable Code Bytes\",");
+            fprintf(s_csvFile, "\"GC Info Bytes\",");
+            fprintf(s_csvFile, "\"Total Bytes Allocated\",");
+            fprintf(s_csvFile, "\"Total Cycles\",");
+            fprintf(s_csvFile, "\"CPS\"\n");
+
+            fflush(s_csvFile);
         }
-        fclose(fp);
     }
 }
 
@@ -8233,8 +8253,14 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         return;
     }
 
-    // eeGetMethodFullName uses locks, so don't enter crit sec before this call.
-    const char* methName = comp->eeGetMethodFullName(comp->info.compMethodHnd);
+// eeGetMethodFullName uses locks, so don't enter crit sec before this call.
+#if defined(DEBUG) || defined(LATE_DISASM)
+    // If we already have computed the name because for some reason we're generating the CSV
+    // for a DEBUG build (presumably not for the time info), just re-use it.
+    const char* methName = comp->info.compFullName;
+#else
+    const char*          methName  = comp->eeGetMethodFullName(comp->info.compMethodHnd);
+#endif
 
     // Try and access the SPMI index to report in the data set.
     //
@@ -8247,22 +8273,27 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
 
     CritSecHolder csvLock(s_csvLock);
 
-    FILE* fp = _wfopen(jitTimeLogCsv, W("a"));
-    fprintf(fp, "\"%s\",", methName);
+    if (s_csvFile == nullptr)
+    {
+        return;
+    }
+
+    fprintf(s_csvFile, "\"%s\",", methName);
     if (index != 0)
     {
-        fprintf(fp, "%d,", index);
+        fprintf(s_csvFile, "%d,", index);
     }
     else
     {
         const char* methodAssemblyName = comp->info.compCompHnd->getAssemblyName(
             comp->info.compCompHnd->getModuleAssembly(comp->info.compCompHnd->getClassModule(comp->info.compClassHnd)));
-        fprintf(fp, "\"%s\",", methodAssemblyName);
+        fprintf(s_csvFile, "\"%s\",", methodAssemblyName);
     }
-    fprintf(fp, "%u,", comp->info.compILCodeSize);
-    fprintf(fp, "%u,", comp->fgBBcount);
-    fprintf(fp, "%u,", comp->opts.MinOpts());
-    fprintf(fp, "%u,", comp->optLoopsCloned);
+    fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
+    fprintf(s_csvFile, "%u,", comp->fgBBcount);
+    fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
+    fprintf(s_csvFile, "%u,", comp->optLoopCount);
+    fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
     unsigned __int64 totCycles = 0;
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
     {
@@ -8270,22 +8301,35 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         {
             totCycles += m_info.m_cyclesByPhase[i];
         }
-        fprintf(fp, "%I64u,", m_info.m_cyclesByPhase[i]);
+        fprintf(s_csvFile, "%I64u,", m_info.m_cyclesByPhase[i]);
 
         if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
-            fprintf(fp, "%u,", m_info.m_nodeCountAfterPhase[i]);
+            fprintf(s_csvFile, "%u,", m_info.m_nodeCountAfterPhase[i]);
         }
     }
 
-    comp->m_inlineStrategy->DumpCsvData(fp);
+    comp->m_inlineStrategy->DumpCsvData(s_csvFile);
 
-    fprintf(fp, "%u,", comp->info.compNativeCodeSize);
-    fprintf(fp, "%Iu,", comp->compInfoBlkSize);
-    fprintf(fp, "%Iu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
-    fprintf(fp, "%I64u,", m_info.m_totalCycles);
-    fprintf(fp, "%f\n", CycleTimer::CyclesPerSecond());
-    fclose(fp);
+    fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
+    fprintf(s_csvFile, "%Iu,", comp->compInfoBlkSize);
+    fprintf(s_csvFile, "%Iu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
+    fprintf(s_csvFile, "%I64u,", m_info.m_totalCycles);
+    fprintf(s_csvFile, "%f\n", CachedCyclesPerSecond());
+
+    fflush(s_csvFile);
+}
+
+// Perform process shutdown actions.
+//
+// static
+void JitTimer::Shutdown()
+{
+    CritSecHolder csvLock(s_csvLock);
+    if (s_csvFile != nullptr)
+    {
+        fclose(s_csvFile);
+    }
 }
 
 // Completes the timing of the current method, and adds it to "sum".

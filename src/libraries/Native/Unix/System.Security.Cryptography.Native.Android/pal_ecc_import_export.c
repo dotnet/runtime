@@ -332,7 +332,7 @@ error:
     {
         // Destroy the private key data.
         (*env)->CallVoidMethod(env, loc[privateKey], g_destroy);
-        CheckJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
+        (void)TryClearJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
     }
 
 cleanup:

@@ -106,7 +106,7 @@ jobs:
       - Windows.10.Amd64.Android.Open
 
     # iOS x64/x86
-    - ${{ if in(parameters.platform, 'iOS_x64', 'iOS_x86') }}:
+    - ${{ if in(parameters.platform, 'iOSSimulator_x64', 'iOSSimulator_x86') }}:
       - OSX.1015.Amd64.Open
 
     # windows x64

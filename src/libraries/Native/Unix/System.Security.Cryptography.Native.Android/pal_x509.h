@@ -56,8 +56,10 @@ enum
     PAL_DSA = 0,
     PAL_EC = 1,
     PAL_RSA = 2,
+
+    PAL_UnknownAlgorithm = -1,
 };
-typedef uint32_t PAL_KeyAlgorithm;
+typedef int32_t PAL_KeyAlgorithm;
 
 /*
 Gets an opaque handle for a certificate's public key

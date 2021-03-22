@@ -219,7 +219,7 @@ namespace System
             return sb.ToString();
         }
 
-        private class ParsedName
+        private sealed class ParsedName
         {
             public List<string>? Names;
             public List<ParsedName>? TypeArguments;
