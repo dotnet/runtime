@@ -11,8 +11,8 @@
   <PropertyGroup>
     <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
-    <IncludeAppleCryptoOnMobile Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">false</IncludeAppleCryptoOnMobile>
-    <IncludeAppleCryptoOnMobile Condition="'$(IncludeAppleCryptoOnMobile)' == ''">true</IncludeAppleCryptoOnMobile>
+    <IncludeUnavailableAppleCryptoAPIs Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">false</IncludeUnavailableAppleCryptoAPIs>
+    <IncludeUnavailableAppleCryptoAPIs Condition="'$(IncludeUnavailableAppleCryptoAPIs)' == ''">true</IncludeUnavailableAppleCryptoAPIs>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemSecurityCryptographyAlgorithms_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <ApiExclusionListPath Condition="'$(TargetsBrowser)' == 'true'">ExcludeApiList.PNSE.Browser.txt</ApiExclusionListPath>
   </PropertyGroup>
@@ -493,40 +493,20 @@
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs" />
-    <Compile Condition="'$(IncludeAppleCryptoOnMobile)' == 'true'" Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs" />
-    <Compile Condition="'$(IncludeAppleCryptoOnMobile)' != 'true'" Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.Mobile.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Hmac.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Hmac.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyAgree.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyAgree.cs" />
-    <Compile Condition="'$(IncludeAppleCryptoOnMobile)' == 'true'" Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs" />
-    <Compile Condition="'$(IncludeAppleCryptoOnMobile)' != 'true'" Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.Mobile.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs" />
-    <Compile Condition="'$(IncludeAppleCryptoOnMobile)' == 'true'" Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs" />
-    <Compile Condition="'$(IncludeAppleCryptoOnMobile)' != 'true'" Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.Mobile.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.Mobile.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs" />
-    <Compile Condition="'$(IncludeAppleCryptoOnMobile)' == 'true'" Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs" />
-    <Compile Condition="'$(IncludeAppleCryptoOnMobile)' != 'true'" Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Mobile.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Mobile.cs" />
-    <Compile Condition="'$(IncludeAppleCryptoOnMobile)' == 'true'" Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.cs" />
-    <Compile Condition="'$(IncludeAppleCryptoOnMobile)' != 'true'" Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.Mobile.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.Mobile.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Symmetric.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Symmetric.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Pbkdf2.cs"
@@ -556,6 +536,30 @@
     <Compile Include="Internal\Cryptography\RC2Implementation.OSX.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.OSX.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.SecurityTransforms.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(IncludeUnavailableAppleCryptoAPIs)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(IncludeUnavailableAppleCryptoAPIs)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.Mobile.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.Mobile.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.Mobile.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.Mobile.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.Mobile.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.Mobile.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Mobile.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Mobile.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.Mobile.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.Mobile.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs"
