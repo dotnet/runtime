@@ -6,7 +6,6 @@
 #include "pal_eckey.h"
 #include "pal_rsa.h"
 #include "pal_misc.h"
-#include "pal_utilities.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -296,16 +295,22 @@ static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
+static size_t min_size_t(size_t x, size_t y)
+{
+    return (x < y) ? x : y;
+}
+
 static void FindCertStart(const uint8_t** buffer, int32_t* len)
 {
+    assert(buffer != NULL && *buffer != NULL);
+    assert(*len >= 0);
+
     if (iscntrl(**buffer) && !isspace(**buffer))
     {
         // If the character is a control character that isn't whitespace, then we're probably using a DER encoding
         // and not using a PEM encoding in ASCII.
         return;
     }
-    assert(buffer != NULL && *buffer != NULL);
-    assert(*len >= 0);
 
     const uint8_t* bufferLocal = *buffer;
     int32_t lengthLocal = *len;
@@ -329,7 +334,7 @@ static void FindCertStart(const uint8_t** buffer, int32_t* len)
             return;
         }
         
-        if (memcmp(bufferLocal, pemHeader, min((size_t)lengthLocal, sizeof(pemHeader) - 1)) == 0)
+        if (memcmp(bufferLocal, pemHeader, min_size_t((size_t)lengthLocal, sizeof(pemHeader) - 1)) == 0)
         {
             // We found the PEM header.
             *buffer = bufferLocal;

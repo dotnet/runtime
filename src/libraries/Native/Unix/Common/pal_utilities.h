@@ -132,5 +132,3 @@ inline static int32_t SizeTToInt32(size_t value)
     assert(value <= INT_MAX);
     return (int32_t)value;
 }
-
-#define min(x, y) (x) < (y) ? (x) : (y)
