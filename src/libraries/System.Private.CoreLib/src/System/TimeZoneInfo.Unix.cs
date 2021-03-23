@@ -28,31 +28,33 @@ namespace System
         // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
         // Hard-coded because we need to treat all aliases of UTC the same even when ICU is not available,
         // or when we get "GMT" returned from older ICU versions.  (This list is not likely to change.)
-        private const string UtcAliases = "\n" +
-            "Etc/UTC\n" +
-            "Etc/UCT\n" +
-            "Etc/Universal\n" +
-            "Etc/Zulu\n" +
-            "UCT\n" +
-            "UTC\n" +
-            "Universal\n" +
-            "Zulu\n";
+        private static readonly string[] s_UtcAliases = new[] {
+            "Etc/UTC",
+            "Etc/UCT",
+            "Etc/Universal",
+            "Etc/Zulu",
+            "UCT",
+            "UTC",
+            "Universal",
+            "Zulu"
+        };
 
         // Some time zones may give better display names using their location names rather than their generic name.
         // We can update this list as need arises.
-        private const string ZonesThatUseLocationName = "\n" +
-            "Europe/Minsk\n" +      // Prefer "Belarus Time" over "Moscow Standard Time (Minsk)"
-            "Europe/Moscow\n" +     // Prefer "Moscow Time" over "Moscow Standard Time"
-            "Europe/Simferopol\n" + // Prefer "Simferopol Time" over "Moscow Standard Time (Simferopol)"
-            "Pacific/Apia\n" +      // Prefer "Samoa Time" over "Apia Time"
-            "Pacific/Pitcairn\n";   // Prefer "Pitcairn Islands Time" over "Pitcairn Time"
+        private static readonly string[] s_ZonesThatUseLocationName = new[] {
+            "Europe/Minsk",       // Prefer "Belarus Time" over "Moscow Standard Time (Minsk)"
+            "Europe/Moscow",      // Prefer "Moscow Time" over "Moscow Standard Time"
+            "Europe/Simferopol",  // Prefer "Simferopol Time" over "Moscow Standard Time (Simferopol)"
+            "Pacific/Apia",       // Prefer "Samoa Time" over "Apia Time"
+            "Pacific/Pitcairn"    // Prefer "Pitcairn Islands Time" over "Pitcairn Time"
+        };
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
             _id = id;
 
             // Handle UTC and its aliases
-            if (DelimitedStringContains(_id, UtcAliases, '\n', StringComparison.OrdinalIgnoreCase))
+            if (StringArrayContains(_id, s_UtcAliases, StringComparison.OrdinalIgnoreCase))
             {
                 _standardDisplayName = GetUtcStandardDisplayName();
                 _daylightDisplayName = _standardDisplayName;
@@ -212,8 +214,8 @@ namespace System
                 return;
             }
 
-            // Also use location names in some special cases.  (See the list at the top of this file.)
-            if (DelimitedStringContains(timeZoneId, ZonesThatUseLocationName, '\n', StringComparison.OrdinalIgnoreCase))
+            // Prefer location names in some special cases.
+            if (StringArrayContains(timeZoneId, s_ZonesThatUseLocationName, StringComparison.OrdinalIgnoreCase))
             {
                 displayName = $"{baseOffsetText} {genericLocationName}";
                 return;
@@ -1946,6 +1948,20 @@ namespace System
             // when adding more versions, ensure all the logic using TZVersion is still correct
         }
 
+        // Helper function for string array search. (LINQ is not available here.)
+        private static bool StringArrayContains(string value, string[] source, StringComparison comparison)
+        {
+            foreach (string s in source)
+            {
+                if (string.Equals(s, value, comparison))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         // Helper function to get the standard display name for the UTC static time zone instance
         private static string GetUtcStandardDisplayName()
         {
@@ -1963,33 +1979,6 @@ namespace System
                 standardDisplayName = InvariantUtcStandardDisplayName;
 
             return standardDisplayName;
-        }
-
-        // Optimized string contains function to ensure exact match without allocating extra strings or arrays.
-        // Each distinct substring within the source string must be separated by the delimiter.
-        // The source must also start and end with the delimiter.
-        private static bool DelimitedStringContains(string pattern, string source, char delimiter, StringComparison comparison)
-        {
-            Debug.Assert(source.Length > 1);
-
-            int index = 1;
-            do
-            {
-                index = source.IndexOf(pattern, index, comparison);
-                if (index < 0)
-                {
-                    return false;
-                }
-
-                if (index + pattern.Length < source.Length && source[index - 1] == delimiter && source[index + pattern.Length] == delimiter)
-                {
-                    return true;
-                }
-
-                index += pattern.Length;
-            } while (index < source.Length);
-
-            return false;
         }
     }
 }
