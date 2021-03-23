@@ -72,7 +72,7 @@
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>6.0.0-preview.3.21169.6</MicrosoftNETCoreILAsmVersion>
     <!-- Libraries dependencies -->
-    <StyleCopAnalyzersVersion>1.2.0-beta.304</StyleCopAnalyzersVersion>
+    <StyleCopAnalyzersVersion>1.2.0-beta.333</StyleCopAnalyzersVersion>
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
     <SystemCollectionsVersion>4.3.0</SystemCollectionsVersion>
     <SystemCollectionsConcurrentVersion>4.3.0</SystemCollectionsConcurrentVersion>
