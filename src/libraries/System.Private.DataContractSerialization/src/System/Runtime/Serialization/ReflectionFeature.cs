@@ -3,7 +3,7 @@
 
 namespace System.Runtime.Serialization
 {
-    internal class ReflectionBasedSerializationFeature
+    internal static class ReflectionBasedSerializationFeature
     {
         public const string Name = "System.Runtime.Serialization.ReflectionBasedSerialization";
     }

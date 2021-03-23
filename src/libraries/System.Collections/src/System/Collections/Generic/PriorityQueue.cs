@@ -358,9 +358,40 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(items));
             }
 
+            int count = 0;
+            var collection = items as ICollection<(TElement Element, TPriority Priority)>;
+            if (collection is not null && (count = collection.Count) > _nodes.Length - _size)
+            {
+                Grow(_size + count);
+            }
+
             if (_size == 0)
             {
-                _nodes = EnumerableHelpers.ToArray(items, out _size);
+                // build using Heapify() if the queue is empty.
+
+                if (collection is not null)
+                {
+                    collection.CopyTo(_nodes, 0);
+                    _size = count;
+                }
+                else
+                {
+                    int i = 0;
+                    (TElement, TPriority)[] nodes = _nodes;
+                    foreach ((TElement element, TPriority priority) in items)
+                    {
+                        if (nodes.Length == i)
+                        {
+                            Grow(i + 1);
+                            nodes = _nodes;
+                        }
+
+                        nodes[i++] = (element, priority);
+                    }
+
+                    _size = i;
+                }
+
                 _version++;
 
                 if (_size > 1)
@@ -370,11 +401,6 @@ namespace System.Collections.Generic
             }
             else
             {
-                if (EnumerableHelpers.TryGetCount(items, out int count) && _nodes.Length - _size < count)
-                {
-                    Grow(_size + count);
-                }
-
                 foreach ((TElement element, TPriority priority) in items)
                 {
                     Enqueue(element, priority);
@@ -398,22 +424,28 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(elements));
             }
 
-            if (EnumerableHelpers.TryGetCount(elements, out int count) && _nodes.Length - _size < count)
+            int count;
+            if (elements is ICollection<(TElement Element, TPriority Priority)> collection &&
+                (count = collection.Count) > _nodes.Length - _size)
             {
                 Grow(_size + count);
             }
 
             if (_size == 0)
             {
+                // build using Heapify() if the queue is empty.
+
                 int i = 0;
+                (TElement, TPriority)[] nodes = _nodes;
                 foreach (TElement element in elements)
                 {
-                    if (_nodes.Length == i)
+                    if (nodes.Length == i)
                     {
                         Grow(i + 1);
+                        nodes = _nodes;
                     }
 
-                    _nodes[i++] = (element, priority);
+                    nodes[i++] = (element, priority);
                 }
 
                 _size = i;

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
+using System.IO;
 using Xunit;
 
 namespace DebuggerTests
@@ -251,6 +252,39 @@ namespace DebuggerTests
                 bps[bp_stop_expected2 ? 0 : 1].Value["locations"][0]["lineNumber"].Value<int>(),
                 bps[bp_stop_expected2 ? 0 : 1].Value["locations"][0]["columnNumber"].Value<int>(),
                 method_to_stop);
+        }
+
+        [Fact]
+        public async Task BreakOnDebuggerBreak()
+        {
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test2.cs", 56, 4,
+                "BreakOnDebuggerBreakCommand");
+        }
+
+        [Fact]
+        public async Task BreakpointInAssemblyUsingTypeFromAnotherAssembly_BothDynamicallyLoaded()
+        {
+            int line = 7;
+            await SetBreakpoint(".*/library-dependency-debugger-test1.cs$", line, 0, use_regex: true);
+            await LoadAssemblyDynamically(
+                    Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test2.dll"),
+                    Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test2.pdb"));
+            await LoadAssemblyDynamically(
+                    Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test1.dll"),
+                    Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test1.pdb"));
+
+            var source_location = "dotnet://library-dependency-debugger-test1.dll/library-dependency-debugger-test1.cs";
+            Assert.Contains(source_location, scripts.Values);
+
+            var pause_location = await EvaluateAndCheck(
+               "window.setTimeout(function () { invoke_static_method('[library-dependency-debugger-test1] TestDependency:IntAdd', 5, 10); }, 1);",
+               source_location, line, 8,
+               "IntAdd");
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "a", 5);
+            CheckNumber(locals, "b", 10);
         }
 
     }

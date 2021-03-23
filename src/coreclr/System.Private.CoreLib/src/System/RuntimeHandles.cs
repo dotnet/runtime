@@ -746,7 +746,7 @@ namespace System
         internal IntPtr m_handle;
     }
 
-    internal class RuntimeMethodInfoStub : IRuntimeMethodInfo
+    internal sealed class RuntimeMethodInfoStub : IRuntimeMethodInfo
     {
         public RuntimeMethodInfoStub(RuntimeMethodHandleInternal methodHandleValue, object keepalive)
         {
@@ -1095,7 +1095,7 @@ namespace System
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class RuntimeFieldInfoStub : IRuntimeFieldInfo
+    internal sealed class RuntimeFieldInfoStub : IRuntimeFieldInfo
     {
         // These unused variables are used to ensure that this class has the same layout as RuntimeFieldInfo
 #pragma warning disable 414, 169

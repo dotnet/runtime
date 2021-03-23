@@ -50,7 +50,14 @@ if NOT [%errorlevel%] == [0] goto :Failure
 echo Commencing build of native components
 echo.
 
-if /i "%__BuildArch%" == "wasm" set __sourceDir=%~dp0\Unix
+:: cmake requires forward slashes in paths
+set __cmakeRepoRoot=%__repoRoot:\=/%
+set __ExtraCmakeParams="-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
+
+if /i "%__BuildArch%" == "wasm" (
+    set __sourceDir=%~dp0\Unix
+    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
+)
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 
@@ -81,11 +88,8 @@ powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__repoRoot%\eng\co
     /t:GenerateNativeVersionFile /restore
 :: Regenerate the VS solution
 
-:: cmake requires forward slashes in paths
-set __cmakeRepoRoot=%__repoRoot:\=/%
-
 pushd "%__IntermediatesDir%"
-call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% "-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
+call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__ExtraCmakeParams%
 if NOT [%errorlevel%] == [0] goto :Failure
 popd
 

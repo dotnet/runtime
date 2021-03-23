@@ -552,7 +552,7 @@ namespace System.Reflection
         #endregion
     }
 
-    internal class MetadataException : Exception
+    internal sealed class MetadataException : Exception
     {
         private int m_hr;
         internal MetadataException(int hr) { m_hr = hr; }

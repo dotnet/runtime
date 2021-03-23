@@ -346,6 +346,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invoke to verify the user name
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public async Task Unix_GetImpersonationUserName_Succeed()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();

@@ -1319,6 +1319,7 @@ class JitTimer
     CompTimeInfo m_info; // The CompTimeInfo for this compilation.
 
     static CritSecObject s_csvLock; // Lock to protect the time log file.
+    static FILE*         s_csvFile; // The time log file handle.
     void PrintCsvMethodStats(Compiler* comp);
 
 private:
@@ -1363,6 +1364,8 @@ public:
         }
         return res;
     }
+
+    static void Shutdown();
 };
 #endif // FEATURE_JIT_METHOD_PERF
 
@@ -5636,7 +5639,7 @@ protected:
     void        fgIncorporateEdgeCounts();
 
 public:
-    bool                                   fgProfileData_ILSizeMismatch;
+    const char*                            fgPgoFailReason;
     ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
     BYTE*                                  fgPgoData;
     UINT32                                 fgPgoSchemaCount;
@@ -5887,6 +5890,8 @@ private:
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
     GenTree* fgMorphConst(GenTree* tree);
 
+    bool fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2);
+
     GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
     GenTree* fgMorphCommutative(GenTreeOp* tree);
 
@@ -6066,7 +6071,9 @@ private:
 public:
     void optInit();
 
-    void optRemoveRangeCheck(GenTree* tree, Statement* stmt);
+    GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
+    GenTree* Compiler::optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
+    void Compiler::optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);
     bool optIsRangeCheckRemovable(GenTree* tree);
 
 protected:
@@ -7345,7 +7352,7 @@ public:
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree);
+    GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);

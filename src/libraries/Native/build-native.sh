@@ -56,10 +56,10 @@ if [[ "$__BuildArch" == wasm ]]; then
 
     export CLR_CC=$(which emcc)
     export CLR_CXX=$(which em++)
-elif [[ "$__TargetOS" == iOS ]]; then
+elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == tvOS ]]; then
+elif [[ "$__TargetOS" == tvOS || "$__TargetOS" == tvOSSimulator ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
@@ -103,7 +103,7 @@ elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
         echo "Error: Unknown Android architecture $__BuildArch."
         exit 1
     fi
-elif [[ "$__TargetOS" == iOS ]]; then
+elif [[ "$__TargetOS" == iOSSimulator ]]; then
     __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS $__CMakeArgs"
     if [[ "$__BuildArch" == x64 ]]; then
         # set default iOS simulator deployment target (8.0 is the minimum supported by Xcode 11)
@@ -116,6 +116,16 @@ elif [[ "$__TargetOS" == iOS ]]; then
     elif [[ "$__BuildArch" == arm64 ]]; then
         # set default iOS device deployment target
         # keep in sync with src/mono/Directory.Build.props
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+    else
+        echo "Error: Unknown iOSSimulator architecture $__BuildArch."
+        exit 1
+    fi
+elif [[ "$__TargetOS" == iOS ]]; then
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS $__CMakeArgs"
+    if [[ "$__BuildArch" == arm64 ]]; then
+        # set default iOS device deployment target
+        # keep in sync with src/mono/Directory.Build.props
         __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     elif [[ "$__BuildArch" == arm ]]; then
         # set default iOS device deployment target
@@ -125,7 +135,7 @@ elif [[ "$__TargetOS" == iOS ]]; then
         echo "Error: Unknown iOS architecture $__BuildArch."
         exit 1
     fi
-elif [[ "$__TargetOS" == tvOS ]]; then
+elif [[ "$__TargetOS" == tvOSSimulator ]]; then
     __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS $__CMakeArgs"
     # set default tvOS device deployment target 
     # keep in sync with tvOSVersionMin in src/mono/Directory.Build.props
@@ -133,6 +143,17 @@ elif [[ "$__TargetOS" == tvOS ]]; then
     if [[ "$__BuildArch" == x64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
     elif [[ "$__BuildArch" == arm64 ]]; then
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+    else
+        echo "Error: Unknown tvOSSimulator architecture $__BuildArch."
+        exit 1
+    fi
+elif [[ "$__TargetOS" == tvOS ]]; then
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS $__CMakeArgs"
+    # set default tvOS device deployment target 
+    # keep in sync with tvOSVersionMin in src/mono/Directory.Build.props
+    __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=9.0 $__CMakeArgs"
+    if [[ "$__BuildArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
         echo "Error: Unknown tvOS architecture $__BuildArch."

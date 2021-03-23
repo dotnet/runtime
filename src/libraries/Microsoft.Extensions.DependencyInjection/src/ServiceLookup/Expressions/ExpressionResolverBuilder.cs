@@ -28,7 +28,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static readonly ParameterExpression ResolvedServices = Expression.Variable(typeof(IDictionary<ServiceCacheKey, object>), ScopeParameter.Name + "resolvedServices");
         private static readonly BinaryExpression ResolvedServicesVariableAssignment =
             Expression.Assign(ResolvedServices,
-                Expression.Property(ScopeParameter, nameof(ServiceProviderEngineScope.ResolvedServices)));
+                Expression.Property(
+                    ScopeParameter,
+                    typeof(ServiceProviderEngineScope).GetProperty(nameof(ServiceProviderEngineScope.ResolvedServices), BindingFlags.Instance | BindingFlags.NonPublic)));
 
         private static readonly ParameterExpression CaptureDisposableParameter = Expression.Parameter(typeof(object));
         private static readonly LambdaExpression CaptureDisposable = Expression.Lambda(

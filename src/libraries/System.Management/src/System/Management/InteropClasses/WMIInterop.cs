@@ -1377,10 +1377,9 @@ namespace System.Management
     }
     #endregion
 
-    internal class MTAHelper
+    internal static class MTAHelper
     {
-
-        private class MTARequest
+        private sealed class MTARequest
         {
             public AutoResetEvent evtDone = new AutoResetEvent(false);
             public Type typeToCreate;

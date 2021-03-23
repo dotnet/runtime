@@ -37,13 +37,5 @@
 
     <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)</OutputPath>
   </PropertyGroup>
-  
-  <PropertyGroup>
-    <DisableImplicitFrameworkReferences Condition="'$(__SkipFXRestore)' == 'true'">true</DisableImplicitFrameworkReferences>
-  </PropertyGroup>
 
-  <ItemGroup Condition="'$(__SkipFXRestore)' == 'true' AND '$(ReferenceSystemPrivateCoreLib)' != 'true'" >
-    <Reference Include="$(__LocalCoreFXPath)\artifacts\bin\ref\$(NetCoreAppCurrent)\*.dll" Private="false" />
-  </ItemGroup>
-  
 </Project>

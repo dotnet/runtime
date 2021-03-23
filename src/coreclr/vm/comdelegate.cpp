@@ -2600,11 +2600,6 @@ bool COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
     if (flags & DBF_InstanceMethodOnly && pTargetMethod->IsStatic())
         return false;
 
-    // we don't allow you to bind to methods on Nullable<T> because the unboxing stubs don't know how to
-    // handle this case.
-    if (!pTargetMethod->IsStatic() && Nullable::IsNullableType(pTargetMethod->GetMethodTable()))
-        return false;
-
     // Get signatures for the delegate invoke and target methods.
     MetaSig sigInvoke(pInvokeMethod, thDelegate);
     MetaSig sigTarget(pTargetMethod, thExactMethodType);

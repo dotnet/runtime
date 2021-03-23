@@ -567,13 +567,13 @@ mono_set_timeout_exec (int id)
 	//YES we swallow exceptions cuz there's nothing much we can do from here.
 	//FIXME Maybe call the unhandled exception function?
 	if (!is_ok (error)) {
-		printf ("timeout callback failed due to %s\n", mono_error_get_message (error));
+		g_printerr ("timeout callback failed due to %s\n", mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
 
 	if (exc) {
 		char *type_name = mono_type_get_full_name (mono_object_class (exc));
-		printf ("timeout callback threw a %s\n", type_name);
+		g_printerr ("timeout callback threw a %s\n", type_name);
 		g_free (type_name);
 	}
 }
@@ -605,13 +605,13 @@ tp_cb (void)
 	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
 
 	if (!is_ok (error)) {
-		printf ("ThreadPool Callback failed due to error: %s\n", mono_error_get_message (error));
+		g_printerr ("ThreadPool Callback failed due to error: %s\n", mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
 
 	if (exc) {
 		char *type_name = mono_type_get_full_name (mono_object_class (exc));
-		printf ("ThreadPool Callback threw an unhandled exception of type %s\n", type_name);
+		g_printerr ("ThreadPool Callback threw an unhandled exception of type %s\n", type_name);
 		g_free (type_name);
 	}
 }
@@ -760,6 +760,17 @@ getpwuid_r (uid_t uid, struct passwd *pwd, char *buffer, size_t bufsize,
 }
 
 G_END_DECLS
+
+/* Helper for runtime debugging */
+void
+mono_wasm_print_stack_trace (void)
+{
+	EM_ASM(
+		   var err = new Error();
+		   console.log ("Stacktrace: \n");
+		   console.log (err.stack);
+		   );
+}
 
 #endif // HOST_WASM
 
