@@ -61,7 +61,7 @@ jobs:
       timeoutInMinutes: 90
 
 #
-# Build with RuntimeFlavor only. This excercise code paths where only Configuration is
+# Build with RuntimeFlavor only. This excercise code paths where only RuntimeFlavor is
 # specified. Catches cases where we depend on Configuration also being specified
 #
 - template: /eng/pipelines/common/platform-matrix.yml
