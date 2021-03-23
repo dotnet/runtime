@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             {
                 AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-                Decode(ref reader, expectedTag, encoded, out OriginatorPublicKeyAsn decoded);
+                DecodeCore(ref reader, expectedTag, encoded, out OriginatorPublicKeyAsn decoded);
                 reader.ThrowIfNotEmpty();
                 return decoded;
             }

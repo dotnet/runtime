@@ -56,9 +56,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/attach.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-errno.h>
 #include <mono/utils/mono-compiler.h>
@@ -77,7 +75,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
-#include "version.h"
 #include "debugger-agent.h"
 #include "mini-runtime.h"
 #include "jit-icalls.h"
@@ -324,13 +321,6 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 
 MONO_SIG_HANDLER_FUNC (static, sigquit_signal_handler)
 {
-	gboolean res;
-
-	/* We use this signal to start the attach agent too */
-	res = mono_attach_start ();
-	if (res)
-		return;
-
 	mono_threads_request_thread_dump ();
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
@@ -855,6 +845,7 @@ dump_memory_around_ip (MonoContext *mctx)
 
 	gpointer native_ip = MONO_CONTEXT_GET_IP (mctx);
 	if (native_ip) {
+		native_ip = MINI_FTNPTR_TO_ADDR (native_ip);
 		g_async_safe_printf ("Memory around native instruction pointer (%p):", native_ip);
 		mono_dump_mem (((guint8 *) native_ip) - 0x10, 0x40);
 	} else {

@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration builder.</returns>
         public static IConfigurationBuilder AddUserSecrets<T>(this IConfigurationBuilder configuration)
             where T : class
-            => configuration.AddUserSecrets(typeof(T).GetTypeInfo().Assembly, optional: false, reloadOnChange: false);
+            => configuration.AddUserSecrets(typeof(T).Assembly, optional: false, reloadOnChange: false);
 
         /// <summary>
         /// <para>
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration builder.</returns>
         public static IConfigurationBuilder AddUserSecrets<T>(this IConfigurationBuilder configuration, bool optional)
             where T : class
-            => configuration.AddUserSecrets(typeof(T).GetTypeInfo().Assembly, optional, reloadOnChange: false);
+            => configuration.AddUserSecrets(typeof(T).Assembly, optional, reloadOnChange: false);
 
         /// <summary>
         /// <para>
@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration builder.</returns>
         public static IConfigurationBuilder AddUserSecrets<T>(this IConfigurationBuilder configuration, bool optional, bool reloadOnChange)
             where T : class
-            => configuration.AddUserSecrets(typeof(T).GetTypeInfo().Assembly, optional, reloadOnChange);
+            => configuration.AddUserSecrets(typeof(T).Assembly, optional, reloadOnChange);
 
         /// <summary>
         /// <para>
@@ -131,7 +131,7 @@ namespace Microsoft.Extensions.Configuration
             UserSecretsIdAttribute attribute = assembly.GetCustomAttribute<UserSecretsIdAttribute>();
             if (attribute != null)
             {
-                return AddUserSecrets(configuration, attribute.UserSecretsId, reloadOnChange);
+                return AddUserSecretsInternal(configuration, attribute.UserSecretsId, optional, reloadOnChange);
             }
 
             if (!optional)
@@ -169,6 +169,9 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
         /// <returns>The configuration builder.</returns>
         public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration, string userSecretsId, bool reloadOnChange)
+            => AddUserSecretsInternal(configuration, userSecretsId, true, reloadOnChange);
+
+        private static IConfigurationBuilder AddUserSecretsInternal(IConfigurationBuilder configuration, string userSecretsId, bool optional, bool reloadOnChange)
         {
             if (configuration == null)
             {
@@ -180,16 +183,16 @@ namespace Microsoft.Extensions.Configuration
                 throw new ArgumentNullException(nameof(userSecretsId));
             }
 
-            return AddSecretsFile(configuration, PathHelper.GetSecretsPathFromSecretsId(userSecretsId), reloadOnChange);
+            return AddSecretsFile(configuration, PathHelper.GetSecretsPathFromSecretsId(userSecretsId), optional, reloadOnChange);
         }
 
-        private static IConfigurationBuilder AddSecretsFile(IConfigurationBuilder configuration, string secretPath, bool reloadOnChange)
+        private static IConfigurationBuilder AddSecretsFile(IConfigurationBuilder configuration, string secretPath, bool optional, bool reloadOnChange)
         {
             string directoryPath = Path.GetDirectoryName(secretPath);
             PhysicalFileProvider fileProvider = Directory.Exists(directoryPath)
                 ? new PhysicalFileProvider(directoryPath)
                 : null;
-            return configuration.AddJsonFile(fileProvider, PathHelper.SecretsFileName, optional: true, reloadOnChange);
+            return configuration.AddJsonFile(fileProvider, PathHelper.SecretsFileName, optional, reloadOnChange);
         }
     }
 }

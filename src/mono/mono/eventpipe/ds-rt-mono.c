@@ -1,9 +1,9 @@
 #include <config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ds-rt-config.h"
-#include "ds-types.h"
-#include "ds-rt.h"
+#include <eventpipe/ds-rt-config.h>
+#include <eventpipe/ds-types.h>
+#include <eventpipe/ds-rt.h>
 
 #ifdef __APPLE__
 #define APPLICATION_CONTAINER_BASE_PATH_SUFFIX "/Library/Group Containers/"
@@ -30,14 +30,6 @@ ipc_get_process_id_disambiguation_key (
 	uint32_t process_id,
 	uint64_t *key);
 #endif /* !HOST_WIN32 */
-
-void ipc_transport_get_default_name (
-	ep_char8_t *name,
-	uint32_t name_len,
-	const ep_char8_t *prefix,
-	int32_t id,
-	const ep_char8_t *group_id,
-	const ep_char8_t *suffix);
 
 #ifndef HOST_WIN32
 
@@ -177,8 +169,8 @@ ipc_get_process_id_disambiguation_key (
 #endif
 }
 
-void
-ipc_transport_get_default_name (
+bool
+ds_rt_mono_transport_get_default_name (
 	ep_char8_t *name,
 	uint32_t name_len,
 	const ep_char8_t *prefix,
@@ -189,7 +181,8 @@ ipc_transport_get_default_name (
 	EP_ASSERT (name != NULL);
 	EP_ASSERT (name > 0);
 
-	int32_t result = 0;
+	bool result = false;
+	int32_t format_result = 0;
 	uint64_t disambiguation_key = 0;
 	ep_char8_t *format_buffer = NULL;
 
@@ -226,8 +219,8 @@ ipc_transport_get_default_name (
 			ep_raise_error ();
 		}
 
-		result = snprintf (format_buffer, name_len, "%s%s%s/", home_dir, APPLICATION_CONTAINER_BASE_PATH_SUFFIX, group_id);
-		if (result <= 0 || (uint32_t)result > name_len) {
+		format_result = snprintf (format_buffer, name_len, "%s%s%s/", home_dir, APPLICATION_CONTAINER_BASE_PATH_SUFFIX, group_id);
+		if (format_result <= 0 || (uint32_t)format_result > name_len) {
 			DS_LOG_ERROR_0 ("format_buffer to small");
 			ep_raise_error ();
 		}
@@ -236,32 +229,35 @@ ipc_transport_get_default_name (
 #endif // __APPLE__
 	{
 		// Get a temp file location
-		result = ep_rt_temp_path_get (format_buffer, name_len);
-		if (result == 0) {
+		format_result = ep_rt_temp_path_get (format_buffer, name_len);
+		if (format_result == 0) {
 			DS_LOG_ERROR_0 ("ep_rt_temp_path_get failed");
 			ep_raise_error ();
 		}
 
-		EP_ASSERT (result <= name_len);
+		EP_ASSERT (format_result <= name_len);
 	}
 
-	result = snprintf(name, name_len, "%s%s-%d-%llu-%s", format_buffer, prefix, id, (unsigned long long)disambiguation_key, suffix);
-	if (result <= 0 || (uint32_t)result > name_len) {
+	format_result = snprintf(name, name_len, "%s%s-%d-%llu-%s", format_buffer, prefix, id, (unsigned long long)disambiguation_key, suffix);
+	if (format_result <= 0 || (uint32_t)format_result > name_len) {
 		DS_LOG_ERROR_0 ("name buffer to small");
 		ep_raise_error ();
 	}
 
+	result = true;
+
 ep_on_exit:
 	free (format_buffer);
-	return;
+	return result;
 
 ep_on_error:
+	EP_ASSERT (!result);
 	name [0] = '\0';
 	ep_exit_error_handler ();
 }
 #else /* !HOST_WIN32 */
-void
-ipc_transport_get_default_name (
+bool
+ds_rt_mono_transport_get_default_name (
 	ep_char8_t *name,
 	uint32_t name_len,
 	const ep_char8_t *prefix,

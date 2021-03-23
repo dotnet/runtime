@@ -6,6 +6,7 @@ Imports System.Collections.Generic
 Imports System.Dynamic
 Imports System.Linq.Expressions
 Imports System.Reflection
+Imports System.Reflection.Emit
 Imports System.Runtime.CompilerServices
 
 Imports Microsoft.VisualBasic.CompilerServices.NewLateBinding
@@ -1047,15 +1048,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Public Delegate Function SiteDelegate0(ByVal site As CallSite, ByVal instance As Object) As Object
-    Public Delegate Function SiteDelegate1(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object) As Object
-    Public Delegate Function SiteDelegate2(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object) As Object
-    Public Delegate Function SiteDelegate3(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object) As Object
-    Public Delegate Function SiteDelegate4(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object) As Object
-    Public Delegate Function SiteDelegate5(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object, ByRef arg4 As Object) As Object
-    Public Delegate Function SiteDelegate6(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object, ByRef arg4 As Object, ByRef arg5 As Object) As Object
-    Public Delegate Function SiteDelegate7(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object, ByRef arg4 As Object, ByRef arg5 As Object, ByRef arg6 As Object) As Object
-
     Friend Class IDOUtils
 
         Private Sub New()
@@ -1278,6 +1270,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return If(valueExpression.Type.Equals(GetType(Object)), valueExpression, Expression.Convert(valueExpression, GetType(Object)))
         End Function
 
+        ' MRU Dictionary of invoker delegates. We keep 16 most recently used ones, rest is GC'd
+        Private Shared Invokers As New CacheDict(Of Integer, Func(Of CallSiteBinder, Object, Object(), Object))(16)
+
         Public Shared Function CreateRefCallSiteAndInvoke(
                 ByVal action As CallSiteBinder,
                 ByVal instance As Object,
@@ -1285,55 +1280,71 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             action = GetCachedBinder(action)
 
-            Select Case arguments.Length
-                Case 0
-                    Dim c As CallSite(Of SiteDelegate0) = CallSite(Of SiteDelegate0).Create(action)
-                    Return c.Target.Invoke(c, instance)
-                Case 1
-                    Dim c As CallSite(Of SiteDelegate1) = CallSite(Of SiteDelegate1).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0))
-                Case 2
-                    Dim c As CallSite(Of SiteDelegate2) = CallSite(Of SiteDelegate2).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0), arguments(1))
-                Case 3
-                    Dim c As CallSite(Of SiteDelegate3) = CallSite(Of SiteDelegate3).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0), arguments(1), arguments(2))
-                Case 4
-                    Dim c As CallSite(Of SiteDelegate4) = CallSite(Of SiteDelegate4).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0), arguments(1), arguments(2), arguments(3))
-                Case 5
-                    Dim c As CallSite(Of SiteDelegate5) = CallSite(Of SiteDelegate5).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0), arguments(1), arguments(2), arguments(3), arguments(4))
-                Case 6
-                    Dim c As CallSite(Of SiteDelegate6) = CallSite(Of SiteDelegate6).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0), arguments(1), arguments(2), arguments(3), arguments(4), arguments(5))
-                Case 7
-                    Dim c As CallSite(Of SiteDelegate7) = CallSite(Of SiteDelegate7).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0), arguments(1), arguments(2), arguments(3), arguments(4), arguments(5), arguments(6))
-                Case Else
-                    Dim signature(arguments.Length + 2) As Type
-                    Dim refObject As Type = GetType(Object).MakeByRefType()
-                    signature(0) = GetType(CallSite)                    ' First argument is a call site
-                    signature(1) = GetType(Object)                      ' Second is the instance (ByVal)
-                    signature(signature.Length - 1) = GetType(Object)   ' Last type is the return type
-                    For i As Integer = 2 To signature.Length - 2        ' All arguments are ByRef
-                        signature(i) = refObject
-                    Next
+            Dim Invoker As Func(Of CallSiteBinder, Object, Object(), Object) = Nothing
 
-                    Dim c As CallSite = CallSite.Create(Expression.GetDelegateType(signature), action)
-                    Dim args(arguments.Length + 1) As Object
-                    args(0) = c
-                    args(1) = instance
-                    arguments.CopyTo(args, 2)
-                    Dim siteTarget As System.Delegate = DirectCast(c.GetType().GetField("Target").GetValue(c), System.Delegate)
-                    Try
-                        Dim result As Object = siteTarget.DynamicInvoke(args)
-                        Array.Copy(args, 2, arguments, 0, arguments.Length)
-                        Return result
-                    Catch ie As TargetInvocationException
-                        Throw ie.InnerException
-                    End Try
-            End Select
+            SyncLock Invokers
+                If Not Invokers.TryGetValue(arguments.Length, Invoker) Then
+                    Invoker = CreateInvoker(arguments.Length)
+                    Invokers.Add(arguments.Length, Invoker)
+                End If
+            End SyncLock
+
+            Return Invoker.Invoke(action, instance, arguments)
+        End Function
+
+        ''' Creates an invoker, a function such as:
+        ''' 
+        ''' Delegate Function InvokerDelegate3(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object) As Object
+        ''' 
+        ''' Function Invoker3(action as CallSiteBinder, instance as Object, args as Object()) as Object
+        '''     Dim site as CallSite(Of InvokerDelegate3)
+        '''     site = CallSite(Of Func(Of InvokerDelegate3).Create(action)
+        '''     ' args(0), args(1) and args(2) are passed ByRef
+        '''     return site.Target.Invoke(site, instance, args(0), args(1), args(2))
+        ''' End Function
+        Private Shared Function CreateInvoker(ByVal ArgLength As Integer) As Func(Of CallSiteBinder, Object, Object(), Object)
+            ' Useful Types
+            Dim ObjectType As Type = GetType(Object)
+            Dim ObjectRefType As Type = ObjectType.MakeByRefType()
+            Dim CallSiteBinderType As Type = GetType(CallSiteBinder)
+
+            ' Call Site Delegate Signature
+            Dim CallSiteSignature(ArgLength + 2) As Type
+            CallSiteSignature(0) = GetType(CallSite)                        ' CallSite must go first
+            CallSiteSignature(1) = ObjectType                               ' Instance: Object
+            For i As Integer = 2 To CallSiteSignature.Length - 2            ' Arguments: Object&
+                CallSiteSignature(i) = ObjectRefType
+            Next
+            CallSiteSignature(CallSiteSignature.Length - 1) = ObjectType    ' Result: Object
+
+            ' Call Site Delegate
+            Dim CallSiteDelegate As Type = Expression.GetDelegateType(CallSiteSignature)
+            Dim CallSiteType As Type = GetType(CallSite(Of )).MakeGenericType(CallSiteDelegate)
+
+            ' Invoker(CallSiteBinder, Instance as Object, Args as Object())
+            Dim InvokerMethod As New DynamicMethod("Invoker", ObjectType, {CallSiteBinderType, ObjectType, GetType(Object())}, True)
+
+            ' Dim cs as CallSite(Of delegateType) = CallSite(Of delegateType).Create(Action)
+            Dim il As ILGenerator = InvokerMethod.GetILGenerator()
+            Dim site As LocalBuilder = il.DeclareLocal(CallSiteType)
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Call, CallSiteType.GetMethod("Create", {CallSiteBinderType}))
+            il.Emit(OpCodes.Stloc, site)
+
+            ' return site.Target.Invoke(site, Instance, ref args(0), ref args(1), ...)
+            il.Emit(OpCodes.Ldloc, site)
+            il.Emit(OpCodes.Ldfld, CallSiteType.GetField("Target"))
+            il.Emit(OpCodes.Ldloc, site)
+            il.Emit(OpCodes.Ldarg_1)                    'Instance
+            For i As Integer = 0 To ArgLength - 1
+                il.Emit(OpCodes.Ldarg_2)
+                il.Emit(OpCodes.Ldc_I4, i)
+                il.Emit(OpCodes.Ldelema, ObjectType)    ' ref arg(i)
+            Next
+            il.Emit(OpCodes.Callvirt, CallSiteDelegate.GetMethod("Invoke"))
+            il.Emit(OpCodes.Ret)
+
+            Return DirectCast(InvokerMethod.CreateDelegate(GetType(Func(Of CallSiteBinder, Object, Object(), Object))), Func(Of CallSiteBinder, Object, Object(), Object))
         End Function
 
         Public Shared Function CreateFuncCallSiteAndInvoke(

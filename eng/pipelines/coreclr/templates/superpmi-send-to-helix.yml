@@ -20,6 +20,7 @@ parameters:
   continueOnError: false                 # optional -- determines whether to continue the build if the step errors; defaults to false
   BuildConfig: 'checked'                 # optional -- Mostly, superpmi will be run on checked builds
   InputArtifacts: ''
+  CollectionType: ''
   CollectionName: ''
 
 steps:
@@ -34,6 +35,7 @@ steps:
       MchFileTag: $(MchFileTag)
       BuildConfig:  ${{ parameters.BuildConfig }}
       InputArtifacts: ${{ parameters.InputArtifacts }}
+      CollectionType: ${{ parameters.CollectionType }}
       CollectionName: ${{ parameters.CollectionName }}
       HelixSource: ${{ parameters.HelixSource }}
       HelixType: ${{ parameters.HelixType }}

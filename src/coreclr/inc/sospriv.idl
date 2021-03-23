@@ -1,0 +1,440 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+/*****************************************************************************
+ **                                                                         **
+ ** sospriv.idl - The private interface that SOS uses to query the runtime  **
+ **               for internal data.                                        **
+ **                                                                         **
+ *****************************************************************************/
+import "unknwn.idl";
+
+import "xclrdata.idl";
+
+struct DacpSyncBlockCleanupData;
+struct DacpThreadStoreData;
+struct DacpAppDomainStoreData;
+struct DacpAppDomainData;
+struct DacpAssemblyData;
+struct DacpThreadData;
+struct DacpMethodDescData;
+struct DacpCodeHeaderData;
+struct DacpThreadpoolData;
+struct DacpObjectData;
+struct DacpWorkRequestData;
+struct DacpMethodTableData;
+struct DacpWorkRequestData;
+struct DacpModuleData;
+struct DacpGcHeapData;
+struct DacpJitManagerInfo;
+struct DacpHeapSegmentData;
+struct DacpDomainLocalModuleData;
+struct DacpDomainLocalModuleData;
+struct DACEHInfo;
+struct DacpRCWData;
+struct DacpAllocData;
+struct DacpGenerationAllocData;
+struct DacpExceptionObjectData;
+cpp_quote("#if 0")
+typedef ULONG64 CLRDATA_ADDRESS;
+typedef int CONTEXT;
+typedef int T_CONTEXT;
+typedef int mdToken;
+typedef unsigned int size_t;
+typedef int ModuleMapType;
+typedef int VCSHeapType;
+cpp_quote("#endif")
+
+
+cpp_quote("typedef enum { TYPEDEFTOMETHODTABLE, TYPEREFTOMETHODTABLE } ModuleMapType;")
+cpp_quote("typedef enum {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap} VCSHeapType;")
+
+typedef void (*MODULEMAPTRAVERSE)(UINT index, CLRDATA_ADDRESS methodTable,LPVOID token);
+typedef void (*VISITHEAP)(CLRDATA_ADDRESS blockData,size_t blockSize,BOOL blockIsCurrentBlock);
+
+typedef BOOL (*VISITRCWFORCLEANUP)(CLRDATA_ADDRESS RCW,CLRDATA_ADDRESS Context,CLRDATA_ADDRESS Thread,
+    BOOL bIsFreeThreaded, LPVOID token);
+typedef BOOL (*DUMPEHINFO)(UINT clauseIndex,UINT totalClauses, struct DACEHInfo *pEHInfo,LPVOID token);
+
+cpp_quote("#ifndef _SOS_HandleData")
+cpp_quote("#define _SOS_HandleData")
+
+typedef struct _SOSHandleData
+{
+    CLRDATA_ADDRESS AppDomain;
+    CLRDATA_ADDRESS Handle;
+    CLRDATA_ADDRESS Secondary;
+    unsigned int Type;
+    BOOL StrongReference;
+
+    // For RefCounted Handles
+    unsigned int RefCount;
+    unsigned int JupiterRefCount;
+    BOOL IsPegged;
+} SOSHandleData;
+
+cpp_quote("#endif //HandleData")
+
+[
+    object,
+    local,
+    uuid(286CA186-E763-4F61-9760-487D43AE4341)
+]
+interface ISOSEnum : IUnknown
+{
+    HRESULT Skip([in] unsigned int count);
+    HRESULT Reset();
+    HRESULT GetCount([out] unsigned int *pCount);
+}
+
+
+[
+    object,
+    local,
+    uuid(3E269830-4A2B-4301-8EE2-D6805B29B2FA)
+]
+interface ISOSHandleEnum : ISOSEnum
+{
+    HRESULT Next([in] unsigned int count,
+                 [out, size_is(count), length_is(*pNeeded)] SOSHandleData handles[],
+                 [out] unsigned int *pNeeded);
+}
+
+cpp_quote("#ifndef _SOS_StackReference_")
+cpp_quote("#define _SOS_StackReference_")
+
+typedef enum SOSStackSourceType
+{
+    SOS_StackSourceIP,     // Instuction pointer in managed code
+    SOS_StackSourceFrame,  // clr!Frame
+} SOSStackSourceType;
+
+typedef enum SOSRefFlags
+{
+    SOSRefInterior = 1,
+    SOSRefPinned = 2
+} SOSRefFlags;
+
+typedef struct _SOS_StackRefData
+{
+    BOOL HasRegisterInformation;
+    int Register;
+    int Offset;
+    CLRDATA_ADDRESS Address;
+    CLRDATA_ADDRESS Object;
+    unsigned int Flags;
+
+    SOSStackSourceType SourceType;
+    CLRDATA_ADDRESS Source;
+    CLRDATA_ADDRESS StackPointer;
+} SOSStackRefData;
+
+/* Informs the user that we were unable to process the given clr!Frame or
+ * managed frame.
+ */
+typedef struct _SOS_StackRefError
+{
+    SOSStackSourceType SourceType;
+    CLRDATA_ADDRESS Source;
+    CLRDATA_ADDRESS StackPointer;
+} SOSStackRefError;
+
+cpp_quote("#endif // _SOS_StackReference_")
+
+[
+    object,
+    local,
+    uuid(774F4E1B-FB7B-491B-976D-A8130FE355E9)
+]
+interface ISOSStackRefErrorEnum : ISOSEnum
+{
+    HRESULT Next([in] unsigned int count,
+                 [out, size_is(count), length_is(*pFetched)] SOSStackRefError ref[],
+                 [out] unsigned int *pFetched);
+}
+
+[
+    object,
+    local,
+    uuid(8FA642BD-9F10-4799-9AA3-512AE78C77EE)
+]
+interface ISOSStackRefEnum  : ISOSEnum
+{
+    HRESULT Next([in] unsigned int count,
+                 [out, size_is(count), length_is(*pFetched)] SOSStackRefData ref[],
+                 [out] unsigned int *pFetched);
+
+
+     /* Reports all frames which we could not enumerate gc references for.
+      */
+     HRESULT EnumerateErrors([out] ISOSStackRefErrorEnum **ppEnum);
+}
+
+
+[
+    object,
+    local,
+    uuid(436f00f2-b42a-4b9f-870c-e73db66ae930)
+]
+interface ISOSDacInterface : IUnknown
+{
+    // ThreadStore
+    HRESULT GetThreadStoreData(struct DacpThreadStoreData *data);
+
+    // AppDomains
+    HRESULT GetAppDomainStoreData(struct DacpAppDomainStoreData *data);
+    HRESULT GetAppDomainList(unsigned int count, CLRDATA_ADDRESS values[], unsigned int *pNeeded);
+    HRESULT GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *data);
+    HRESULT GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, WCHAR *name, unsigned int *pNeeded);
+    HRESULT GetDomainFromContext(CLRDATA_ADDRESS context, CLRDATA_ADDRESS *domain);
+
+    // Assemblies
+    HRESULT GetAssemblyList(CLRDATA_ADDRESS appDomain, int count, CLRDATA_ADDRESS values[], int *pNeeded);
+    HRESULT GetAssemblyData(CLRDATA_ADDRESS baseDomainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *data);
+    HRESULT GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, WCHAR *name, unsigned int *pNeeded);
+
+    // Modules
+    HRESULT GetModule(CLRDATA_ADDRESS addr, IXCLRDataModule **mod);
+    HRESULT GetModuleData(CLRDATA_ADDRESS moduleAddr, struct DacpModuleData *data);
+    HRESULT TraverseModuleMap(ModuleMapType mmt, CLRDATA_ADDRESS moduleAddr, MODULEMAPTRAVERSE pCallback, LPVOID token);
+    HRESULT GetAssemblyModuleList(CLRDATA_ADDRESS assembly, unsigned int count, CLRDATA_ADDRESS modules[], unsigned int *pNeeded);
+    HRESULT GetILForModule(CLRDATA_ADDRESS moduleAddr, DWORD rva, CLRDATA_ADDRESS *il);
+
+    // Threads
+    HRESULT GetThreadData(CLRDATA_ADDRESS thread, struct DacpThreadData *data);
+    HRESULT GetThreadFromThinlockID(UINT thinLockId, CLRDATA_ADDRESS *pThread);
+    HRESULT GetStackLimits(CLRDATA_ADDRESS threadPtr, CLRDATA_ADDRESS *lower, CLRDATA_ADDRESS *upper, CLRDATA_ADDRESS *fp);
+
+    // MethodDescs
+    HRESULT GetMethodDescData(CLRDATA_ADDRESS methodDesc, CLRDATA_ADDRESS ip, struct DacpMethodDescData *data, ULONG cRevertedRejitVersions, struct DacpReJitData * rgRevertedRejitData, ULONG * pcNeededRevertedRejitData);
+    HRESULT GetMethodDescPtrFromIP(CLRDATA_ADDRESS ip, CLRDATA_ADDRESS * ppMD);
+    HRESULT GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count, WCHAR *name, unsigned int *pNeeded);
+    HRESULT GetMethodDescPtrFromFrame(CLRDATA_ADDRESS frameAddr, CLRDATA_ADDRESS * ppMD);
+    HRESULT GetMethodDescFromToken(CLRDATA_ADDRESS moduleAddr, mdToken token, CLRDATA_ADDRESS *methodDesc);
+    HRESULT GetMethodDescTransparencyData(CLRDATA_ADDRESS methodDesc, struct DacpMethodDescTransparencyData *data);
+
+    // JIT Data
+    HRESULT GetCodeHeaderData(CLRDATA_ADDRESS ip, struct DacpCodeHeaderData *data);
+    HRESULT GetJitManagerList(unsigned int count, struct DacpJitManagerInfo *managers, unsigned int *pNeeded);
+    HRESULT GetJitHelperFunctionName(CLRDATA_ADDRESS ip, unsigned int count, char *name, unsigned int *pNeeded);
+    HRESULT GetJumpThunkTarget(T_CONTEXT *ctx, CLRDATA_ADDRESS *targetIP, CLRDATA_ADDRESS *targetMD);
+
+    // ThreadPool
+    HRESULT GetThreadpoolData(struct DacpThreadpoolData *data);
+    HRESULT GetWorkRequestData(CLRDATA_ADDRESS addrWorkRequest, struct DacpWorkRequestData *data);
+    HRESULT GetHillClimbingLogEntry(CLRDATA_ADDRESS addr, struct DacpHillClimbingLogEntry *data);
+
+    // Objects
+    HRESULT GetObjectData(CLRDATA_ADDRESS objAddr, struct DacpObjectData *data);
+    HRESULT GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, WCHAR *stringData, unsigned int *pNeeded);
+    HRESULT GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, WCHAR *className, unsigned int *pNeeded);
+
+    // MethodTable
+    HRESULT GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, WCHAR *mtName, unsigned int *pNeeded);
+    HRESULT GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData *data);
+    HRESULT GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA_ADDRESS *value);
+    HRESULT GetMethodTableFieldData(CLRDATA_ADDRESS mt, struct DacpMethodTableFieldData *data);
+    HRESULT GetMethodTableTransparencyData(CLRDATA_ADDRESS mt, struct DacpMethodTableTransparencyData *data);
+
+    // EEClass
+    HRESULT GetMethodTableForEEClass(CLRDATA_ADDRESS eeClass, CLRDATA_ADDRESS *value);
+
+    // FieldDesc
+    HRESULT GetFieldDescData(CLRDATA_ADDRESS fieldDesc, struct DacpFieldDescData *data);
+
+    // Frames
+    HRESULT GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, WCHAR *frameName, unsigned int *pNeeded);
+
+
+    // PEFiles
+    HRESULT GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base);
+    HRESULT GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, WCHAR *fileName, unsigned int *pNeeded);
+
+    // GC
+    HRESULT GetGCHeapData(struct DacpGcHeapData *data);
+    HRESULT GetGCHeapList(unsigned int count, CLRDATA_ADDRESS heaps[], unsigned int *pNeeded); // svr only
+    HRESULT GetGCHeapDetails(CLRDATA_ADDRESS heap, struct DacpGcHeapDetails *details); // wks only
+    HRESULT GetGCHeapStaticData(struct DacpGcHeapDetails *data);
+    HRESULT GetHeapSegmentData(CLRDATA_ADDRESS seg, struct DacpHeapSegmentData *data);
+    HRESULT GetOOMData(CLRDATA_ADDRESS oomAddr, struct DacpOomData *data);
+    HRESULT GetOOMStaticData(struct DacpOomData *data);
+    HRESULT GetHeapAnalyzeData(CLRDATA_ADDRESS addr, struct  DacpGcHeapAnalyzeData *data);
+    HRESULT GetHeapAnalyzeStaticData(struct DacpGcHeapAnalyzeData *data);
+
+    // DomainLocal
+    HRESULT GetDomainLocalModuleData(CLRDATA_ADDRESS addr, struct DacpDomainLocalModuleData *data);
+    HRESULT GetDomainLocalModuleDataFromAppDomain(CLRDATA_ADDRESS appDomainAddr, int moduleID, struct DacpDomainLocalModuleData *data);
+    HRESULT GetDomainLocalModuleDataFromModule(CLRDATA_ADDRESS moduleAddr, struct DacpDomainLocalModuleData *data);
+
+    // ThreadLocal
+    HRESULT GetThreadLocalModuleData(CLRDATA_ADDRESS thread, unsigned int index, struct DacpThreadLocalModuleData *data);
+
+    // SyncBlock
+    HRESULT GetSyncBlockData(unsigned int number, struct DacpSyncBlockData *data);
+    HRESULT GetSyncBlockCleanupData(CLRDATA_ADDRESS addr, struct DacpSyncBlockCleanupData *data);
+
+    // Handles
+    HRESULT GetHandleEnum(ISOSHandleEnum **ppHandleEnum);
+    HRESULT GetHandleEnumForTypes(unsigned int types[], unsigned int count, ISOSHandleEnum **ppHandleEnum);
+    HRESULT GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppHandleEnum);
+
+    // EH
+    HRESULT TraverseEHInfo(CLRDATA_ADDRESS ip, DUMPEHINFO pCallback, LPVOID token);
+    HRESULT GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException);
+
+    // StressLog
+    HRESULT GetStressLogAddress(CLRDATA_ADDRESS *stressLog);
+
+    // Heaps
+    HRESULT TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pCallback);
+    HRESULT GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, struct DacpJitCodeHeapInfo *codeHeaps, unsigned int *pNeeded);
+    HRESULT TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType heaptype, VISITHEAP pCallback);
+
+    // Other
+    HRESULT GetUsefulGlobals(struct DacpUsefulGlobalsData *data);
+    HRESULT GetClrWatsonBuckets(CLRDATA_ADDRESS thread, void *pGenericModeBlock);
+    HRESULT GetTLSIndex(ULONG *pIndex);
+    HRESULT GetDacModuleHandle(HMODULE *phModule);
+
+    // COM
+    HRESULT GetRCWData(CLRDATA_ADDRESS addr, struct DacpRCWData *data);
+    HRESULT GetRCWInterfaces(CLRDATA_ADDRESS rcw, unsigned int count, struct DacpCOMInterfacePointerData *interfaces, unsigned int *pNeeded);
+    HRESULT GetCCWData(CLRDATA_ADDRESS ccw, struct DacpCCWData *data);
+    HRESULT GetCCWInterfaces(CLRDATA_ADDRESS ccw, unsigned int count, struct DacpCOMInterfacePointerData *interfaces, unsigned int *pNeeded);
+    HRESULT TraverseRCWCleanupList(CLRDATA_ADDRESS cleanupListPtr, VISITRCWFORCLEANUP pCallback, LPVOID token);
+
+    // GC Reference Functions
+
+    /*      GetStackReferences
+     * Enumerates all references on a given callstack.
+     */
+    HRESULT GetStackReferences([in] DWORD osThreadID, [out] ISOSStackRefEnum **ppEnum);
+    HRESULT GetRegisterName([in] int regName, [in] unsigned int count, [out] WCHAR *buffer, [out] unsigned int *pNeeded);
+
+    HRESULT GetThreadAllocData(CLRDATA_ADDRESS thread, struct DacpAllocData *data);
+    HRESULT GetHeapAllocData(unsigned int count, struct DacpGenerationAllocData *data, unsigned int *pNeeded);
+
+    // For BindingDisplay plugin
+    HRESULT GetFailedAssemblyList(CLRDATA_ADDRESS appDomain, int count, CLRDATA_ADDRESS values[], unsigned int *pNeeded);
+    HRESULT GetPrivateBinPaths(CLRDATA_ADDRESS appDomain, int count, WCHAR *paths, unsigned int *pNeeded);
+    HRESULT GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, WCHAR *location, unsigned int *pNeeded);
+    HRESULT GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count, WCHAR *configFile, unsigned int *pNeeded);
+    HRESULT GetApplicationBase(CLRDATA_ADDRESS appDomain, int count, WCHAR *base, unsigned int *pNeeded);
+    HRESULT GetFailedAssemblyData(CLRDATA_ADDRESS assembly, unsigned int *pContext, HRESULT *pResult);
+    HRESULT GetFailedAssemblyLocation(CLRDATA_ADDRESS assesmbly, unsigned int count, WCHAR *location, unsigned int *pNeeded);
+    HRESULT GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned int count, WCHAR *name, unsigned int *pNeeded);
+};
+
+[
+    object,
+    local,
+    uuid(A16026EC-96F4-40BA-87FB-5575986FB7AF)
+]
+interface ISOSDacInterface2 : IUnknown
+{
+    HRESULT GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
+    HRESULT IsRCWDCOMProxy(CLRDATA_ADDRESS rcwAddr, BOOL* isDCOMProxy);
+};
+
+[
+    object,
+    local,
+    uuid(B08C5CDC-FD8A-49C5-AB38-5FEEF35235B4)
+]
+interface ISOSDacInterface3 : IUnknown
+{
+    HRESULT GetGCInterestingInfoData(CLRDATA_ADDRESS interestingInfoAddr, struct DacpGCInterestingInfoData *data);
+    HRESULT GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *data);
+    HRESULT GetGCGlobalMechanisms(size_t* globalMechanisms);
+};
+
+[
+    object,
+    local,
+    uuid(74B9D34C-A612-4B07-93DD-5462178FCE11)
+]
+interface ISOSDacInterface4 : IUnknown
+{
+    HRESULT GetClrNotification(CLRDATA_ADDRESS arguments[], int count, int *pNeeded);
+};
+
+[
+    object,
+    local,
+    uuid(127d6abe-6c86-4e48-8e7b-220781c58101)
+]
+interface ISOSDacInterface5 : IUnknown
+{
+    HRESULT GetTieredVersions(CLRDATA_ADDRESS methodDesc, int rejitId, struct DacpTieredVersionData *nativeCodeAddrs, int cNativeCodeAddrs, int *pcNativeCodeAddrs);
+};
+
+[
+    object,
+    local,
+    uuid(11206399-4B66-4EDB-98EA-85654E59AD45)
+]
+interface ISOSDacInterface6 : IUnknown
+{
+    HRESULT GetMethodTableCollectibleData(CLRDATA_ADDRESS mt, struct DacpMethodTableCollectibleData *data);
+};
+
+[
+    object,
+    local,
+    uuid(c1020dde-fe98-4536-a53b-f35a74c327eb)
+]
+interface ISOSDacInterface7 : IUnknown
+{
+    HRESULT GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejitId);
+    HRESULT GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejitId, struct DacpReJitData2 *pRejitData);
+    HRESULT GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDesc, struct DacpProfilerILData *pILData);
+    HRESULT GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLRDATA_ADDRESS *methodDescs, int cMethodDescs, int *pcMethodDescs);
+};
+
+[
+    object,
+    local,
+    uuid(c12f35a9-e55c-4520-a894-b3dc5165dfce)
+]
+interface ISOSDacInterface8 : IUnknown
+{
+    HRESULT GetNumberGenerations(unsigned int *pGenerations);
+
+    // WKS
+    HRESULT GetGenerationTable(unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded);
+    HRESULT GetFinalizationFillPointers(unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded);
+
+    // SVR
+    HRESULT GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded);
+    HRESULT GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded);
+
+    HRESULT GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS* assemblyLoadContext);
+}
+
+// Increment anytime there is a change in the data structures that SOS depends on like
+// stress log structs (StressMsg, StressLogChunck, ThreadStressLog, etc), exception
+// stack traces (StackTraceElement), the PredefinedTlsSlots enums, etc.
+cpp_quote("#define SOS_BREAKING_CHANGE_VERSION 2")
+
+[
+    object,
+    local,
+    uuid(4eca42d8-7e7b-4c8a-a116-7bfbf6929267)
+]
+interface ISOSDacInterface9 : IUnknown
+{
+    HRESULT GetBreakingChangeVersion(int* pVersion);
+}
+
+[
+    object,
+    local,
+    uuid(90B8FCC3-7251-4B0A-AE3D-5C13A67EC9AA)
+]
+interface ISOSDacInterface10 : IUnknown
+{
+    HRESULT GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA_ADDRESS *rcw, unsigned int count, CLRDATA_ADDRESS *mowList, unsigned int *pNeeded);
+    HRESULT IsComWrappersCCW(CLRDATA_ADDRESS ccw, BOOL *isComWrappersCCW);
+    HRESULT GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRESS *managedObject, int *refCount);
+    HRESULT IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappersRCW);
+    HRESULT GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRESS *identity);
+}

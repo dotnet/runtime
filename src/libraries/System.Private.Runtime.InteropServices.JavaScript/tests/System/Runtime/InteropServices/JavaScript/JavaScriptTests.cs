@@ -92,14 +92,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40112")]
         public static void FunctionMath()
         {
             JSObject math = (JSObject)Runtime.GetGlobalObject("Math");
-            Assert.NotNull(math);
+            Assert.True(math != null, "math != null");
 
             Function mathMax = (Function)math.GetObjectProperty("max");
-            Assert.NotNull(mathMax);
+            Assert.True(mathMax != null, "math.max != null");
 
             var maxValue = (int)mathMax.Apply(null, new object[] { 5, 6, 2, 3, 7 });
             Assert.Equal(7, maxValue);
@@ -108,7 +107,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(7, maxValue);
 
             Function mathMin = (Function)((JSObject)Runtime.GetGlobalObject("Math")).GetObjectProperty("min");
-            Assert.NotNull(mathMin);
+            Assert.True(mathMin != null, "math.min != null");
 
             var minValue = (int)mathMin.Apply(null, new object[] { 5, 6, 2, 3, 7 });
             Assert.Equal(2, minValue);

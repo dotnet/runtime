@@ -4,5 +4,9 @@
     <StrongNameKeyId>Open</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
+    <PackageDescription>Provides classes for controlling serial ports.
+
+Commonly Used Types:
+System.IO.Ports.SerialPort</PackageDescription>
   </PropertyGroup>
 </Project>

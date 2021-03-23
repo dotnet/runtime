@@ -73,6 +73,10 @@ The "COMPlus_EnableDiagnostics" environment variable can be used to disable mana
 
     export COMPlus_EnableDiagnostics=0
 
+Debugging Crossgen2
+==================================
+
+Debugging Crossgen2 is described in [this](debugging-crossgen2.md) document.
 
 Using Visual Studio Code
 ========================
@@ -100,7 +104,7 @@ Using Visual Studio
       (Note: you probably want 'dotnet exec' rather than 'dotnet run' because the run verb is implemented to launch the app in a child-process and the debugger won't be attached to that child process)
   - Working Directory: Make this match whatever you would have used on the command-line
   - Debugger Type: Set this to either 'Managed (CoreCLR)' or 'Native Only' depending on whether you want to debug the C+ or native code respectively.
-  - Environment: Add any environment variables you would have added at the command-line. You may also consider adding COMPLUS_ZapDisable=1 and COMPLUS_ReadyToRun=0 which disable NGEN and R2R pre-compilation respectively and allow the JIT to create debuggable code. This will give you a higher quality C# debugging experience inside the runtime framework assemblies, at the cost of somewhat lower app performance.
+  - Environment: Add any environment variables you would have added at the command-line. You may also consider adding COMPlus_ZapDisable=1 and COMPlus_ReadyToRun=0 which disable NGEN and R2R pre-compilation respectively and allow the JIT to create debuggable code. This will give you a higher quality C# debugging experience inside the runtime framework assemblies, at the cost of somewhat lower app performance.
 - For managed debugging, there are some settings in Debug->Options, Debugging->General that might be useful:
   - Uncheck 'Just My Code'. This will allow you debug into the framework libraries.
   - Check 'Enable .NET Framework Source Stepping.' This will configure the debugger to download symbols and source automatically for runtime framework binaries. If you built the framework yourself this may be irrelevant because you already have all the source on your machine but it doesn't hurt.

@@ -15,6 +15,7 @@ parameters:
   container: ''
   steps: []
   dependsOn: []
+  dependOnEvaluatePaths: false
   variables: {}
   name: ''
   displayName: ''
@@ -22,6 +23,7 @@ parameters:
   testScope: ''
   pool: ''
   runTests: false
+  pgoType: ''
 
 jobs:
   - template: /eng/common/templates/job/job.yml
@@ -95,7 +97,7 @@ jobs:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
           - _runtimeConfigurationArg: -rc ${{ parameters.liveRuntimeBuildConfig }}
           - ${{ if eq(parameters.runTests, true) }}:
-            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+            - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.pgoType }}_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
             - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - ${{ if eq(parameters.testDisplayName, '') }}:
             - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
@@ -117,7 +119,8 @@ jobs:
         - _BuildConfig: ${{ parameters.buildConfig }}
 
       dependsOn:
-      - checkout
+      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+        - evaluate_paths
       - ${{ parameters.dependsOn }}
       workspace:
         clean: all
@@ -126,7 +129,9 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
       steps:
-      - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+      - checkout: self
+        clean: true
+        fetchDepth: $(checkoutFetchDepth)
 
       - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml

@@ -57,6 +57,8 @@ HRESULT GCProfiler::Shutdown()
 
 HRESULT GCProfiler::GarbageCollectionStarted(int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason)
 {
+    SHUTDOWNGUARD();
+
     _gcStarts++;
     if (_gcStarts - _gcFinishes > 2)
     {
@@ -69,6 +71,8 @@ HRESULT GCProfiler::GarbageCollectionStarted(int cGenerations, BOOL generationCo
 
 HRESULT GCProfiler::GarbageCollectionFinished()
 {
+    SHUTDOWNGUARD();
+
     _gcFinishes++;
     if (_gcStarts < _gcFinishes)
     {
@@ -84,6 +88,8 @@ HRESULT GCProfiler::GarbageCollectionFinished()
 
 HRESULT GCProfiler::ObjectReferences(ObjectID objectId, ClassID classId, ULONG cObjectRefs, ObjectID objectRefIds[])
 {
+    SHUTDOWNGUARD();
+
     HRESULT hr = S_OK;
     for (ULONG i = 0; i < cObjectRefs; ++i)
     {
@@ -98,7 +104,9 @@ HRESULT GCProfiler::ObjectReferences(ObjectID objectId, ClassID classId, ULONG c
 }
 
 HRESULT GCProfiler::RootReferences(ULONG cRootRefs, ObjectID rootRefIds[])
-{    
+{
+    SHUTDOWNGUARD();
+
     for (ULONG i = 0; i < cRootRefs; ++i)
     {
         ObjectID obj = rootRefIds[i];

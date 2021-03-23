@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -258,7 +259,7 @@ namespace System.Numerics
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this vector; False otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override readonly bool Equals(object? obj) => (obj is Vector<T> other) && Equals(other);
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector<T> other) && Equals(other);
 
         /// <summary>Returns a boolean indicating whether the given vector is equal to this vector instance.</summary>
         /// <param name="other">The vector to compare this instance to.</param>

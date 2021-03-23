@@ -54,21 +54,24 @@ int
 interp_intrins_ordinal_ignore_case_ascii (guint32 valueA, guint32 valueB)
 {
 	// Utf16Utility.UInt32OrdinalIgnoreCaseAscii
-	guint32 differentBits = valueA ^ valueB;
-	guint32 lowerIndicator = valueA + 0x01000100 - 0x00410041;
-	guint32 upperIndicator = (valueA | 0x00200020u) + 0x00800080 - 0x007B007B;
-	guint32 combinedIndicator = lowerIndicator | upperIndicator;
-	return (((combinedIndicator >> 2) | ~0x00200020) & differentBits) == 0;
+	guint32 differentBits = (valueA ^ valueB) << 2;
+	guint32 indicator = valueA + 0x00050005;
+	indicator |= 0x00A000A0;
+	indicator += 0x001A001A;
+	indicator |= 0xFF7FFF7F;
+	return (differentBits & indicator) == 0;
 }
 
 int
 interp_intrins_64ordinal_ignore_case_ascii (guint64 valueA, guint64 valueB)
 {
 	// Utf16Utility.UInt64OrdinalIgnoreCaseAscii
-	guint64 lowerIndicator = valueA + 0x0080008000800080l - 0x0041004100410041l;
-	guint64 upperIndicator = (valueA | 0x0020002000200020l) + 0x0100010001000100l - 0x007B007B007B007Bl;
-	guint64 combinedIndicator = (0x0080008000800080l & lowerIndicator & upperIndicator) >> 2;
-	return (valueA | combinedIndicator) == (valueB | combinedIndicator);
+	guint64 differentBits = (valueA ^ valueB) << 2;
+	guint64 indicator = valueA + 0x0005000500050005l;
+	indicator |= 0x00A000A000A000A0l;
+	indicator += 0x001A001A001A001Al;
+	indicator |= 0xFF7FFF7FFF7FFF7Fl;
+	return (differentBits & indicator) == 0;
 }
 
 static int

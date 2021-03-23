@@ -87,31 +87,6 @@ namespace System.Collections.Generic
                     return 0;
                 }
 
-                // The Ordinal version of Marvin32 operates over bytes, so convert
-                // char count -> byte count. Guaranteed not to integer overflow.
-                return Marvin.ComputeHash32(
-                    ref Unsafe.As<char, byte>(ref obj.GetRawStringData()),
-                    (uint)obj.Length * sizeof(char),
-                    _seed.p0, _seed.p1);
-            }
-        }
-
-        private sealed class RandomizedOrdinalIgnoreCaseComparer : RandomizedStringEqualityComparer
-        {
-            internal RandomizedOrdinalIgnoreCaseComparer(IEqualityComparer<string?> underlyingComparer)
-                : base(underlyingComparer)
-            {
-            }
-
-            public override bool Equals(string? x, string? y) => string.EqualsOrdinalIgnoreCase(x, y);
-
-            public override int GetHashCode(string? obj)
-            {
-                if (obj is null)
-                {
-                    return 0;
-                }
-
                 // The OrdinalIgnoreCase version of Marvin32 operates over chars,
                 // so pass in the char count directly.
                 return Marvin.ComputeHash32OrdinalIgnoreCase(

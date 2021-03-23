@@ -13,6 +13,9 @@
     <Compile Include="System\Runtime\InteropServices\BStrWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CallingConventionTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\NFloatTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\CULongTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\CLongTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CoClassAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CollectionsMarshalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAliasNameAttributeTests.cs" />
@@ -90,6 +93,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\GetTypeInfoNameTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetUniqueObjectForIUnknownTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetUniqueObjectForIUnknownTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\InitHandleTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseTests.cs" />

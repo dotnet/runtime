@@ -86,8 +86,10 @@ if job_id == '':
 
 replace_string = ''
 dir_separator = '/' if platform.system() != 'Windows' else '\\'
+unix_user_folder = '~/helix_payload/'
+windows_user_folder = 'c:\\helix_payload\\'
 source_file = template_dir + dir_separator + 'debug-dump-template.md'
-with open(source_file, 'r+') as f:
+with open(source_file, 'r') as f:
     file_text = f.read()
 
     print('read file: ' + source_file)
@@ -95,6 +97,8 @@ with open(source_file, 'r+') as f:
     replace_string = file_text.replace('%JOBID%', job_id)
     replace_string = replace_string.replace('%WORKITEM%', workitem)
     replace_string = replace_string.replace('%BUILDID%', build_id)
+    replace_string = replace_string.replace('%LOUTDIR%', unix_user_folder + workitem)
+    replace_string = replace_string.replace('%WOUTDIR%', windows_user_folder + workitem)
 
 output_file = out_dir + dir_separator + 'how-to-debug-dump.md'
 with open(output_file, 'w+') as output:

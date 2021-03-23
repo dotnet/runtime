@@ -733,7 +733,7 @@ namespace System.DirectoryServices.Protocols
 
                 if (error != 0)
                 {
-                    if (Utility.IsLdapError((LdapError)error))
+                    if (LdapErrorMappings.IsLdapError(error))
                     {
                         string errorMessage = LdapErrorMappings.MapResultCode(error);
                         throw new LdapException(error, errorMessage);
@@ -1022,7 +1022,7 @@ namespace System.DirectoryServices.Protocols
     }
 
     [SupportedOSPlatform("windows")]
-    public class QuotaControl : DirectoryControl
+    public partial class QuotaControl : DirectoryControl
     {
         private byte[] _sid;
 
@@ -1031,23 +1031,6 @@ namespace System.DirectoryServices.Protocols
         public QuotaControl(SecurityIdentifier querySid) : this()
         {
             QuerySid = querySid;
-        }
-
-        public SecurityIdentifier QuerySid
-        {
-            get => _sid == null ? null : new SecurityIdentifier(_sid, 0);
-            set
-            {
-                if (value == null)
-                {
-                    _sid = null;
-                }
-                else
-                {
-                    _sid = new byte[value.BinaryLength];
-                    value.GetBinaryForm(_sid, 0);
-                }
-            }
         }
 
         public override byte[] GetValue()

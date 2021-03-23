@@ -3,10 +3,12 @@
 
 using System;
 using System.IO;
+using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+    [UnsupportedOSPlatform("browser")]
     internal class ConsoleLogger : ILogger
     {
         private readonly string _name;

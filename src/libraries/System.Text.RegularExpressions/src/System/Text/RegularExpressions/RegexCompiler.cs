@@ -15,6 +15,9 @@ namespace System.Text.RegularExpressions
     /// RegexCompiler translates a block of RegexCode to MSIL, and creates a
     /// subclass of the RegexRunner type.
     /// </summary>
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+        Target = "M:System.Text.RegularExpressions.RegexCompiler.#cctor",
+        Justification = "The referenced methods don't have any DynamicallyAccessedMembers annotations. See https://github.com/mono/linker/issues/1727")]
     internal abstract class RegexCompiler
     {
         private static readonly FieldInfo s_runtextbegField = RegexRunnerField("runtextbeg");

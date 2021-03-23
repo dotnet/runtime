@@ -19,11 +19,11 @@ namespace System.Data.Common
 
         public abstract byte GetByte(int i);
 
-        public abstract long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length);
+        public abstract long GetBytes(int i, long dataIndex, byte[]? buffer, int bufferIndex, int length);
 
         public abstract char GetChar(int i);
 
-        public abstract long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length);
+        public abstract long GetChars(int i, long dataIndex, char[]? buffer, int bufferIndex, int length);
 
         public IDataReader GetData(int i) => GetDbDataReader(i);
 

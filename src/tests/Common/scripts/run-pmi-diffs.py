@@ -97,7 +97,7 @@ parser.add_argument('-diff_root', dest='diff_root', default=None)
 parser.add_argument('-scratch_root', dest='scratch_root', default=None)
 parser.add_argument('--skip_baseline_build', dest='skip_baseline_build', action='store_true', default=False)
 parser.add_argument('--skip_diffs', dest='skip_diffs', action='store_true', default=False)
-parser.add_argument('-target_branch', dest='target_branch', default='master')
+parser.add_argument('-target_branch', dest='target_branch', default='main')
 parser.add_argument('-commit_hash', dest='commit_hash', default=None)
 
 ##########################################################################

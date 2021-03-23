@@ -16,12 +16,11 @@
     <Compile Include="System\DomainNameHelper.cs" />
     <Compile Include="System\GenericUriParser.cs" />
     <Compile Include="System\IPv4AddressHelper.cs" />
-    <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs"
-             Link="System\IPv4AddressHelper.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs" Link="System\IPv4AddressHelper.Common.cs" />
     <Compile Include="System\IPv6AddressHelper.cs" />
-    <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs"
-             Link="System\IPv6AddressHelper.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs" Link="System\IPv6AddressHelper.Common.cs" />
     <Compile Include="System\IriHelper.cs" />
+    <Compile Include="System\PercentEncodingHelper.cs" />
     <Compile Include="System\UncNameHelper.cs" />
     <Compile Include="System\Uri.cs" />
     <Compile Include="System\UriBuilder.cs" />
@@ -34,8 +33,8 @@
     <Compile Include="System\UriPartial.cs" />
     <Compile Include="System\UriScheme.cs" />
     <Compile Include="System\UriSyntax.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
-             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="System\ValueStringBuilderExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Uri.Windows.cs" />

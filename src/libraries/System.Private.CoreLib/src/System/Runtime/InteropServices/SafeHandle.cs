@@ -74,7 +74,7 @@ namespace System.Runtime.InteropServices
         }
 #endif
 
-        protected void SetHandle(IntPtr handle) => this.handle = handle;
+        protected internal void SetHandle(IntPtr handle) => this.handle = handle;
 
         public IntPtr DangerousGetHandle() => handle;
 

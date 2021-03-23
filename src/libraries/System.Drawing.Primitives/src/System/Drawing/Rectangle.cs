@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Drawing
 {
@@ -155,7 +156,7 @@ namespace System.Drawing
         /// Tests whether <paramref name="obj"/> is a <see cref='System.Drawing.Rectangle'/> with the same location
         /// and size of this Rectangle.
         /// </summary>
-        public override readonly bool Equals(object? obj) => obj is Rectangle && Equals((Rectangle)obj);
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => obj is Rectangle && Equals((Rectangle)obj);
 
         public readonly bool Equals(Rectangle other) => this == other;
 

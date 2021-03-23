@@ -110,17 +110,18 @@ check_object_handle (MonoDomain* domain, MonoClass *klass, gpointer item)
 	return obj_handle;
 }
 
-
-typedef MonoObjectHandle (*ReflectionCacheConstructFunc_handle) (MonoDomain*, MonoClass*, gpointer, gpointer, MonoError *);
+typedef MonoObjectHandle (*ReflectionCacheConstructFunc_handle) (MonoClass*, gpointer, gpointer, MonoError *);
 
 static inline MonoObjectHandle
-check_or_construct_handle (MonoDomain *domain, MonoClass *klass, gpointer item, gpointer user_data, MonoError *error, ReflectionCacheConstructFunc_handle construct)
+check_or_construct_handle (MonoClass *klass, gpointer item, gpointer user_data, MonoError *error, ReflectionCacheConstructFunc_handle construct)
 {
+	MonoDomain *domain = mono_get_root_domain ();
+
 	error_init (error);
 	MonoObjectHandle obj = check_object_handle (domain, klass, item);
 	if (!MONO_HANDLE_IS_NULL (obj))
 		return obj;
-	MONO_HANDLE_ASSIGN (obj, construct (domain, klass, item, user_data, error));
+	MONO_HANDLE_ASSIGN (obj, construct (klass, item, user_data, error));
 	return_val_if_nok (error, NULL_HANDLE);
 	if (MONO_HANDLE_IS_NULL (obj))
 		return obj;
@@ -130,6 +131,6 @@ check_or_construct_handle (MonoDomain *domain, MonoClass *klass, gpointer item, 
 
 #define CHECK_OR_CONSTRUCT_HANDLE(t,p,k,construct,ud) \
 	(MONO_HANDLE_CAST (t, check_or_construct_handle ( \
-		domain, (k), (p), (ud), error, (ReflectionCacheConstructFunc_handle) (construct))))
+		(k), (p), (ud), error, (ReflectionCacheConstructFunc_handle) (construct))))
 
 #endif /*__MONO_METADATA_REFLECTION_CACHE_H__*/

@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization.Converters
                         }
 
                         // Obtain the CLR value from the JSON and apply to the object.
-                        TElement element = elementConverter.Read(ref reader, elementConverter.TypeToConvert, options);
+                        TElement? element = elementConverter.Read(ref reader, elementConverter.TypeToConvert, options);
                         Add(element!, ref state);
                     }
                 }
@@ -81,7 +81,7 @@ namespace System.Text.Json.Serialization.Converters
                         }
 
                         // Get the value from the converter and add it.
-                        elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement element);
+                        elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element);
                         Add(element!, ref state);
                     }
                 }
@@ -90,7 +90,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 // Slower path that supports continuation and preserved references.
 
-                bool preserveReferences = options.ReferenceHandler != null;
+                bool preserveReferences = options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve;
                 if (state.Current.ObjectState == StackFrameObjectState.None)
                 {
                     if (reader.TokenType == JsonTokenType.StartArray)
@@ -169,7 +169,7 @@ namespace System.Text.Json.Serialization.Converters
                         if (state.Current.PropertyState < StackFramePropertyState.TryRead)
                         {
                             // Get the value from the converter and add it.
-                            if (!elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement element))
+                            if (!elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element))
                             {
                                 value = default;
                                 return false;
@@ -236,12 +236,7 @@ namespace System.Text.Json.Serialization.Converters
                 if (!state.Current.ProcessedStartToken)
                 {
                     state.Current.ProcessedStartToken = true;
-
-                    if (options.ReferenceHandler == null)
-                    {
-                        writer.WriteStartArray();
-                    }
-                    else
+                    if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
                     {
                         MetadataPropertyName metadata = JsonSerializer.WriteReferenceForCollection(this, value, ref state, writer);
                         if (metadata == MetadataPropertyName.Ref)
@@ -250,6 +245,10 @@ namespace System.Text.Json.Serialization.Converters
                         }
 
                         state.Current.MetadataPropertyName = metadata;
+                    }
+                    else
+                    {
+                        writer.WriteStartArray();
                     }
 
                     state.Current.DeclaredJsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;

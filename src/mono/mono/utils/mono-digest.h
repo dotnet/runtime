@@ -60,6 +60,9 @@ MONO_API void mono_md5_init   (MonoMD5Context *ctx);
 MONO_API void mono_md5_update (MonoMD5Context *ctx, const guchar *buf, guint32 len);
 MONO_API void mono_md5_final  (MonoMD5Context *ctx, guchar digest[16]);
 
+uint64_t
+mono_md5_ctx_byte_length (MonoMD5Context *ctx);
+
 #if !HAVE_COMMONCRYPTO_COMMONDIGEST_H
 
 typedef struct {

@@ -21,7 +21,7 @@ namespace System.Net.Http.Headers
         {
         }
 
-        public override bool TryParseValue(string? value, object? storeValue, ref int index, [NotNullWhen(true)] out object? parsedValue)
+        public override bool TryParseValue([NotNullWhen(true)] string? value, object? storeValue, ref int index, [NotNullWhen(true)] out object? parsedValue)
         {
             parsedValue = null;
 

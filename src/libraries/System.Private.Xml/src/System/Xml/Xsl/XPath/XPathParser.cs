@@ -27,7 +27,7 @@ namespace System.Xml.Xsl.XPath
             Debug.Assert(_scanner == null && _builder == null);
             Debug.Assert(scanner != null && builder != null);
 
-            Node result = default(Node);
+            Node? result = default(Node);
             _scanner = scanner;
             _builder = builder;
             _posInfo.Clear();

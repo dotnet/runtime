@@ -30,6 +30,7 @@
     <Compile Include="Microsoft\VisualBasic\ComClassAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\BooleanType.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\ByteType.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\CacheDict.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\CharType.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\CharArrayType.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\ConversionResolution.vb" />
@@ -112,6 +113,9 @@
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Reflection" />
+    <Reference Include="System.Reflection.Emit" />
+    <Reference Include="System.Reflection.Emit.ILGeneration" />
+    <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Extensions" />
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Reflection.TypeExtensions" />

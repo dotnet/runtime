@@ -6,6 +6,7 @@
 
 namespace System.Collections.Concurrent
 {
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class BlockingCollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.IDisposable
     {
         public BlockingCollection() { }
@@ -81,6 +82,7 @@ namespace System.Collections.Concurrent
         public ConcurrentDictionary(int concurrencyLevel, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> collection, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
         public ConcurrentDictionary(int concurrencyLevel, int capacity) { }
         public ConcurrentDictionary(int concurrencyLevel, int capacity, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
+        public System.Collections.Generic.IEqualityComparer<TKey> Comparer { get { throw null; } }
         public int Count { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public TValue this[TKey key] { get { throw null; } set { } }

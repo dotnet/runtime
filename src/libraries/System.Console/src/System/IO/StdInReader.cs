@@ -93,9 +93,9 @@ namespace System.IO
             return line;
         }
 
-        public int ReadLine(byte[] buffer, int offset, int count)
+        public int ReadLine(Span<byte> buffer)
         {
-            if (count == 0)
+            if (buffer.IsEmpty)
             {
                 return 0;
             }
@@ -114,11 +114,10 @@ namespace System.IO
             Encoder encoder = _bufferReadEncoder ??= _encoding.GetEncoder();
             int bytesUsedTotal = 0;
             int charsUsedTotal = 0;
-            Span<byte> destination = buffer.AsSpan(offset, count);
             foreach (ReadOnlyMemory<char> chunk in _readLineSB.GetChunks())
             {
-                encoder.Convert(chunk.Span, destination, flush: false, out int charsUsed, out int bytesUsed, out bool completed);
-                destination = destination.Slice(bytesUsed);
+                encoder.Convert(chunk.Span, buffer, flush: false, out int charsUsed, out int bytesUsed, out bool completed);
+                buffer = buffer.Slice(bytesUsed);
                 bytesUsedTotal += bytesUsed;
                 charsUsedTotal += charsUsed;
 

@@ -45,7 +45,7 @@ namespace System
             return m_value - value;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is short))
             {

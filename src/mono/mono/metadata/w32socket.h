@@ -178,10 +178,4 @@ ICALL_EXPORT
 gint32
 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_icall (void);
 
-void
-mono_network_init(void);
-
-void
-mono_network_cleanup(void);
-
 #endif /* _MONO_METADATA_W32SOCKET_H_ */

@@ -25,7 +25,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             TypeLib = typeLibDesc;
         }
 
-
         internal static ComTypeDesc FromITypeInfo(ITypeInfo typeInfo, TYPEATTR typeAttr)
         {
             switch (typeAttr.typekind)
@@ -39,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     ComTypeDesc typeDesc = new ComTypeDesc(typeInfo, null);
                     return typeDesc;
                 default:
-                    throw new InvalidOperationException("Attempting to wrap an unsupported enum type.");
+                    throw new InvalidOperationException(SR.UnsupportedEnum);
             }
         }
 

@@ -104,15 +104,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             bool success;
 
-            using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+            using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComLegacySslCertBytes))
             {
                 // Fails because expired (NotAfter = 10/16/2016)
-                Assert.False(microsoftDotCom.Verify(), "MicrosoftDotComSslCertBytes");
+                Assert.False(microsoftDotCom.Verify(), "MicrosoftDotComLegacySslCertBytes");
             }
 
             using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             {
-                // NotAfter=10/31/2023
+                // NotAfter=10/8/2024, 7:00:00 AM UTC
                 success = microsoftDotComIssuer.Verify();
                 if (!success)
                 {
@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
                 {
-                    // NotAfter=7/17/2036
+                    // NotAfter=7/17/2025
                     success = microsoftDotComRoot.Verify();
                     if (!success)
                     {

@@ -513,11 +513,6 @@ namespace System.Net.Http
             CheckDisposed();
             HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
 
-            if (_settings._plaintextStreamFilter is not null)
-            {
-                throw new NotSupportedException(SR.net_http_sync_operations_not_allowed_with_plaintext_filter);
-            }
-
             Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)
             {

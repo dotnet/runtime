@@ -1557,23 +1557,6 @@ mono_w32socket_convert_error (gint error)
 	}
 }
 
-#ifndef ENABLE_NETCORE
-MonoBoolean
-ves_icall_System_Net_Sockets_Socket_SupportPortReuse_icall (MonoProtocolType proto)
-{
-#if defined (SO_REUSEPORT)
-	return TRUE;
-#else
-#ifdef __linux__
-	/* Linux always supports double binding for UDP, even on older kernels. */
-	if (proto == ProtocolType_Udp)
-		return TRUE;
-#endif
-	return FALSE;
-#endif
-}
-#endif
-
 gboolean
 mono_w32socket_duplicate (gpointer handle, gint32 targetProcessId, gpointer *duplicate_handle)
 {

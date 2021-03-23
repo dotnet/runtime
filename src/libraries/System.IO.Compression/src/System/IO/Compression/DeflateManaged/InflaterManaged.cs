@@ -48,7 +48,6 @@ namespace System.IO.Compression
         private HuffmanTree? _distanceTree;
 
         private InflaterState _state;
-        private readonly bool _hasFormatReader;
         private int _bfinal;
         private BlockType _blockType;
 
@@ -75,9 +74,7 @@ namespace System.IO.Compression
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
 
-        private readonly IFileFormatReader? _formatReader; // class to decode header and footer (e.g. gzip)
-
-        internal InflaterManaged(IFileFormatReader? reader, bool deflate64, long uncompressedSize)
+        internal InflaterManaged(bool deflate64, long uncompressedSize)
         {
             _output = new OutputWindow();
             _input = new InputBuffer();
@@ -86,20 +83,10 @@ namespace System.IO.Compression
             _codeLengthTreeCodeLength = new byte[HuffmanTree.NumberOfCodeLengthTreeElements];
             _deflate64 = deflate64;
             _uncompressedSize = uncompressedSize;
-            if (reader != null)
-            {
-                _formatReader = reader;
-                _hasFormatReader = true;
-            }
-            Reset();
+            _state = InflaterState.ReadingBFinal; // start by reading BFinal bit
         }
 
-        private void Reset()
-        {
-            _state = _hasFormatReader ?
-                InflaterState.ReadingHeader :   // start by reading Header info
-                InflaterState.ReadingBFinal;    // start by reading BFinal bit
-        }
+        public void SetInput(Memory<byte> inputBytes) => _input.SetInput(inputBytes);
 
         public void SetInput(byte[] inputBytes, int offset, int length) =>
             _input.SetInput(inputBytes, offset, length); // append the bytes
@@ -108,7 +95,7 @@ namespace System.IO.Compression
 
         public int AvailableOutput => _output.AvailableBytes;
 
-        public int Inflate(byte[] bytes, int offset, int length)
+        public int Inflate(Memory<byte> bytes)
         {
             // copy bytes from output to outputbytes if we have available bytes
             // if buffer is not filled up. keep decoding until no input are available
@@ -119,14 +106,14 @@ namespace System.IO.Compression
                 int copied = 0;
                 if (_uncompressedSize == -1)
                 {
-                    copied = _output.CopyTo(bytes, offset, length);
+                    copied = _output.CopyTo(bytes);
                 }
                 else
                 {
                     if (_uncompressedSize > _currentInflatedCount)
                     {
-                        length = (int)Math.Min(length, _uncompressedSize - _currentInflatedCount);
-                        copied = _output.CopyTo(bytes, offset, length);
+                        bytes = bytes.Slice(0, (int)Math.Min(bytes.Length, _uncompressedSize - _currentInflatedCount));
+                        copied = _output.CopyTo(bytes);
                         _currentInflatedCount += copied;
                     }
                     else
@@ -137,37 +124,22 @@ namespace System.IO.Compression
                 }
                 if (copied > 0)
                 {
-                    if (_hasFormatReader)
-                    {
-                        Debug.Assert(_formatReader != null);
-                        _formatReader.UpdateWithBytesRead(bytes, offset, copied);
-                    }
-
-                    offset += copied;
+                    bytes = bytes.Slice(copied, bytes.Length - copied);
                     count += copied;
-                    length -= copied;
                 }
 
-                if (length == 0)
-                {   // filled in the bytes array
+                if (bytes.IsEmpty)
+                {
+                    // filled in the bytes buffer
                     break;
                 }
                 // Decode will return false when more input is needed
             } while (!Finished() && Decode());
 
-            if (_state == InflaterState.VerifyingFooter)
-            {  // finished reading CRC
-                // In this case finished is true and output window has all the data.
-                // But some data in output window might not be copied out.
-                if (_output.AvailableBytes == 0)
-                {
-                    Debug.Assert(_formatReader != null);
-                    _formatReader.Validate();
-                }
-            }
-
             return count;
         }
+
+        public int Inflate(byte[] bytes, int offset, int length) => Inflate(bytes.AsMemory(offset, length));
 
         //Each block of compressed data begins with 3 header bits
         // containing the following data:
@@ -198,27 +170,6 @@ namespace System.IO.Compression
             if (Finished())
             {
                 return true;
-            }
-
-            if (_hasFormatReader)
-            {
-                Debug.Assert(_formatReader != null);
-                if (_state == InflaterState.ReadingHeader)
-                {
-                    if (!_formatReader.ReadHeader(_input))
-                    {
-                        return false;
-                    }
-                    _state = InflaterState.ReadingBFinal;
-                }
-                else if (_state == InflaterState.StartReadingFooter || _state == InflaterState.ReadingFooter)
-                {
-                    if (!_formatReader.ReadFooter(_input))
-                        return false;
-
-                    _state = InflaterState.VerifyingFooter;
-                    return true;
-                }
             }
 
             if (_state == InflaterState.ReadingBFinal)
@@ -293,10 +244,7 @@ namespace System.IO.Compression
             //
             if (eob && (_bfinal != 0))
             {
-                if (_hasFormatReader)
-                    _state = InflaterState.StartReadingFooter;
-                else
-                    _state = InflaterState.Done;
+                _state = InflaterState.Done;
             }
             return result;
         }

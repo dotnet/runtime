@@ -346,6 +346,7 @@ namespace System
         /// <param name="value">A read-only span containing the bytes to convert.</param>
         /// <returns>A character representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than the length of a <see cref="char"/>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static char ToChar(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(char))
@@ -380,6 +381,7 @@ namespace System
         /// <param name="value">A read-only span containing the bytes to convert.</param>
         /// <returns>A 16-bit signed integer representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 2.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short ToInt16(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(short))
@@ -417,6 +419,7 @@ namespace System
         /// <param name="value">A read-only span containing the bytes to convert.</param>
         /// <returns>A 32-bit signed integer representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 4.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ToInt32(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(int))
@@ -454,6 +457,7 @@ namespace System
         /// <param name="value">A read-only span containing the bytes to convert.</param>
         /// <returns>A 64-bit signed integer representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 8.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long ToInt64(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(long))
@@ -480,6 +484,7 @@ namespace System
         /// <returns>A 16-bit unsigned integer representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 2.</exception>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ushort ToUInt16(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(ushort))
@@ -509,6 +514,7 @@ namespace System
         /// <returns>A 32-bit unsigned integer representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 4.</exception>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint ToUInt32(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(uint))
@@ -538,6 +544,7 @@ namespace System
         /// <returns>A 64-bit unsigned integer representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 8.</exception>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong ToUInt64(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(ulong))
@@ -562,6 +569,7 @@ namespace System
         /// <param name="value">A read-only span containing the bytes to convert.</param>
         /// <returns>A half-precision floating-point value representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 2.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Half ToHalf(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(Half))
@@ -589,6 +597,7 @@ namespace System
         /// <param name="value">A read-only span containing the bytes to convert.</param>
         /// <returns>A single-precision floating-point value representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 4.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ToSingle(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(float))
@@ -616,6 +625,7 @@ namespace System
         /// <param name="value">A read-only span containing the bytes to convert.</param>
         /// <returns>A double-precision floating-point value representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 8.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ToDouble(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(double))
@@ -746,6 +756,7 @@ namespace System
         /// <param name="value">A read-only span containing the bytes to convert.</param>
         /// <returns>A Boolean representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 1.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ToBoolean(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(byte))

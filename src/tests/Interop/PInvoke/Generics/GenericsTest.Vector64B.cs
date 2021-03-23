@@ -9,19 +9,19 @@ using TestLibrary;
 unsafe partial class GenericsNative
 {
     [DllImport(nameof(GenericsNative))]
-    public static extern Vector64<bool> GetVector64B(bool e00, bool e01, bool e02, bool e03, bool e04, bool e05, bool e06, bool e07);
+    public static extern Vector64<bool> GetVector64B([MarshalAs(UnmanagedType.U1)]bool e00, [MarshalAs(UnmanagedType.U1)]bool e01, [MarshalAs(UnmanagedType.U1)]bool e02, [MarshalAs(UnmanagedType.U1)]bool e03, [MarshalAs(UnmanagedType.U1)]bool e04, [MarshalAs(UnmanagedType.U1)]bool e05, [MarshalAs(UnmanagedType.U1)]bool e06, [MarshalAs(UnmanagedType.U1)]bool e07);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetVector64BOut(bool e00, bool e01, bool e02, bool e03, bool e04, bool e05, bool e06, bool e07, Vector64<bool>* value);
+    public static extern void GetVector64BOut([MarshalAs(UnmanagedType.U1)]bool e00, [MarshalAs(UnmanagedType.U1)]bool e01, [MarshalAs(UnmanagedType.U1)]bool e02, [MarshalAs(UnmanagedType.U1)]bool e03, [MarshalAs(UnmanagedType.U1)]bool e04, [MarshalAs(UnmanagedType.U1)]bool e05, [MarshalAs(UnmanagedType.U1)]bool e06, [MarshalAs(UnmanagedType.U1)]bool e07, Vector64<bool>* value);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetVector64BOut(bool e00, bool e01, bool e02, bool e03, bool e04, bool e05, bool e06, bool e07, out Vector64<bool> value);
+    public static extern void GetVector64BOut([MarshalAs(UnmanagedType.U1)]bool e00, [MarshalAs(UnmanagedType.U1)]bool e01, [MarshalAs(UnmanagedType.U1)]bool e02, [MarshalAs(UnmanagedType.U1)]bool e03, [MarshalAs(UnmanagedType.U1)]bool e04, [MarshalAs(UnmanagedType.U1)]bool e05, [MarshalAs(UnmanagedType.U1)]bool e06, [MarshalAs(UnmanagedType.U1)]bool e07, out Vector64<bool> value);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern Vector64<bool>* GetVector64BPtr(bool e00, bool e01, bool e02, bool e03, bool e04, bool e05, bool e06, bool e07);
+    public static extern Vector64<bool>* GetVector64BPtr([MarshalAs(UnmanagedType.U1)]bool e00, [MarshalAs(UnmanagedType.U1)]bool e01, [MarshalAs(UnmanagedType.U1)]bool e02, [MarshalAs(UnmanagedType.U1)]bool e03, [MarshalAs(UnmanagedType.U1)]bool e04, [MarshalAs(UnmanagedType.U1)]bool e05, [MarshalAs(UnmanagedType.U1)]bool e06, [MarshalAs(UnmanagedType.U1)]bool e07);
 
     [DllImport(nameof(GenericsNative), EntryPoint = "GetVector64BPtr")]
-    public static extern ref readonly Vector64<bool> GetVector64BRef(bool e00, bool e01, bool e02, bool e03, bool e04, bool e05, bool e06, bool e07);
+    public static extern ref readonly Vector64<bool> GetVector64BRef([MarshalAs(UnmanagedType.U1)]bool e00, [MarshalAs(UnmanagedType.U1)]bool e01, [MarshalAs(UnmanagedType.U1)]bool e02, [MarshalAs(UnmanagedType.U1)]bool e03, [MarshalAs(UnmanagedType.U1)]bool e04, [MarshalAs(UnmanagedType.U1)]bool e05, [MarshalAs(UnmanagedType.U1)]bool e06, [MarshalAs(UnmanagedType.U1)]bool e07);
 
     [DllImport(nameof(GenericsNative))]
     public static extern Vector64<bool> AddVector64B(Vector64<bool> lhs, Vector64<bool> rhs);

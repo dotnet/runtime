@@ -30,7 +30,7 @@
     <PropertyGroup>
       <UseHardlink>true</UseHardlink>
       <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
-      <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
+      <UseHardlink Condition="$(PackageRID.StartsWith('freebsd'))">false</UseHardlink>
     </PropertyGroup>
 
     <!-- We do not need apphost.exe.
@@ -85,7 +85,7 @@
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
       <!-- Setup runtime pack native. -->
       <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"
-                               DestinationSubDirectory="cross/" />
+                               DestinationSubDirectory="cross/%(RecursiveDir)" />
       <ReferenceCopyLocalPaths Include="@(MonoIncludeFiles)"
                                DestinationSubDirectory="include/%(RecursiveDir)" />
     </ItemGroup>

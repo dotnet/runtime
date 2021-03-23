@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 segments.Add(new ConsoleContext() {
                     BackgroundColor = bg,
                     ForegroundColor = fg,
-                    Message = message.AsSpan().Slice(startIndex, length).ToString()
+                    Message = message.AsSpan(startIndex, length).ToString()
                 });
             };
             var parser = new AnsiParser(onParseWrite);
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 segments.Add(new ConsoleContext() {
                     BackgroundColor = bg,
                     ForegroundColor = fg,
-                    Message = message.AsSpan().Slice(startIndex, length).ToString()
+                    Message = message.AsSpan(startIndex, length).ToString()
                 });
             };
             var parser = new AnsiParser(onParseWrite);
@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 segments.Add(new ConsoleContext() {
                     BackgroundColor = bg,
                     ForegroundColor = fg,
-                    Message = message.AsSpan().Slice(startIndex, length).ToString()
+                    Message = message.AsSpan(startIndex, length).ToString()
                 });
             };
             var parser = new AnsiParser(onParseWrite);
@@ -134,7 +134,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 segments.Add(new ConsoleContext() {
                     BackgroundColor = bg,
                     ForegroundColor = fg,
-                    Message = message.AsSpan().Slice(startIndex, length).ToString()
+                    Message = message.AsSpan(startIndex, length).ToString()
                 });
             };
             var parser = new AnsiParser(onParseWrite);
@@ -187,7 +187,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 segments.Add(new ConsoleContext() {
                     BackgroundColor = bg,
                     ForegroundColor = fg,
-                    Message = message.AsSpan().Slice(startIndex, length).ToString()
+                    Message = message.AsSpan(startIndex, length).ToString()
                 });
             };
             var parser = new AnsiParser(onParseWrite);

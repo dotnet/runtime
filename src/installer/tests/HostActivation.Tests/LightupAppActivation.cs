@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             var repoDirectories = new RepoDirectoriesProvider(builtDotnet: _currentWorkingDir);
             GlobalLightupClientFixture = new TestProjectFixture("LightupClient", repoDirectories)
-                .EnsureRestored(sharedTestState.RepoDirectories.CorehostPackages)
+                .EnsureRestored()
                 .BuildProject();
 
             string greatestVersionSharedFxPath = sharedTestState.LightupLibFixture_Built.BuiltDotnet.GreatestVersionSharedFxPath;
@@ -558,15 +558,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 RepoDirectories = new RepoDirectoriesProvider();
 
                 LightupLibFixture_Built = new TestProjectFixture("LightupLib", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
 
                 LightupLibFixture_Published = new TestProjectFixture("LightupLib", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
 
                 LightupClientFixture = new TestProjectFixture("LightupClient", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
             }
 

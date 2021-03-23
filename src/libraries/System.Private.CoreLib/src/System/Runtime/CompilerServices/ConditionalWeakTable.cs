@@ -187,7 +187,7 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentNullException(nameof(createValueCallback));
             }
 
-            return TryGetValue(key, out TValue existingValue) ?
+            return TryGetValue(key, out TValue? existingValue) ?
                 existingValue :
                 GetValueLocked(key, createValueCallback);
         }
@@ -201,7 +201,7 @@ namespace System.Runtime.CompilerServices
             lock (_lock)
             {
                 // Now that we've taken the lock, must recheck in case we lost a race to add the key.
-                if (_container.TryGetValueWorker(key, out TValue existingValue))
+                if (_container.TryGetValueWorker(key, out TValue? existingValue))
                 {
                     return existingValue;
                 }
@@ -336,7 +336,7 @@ namespace System.Runtime.CompilerServices
                             while (_currentIndex < _maxIndexInclusive)
                             {
                                 _currentIndex++;
-                                if (c.TryGetEntry(_currentIndex, out TKey? key, out TValue value))
+                                if (c.TryGetEntry(_currentIndex, out TKey? key, out TValue? value))
                                 {
                                     _current = new KeyValuePair<TKey, TValue>(key, value);
                                     return true;

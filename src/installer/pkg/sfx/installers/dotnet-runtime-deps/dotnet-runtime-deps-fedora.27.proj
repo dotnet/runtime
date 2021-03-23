@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <GenerateInstallers Condition="'$(BuildRpmPackage)' != 'true'">false</GenerateInstallers>
+    <PackageTargetOS>fedora.27</PackageTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="compat-openssl10;libicu;krb5-libs" />
+  </ItemGroup>
+</Project>

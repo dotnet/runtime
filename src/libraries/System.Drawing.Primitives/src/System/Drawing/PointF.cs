@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Drawing
 {
@@ -106,7 +107,7 @@ namespace System.Drawing
         /// </summary>
         public static PointF Subtract(PointF pt, SizeF sz) => new PointF(pt.X - sz.Width, pt.Y - sz.Height);
 
-        public override readonly bool Equals(object? obj) => obj is PointF && Equals((PointF)obj);
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => obj is PointF && Equals((PointF)obj);
 
         public readonly bool Equals(PointF other) => this == other;
 

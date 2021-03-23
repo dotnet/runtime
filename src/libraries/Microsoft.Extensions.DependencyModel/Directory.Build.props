@@ -1,0 +1,9 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <PackageDescription>Abstractions for reading `.deps` files.
+
+Commonly Used Types:
+Microsoft.Extensions.DependencyModel.DependencyContext</PackageDescription>
+  </PropertyGroup>
+</Project>

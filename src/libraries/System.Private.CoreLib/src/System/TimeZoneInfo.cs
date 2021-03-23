@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Threading;
@@ -743,12 +744,12 @@ namespace System
         /// Returns value equality. Equals does not compare any localizable
         /// String objects (DisplayName, StandardName, DaylightName).
         /// </summary>
-        public bool Equals(TimeZoneInfo? other) =>
+        public bool Equals([NotNullWhen(true)] TimeZoneInfo? other) =>
             other != null &&
             string.Equals(_id, other._id, StringComparison.OrdinalIgnoreCase) &&
             HasSameRules(other);
 
-        public override bool Equals(object? obj) => Equals(obj as TimeZoneInfo);
+        public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as TimeZoneInfo);
 
         public static TimeZoneInfo FromSerializedString(string source)
         {
@@ -826,38 +827,15 @@ namespace System
                 return false;
             }
 
-            bool sameRules;
             AdjustmentRule[]? currentRules = _adjustmentRules;
             AdjustmentRule[]? otherRules = other._adjustmentRules;
 
-            sameRules =
-                (currentRules == null && otherRules == null) ||
-                (currentRules != null && otherRules != null);
-
-            if (!sameRules)
+            if (currentRules is null || otherRules is null)
             {
-                // AdjustmentRule array mismatch
-                return false;
+                return currentRules == otherRules;
             }
 
-            if (currentRules != null)
-            {
-                if (currentRules.Length != otherRules!.Length)
-                {
-                    // AdjustmentRule array length mismatch
-                    return false;
-                }
-
-                for (int i = 0; i < currentRules.Length; i++)
-                {
-                    if (!(currentRules[i]).Equals(otherRules[i]))
-                    {
-                        // AdjustmentRule value-equality mismatch
-                        return false;
-                    }
-                }
-            }
-            return sameRules;
+            return currentRules.AsSpan().SequenceEqual(otherRules);
         }
 
         /// <summary>

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
@@ -13,17 +11,15 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "CreateProcessW")]
-        internal static extern bool CreateProcess(
+        internal static extern unsafe bool CreateProcess(
             string? lpApplicationName,
-#pragma warning disable CA1838 // reasonable use of StringBuilder to build up a command line
-            [In] StringBuilder lpCommandLine,
-#pragma warning restore CA1838
+            char* lpCommandLine,
             ref SECURITY_ATTRIBUTES procSecAttrs,
             ref SECURITY_ATTRIBUTES threadSecAttrs,
             bool bInheritHandles,
             int dwCreationFlags,
             IntPtr lpEnvironment,
-            string lpCurrentDirectory,
+            string? lpCurrentDirectory,
             ref STARTUPINFO lpStartupInfo,
             ref PROCESS_INFORMATION lpProcessInformation
         );

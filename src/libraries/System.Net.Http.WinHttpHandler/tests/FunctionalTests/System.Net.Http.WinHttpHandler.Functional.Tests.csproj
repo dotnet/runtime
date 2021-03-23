@@ -97,6 +97,8 @@
              Link="Common\System\Net\Http\HttpClientHandlerTest.MaxResponseHeadersLength.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Proxy.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.Proxy.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.RemoteServer.cs"
+             Link="Common\System\Net\Http\HttpClientHandlerTest.RemoteServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.SslProtocols.cs"

@@ -125,7 +125,7 @@ namespace System.Linq.Parallel
             // Moves to the next matching element in the underlying data stream.
             //
 
-            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, [AllowNull] ref TKey currentKey)
             {
                 Debug.Assert(_predicate != null, "expected a compiled operator");
 

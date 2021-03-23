@@ -10,14 +10,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Security;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.Xslt;
-using System.Runtime.Versioning;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace System.Xml.Xsl
 {
@@ -44,10 +40,8 @@ namespace System.Xml.Xsl
 
     public sealed class XslCompiledTransform
     {
-#if FEATURE_COMPILED_XSL
         // Version for GeneratedCodeAttribute
         private static readonly Version? s_version = typeof(XslCompiledTransform).Assembly.GetName().Version;
-#endif
 
         // Options of compilation
         private readonly bool _enableDebug;
@@ -57,10 +51,8 @@ namespace System.Xml.Xsl
         private XmlWriterSettings? _outputSettings;
         private QilExpression? _qil;
 
-#if FEATURE_COMPILED_XSL
         // Executable command for the compiled stylesheet
         private XmlILCommand? _command;
-#endif
 
         public XslCompiledTransform() { }
 
@@ -77,9 +69,7 @@ namespace System.Xml.Xsl
             _compilerErrorColl = null;
             _outputSettings = null;
             _qil = null;
-#if FEATURE_COMPILED_XSL
             _command = null;
-#endif
         }
 
         /// <summary>
@@ -196,13 +186,9 @@ namespace System.Xml.Xsl
 
         private void CompileQilToMsil(XsltSettings settings)
         {
-#if FEATURE_COMPILED_XSL
             _command = new XmlILGenerator().Generate(_qil!, /*typeBuilder:*/null)!;
             _outputSettings = _command.StaticData.DefaultWriterSettings;
             _qil = null;
-#else
-            throw new PlatformNotSupportedException(SR.Xslt_NotSupported);
-#endif
         }
 
         //------------------------------------------------
@@ -211,7 +197,6 @@ namespace System.Xml.Xsl
 
         public void Load(Type compiledStylesheet)
         {
-#if FEATURE_COMPILED_XSL
             Reset();
             if (compiledStylesheet == null)
                 throw new ArgumentNullException(nameof(compiledStylesheet));
@@ -251,14 +236,10 @@ namespace System.Xml.Xsl
             // Throw an exception if the command was not loaded
             if (_command == null)
                 throw new ArgumentException(SR.Format(SR.Xslt_NotCompiledStylesheet, compiledStylesheet.FullName), nameof(compiledStylesheet));
-#else
-            throw new PlatformNotSupportedException(SR.Xslt_NotSupported);
-#endif
         }
 
         public void Load(MethodInfo executeMethod, byte[] queryData, Type[]? earlyBoundTypes)
         {
-#if FEATURE_COMPILED_XSL
             Reset();
 
             if (executeMethod == null)
@@ -272,9 +253,6 @@ namespace System.Xml.Xsl
             Delegate delExec = (dm != null) ? dm.CreateDelegate(typeof(ExecuteDelegate)) : executeMethod.CreateDelegate(typeof(ExecuteDelegate));
             _command = new XmlILCommand((ExecuteDelegate)delExec, new XmlQueryStaticData(queryData, earlyBoundTypes));
             _outputSettings = _command.StaticData.DefaultWriterSettings;
-#else
-            throw new PlatformNotSupportedException(SR.Xslt_NotSupported);
-#endif
         }
 
         //------------------------------------------------
@@ -421,26 +399,18 @@ namespace System.Xml.Xsl
         // It's OK to suppress the SxS warning.
         public void Transform(XmlReader input, XsltArgumentList? arguments, XmlWriter results, XmlResolver? documentResolver)
         {
-#if FEATURE_COMPILED_XSL
             CheckArguments(input, results);
             CheckCommand();
             _command.Execute((object)input, documentResolver, arguments, results);
-#else
-            throw new PlatformNotSupportedException(SR.Xslt_NotSupported);
-#endif
         }
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
         public void Transform(IXPathNavigable input, XsltArgumentList? arguments, XmlWriter results, XmlResolver? documentResolver)
         {
-#if FEATURE_COMPILED_XSL
             CheckArguments(input, results);
             CheckCommand();
             _command.Execute((object)input.CreateNavigator()!, documentResolver, arguments, results);
-#else
-            throw new PlatformNotSupportedException(SR.Xslt_NotSupported);
-#endif
         }
 
         //------------------------------------------------
@@ -468,14 +438,10 @@ namespace System.Xml.Xsl
         [MemberNotNull(nameof(_command))]
         private void CheckCommand()
         {
-#if FEATURE_COMPILED_XSL
             if (_command == null)
             {
                 throw new InvalidOperationException(SR.Xslt_NoStylesheetLoaded);
             }
-#else
-            throw new InvalidOperationException(SR.Xslt_NoStylesheetLoaded);
-#endif
         }
 
         private static XmlResolver CreateDefaultResolver()
@@ -507,12 +473,10 @@ namespace System.Xml.Xsl
             CompileQilToMsil(settings);
         }
 
-#if FEATURE_COMPILED_XSL
         private void Transform(string inputUri, XsltArgumentList? arguments, XmlWriter results, XmlResolver documentResolver)
         {
             _command!.Execute(inputUri, documentResolver, arguments, results);
         }
-#endif
     }
 #endif // ! HIDE_XSL
 }

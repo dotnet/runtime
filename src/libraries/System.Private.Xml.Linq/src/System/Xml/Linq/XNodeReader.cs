@@ -378,7 +378,7 @@ namespace System.Xml.Linq
                         case XmlNodeType.ProcessingInstruction:
                             return ((XProcessingInstruction)o).Data;
                         case XmlNodeType.DocumentType:
-                            return ((XDocumentType)o).InternalSubset;
+                            return ((XDocumentType)o).InternalSubset ?? string.Empty;
                         default:
                             return string.Empty;
                     }
@@ -552,17 +552,18 @@ namespace System.Xml.Linq
             return null;
         }
 
-        // TODO-NULLABLE: decide if base signature should be switched to return string?
         public override string GetAttribute(int index)
         {
             if (!IsInteractive)
             {
-                return null!;
+                throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
             }
+
             if (index < 0)
             {
-                return null!;
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
+
             XElement? e = GetElementInAttributeScope();
             if (e != null)
             {
@@ -582,7 +583,7 @@ namespace System.Xml.Linq
                     } while (a != e.lastAttr);
                 }
             }
-            return null!;
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
         public override string? LookupNamespace(string prefix)

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
@@ -85,25 +87,35 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                IntPtr buf = Marshal.AllocHGlobal(6 * 8); // 6 elements x 8 bytes (float)
-
-                try
-                {
-                    Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(this, NativeMatrix), buf));
-
-                    float[] m = new float[6];
-                    Marshal.Copy(buf, m, 0, 6);
-                    return m;
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(buf);
-                }
+                float[] elements = new float[6];
+                GetElements(elements);
+                return elements;
             }
         }
 
-        public float OffsetX => Elements[4];
-        public float OffsetY => Elements[5];
+        internal unsafe void GetElements(Span<float> elements)
+        {
+            Debug.Assert(elements.Length >= 6);
+
+            fixed (float* m = elements)
+            {
+                Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(this, NativeMatrix), m));
+            }
+        }
+
+        public unsafe float OffsetX => Offset.X;
+
+        public unsafe float OffsetY => Offset.Y;
+
+        internal unsafe PointF Offset
+        {
+            get
+            {
+                Span<float> elements = stackalloc float[6];
+                GetElements(elements);
+                return new PointF(elements[4], elements[5]);
+            }
+        }
 
         public void Reset()
         {
@@ -262,7 +274,8 @@ namespace System.Drawing.Drawing2D
                 return isIdentity != 0;
             }
         }
-        public override bool Equals(object? obj)
+
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is Matrix matrix2))
                 return false;

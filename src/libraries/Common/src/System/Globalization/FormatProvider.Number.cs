@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -328,6 +329,35 @@ namespace System.Globalization
                 return null;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static unsafe bool AllowHyphenDuringParsing(NumberFormatInfo info)
+            {
+                string negativeSign = info.NegativeSign;
+                return negativeSign.Length == 1 &&
+                       negativeSign[0] switch {
+                           '\u2012' or         // Figure Dash
+                           '\u207B' or         // Superscript Minus
+                           '\u208B' or         // Subscript Minus
+                           '\u2212' or         // Minus Sign
+                           '\u2796' or         // Heavy Minus Sign
+                           '\uFE63' or         // Small Hyphen-Minus
+                           '\uFF0D' => true,   // Fullwidth Hyphen-Minus
+                           _ => false
+                       };
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static unsafe char* MatchNegativeSignChars(char* p, char* pEnd, string negativeSign, bool allowHyphenDuringParsing)
+            {
+                char *ret = MatchChars(p, pEnd, negativeSign);
+                if (ret == null && allowHyphenDuringParsing && p < pEnd && *p == '-')
+                {
+                    ret = p + 1;
+                }
+
+                return ret;
+            }
+
             private static unsafe bool ParseNumber(ref char* str, char* strEnd, NumberStyles options, ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
                 Debug.Assert(str != null);
@@ -345,7 +375,9 @@ namespace System.Globalization
                 number.sign = false;
                 string decSep;                  // Decimal separator from NumberFormatInfo.
                 string groupSep;                // Group separator from NumberFormatInfo.
-                string? currSymbol = null;       // Currency symbol from NumberFormatInfo.
+                string? currSymbol = null;      // Currency symbol from NumberFormatInfo.
+
+                bool allowHyphenDuringParsing = AllowHyphenDuringParsing(numfmt);
 
                 bool parsingCurrency = false;
                 if ((options & NumberStyles.AllowCurrencySymbol) != 0)
@@ -379,7 +411,7 @@ namespace System.Globalization
                     // "-Kr 1231.47" is legal but "- 1231.47" is not.
                     if (!IsWhite(ch) || (options & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && ((state & StateCurrency) == 0 && numfmt.NumberNegativePattern != 2)))
                     {
-                        if ((((options & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, numfmt.PositiveSign)) != null || ((next = MatchChars(p, strEnd, numfmt.NegativeSign)) != null && (number.sign = true))))
+                        if ((((options & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, numfmt.PositiveSign)) != null || ((next = MatchNegativeSignChars(p, strEnd, numfmt.NegativeSign, allowHyphenDuringParsing)) != null && (number.sign = true))))
                         {
                             state |= StateSign;
                             p = next - 1;
@@ -475,7 +507,7 @@ namespace System.Globalization
                         {
                             ch = (p = next) < strEnd ? *p : '\0';
                         }
-                        else if ((next = MatchChars(p, strEnd, numfmt.NegativeSign)) != null)
+                        else if ((next = MatchNegativeSignChars(p, strEnd, numfmt.NegativeSign, allowHyphenDuringParsing)) != null)
                         {
                             ch = (p = next) < strEnd ? *p : '\0';
                             negExp = true;
@@ -512,7 +544,7 @@ namespace System.Globalization
                     {
                         if (!IsWhite(ch) || (options & NumberStyles.AllowTrailingWhite) == 0)
                         {
-                            if (((options & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0)) && ((next = MatchChars(p, strEnd, numfmt.PositiveSign)) != null || (((next = MatchChars(p, strEnd, numfmt.NegativeSign)) != null) && (number.sign = true))))
+                            if (((options & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0)) && ((next = MatchChars(p, strEnd, numfmt.PositiveSign)) != null || (((next = MatchNegativeSignChars(p, strEnd, numfmt.NegativeSign, allowHyphenDuringParsing)) != null) && (number.sign = true))))
                             {
                                 state |= StateSign;
                                 p = next - 1;
@@ -684,9 +716,14 @@ namespace System.Globalization
                         // digits.  Further, for compat, we need to stop when we hit a null char.
                         int n = 0;
                         int i = 1;
-                        while (i < format.Length && (((uint)format[i] - '0') < 10) && n < 10)
+                        while (i < format.Length && (((uint)format[i] - '0') < 10))
                         {
-                            n = (n * 10) + format[i++] - '0';
+                            int temp = (n * 10) + format[i++] - '0';
+                            if (temp < n)
+                            {
+                                throw new FormatException(SR.Argument_BadFormatSpecifier);
+                            }
+                            n = temp;
                         }
 
                         // If we're at the end of the digits rather than having stopped because we hit something
@@ -892,23 +929,13 @@ namespace System.Globalization
                 }
             }
 
-            private static unsafe int wcslen(char* s)
-            {
-                int result = 0;
-                while (*s++ != '\0')
-                {
-                    result++;
-                }
-                return result;
-            }
-
             private static unsafe void FormatFixed(ref ValueStringBuilder sb, ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, int[]? groupDigits, string sDecimal, string? sGroup)
             {
                 Debug.Assert(sGroup != null || groupDigits == null);
 
                 int digPos = number.scale;
                 char* dig = number.digits;
-                int digLength = wcslen(dig);
+                int digLength = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(dig).Length;
 
                 if (digPos > 0)
                 {

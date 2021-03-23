@@ -19,7 +19,6 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/marshal.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
@@ -57,7 +56,6 @@ fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 	ERROR_DECL (error);
 	MonoObject *exc;
 
-#if ENABLE_NETCORE
 	MONO_STATIC_POINTER_INIT (MonoMethod, procexit_method)
 
 		procexit_method = mono_class_get_method_from_name_checked (mono_defaults.appcontext_class, "OnProcessExit", 0, 0, error);
@@ -68,23 +66,6 @@ fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 	g_assert (procexit_method);
 	
 	mono_runtime_try_invoke (procexit_method, NULL, NULL, &exc, error);
-#else
-	MonoClassField *field;
-	gpointer pa [2];
-	MonoObject *delegate;
-
-	field = mono_class_get_field_from_name_full (mono_defaults.appdomain_class, "ProcessExit", NULL);
-	g_assert (field);
-
-	delegate = *(MonoObject **)(((char *)domain->domain) + field->offset);
-	if (delegate == NULL)
-		return;
-
-	pa [0] = domain->domain;
-	pa [1] = NULL;
-	mono_runtime_delegate_try_invoke (delegate, pa, &exc, error);
-	mono_error_cleanup (error);
-#endif
 }
 
 static void

@@ -182,6 +182,26 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        public void PackageOpen_Open_InvalidContent_Throws()
+        {
+            string temp = GetTempFileInfoWithExtension(".docx").FullName;
+
+            using (FileStream fs = File.OpenWrite(temp))
+            {
+                byte[] bytes = File.ReadAllBytes("plain.docx");
+                bytes.AsSpan(500, 500).Clear(); // garble it
+                fs.Write(bytes, 0, bytes.Length);
+            }
+
+            AssertExtensions.ThrowsAny<InvalidDataException, ArgumentOutOfRangeException>(
+                () => Package.Open(temp, FileMode.Open, FileAccess.Read, FileShare.Read));
+
+            // Package should not have held a stream open on the file; if it did, this operation will
+            // throw IOException (unless the finalizer runs first, and it will not do so deterministically)
+            File.Move(temp, GetTestFilePath());
+        }
+
+        [Fact]
         public void T172_EmptyRelationshipPart()
         {
             var docName = "EmptyRelationshipElement.docx";

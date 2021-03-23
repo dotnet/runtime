@@ -24,6 +24,17 @@ Please note that this builds the Priority 0 tests. To build priority 1:
 ./src/tests/build.sh -priority1
 ```
 
+## Generating Core_Root
+
+The `src/tests/build.sh` script generates the Core_Root folder, which contains the test host (`corerun`), libraries, and coreclr product binaries necessary to run a test. To generate Core_Root without building the tests:
+
+```
+./src/tests/build.sh generatelayoutonly
+```
+
+The output will be at `<repo_root>/artifacts/tests/coreclr/<os>.<arch>.<configuration>/Tests/Core_Root`.
+
+
 ## Building Individual Tests
 
 During development there are many instances where building an individual test is fast and necessary. All of the necessary tools to build are under `coreclr`. It is possible to use `~/runtime/dotnet.sh msbuild` as you would normally use MSBuild with a few caveats.
@@ -33,8 +44,10 @@ During development there are many instances where building an individual test is
 ## Building an Individual Test
 
 ```sh
-./dotnet.sh msbuild src/coreclr/tests/src/path-to-proj-file /p:TargetOS=<TargetOS> /p:Configuration=<BuildType>
+./dotnet.sh msbuild src/tests/path-to-proj-file /p:TargetOS=<TargetOS> /p:Configuration=<BuildType>
 ```
+
+In addition to the test assembly, this will generate a `.sh` script next to the test assembly in the test's output folder. The test's output folder will be under `<repo_root>/artifacts/tests/coreclr/<os>.<arch>.<configuration>` at a subpath based on the test's location in source.
 
 ## Running Tests
 
@@ -76,6 +89,14 @@ Tests which never should be built or run are marked
 This propoerty should not be conditioned on Target properties to allow
 all tests to be built for `allTargets`.
 
+## Running Individual Tests
+
+After [building an individual test](#building-individual-tests), to run the test:
+
+1) Set the `CORE_ROOT` environment variable to the [Core_Root folder](#generating-core_root).
+
+2) Run the test using the `.sh` generated for the test.
+
 PAL tests
 ---------
 
@@ -89,7 +110,7 @@ Run tests:
 
 To run all tests including disabled tests
 ```sh
-./src/coreclr/src/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
+./src/coreclr/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
 # on macOS, replace $(uname) with OSX
 ```
 To only run enabled tests for the platform the tests were built for:
@@ -101,4 +122,4 @@ artifacts/bin/coreclr/$(uname).x64.Debug/paltests/runpaltests.sh $(pwd)/artifact
 Test results will go into: `/tmp/PalTestOutput/default/pal_tests.xml`
 
 To disable tests in the CI edit
-`src/coreclr/src/pal/tests/palsuite/issues.targets`
+`src/coreclr/pal/tests/palsuite/issues.targets`

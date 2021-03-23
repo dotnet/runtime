@@ -201,7 +201,8 @@ copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, 
 #ifdef _MSC_VER
 typedef void (*CopyStackDataFunc)(MonoThreadInfo *, MonoStackData *, gconstpointer, gconstpointer);
 
-#ifdef TARGET_AMD64
+#ifdef HOST_AMD64
+#include <emmintrin.h>
 // Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo.
 typedef struct {
 	__m128d fregs [10];

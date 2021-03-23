@@ -59,7 +59,7 @@ namespace System.Net.Http.Functional.Tests
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestHeaderAsync();
-                        await connection.Writer.WriteAsync(
+                        await connection.WriteStringAsync(
                             LoopbackServer.GetContentModeResponse(
                                 contentMode,
                                 string.Concat(Enumerable.Repeat('s', 10_000)),

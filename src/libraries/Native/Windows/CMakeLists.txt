@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 3.14.5)
+cmake_minimum_required(VERSION 3.16)
+cmake_policy(SET CMP0091 NEW)
 
 # C Compiler flags
-SET (CMAKE_C_FLAGS_INIT                     "/W0 /FC")
+SET (CMAKE_C_FLAGS_INIT                     "/FC")
 SET (CMAKE_C_FLAGS_DEBUG_INIT               "/Od /Zi")
 SET (CMAKE_C_FLAGS_RELEASE_INIT             "/Ox")
 SET (CMAKE_C_FLAGS_RELWITHDEBINFO_INIT      "/O2 /Zi")
@@ -21,6 +22,17 @@ endif()
 # Force an out of source build
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "Binary directory isn't being correctly set before calling Cmake. Tree must be built in separate directory from source.")
+endif()
+
+if(STATIC_LIBS_ONLY)
+    # Suppress exporting of the PAL APIs
+    add_definitions(-DPALEXPORT=EXTERN_C)
+
+    set(GEN_SHARED_LIB 0)
+    set(STATIC_LIB_DESTINATION lib)
+else()
+    set(GEN_SHARED_LIB 1)
+    set(STATIC_LIB_DESTINATION .)
 endif()
 
 project(CoreFX)
@@ -55,7 +67,7 @@ if ($ENV{__BuildArch} STREQUAL "x86")
 endif ()
 
 # enable control-flow-guard support for native components
-add_compile_options(/guard:cf) 
+add_compile_options(/guard:cf)
 list(APPEND __SharedLinkArgs /GUARD:CF)
 
 # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
@@ -65,8 +77,7 @@ list(APPEND __SharedLinkArgs /GUARD:CF)
 # won't do the same for debug/checked builds since ucrtbased.dll is not redistributable and Debug/Checked builds are not
 # production-time scenarios.
 
-add_compile_options($<$<CONFIG:DEBUG>:/MTd>)
-add_compile_options($<$<CONFIG:RELEASE>:/MT>)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 add_compile_options($<$<CONFIG:RELEASE>:/GL>)
 add_compile_options($<$<CONFIG:RELEASE>:/O1>)
@@ -113,4 +124,9 @@ endif ()
 # as other asserts should still be included.
 add_compile_definitions($<$<CONFIG:RELEASE>:NDEBUG>)
 
-add_subdirectory(clrcompression)
+# we only need to build System.Globalization.Native when building static libs.
+if(STATIC_LIBS_ONLY)
+    add_subdirectory(../Unix/System.Globalization.Native System.Globalization.Native)
+endif()
+
+add_subdirectory(System.IO.Compression.Native)

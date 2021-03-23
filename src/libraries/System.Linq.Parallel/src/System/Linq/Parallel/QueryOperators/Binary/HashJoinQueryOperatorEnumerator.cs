@@ -90,7 +90,7 @@ namespace System.Linq.Parallel
         // as we do for inner joins.
         //
 
-        internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TOutput currentElement, ref TOutputKey currentKey)
+        internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TOutput currentElement, [AllowNull] ref TOutputKey currentKey)
         {
             Debug.Assert(_resultSelector != null, "expected a compiled result selector");
             Debug.Assert(_leftSource != null);

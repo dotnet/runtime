@@ -18,4 +18,6 @@ PALEXPORT void SystemNative_LowLevelMonitor_Release(LowLevelMonitor* monitor);
 
 PALEXPORT void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor);
 
+PALEXPORT int32_t SystemNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monitor, int32_t timeoutMilliseconds);
+
 PALEXPORT void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor);

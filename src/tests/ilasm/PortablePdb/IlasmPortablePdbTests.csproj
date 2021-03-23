@@ -35,6 +35,9 @@
     <None Include="TestFiles\TestLocalScopes4.il">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="TestFiles\TestMethodDebugInformation.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="TestFiles\TestMethodDebugInformation_unix.il">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

@@ -24,7 +24,7 @@ namespace System.Xml.Serialization
 
         public XmlSerializer CreateSerializer(Type type, XmlRootAttribute? root)
         {
-            return CreateSerializer(type, null, Array.Empty<Type>(), root, null, null);
+            return CreateSerializer(type, null, Type.EmptyTypes, root, null, null);
         }
 
         public XmlSerializer CreateSerializer(Type type, Type[]? extraTypes)
@@ -34,7 +34,7 @@ namespace System.Xml.Serialization
 
         public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides? overrides)
         {
-            return CreateSerializer(type, overrides, Array.Empty<Type>(), null, null, null);
+            return CreateSerializer(type, overrides, Type.EmptyTypes, null, null, null);
         }
 
         public XmlSerializer CreateSerializer(XmlTypeMapping xmlTypeMapping)

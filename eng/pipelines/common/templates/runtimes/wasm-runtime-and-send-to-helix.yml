@@ -28,10 +28,11 @@ parameters:
   timeoutInMinutes: ''
   enableMicrobuild: ''
   gatherAssetManifests: false
+  shouldContinueOnError: false
 
 
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -skipstressdependencies -excludemonofailures os Browser wasm $(buildConfigUpper)
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os Browser wasm $(buildConfigUpper)
     displayName: Build Tests
 
   #  Send tests to Helix
@@ -44,6 +45,7 @@ steps:
       osSubgroup: ${{ parameters.osSubgroup}}
       coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
       runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
         creator: $(Build.DefinitionName)

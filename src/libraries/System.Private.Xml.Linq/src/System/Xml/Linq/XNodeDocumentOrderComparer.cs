@@ -13,7 +13,7 @@ namespace System.Xml.Linq
     /// </summary>
     public sealed class XNodeDocumentOrderComparer :
         IComparer,
-        IComparer<XNode>
+        IComparer<XNode?>
     {
         /// <summary>
         /// Compares two nodes to determine their relative XML document order.

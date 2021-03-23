@@ -17,28 +17,21 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string Configuration { get; }
         public string RepoRoot { get; }
         public string BaseArtifactsFolder { get; }
-        public string BaseBinFolder { get; }
-        public string BaseObjFolder { get; }
         public string Artifacts { get; }
         public string HostArtifacts { get; }
         public string BuiltDotnet { get; }
         public string NugetPackages { get; }
-        public string CorehostPackages { get; }
         public string DotnetSDK { get; }
 
         private string _testContextVariableFilePath { get; }
         private ImmutableDictionary<string, string> _testContextVariables { get; }
 
         public RepoDirectoriesProvider(
-            string repoRoot = null,
-            string artifacts = null,
             string builtDotnet = null,
-            string nugetPackages = null,
-            string corehostPackages = null,
-            string dotnetSdk = null,
             string microsoftNETCoreAppVersion = null)
         {
-            RepoRoot = repoRoot ?? GetRepoRootDirectory();
+            RepoRoot = GetRepoRootDirectory();
+            BaseArtifactsFolder = Path.Combine(RepoRoot, "artifacts");
 
             _testContextVariableFilePath = Path.Combine(
                 Directory.GetCurrentDirectory(),
@@ -50,10 +43,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     line => line.Substring(line.IndexOf('=') + 1),
                     StringComparer.OrdinalIgnoreCase);
 
-            BaseArtifactsFolder = artifacts ?? Path.Combine(RepoRoot, "artifacts");
-            BaseBinFolder = artifacts ?? Path.Combine(BaseArtifactsFolder, "bin");
-            BaseObjFolder = artifacts ?? Path.Combine(BaseArtifactsFolder, "obj");
-
             TargetRID = GetTestContextVariable("TEST_TARGETRID");
             BuildRID = GetTestContextVariable("BUILDRID");
             BuildArchitecture = GetTestContextVariable("BUILD_ARCHITECTURE");
@@ -61,24 +50,20 @@ namespace Microsoft.DotNet.CoreSetup.Test
             TestAssetsFolder = GetTestContextVariable("TEST_ASSETS");
 
             Configuration = GetTestContextVariable("BUILD_CONFIGURATION");
+
             string osPlatformConfig = $"{BuildRID}.{Configuration}";
+            Artifacts = Path.Combine(BaseArtifactsFolder, "bin", osPlatformConfig);
+            HostArtifacts = Path.Combine(Artifacts, "corehost");
 
-            DotnetSDK = dotnetSdk ?? GetTestContextVariable("DOTNET_SDK_PATH");
-
+            DotnetSDK = GetTestContextVariable("DOTNET_SDK_PATH");
             if (!Directory.Exists(DotnetSDK))
             {
                 throw new InvalidOperationException("ERROR: Test SDK folder not found.");
             }
 
-            Artifacts = Path.Combine(BaseBinFolder, osPlatformConfig);
-            HostArtifacts = artifacts ?? Path.Combine(Artifacts, "corehost");
+            NugetPackages = GetTestContextVariable("NUGET_PACKAGES") ?? Path.Combine(RepoRoot, ".packages");
 
-            NugetPackages = nugetPackages ??
-                GetTestContextVariable("NUGET_PACKAGES") ??
-                Path.Combine(RepoRoot, ".packages");
-
-            CorehostPackages = corehostPackages ?? Path.Combine(Artifacts, "corehost");
-            BuiltDotnet = builtDotnet ?? Path.Combine(BaseObjFolder, osPlatformConfig, "sharedFrameworkPublish");
+            BuiltDotnet = builtDotnet ?? Path.Combine(GetTestContextVariable("TEST_ARTIFACTS"), "sharedFrameworkPublish");
         }
 
         public string GetTestContextVariable(string name)

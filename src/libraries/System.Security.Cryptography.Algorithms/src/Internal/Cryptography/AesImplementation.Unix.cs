@@ -25,50 +25,29 @@ namespace Internal.Cryptography
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
-        private static readonly Tuple<int, int, CipherMode, Func<IntPtr>>[] s_algorithmInitializers =
-        {
-            // Neither OpenSSL nor Cng Aes support CTS mode.
-            // second parameter is feedback size (required only for CFB).
-
-            Tuple.Create(128, 0, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes128Cbc),
-            Tuple.Create(128, 0, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes128Ecb),
-            Tuple.Create(128, 8, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes128Cfb8),
-            Tuple.Create(128, 128, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes128Cfb128),
-
-            Tuple.Create(192, 0, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes192Cbc),
-            Tuple.Create(192, 0, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes192Ecb),
-            Tuple.Create(192, 8, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes192Cfb8),
-            Tuple.Create(192, 128, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes192Cfb128),
-
-            Tuple.Create(256, 0, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes256Cbc),
-            Tuple.Create(256, 0, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes256Ecb),
-            Tuple.Create(256, 8, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes256Cfb8),
-            Tuple.Create(256, 128, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes256Cfb128),
-        };
-
-        private static IntPtr GetAlgorithm(int keySize, int feedback, CipherMode cipherMode)
-        {
-            bool foundKeysize = false;
-
-            foreach (var tuple in s_algorithmInitializers)
+        private static IntPtr GetAlgorithm(int keySize, int feedback, CipherMode cipherMode) =>
+            (keySize, cipherMode) switch
             {
-                if (tuple.Item1 == keySize && (tuple.Item2 == 0 || tuple.Item2 == feedback) && tuple.Item3 == cipherMode)
-                {
-                    return tuple.Item4();
-                }
+                // Neither OpenSSL nor Cng Aes support CTS mode.
 
-                if (tuple.Item1 == keySize)
-                {
-                    foundKeysize = true;
-                }
-            }
+                (128, CipherMode.CBC) => Interop.Crypto.EvpAes128Cbc(),
+                (128, CipherMode.ECB) => Interop.Crypto.EvpAes128Ecb(),
+                (128, CipherMode.CFB) when feedback == 8 => Interop.Crypto.EvpAes128Cfb8(),
+                (128, CipherMode.CFB) when feedback == 128 => Interop.Crypto.EvpAes128Cfb128(),
 
-            if (!foundKeysize)
-            {
-                throw new CryptographicException(SR.Cryptography_InvalidKeySize);
-            }
+                (192, CipherMode.CBC) => Interop.Crypto.EvpAes192Cbc(),
+                (192, CipherMode.ECB) => Interop.Crypto.EvpAes192Ecb(),
+                (192, CipherMode.CFB) when feedback == 8 => Interop.Crypto.EvpAes192Cfb8(),
+                (192, CipherMode.CFB) when feedback == 128 => Interop.Crypto.EvpAes192Cfb128(),
 
-            throw new NotSupportedException();
-        }
+                (256, CipherMode.CBC) => Interop.Crypto.EvpAes256Cbc(),
+                (256, CipherMode.ECB) => Interop.Crypto.EvpAes256Ecb(),
+                (256, CipherMode.CFB) when feedback == 8 => Interop.Crypto.EvpAes256Cfb8(),
+                (256, CipherMode.CFB) when feedback == 128 => Interop.Crypto.EvpAes256Cfb128(),
+
+                _ => throw (keySize == 128 || keySize == 192 || keySize == 256 ? (Exception)
+                        new NotSupportedException() :
+                        new CryptographicException(SR.Cryptography_InvalidKeySize)),
+            };
     }
 }

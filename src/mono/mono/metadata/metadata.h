@@ -37,7 +37,11 @@ typedef enum {
 	MONO_CALL_STDCALL,
 	MONO_CALL_THISCALL,
 	MONO_CALL_FASTCALL,
-	MONO_CALL_VARARG
+	MONO_CALL_VARARG = 0x05,
+	/* unused, */
+	/* unused, */
+	/* unused, */
+	MONO_CALL_UNMANAGED_MD = 0x09, /* default unmanaged calling convention, with additional attributed encoded in modopts */
 } MonoCallConvention;
 
 /* ECMA lamespec: the old spec had more info... */
@@ -200,6 +204,8 @@ typedef struct {
 } MonoMarshalSpec;
 
 MONO_API void         mono_metadata_init (void);
+
+void mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, uint32_t *res, int res_size);
 
 MONO_API void         mono_metadata_decode_row (const MonoTableInfo   *t,
 				       int                    idx,

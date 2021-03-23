@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             string nethostName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost");
             NethostPath = Path.Combine(Path.GetDirectoryName(NativeHostPath), nethostName);
             File.Copy(
-                Path.Combine(RepoDirectories.CorehostPackages, nethostName),
+                Path.Combine(RepoDirectories.HostArtifacts, nethostName),
                 NethostPath);
         }
 

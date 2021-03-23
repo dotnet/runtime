@@ -117,14 +117,26 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="net_quic_addressfamily_notsupported" xml:space="preserve">
+    <value>Only IPv4 or IPv6 are supported</value>
+  </data>
   <data name="net_quic_connectionaborted" xml:space="preserve">
     <value>Connection aborted by peer ({0}).</value>
   </data>
+  <data name="net_quic_noloopback" xml:space="preserve">
+    <value>Must pass loopback address and port 0</value>
+  </data>
   <data name="net_quic_notsupported" xml:space="preserve">
-    <value>QUIC is not supported on this platform. See http://aka.ms/dotnetquic</value>
+    <value>QUIC is not supported on this platform. See https://aka.ms/dotnetquic</value>
   </data>
   <data name="net_quic_operationaborted" xml:space="preserve">
     <value>Operation aborted.</value>
+  </data>
+  <data name="net_quic_reading_notallowed" xml:space="preserve">
+    <value>Reading is not allowed on stream.</value>
+  </data>
+  <data name="net_quic_sending_aborted" xml:space="preserve">
+    <value>Sending has already been aborted on the stream</value>
   </data>
   <data name="net_quic_streamaborted" xml:space="preserve">
     <value>Stream aborted by peer ({0}).</value>
@@ -132,4 +144,11 @@
   <data name="SystemNetQuic_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Quic is not supported on this platform.</value>
   </data>
+  <data name="net_quic_unsupported_address_family" xml:space="preserve">
+    <value>Unsupported address family of '{0}' for remote endpoint.</value>
+  </data>
+  <data name="net_quic_writing_notallowed" xml:space="preserve">
+    <value>Writing is not allowed on stream.</value>
+  </data>
 </root>
+

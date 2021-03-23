@@ -31,14 +31,7 @@ namespace System.Net.Http.Headers
             Debug.Assert(source != null);
 
             _value = source._value;
-
-            if (source._parameters != null)
-            {
-                foreach (var parameter in source._parameters)
-                {
-                    this.Parameters.Add((NameValueHeaderValue)((ICloneable)parameter).Clone());
-                }
-            }
+            _parameters = source._parameters.Clone();
         }
 
         public TransferCodingHeaderValue(string value)
@@ -127,7 +120,7 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             TransferCodingHeaderValue? other = obj as TransferCodingHeaderValue;
 

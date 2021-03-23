@@ -15,15 +15,15 @@ namespace ComWrappersTests.GlobalInstance
     {
         struct MarshalInterface
         {
-            [DllImport(nameof(MockReferenceTrackerRuntime), EntryPoint=nameof(MockReferenceTrackerRuntime.CreateTrackerObject))]
+            [DllImport(nameof(MockReferenceTrackerRuntime), EntryPoint="CreateTrackerObject_SkipTrackerRuntime")]
             [return: MarshalAs(UnmanagedType.IUnknown)]
             extern public static object CreateTrackerObjectAsIUnknown();
 
-            [DllImport(nameof(MockReferenceTrackerRuntime), EntryPoint=nameof(MockReferenceTrackerRuntime.CreateTrackerObject))]
+            [DllImport(nameof(MockReferenceTrackerRuntime), EntryPoint="CreateTrackerObject_SkipTrackerRuntime")]
             [return: MarshalAs(UnmanagedType.Interface)]
             extern public static FakeWrapper CreateTrackerObjectAsInterface();
 
-            [DllImport(nameof(MockReferenceTrackerRuntime), EntryPoint = nameof(MockReferenceTrackerRuntime.CreateTrackerObject))]
+            [DllImport(nameof(MockReferenceTrackerRuntime), EntryPoint="CreateTrackerObject_SkipTrackerRuntime")]
             [return: MarshalAs(UnmanagedType.Interface)]
             extern public static Test CreateTrackerObjectWrongType();
 

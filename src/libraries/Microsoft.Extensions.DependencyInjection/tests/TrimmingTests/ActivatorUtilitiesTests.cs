@@ -10,7 +10,7 @@ class Program
     {
         ServiceProvider provider = new ServiceCollection().BuildServiceProvider();
 
-        ObjectFactory factory = ActivatorUtilities.CreateFactory(typeof(ServiceA), Array.Empty<Type>());
+        ObjectFactory factory = ActivatorUtilities.CreateFactory(typeof(ServiceA), Type.EmptyTypes);
         ServiceA serviceA = factory(provider, null) as ServiceA;
         ServiceB serviceB = ActivatorUtilities.CreateInstance(provider, typeof(ServiceB)) as ServiceB;
         ServiceC serviceC = ActivatorUtilities.CreateInstance<ServiceC>(provider);

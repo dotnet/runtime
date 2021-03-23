@@ -18,7 +18,7 @@ using Xunit;
 namespace System.IO.Tests
 {
     /// <summary>Base class providing tests for any Stream-derived type.</summary>
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // lots of operations aren't supported on browser
+    [PlatformSpecific(~TestPlatforms.Browser)] // lots of operations aren't supported on browser
     public abstract class StreamConformanceTests : FileCleanupTestBase
     {
         /// <summary>Gets the name of the byte[] argument to Read/Write methods.</summary>
@@ -269,7 +269,6 @@ namespace System.IO.Tests
                 foreach ((int offset, int count) in new[] { (0, 0), (1, 2) }) // validate 0, 0 isn't special-cased to be allowed with a null buffer
                 {
                     AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.Read(null!, offset, count); });
-                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.Read(null!, offset, count); });
                     AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.ReadAsync(null!, offset, count); });
                     AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.ReadAsync(null!, offset, count, default); });
                     AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.EndRead(stream.BeginRead(null!, offset, count, iar => { }, new object())); });
@@ -281,28 +280,23 @@ namespace System.IO.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteOffsetName, () => { stream.ReadAsync(oneByteBuffer, -1, 0); });
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteOffsetName, () => { stream.ReadAsync(oneByteBuffer, -1, 0, default); });
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteOffsetName, () => { stream.EndRead(stream.BeginRead(oneByteBuffer, -1, 0, iar => { }, new object())); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.Read(oneByteBuffer, 2, 0); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.ReadAsync(oneByteBuffer, 2, 0); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.ReadAsync(oneByteBuffer, 2, 0, default); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.EndRead(stream.BeginRead(oneByteBuffer, 2, 0, iar => { }, new object())); });
 
                 // Invalid count
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.Read(oneByteBuffer, 0, -1); });
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.ReadAsync(oneByteBuffer, 0, -1); });
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.ReadAsync(oneByteBuffer, 0, -1, default); });
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.EndRead(stream.BeginRead(oneByteBuffer, 0, -1, iar => { }, new object())); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.Read(oneByteBuffer, 0, 2); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.ReadAsync(oneByteBuffer, 0, 2); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.ReadAsync(oneByteBuffer, 0, 2, default); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.EndRead(stream.BeginRead(oneByteBuffer, 0, 2, iar => { }, new object())); });
+                foreach (int count in new[] { -1, 2 })
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.Read(oneByteBuffer, 0, count); });
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.ReadAsync(oneByteBuffer, 0, count); });
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.ReadAsync(oneByteBuffer, 0, count, default); });
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.EndRead(stream.BeginRead(oneByteBuffer, 0, count, iar => { }, new object())); });
+                }
 
                 // Invalid offset + count
-                foreach ((int invalidOffset, int invalidCount) in new[] { (1, 1) })
+                foreach ((int invalidOffset, int invalidCount) in new[] { (1, 1), (2, 0), (int.MaxValue, int.MaxValue) })
                 {
-                    Assert.ThrowsAny<ArgumentException>(() => { stream.Read(oneByteBuffer, invalidOffset, invalidCount); });
-                    Assert.ThrowsAny<ArgumentException>(() => { stream.ReadAsync(oneByteBuffer, invalidOffset, invalidCount); });
-                    Assert.ThrowsAny<ArgumentException>(() => { stream.ReadAsync(oneByteBuffer, invalidOffset, invalidCount, default); });
-                    Assert.ThrowsAny<ArgumentException>(() => { stream.EndRead(stream.BeginRead(oneByteBuffer, invalidOffset, invalidCount, iar => { }, new object())); });
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.Read(oneByteBuffer, invalidOffset, invalidCount); });
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.ReadAsync(oneByteBuffer, invalidOffset, invalidCount); });
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.ReadAsync(oneByteBuffer, invalidOffset, invalidCount, default); });
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.EndRead(stream.BeginRead(oneByteBuffer, invalidOffset, invalidCount, iar => { }, new object())); });
                 }
 
                 // Unknown arguments
@@ -365,23 +359,18 @@ namespace System.IO.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteOffsetName, () => { stream.WriteAsync(oneByteBuffer, -1, 0); });
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteOffsetName, () => { stream.WriteAsync(oneByteBuffer, -1, 0, default); });
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteOffsetName, () => { stream.EndWrite(stream.BeginWrite(oneByteBuffer, -1, 0, iar => { }, new object())); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.Write(oneByteBuffer, 2, 0); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.WriteAsync(oneByteBuffer, 2, 0); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.WriteAsync(oneByteBuffer, 2, 0, default); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.EndWrite(stream.BeginWrite(oneByteBuffer, 2, 0, iar => { }, new object())); });
 
                 // Invalid count
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.Write(oneByteBuffer, 0, -1); });
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.WriteAsync(oneByteBuffer, 0, -1); });
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.WriteAsync(oneByteBuffer, 0, -1, default); });
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.EndWrite(stream.BeginWrite(oneByteBuffer, 0, -1, iar => { }, new object())); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.Write(oneByteBuffer, 0, 2); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.WriteAsync(oneByteBuffer, 0, 2); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.WriteAsync(oneByteBuffer, 0, 2, default); });
-                Assert.ThrowsAny<ArgumentException>(() => { stream.EndWrite(stream.BeginWrite(oneByteBuffer, 0, 2, iar => { }, new object())); });
+                foreach (int count in new[] { -1, 2 })
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.Write(oneByteBuffer, 0, count); });
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.WriteAsync(oneByteBuffer, 0, count); });
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.WriteAsync(oneByteBuffer, 0, count, default); });
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(ReadWriteCountName, () => { stream.EndWrite(stream.BeginWrite(oneByteBuffer, 0, count, iar => { }, new object())); });
+                }
 
                 // Invalid offset + count
-                foreach ((int invalidOffset, int invalidCount) in new[] { (1, 1) })
+                foreach ((int invalidOffset, int invalidCount) in new[] { (1, 1), (2, 0), (int.MaxValue, int.MaxValue) })
                 {
                     Assert.ThrowsAny<ArgumentException>(() => { stream.Write(oneByteBuffer, invalidOffset, invalidCount); });
                     Assert.ThrowsAny<ArgumentException>(() => { stream.WriteAsync(oneByteBuffer, invalidOffset, invalidCount); });
@@ -430,10 +419,11 @@ namespace System.IO.Tests
             Assert.Equal(CanTimeout, stream.CanTimeout);
             if (stream.CanTimeout)
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => stream.ReadTimeout = 0);
-                Assert.Throws<ArgumentOutOfRangeException>(() => stream.ReadTimeout = -2);
-                Assert.Throws<ArgumentOutOfRangeException>(() => stream.WriteTimeout = 0);
-                Assert.Throws<ArgumentOutOfRangeException>(() => stream.WriteTimeout = -2);
+                foreach (int timeout in new[] { 0, -2 })
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => stream.ReadTimeout = timeout);
+                    Assert.Throws<ArgumentOutOfRangeException>(() => stream.WriteTimeout = timeout);
+                }
             }
             else
             {
@@ -532,23 +522,30 @@ namespace System.IO.Tests
             }
         }
 
-        protected async Task ValidateCancelableReads_AfterInvocation_ThrowsCancellationException(Stream stream)
+        protected async Task ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(Stream stream)
         {
             if (!stream.CanRead || !FullyCancelableOperations)
             {
                 return;
             }
 
-            CancellationTokenSource cts;
+            var cts = new CancellationTokenSource();
+            Task<int> t = stream.ReadAsync(new byte[1], 0, 1, cts.Token);
+            cts.Cancel();
+            await AssertCanceledAsync(cts.Token, () => t);
+        }
 
-            cts = new CancellationTokenSource(1);
-            await AssertCanceledAsync(cts.Token, () => stream.ReadAsync(new byte[1], 0, 1, cts.Token));
-
-            if (UsableAfterCanceledReads)
+        protected async Task ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(Stream stream)
+        {
+            if (!stream.CanRead || !FullyCancelableOperations)
             {
-                cts = new CancellationTokenSource(1);
-                await AssertCanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
+                return;
             }
+
+            var cts = new CancellationTokenSource();
+            Task<int> t = stream.ReadAsync(new byte[1], cts.Token).AsTask();
+            cts.Cancel();
+            await AssertCanceledAsync(cts.Token, () => t);
         }
 
         protected async Task WhenAllOrAnyFailed(Task task1, Task task2)
@@ -908,7 +905,7 @@ namespace System.IO.Tests
                 Assert.Equal(size, stream.Seek(0, SeekOrigin.Current));
             }
 
-            Assert.Equal(expected, actual.ToArray());
+            AssertExtensions.SequenceEqual(expected, actual.ToArray());
         }
 
         [Theory]
@@ -993,7 +990,7 @@ namespace System.IO.Tests
             stream.Position = 0;
             byte[] actual = (byte[])expected.Clone();
             Assert.Equal(actual.Length, await ReadAllAsync(ReadWriteMode.AsyncMemory, stream, actual, 0, actual.Length));
-            Assert.Equal(expected, actual);
+            AssertExtensions.SequenceEqual(expected, actual);
         }
 
         [Theory]
@@ -1035,7 +1032,7 @@ namespace System.IO.Tests
                 Assert.Equal(expected.Length, stream.Position);
             }
 
-            Assert.Equal(expected.AsSpan(position).ToArray(), destination.ToArray());
+            AssertExtensions.SequenceEqual(expected.AsSpan(position).ToArray(), destination.ToArray());
         }
 
         public static IEnumerable<object[]> CopyTo_CopiesAllDataFromRightPosition_Success_MemberData()
@@ -1076,7 +1073,7 @@ namespace System.IO.Tests
             for (int i = 0; i < Copies; i++)
             {
                 int bytesRead = await ReadAllAsync(mode, stream, actual, 0, actual.Length);
-                Assert.Equal(expected, actual);
+                AssertExtensions.SequenceEqual(expected, actual);
                 Array.Clear(actual, 0, actual.Length);
             }
         }
@@ -1624,15 +1621,32 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public virtual async Task ReadWriteAsync_Canceled_ThrowsOperationCanceledException()
+        public virtual async Task ReadWriteAsync_PrecanceledOperations_ThrowsCancellationException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
 
             foreach (Stream stream in streams)
             {
                 await ValidatePrecanceledOperations_ThrowsCancellationException(stream);
-                await ValidateCancelableReads_AfterInvocation_ThrowsCancellationException(stream);
             }
+        }
+
+        [Fact]
+        public virtual async Task ReadAsync_CancelPendingTask_ThrowsCancellationException()
+        {
+            using StreamPair streams = await CreateConnectedStreamsAsync();
+            (Stream writeable, Stream readable) = GetReadWritePair(streams);
+
+            await ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(readable);
+        }
+
+        [Fact]
+        public virtual async Task ReadAsync_CancelPendingValueTask_ThrowsCancellationException()
+        {
+            using StreamPair streams = await CreateConnectedStreamsAsync();
+            (Stream writeable, Stream readable) = GetReadWritePair(streams);
+
+            await ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(readable);
         }
 
         [Fact]
@@ -1672,7 +1686,7 @@ namespace System.IO.Tests
                     readerBytes[i] = (byte)r;
                 }
 
-                Assert.Equal(writerBytes, readerBytes);
+                AssertExtensions.SequenceEqual(writerBytes, readerBytes);
 
                 await writes;
 
@@ -1746,7 +1760,7 @@ namespace System.IO.Tests
                     }
 
                     Assert.Equal(readerBytes.Length, n);
-                    Assert.Equal(writerBytes, readerBytes);
+                    AssertExtensions.SequenceEqual(writerBytes, readerBytes);
 
                     await writes;
 
@@ -1844,6 +1858,8 @@ namespace System.IO.Tests
 
             using StreamReader reader = new StreamReader(readable);
             Assert.Equal("hello", reader.ReadToEnd());
+
+            await write;
         }
 
         [Fact]
@@ -2353,7 +2369,7 @@ namespace System.IO.Tests
             writeable.Dispose();
             await copyTask;
 
-            Assert.Equal(dataToCopy, results.ToArray());
+            AssertExtensions.SequenceEqual(dataToCopy, results.ToArray());
         }
 
         [OuterLoop("May take several seconds")]

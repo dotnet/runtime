@@ -51,7 +51,6 @@
 #include <ucontext.h>
 
 #include <mono/arch/s390x/s390x-codegen.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
@@ -109,7 +108,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	static guint8 *start;
 	static int inited = 0;
 	guint8 *code;
-	int alloc_size, pos, i;
+	int gr_offset, alloc_size, pos, i;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
 
@@ -122,10 +121,17 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
 	code = start = mono_global_codeman_reserve (512);
 
-	s390_stmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, STK_BASE, S390_CFA_OFFSET);
+	s390_stmg (code, s390_r6, s390_r15, STK_BASE, S390_REG_SAVE_OFFSET);
+	gr_offset = S390_REG_SAVE_OFFSET - S390_CFA_OFFSET;
+	for (i = s390_r6; i <= s390_r15; i++) {
+		mono_add_unwind_op_offset (unwind_ops, code, start, i, gr_offset);
+		gr_offset += sizeof(uintptr_t);
+	}
 	s390_lgr  (code, s390_r14, STK_BASE);
 	alloc_size = S390_ALIGN(S390_CALLFILTER_SIZE, S390_STACK_ALIGNMENT);
 	s390_aghi (code, STK_BASE, -alloc_size);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, alloc_size + S390_CFA_OFFSET);
 	s390_stg  (code, s390_r14, 0, STK_BASE, 0);
 
 	/*------------------------------------------------------*/
@@ -304,16 +310,23 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 				       gboolean rethrow, gboolean aot, gboolean preserve_ips)
 {
 	guint8 *code, *start;
-	int alloc_size, pos, i;
+	int gr_offset, alloc_size, pos, i;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
 
 	code = start = mono_global_codeman_reserve(size);
 
-	s390_stmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, STK_BASE, S390_CFA_OFFSET);
+	s390_stmg (code, s390_r6, s390_r15, STK_BASE, S390_REG_SAVE_OFFSET);
+	gr_offset = S390_REG_SAVE_OFFSET - S390_CFA_OFFSET;
+	for (i = s390_r6; i <= s390_r15; i++) {
+		mono_add_unwind_op_offset (unwind_ops, code, start, i, gr_offset);
+		gr_offset += sizeof(uintptr_t);
+	}
 	alloc_size = S390_ALIGN(S390_THROWSTACK_SIZE, S390_STACK_ALIGNMENT);
 	s390_lgr  (code, s390_r14, STK_BASE);
 	s390_aghi (code, STK_BASE, -alloc_size);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, alloc_size + S390_CFA_OFFSET);
 	s390_stg  (code, s390_r14, 0, STK_BASE, 0);
 	s390_lgr  (code, s390_r3, s390_r2);
 	if (corlib) {
@@ -489,7 +502,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 /*------------------------------------------------------------------*/
 
 gboolean
-mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls, 
 			 MonoJitInfo *ji, MonoContext *ctx, 
 			 MonoContext *new_ctx, MonoLMF **lmf,
 			 host_mgreg_t **save_locations,
@@ -533,12 +546,13 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		memcpy (&new_ctx->uc_mcontext.gregs, &regs, sizeof(regs));
 		MONO_CONTEXT_SET_IP(new_ctx, regs[14] - 2);
-		MONO_CONTEXT_SET_BP(new_ctx, cfa);
+		MONO_CONTEXT_SET_BP(new_ctx, regs[15]);
+		MONO_CONTEXT_SET_SP(new_ctx, regs[15]);
 	
 		return TRUE;
 	} else if (*lmf) {
 
-		ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL);
+		ji = mini_jit_info_table_find ((gpointer)(*lmf)->eip);
 		if (!ji) {
 			if (!(*lmf)->method)
 				return FALSE;
@@ -567,7 +581,7 @@ static void
 altstack_handle_and_restore (MonoContext *ctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer obj, guint32 flags)
 {
 	MonoContext mctx;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
+	MonoJitInfo *ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (ctx));
 	gboolean stack_ovf = (flags & 1) != 0;
 	gboolean nullref = (flags & 2) != 0;
 
@@ -615,7 +629,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 		nullref = FALSE;
 
 	if (stack_ovf)
-		exc = mono_domain_get ()->stack_overflow_ex;
+		exc = mini_get_stack_overflow_ex ();
 
 	/*
 	 * Setup the call frame on the application stack so that control is
@@ -624,7 +638,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	 * requires allocation on the stack, as this wouldn't be encoded in unwind
 	 * information for the caller frame.
 	 */
-	sp = (uintptr_t) (UCONTEXT_SP(uc));
+	sp = (uintptr_t) (UCONTEXT_REG_Rn(uc, 15));
 	sp = sp - S390_MINIMAL_STACK_SIZE;
 
 	mono_sigctx_to_monoctx (uc, uc_copy);

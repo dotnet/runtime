@@ -723,7 +723,7 @@ namespace System.Data.Common
             System.Data.OleDb.OleDbHResult GetReferencedRowset(
                 [In] IntPtr iOrdinal,
                 [In] ref Guid riid,
-                [Out, MarshalAs(UnmanagedType.Interface)] out IRowset ppRowset);
+                [Out, MarshalAs(UnmanagedType.Interface)] out IRowset? ppRowset);
 
             //[PreserveSig]
             //int GetSpecification(/*deleted parameter signature*/);

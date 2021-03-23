@@ -16,7 +16,7 @@ static const int32_t kErrorSeeError = -2;
 static const int32_t kErrorUnknownAlgorithm = -3;
 static const int32_t kErrorUnknownState = -4;
 
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Export a key object.
 
@@ -60,7 +60,7 @@ For ECC the value should not be used.
 */
 PALEXPORT uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey);
 
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Export a key and re-import it to the NULL keychain.
 

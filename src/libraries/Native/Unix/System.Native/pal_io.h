@@ -35,6 +35,12 @@ typedef struct
     uint32_t UserFlags; // user defined flags
 } FileStatus;
 
+typedef struct
+{
+    size_t ResidentSetSize;
+    // add more fields when needed.
+} ProcessStatus;
+
 /* Provide consistent access to nanosecond fields, if they exist. */
 /* Seconds are always available through st_atime, st_mtime, st_ctime. */
 
@@ -710,3 +716,10 @@ PALEXPORT int32_t SystemNative_LChflags(const char* path, uint32_t flags);
  * Returns true (non-zero) if supported, false (zero) if not.
  */
 PALEXPORT int32_t SystemNative_LChflagsCanSetHiddenFlag(void);
+
+/**
+ * Reads the psinfo_t struct and converts into ProcessStatus.
+ *
+ * Returns 1 if the process status was read; otherwise, 0.
+ */
+PALEXPORT int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus);

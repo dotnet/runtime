@@ -50,14 +50,14 @@ check_prereqs()
 
     if [[ "$__HostOS" == "OSX" ]]; then
         # Check presence of pkg-config on the path
-        command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+        command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
 
         if ! pkg-config openssl ; then
             # We export the proper PKG_CONFIG_PATH where openssl was installed by Homebrew
             # It's important to _export_ it since build-commons.sh is sourced by other scripts such as build-native.sh
-            export PKG_CONFIG_PATH=/usr/local/opt/openssl@1.1/lib/pkgconfig:/usr/local/opt/openssl/lib/pkgconfig
+            export PKG_CONFIG_PATH=$(brew --prefix)/opt/openssl@1.1/lib/pkgconfig:$(brew --prefix)/opt/openssl/lib/pkgconfig
             # We try again with the PKG_CONFIG_PATH in place, if pkg-config still can't find OpenSSL, exit with an error, cmake won't find OpenSSL either
-            pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+            pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
         fi
     fi
 
@@ -71,15 +71,14 @@ build_native()
     targetOS="$1"
     platformArch="$2"
     cmakeDir="$3"
-    tryrunDir="$4"
-    intermediatesDir="$5"
-    cmakeArgs="$6"
-    message="$7"
+    intermediatesDir="$4"
+    cmakeArgs="$5"
+    message="$6"
 
     # All set to commence the build
     echo "Commencing build of \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
 
-    if [[ "$targetOS" == OSX ]]; then
+    if [[ "$targetOS" == OSX || "$targetOS" == MacCatalyst ]]; then
         if [[ "$platformArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
         elif [[ "$platformArch" == arm64 ]]; then
@@ -88,6 +87,10 @@ build_native()
             echo "Error: Unknown OSX architecture $platformArch."
             exit 1
         fi
+    fi
+
+    if [[ "$targetOS" == MacCatalyst ]]; then
+        cmakeArgs="-DCLR_CMAKE_TARGET_MACCATALYST=1 $cmakeArgs"
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then
@@ -146,9 +149,7 @@ EOF
             scan_build=scan-build
         fi
 
-        engNativeDir="$__RepoRootDir/eng/native"
-        cmakeArgs="-DCLR_ENG_NATIVE_DIR=\"$engNativeDir\" $cmakeArgs"
-        nextCommand="\"$engNativeDir/gen-buildsys.sh\" \"$cmakeDir\" \"$tryrunDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $cmakeArgs"
+        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $cmakeArgs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -265,7 +266,8 @@ __msbuildonunsupportedplatform=0
 # processors available to a single process.
 platform="$(uname)"
 if [[ "$platform" == "FreeBSD" ]]; then
-  __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
+  output=("$(sysctl hw.ncpu)")
+  __NumProc="$((output[1] + 1))"
 elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
   __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 elif [[ "$platform" == "Darwin" ]]; then
@@ -279,7 +281,7 @@ while :; do
         break
     fi
 
-    lowerI="$(echo "$1" | awk '{print tolower($0)}')"
+    lowerI="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
         -\?|-h|--help)
             usage
@@ -455,6 +457,22 @@ fi
 
 if [[ "$__PortableBuild" == 0 ]]; then
     __CommonMSBuildArgs="$__CommonMSBuildArgs /p:PortableBuild=false"
+fi
+
+if [[ "$__BuildArch" == wasm ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == iOS ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == tvOS ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == Android ]]; then
+    # nothing to do here
+    true
+else
+    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
 fi
 
 # Configure environment if we are doing a cross compile.

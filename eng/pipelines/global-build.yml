@@ -7,7 +7,7 @@ trigger: none
 pr:
   branches:
     include:
-    - master
+    - main
     - release/*.*
   paths:
     include:
@@ -29,11 +29,6 @@ pr:
     - THIRD-PARTY-NOTICES.TXT
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
-
 #
 # Build with Release config and Debug runtimeConfiguration
 #

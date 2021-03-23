@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.Serialization;
 using System.Diagnostics;
-
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
 
 namespace System.Xml
 {
@@ -177,7 +177,7 @@ namespace System.Xml
             return GetString().CompareTo(that.GetString());
         }
 
-        public bool Equals(PrefixHandle? prefix2)
+        public bool Equals([NotNullWhen(true)] PrefixHandle? prefix2)
         {
             if (prefix2 is null)
                 return false;
@@ -234,7 +234,7 @@ namespace System.Xml
         {
             return !prefix1.Equals(prefix2);
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return Equals(obj as PrefixHandle);
         }

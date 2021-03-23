@@ -31,7 +31,8 @@ namespace System.Net
                 {
                     Interop.Winsock.EnsureInitialized();
 
-                    IntPtr libHandle = NativeLibrary.Load(Interop.Libraries.Ws2_32, typeof(NameResolutionPal).Assembly, null);
+                    IntPtr libHandle = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Ws2_32, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
+                    Debug.Assert(libHandle != IntPtr.Zero);
 
                     // We can't just check that 'GetAddrInfoEx' exists, because it existed before supporting overlapped.
                     // The existence of 'GetAddrInfoExCancel' indicates that overlapped is supported.
@@ -133,7 +134,7 @@ namespace System.Net
             return new string((sbyte*)buffer);
         }
 
-        public static unsafe Task GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken)
+        public static unsafe Task? GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken)
         {
             Interop.Winsock.EnsureInitialized();
 
@@ -163,6 +164,16 @@ namespace System.Net
             if (errorCode == SocketError.IOPending)
             {
                 state.RegisterForCancellation(cancellationToken);
+            }
+            else if (errorCode == SocketError.TryAgain || (int)errorCode == Interop.Winsock.WSA_E_CANCELLED)
+            {
+                // WSATRY_AGAIN indicates possible problem with reachability according to docs.
+                // However, if servers are really unreachable, we would still get IOPending here
+                // and final result would be posted via overlapped IO.
+                // synchronous failure here may signal issue when GetAddrInfoExW does not work from
+                // impersonated context. Windows 8 and Server 2012 fail for same reason with different errorCode.
+                GetAddrInfoExContext.FreeContext(context);
+                return null;
             }
             else
             {
@@ -206,7 +217,6 @@ namespace System.Net
                     Exception ex = (errorCode == (SocketError)Interop.Winsock.WSA_E_CANCELLED && cancellationToken.IsCancellationRequested)
                         ? (Exception)new OperationCanceledException(cancellationToken)
                         : new SocketException((int)errorCode);
-
                     state.SetResult(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
                 }
             }
@@ -412,7 +422,7 @@ namespace System.Net
                             }
                         }
 
-                        if (cancelResult != 0 && cancelResult != Interop.Winsock.WSA_INVALID_HANDLE && NetEventSource.IsEnabled)
+                        if (cancelResult != 0 && cancelResult != Interop.Winsock.WSA_INVALID_HANDLE && NetEventSource.Log.IsEnabled())
                         {
                             NetEventSource.Info(@this, $"GetAddrInfoExCancel returned error {cancelResult}");
                         }

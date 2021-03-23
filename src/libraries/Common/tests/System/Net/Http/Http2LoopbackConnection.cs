@@ -540,7 +540,7 @@ namespace System.Net.Test.Common
                         byte[] newBuffer = new byte[body.Length + dataFrame.Data.Length];
 
                         body.CopyTo(newBuffer, 0);
-                        dataFrame.Data.Span.CopyTo(newBuffer.AsSpan().Slice(body.Length));
+                        dataFrame.Data.Span.CopyTo(newBuffer.AsSpan(body.Length));
                         body= newBuffer;
                     }
                 }
@@ -764,7 +764,7 @@ namespace System.Net.Test.Common
                 flags |= FrameFlags.EndStream;
             }
 
-            HeadersFrame headersFrame = new HeadersFrame(headerBlock.AsMemory().Slice(0, bytesGenerated), flags, 0, 0, 0, streamId);
+            HeadersFrame headersFrame = new HeadersFrame(headerBlock.AsMemory(0, bytesGenerated), flags, 0, 0, 0, streamId);
             await WriteFrameAsync(headersFrame).ConfigureAwait(false);
         }
 

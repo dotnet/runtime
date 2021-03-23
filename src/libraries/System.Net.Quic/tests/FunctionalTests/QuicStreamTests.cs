@@ -249,7 +249,7 @@ namespace System.Net.Quic.Tests
                         int totalBytesRead = 0;
                         while (totalBytesRead < data.Length)
                         {
-                            int bytesRead = await stream.ReadAsync(buffer.AsMemory().Slice(totalBytesRead));
+                            int bytesRead = await stream.ReadAsync(buffer.AsMemory(totalBytesRead));
                             Assert.NotEqual(0, bytesRead);
                             totalBytesRead += bytesRead;
                         }
@@ -288,7 +288,7 @@ namespace System.Net.Quic.Tests
                         int totalBytesRead = 0;
                         while (totalBytesRead < data.Length)
                         {
-                            int bytesRead = await stream.ReadAsync(buffer.AsMemory().Slice(totalBytesRead));
+                            int bytesRead = await stream.ReadAsync(buffer.AsMemory(totalBytesRead));
                             Assert.NotEqual(0, bytesRead);
                             totalBytesRead += bytesRead;
                         }
@@ -304,8 +304,6 @@ namespace System.Net.Quic.Tests
                 await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
             }
         }
-
-
 
         [Fact]
         public async Task TestStreams()

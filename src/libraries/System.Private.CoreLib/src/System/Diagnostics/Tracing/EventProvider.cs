@@ -82,7 +82,7 @@ namespace System.Diagnostics.Tracing
         private byte m_level;                            // Tracing Level
         private long m_anyKeywordMask;                   // Trace Enable Flags
         private long m_allKeywordMask;                   // Match all keyword
-        private List<SessionInfo>? m_liveSessions;       // current live sessions (Tuple<sessionIdBit, etwSessionId>)
+        private List<SessionInfo>? m_liveSessions;       // current live sessions (KeyValuePair<sessionIdBit, etwSessionId>)
         private bool m_enabled;                          // Enabled flag from Trace callback
         private string? m_providerName;                  // Control name
         private Guid m_providerId;                       // Control Guid
@@ -256,7 +256,7 @@ namespace System.Diagnostics.Tracing
                     m_anyKeywordMask = anyKeyword;
                     m_allKeywordMask = allKeyword;
 
-                    List<Tuple<SessionInfo, bool>> sessionsChanged = GetSessions();
+                    List<KeyValuePair<SessionInfo, bool>> sessionsChanged = GetSessions();
 
                     // The GetSessions() logic was here to support the idea that different ETW sessions
                     // could have different user-defined filters.   (I believe it is currently broken but that is another matter.)
@@ -268,13 +268,13 @@ namespace System.Diagnostics.Tracing
                     // All this session based logic should be reviewed and likely removed, but that is a larger
                     // change that needs more careful staging.
                     if (sessionsChanged.Count == 0)
-                        sessionsChanged.Add(new Tuple<SessionInfo, bool>(new SessionInfo(0, 0), true));
+                        sessionsChanged.Add(new KeyValuePair<SessionInfo, bool>(new SessionInfo(0, 0), true));
 
-                    foreach (Tuple<SessionInfo, bool> session in sessionsChanged)
+                    foreach (KeyValuePair<SessionInfo, bool> session in sessionsChanged)
                     {
-                        int sessionChanged = session.Item1.sessionIdBit;
-                        int etwSessionId = session.Item1.etwSessionId;
-                        bool bEnabling = session.Item2;
+                        int sessionChanged = session.Key.sessionIdBit;
+                        int etwSessionId = session.Key.etwSessionId;
+                        bool bEnabling = session.Value;
 
                         skipFinalOnControllerCommand = true;
                         args = null;                                // reinitialize args for every session...
@@ -374,7 +374,7 @@ namespace System.Diagnostics.Tracing
         /// ETW session that was added or remove, and the bool specifies whether the
         /// session was added or whether it was removed from the set.
         /// </summary>
-        private List<Tuple<SessionInfo, bool>> GetSessions()
+        private List<KeyValuePair<SessionInfo, bool>> GetSessions()
         {
             List<SessionInfo>? liveSessionList = null;
 
@@ -383,7 +383,7 @@ namespace System.Diagnostics.Tracing
                     GetSessionInfoCallback(etwSessionId, matchAllKeywords, ref sessionList),
                 ref liveSessionList);
 
-            List<Tuple<SessionInfo, bool>> changedSessionList = new List<Tuple<SessionInfo, bool>>();
+            List<KeyValuePair<SessionInfo, bool>> changedSessionList = new List<KeyValuePair<SessionInfo, bool>>();
 
             // first look for sessions that have gone away (or have changed)
             // (present in the m_liveSessions but not in the new liveSessionList)
@@ -394,7 +394,7 @@ namespace System.Diagnostics.Tracing
                     int idx;
                     if ((idx = IndexOfSessionInList(liveSessionList, s.etwSessionId)) < 0 ||
                         (liveSessionList![idx].sessionIdBit != s.sessionIdBit))
-                        changedSessionList.Add(Tuple.Create(s, false));
+                        changedSessionList.Add(new KeyValuePair<SessionInfo, bool>(s, false));
                 }
             }
             // next look for sessions that were created since the last callback  (or have changed)
@@ -406,7 +406,7 @@ namespace System.Diagnostics.Tracing
                     int idx;
                     if ((idx = IndexOfSessionInList(m_liveSessions, s.etwSessionId)) < 0 ||
                         (m_liveSessions![idx].sessionIdBit != s.sessionIdBit))
-                        changedSessionList.Add(Tuple.Create(s, true));
+                        changedSessionList.Add(new KeyValuePair<SessionInfo, bool>(s, true));
                 }
             }
 
@@ -1235,7 +1235,7 @@ namespace System.Diagnostics.Tracing
 
         internal unsafe int SetInformation(
             Interop.Advapi32.EVENT_INFO_CLASS eventInfoClass,
-            IntPtr data,
+            void* data,
             uint dataSize)
         {
             int status = Interop.Errors.ERROR_NOT_SUPPORTED;
@@ -1247,8 +1247,8 @@ namespace System.Diagnostics.Tracing
                     status = Interop.Advapi32.EventSetInformation(
                         m_regHandle,
                         eventInfoClass,
-                        (void*)data,
-                        (int)dataSize);
+                        data,
+                        dataSize);
                 }
                 catch (TypeLoadException)
                 {

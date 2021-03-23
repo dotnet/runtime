@@ -135,7 +135,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 }
 
                 ComLibraryFixture = new TestProjectFixture("ComLibrary", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
 
                 // Create a .clsidmap from the assembly
@@ -155,7 +155,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     ComLibraryFixture.TestProject.BuiltApp.Location,
                     $"{ ComLibraryFixture.TestProject.AssemblyName }.comhost.dll");
                 ComHost.Create(
-                    Path.Combine(RepoDirectories.CorehostPackages, "comhost.dll"),
+                    Path.Combine(RepoDirectories.HostArtifacts, "comhost.dll"),
                     ComHostPath,
                     clsidMapPath);
             }

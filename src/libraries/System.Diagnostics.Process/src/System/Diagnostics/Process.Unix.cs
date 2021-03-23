@@ -5,7 +5,6 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Net.Sockets;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -16,8 +15,6 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        private static readonly UTF8Encoding s_utf8NoBom =
-            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
@@ -449,20 +446,20 @@ namespace System.Diagnostics
             {
                 Debug.Assert(stdinFd >= 0);
                 _standardInput = new StreamWriter(OpenStream(stdinFd, FileAccess.Write),
-                    startInfo.StandardInputEncoding ?? s_utf8NoBom, StreamBufferSize)
+                    startInfo.StandardInputEncoding ?? Encoding.Default, StreamBufferSize)
                 { AutoFlush = true };
             }
             if (startInfo.RedirectStandardOutput)
             {
                 Debug.Assert(stdoutFd >= 0);
                 _standardOutput = new StreamReader(OpenStream(stdoutFd, FileAccess.Read),
-                    startInfo.StandardOutputEncoding ?? s_utf8NoBom, true, StreamBufferSize);
+                    startInfo.StandardOutputEncoding ?? Encoding.Default, true, StreamBufferSize);
             }
             if (startInfo.RedirectStandardError)
             {
                 Debug.Assert(stderrFd >= 0);
                 _standardError = new StreamReader(OpenStream(stderrFd, FileAccess.Read),
-                    startInfo.StandardErrorEncoding ?? s_utf8NoBom, true, StreamBufferSize);
+                    startInfo.StandardErrorEncoding ?? Encoding.Default, true, StreamBufferSize);
             }
 
             return true;
@@ -556,7 +553,7 @@ namespace System.Diagnostics
         private static string[] ParseArgv(ProcessStartInfo psi, string? resolvedExe = null, bool ignoreArguments = false)
         {
             if (string.IsNullOrEmpty(resolvedExe) &&
-                (ignoreArguments || (string.IsNullOrEmpty(psi.Arguments) && psi.ArgumentList.Count == 0)))
+                (ignoreArguments || (string.IsNullOrEmpty(psi.Arguments) && !psi.HasArgumentList)))
             {
                 return new string[] { psi.FileName };
             }
@@ -579,7 +576,7 @@ namespace System.Diagnostics
                 {
                     ParseArgumentsIntoList(psi.Arguments, argvList);
                 }
-                else
+                else if (psi.HasArgumentList)
                 {
                     argvList.AddRange(psi.ArgumentList);
                 }
@@ -754,31 +751,16 @@ namespace System.Diagnostics
             return TimeSpan.FromSeconds(ticks / (double)ticksPerSecond);
         }
 
-        /// <summary>Opens a stream around the specified socket file descriptor and with the specified access.</summary>
-        /// <param name="fd">The socket file descriptor.</param>
+        /// <summary>Opens a stream around the specified file descriptor and with the specified access.</summary>
+        /// <param name="fd">The file descriptor.</param>
         /// <param name="access">The access mode.</param>
         /// <returns>The opened stream.</returns>
-        private static Stream OpenStream(int fd, FileAccess access)
+        private static FileStream OpenStream(int fd, FileAccess access)
         {
             Debug.Assert(fd >= 0);
-            var socketHandle = new SafeSocketHandle((IntPtr)fd, ownsHandle: true);
-            var socket = new Socket(socketHandle);
-
-            if (!socket.Connected)
-            {
-                // WSL1 workaround -- due to issues with sockets syscalls
-                // socket pairs fd's are erroneously inferred as not connected.
-                // Fall back to using FileStream instead.
-
-                GC.SuppressFinalize(socket);
-                GC.SuppressFinalize(socketHandle);
-
-                return new FileStream(
-                    new SafeFileHandle((IntPtr)fd, ownsHandle: true),
-                    access, StreamBufferSize, isAsync: false);
-            }
-
-            return new NetworkStream(socket, access, ownsSocket: true);
+            return new FileStream(
+                new SafeFileHandle((IntPtr)fd, ownsHandle: true),
+                access, StreamBufferSize, isAsync: false);
         }
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>

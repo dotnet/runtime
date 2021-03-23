@@ -397,7 +397,6 @@ namespace System.Net.Test.Common
             private const int BufferSize = 4000;
             private Socket _socket;
             private Stream _stream;
-            private StreamWriter _writer;
             private byte[] _readBuffer;
             private int _readStart;
             private int _readEnd;
@@ -409,8 +408,6 @@ namespace System.Net.Test.Common
                 _socket = socket;
                 _stream = stream;
 
-                _writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true };
-
                 _readBuffer = new byte[BufferSize];
                 _readStart = 0;
                 _readEnd = 0;
@@ -418,7 +415,6 @@ namespace System.Net.Test.Common
 
             public Socket Socket => _socket;
             public Stream Stream => _stream;
-            public StreamWriter Writer => _writer;
 
             public static async Task<Connection> CreateAsync(Socket socket, Stream stream, Options httpOptions)
             {
@@ -620,7 +616,6 @@ namespace System.Net.Test.Common
                 }
                 catch (Exception) { }
 
-                _writer.Dispose();
                 _stream.Dispose();
                 _socket?.Dispose();
             }
@@ -673,9 +668,20 @@ namespace System.Net.Test.Common
                 return lines;
             }
 
+            public async Task WriteStringAsync(string s)
+            {
+                byte[] bytes = Encoding.ASCII.GetBytes(s);
+                await _stream.WriteAsync(bytes);
+            }
+
             public async Task SendResponseAsync(string response)
             {
-                await _writer.WriteAsync(response).ConfigureAwait(false);
+                await WriteStringAsync(response);
+            }
+
+            public async Task SendResponseAsync(byte[] response)
+            {
+                await _stream.WriteAsync(response);
             }
 
             public async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null)
@@ -686,7 +692,7 @@ namespace System.Net.Test.Common
             public async Task<List<string>> ReadRequestHeaderAndSendCustomResponseAsync(string response)
             {
                 List<string> lines = await ReadRequestHeaderAsync().ConfigureAwait(false);
-                await _writer.WriteAsync(response).ConfigureAwait(false);
+                await WriteStringAsync(response);
                 return lines;
             }
 
@@ -892,7 +898,7 @@ namespace System.Net.Test.Common
 
             public override async Task SendResponseBodyAsync(byte[] body, bool isFinal = true, int requestId = 0)
             {
-                await SendResponseAsync(Encoding.UTF8.GetString(body)).ConfigureAwait(false);
+                await SendResponseAsync(body).ConfigureAwait(false);
             }
 
             public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")

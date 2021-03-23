@@ -43,14 +43,14 @@
   .ver 1:0:0:0
 }
 .module more_tailcalls.dll
-// MVID: {2945C9C4-EED0-49EA-8A87-27475136401B}
+// MVID: {81332D24-430E-4E25-88E2-383124EB3597}
 .custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
 .subsystem 0x0003       // WINDOWS_CUI
 .corflags 0x00000001    //  ILONLY
-// Image base: 0x00000273609B0000
+// Image base: 0x000001F273BC0000
 
 
 // =============== CLASS MEMBERS DECLARATION ===================
@@ -258,6 +258,68 @@
 .class private auto ansi Program
        extends [System.Runtime]System.Object
 {
+  .class auto ansi nested private beforefieldinit GenericInstance`1<T>
+         extends [System.Runtime]System.Object
+  {
+    .field private class Program/GenericInstanceFactory factory
+    .method public hidebysig specialname rtspecialname 
+            instance void  .ctor(class Program/GenericInstanceFactory factory) cil managed
+    {
+      // Code size       14 (0xe)
+      .maxstack  8
+      IL_0000:  ldarg.0
+      IL_0001:  call       instance void [System.Runtime]System.Object::.ctor()
+      IL_0006:  ldarg.0
+      IL_0007:  ldarg.1
+      IL_0008:  stfld      class Program/GenericInstanceFactory class Program/GenericInstance`1<!T>::factory
+      IL_000d:  ret
+    } // end of method GenericInstance`1::.ctor
+
+    .method public hidebysig newslot virtual 
+            instance int32  NumberOfInstances() cil managed noinlining
+    {
+      // Code size       12 (0xc)
+      .maxstack  8
+      IL_0000:  ldarg.0
+      IL_0001:  ldfld      class Program/GenericInstanceFactory class Program/GenericInstance`1<!T>::factory
+      IL_0006:  ldfld      int32 Program/GenericInstanceFactory::counter
+      IL_000b:  ret
+    } // end of method GenericInstance`1::NumberOfInstances
+
+  } // end of class GenericInstance`1
+
+  .class auto ansi nested private beforefieldinit GenericInstanceFactory
+         extends [System.Runtime]System.Object
+  {
+    .field public int32 counter
+    .method public hidebysig instance class Program/GenericInstance`1<string> 
+            CreateInstance() cil managed noinlining
+    {
+      // Code size       21 (0x15)
+      .maxstack  8
+      IL_0000:  ldarg.0
+      IL_0001:  ldarg.0
+      IL_0002:  ldfld      int32 Program/GenericInstanceFactory::counter
+      IL_0007:  ldc.i4.1
+      IL_0008:  add
+      IL_0009:  stfld      int32 Program/GenericInstanceFactory::counter
+      IL_000e:  ldarg.0
+      IL_000f:  newobj     instance void class Program/GenericInstance`1<string>::.ctor(class Program/GenericInstanceFactory)
+      IL_0014:  ret
+    } // end of method GenericInstanceFactory::CreateInstance
+
+    .method public hidebysig specialname rtspecialname 
+            instance void  .ctor() cil managed
+    {
+      // Code size       7 (0x7)
+      .maxstack  8
+      IL_0000:  ldarg.0
+      IL_0001:  call       instance void [System.Runtime]System.Object::.ctor()
+      IL_0006:  ret
+    } // end of method GenericInstanceFactory::.ctor
+
+  } // end of class GenericInstanceFactory
+
   .class auto ansi sealed nested private beforefieldinit '<>c__DisplayClass7_0'
          extends [System.Runtime]System.Object
   {
@@ -348,7 +410,7 @@
       IL_0008:  stfld      class [System.Runtime]System.Func`3<int32,int32,!0> class Program/'<>c__DisplayClass7_1`1'<!!T>::f
       IL_000d:  ldarg.0
       IL_000e:  ldloc.0
-      IL_000f:  ldftn      instance !0 class Program/'<>c__DisplayClass7_1`1'<!!T>::'<Main>b__30'()
+      IL_000f:  ldftn      instance !0 class Program/'<>c__DisplayClass7_1`1'<!!T>::'<Main>b__31'()
       IL_0015:  newobj     instance void class [System.Runtime]System.Func`1<!!T>::.ctor(object,
                                                                                          native int)
       IL_001a:  ldarg.2
@@ -572,7 +634,7 @@
     } // end of method '<>c__DisplayClass7_1`1'::.ctor
 
     .method assembly hidebysig instance !T 
-            '<Main>b__30'() cil managed
+            '<Main>b__31'() cil managed
     {
       // Code size       18 (0x12)
       .maxstack  8
@@ -583,7 +645,7 @@
       IL_000c:  callvirt   instance !2 class [System.Runtime]System.Func`3<int32,int32,!T>::Invoke(!0,
                                                                                                    !1)
       IL_0011:  ret
-    } // end of method '<>c__DisplayClass7_1`1'::'<Main>b__30'
+    } // end of method '<>c__DisplayClass7_1`1'::'<Main>b__31'
 
   } // end of class '<>c__DisplayClass7_1`1'
 
@@ -608,6 +670,7 @@
     .field public static class [System.Runtime]System.Func`1<string> '<>9__7_16'
     .field public static class [System.Runtime]System.Func`1<string> '<>9__7_17'
     .field public static class [System.Runtime]System.Func`1<string> '<>9__7_18'
+    .field public static class [System.Runtime]System.Func`1<int32> '<>9__7_30'
     .method private hidebysig specialname rtspecialname static 
             void  .cctor() cil managed
     {
@@ -821,6 +884,15 @@
       IL_000f:  ret
     } // end of method '<>c'::'<Main>b__7_18'
 
+    .method assembly hidebysig instance int32 
+            '<Main>b__7_30'() cil managed
+    {
+      // Code size       6 (0x6)
+      .maxstack  8
+      IL_0000:  call       int32 Program::VirtCallThisHasSideEffects()
+      IL_0005:  ret
+    } // end of method '<>c'::'<Main>b__7_30'
+
   } // end of class '<>c'
 
   .field private static initonly native int s_calcStaticCalli
@@ -878,7 +950,7 @@
           Main() cil managed
   {
     .entrypoint
-    // Code size       1792 (0x700)
+    // Code size       1835 (0x72b)
     .maxstack  4
     .locals init (class Program/'<>c__DisplayClass7_0' V_0,
              int32 V_1,
@@ -1571,24 +1643,41 @@
                                                                                                 !!0,
                                                                                                 string)
     IL_06d5:  ldloc.0
-    IL_06d6:  ldfld      bool Program/'<>c__DisplayClass7_0'::result
-    IL_06db:  brfalse.s  IL_06e9
+    IL_06d6:  ldsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__7_30'
+    IL_06db:  dup
+    IL_06dc:  brtrue.s   IL_06f5
 
-    IL_06dd:  ldstr      "All tailcall-via-help succeeded"
-    IL_06e2:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_06e7:  br.s       IL_06f3
+    IL_06de:  pop
+    IL_06df:  ldsfld     class Program/'<>c' Program/'<>c'::'<>9'
+    IL_06e4:  ldftn      instance int32 Program/'<>c'::'<Main>b__7_30'()
+    IL_06ea:  newobj     instance void class [System.Runtime]System.Func`1<int32>::.ctor(object,
+                                                                                         native int)
+    IL_06ef:  dup
+    IL_06f0:  stsfld     class [System.Runtime]System.Func`1<int32> Program/'<>c'::'<>9__7_30'
+    IL_06f5:  ldc.i4.1
+    IL_06f6:  ldstr      "Virtual call where computing \"this\" has side effects"
+    IL_06fb:  callvirt   instance void Program/'<>c__DisplayClass7_0'::'<Main>g__Test|0'<int32>(class [System.Runtime]System.Func`1<!!0>,
+                                                                                                !!0,
+                                                                                                string)
+    IL_0700:  ldloc.0
+    IL_0701:  ldfld      bool Program/'<>c__DisplayClass7_0'::result
+    IL_0706:  brfalse.s  IL_0714
 
-    IL_06e9:  ldstr      "One or more failures in tailcall-via-help test"
-    IL_06ee:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_06f3:  ldloc.0
-    IL_06f4:  ldfld      bool Program/'<>c__DisplayClass7_0'::result
-    IL_06f9:  brtrue.s   IL_06fd
+    IL_0708:  ldstr      "All tailcall-via-help succeeded"
+    IL_070d:  call       void [System.Console]System.Console::WriteLine(string)
+    IL_0712:  br.s       IL_071e
 
-    IL_06fb:  ldc.i4.1
-    IL_06fc:  ret
+    IL_0714:  ldstr      "One or more failures in tailcall-via-help test"
+    IL_0719:  call       void [System.Console]System.Console::WriteLine(string)
+    IL_071e:  ldloc.0
+    IL_071f:  ldfld      bool Program/'<>c__DisplayClass7_0'::result
+    IL_0724:  brtrue.s   IL_0728
 
-    IL_06fd:  ldc.i4.s   100
-    IL_06ff:  ret
+    IL_0726:  ldc.i4.1
+    IL_0727:  ret
+
+    IL_0728:  ldc.i4.s   100
+    IL_072a:  ret
   } // end of method Program::Main
 
   .method public hidebysig static void  Calc(int32& x,
@@ -2751,6 +2840,21 @@
     IL_001e:  ret
   } // end of method Program::InstantiatingStub1Other
 
+  .method private hidebysig static int32 
+          VirtCallThisHasSideEffects() cil managed noinlining
+  {
+    // Code size       26 (0x1a)
+    .maxstack  1
+    IL_0000:  ldc.i4     0x3e8
+    IL_0005:  localloc
+    IL_0007:  pop
+    IL_0008:  newobj     instance void Program/GenericInstanceFactory::.ctor()
+    IL_000d:  call       instance class Program/GenericInstance`1<string> Program/GenericInstanceFactory::CreateInstance()
+    IL_0012:  tail.
+    IL_0014:  callvirt   instance int32 class Program/GenericInstance`1<string>::NumberOfInstances()
+    IL_0019:  ret
+  } // end of method Program::VirtCallThisHasSideEffects
+
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
   {
@@ -3526,7 +3630,8 @@
     IL_0006:  ret
   } // end of method ClassImpl::.ctor
 
-  .property instance class BaseClass Other()
+  .property instance callconv(8) class BaseClass
+          Other()
   {
     .get instance class BaseClass ClassImpl::get_Other()
     .set instance void ClassImpl::set_Other(class BaseClass)
@@ -3754,7 +3859,8 @@
     IL_0006:  ret
   } // end of method InterfaceImpl::.ctor
 
-  .property instance class IInterface Other()
+  .property instance callconv(8) class IInterface
+          Other()
   {
     .get instance class IInterface InterfaceImpl::get_Other()
     .set instance void InterfaceImpl::set_Other(class IInterface)

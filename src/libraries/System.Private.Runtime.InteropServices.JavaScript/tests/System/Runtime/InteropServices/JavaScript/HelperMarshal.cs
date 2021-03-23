@@ -60,6 +60,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             _stringResource = s;
         }
 
+        internal static string _stringResource2;
+        private static void InvokeString2(string s)
+        {
+            _stringResource2 = s;
+        }
+
+        private static string StoreArgumentAndReturnLiteral(string s)
+        {
+            _stringResource = $"s: {s} length: {s?.Length}";
+            return "1";
+        }
+
         internal static string _marshalledString;
         private static string InvokeMarshalString()
         {
@@ -85,6 +97,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static object InvokeMarshalObj()
         {
             _marshalledObject = new object();
+            return _marshalledObject;
+        }
+
+        private static object InvokeReturnMarshalObj()
+        {
             return _marshalledObject;
         }
 
@@ -115,16 +132,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static void UseAsFunction(Function func)
         {
             _jsAddAsFunctionResult = (int)func.Call(null, 20, 30);
-        }
-
-        internal static int _functionResultValue;
-        private static Func<int, int, int> CreateFunctionDelegate()
-        {
-            return (a, b) =>
-            {
-                _functionResultValue = a + b;
-                return _functionResultValue;
-            };
         }
 
         internal static int _intValue;
@@ -316,6 +323,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static int _sumValue = 0;
         private static void CallFunctionSum()
         {
+            if (_sumFunction == null)
+                throw new Exception("_sumFunction is null");
             _sumValue = (int)_sumFunction.Call(null, 3, 5);
         }
 
@@ -323,6 +332,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static void CreateFunctionApply()
         {
             var math = (JSObject)Runtime.GetGlobalObject("Math");
+            if (math == null)
+                throw new Exception("Runtime.GetGlobalObject(Math) returned null");
             _mathMinFunction = (Function)math.GetObjectProperty("min");
 
         }
@@ -330,6 +341,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static int _minValue = 0;
         private static void CallFunctionApply()
         {
+            if (_mathMinFunction == null)
+                throw new Exception("_mathMinFunction is null");
             _minValue = (int)_mathMinFunction.Apply(null, new object[] { 5, 6, 2, 3, 7 });
         }
 
@@ -345,5 +358,285 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             _blobURI = blobUri;
         }
 
+        internal static uint _uintValue;
+        private static void InvokeUInt(uint value)
+        {
+            _uintValue = value;
+        }
+
+        internal static TestEnum _enumValue;
+        private static void SetEnumValue(TestEnum value)
+        {
+            _enumValue = value;
+        }
+        private static TestEnum GetEnumValue()
+        {
+            return _enumValue;
+        }
+
+        private static UInt64 GetUInt64()
+        {
+            return UInt64.MaxValue;
+        }
+
+        internal static int _functionResultValue;
+        private static Func<int, int, int> CreateFunctionDelegate()
+        {
+            return (a, b) =>
+            {
+                _functionResultValue = a + b;
+                return _functionResultValue;
+            };
+        }
+
+        internal static int _functionActionResultValue;
+        internal static int _functionActionResultValueOfAction;
+        private static Func<int, int, Action<int,int>> CreateFunctionDelegateWithAction()
+        {
+            return (a, b) =>
+            {
+                _functionActionResultValue = a + b;
+                return (i1, i2) =>
+                {
+                    _functionActionResultValueOfAction = i1 + i2;
+                };
+            };
+        }
+
+        internal static int _actionResultValue;
+        private static Action<int,int> CreateActionDelegate()
+        {
+            return (a1, a2) =>
+            {
+                _actionResultValue = a1 + a2;
+            };
+        }
+
+        private static bool AreEqual(int a, int b)
+        {
+            return a == b;
+        }
+
+        private static string TestString1(string a)
+        {
+            return "Received: " + a;
+        }
+
+        private static void SetTestString1(string a)
+        {
+            _delMethodStringResultValue = a;
+        }
+
+        // Create a method for a delegate.
+        public static void DelegateMethod(string message)
+        {
+            _delMethodResultValue = message;
+        }
+
+        delegate void Del(string message);
+        internal static string _delMethodResultValue;
+        private static Del CreateDelegateMethod()
+        {
+            // Instantiate the delegate.
+            Del handler = DelegateMethod;
+            return handler;
+        }
+
+        delegate string Del2(string message);
+        internal static string _delMethodStringResultValue;
+        private static Del2 CreateDelegateMethodReturnString()
+        {
+            // Instantiate the delegate.
+            Del2 handler = TestString1;
+            return handler;
+        }
+
+        internal static string _delegateCallResult;
+        private static Del CreateDelegateFromAnonymousMethod_VoidString()
+        {
+            // Instantiate the delegate.
+            Del handler = delegate(string name) { _delegateCallResult = $"Notification received for: {name}"; };
+            return handler;
+        }
+
+        private static Del CreateDelegateFromLambda_VoidString()
+        {
+            // Instantiate the delegate.
+            Del handler = (string name) => { _delegateCallResult = $"Notification received for: {name}"; };
+            return handler;
+        }
+
+        public static void DelegateMethod_VoidString(string name) => _delegateCallResult = $"Notification received for: {name}";
+
+        private static Del CreateDelegateFromMethod_VoidString()
+        {
+            // Instantiate the delegate.
+            Del handler = DelegateMethod_VoidString;
+            return handler;
+        }
+
+        private static Action<string> CreateActionT_VoidString()
+            => (string name) => _delegateCallResult = $"Notification received for: {name}";
+
+        static void Hello(string s)
+        {
+            _delegateCallResult += $"  Hello, {s}!";
+        }
+
+        static void GoodMorning(string s)
+        {
+            _delegateCallResult += $"  GoodMorning, {s}!";
+        }
+
+        delegate void CustomDelStr(string s);
+        private static CustomDelStr CreateCustomMultiCastDelegate_VoidString()
+        {
+            CustomDelStr hiDel, mornDel, multiDel;
+            hiDel = Hello;
+            mornDel = GoodMorning;
+            multiDel = hiDel + mornDel;
+
+            return multiDel;
+        }
+
+        private static Action<string> CreateMultiCastAction_VoidString()
+        {
+            Action<string> hiDel, mornDel, multiDel;
+            hiDel = Hello;
+            mornDel = GoodMorning;
+            multiDel = hiDel + mornDel;
+
+            return multiDel;
+        }
+
+        internal static JSObject _funcActionBufferObjectResultValue;
+        internal static int _funcActionBufferResultLengthValue;
+        private static Func<Uint8ClampedArray, Action<Uint8ClampedArray>> CreateFunctionAcceptingUint8ClampedArray()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Uint8Array, Action<Uint8Array>> CreateFunctionAcceptingUint8Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Int8Array, Action<Int8Array>> CreateFunctionAcceptingInt8Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Uint16Array, Action<Uint16Array>> CreateFunctionAcceptingUint16Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Int16Array, Action<Int16Array>> CreateFunctionAcceptingInt16Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Uint32Array, Action<Uint32Array>> CreateFunctionAcceptingUint32Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Int32Array, Action<Int32Array>> CreateFunctionAcceptingInt32Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Float32Array, Action<Float32Array>> CreateFunctionAcceptingFloat32Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Float64Array, Action<Float64Array>> CreateFunctionAcceptingFloat64Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Array, Action<Array>> CreateFunctionAcceptingArray()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+    }
+
+    public enum TestEnum : uint {
+        FirstValue = 1,
+        Zero = 0,
+        Five = 5,
+        BigValue = 0xFFFFFFFEu
     }
 }

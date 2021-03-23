@@ -741,7 +741,7 @@ namespace System.Collections.Concurrent.Tests
         /// are consumed by consumers with no element lost nor consumed more than once.</summary>
         /// <param name="threads">Total number of producer and consumer threads.</param>
         /// <param name="numOfElementsPerThread">Number of elements to Add/Take per thread.</param>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(4, 2048, 2, 64)]
         [OuterLoop]
         private static void TestConcurrentAddAnyTakeAny(int numOfThreads, int numOfElementsPerThread, int numOfCollections, int boundOfCollections)

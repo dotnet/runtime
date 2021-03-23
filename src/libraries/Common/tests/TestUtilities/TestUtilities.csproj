@@ -19,6 +19,7 @@
     <Compile Include="System\Buffers\BoundedMemory.Unix.cs" />
     <Compile Include="System\Buffers\BoundedMemory.Windows.cs" />
     <Compile Include="System\Buffers\PoisonPagePlacement.cs" />
+    <Compile Include="System\Runtime\InteropServices\SafeBufferUtil.cs" />
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
     <Compile Include="System\TestEnvironment.cs" />
     <Compile Include="System\ThreadCultureChange.cs" />
@@ -35,8 +36,8 @@
   </ItemGroup>
   <!-- Windows imports -->
   <ItemGroup>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlGetVersion.cs"
              Link="Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs"
@@ -56,6 +57,8 @@
   </ItemGroup>
   <!-- Unix imports -->
   <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslGetProtocolSupport.cs"
@@ -70,7 +73,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <!-- Upgrade the NetStandard.Library transitive xunit dependency to avoid 1.x NS dependencies. -->
-    <PackageReference Include="NETStandard.Library" Version="$(NetStandardLibrary20Version)" />
+    <PackageReference Include="NETStandard.Library" Version="$(NetStandardLibraryVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\ref\Microsoft.Win32.Registry.csproj" PrivateAssets="all" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" PrivateAssets="all" />
   </ItemGroup>

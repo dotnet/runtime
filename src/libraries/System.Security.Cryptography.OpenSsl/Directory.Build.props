@@ -4,5 +4,9 @@
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>windows;browser</UnsupportedOSPlatforms>
+    <PackageDescription>Provides cryptographic algorithm implementations and key management for non-Windows systems with OpenSSL.
+
+Commonly Used Types:
+System.Security.Cryptography.RSAOpenSsl</PackageDescription>
   </PropertyGroup>
 </Project>

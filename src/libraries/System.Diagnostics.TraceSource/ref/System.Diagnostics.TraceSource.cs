@@ -86,6 +86,7 @@ namespace System.Diagnostics
         public string? SwitchDescription { get { throw null; } set { } }
         public string SwitchName { get { throw null; } set { } }
         public System.Type SwitchType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Types may be trimmed from the assembly.")]
         public static System.Diagnostics.SwitchAttribute[] GetAll(System.Reflection.Assembly assembly) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class)]

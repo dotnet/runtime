@@ -18,7 +18,6 @@
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/method-builder.h>
-#include <mono/metadata/remoting.h>
 #include <mono/utils/mono-error.h>
 #include <mono/metadata/icalls.h>
 
@@ -115,6 +114,7 @@ typedef enum {
 	/* Subtypes of MONO_WRAPPER_MANAGED_TO_NATIVE */
 	WRAPPER_SUBTYPE_ICALL_WRAPPER, // specifically JIT icalls
 	WRAPPER_SUBTYPE_NATIVE_FUNC_AOT,
+	WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT,
 	WRAPPER_SUBTYPE_PINVOKE,
 	/* Subtypes of MONO_WRAPPER_OTHER */
 	WRAPPER_SUBTYPE_SYNCHRONIZED_INNER,
@@ -185,10 +185,6 @@ typedef struct {
 } ArrayAccessorWrapperInfo;
 
 typedef struct {
-	MonoClass *klass;
-} ProxyWrapperInfo;
-
-typedef struct {
 	const char *gc_name;
 	int alloc_type;
 } AllocatorWrapperInfo;
@@ -196,10 +192,6 @@ typedef struct {
 typedef struct {
 	MonoMethod *method;
 } UnboxWrapperInfo;
-
-typedef struct {
-	MonoMethod *method;
-} RemotingWrapperInfo;
 
 typedef struct {
 	MonoMethodSignature *sig;
@@ -268,14 +260,10 @@ typedef struct {
 		ICallWrapperInfo icall;
 		/* ARRAY_ACCESSOR */
 		ArrayAccessorWrapperInfo array_accessor;
-		/* PROXY_ISINST etc. */
-		ProxyWrapperInfo proxy;
 		/* ALLOC */
 		AllocatorWrapperInfo alloc;
 		/* UNBOX */
 		UnboxWrapperInfo unbox;
-		/* MONO_WRAPPER_REMOTING_INVOKE/MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK/MONO_WRAPPER_XDOMAIN_INVOKE */
-		RemotingWrapperInfo remoting;
 		/* GSHAREDVT_IN_SIG/GSHAREDVT_OUT_SIG */
 		GsharedvtWrapperInfo gsharedvt;
 		/* DELEGATE_INVOKE */
@@ -300,7 +288,17 @@ typedef enum {
 } MonoStelemrefKind;
 
 
-#define MONO_MARSHAL_CALLBACKS_VERSION 4
+typedef enum {
+	EMIT_NATIVE_WRAPPER_AOT = 0x01, /* FIXME: what does "aot" mean here */
+	EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS = 0x02,
+	EMIT_NATIVE_WRAPPER_FUNC_PARAM = 0x04,
+	EMIT_NATIVE_WRAPPER_FUNC_PARAM_UNBOXED = 0x08,
+	EMIT_NATIVE_WRAPPER_SKIP_GC_TRANS=0x10,
+} MonoNativeWrapperFlags;
+
+G_ENUM_FUNCTIONS(MonoNativeWrapperFlags);
+
+#define MONO_MARSHAL_CALLBACKS_VERSION 5
 
 typedef struct {
 	int version;
@@ -325,7 +323,7 @@ typedef struct {
 	void (*emit_virtual_stelemref) (MonoMethodBuilder *mb, const char **param_names, MonoStelemrefKind kind);
 	void (*emit_stelemref) (MonoMethodBuilder *mb);
 	void (*emit_array_address) (MonoMethodBuilder *mb, int rank, int elem_size);
-	void (*emit_native_wrapper) (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param, gboolean skip_gc_trans);
+	void (*emit_native_wrapper) (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags);
 	void (*emit_managed_wrapper) (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle);
 	void (*emit_runtime_invoke_body) (MonoMethodBuilder *mb, const char **param_names, MonoImage *image, MonoMethod *method, MonoMethodSignature *sig, MonoMethodSignature *callsig, gboolean virtual_, gboolean need_direct_wrapper);
 	void (*emit_runtime_invoke_dynamic) (MonoMethodBuilder *mb);
@@ -473,6 +471,10 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 MonoMethod*
 mono_marshal_get_native_func_wrapper_aot (MonoClass *klass);
 
+MonoMethod*
+mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMethodSignature *sig,
+					       gboolean aot);
+
 MonoMethod *
 mono_marshal_get_struct_to_ptr (MonoClass *klass);
 
@@ -502,6 +504,9 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class);
 
 MonoMethod**
 mono_marshal_get_virtual_stelemref_wrappers (int *nwrappers);
+
+MonoMethod*
+mono_marshal_get_virtual_stelemref_wrapper (MonoStelemrefKind kind);
 
 MonoMethod*
 mono_marshal_get_array_address (int rank, int elem_size);
@@ -668,7 +673,7 @@ mono_signature_no_pinvoke (MonoMethod *method);
 /* Called from cominterop.c/remoting.c */
 
 void
-mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param, gboolean skip_gc_trans);
+mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags);
 
 void
 mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle);

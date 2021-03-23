@@ -31,6 +31,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/class-init.h>
@@ -41,7 +42,6 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/lock-tracer.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-dl.h>
@@ -272,9 +272,6 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
 
 	fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
-
-	if (!mono_verifier_verify_memberref_field_signature (image, cols [MONO_MEMBERREF_SIGNATURE], error))
-		return NULL;
 
 	switch (class_index) {
 	case MONO_MEMBERREF_PARENT_TYPEDEF:
@@ -774,9 +771,6 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 
 		sig = (MonoMethodSignature *)find_cached_memberref_sig (image, sig_idx);
 		if (!sig) {
-			if (!mono_verifier_verify_memberref_method_signature (image, sig_idx, error))
-				return NULL;
-
 			ptr = mono_metadata_blob_heap (image, sig_idx);
 			mono_metadata_decode_blob_size (ptr, &ptr);
 
@@ -785,14 +779,6 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 				return NULL;
 
 			sig = (MonoMethodSignature *)cache_memberref_sig (image, sig_idx, sig);
-		}
-		/* FIXME: we probably should verify signature compat in the dynamic case too*/
-		if (!mono_verifier_is_sig_compatible (image, method, sig)) {
-			guint32 klass = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
-			const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
-
-			mono_error_set_bad_image (error, image, "Incompatible method signature class token 0x%08x field name %s token 0x%08x", klass, fname, token);
-			return NULL;
 		}
 	}
 
@@ -864,7 +850,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 	error_init (error);
 
-	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, 3);
+	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
 	nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
 	class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
 	/*g_print ("methodref: 0x%x 0x%x %s\n", class, nindex,
@@ -914,9 +900,6 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	mono_class_init_internal (klass);
 
 	sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
-
-	if (!mono_verifier_verify_memberref_method_signature (image, sig_idx, error))
-		goto fail;
 
 	ptr = mono_metadata_blob_heap (image, sig_idx);
 	mono_metadata_decode_blob_size (ptr, &ptr);
@@ -983,9 +966,6 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	mono_metadata_decode_row (&tables [MONO_TABLE_METHODSPEC], idx - 1, cols, MONO_METHODSPEC_SIZE);
 	token = cols [MONO_METHODSPEC_METHOD];
 	nindex = token >> MONO_METHODDEFORREF_BITS;
-
-	if (!mono_verifier_verify_methodspec_signature (image, cols [MONO_METHODSPEC_SIGNATURE], error))
-		return NULL;
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODSPEC_SIGNATURE]);
 
@@ -1073,7 +1053,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	if (used_context) *used_context = FALSE;
 
-	if (idx > image->tables [MONO_TABLE_METHOD].rows) {
+	if (mono_metadata_table_bounds_check (image, MONO_TABLE_METHOD, idx)) {
 		mono_error_set_bad_image (error, image, "Bad method token 0x%08x (out of bounds).", token);
 		return NULL;
 	}
@@ -1745,7 +1725,7 @@ async_stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer 
 		MonoMethod *method;
 		method = frame->ji->async ? NULL : frame->actual_method;
 
-		return d->func (method, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
+		return d->func (method, mono_get_root_domain (), frame->ji->code_start, frame->native_offset, d->user_data);
 	default:
 		g_assert_not_reached ();
 		return FALSE;
@@ -1861,9 +1841,6 @@ mono_method_signature_checked_slow (MonoMethod *m, MonoError *error)
 
 	if (!signature) {
 		const char *sig_body;
-		/*TODO we should cache the failure result somewhere*/
-		if (!mono_verifier_verify_method_signature (img, sig_offset, error))
-			return NULL;
 
 		/* size = */ mono_metadata_decode_blob_size (sig, &sig_body);
 
@@ -2017,6 +1994,26 @@ mono_method_has_no_body (MonoMethod *method)
 		(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 }
 
+#ifdef ENABLE_METADATA_UPDATE
+static gpointer
+get_method_update_rva (MonoImage *image_base, uint32_t idx)
+{
+	gpointer loc = NULL;
+	uint32_t cur = mono_metadata_update_get_thread_generation ();
+	GList *ptr = image_base->delta_image;
+	/* Go through all the updates that the current thread can see and see
+	 * if they updated the method.  Keep the latest visible update */
+	for (; ptr != NULL; ptr = ptr->next) {
+		MonoImage *image_delta = (MonoImage*) ptr->data;
+		if (image_delta->generation > cur)
+			break;
+		if (image_delta->method_table_update)
+			loc = g_hash_table_lookup (image_delta->method_table_update, GUINT_TO_POINTER (idx));
+	}
+	return loc;
+}
+#endif
+
 // FIXME Replace all internal callers of mono_method_get_header_checked with
 // mono_method_get_header_internal; the difference is in error initialization.
 MonoMethodHeader*
@@ -2025,7 +2022,7 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	int idx;
 	guint32 rva;
 	MonoImage* img;
-	gpointer loc;
+	gpointer loc = NULL;
 	MonoGenericContainer *container;
 
 	error_init (error);
@@ -2070,12 +2067,24 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	 */
 	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (method->token);
-	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
 
-	if (!mono_verifier_verify_method_header (img, rva, error))
-		return NULL;
+#ifdef ENABLE_METADATA_UPDATE
+	/* EnC case */
+	if (G_UNLIKELY (img->method_table_update)) {
+		/* pre-computed rva pointer into delta IL image */
+		uint32_t gen = GPOINTER_TO_UINT (g_hash_table_lookup (img->method_table_update, GUINT_TO_POINTER (idx)));
+		if (G_UNLIKELY (gen > 0)) {
+			loc = get_method_update_rva (img, idx);
+		}
+	}
+#endif
 
-	loc = mono_image_rva_map (img, rva);
+	if (!loc) {
+		rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
+
+		loc = mono_image_rva_map (img, rva);
+	}
+
 	if (!loc) {
 		mono_error_set_bad_image (error, img, "Method has zero rva");
 		return NULL;

@@ -429,7 +429,6 @@ namespace System.ComponentModel
         /// a TypeDescriptionProvider object that is associated with the given
         /// data type. If it finds one, it will delegate the call to that object.
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         public static object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
         {
             if (objectType == null)
@@ -2557,7 +2556,7 @@ namespace System.ComponentModel
             }
             else
             {
-                return !attribute.Equals(memberAttribute);
+                return !attribute.Match(memberAttribute);
             }
         }
 

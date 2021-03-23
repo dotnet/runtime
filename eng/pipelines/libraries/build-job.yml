@@ -24,6 +24,8 @@ parameters:
   preBuildSteps: []
   container: ''
   condition: true
+  dependOnEvaluatePaths: false
+  shouldContinueOnError: false
   variables: {}
   pool: ''
   runTests: false
@@ -49,6 +51,7 @@ jobs:
       preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
       condition: ${{ parameters.condition }}
+      dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
       pool: ${{ parameters.pool }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
       testScope: ${{ parameters.testScope }}
@@ -129,7 +132,7 @@ jobs:
           # platform-specific jobs' nupkgs automatically flow through the matching platform-specific
           # Installer build, but AllConfigurations should only be uploaded once, here.
           - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
-            - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
               parameters:
                 name: Libraries_AllConfigurations
 
@@ -142,6 +145,7 @@ jobs:
               buildConfig: ${{ parameters.buildConfig }}
               helixQueues: ${{ parameters.helixQueues }}
               testScope: ${{ parameters.testScope }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
               creator: dotnet-bot
               testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
               extraHelixArguments: $(_extraHelixArguments)

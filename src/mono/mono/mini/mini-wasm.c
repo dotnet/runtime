@@ -226,11 +226,10 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->gen_sdb_seq_points)
 		g_error ("gen_sdb_seq_points not supported");
 
-	if (cfg->method->save_lmf)
+	if (cfg->method->save_lmf) {
 		cfg->create_lmf_var = TRUE;
-
-	if (cfg->method->save_lmf)
 		cfg->lmf_ir = TRUE;
+	}
 }
 
 void
@@ -370,7 +369,7 @@ mono_arch_get_delegate_invoke_impls (void)
 }
 
 gpointer
-mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
+mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
 {
 	g_error ("mono_arch_get_gsharedvt_call_info");
 	return NULL;
@@ -395,7 +394,6 @@ extern void mono_set_timeout (int t, int d);
 extern void mono_wasm_queue_tp_cb (void);
 G_END_DECLS
 
-extern void mono_wasm_pump_threadpool (void);
 void mono_background_exec (void);
 
 #endif // HOST_WASM
@@ -469,7 +467,7 @@ mono_arch_get_cie_program (void)
 }
 
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
 	g_error ("mono_arch_build_imt_trampoline");
 }
@@ -547,11 +545,7 @@ mono_set_timeout_exec (int id)
 {
 	ERROR_DECL (error);
 
-#ifdef ENABLE_NETCORE
 	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
-#else
-	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "WasmRuntime");
-#endif
 	g_assert (klass);
 
 	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
@@ -615,36 +609,25 @@ tp_cb (void)
 	}
 }
 
+#ifdef HOST_WASM
 void
 mono_wasm_queue_tp_cb (void)
 {
-#ifdef HOST_WASM
 	mono_threads_schedule_background_job (tp_cb);
-#endif
 }
-
-void
-mono_wasm_pump_threadpool (void)
-{
-#ifdef HOST_WASM
-	mono_background_exec ();
 #endif
-}
 
 void
 mono_arch_register_icall (void)
 {
-#ifdef ENABLE_NETCORE
+#ifdef HOST_WASM
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::QueueCallback", mono_wasm_queue_tp_cb);
-	mono_add_internal_call_internal ("System.Threading.ThreadPool::PumpThreadPool", mono_wasm_pump_threadpool);
-#else
-	mono_add_internal_call_internal ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
 #endif
 }
 
 void
-mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target)
+mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	g_error ("mono_arch_patch_code_new");
 }

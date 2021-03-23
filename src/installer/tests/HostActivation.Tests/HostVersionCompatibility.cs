@@ -162,7 +162,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 var fixtureLatest = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 fixtureLatest
-                    .EnsureRestoredForRid(fixtureLatest.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(fixtureLatest.CurrentRid)
                     .PublishProject(runtime: fixtureLatest.CurrentRid);
 
                 FixtureLatest = fixtureLatest;
@@ -185,7 +185,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 if (IsRidSupported())
                 {
                     publishFixture
-                        .EnsureRestoredForRid(publishFixture.CurrentRid, repoDirectories.CorehostPackages)
+                        .EnsureRestoredForRid(publishFixture.CurrentRid)
                         .PublishProject(runtime: publishFixture.CurrentRid);
                 }
 

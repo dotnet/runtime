@@ -198,7 +198,7 @@ namespace System.Linq.Parallel
         // in memory, and the data sorted.
         //
 
-        internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, ref TSortKey currentKey)
+        internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, [AllowNull] ref TSortKey currentKey)
         {
             Debug.Assert(_source != null);
 

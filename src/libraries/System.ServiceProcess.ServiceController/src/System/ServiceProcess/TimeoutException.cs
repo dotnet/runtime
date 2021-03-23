@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Runtime.Serialization;
 
 namespace System.ServiceProcess
@@ -12,7 +11,7 @@ namespace System.ServiceProcess
     {
         private const int ServiceControllerTimeout = unchecked((int)0x80131906);
 
-        public TimeoutException() : base()
+        public TimeoutException()
         {
             HResult = ServiceControllerTimeout;
         }

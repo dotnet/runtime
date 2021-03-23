@@ -1,7 +1,0 @@
-<Project>
-  <Import Project="$(MSBuildThisFileDirectory)..\..\..\Directory.Build.targets" />
-
-  <PropertyGroup>
-    <RuntimeConfiguration>Release</RuntimeConfiguration>
-  </PropertyGroup>
-</Project>

@@ -35,5 +35,5 @@ foreach ($f in Get-ChildItem -Recurse -Path $([System.IO.Path]::Combine("*", $ty
 if ($type -eq "src")
 {
     # Also add CoreLib if this is for src projects
-    dotnet sln $SolutionName add --in-root $f.FullName $([System.IO.Path]::Combine("..", "coreclr", "src", "System.Private.CoreLib", "System.Private.CoreLib.csproj"))
+    dotnet sln $SolutionName add --in-root $f.FullName $([System.IO.Path]::Combine("..", "coreclr", "System.Private.CoreLib", "System.Private.CoreLib.csproj"))
 }

@@ -313,21 +313,18 @@ namespace SuperPMICollection
             Console.WriteLine("Setting environment variables:");
             Console.WriteLine("    SuperPMIShimLogPath=" + s_tempDir);
             Console.WriteLine("    SuperPMIShimPath=" + Global.JitPath);
-            Console.WriteLine("    COMPlus_AltJit=*");
-            Console.WriteLine("    COMPlus_AltJitName=" + Global.CollectorShimName);
+            Console.WriteLine("    COMPlus_JitName=" + Global.CollectorShimName);
 
             Environment.SetEnvironmentVariable("SuperPMIShimLogPath", s_tempDir);
             Environment.SetEnvironmentVariable("SuperPMIShimPath", Global.JitPath);
-            Environment.SetEnvironmentVariable("COMPlus_AltJit", "*");
-            Environment.SetEnvironmentVariable("COMPlus_AltJitName", Global.CollectorShimName);
+            Environment.SetEnvironmentVariable("COMPlus_JitName", Global.CollectorShimName);
 
             RunProgramsWhileCollecting(runProgramPath, runProgramArguments);
 
             // Un-set environment variables
             Environment.SetEnvironmentVariable("SuperPMIShimLogPath", "");
             Environment.SetEnvironmentVariable("SuperPMIShimPath", "");
-            Environment.SetEnvironmentVariable("COMPlus_AltJit", "");
-            Environment.SetEnvironmentVariable("COMPlus_AltJitName", "");
+            Environment.SetEnvironmentVariable("COMPlus_JitName", "");
 
             // Did any .mc files get generated?
             string[] mcFiles = Directory.GetFiles(s_tempDir, "*.mc");
@@ -606,7 +603,7 @@ namespace SuperPMICollection
             Console.WriteLine("If -mch is not given, all generated files are deleted, and the result is simply the exit code");
             Console.WriteLine("indicating whether the collection succeeded. This is useful as a test.");
             Console.WriteLine("");
-            Console.WriteLine("If the COMPlus_AltJit variable is already set, it is assumed SuperPMI collection is already happening,");
+            Console.WriteLine("If the COMPlus_JitName variable is already set, it is assumed SuperPMI collection is already happening,");
             Console.WriteLine("and the program exits with success.");
             Console.WriteLine("");
             Console.WriteLine("On success, the return code is 100.");
@@ -703,14 +700,14 @@ namespace SuperPMICollection
 
             // Done with argument parsing.
 
-            string altjitvar = System.Environment.GetEnvironmentVariable("COMPlus_AltJit");
-            if (!String.IsNullOrEmpty(altjitvar))
+            string jitnamevar = System.Environment.GetEnvironmentVariable("COMPlus_JitName");
+            if (!String.IsNullOrEmpty(jitnamevar))
             {
-                // Someone already has the COMPlus_AltJit variable set. We don't want to override
+                // Someone already has the COMPlus_JitName variable set. We don't want to override
                 // that. Perhaps someone is already doing a SuperPMI collection and invokes this
                 // program as part of a full test path in which this program exists.
 
-                Console.WriteLine("COMPlus_AltJit already exists: skipping SuperPMI collection and returning success");
+                Console.WriteLine("COMPlus_JitName already exists: skipping SuperPMI collection and returning success");
                 return 100;
             }
 

@@ -28,13 +28,11 @@ set testenvfile=%TEMP%\superpmitestenv_%RANDOM%.cmd
 
 echo set SuperPMIShimLogPath=%SuperPMIShimLogPath%> %testenvfile%
 echo set SuperPMIShimPath=%SuperPMIShimPath%>> %testenvfile%
-echo set COMPlus_AltJit=%COMPlus_AltJit%>> %testenvfile%
-echo set COMPlus_AltJitName=%COMPlus_AltJitName%>> %testenvfile%
+echo set COMPlus_JitName=%COMPlus_JitName%>> %testenvfile%
 
 set SuperPMIShimLogPath=
 set SuperPMIShimPath=
-set COMPlus_AltJit=
-set COMPlus_AltJitName=
+set COMPlus_JitName=
 
 set _nextcmd=call %runtestscript% testEnv %testenvfile%
 echo %0: Running: %_nextcmd%

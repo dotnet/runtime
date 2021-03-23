@@ -226,7 +226,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual object? Value => _value;
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == this)
             {

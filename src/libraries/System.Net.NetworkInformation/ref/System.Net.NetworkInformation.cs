@@ -365,7 +365,7 @@ namespace System.Net.NetworkInformation
     {
         public static readonly System.Net.NetworkInformation.PhysicalAddress None;
         public PhysicalAddress(byte[] address) { }
-        public override bool Equals(object? comparand) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? comparand) { throw null; }
         public byte[] GetAddressBytes() { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Net.NetworkInformation.PhysicalAddress Parse(string? address) { throw null; }

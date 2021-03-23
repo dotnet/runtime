@@ -6,6 +6,13 @@ include(CheckPrototypeDefinition)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
+include(CMakePushCheckState)
+include(CheckLibraryExists)
+
+# CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
+if(POLICY CMP0075)
+    cmake_policy(SET CMP0075 NEW)
+endif()
 
 if (CLR_CMAKE_TARGET_ANDROID)
     set(PAL_UNIX_NAME \"ANDROID\")
@@ -19,6 +26,8 @@ elseif (CLR_CMAKE_TARGET_OSX)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
+elseif (CLR_CMAKE_TARGET_MACCATALYST)
+    set(PAL_UNIX_NAME \"MACCATALYST\")
 elseif (CLR_CMAKE_TARGET_IOS)
     set(PAL_UNIX_NAME \"IOS\")
 elseif (CLR_CMAKE_TARGET_TVOS)
@@ -120,6 +129,11 @@ check_symbol_exists(
     F_DUPFD_CLOEXEC
     fcntl.h
     HAVE_F_DUPFD_CLOEXEC)
+
+check_symbol_exists(
+    F_FULLFSYNC
+    fcntl.h
+    HAVE_F_FULLFSYNC)
 
 check_symbol_exists(
     getifaddrs
@@ -492,6 +506,13 @@ if(CLR_CMAKE_TARGET_IOS)
     unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
     unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
     unset(HAVE_FORK) # exists but blocked by kernel
+elseif(CLR_CMAKE_TARGET_MACCATALYST)
+    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
+    # TODO: test to see if these all actually hold true on Mac Catalyst
+    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
+    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_TVOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
@@ -566,6 +587,8 @@ check_symbol_exists(
     clock_gettime_nsec_np
     time.h
     HAVE_CLOCK_GETTIME_NSEC_NP)
+
+check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
 check_symbol_exists(
     futimes
@@ -771,7 +794,7 @@ check_symbol_exists(
     "unistd.h;grp.h"
     HAVE_GETGROUPLIST)
 
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
 else()
@@ -795,9 +818,14 @@ check_type_size(
      BUILTIN_TYPES_ONLY)
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 
-check_include_files(
-    "sys/types.h;sys/sysctl.h"
-    HAVE_SYS_SYSCTL_H)
+if (CLR_CMAKE_TARGET_LINUX)
+    # sysctl is deprecated on Linux
+    set(HAVE_SYS_SYSCTL_H 0)
+else ()
+    check_include_files(
+        "sys/types.h;sys/sysctl.h"
+        HAVE_SYS_SYSCTL_H)
+endif()
 
 check_include_files(
     "sys/ioctl.h"
@@ -830,6 +858,10 @@ check_include_files(
 check_include_files(
     linux/can.h
     HAVE_LINUX_CAN_H)
+
+check_include_files(
+    IOKit/serial/ioss.h
+    HAVE_IOSS_H)
 
 check_symbol_exists(
     getpeereid
@@ -886,6 +918,19 @@ check_symbol_exists(
     HAVE_INOTIFY_RM_WATCH)
 set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
+if (CLR_CMAKE_TARGET_LINUX)
+    cmake_push_check_state(RESET)
+    set (CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
+    set (CMAKE_REQUIRED_LIBRARIES "-lanl")
+
+    check_symbol_exists(
+        getaddrinfo_a
+        netdb.h
+        HAVE_GETADDRINFO_A)
+
+    cmake_pop_check_state()
+endif ()
+
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
     set (HAVE_INOTIFY 1)
@@ -929,6 +974,7 @@ else ()
         HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
 endif ()
 
+check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 
 if (HAVE_CRT_EXTERNS_H)

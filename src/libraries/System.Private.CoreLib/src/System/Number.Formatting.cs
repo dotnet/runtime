@@ -1334,7 +1334,8 @@ namespace System
         {
             while (--digits >= 0 || value != 0)
             {
-                value = Math.DivRem(value, 10, out uint remainder);
+                uint remainder;
+                (value, remainder) = Math.DivRem(value, 10);
                 *(--bufferEnd) = (byte)(remainder + '0');
             }
             return bufferEnd;
@@ -1344,7 +1345,8 @@ namespace System
         {
             while (--digits >= 0 || value != 0)
             {
-                value = Math.DivRem(value, 10, out uint remainder);
+                uint remainder;
+                (value, remainder) = Math.DivRem(value, 10);
                 *(--bufferEnd) = (char)(remainder + '0');
             }
             return bufferEnd;
@@ -1367,7 +1369,8 @@ namespace System
                 char* p = buffer + bufferLength;
                 do
                 {
-                    value = Math.DivRem(value, 10, out uint remainder);
+                    uint remainder;
+                    (value, remainder) = Math.DivRem(value, 10);
                     *(--p) = (char)(remainder + '0');
                 }
                 while (value != 0);
@@ -1409,7 +1412,8 @@ namespace System
                 {
                     do
                     {
-                        value = Math.DivRem(value, 10, out uint remainder);
+                        uint remainder;
+                        (value, remainder) = Math.DivRem(value, 10);
                         *(--p) = (char)(remainder + '0');
                     }
                     while (value != 0);
@@ -1703,9 +1707,14 @@ namespace System
                     // digits.  Further, for compat, we need to stop when we hit a null char.
                     int n = 0;
                     int i = 1;
-                    while (i < format.Length && (((uint)format[i] - '0') < 10) && n < 10)
+                    while (i < format.Length && (((uint)format[i] - '0') < 10))
                     {
-                        n = (n * 10) + format[i++] - '0';
+                        int temp = ((n * 10) + format[i++] - '0');
+                        if (temp < n)
+                        {
+                            throw new FormatException(SR.Argument_BadFormatSpecifier);
+                        }
+                        n = temp;
                     }
 
                     // If we're at the end of the digits rather than having stopped because we hit something

@@ -104,7 +104,7 @@ namespace System.Linq.Parallel
         // anyway, so having the repartitioning operator do so isn't complicating matters much at all.
         //
 
-        internal override bool MoveNext(ref Pair<TInputOutput, THashKey> currentElement, ref TOrderKey currentKey)
+        internal override bool MoveNext(ref Pair<TInputOutput, THashKey> currentElement, [AllowNull] ref TOrderKey currentKey)
         {
             if (_partitionCount == 1)
             {

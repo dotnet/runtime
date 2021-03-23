@@ -100,6 +100,7 @@ namespace System.Globalization.Tests
         [Theory]
         [InlineData("en-US", "United States")]
         [OuterLoop("May fail on machines with multiple language packs installed")] // see https://github.com/dotnet/runtime/issues/30132
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45951", TestPlatforms.Browser)]
         public void DisplayName(string name, string expected)
         {
             using (new ThreadCultureChange(null, new CultureInfo(name)))

@@ -52,6 +52,13 @@ namespace System.Collections
             if (defaultValue)
             {
                 m_array.AsSpan().Fill(-1);
+
+                // clear high bit values in the last int
+                Div32Rem(length, out int extraBits);
+                if (extraBits > 0)
+                {
+                    m_array[^1] = (1 << extraBits) - 1;
+                }
             }
 
             _version = 0;
@@ -337,9 +344,20 @@ namespace System.Collections
             int arrayLength = GetInt32ArrayLengthFromBitLength(Length);
             Span<int> span = m_array.AsSpan(0, arrayLength);
             if (value)
+            {
                 span.Fill(-1);
+
+                // clear high bit values in the last int
+                Div32Rem(m_length, out int extraBits);
+                if (extraBits > 0)
+                {
+                    span[^1] &= (1 << extraBits) - 1;
+                }
+            }
             else
+            {
                 span.Clear();
+            }
 
             _version++;
         }

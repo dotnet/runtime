@@ -36,7 +36,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.ExceptionServices;
@@ -175,7 +175,7 @@ namespace System.Runtime.CompilerServices
                 // If the task faulted, throw its first exception,
                 // even if it contained more than one.
                 case TaskStatus.Faulted:
-                    ReadOnlyCollection<ExceptionDispatchInfo> edis = task.GetExceptionDispatchInfos();
+                    List<ExceptionDispatchInfo> edis = task.GetExceptionDispatchInfos();
                     if (edis.Count > 0)
                     {
                         edis[0].Throw();

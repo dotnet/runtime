@@ -9,8 +9,9 @@
     <TestRestoreNuGetConfigFile>$(ArtifactsObjDir)TestNuGetConfig\NuGet.config</TestRestoreNuGetConfigFile>
     <InternalNupkgCacheDir>$(ArtifactsObjDir)ExtraNupkgsForTestRestore\</InternalNupkgCacheDir>
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
-    <TestInfraTargetFramework>$(NetCoreAppCurrent)</TestInfraTargetFramework>
-    <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
+    <TestInfraTargetFramework>$(NetCoreAppToolCurrent)</TestInfraTargetFramework>
+    <TestRunnerAdditionalArguments Condition="'$(RunOnStaging)' != 'true'">-notrait category=failing</TestRunnerAdditionalArguments>
+    <TestRunnerAdditionalArguments Condition="'$(RunOnStaging)' == 'true'">-trait category=failing</TestRunnerAdditionalArguments>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 

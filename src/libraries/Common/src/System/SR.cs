@@ -3,7 +3,6 @@
 
 #nullable enable
 using System.Resources;
-using System.Runtime.CompilerServices;
 
 namespace System
 {

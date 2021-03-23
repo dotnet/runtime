@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Linq;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -872,6 +873,33 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(Regex.IsMatch(Input, Pattern, options));
         }
 
+
+        // https://docs.microsoft.com/en-us/dotnet/standard/base-types/anchors-in-regular-expressions#contiguous-matches-g
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
+        public void Docs_Anchors_ContiguousMatches(RegexOptions options)
+        {
+            const string Input = "capybara,squirrel,chipmunk,porcupine";
+            const string Pattern = @"\G(\w+\s?\w*),?";
+            string[] expected = new[] { "capybara", "squirrel", "chipmunk", "porcupine" };
+
+            Match m = Regex.Match(Input, Pattern, options);
+
+            string[] actual = new string[4];
+            for (int i = 0; i < actual.Length; i++)
+            {
+                Assert.True(m.Success);
+                actual[i] = m.Groups[1].Value;
+                m = m.NextMatch();
+            }
+            Assert.False(m.Success);
+            Assert.Equal(expected, actual);
+
+            Assert.Equal(
+                ",arabypac,lerriuqs,knumpihcenipucrop",
+                Regex.Replace(Input, Pattern, m => string.Concat(m.Value.Reverse())));
+        }
 
 
         //

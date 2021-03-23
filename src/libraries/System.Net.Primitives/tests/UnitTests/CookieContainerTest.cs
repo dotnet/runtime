@@ -377,6 +377,20 @@ namespace System.Net.Primitives.Unit.Tests
         }
 
         [Fact]
+        public void SetCookies_ExpiresMaxValue_Success()
+        {
+            // Expiry can be 9999-12-31 23:59:59 UTC, but if this is converted to Local time, it might exceed DateTime.MaxValue and become invalid
+            // This test ensures that the DateTime in expiry has the correct kind, thereby ensuring it was interpreted as a UTC timezone
+            CookieContainer cc = new CookieContainer();
+            cc.SetCookies(new Uri("http://contoso.com/"), "set-cookie: MyKey=MyValue; expires=Fri, 31-Dec-9999 23:59:59 GMT");
+
+            var cookie = cc.GetCookies(new Uri("http://contoso.com/")).First();
+
+            Assert.Equal(new DateTime(9999, 12, 31, 23, 59, 59, DateTimeKind.Utc), cookie.Expires);
+            Assert.Equal(DateTimeKind.Utc, cookie.Expires.Kind);
+        }
+
+        [Fact]
         public void Add_CookieVersion1AndRootDomainWithNoLeadingDot_Success()
         {
             const string SchemePrefix = "http://";

@@ -85,6 +85,7 @@
     <Compile Include="ReusabilityTests.cs" />
     <Compile Include="Rfc2202HmacTests.cs" />
     <Compile Include="Rfc2898Tests.cs" />
+    <Compile Include="Rfc2898OneShotTests.cs" />
     <Compile Include="Rfc4231HmacTests.cs" />
     <Compile Include="Sha1Tests.cs" />
     <Compile Include="Sha256Tests.cs" />
@@ -103,6 +104,8 @@
     <Compile Include="DefaultECDsaProvider.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="DefaultECDiffieHellmanProvider.Unix.cs" />

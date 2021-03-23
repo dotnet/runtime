@@ -7,6 +7,7 @@ Imports System.Security
 Imports System.Globalization
 Imports System.IO
 Imports System.Text
+Imports System.Runtime.Versioning
 
 Imports Microsoft.VisualBasic.CompilerServices.StructUtils
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
@@ -595,15 +596,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return m_position
         End Function
 
+        <UnsupportedOSPlatform("macos")> 
         Friend Overridable Overloads Sub Lock()
             'Lock the whole file, not just the current size of file, since file could change.
             m_file.Lock(0, Int32.MaxValue)
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Friend Overridable Overloads Sub Unlock()
             m_file.Unlock(0, Int32.MaxValue)
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Friend Overridable Overloads Sub Lock(ByVal Record As Long)
             If m_lRecordLen = -1 Then
                 m_file.Lock((Record - 1), 1)
@@ -612,6 +616,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Friend Overridable Overloads Sub Unlock(ByVal Record As Long)
             If m_lRecordLen = -1 Then
                 m_file.Unlock((Record - 1), 1)
@@ -620,6 +625,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Friend Overridable Overloads Sub Lock(ByVal RecordStart As Long, ByVal RecordEnd As Long)
             If m_lRecordLen = -1 Then
                 m_file.Lock((RecordStart - 1), (RecordEnd - RecordStart) + 1)
@@ -628,6 +634,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Friend Overridable Overloads Sub Unlock(ByVal RecordStart As Long, ByVal RecordEnd As Long)
             If m_lRecordLen = -1 Then
                 m_file.Unlock((RecordStart - 1), (RecordEnd - RecordStart) + 1)

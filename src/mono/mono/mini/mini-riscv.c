@@ -309,7 +309,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count,
 }
 
 void
-mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code,
+mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code,
                           MonoJumpInfo *ji, gpointer target)
 {
 	NOT_IMPLEMENTED;
@@ -680,7 +680,7 @@ mono_arch_skip_single_step (MonoContext *ctx)
 }
 
 gpointer
-mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+mono_arch_get_seq_point_info (guint8 *code)
 {
 	NOT_IMPLEMENTED;
 	return NULL;

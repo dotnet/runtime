@@ -91,6 +91,18 @@ namespace System.Collections.Tests
             }
         }
 
+        [Fact]
+        public static void SetAll_ShouldNotLeaveDirtyBits()
+        {
+            BitArray bitArray = new BitArray(33, false);
+            bitArray.SetAll(true);
+            bitArray.RightShift(31);
+
+            Assert.True(bitArray[0]);
+            Assert.True(bitArray[1]);
+            Assert.False(bitArray[2]);
+        }
+
         public static IEnumerable<object[]> GetEnumerator_Data()
         {
             foreach (int size in new[] { 0, 1, BitsPerByte, BitsPerByte + 1, BitsPerInt32, BitsPerInt32 + 1 })

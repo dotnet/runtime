@@ -41,7 +41,7 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> EmptyTypeArgs()
         {
-            yield return new object[] { Array.Empty<Type>() };
+            yield return new object[] { Type.EmptyTypes };
         }
 
         public static IEnumerable<object[]> ByRefTypeArgs()

@@ -133,7 +133,7 @@ namespace System.Threading.Tasks.Dataflow
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
 #pragma warning disable 8617
-            DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, bool consumeToAccept)
+            DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T>? source, bool consumeToAccept)
 #pragma warning restore 8617
             {
                 // Validate arguments.  Some targets may have a null source, but FilteredLinkPropagator
@@ -939,7 +939,7 @@ namespace System.Threading.Tasks.Dataflow
 
             // Do fast path checks for both cancellation and data already existing.
             cancellationToken.ThrowIfCancellationRequested();
-            TOutput fastCheckedItem;
+            TOutput? fastCheckedItem;
             var receivableSource = source as IReceivableSourceBlock<TOutput>;
             if (receivableSource != null && receivableSource.TryReceive(null, out fastCheckedItem))
             {
@@ -995,7 +995,7 @@ namespace System.Threading.Tasks.Dataflow
                 {
                     try
                     {
-                        TOutput fastCheckedItem;
+                        TOutput? fastCheckedItem;
                         if (receivableSource.TryReceive(null, out fastCheckedItem))
                         {
                             return Task.FromResult<TOutput>(fastCheckedItem);
@@ -1091,7 +1091,7 @@ namespace System.Threading.Tasks.Dataflow
                 // So we are racing to dispose of the unlinker.
                 if (Volatile.Read(ref target._cleanupReserved))
                 {
-                    IDisposable disposableUnlink = Interlocked.CompareExchange(ref target._unlink, null, unlink);
+                    IDisposable? disposableUnlink = Interlocked.CompareExchange<IDisposable?>(ref target._unlink, null, unlink);
                     if (disposableUnlink != null) disposableUnlink.Dispose();
                 }
             }
@@ -1173,7 +1173,7 @@ namespace System.Threading.Tasks.Dataflow
                     {
                         // Accept the message if possible and complete this task with the message's value.
                         bool consumed = true;
-                        T acceptedValue = consumeToAccept ? source!.ConsumeMessage(messageHeader, this, out consumed) : messageValue;
+                        T? acceptedValue = consumeToAccept ? source!.ConsumeMessage(messageHeader, this, out consumed) : messageValue;
                         if (consumed)
                         {
                             status = DataflowMessageStatus.Accepted;
@@ -1962,7 +1962,7 @@ namespace System.Threading.Tasks.Dataflow
             Debug.Assert(scheduler != null, "Expected a non-null scheduler");
 
             // Try to receive from the source.  If we can't, bail.
-            T result;
+            T? result;
             var receivableSource = source as IReceivableSourceBlock<T>;
             if (receivableSource == null || !receivableSource.TryReceive(out result))
             {
@@ -2198,7 +2198,7 @@ namespace System.Threading.Tasks.Dataflow
                     if (consumeToAccept)
                     {
                         bool consumed;
-                        messageValue = source!.ConsumeMessage(messageHeader, this, out consumed);
+                        messageValue = source!.ConsumeMessage(messageHeader, this, out consumed)!;
                         if (!consumed) return DataflowMessageStatus.NotAvailable;
                     }
 

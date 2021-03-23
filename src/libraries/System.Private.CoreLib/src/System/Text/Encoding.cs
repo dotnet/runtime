@@ -956,6 +956,9 @@ namespace System.Text
 
         public virtual int CodePage => _codePage;
 
+        // Quick accessor for "is UTF8?"
+        internal bool IsUTF8CodePage => CodePage == CodePageUTF8;
+
         // IsAlwaysNormalized
         // Returns true if the encoding is always normalized for the specified encoding form
         public bool IsAlwaysNormalized() =>
@@ -1079,7 +1082,7 @@ namespace System.Text
 
         private static Encoding BigEndianUTF32 => UTF32Encoding.s_bigEndianDefault;
 
-        public override bool Equals(object? value) =>
+        public override bool Equals([NotNullWhen(true)] object? value) =>
             value is Encoding that &&
             (_codePage == that._codePage) &&
             (EncoderFallback.Equals(that.EncoderFallback)) &&

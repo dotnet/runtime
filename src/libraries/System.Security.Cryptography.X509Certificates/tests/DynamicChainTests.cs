@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Test.Cryptography;
@@ -10,6 +11,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class DynamicChainTests
     {
+        private static X509Extension BasicConstraintsCA => new X509BasicConstraintsExtension(
+            certificateAuthority: true,
+            hasPathLengthConstraint: false,
+            pathLengthConstraint: 0,
+            critical: true);
+
+        private static X509Extension BasicConstraintsEndEntity => new X509BasicConstraintsExtension(
+            certificateAuthority: false,
+            hasPathLengthConstraint: false,
+            pathLengthConstraint: 0,
+            critical: true);
+
         public static object[][] InvalidSignature3Cases { get; } =
             new object[][]
             {
@@ -203,20 +216,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void BasicConstraints_ExceedMaximumPathLength()
         {
-            X509Extension[] rootExtensions = new [] {
+            X509Extension[] rootExtensions = new []
+            {
                 new X509BasicConstraintsExtension(
                     certificateAuthority: true,
                     hasPathLengthConstraint: true,
                     pathLengthConstraint: 0,
-                    critical: true)
+                    critical: true),
             };
 
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 new X509BasicConstraintsExtension(
                     certificateAuthority: true,
                     hasPathLengthConstraint: true,
                     pathLengthConstraint: 0,
-                    critical: true)
+                    critical: true),
             };
 
             TestDataGenerator.MakeTestChain4(
@@ -249,7 +264,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void BasicConstraints_ViolatesCaFalse()
         {
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 new X509BasicConstraintsExtension(
                     certificateAuthority: false,
                     hasPathLengthConstraint: false,
@@ -266,17 +282,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (endEntityCert)
             using (intermediateCert)
             using (rootCert)
-            using (ChainHolder chainHolder = new ChainHolder())
             {
-                X509Chain chain = chainHolder.Chain;
-                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
-                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
-                chain.ChainPolicy.ExtraStore.Add(intermediateCert);
-
-                Assert.False(chain.Build(endEntityCert));
-                Assert.Equal(X509ChainStatusFlags.InvalidBasicConstraints, chain.AllStatusFlags());
+                TestChain3(
+                    rootCert,
+                    intermediateCert,
+                    endEntityCert,
+                    expectedFlags: X509ChainStatusFlags.InvalidBasicConstraints);
             }
         }
 
@@ -327,8 +338,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
-                rootReq.CertificateExtensions.Add(
-                    new X509BasicConstraintsExtension(true, false, 0, true));
+                rootReq.CertificateExtensions.Add(BasicConstraintsCA);
 
                 CertificateRequest certReq = new CertificateRequest(
                     "CN=test",
@@ -336,8 +346,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
-                certReq.CertificateExtensions.Add(
-                    new X509BasicConstraintsExtension(false, false, 0, false));
+                certReq.CertificateExtensions.Add(BasicConstraintsEndEntity);
 
                 certReq.CertificateExtensions.Add(
                     new X509Extension(
@@ -516,28 +525,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void MismatchKeyIdentifiers()
         {
-            X509Extension[] intermediateExtensions = new [] {
-                new X509BasicConstraintsExtension(
-                    certificateAuthority: true,
-                    hasPathLengthConstraint: false,
-                    pathLengthConstraint: 0,
-                    critical: true),
+            X509Extension[] intermediateExtensions = new []
+            {
+                BasicConstraintsCA,
                 new X509Extension(
                     "2.5.29.14",
                     "0414C7AC28EFB300F46F9406ED155628A123633E556F".HexToByteArray(),
-                    critical: false)
+                    critical: false),
             };
 
-            X509Extension[] endEntityExtensions = new [] {
-                new X509BasicConstraintsExtension(
-                    certificateAuthority: false,
-                    hasPathLengthConstraint: false,
-                    pathLengthConstraint: 0,
-                    critical: true),
+            X509Extension[] endEntityExtensions = new []
+            {
+                BasicConstraintsEndEntity,
                 new X509Extension(
                     "2.5.29.35",
                     "30168014A84A6A63047DDDBAE6D139B7A64565EFF3A8ECA1".HexToByteArray(),
-                    critical: false)
+                    critical: false),
             };
 
             TestDataGenerator.MakeTestChain3(
@@ -572,6 +575,192 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Linux)]
+        public static void PolicyConstraints_RequireExplicitPolicy()
+        {
+            X509Extension[] intermediateExtensions = new []
+            {
+                BasicConstraintsCA,
+                BuildPolicyConstraints(requireExplicitPolicySkipCerts: 0),
+            };
+
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                intermediateExtensions: intermediateExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            {
+                TestChain3(
+                    rootCert,
+                    intermediateCert,
+                    endEntityCert,
+                    expectedFlags: PlatformPolicyConstraints(X509ChainStatusFlags.NoIssuanceChainPolicy));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void PolicyConstraints_Malformed()
+        {
+            X509Extension[] intermediateExtensions = new []
+            {
+                BasicConstraintsCA,
+                // Nonsense ContextSpecific 3.
+                new X509Extension("2.5.29.36", "3003830102".HexToByteArray(), critical: true),
+            };
+
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                intermediateExtensions: intermediateExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            {
+                TestChain3(
+                    rootCert,
+                    intermediateCert,
+                    endEntityCert,
+                    expectedFlags: X509ChainStatusFlags.InvalidPolicyConstraints);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Linux)]
+        public static void PolicyConstraints_Valid()
+        {
+            X509Extension[] intermediateExtensions = new []
+            {
+                BasicConstraintsCA,
+                BuildPolicyConstraints(requireExplicitPolicySkipCerts: 0),
+                BuildPolicyByIdentifiers("2.23.140.1.2.1"), // CABF DV OID
+            };
+            X509Extension[] endEntityExtensions = new []
+            {
+                BasicConstraintsEndEntity,
+                BuildPolicyByIdentifiers("2.23.140.1.2.1"), // CABF DV OID
+            };
+
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                intermediateExtensions: intermediateExtensions,
+                endEntityExtensions: endEntityExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            {
+                TestChain3(rootCert, intermediateCert, endEntityCert);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Linux)]
+        public static void PolicyConstraints_Mismatch()
+        {
+            X509Extension[] intermediateExtensions = new []
+            {
+                BasicConstraintsCA,
+                BuildPolicyConstraints(requireExplicitPolicySkipCerts: 0),
+                BuildPolicyByIdentifiers("2.23.140.1.2.1"), // CABF DV OID
+            };
+            X509Extension[] endEntityExtensions = new []
+            {
+                BasicConstraintsEndEntity,
+                BuildPolicyByIdentifiers("1.2.3.4"),
+            };
+
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                intermediateExtensions: intermediateExtensions,
+                endEntityExtensions: endEntityExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            {
+                TestChain3(
+                    rootCert,
+                    intermediateCert,
+                    endEntityCert,
+                    expectedFlags: PlatformPolicyConstraints(X509ChainStatusFlags.NoIssuanceChainPolicy));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Linux)]
+        public static void PolicyConstraints_AnyPolicy()
+        {
+            X509Extension[] intermediateExtensions = new []
+            {
+                BasicConstraintsCA,
+                BuildPolicyConstraints(requireExplicitPolicySkipCerts: 0),
+                BuildPolicyByIdentifiers("2.5.29.32.0"), // anyPolicy special OID.
+            };
+            X509Extension[] endEntityExtensions = new []
+            {
+                BasicConstraintsEndEntity,
+                BuildPolicyByIdentifiers("1.2.3.4"),
+            };
+
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                intermediateExtensions: intermediateExtensions,
+                endEntityExtensions: endEntityExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            {
+                TestChain3(rootCert, intermediateCert, endEntityCert);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Linux)]
+        public static void PolicyConstraints_Mapped()
+        {
+            X509Extension[] intermediateExtensions = new []
+            {
+                BasicConstraintsCA,
+                BuildPolicyConstraints(requireExplicitPolicySkipCerts: 0),
+                BuildPolicyByIdentifiers("2.23.140.1.2.1"),
+                BuildPolicyMappings(("2.23.140.1.2.1", "1.2.3.4")),
+            };
+            X509Extension[] endEntityExtensions = new []
+            {
+                BasicConstraintsEndEntity,
+                BuildPolicyByIdentifiers("1.2.3.4"),
+            };
+
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                intermediateExtensions: intermediateExtensions,
+                endEntityExtensions: endEntityExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            {
+                TestChain3(rootCert, intermediateCert, endEntityCert);
+            }
+        }
+
         private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -593,21 +782,40 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return flags;
         }
 
+        private static X509ChainStatusFlags PlatformPolicyConstraints(X509ChainStatusFlags flags)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                const X509ChainStatusFlags AnyPolicyConstraintFlags =
+                    X509ChainStatusFlags.NoIssuanceChainPolicy;
+
+                if ((flags & AnyPolicyConstraintFlags) != 0)
+                {
+                    flags &= ~AnyPolicyConstraintFlags;
+                    flags |= X509ChainStatusFlags.InvalidPolicyConstraints;
+                }
+            }
+
+            return flags;
+        }
+
         private static void TestNameConstrainedChain(
             string intermediateNameConstraints,
             SubjectAlternativeNameBuilder endEntitySanBuilder,
             Action<bool, X509Chain> body)
         {
-            X509Extension[] endEntityExtensions = new [] {
+            X509Extension[] endEntityExtensions = new []
+            {
                 new X509BasicConstraintsExtension(
                     certificateAuthority: false,
                     hasPathLengthConstraint: false,
                     pathLengthConstraint: 0,
                     critical: true),
-                endEntitySanBuilder.Build()
+                endEntitySanBuilder.Build(),
             };
 
-            X509Extension[] intermediateExtensions = new [] {
+            X509Extension[] intermediateExtensions = new []
+            {
                 new X509BasicConstraintsExtension(
                     certificateAuthority: true,
                     hasPathLengthConstraint: false,
@@ -616,7 +824,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 new X509Extension(
                     "2.5.29.30",
                     intermediateNameConstraints.HexToByteArray(),
-                    critical: true)
+                    critical: true),
             };
 
             TestDataGenerator.MakeTestChain3(
@@ -648,6 +856,117 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] cert = input.RawData;
             cert[cert.Length - 1] ^= 0xFF;
             return new X509Certificate2(cert);
+        }
+
+        private static X509Extension BuildPolicyConstraints(
+            int? requireExplicitPolicySkipCerts = null,
+            int? inhibitPolicyMappingSkipCerts = null)
+        {
+            // RFC 5280 4.2.1.11
+            //    id-ce-policyConstraints OBJECT IDENTIFIER ::=  { id-ce 36 }
+            //    PolicyConstraints ::= SEQUENCE {
+            //         requireExplicitPolicy           [0] SkipCerts OPTIONAL,
+            //         inhibitPolicyMapping            [1] SkipCerts OPTIONAL }
+            //    SkipCerts ::= INTEGER (0..MAX)
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence())
+            {
+                if (requireExplicitPolicySkipCerts.HasValue)
+                {
+                    Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 0);
+                    writer.WriteInteger(requireExplicitPolicySkipCerts.Value, tag);
+                }
+
+                if (inhibitPolicyMappingSkipCerts.HasValue)
+                {
+                    Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 1);
+                    writer.WriteInteger(inhibitPolicyMappingSkipCerts.Value, tag);
+                }
+            }
+
+            // Conforming CAs MUST mark this extension as critical.
+            return new X509Extension("2.5.29.36", writer.Encode(), critical: true);
+        }
+
+        private static X509Extension BuildPolicyByIdentifiers(params string[] policyOids)
+        {
+            // id-ce-certificatePolicies OBJECT IDENTIFIER ::=  { id-ce 32 }
+
+            // anyPolicy OBJECT IDENTIFIER ::= { id-ce-certificatePolicies 0 }
+
+            // CertificatePolicies ::= SEQUENCE SIZE (1..MAX) OF PolicyInformation
+
+            // PolicyInformation ::= SEQUENCE {
+            //      policyIdentifier   CertPolicyId,
+            //      policyQualifiers   SEQUENCE SIZE (1..MAX) OF
+            //              PolicyQualifierInfo OPTIONAL }
+
+            // CertPolicyId ::= OBJECT IDENTIFIER
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence()) //CertificatePolicies
+            {
+                foreach (string policyOid in policyOids)
+                {
+                    using (writer.PushSequence()) // PolicyInformation
+                    {
+                        writer.WriteObjectIdentifier(policyOid);
+                    }
+                }
+            }
+
+            return new X509Extension("2.5.29.32", writer.Encode(), critical: false);
+        }
+
+        private static X509Extension BuildPolicyMappings(
+            params (string IssuerDomainPolicy, string SubjectDomainPolicy)[] policyMappings)
+        {
+            //    PolicyMappings ::= SEQUENCE SIZE (1..MAX) OF SEQUENCE {
+            //         issuerDomainPolicy      CertPolicyId,
+            //         subjectDomainPolicy     CertPolicyId }
+            //    CertPolicyId ::= OBJECT IDENTIFIER
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence())
+            {
+                foreach ((string issuerDomainPolicy, string subjectDomainPolicy) in policyMappings)
+                {
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteObjectIdentifier(issuerDomainPolicy);
+                        writer.WriteObjectIdentifier(subjectDomainPolicy);
+                    }
+                }
+            }
+
+            return new X509Extension("2.5.29.33", writer.Encode(), critical: true);
+        }
+
+        private static void TestChain3(
+            X509Certificate2 rootCertificate,
+            X509Certificate2 intermediateCertificate,
+            X509Certificate2 endEntityCertificate,
+            X509ChainStatusFlags expectedFlags = X509ChainStatusFlags.NoError)
+        {
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCertificate.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(rootCertificate);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCertificate);
+
+                bool result = chain.Build(endEntityCertificate);
+                X509ChainStatusFlags actualFlags = chain.AllStatusFlags();
+                Assert.True(result == (expectedFlags == X509ChainStatusFlags.NoError), $"chain.Build ({actualFlags})");
+
+                Assert.True(
+                    actualFlags.HasFlag(expectedFlags),
+                    $"Expected Flags: \"{expectedFlags}\"; Actual Flags: \"{actualFlags}\"");
+            }
         }
     }
 }

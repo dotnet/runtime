@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
+using System.Diagnostics;
 public class Misc
 { //Only append content to this class as the test suite depends on line info
     public static int CreateObject(int foo, int bar)
@@ -47,5 +47,12 @@ public class Fancy
         ushort usMax = ushort.MaxValue;
 
         var d = usMin + usMax;
+    }
+}
+
+public class UserBreak {
+    public static void BreakOnDebuggerBreakCommand()
+    {
+        Debugger.Break();
     }
 }

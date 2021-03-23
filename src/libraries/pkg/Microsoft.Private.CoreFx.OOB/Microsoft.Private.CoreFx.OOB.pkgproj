@@ -5,6 +5,7 @@
     <_PreReleasePackageVersion>$(PackageVersion)</_PreReleasePackageVersion>
     <!-- We don't need to harvest the stable packages to build this -->
     <HarvestStablePackage>false</HarvestStablePackage>
+    <PackageDescription>Package used to represent out-of-band packages that are not included in NetCoreApp.</PackageDescription>
   </PropertyGroup>
 
   <Target Name="FindNetCoreAppPackages">

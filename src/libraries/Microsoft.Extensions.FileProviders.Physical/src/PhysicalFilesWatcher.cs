@@ -79,14 +79,23 @@ namespace Microsoft.Extensions.FileProviders.Physical
             bool pollForChanges,
             ExclusionFilters filters)
         {
+            if (fileSystemWatcher == null && !pollForChanges)
+            {
+                throw new ArgumentNullException(nameof(fileSystemWatcher), SR.Error_FileSystemWatcherRequiredWithoutPolling);
+            }
+
             _root = root;
-            _fileWatcher = fileSystemWatcher;
-            _fileWatcher.IncludeSubdirectories = true;
-            _fileWatcher.Created += OnChanged;
-            _fileWatcher.Changed += OnChanged;
-            _fileWatcher.Renamed += OnRenamed;
-            _fileWatcher.Deleted += OnChanged;
-            _fileWatcher.Error += OnError;
+
+            if (fileSystemWatcher != null)
+            {
+                _fileWatcher = fileSystemWatcher;
+                _fileWatcher.IncludeSubdirectories = true;
+                _fileWatcher.Created += OnChanged;
+                _fileWatcher.Changed += OnChanged;
+                _fileWatcher.Renamed += OnRenamed;
+                _fileWatcher.Deleted += OnChanged;
+                _fileWatcher.Error += OnError;
+            }
 
             PollForChanges = pollForChanges;
             _filters = filters;
@@ -361,27 +370,33 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private void TryDisableFileSystemWatcher()
         {
-            lock (_fileWatcherLock)
+            if (_fileWatcher != null)
             {
-                if (_filePathTokenLookup.IsEmpty &&
-                    _wildcardTokenLookup.IsEmpty &&
-                    _fileWatcher.EnableRaisingEvents)
+                lock (_fileWatcherLock)
                 {
-                    // Perf: Turn off the file monitoring if no files to monitor.
-                    _fileWatcher.EnableRaisingEvents = false;
+                    if (_filePathTokenLookup.IsEmpty &&
+                        _wildcardTokenLookup.IsEmpty &&
+                        _fileWatcher.EnableRaisingEvents)
+                    {
+                        // Perf: Turn off the file monitoring if no files to monitor.
+                        _fileWatcher.EnableRaisingEvents = false;
+                    }
                 }
             }
         }
 
         private void TryEnableFileSystemWatcher()
         {
-            lock (_fileWatcherLock)
+            if (_fileWatcher != null)
             {
-                if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) &&
-                    !_fileWatcher.EnableRaisingEvents)
+                lock (_fileWatcherLock)
                 {
-                    // Perf: Turn off the file monitoring if no files to monitor.
-                    _fileWatcher.EnableRaisingEvents = true;
+                    if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) &&
+                        !_fileWatcher.EnableRaisingEvents)
+                    {
+                        // Perf: Turn off the file monitoring if no files to monitor.
+                        _fileWatcher.EnableRaisingEvents = true;
+                    }
                 }
             }
         }

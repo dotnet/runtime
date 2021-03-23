@@ -211,26 +211,48 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Create a new span over a portion of a regular managed object. This can be useful
+        /// Creates a new span over a portion of a regular managed object. This can be useful
         /// if part of a managed object represents a "fixed array." This is dangerous because the
         /// <paramref name="length"/> is not checked.
         /// </summary>
         /// <param name="reference">A reference to data.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
-        /// <returns>The lifetime of the returned span will not be validated for safety by span-aware languages.</returns>
+        /// <returns>A span representing the specified reference and length.</returns>
+        /// <remarks>The lifetime of the returned span will not be validated for safety by span-aware languages.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> CreateSpan<T>(ref T reference, int length) => new Span<T>(ref reference, length);
 
         /// <summary>
-        /// Create a new read-only span over a portion of a regular managed object. This can be useful
+        /// Creates a new read-only span over a portion of a regular managed object. This can be useful
         /// if part of a managed object represents a "fixed array." This is dangerous because the
         /// <paramref name="length"/> is not checked.
         /// </summary>
         /// <param name="reference">A reference to data.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
-        /// <returns>The lifetime of the returned span will not be validated for safety by span-aware languages.</returns>
+        /// <returns>A read-only span representing the specified reference and length.</returns>
+        /// <remarks>The lifetime of the returned span will not be validated for safety by span-aware languages.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<T> CreateReadOnlySpan<T>(ref T reference, int length) => new ReadOnlySpan<T>(ref reference, length);
+
+        /// <summary>Creates a new read-only span for a null-terminated string.</summary>
+        /// <param name="value">The pointer to the null-terminated string of characters.</param>
+        /// <returns>A read-only span representing the specified null-terminated string, or an empty span if the pointer is null.</returns>
+        /// <remarks>The returned span does not include the null terminator.</remarks>
+        /// <exception cref="ArgumentException">The string is longer than <see cref="int.MaxValue"/>.</exception>
+        [CLSCompliant(false)]
+        public static unsafe ReadOnlySpan<char> CreateReadOnlySpanFromNullTerminated(char* value) =>
+            value != null ? new ReadOnlySpan<char>(value, string.wcslen(value)) :
+            default;
+
+        /// <summary>Creates a new read-only span for a null-terminated UTF8 string.</summary>
+        /// <param name="value">The pointer to the null-terminated string of bytes.</param>
+        /// <returns>A read-only span representing the specified null-terminated string, or an empty span if the pointer is null.</returns>
+        /// <remarks>The returned span does not include the null terminator, nor does it validate the well-formedness of the UTF8 data.</remarks>
+        /// <exception cref="ArgumentException">The string is longer than <see cref="int.MaxValue"/>.</exception>
+        [CLSCompliant(false)]
+        public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) =>
+            value != null ? new ReadOnlySpan<byte>(value, string.strlen(value)) :
+            default;
 
         /// <summary>
         /// Get an array segment from the underlying memory.
@@ -245,9 +267,6 @@ namespace System.Runtime.InteropServices
 
             if (obj != null && !(
                 (typeof(T) == typeof(char) && obj.GetType() == typeof(string))
-#if FEATURE_UTF8STRING
-                || ((typeof(T) == typeof(byte) || typeof(T) == typeof(Char8)) && obj.GetType() == typeof(Utf8String))
-#endif // FEATURE_UTF8STRING
                 ))
             {
                 if (RuntimeHelpers.ObjectHasComponentSize(obj))

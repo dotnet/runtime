@@ -20,15 +20,9 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeThreadHandle : SafeHandle
     {
-        internal SafeThreadHandle()
+        public SafeThreadHandle()
             : base(new IntPtr(0), true)
         {
-        }
-
-        internal void InitialSetHandle(IntPtr h)
-        {
-            Debug.Assert(IsInvalid, "Safe handle should only be set once");
-            base.SetHandle(h);
         }
 
         public override bool IsInvalid

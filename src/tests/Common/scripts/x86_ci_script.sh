@@ -6,7 +6,7 @@ for arg in "$@"
 do
     case $arg in
     --buildConfig=*)
-        __buildConfig="$(echo ${arg#*=} | awk '{print tolower($0)}')"
+        __buildConfig="$(echo ${arg#*=} | tr "[:upper:]" "[:lower:]")"
         if [[ "$__buildConfig" != "debug" && "$__buildConfig" != "release" && "$__buildConfig" != "checked" ]]; then
             exit_with_error "--buildConfig can be only Debug or Release" true
         fi

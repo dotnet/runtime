@@ -276,7 +276,7 @@ namespace System.Buffers
         private sealed class VirtualAllocHandle : SafeHandle
         {
             // Called by P/Invoke when returning SafeHandles
-            private VirtualAllocHandle()
+            public VirtualAllocHandle()
                 : base(IntPtr.Zero, ownsHandle: true)
             {
             }

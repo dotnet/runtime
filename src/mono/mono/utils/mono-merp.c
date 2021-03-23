@@ -25,7 +25,6 @@
 #include <mach/mach_traps.h>
 #include <servers/bootstrap.h>
 
-#include <metadata/locales.h>
 #include <mini/jit.h>
 
 #if defined(HAVE_SYS_UTSNAME_H)
@@ -37,6 +36,7 @@
 #include <sys/sysctl.h>
 #include <fcntl.h>
 
+#include <mono/metadata/object-internals.h>
 #include <mono/utils/json.h>
 #include <mono/utils/mono-state.h>
 #include <utils/mono-threads-debug.h>
@@ -129,7 +129,8 @@ typedef enum {
 	MerpArchx86_64 = 1,
 	MerpArchx86 = 2,
 	MerpArchPPC = 3,
-	MerpArchPPC64 = 4
+	MerpArchPPC64 = 4,
+	MerpArchARM64 = 5
 } MerpArch;
 
 typedef enum
@@ -218,6 +219,8 @@ get_merp_bitness (MerpArch arch)
 			return "x64";
 		case MerpArchx86:
 			return "x32";
+		case MerpArchARM64:
+			return "arm64";
 		default:
 			g_assert_not_reached ();
 	}
@@ -234,6 +237,8 @@ get_merp_arch (void)
 	return MerpArchPPC;
 #elif defined(TARGET_POWERPC64)
 	return MerpArchPPC64;
+#elif defined(TARGET_ARM64)
+	return MerpArchARM64;
 #else
 	g_assert_not_reached ();
 #endif
@@ -422,7 +427,7 @@ mono_init_merp (const intptr_t crashed_pid, const char *signal, MonoStackHash *h
 
 	merp->moduleOffset = 0;
 
-	merp->uiLidArg = MONO_LOCALE_INVARIANT;
+	merp->uiLidArg = 0x007F; // MONO_LOCALE_INVARIANT
 #if defined (TARGET_OSX)
 	merp->osVersion = macos_version_string ();
 #else

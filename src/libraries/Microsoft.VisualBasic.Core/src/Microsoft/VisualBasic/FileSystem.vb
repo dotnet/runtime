@@ -719,7 +719,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
-        <ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. http://go.microsoft.com/fwlink/?linkid=14202")>
+        <ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. https://go.microsoft.com/fwlink/?linkid=14202")>
         Public Sub FilePut(ByVal FileNumber As Object, ByVal Value As Object, Optional ByVal RecordNumber As Object = -1)
             Throw New ArgumentException(SR.UseFilePutObject)
         End Sub
@@ -1000,6 +1000,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Public Function InputString(ByVal FileNumber As Integer, ByVal CharCount As Integer) As String
             Try
                 Dim oFile As VB6File
@@ -1037,31 +1038,37 @@ Namespace Microsoft.VisualBasic
             Return oFile.LineInput()
         End Function
 
+        <UnsupportedOSPlatform("macos")> 
         Public Sub Lock(ByVal FileNumber As Integer)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Lock()
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Public Sub Lock(ByVal FileNumber As Integer, ByVal Record As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Lock(Record)
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Public Sub Lock(ByVal FileNumber As Integer, ByVal FromRecord As Long, ByVal ToRecord As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Lock(FromRecord, ToRecord)
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Public Sub Unlock(ByVal FileNumber As Integer)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Unlock()
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Public Sub Unlock(ByVal FileNumber As Integer, ByVal Record As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Unlock(Record)
         End Sub
 
+        <UnsupportedOSPlatform("macos")> 
         Public Sub Unlock(ByVal FileNumber As Integer, ByVal FromRecord As Long, ByVal ToRecord As Long)
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
             GetStream(assem, FileNumber).Unlock(FromRecord, ToRecord)

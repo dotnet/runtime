@@ -641,7 +641,7 @@ namespace System.Xml.Serialization
             _ns = ns;
         }
 
-        public override bool Equals(object? o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
             TempAssemblyCacheKey? key = o as TempAssemblyCacheKey;
             if (key == null)

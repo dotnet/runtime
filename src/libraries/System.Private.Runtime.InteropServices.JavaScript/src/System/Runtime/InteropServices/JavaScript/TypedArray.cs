@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 case Float64Array _:
                     return TypedArrayTypeCode.Float64Array;
                 default:
-                    throw new ArrayTypeMismatchException("TypedArray is not of correct type.");
+                    throw new ArrayTypeMismatchException(SR.TypedArrayNotCorrectType);
             }
         }
 
@@ -172,7 +172,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // source has to be instantiated.
             if (span == null)
             {
-                throw new System.ArgumentException($"Invalid argument: {nameof(span)} can not be null.");
+                throw new System.ArgumentException(SR.Format(SR.ArgumentCannotBeNull, nameof(span)));
             }
 
             TypedArrayTypeCode type = (TypedArrayTypeCode)Type.GetTypeCode(typeof(U));
@@ -208,7 +208,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // source has to be instantiated.
             if (span == null || span.Length == 0)
             {
-                throw new System.ArgumentException($"Invalid argument: {nameof(span)} can not be null and must have a length");
+                throw new System.ArgumentException(SR.Format(SR.ArgumentCannotBeNullWithLength, nameof(span)));
             }
 
             ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(span);

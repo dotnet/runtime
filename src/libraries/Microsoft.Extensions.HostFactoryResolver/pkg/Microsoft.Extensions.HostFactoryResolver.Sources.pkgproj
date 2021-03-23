@@ -5,7 +5,7 @@
     <IsSourcePackage>true</IsSourcePackage>
   </PropertyGroup>
   <ItemGroup>
-    <SourcePackageFiles Include="..\src\*.*" PackagePath="contentFiles/cs/netstandard1.0/%(FileName)%(Extension)"  />
+    <SourcePackageFiles Include="..\src\*.cs" PackagePath="contentFiles/cs/netstandard1.0/%(FileName)%(Extension)"  />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

@@ -10,42 +10,28 @@ namespace System.Net.Http.Functional.Tests
     public sealed class DribbleStream : Stream
     {
         private readonly Stream _wrapped;
-        private readonly bool _clientDisconnectAllowed;
 
-        public DribbleStream(Stream wrapped, bool clientDisconnectAllowed = false)
+        public DribbleStream(Stream wrapped)
         {
             _wrapped = wrapped;
-            _clientDisconnectAllowed = clientDisconnectAllowed;
         }
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            try
+            for (int i = 0; i < count; i++)
             {
-                for (int i = 0; i < count; i++)
-                {
-                    await _wrapped.WriteAsync(buffer, offset + i, 1);
-                    await _wrapped.FlushAsync();
-                    await Task.Yield(); // introduce short delays, enough to send packets individually but not so long as to extend test duration significantly
-                }
-            }
-            catch (IOException) when (_clientDisconnectAllowed)
-            {
+                await _wrapped.WriteAsync(buffer, offset + i, 1);
+                await _wrapped.FlushAsync();
+                await Task.Yield(); // introduce short delays, enough to send packets individually but not so long as to extend test duration significantly
             }
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            try
+            for (int i = 0; i < count; i++)
             {
-                for (int i = 0; i < count; i++)
-                {
-                    _wrapped.Write(buffer, offset + i, 1);
-                    _wrapped.Flush();
-                }
-            }
-            catch (IOException) when (_clientDisconnectAllowed)
-            {
+                _wrapped.Write(buffer, offset + i, 1);
+                _wrapped.Flush();
             }
         }
 

@@ -73,7 +73,7 @@ if "%VisualStudioVersion%"=="16.0" (
 :MissingVersion
 :: Can't find appropriate VS install
 echo Error: Visual Studio 2019 required
-echo        Please see https://github.com/dotnet/runtime/tree/master/docs/workflow/building/libraries for build instructions.
+echo        Please see https://github.com/dotnet/runtime/tree/main/docs/workflow/building/libraries for build instructions.
 exit /b 1
 
 :VS2019
@@ -97,7 +97,7 @@ goto :SetupDirs
 echo Commencing build of native components
 echo.
 
-if /i "%__BuildArch%" == "wasm" set __sourceDir=%~dp0..\Unix
+if /i "%__BuildArch%" == "wasm" set __sourceDir=%~dp0\Unix
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 
@@ -125,7 +125,7 @@ echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Bu
 if exist "%VSINSTALLDIR%DIA SDK" goto FindCMake
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
 Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
-Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
+Please see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md ^
 Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
 may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1
@@ -158,7 +158,7 @@ set __generatorArgs=
 if [%__Ninja%] == [1] (
     set __generatorArgs=
 ) else if [%__BuildArch%] == [wasm] (
-    set __generatorArgs=-j
+    set __generatorArgs=
 ) else (
     set __generatorArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
 )

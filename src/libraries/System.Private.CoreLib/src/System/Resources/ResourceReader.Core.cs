@@ -3,8 +3,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
@@ -19,6 +21,7 @@ namespace System.Resources
         // statics used to dynamically call into BinaryFormatter
         // When successfully located s_binaryFormatterType will point to the BinaryFormatter type
         // and s_deserializeMethod will point to an unbound delegate to the deserialize method.
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         private static Type? s_binaryFormatterType;
         private static Func<object?, Stream, object>? s_deserializeMethod;
 
@@ -42,14 +45,23 @@ namespace System.Resources
             ReadResources();
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
+            "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
+            "the user to only get one error.")]
         private object DeserializeObject(int typeIndex)
         {
+            if (!AllowCustomResourceTypes)
+            {
+                throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
+            }
+
             if (!_permitDeserialization)
             {
                 throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
             }
 
-            if (_binaryFormatter == null)
+            if (Volatile.Read(ref _binaryFormatter) is null)
             {
                 if (!InitializeBinaryFormatter())
                 {
@@ -73,29 +85,30 @@ namespace System.Resources
         }
 
         // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
+        [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
+            "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
         private bool InitializeBinaryFormatter()
         {
             // If BinaryFormatter support is disabled for the app, the linker will replace this entire
             // method body with "return false;", skipping all reflection code below.
 
-            LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, static () =>
-                Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
-                throwOnError: true)!);
-
-            LazyInitializer.EnsureInitialized(ref s_deserializeMethod, static () =>
+            if (Volatile.Read(ref s_binaryFormatterType) is null || Volatile.Read(ref s_deserializeMethod) is null)
             {
-                MethodInfo binaryFormatterDeserialize = s_binaryFormatterType!.GetMethod("Deserialize", new Type[] { typeof(Stream) })!;
+                Type binaryFormatterType = Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters", throwOnError: true)!;
+                MethodInfo? binaryFormatterDeserialize = binaryFormatterType.GetMethod("Deserialize", new[] { typeof(Stream) });
+                Func<object?, Stream, object>? deserializeMethod = (Func<object?, Stream, object>?)
+                    typeof(ResourceReader)
+                        .GetMethod(nameof(CreateUntypedDelegate), BindingFlags.NonPublic | BindingFlags.Static)
+                        ?.MakeGenericMethod(binaryFormatterType)
+                        .Invoke(null, new[] { binaryFormatterDeserialize });
 
-                // create an unbound delegate that can accept a BinaryFormatter instance as object
-                return (Func<object?, Stream, object>)typeof(ResourceReader)
-                        .GetMethod(nameof(CreateUntypedDelegate), BindingFlags.NonPublic | BindingFlags.Static)!
-                        .MakeGenericMethod(s_binaryFormatterType)
-                        .Invoke(null, new object[] { binaryFormatterDeserialize })!;
-            });
+                Interlocked.CompareExchange(ref s_binaryFormatterType, binaryFormatterType, null);
+                Interlocked.CompareExchange(ref s_deserializeMethod, deserializeMethod, null);
+            }
 
-            _binaryFormatter = Activator.CreateInstance(s_binaryFormatterType!)!;
+            Volatile.Write(ref _binaryFormatter, Activator.CreateInstance(s_binaryFormatterType!));
 
-            return true; // initialization successful
+            return s_deserializeMethod != null;
         }
 
         // generic method that we specialize at runtime once we've loaded the BinaryFormatter type

@@ -459,6 +459,11 @@ namespace System.Text
         {
             EnsurePreWriteConditions();
 
+            if (buffer.IsEmpty)
+            {
+                return;
+            }
+
             int rentalLength = Math.Clamp(buffer.Length, MinWriteRentedArraySize, MaxWriteRentedArraySize);
 
             char[] scratchChars = ArrayPool<char>.Shared.Rent(rentalLength);
@@ -479,11 +484,11 @@ namespace System.Text
                         out int charsWritten,
                         out decoderFinished);
 
-                    buffer = buffer[bytesConsumed..];
+                    buffer = buffer.Slice(bytesConsumed);
 
                     // convert chars -> bytes [inner]
 
-                    Span<char> decodedChars = scratchChars.AsSpan(..charsWritten);
+                    Span<char> decodedChars = scratchChars.AsSpan(0, charsWritten);
 
                     do
                     {
@@ -495,7 +500,7 @@ namespace System.Text
                             out int bytesWritten,
                             out encoderFinished);
 
-                        decodedChars = decodedChars[charsConsumed..];
+                        decodedChars = decodedChars.Slice(charsConsumed);
 
                         // It's more likely that the inner stream provides an optimized implementation of
                         // Write(byte[], ...) over Write(ROS<byte>), so we'll prefer the byte[]-based overloads.
@@ -527,6 +532,11 @@ namespace System.Text
                 return ValueTask.FromCanceled(cancellationToken);
             }
 
+            if (buffer.IsEmpty)
+            {
+                return ValueTask.CompletedTask;
+            }
+
             return WriteAsyncCore(buffer, cancellationToken);
             async ValueTask WriteAsyncCore(ReadOnlyMemory<byte> remainingOuterEncodedBytes, CancellationToken cancellationToken)
             {
@@ -550,7 +560,7 @@ namespace System.Text
                             out int charsWritten,
                             out decoderFinished);
 
-                        remainingOuterEncodedBytes = remainingOuterEncodedBytes[bytesConsumed..];
+                        remainingOuterEncodedBytes = remainingOuterEncodedBytes.Slice(bytesConsumed);
 
                         // convert chars -> bytes [inner]
 
@@ -566,7 +576,7 @@ namespace System.Text
                                 out int bytesWritten,
                                 out encoderFinished);
 
-                            decodedChars = decodedChars[charsConsumed..];
+                            decodedChars = decodedChars.Slice(charsConsumed);
                             await _innerStream.WriteAsync(new ReadOnlyMemory<byte>(scratchBytes, 0, bytesWritten), cancellationToken).ConfigureAwait(false);
                         } while (!encoderFinished);
                     } while (!decoderFinished);

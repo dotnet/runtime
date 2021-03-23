@@ -172,6 +172,9 @@ namespace Microsoft.NET.HostModel.AppHost
                                              BitConverter.GetBytes(bundleHeaderOffset),
                                              pad0s: false));
 
+            RetryUtil.RetryOnIOError(() =>
+                MachOUtils.AdjustHeadersForBundle(appHostPath));
+
             // Memory-mapped write does not updating last write time
             RetryUtil.RetryOnIOError(() =>
                 File.SetLastWriteTimeUtc(appHostPath, DateTime.UtcNow));

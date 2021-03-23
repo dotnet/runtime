@@ -84,7 +84,7 @@ namespace Internal.Cryptography.Pal
                     {
                         if (loadFromFile)
                             rawData = File.ReadAllBytes(fileName!);
-                        pCertContext = FilterPFXStore(rawData!, password, pfxCertStoreFlags);
+                        pCertContext = FilterPFXStore(rawData, password, pfxCertStoreFlags);
 
                         // If PersistKeySet is set we don't delete the key, so that it persists.
                         // If EphemeralKeySet is set we don't delete the key, because there's no file, so it's a wasteful call.

@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Text;
 using System.Threading;
 
@@ -21,7 +17,6 @@ namespace System.ServiceProcess
     public class ServiceController : Component
     {
         private string _machineName; // Never null
-        private readonly ManualResetEvent _waitForStatusSignal = new ManualResetEvent(false);
         private const string DefaultMachineName = ".";
 
         private string? _name;
@@ -45,13 +40,21 @@ namespace System.ServiceProcess
             _type = Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_ALL;
         }
 
+        /// <summary>
         /// Creates a ServiceController object, based on service name.
+        /// </summary>
+        /// <param name="name">Name of the service</param>
         public ServiceController(string name)
             : this(name, DefaultMachineName)
         {
         }
 
+
+        /// <summary>
         /// Creates a ServiceController object, based on machine and service name.
+        /// </summary>
+        /// <param name="name">Name of the service</param>
+        /// <param name="machineName">Name of the machine</param>
         public ServiceController(string name, string machineName)
         {
             if (!CheckMachineName(machineName))
@@ -65,9 +68,6 @@ namespace System.ServiceProcess
             _type = Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_ALL;
         }
 
-
-        /// Used by the GetServices and GetDevices methods. Avoids duplicating work by the static
-        /// methods and our own GenerateInfo().
         private ServiceController(string machineName, Interop.Advapi32.ENUM_SERVICE_STATUS status)
         {
             if (!CheckMachineName(machineName))
@@ -82,7 +82,11 @@ namespace System.ServiceProcess
             _statusGenerated = true;
         }
 
+        /// <summary>
         /// Used by the GetServicesInGroup method.
+        /// </summary>
+        /// <param name="machineName">Name of the machine</param>
+        /// <param name="status">Service process status</param>
         private ServiceController(string machineName, Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS status)
         {
             if (!CheckMachineName(machineName))
@@ -97,7 +101,9 @@ namespace System.ServiceProcess
             _statusGenerated = true;
         }
 
+        /// <summary>
         /// Tells if the service referenced by this object can be paused.
+        /// </summary>
         public bool CanPauseAndContinue
         {
             get
@@ -107,8 +113,9 @@ namespace System.ServiceProcess
             }
         }
 
-
+        /// <summary>
         /// Tells if the service is notified when system shutdown occurs.
+        /// </summary>
         public bool CanShutdown
         {
             get
@@ -118,7 +125,9 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
         /// Tells if the service referenced by this object can be stopped.
+        /// </summary>
         public bool CanStop
         {
             get
@@ -128,7 +137,9 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
         /// The descriptive name shown for this service in the Service applet.
+        /// </summary>
         public string DisplayName
         {
             get
@@ -155,8 +166,9 @@ namespace System.ServiceProcess
             }
         }
 
-        /// The set of services that depend on this service. These are the services that will be stopped if
-        /// this service is stopped.
+        /// <summary>
+        /// The set of services that depend on this service. These are the services that will be stopped if this service is stopped.
+        /// </summary>
         public ServiceController[] DependentServices
         {
             get
@@ -210,7 +222,9 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
         /// The name of the machine on which this service resides.
+        /// </summary>
         public string MachineName
         {
             get
@@ -235,7 +249,9 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
         /// Returns the short name of the service referenced by this object.
+        /// </summary>
         public string ServiceName
         {
             get
@@ -266,6 +282,9 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
+        /// A set of services on which the given service object is depend upon.
+        /// </summary>
         public unsafe ServiceController[] ServicesDependedOn
         {
             get
@@ -395,7 +414,12 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
         /// Gets the status of the service referenced by this object, e.g., Running, Stopped, etc.
+        /// </summary>
+        /// <remarks>
+        /// Please see <see cref="ServiceControllerStatus"/> for more available status.
+        /// </remarks>
         public ServiceControllerStatus Status
         {
             get
@@ -405,7 +429,12 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
         /// Gets the type of service that this object references.
+        /// </summary>
+        /// <remarks>
+        /// Please see <see cref="System.ServiceProcess.ServiceType"/> for available list of Service types.
+        /// </remarks>
         public ServiceType ServiceType
         {
             get
@@ -453,19 +482,21 @@ namespace System.ServiceProcess
 
         private unsafe void GenerateStatus()
         {
-            if (!_statusGenerated)
+            if (_statusGenerated)
             {
-                using var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_QUERY_STATUS);
-                Interop.Advapi32.SERVICE_STATUS svcStatus = default;
-                bool success = Interop.Advapi32.QueryServiceStatus(serviceHandle, &svcStatus);
-                if (!success)
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
-
-                _commandsAccepted = svcStatus.controlsAccepted;
-                _status = (ServiceControllerStatus)svcStatus.currentState;
-                _type = svcStatus.serviceType;
-                _statusGenerated = true;
+                return;
             }
+
+            using var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_QUERY_STATUS);
+            Interop.Advapi32.SERVICE_STATUS svcStatus = default;
+            bool success = Interop.Advapi32.QueryServiceStatus(serviceHandle, &svcStatus);
+            if (!success)
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+
+            _commandsAccepted = svcStatus.controlsAccepted;
+            _status = (ServiceControllerStatus)svcStatus.currentState;
+            _type = svcStatus.serviceType;
+            _statusGenerated = true;
         }
 
         [MemberNotNull(nameof(_name))]
@@ -622,18 +653,30 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
+        /// Gets all the device-driver services with <see cref="DefaultMachineName"/>.
+        /// </summary>
+        /// <returns>Set of service controllers</returns>
         public static ServiceController[] GetDevices()
         {
             return GetDevices(DefaultMachineName);
         }
 
+        /// <summary>
         /// Gets all the device-driver services in the machine specified.
+        /// </summary>
+        /// <param name="machineName">Name of the machine.</param>
+        /// <returns>Set of service controllers</returns>
         public static ServiceController[] GetDevices(string machineName)
         {
             return GetServicesOfType(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_DRIVER);
         }
 
+        /// <summary>
         /// Opens a handle for the current service. The handle must be Dispose()'d.
+        /// </summary>
+        /// <param name="desiredAccess">Access level to pass to OpenService()</param>
+        /// <returns></returns>
         private SafeServiceHandle GetServiceHandle(int desiredAccess)
         {
             GetDataBaseHandleWithConnectAccess();
@@ -648,31 +691,48 @@ namespace System.ServiceProcess
             return serviceHandle;
         }
 
+        /// <summary>
         /// Gets the services (not including device-driver services) on the local machine.
+        /// </summary>
+        /// <returns>Set of service controllers</returns>
         public static ServiceController[] GetServices()
         {
             return GetServices(DefaultMachineName);
         }
 
-        /// Gets the services (not including device-driver services) on the machine specified.
+        /// <summary>
+        /// Gets the services (not including device-driver services) on the given machine name.
+        /// /// </summary>
+        /// <param name="machineName">Name of the machine</param>
+        /// <returns></returns>
         public static ServiceController[] GetServices(string machineName)
         {
             return GetServicesOfType(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_WIN32);
         }
 
+        /// <summary>
         /// Helper function for ServicesDependedOn.
+        /// </summary>
+        /// <param name="machineName">Name of the machine.</param>
+        /// <param name="group">Name of the group.</param>
+        /// <returns></returns>
         private static Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS[] GetServicesInGroup(string machineName, string group)
         {
-            return GetServices<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS>(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_WIN32, group, status => status);
+            return GetServices(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_WIN32, group, status => status);
         }
 
+        /// <summary>
         /// Helper function for GetDevices and GetServices.
+        /// </summary>
+        /// <param name="machineName">Name of the machine.</param>
+        /// <param name="serviceType">Type of service.</param>
+        /// <returns></returns>
         private static ServiceController[] GetServicesOfType(string machineName, int serviceType)
         {
             if (!CheckMachineName(machineName))
                 throw new ArgumentException(SR.Format(SR.BadMachineName, machineName));
 
-            return GetServices<ServiceController>(machineName, serviceType, null, status => new ServiceController(machineName, status));
+            return GetServices(machineName, serviceType, null, status => new ServiceController(machineName, status));
         }
 
         /// Helper for GetDevices, GetServices, and ServicesDependedOn
@@ -733,7 +793,9 @@ namespace System.ServiceProcess
             return services;
         }
 
+        /// <summary>
         /// Suspends a service's operation.
+        /// </summary>
         public unsafe void Pause()
         {
             using var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_PAUSE_CONTINUE);
@@ -747,7 +809,9 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
         /// Continues a service after it has been paused.
+        /// </summary>
         public unsafe void Continue()
         {
             using var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_PAUSE_CONTINUE);
@@ -760,6 +824,10 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
+        /// Executes the command.
+        /// </summary>
+        /// <param name="command">The command</param>
         public unsafe void ExecuteCommand(int command)
         {
             using var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_USER_DEFINED_CONTROL);
@@ -772,7 +840,9 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
         /// Refreshes all property values.
+        /// </summary>
         public void Refresh()
         {
             _statusGenerated = false;
@@ -781,13 +851,17 @@ namespace System.ServiceProcess
             _servicesDependedOn = null;
         }
 
+        /// <summary>
         /// Starts the service.
+        /// </summary>
         public void Start()
         {
             Start(Array.Empty<string>());
         }
 
+        /// <summary>
         /// Starts a service in the machine specified.
+        /// </summary>
         public void Start(string[] args)
         {
             if (args == null)
@@ -833,9 +907,11 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
         /// Stops the service. If any other services depend on this one for operation,
         /// they will be stopped first. The DependentServices property lists this set
         /// of services.
+        /// </summary>
         public unsafe void Stop()
         {
             using SafeServiceHandle serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_STOP);
@@ -861,14 +937,20 @@ namespace System.ServiceProcess
             }
         }
 
+        /// <summary>
         /// Waits infinitely until the service has reached the given status.
+        /// </summary>
+        /// <param name="desiredStatus">The status for which to wait.</param>
         public void WaitForStatus(ServiceControllerStatus desiredStatus)
         {
             WaitForStatus(desiredStatus, TimeSpan.MaxValue);
         }
 
-        /// Waits until the service has reached the given status or until the specified time
-        /// has expired
+        /// <summary>
+        /// Waits until the service has reached the given status or until the specified time has expired.
+        /// </summary>
+        /// <param name="desiredStatus">The status for which to wait.</param>
+        /// <param name="timeout">Wait for specific timeout</param>
         public void WaitForStatus(ServiceControllerStatus desiredStatus, TimeSpan timeout)
         {
             if (!Enum.IsDefined(typeof(ServiceControllerStatus), desiredStatus))
@@ -881,7 +963,7 @@ namespace System.ServiceProcess
                 if (DateTime.UtcNow - start > timeout)
                     throw new System.ServiceProcess.TimeoutException(SR.Format(SR.Timeout, ServiceName));
 
-                _waitForStatusSignal.WaitOne(250);
+                Thread.Sleep(250);
                 Refresh();
             }
         }

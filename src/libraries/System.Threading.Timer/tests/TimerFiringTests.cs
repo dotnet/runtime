@@ -62,7 +62,7 @@ namespace System.Threading.Tests
         }
 
         [OuterLoop("Several second delays")]
-        [Theory] // values chosen based on knowing the 333 pivot used in implementation
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // values chosen based on knowing the 333 pivot used in implementation
         [InlineData(1, 1)]
         [InlineData(50, 50)]
         [InlineData(250, 50)]
@@ -284,7 +284,7 @@ namespace System.Threading.Tests
                                }));
         }
 
-        [PlatformSpecific(~TestPlatforms.OSX)] // macOS in CI appears to have a lot more variation
+        [PlatformSpecific(~TestPlatforms.OSX & ~TestPlatforms.Browser)] // macOS and Browser in CI appears to have a lot more variation
         [OuterLoop("Takes several seconds")]
         [Theory] // selection based on 333ms threshold used by implementation
         [InlineData(new int[] { 15 })]

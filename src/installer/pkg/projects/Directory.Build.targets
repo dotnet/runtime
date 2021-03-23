@@ -1,31 +1,12 @@
 <Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
-
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)" />
-  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)" />
-
   <PropertyGroup>
     <!--
       If we are stabilizing set the StableVersion property for the packages.
       Needs to happen in Directory.Build.targets to allow all the pkgproj's to set Version property first.
     -->
     <StableVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' != 'true'">$(Version)</StableVersion>
-    <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
   </PropertyGroup>
-
-  <!--
-    Mono does not need some pkgproj (no host on mobile, no crossgen for desktop), so allow projects to
-    opt out.
-  -->
-  <Target Name="MonoSkipBuildProps"
-          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
-          BeforeTargets="GetSkipBuildProps">
-    <PropertyGroup>
-      <SkipBuild>true</SkipBuild>
-    </PropertyGroup>
-  </Target>
 
   <!--
     We should not build some pkgproj in source-build (i.e. targeting-pack).
@@ -37,16 +18,6 @@
       <SkipBuild>true</SkipBuild>
     </PropertyGroup>
   </Target>
-
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
-    <RuntimeSpecificFrameworkSuffix>.Mono</RuntimeSpecificFrameworkSuffix>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
-    <RuntimeSpecificFrameworkSuffix>.Mono.LLVM</RuntimeSpecificFrameworkSuffix>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(MonoBundleLLVMOptimizer)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
-    <RuntimeSpecificFrameworkSuffix>.Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
-  </PropertyGroup>
 
   <!--
     For any Dependency items with a VersionProp, set it to the property by that name given by the
@@ -157,43 +128,58 @@
   <!--
     Finds symbol files and injects them into the package build.
   -->
-  <Target Name="GetSymbolPackageFiles"
-          BeforeTargets="GetPackageFiles"
-          DependsOnTargets="
-            SetupFindSiblingSymbolFilesByNameForSymbolPackage;
-            FindSiblingSymbolFilesByName">
-    <ItemGroup Condition="'$(SymbolFileExtension)' != ''">
-      <AdditionalLibPackageExcludes Include="%2A%2A\%2A$(SymbolFileExtension)" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(CrossGenSymbolExtension)' != ''">
-      <AdditionalLibPackageExcludes Include="%2A%2A\%2A$(CrossGenSymbolExtension)" />
+
+  <!--
+    Finds symbol files and injects them into the package build.
+  -->
+  <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
+    <ItemGroup Condition="'$(SymbolsSuffix)' != ''">
+      <AdditionalLibPackageExcludes Include="%2A%2A\%2A$(SymbolsSuffix)"/>
     </ItemGroup>
 
     <ItemGroup>
+      <NativeWithSymbolFile Include="@(NativeBinary)">
+        <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      </NativeWithSymbolFile>
+      <NativeWithSymbolFile Include="@(ArchitectureSpecificToolFile)">
+        <TargetPath>tools</TargetPath>
+      </NativeWithSymbolFile>
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- On Windows, trim ".dll" before adding ".pdb". -->
+      <WindowsNativeFile Include="@(NativeWithSymbolFile)"
+                         Condition="'%(NativeWithSymbolFile.Extension)'=='.dll' OR '%(NativeWithSymbolFile.Extension)'=='.exe'" />
+      <WindowsSymbolFile Include="@(WindowsNativeFile -> '%(RootDir)%(Directory)PDB\%(Filename).pdb')" />
+      <!-- Crossgened files (on windows) have both a *.pdb and a *.ni.pdb symbol file.  Include the *.ni.pdb file as well if it exists. -->
+      <WindowsSymbolFile Include="@(WindowsNativeFile -> '%(RootDir)%(Directory)PDB\%(Filename).ni.pdb')" />
+
       <!--
-        Discovered symbol files might already be in File, without IsSymbolFile set. Make sure we
-        keep the discovered one, which has IsSymbolFile=true.
+        Search for all xplat symbol file extensions on every xplat native binary. Some binaries have
+        no ".so" or ".dylib" extension, so we can't tell which convention its symbol files would
+        use. On xplat, the symbol extension is simply appended.
       -->
-      <File Remove="@(SiblingSymbolFile)" />
-      <File Include="@(SiblingSymbolFile)" />
-    </ItemGroup>
+      <NonWindowsNativeFile Include="@(NativeWithSymbolFile)"
+                            Exclude="@(WindowsNativeFile)" />
 
-    <!-- On Windows, native symbols are installed to a PDB subdirectory -->
-    <ItemGroup>
-      <WindowsSymbolFileInSubdirectory Include="@(WindowsSymbolFile -> '%(RootDir)%(Directory)PDB\%(Filename)%(Extension)')" />
-      <ExistingWindowsSymbolFileInSubdirectory Include="@(WindowsSymbolFileInSubdirectory)" Condition="Exists('%(Identity)')" />
-      <File Include="@(ExistingWindowsSymbolFileInSubdirectory)">
+      <NonWindowsSymbolFile Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolsSuffix)')" />
+
+      <ExistingWindowsSymbolFile Include="@(WindowsSymbolFile)" Condition="Exists('%(Identity)')" />
+      <ExistingNonWindowsSymbolFile Include="@(NonWindowsSymbolFile)" Condition="Exists('%(Identity)') AND '$(SkipPackagingXplatSymbols)'!='true'" />
+
+      <!-- Include all found symbols. -->
+      <File Include="@(ExistingWindowsSymbolFile);@(ExistingNonWindowsSymbolFile)">
         <IsSymbolFile>true</IsSymbolFile>
       </File>
     </ItemGroup>
 
     <PropertyGroup>
-      <NeedsPlaceholderPdb Condition="'@(ExistingNonWindowsSymbolFile)' != '' and '@(ExistingWindowsSymbolFile)' == ''">true</NeedsPlaceholderPdb>
+      <NeedsPlaceholderPdb Condition="'@(ExistingNonWindowsSymbolFile)'!='' AND '@(ExistingWindowsSymbolFile)'==''">true</NeedsPlaceholderPdb>
     </PropertyGroup>
 
     <ItemGroup>
-      <File Include="$(MSBuildThisFileDirectory)../_.pdb"
-            Condition="'$(NeedsPlaceholderPdb)' == 'true' AND '$(PackageTargetRuntime)' != ''">
+      <File Include="$(InstallerProjectRoot)\pkg\_.pdb"
+            Condition="'$(NeedsPlaceholderPdb)'=='true' AND '$(PackageTargetRuntime)'!=''">
         <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
         <IsSymbolFile>true</IsSymbolFile>
       </File>
@@ -213,163 +199,6 @@
     </ItemGroup>
   </Target>
 
-  <!-- override AssignPkgProjPackageDependenciesTargetFramework so that
-       it doesn't attempt to resolve all files in order to get dependency
-       TargetFrameworks.
-       https://github.com/dotnet/buildtools/issues/1273 -->
-  <Target Name="AssignPkgProjPackageDependenciesTargetFramework" DependsOnTargets="GetPkgProjPackageDependencies">
-    <SplitDependenciesBySupport Condition="'$(SplitDependenciesBySupport)' == 'true'" OriginalDependencies="@(PkgProjDependency)">
-      <Output TaskParameter="SplitDependencies" ItemName="_SplitPkgProjDependency" />
-    </SplitDependenciesBySupport>
-    <ItemGroup Condition="'@(_SplitPkgProjDependency)' != ''">
-      <PkgProjDependency Remove="@(PkgProjDependency)" />
-      <PkgProjDependency Include="@(_SplitPkgProjDependency)" />
-    </ItemGroup>
-    <ItemGroup>
-      <!-- ensure that unconstrained dependencies are also expanded in constrained TFM groups -->
-      <_PkgProjDependencyWithoutTFM Include="@(PkgProjDependency)" Condition="'%(PkgProjDependency.TargetFramework)' == '' AND '%(PkgProjDependency.TargetRuntime)' == '' AND '%(PkgProjDependency.DoNotExpand)' != 'true'" />
-      <_AllPkgProjTFMs Include="%(PkgProjDependency.TargetFramework)" Condition="'%(PkgProjDependency.DependencyKind)' == 'Direct'" />
-      <!-- Remove dependencies without a TFM so they can be replaced -->
-      <PkgProjDependency Remove="@(_PkgProjDependencyWithoutTFM)" />
-      <!-- operate on pkgproj dependencies and file dependencies -->
-      <PkgProjDependency Include="@(_PkgProjDependencyWithoutTFM)">
-        <TargetFramework>%(_AllPkgProjTFMs.Identity)</TargetFramework>
-      </PkgProjDependency>
-      <Dependency Include="@(PkgProjDependency)" Condition="'%(PkgProjDependency.DependencyKind)' == 'Direct'" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="GetNonPkgProjDependenciesToPackage"
-          Condition="'$(PackProjectDependencies)' == 'true'"
-          AfterTargets="ExpandProjectReferences">
-    <!-- allow projects to provide dependencies -->
-    <MSBuild Targets="GetDependenciesToPackage"
-             BuildInParallel="$(BuildInParallel)"
-             Projects="@(_NonPkgProjProjectReference)"
-             Properties="$(ProjectProperties)">
-      <Output TaskParameter="TargetOutputs"
-              ItemName="Dependency" />
-    </MSBuild>
-  </Target>
-
-  <Target Name="GetDependencyDataFileInclusionDefaults">
-    <PropertyGroup Condition="'$(BuildTargetPath)' != ''">
-      <FileVersionPropsTargetPath Condition="'$(FileVersionPropsTargetPath)' == ''">$(BuildTargetPath)$(Id).props</FileVersionPropsTargetPath>
-      <PlatformManifestTargetPath Condition="'$(PlatformManifestTargetPath)' == ''">$(BuildTargetPath)$(Id.Replace('.Internal', '')).PlatformManifest.txt</PlatformManifestTargetPath>
-    </PropertyGroup>
-  </Target>
-
-  <!-- Get data files (platform manifest, file version props) from depproj dependencies. -->
-  <Target Name="GetDepprojDependencyDataFiles">
-    <MSBuild
-      Projects="@(ProjectReference)"
-      Targets="GetDataFiles"
-      SkipNonExistentTargets="true">
-      <Output TaskParameter="TargetOutputs" ItemName="_depprojDataFile" />
-    </MSBuild>
-  </Target>
-
-  <Target Name="IncludeFileVersionPropsFile"
-          DependsOnTargets="GetDepprojDependencyDataFiles;GetDependencyDataFileInclusionDefaults"
-          BeforeTargets="GetFiles">
-    <!-- Create a copy with some per-pkgproj templates replaced. -->
-    <PropertyGroup>
-      <_propsFileTemplateFile Condition="'%(_depprojDataFile.PropsFile)' == 'true'">%(_depprojDataFile.Identity)</_propsFileTemplateFile>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="Exists('$(_propsFileTemplateFile)')">
-      <_runtimeDependencyItems>@(RuntimeDependency)</_runtimeDependencyItems>
-      <_filledPropsFileContent>$([System.IO.File]::ReadAllText('$(_propsFileTemplateFile)')
-        .Replace("__PackageId__", "$(Id.Replace('.', '_'))")
-        .Replace("__PreferredPackages__", "$(Id);$(_runtimeDependencyItems)"))
-      </_filledPropsFileContent>
-
-      <_filledPropsFile>$(IntermediateOutputPath)$(MSBuildProjectName).props</_filledPropsFile>
-    </PropertyGroup>
-
-    <WriteLinesToFile
-      Condition="'$(_filledPropsFile)' != ''"
-      File="$(_filledPropsFile)"
-      Lines="$(_filledPropsFileContent)"
-      Overwrite="true" />
-
-    <ItemGroup Condition="'$(PackageTargetRuntime)' == '' AND '$(FileVersionPropsTargetPath)' != ''">
-      <File
-        Include="$(_filledPropsFile)"
-        TargetPath="$(FileVersionPropsTargetPath)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="IncludePlatformManifestFile"
-          DependsOnTargets="GetDepprojDependencyDataFiles;GetDependencyDataFileInclusionDefaults"
-          BeforeTargets="GetFiles">
-    <!-- Create a copy with some per-pkgproj templates replaced. -->
-    <PropertyGroup>
-      <_platformManifestFileTemplateFile Condition="'%(_depprojDataFile.PlatformManifestFile)' == 'true'">%(_depprojDataFile.Identity)</_platformManifestFileTemplateFile>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="Exists('$(_platformManifestFileTemplateFile)')">
-      <_runtimeDependencyItems>@(RuntimeDependency)</_runtimeDependencyItems>
-      <_filledPlatformManifestFileContent>$([System.IO.File]::ReadAllText('$(_platformManifestFileTemplateFile)')
-        .Replace("__PackageId__", "$(Id)"))
-      </_filledPlatformManifestFileContent>
-
-      <_filledPlatformManifestFile>$(IntermediateOutputPath)PlatformManifest.txt</_filledPlatformManifestFile>
-    </PropertyGroup>
-
-    <WriteLinesToFile
-      Condition="'$(_filledPlatformManifestFile)' != ''"
-      File="$(_filledPlatformManifestFile)"
-      Lines="$(_filledPlatformManifestFileContent)"
-      Overwrite="true" />
-
-    <ItemGroup Condition="'$(PlatformManifestTargetPath)' != ''">
-      <File
-        Include="$(_filledPlatformManifestFile)"
-        TargetPath="$(PlatformManifestTargetPath)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="IncludeFrameworkListFile"
-          BeforeTargets="GetFiles"
-          DependsOnTargets="GetSymbolPackageFiles"
-          Condition="
-            '$(FrameworkListTargetPath)' != '' AND
-            (
-              '$(PackageTargetRuntime)' == '' OR
-              '$(PackageTargetRuntime)' == '$(PackageRID)'
-            )">
-    <PropertyGroup>
-      <FrameworkListFilename Condition="'$(FrameworkListFilename)' == ''">FrameworkList.xml</FrameworkListFilename>
-      <FrameworkListFile>$(IntermediateOutputPath)$(FrameworkListFilename)</FrameworkListFile>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <FrameworkListRootAttributes Include="Name" Value="$(FrameworkListName)" />
-      <FrameworkListRootAttributes Include="TargetFrameworkIdentifier" Value="$(FrameworkListTargetFrameworkIdentifier)" />
-      <FrameworkListRootAttributes Include="TargetFrameworkVersion" Value="$(FrameworkListTargetFrameworkVersion)" />
-      <FrameworkListRootAttributes Include="FrameworkName" Value="$(FrameworkListFrameworkName)" />
-    </ItemGroup>
-
-    <Error
-      Condition="'%(FrameworkListRootAttributes.Value)' == ''"
-      Text="Missing value for property 'FrameworkList%(FrameworkListRootAttributes.Identity)'" />
-
-    <CreateFrameworkListFile
-      Files="@(File)"
-      FileClassifications="@(FrameworkListFileClass)"
-      TargetFile="$(FrameworkListFile)"
-      TargetFilePrefixes="ref/;runtimes/"
-      RootAttributes="@(FrameworkListRootAttributes)"
-      SingleFileHostIncludeFilenames="@(SingleFileHostIncludeFilename)" />
-
-    <ItemGroup>
-      <File Include="$(FrameworkListFile)">
-        <TargetPath>$(FrameworkListTargetPath)</TargetPath>
-      </File>
-    </ItemGroup>
-  </Target>
-
   <!--
     Create RuntimeDependencies just before they're needed. Use MSBuild to get their identities, like
     GetPkgProjPackageDependencies: this finds package id and version without any guesswork.
@@ -386,27 +215,6 @@
 
     <ItemGroup>
       <RuntimeDependency Include="@(_runtimeDependencyIdentity)" />
-    </ItemGroup>
-  </Target>
-
-  <!-- Override adding packages to get the crossgen tool to only pull down the WinRT targeting pack and DiaSymReader since we have everything else locally. -->
-  <Target Name="AddCrossgenToolPackageReferences"
-          BeforeTargets="CollectPackageReferences">
-    <ItemGroup>
-      <!-- This tool is a prebuilt not buildable from source. -->
-      <CrossgenToolPackageReference
-        Condition="'$(DotNetBuildFromSource)' != 'true'"
-        Include="Microsoft.DiaSymReader.Native"
-        Version="$(MicrosoftDiaSymReaderNativeVersion)" />
-
-      <!--
-        If any tool packages are missing, add them with ExcludeAssets=All. Be careful not to modify
-        existing PackageReferences.
-      -->
-      <PackageReference
-        Include="@(CrossgenToolPackageReference)"
-        Exclude="@(PackageReference)"
-        ExcludeAssets="All" />
     </ItemGroup>
   </Target>
 </Project>

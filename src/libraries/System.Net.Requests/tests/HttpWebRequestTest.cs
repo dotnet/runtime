@@ -34,10 +34,13 @@ namespace System.Net.Tests
     {
         public HttpWebRequestTest_Sync(ITestOutputHelper output) : base(output) { }
         protected override Task<WebResponse> GetResponseAsync(HttpWebRequest request) => Task.Run(() => request.GetResponse());
+        protected override bool IsAsync => false;
     }
 
     public abstract partial class HttpWebRequestTest
     {
+        protected virtual bool IsAsync => true;
+
         public class HttpWebRequestParameters
         {
             public DecompressionMethods AutomaticDecompression { get; set; }
@@ -511,21 +514,23 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public async Task Timeout_SetTenMillisecondsOnLoopback_ThrowsWebException()
+        public async Task Timeout_Set30MillisecondsOnLoopback_ThrowsWebException()
         {
             await LoopbackServer.CreateServerAsync((server, url) =>
             {
                 HttpWebRequest request = WebRequest.CreateHttp(url);
-                request.Timeout = 10; // ms.
+                request.Timeout = 30; // ms.
 
                 var sw = Stopwatch.StartNew();
                 WebException exception = Assert.Throws<WebException>(() => request.GetResponse());
                 sw.Stop();
 
-                Assert.InRange(sw.ElapsedMilliseconds, 1, 15 * 1000);
+                _output.WriteLine(exception.ToString());
+
                 Assert.Equal(WebExceptionStatus.Timeout, exception.Status);
                 Assert.Null(exception.InnerException);
                 Assert.Null(exception.Response);
+                Assert.InRange(sw.ElapsedMilliseconds, 1, 15 * 1000);
 
                 return Task.FromResult<object>(null);
             });
@@ -1059,6 +1064,68 @@ namespace System.Net.Tests
             HttpWebRequest request = WebRequest.CreateHttp("http://test");
             Assert.Throws<ArgumentOutOfRangeException>(() => { request.ReadWriteTimeout = 0; });
             Assert.Throws<ArgumentOutOfRangeException>(() => { request.ReadWriteTimeout = -10; });
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReadWriteTimeout_CancelsResponse(bool forceTimeoutDuringHeaders)
+        {
+            if (forceTimeoutDuringHeaders && IsAsync)
+            {
+                // ReadWriteTimeout doesn't apply to asynchronous operations, so when doing async
+                // internally, this test is only relevant when we then perform synchronous operations
+                // on the response stream.
+                return;
+            }
+
+            var tcs = new TaskCompletionSource();
+            await LoopbackServer.CreateClientAndServerAsync(uri => Task.Run(async () =>
+            {
+                try
+                {
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    request.ReadWriteTimeout = 10;
+                    Exception e = await Assert.ThrowsAnyAsync<Exception>(async () =>
+                    {
+                        using WebResponse response = await GetResponseAsync(request);
+                        using (Stream myStream = response.GetResponseStream())
+                        {
+                            while (myStream.ReadByte() != -1) ;
+                        }
+                    });
+
+                    // If the timeout occurs while we're reading on the stream, we'll get an IOException.
+                    // If the timeout occurs while we're reading/writing the request/response headers,
+                    // that IOException will be wrapped in an HttpRequestException wrapped in a WebException.
+                    // (Note that this differs slightly from .NET Framework, where exceptions from the stream
+                    // are wrapped in a WebException as  well, but in .NET Core, HttpClient's response Stream
+                    // is passed back through the WebResponse without being wrapped.)
+                    Assert.True(
+                        e is WebException { InnerException: HttpRequestException { InnerException: IOException { InnerException: SocketException { SocketErrorCode: SocketError.TimedOut } } } } ||
+                        e is IOException { InnerException: SocketException { SocketErrorCode: SocketError.TimedOut } },
+                        e.ToString());
+                }
+                finally
+                {
+                    tcs.SetResult();
+                }
+            }), async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestHeaderAsync();
+                        if (!forceTimeoutDuringHeaders)
+                        {
+                            await connection.WriteStringAsync("HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nHello Wor");
+                        }
+                        await tcs.Task;
+                    });
+                }
+                catch { }
+            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1666,7 +1733,7 @@ namespace System.Net.Tests
 
                         Task<Socket> secondAccept = listener.AcceptAsync();
 
-                        Task<WebResponse> secondResponseTask = request1.GetResponseAsync();
+                        Task<WebResponse> secondResponseTask = bool.Parse(async) ? request1.GetResponseAsync() : Task.Run(() => request1.GetResponse());
                         await ReplyToClient(responseContent, server, serverReader);
                         if (bool.Parse(connectionReusedString))
                         {

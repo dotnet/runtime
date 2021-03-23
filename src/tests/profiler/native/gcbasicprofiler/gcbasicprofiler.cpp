@@ -55,6 +55,8 @@ HRESULT GCBasicProfiler::Shutdown()
 
 HRESULT GCBasicProfiler::GarbageCollectionStarted(int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason)
 {
+    SHUTDOWNGUARD();
+
     _gcStarts++;
     if (_gcStarts - _gcFinishes > 2)
     {
@@ -125,6 +127,8 @@ HRESULT GCBasicProfiler::GarbageCollectionStarted(int cGenerations, BOOL generat
 
 HRESULT GCBasicProfiler::GarbageCollectionFinished()
 {
+    SHUTDOWNGUARD();
+
     _gcFinishes++;
     if (_gcStarts < _gcFinishes)
     {

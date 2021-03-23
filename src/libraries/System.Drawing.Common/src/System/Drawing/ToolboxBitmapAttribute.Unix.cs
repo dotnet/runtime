@@ -36,6 +36,7 @@
 //
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Drawing
@@ -65,7 +66,7 @@ namespace System.Drawing
             smallImage = GetImageFromResource(t, name, false);
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (!(value is ToolboxBitmapAttribute))
                 return false;
@@ -122,7 +123,7 @@ namespace System.Drawing
 
             try
             {
-                using (System.IO.Stream? s = t.GetTypeInfo().Assembly.GetManifestResourceStream(t.Namespace + "." + imageName))
+                using (System.IO.Stream? s = t.Assembly.GetManifestResourceStream(t.Namespace + "." + imageName))
                 {
                     if (s == null)
                     {

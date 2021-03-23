@@ -19,7 +19,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(dictionary));
             }
 
-            TValue value;
+            TValue? value;
             return dictionary.TryGetValue(key, out value) ? value : defaultValue;
         }
 

@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -353,19 +354,28 @@ namespace System.Diagnostics
                 return false;
             }
 
-            if (mb.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
+            try
             {
-                // Don't show where StackTraceHidden is applied to the method.
-                return false;
-            }
+                if (mb.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
+                {
+                    // Don't show where StackTraceHidden is applied to the method.
+                    return false;
+                }
 
-            Type? declaringType = mb.DeclaringType;
-            // Methods don't always have containing types, for example dynamic RefEmit generated methods.
-            if (declaringType != null &&
-                declaringType.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
+                Type? declaringType = mb.DeclaringType;
+                // Methods don't always have containing types, for example dynamic RefEmit generated methods.
+                if (declaringType != null &&
+                    declaringType.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
+                {
+                    // Don't show where StackTraceHidden is applied to the containing Type of the method.
+                    return false;
+                }
+            }
+            catch
             {
-                // Don't show where StackTraceHidden is applied to the containing Type of the method.
-                return false;
+                // Getting the StackTraceHiddenAttribute has failed, behave as if it was not present.
+                // One of the reasons can be that the method mb or its declaring type use attributes
+                // defined in an assembly that is missing.
             }
 
             return true;
@@ -384,7 +394,13 @@ namespace System.Diagnostics
                 return false;
             }
 
-            MethodInfo[]? methods = parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                Justification = "Using Reflection to find the state machine's corresponding method is safe because the corresponding method is the only " +
+                                "caller of the state machine. If the state machine is present, the corresponding method will be, too.")]
+            static MethodInfo[]? GetDeclaredMethods(Type type) =>
+                type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+            MethodInfo[]? methods = GetDeclaredMethods(parentType);
             if (methods == null)
             {
                 return false;

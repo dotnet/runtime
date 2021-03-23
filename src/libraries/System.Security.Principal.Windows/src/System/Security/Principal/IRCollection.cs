@@ -165,7 +165,7 @@ namespace System.Security.Principal
             // Target type must be a subclass of IdentityReference
             //
 
-            if (!targetType.GetTypeInfo().IsSubclassOf(typeof(IdentityReference)))
+            if (!targetType.IsSubclassOf(typeof(IdentityReference)))
             {
                 throw new ArgumentException(SR.IdentityReference_MustBeIdentityReference, nameof(targetType));
             }

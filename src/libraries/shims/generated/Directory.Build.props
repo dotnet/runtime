@@ -15,9 +15,9 @@
 
   <!-- Download the .NET Framework RefPack to build against the contract. -->
   <ItemGroup>
-    <PackageDownload Include="NETStandard.Library"
+    <PackageDownload Include="NETStandard.Library.Ref"
                      Condition="'$(MSBuildProjectName)' == 'netstandard'"
-                     Version="[$(NETStandardLibraryVersion)]" />
+                     Version="[$(NETStandardLibraryRefVersion)]" />
     <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.$(NETFrameworkReferenceAssemblyTFM)"
                      Condition="'$(MSBuildProjectName)' != 'netstandard'"
                      Version="[$(MicrosoftNetFrameworkReferenceAssembliesVersion)]" />

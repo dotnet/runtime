@@ -4726,40 +4726,6 @@ GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 }
 #endif
 
-#ifndef ENABLE_NETCORE
-guint32
-mono_w32file_get_drive_type (const gunichar2 *root_path_name, gint32 root_path_name_length, MonoError *error)
-{
-	// FIXME Check for embedded nuls here or in managed.
-
-	gchar *utf8_root_path_name;
-	guint32 drive_type;
-
-	if (root_path_name == NULL) {
-		utf8_root_path_name = g_strdup (g_get_current_dir());
-		if (utf8_root_path_name == NULL) {
-			return(DRIVE_NO_ROOT_DIR);
-		}
-	}
-	else {
-		utf8_root_path_name = mono_unicode_to_external_checked (root_path_name, error);
-		if (utf8_root_path_name == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: unicode conversion returned NULL; %s", __func__, mono_error_get_message (error));
-			return(DRIVE_NO_ROOT_DIR);
-		}
-		
-		/* strip trailing slash for compare below */
-		if (g_str_has_suffix(utf8_root_path_name, "/") && utf8_root_path_name [1] != 0) {
-			utf8_root_path_name[strlen(utf8_root_path_name) - 1] = 0;
-		}
-	}
-	drive_type = GetDriveTypeFromPath (utf8_root_path_name);
-	g_free (utf8_root_path_name);
-
-	return (drive_type);
-}
-#endif
-
 #if defined (HOST_DARWIN) || defined (__linux__) || defined(HOST_BSD) || defined(__FreeBSD_kernel__) || defined(__HAIKU__) || defined(_AIX)
 static gchar*
 get_fstypename (gchar *utfpath)

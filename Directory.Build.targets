@@ -1,18 +1,15 @@
-<Project>
-
+<Project InitialTargets="ErrorForMissingPackageDescription;_OverridePackDependsOn">
   <PropertyGroup>
     <!--
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
     tell Microsoft.Common.targets not to import Directory.Build.targets again
     -->
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
-
-    <EnableNETAnalyzers Condition="'$(EnableAnalyzers)' != 'true'">false</EnableNETAnalyzers>
   </PropertyGroup>
 
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)python.targets" />
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(SkipImportArcadeSdkFromRoot)' != 'true'" />
 
   <PropertyGroup>
     <!--
@@ -20,29 +17,57 @@
       unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
     -->
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
+    <EnableNETAnalyzers Condition="'$(EnableAnalyzers)' != 'true'">false</EnableNETAnalyzers>
+    <!-- SDK sets product to assembly but we want it to be our product name -->
+    <Product>Microsoft%AE .NET</Product>
+    <!-- Use the .NET product branding version for informational version description -->
+    <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' == ''">$(ProductVersion)</InformationalVersion>
+    <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' != ''">$(ProductVersion)-$(VersionSuffix)</InformationalVersion>
+  </PropertyGroup>
+  
+  <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
+       This is required to show all the files corresponding to all target frameworks in VS. -->
+  <ItemGroup Condition="'$(DefaultLanguageSourceExtension)' != '' and
+                        ('$(BuildingInsideVisualStudio)' == 'true' or '$(DesignTimeBuild)' == 'true')">
+    <None Include="$(MSBuildProjectDirectory)\**\*$(DefaultLanguageSourceExtension)"
+          Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)" />
+  </ItemGroup>
+
+  <!-- Packaging -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <!-- The sfxproj files add the license themselves. -->
+    <None Include="$(LicenseFile)"
+          PackagePath="$([System.IO.Path]::GetFileName('$(LicenseFile)'))"
+          Pack="true"
+          Condition="'$(MSBuildProjectExtension)' != '.sfxproj'" />
+    <None Include="$(PackageThirdPartyNoticesFile)"
+          PackagePath="$([System.IO.Path]::GetFileName('$(PackageThirdPartyNoticesFile)'))"
+          Pack="true" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PackageDescription Condition="'$(PackageDescription)' == '' and '$(Description)' != ''">$(Description)</PackageDescription>
+    <RuntimePackageDisclaimer>Internal implementation package not meant for direct consumption. Please do not reference directly.</RuntimePackageDisclaimer>
+    <UseRuntimePackageDisclaimer Condition="'$(UseRuntimePackageDisclaimer)' == '' and
+                                            ($(MSBuildProjectName.StartsWith('runtime.native')) or '$(PackageTargetRuntime)' != '')">true</UseRuntimePackageDisclaimer>
+    <PackageDescription Condition="'$(PackageDescription)' != '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer) %0A$(PackageDescription)</PackageDescription>
+    <PackageDescription Condition="'$(PackageDescription)' == '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer)</PackageDescription>
+    <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
+    <Description>$(PackageDescription)</Description>
   </PropertyGroup>
 
-  <!--
-    SDK currently does not know about net6.0 TargetFramework.
-    We need to manually add these to correctly resolve the targeting packs.
-    https://github.com/dotnet/sdk/issues/13950  
-  -->
-  <ItemGroup>
-    <KnownFrameworkReference Include="Microsoft.NETCore.App"
-      DefaultRuntimeFrameworkVersion="5.0.0-rc.1.20451.14"
-      IsTrimmable="true"
-      LatestRuntimeFrameworkVersion="5.0.0-rc.1.20451.14"
-      RuntimeFrameworkName="Microsoft.NETCore.App"
-      RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.**RID**"
-      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;ios-arm64;ios-arm;ios-x64;ios-x86;tvos-arm64;tvos-x64;android-arm64;android-arm;android-x64;android-x86;browser-wasm"
-      TargetFramework="$(NetCoreAppCurrent)"
-      TargetingPackName="Microsoft.NETCore.App.Ref"
-      TargetingPackVersion="5.0.0-rc.1.20451.14" />
+  <!-- Remove when https://github.com/NuGet/Home/issues/10405 is implemented and consumed. -->
+  <Target Name="ErrorForMissingPackageDescription"
+          Condition="'$(IsPackable)' == 'true' and '$(PackageDescription)' == ''">
+    <Error Text="Required property 'PackageDescription' is missing for $(MSBuildProjectName)." />
+  </Target>
 
-    <KnownAppHostPack Include="Microsoft.NETCore.App" 
-      AppHostPackNamePattern="Microsoft.NETCore.App.Host.**RID**"
-      AppHostPackVersion="5.0.0-rc.1.20451.14"
-      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86"
-      TargetFramework="$(NetCoreAppCurrent)" />
-  </ItemGroup>
+  <!-- <GeneratePackage /> controls if a package should be created by clearing out <PackDependsOn />. -->
+  <Target Name="_OverridePackDependsOn"
+          Condition="'$(IsPackable)' == 'true' and
+                     '$(GeneratePackage)' != 'true'">
+    <PropertyGroup>
+      <PackDependsOn />
+    </PropertyGroup>
+  </Target>
 </Project>

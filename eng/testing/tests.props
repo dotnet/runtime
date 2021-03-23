@@ -32,7 +32,7 @@
   </PropertyGroup>
 
   <!-- Provide runtime options to Mono (interpreter, aot, debugging, etc) -->
-  <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
+  <ItemGroup Condition="'$(MonoEnvOptions)' != '' and '$(TargetsMobile)' != 'true'">
     <RunScriptCommands Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
     <RunScriptCommands Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>

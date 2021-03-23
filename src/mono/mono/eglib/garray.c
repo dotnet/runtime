@@ -50,7 +50,7 @@ ensure_capacity (GArrayPriv *priv, guint capacity)
 	if (capacity <= priv->capacity)
 		return;
 	
-	new_capacity = (capacity + 63) & ~63;
+	new_capacity = (capacity + (capacity >> 1) + 63) & ~63;
 	
 	priv->array.data = g_realloc (priv->array.data, element_length (priv, new_capacity));
 	

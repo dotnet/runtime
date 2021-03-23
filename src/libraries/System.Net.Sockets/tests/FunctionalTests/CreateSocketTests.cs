@@ -269,6 +269,15 @@ namespace System.Net.Sockets.Tests
         [InlineData(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified)]
         public void Ctor_SafeHandle_BasicPropertiesPropagate_Success(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
+            bool isRawPacket = (addressFamily == AddressFamily.Packet) &&
+                               (socketType == SocketType.Raw);
+            if (isRawPacket)
+            {
+                // protocol is the IEEE 802.3 protocol number in network byte order.
+                const short ETH_P_ARP = 0x0806;
+                protocolType = (ProtocolType)IPAddress.HostToNetworkOrder(ETH_P_ARP);
+            }
+
             Socket tmpOrig;
             try
             {
@@ -332,7 +341,13 @@ namespace System.Net.Sockets.Tests
 
             Assert.Equal(addressFamily, copy.AddressFamily);
             Assert.Equal(socketType, copy.SocketType);
-            Assert.Equal(protocolType, copy.ProtocolType);
+            ProtocolType expectedProtocolType = protocolType;
+            if (isRawPacket)
+            {
+                // raw packet doesn't support getting the protocol using getsockopt SO_PROTOCOL.
+                expectedProtocolType = ProtocolType.Unspecified;
+            }
+            Assert.Equal(expectedProtocolType, copy.ProtocolType);
 
             Assert.True(orig.Blocking);
             Assert.True(copy.Blocking);
@@ -594,7 +609,7 @@ namespace System.Net.Sockets.Tests
 
                 if (nlh.nlmsg_type == NLMSG_ERROR)
                 {
-                    MemoryMarshal.TryRead<nlmsgerr>(response.AsSpan().Slice(sizeof(nlmsghdr)), out nlmsgerr err);
+                    MemoryMarshal.TryRead<nlmsgerr>(response.AsSpan(sizeof(nlmsghdr)), out nlmsgerr err);
                     _output.WriteLine("Netlink request failed with {0}", err.error);
                 }
 

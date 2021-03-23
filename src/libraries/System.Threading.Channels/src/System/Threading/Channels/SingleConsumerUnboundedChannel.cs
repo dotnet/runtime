@@ -72,7 +72,7 @@ namespace System.Threading.Channels
                     return new ValueTask<T>(Task.FromCanceled<T>(cancellationToken));
                 }
 
-                if (TryRead(out T item))
+                if (TryRead(out T? item))
                 {
                     return new ValueTask<T>(item);
                 }

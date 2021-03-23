@@ -70,5 +70,7 @@ namespace System.Text.Json.Serialization.Converters
                 _converter.WriteNumberWithCustomHandling(writer, value.Value, handling);
             }
         }
+
+        internal override bool IsNull(in T? value) => !value.HasValue;
     }
 }

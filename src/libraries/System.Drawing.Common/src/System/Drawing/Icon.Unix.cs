@@ -247,7 +247,7 @@ namespace System.Drawing
             if (type == null)
                 throw new NullReferenceException();
 
-            using (Stream? s = type.GetTypeInfo().Assembly.GetManifestResourceStream(type, resource))
+            using (Stream? s = type.Assembly.GetManifestResourceStream(type, resource))
             {
                 if (s == null)
                 {
@@ -259,7 +259,7 @@ namespace System.Drawing
 
         internal Icon(string resourceName, bool undisposable)
         {
-            using (Stream? s = typeof(Icon).GetTypeInfo().Assembly.GetManifestResourceStream(resourceName))
+            using (Stream? s = typeof(Icon).Assembly.GetManifestResourceStream(resourceName))
             {
                 if (s == null)
                 {

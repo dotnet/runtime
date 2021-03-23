@@ -1,16 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Schema;
-using System.Xml;
 
 namespace System.Xml.Serialization
 {
@@ -576,7 +572,7 @@ namespace System.Xml.Serialization
                     if (m.CheckShouldPersist)
                     {
                         string methodInvoke = "ShouldSerialize" + m.Name;
-                        MethodInfo method = o!.GetType().GetTypeInfo().GetDeclaredMethod(methodInvoke)!;
+                        MethodInfo method = o!.GetType().GetMethod(methodInvoke, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)!;
                         shouldPersist = (bool)method.Invoke(o, Array.Empty<object>())!;
                     }
 
@@ -608,7 +604,7 @@ namespace System.Xml.Serialization
                     if (m.CheckShouldPersist)
                     {
                         string methodInvoke = "ShouldSerialize" + m.Name;
-                        MethodInfo method = o!.GetType().GetTypeInfo().GetDeclaredMethod(methodInvoke)!;
+                        MethodInfo method = o!.GetType().GetMethod(methodInvoke, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)!;
                         shouldPersist = (bool)method.Invoke(o, Array.Empty<object>())!;
                     }
 

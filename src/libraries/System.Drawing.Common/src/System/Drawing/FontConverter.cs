@@ -87,7 +87,7 @@ namespace System.Drawing
 
                 if (destinationType == typeof(InstanceDescriptor))
                 {
-                    ConstructorInfo? met = typeof(Font).GetTypeInfo().GetConstructor(new Type[] { typeof(string), typeof(float), typeof(FontStyle), typeof(GraphicsUnit) });
+                    ConstructorInfo? met = typeof(Font).GetConstructor(new Type[] { typeof(string), typeof(float), typeof(FontStyle), typeof(GraphicsUnit) });
                     object[] args = new object[4];
                     args[0] = font.Name;
                     args[1] = font.Size;
@@ -365,7 +365,11 @@ namespace System.Drawing
             object? value,
             Attribute[]? attributes)
         {
-            return value is Font ? TypeDescriptor.GetProperties(value, attributes) : base.GetProperties(context, value, attributes);
+            if (value is not Font)
+                return base.GetProperties(context, value, attributes);
+
+            PropertyDescriptorCollection props = TypeDescriptor.GetProperties(value, attributes);
+            return props.Sort(new string[] { nameof(Font.Name), nameof(Font.Size), nameof(Font.Unit) });
         }
 
         public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;

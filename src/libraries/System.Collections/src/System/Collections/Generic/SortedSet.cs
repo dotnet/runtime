@@ -146,8 +146,8 @@ namespace System.Collections.Generic
 
         private void RemoveAllElements(IEnumerable<T> collection)
         {
-            T min = Min;
-            T max = Max;
+            T? min = Min;
+            T? max = Max;
             foreach (T item in collection)
             {
                 if (!(comparer.Compare(item, min) < 0 || comparer.Compare(item, max) > 0) && Contains(item))
@@ -1031,7 +1031,7 @@ namespace System.Collections.Generic
                 Enumerator mine = this.GetEnumerator();
                 Enumerator theirs = asSorted.GetEnumerator();
                 bool mineEnded = !mine.MoveNext(), theirsEnded = !theirs.MoveNext();
-                T max = Max;
+                T? max = Max;
 
                 while (!mineEnded && !theirsEnded && Comparer.Compare(theirs.Current, max) <= 0)
                 {
@@ -1109,8 +1109,8 @@ namespace System.Collections.Generic
                 // Outside range, no point in doing anything
                 if (comparer.Compare(asSorted.Max, Min) >= 0 && comparer.Compare(asSorted.Min, Max) <= 0)
                 {
-                    T min = Min;
-                    T max = Max;
+                    T? min = Min;
+                    T? max = Max;
                     foreach (T item in other)
                     {
                         if (comparer.Compare(item, min) < 0)

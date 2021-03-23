@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Net.Security;
 
 namespace System.Net.Quic
@@ -43,7 +42,7 @@ namespace System.Net.Quic
         public long MaxUnidirectionalStreams { get; set; } = 100;
 
         /// <summary>
-        /// Idle timeout for connections, afterwhich the connection will be closed.
+        /// Idle timeout for connections, after which the connection will be closed.
         /// </summary>
         public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromMinutes(2);
     }

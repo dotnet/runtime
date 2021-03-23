@@ -133,7 +133,7 @@ namespace System.Text.Json
         public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<byte> utf8Value, System.Text.Encodings.Web.JavaScriptEncoder? encoder = null) { throw null; }
         public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<char> value, System.Text.Encodings.Web.JavaScriptEncoder? encoder = null) { throw null; }
         public static System.Text.Json.JsonEncodedText Encode(string value, System.Text.Encodings.Web.JavaScriptEncoder? encoder = null) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Text.Json.JsonEncodedText other) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
@@ -559,6 +559,7 @@ namespace System.Text.Json.Serialization
     {
         protected ReferenceHandler() { }
         public static System.Text.Json.Serialization.ReferenceHandler Preserve { get { throw null; } }
+        public static System.Text.Json.Serialization.ReferenceHandler IgnoreCycles { get { throw null; } }
         public abstract System.Text.Json.Serialization.ReferenceResolver CreateResolver();
     }
     public sealed partial class ReferenceHandler<T> : System.Text.Json.Serialization.ReferenceHandler where T : System.Text.Json.Serialization.ReferenceResolver, new()

@@ -725,7 +725,7 @@ namespace System
             Encoding? enc = EncodingHelper.GetEncodingFromCharset();
             return enc != null ?
                 enc.RemovePreamble() :
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+                Encoding.Default;
         }
 
         public static void SetConsoleInputEncoding(Encoding enc)
@@ -1212,15 +1212,13 @@ namespace System
         /// <summary>Reads data from the file descriptor into the buffer.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer to read into.</param>
-        /// <param name="offset">The offset at which to start writing into the buffer.</param>
-        /// <param name="count">The maximum number of bytes to read.</param>
         /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
-        internal static unsafe int Read(SafeFileHandle fd, byte[] buffer, int offset, int count)
+        internal static unsafe int Read(SafeFileHandle fd, Span<byte> buffer)
         {
             fixed (byte* bufPtr = buffer)
             {
-                int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
-                Debug.Assert(result <= count);
+                int result = Interop.CheckIo(Interop.Sys.Read(fd, bufPtr, buffer.Length));
+                Debug.Assert(result <= buffer.Length);
                 return result;
             }
         }
@@ -1231,6 +1229,11 @@ namespace System
         /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
         internal static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
         {
+            // Console initialization might emit data to stdout.
+            // In order to avoid splitting user data we need to
+            // complete it before any writes are performed.
+            EnsureConsoleInitialized();
+
             fixed (byte* p = buffer)
             {
                 byte* bufPtr = p;
@@ -1424,26 +1427,13 @@ namespace System
                 base.Dispose(disposing);
             }
 
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                ValidateRead(buffer, offset, count);
+            public override int Read(Span<byte> buffer) =>
+                _useReadLine ?
+                    ConsolePal.StdInReader.ReadLine(buffer) :
+                    ConsolePal.Read(_handle, buffer);
 
-                if (_useReadLine)
-                {
-                    return ConsolePal.StdInReader.ReadLine(buffer, offset, count);
-                }
-                else
-                {
-                    return ConsolePal.Read(_handle, buffer, offset, count);
-                }
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                ValidateWrite(buffer, offset, count);
-
-                ConsolePal.Write(_handle, buffer.AsSpan(offset, count));
-            }
+            public override void Write(ReadOnlySpan<byte> buffer) =>
+                ConsolePal.Write(_handle, buffer);
 
             public override void Flush()
             {
@@ -1483,7 +1473,11 @@ namespace System
                 // on work triggered from the signal handling thread.
                 // We use a new thread rather than queueing to the ThreadPool in order to prioritize handling
                 // in case the ThreadPool is saturated.
-                Thread handlerThread = new Thread(HandleBreakEvent) { IsBackground = true };
+                Thread handlerThread = new Thread(HandleBreakEvent)
+                {
+                    IsBackground = true,
+                    Name = ".NET Console Break"
+                };
                 handlerThread.Start(ctrlCode);
             }
 

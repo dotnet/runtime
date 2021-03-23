@@ -83,7 +83,7 @@ internal static partial class Interop
 
 namespace System.Security.Cryptography
 {
-    internal class SafeAppleCryptorHandle : SafeHandle
+    internal sealed class SafeAppleCryptorHandle : SafeHandle
     {
         public SafeAppleCryptorHandle()
             : base(IntPtr.Zero, ownsHandle: true)

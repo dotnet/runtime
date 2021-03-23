@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System.Transactions
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class CommittableTransaction : Transaction, IAsyncResult
     {
         // Create a transaction with defaults

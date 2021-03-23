@@ -2,22 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
     public static class Runtime
     {
-        private static readonly Dictionary<int, WeakReference> _boundObjects = new Dictionary<int, WeakReference>();
+        private static readonly Dictionary<int, WeakReference<JSObject>> _boundObjects = new Dictionary<int, WeakReference<JSObject>>();
         private static readonly Dictionary<object, JSObject> _rawToJS = new Dictionary<object, JSObject>();
         // _weakDelegateTable is a ConditionalWeakTable with the Delegate and associated JSObject:
         // Key Lifetime:
         //    Once the key dies, the dictionary automatically removes the key/value entry.
         // No need to lock as it is thread safe.
         private static readonly ConditionalWeakTable<Delegate, JSObject> _weakDelegateTable = new ConditionalWeakTable<Delegate, JSObject>();
+
+        private const string TaskGetResultName = "get_Result";
+        private static readonly MethodInfo _taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
 
         // <summary>
         // Execute the provided string in the JavaScript context
@@ -56,7 +60,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (!_rawToJS.Remove(obj, out jsobj))
                 {
-                    throw new JSException($"Error releasing object {obj}");
+                    throw new JSException(SR.Format(SR.ErrorReleasingObject, obj));
                 }
             }
         }
@@ -66,42 +70,53 @@ namespace System.Runtime.InteropServices.JavaScript
             return Interop.Runtime.GetGlobalObject(str);
         }
 
-        private static int BindJSObject(int jsId, bool ownsHandle, int mappedType)
+        public static void DumpAotProfileData (ref byte buf, int len, string extraArg)
         {
-            WeakReference? reference;
-            lock (_boundObjects)
-            {
-                if (!_boundObjects.TryGetValue(jsId, out reference))
-                {
-                    IntPtr jsIntPtr = (IntPtr)jsId;
-                    reference = new WeakReference(mappedType > 0 ? BindJSType(jsIntPtr, ownsHandle, mappedType) : new JSObject(jsIntPtr, ownsHandle), true);
-                    _boundObjects.Add(jsId, reference);
-                }
-            }
-            return reference.Target is JSObject target ? target.Int32Handle : 0;
+            Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
-        private static int BindCoreCLRObject(int jsId, int gcHandle)
+        public static int BindJSObject(int jsId, bool ownsHandle, int mappedType)
         {
-            GCHandle h = (GCHandle)(IntPtr)gcHandle;
-            JSObject? obj;
+            JSObject? target = null;
 
             lock (_boundObjects)
             {
-                if (_boundObjects.TryGetValue(jsId, out WeakReference? existingObj))
+                if (!_boundObjects.TryGetValue(jsId, out WeakReference<JSObject>? reference) ||
+                    !reference.TryGetTarget(out target) ||
+                    target.IsDisposed)
                 {
-                    var instance = existingObj.Target as JSObject;
-                    if (instance?.Int32Handle != (int)(IntPtr)h && h.IsAllocated)
-                        throw new JSException($"Multiple handles pointing at jsId: {jsId}");
+                    IntPtr jsIntPtr = (IntPtr)jsId;
+                    target = mappedType > 0 ? BindJSType(jsIntPtr, ownsHandle, mappedType) : new JSObject(jsIntPtr, ownsHandle);
+                    _boundObjects[jsId] = new WeakReference<JSObject>(target, trackResurrection: true);
+                }
+            }
+
+            return target.Int32Handle;
+        }
+
+        public static int BindCoreCLRObject(int jsId, int gcHandle)
+        {
+            GCHandle h = (GCHandle)(IntPtr)gcHandle;
+            JSObject? obj = null;
+
+            lock (_boundObjects)
+            {
+                if (_boundObjects.TryGetValue(jsId, out WeakReference<JSObject>? wr))
+                {
+                    if (!wr.TryGetTarget(out JSObject? instance) || (instance.Int32Handle != (int)(IntPtr)h && h.IsAllocated))
+                    {
+                        throw new JSException(SR.Format(SR.MultipleHandlesPointingJsId, jsId));
+                    }
 
                     obj = instance;
                 }
-                else
+                else if (h.Target is JSObject instance)
                 {
-                    obj = h.Target as JSObject;
-                    _boundObjects.Add(jsId, new WeakReference(obj, true));
+                    _boundObjects.Add(jsId, new WeakReference<JSObject>(instance, trackResurrection: true));
+                    obj = instance;
                 }
             }
+
             return obj?.Int32Handle ?? 0;
         }
 
@@ -139,7 +154,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return true;
         }
 
-        private static void UnBindRawJSObjectAndFree(int gcHandle)
+        public static void UnBindRawJSObjectAndFree(int gcHandle)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? obj = h.Target as JSObject;
@@ -153,27 +168,27 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        private static object CreateTaskSource(int jsId)
+        public static object CreateTaskSource(int jsId)
         {
             return new TaskCompletionSource<object>();
         }
 
-        private static void SetTaskSourceResult(TaskCompletionSource<object> tcs, object result)
+        public static void SetTaskSourceResult(TaskCompletionSource<object> tcs, object result)
         {
             tcs.SetResult(result);
         }
 
-        private static void SetTaskSourceFailure(TaskCompletionSource<object> tcs, string reason)
+        public static void SetTaskSourceFailure(TaskCompletionSource<object> tcs, string reason)
         {
             tcs.SetException(new JSException(reason));
         }
 
-        private static int GetTaskAndBind(TaskCompletionSource<object> tcs, int jsId)
+        public static int GetTaskAndBind(TaskCompletionSource<object> tcs, int jsId)
         {
             return BindExistingObject(tcs.Task, jsId);
         }
 
-        private static int BindExistingObject(object rawObj, int jsId)
+        public static int BindExistingObject(object rawObj, int jsId)
         {
             JSObject? jsObject;
             if (rawObj is Delegate dele)
@@ -181,7 +196,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 jsObject = new JSObject(jsId, dele);
                 lock (_boundObjects)
                 {
-                    _boundObjects.Add(jsId, new WeakReference(jsObject));
+                    _boundObjects.Add(jsId, new WeakReference<JSObject>(jsObject));
                 }
                 lock (_weakDelegateTable)
                 {
@@ -201,7 +216,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject.Int32Handle;
         }
 
-        private static int GetJSObjectId(object rawObj)
+        public static int GetJSObjectId(object rawObj)
         {
             JSObject? jsObject;
             if (rawObj is Delegate dele)
@@ -221,7 +236,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject?.JSHandle ?? -1;
         }
 
-        private static object? GetDotNetObject(int gcHandle)
+        public static object? GetDotNetObject(int gcHandle)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
 
@@ -229,22 +244,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 js.GetWrappedObject() ?? h.Target : h.Target;
         }
 
-        private static object BoxInt(int i)
-        {
-            return i;
-        }
-
-        private static object BoxDouble(double d)
-        {
-            return d;
-        }
-
-        private static object BoxBool(int b)
-        {
-            return b == 0 ? false : true;
-        }
-
-        private static bool IsSimpleArray(object a)
+        public static bool IsSimpleArray(object a)
         {
             return a is System.Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
         }
@@ -259,12 +259,12 @@ namespace System.Runtime.InteropServices.JavaScript
             internal RuntimeMethodHandle handle;
         }
 
-        private static string GetCallSignature(IntPtr methodHandle)
+        public static string GetCallSignature(IntPtr methodHandle, object objForRuntimeType)
         {
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodHandle;
 
-            MethodBase? mb = MethodBase.GetMethodFromHandle(tmp.handle);
+            MethodBase? mb = objForRuntimeType == null ? MethodBase.GetMethodFromHandle(tmp.handle) : MethodBase.GetMethodFromHandle(tmp.handle, Type.GetTypeHandle(objForRuntimeType));
             if (mb == null)
                 return string.Empty;
 
@@ -326,7 +326,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         else
                         {
                             if (t.IsValueType)
-                                throw new NotSupportedException("ValueType arguments are not supported.");
+                                throw new NotSupportedException(SR.ValueTypeNotSupported);
                             res[c] = 'o';
                         }
                         break;
@@ -335,7 +335,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return new string(res);
         }
 
-        private static void SetupJSContinuation(Task task, JSObject continuationObj)
+        public static void SetupJSContinuation(Task task, JSObject continuationObj)
         {
             if (task.IsCompleted)
                 Complete();
@@ -356,8 +356,9 @@ namespace System.Runtime.InteropServices.JavaScript
                         }
                         else
                         {
-                            result = task_type.GetMethod("get_Result")?.Invoke(task, System.Array.Empty<object>());
+                            result = GetTaskResultMethodInfo(task_type)?.Invoke(task, null);
                         }
+
                         continuationObj.Invoke("resolve", result);
                     }
                     else
@@ -377,17 +378,41 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        private static string ObjectToString(object o)
+        /// <summary>
+        /// Gets the MethodInfo for the Task{T}.Result property getter.
+        /// </summary>
+        /// <remarks>
+        /// This ensures the returned MethodInfo is strictly for the Task{T} type, and not
+        /// a "Result" property on some other class that derives from Task or a "new Result"
+        /// property on a class that derives from Task{T}.
+        ///
+        /// The reason for this restriction is to make this use of Reflection trim-compatible,
+        /// ensuring that trimming doesn't change the application's behavior.
+        /// </remarks>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Task<T>.Result is preserved by the ILLinker because _taskGetResultMethodInfo was initialized with it.")]
+        private static MethodInfo? GetTaskResultMethodInfo(Type taskType)
+        {
+            MethodInfo? result = taskType.GetMethod(TaskGetResultName);
+            if (result != null && result.HasSameMetadataDefinitionAs(_taskGetResultMethodInfo))
+            {
+                return result;
+            }
+
+            return null;
+        }
+
+        public static string ObjectToString(object o)
         {
             return o.ToString() ?? string.Empty;
         }
 
-        private static double GetDateValue(object dtv)
+        public static double GetDateValue(object dtv)
         {
             if (dtv == null)
                 throw new ArgumentNullException(nameof(dtv));
             if (!(dtv is DateTime dt))
-                throw new InvalidCastException($"Unable to cast object of type {dtv.GetType()} to type DateTime.");
+                throw new InvalidCastException(SR.Format(SR.UnableCastObjectToType, dtv.GetType(), typeof(DateTime)));
             if (dt.Kind == DateTimeKind.Local)
                 dt = dt.ToUniversalTime();
             else if (dt.Kind == DateTimeKind.Unspecified)
@@ -395,18 +420,18 @@ namespace System.Runtime.InteropServices.JavaScript
             return new DateTimeOffset(dt).ToUnixTimeMilliseconds();
         }
 
-        private static DateTime CreateDateTime(double ticks)
+        public static DateTime CreateDateTime(double ticks)
         {
             DateTimeOffset unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
             return unixTime.DateTime;
         }
 
-        private static Uri CreateUri(string uri)
+        public static Uri CreateUri(string uri)
         {
             return new Uri(uri);
         }
 
-        private static bool SafeHandleAddRef(SafeHandle safeHandle)
+        public static bool SafeHandleAddRef(SafeHandle safeHandle)
         {
             bool _addRefSucceeded = false;
 #if DEBUG_HANDLE
@@ -438,7 +463,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return _addRefSucceeded;
         }
 
-        private static void SafeHandleRelease(SafeHandle safeHandle)
+        public static void SafeHandleRelease(SafeHandle safeHandle)
         {
             safeHandle.DangerousRelease();
 #if DEBUG_HANDLE
@@ -451,17 +476,18 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
-        private static void SafeHandleReleaseByHandle(int jsId)
+        public static void SafeHandleReleaseByHandle(int jsId)
         {
 #if DEBUG_HANDLE
             Debug.WriteLine($"SafeHandleReleaseByHandle: {jsId}");
 #endif
             lock (_boundObjects)
             {
-                if (_boundObjects.TryGetValue(jsId, out WeakReference? reference))
+                if (_boundObjects.TryGetValue(jsId, out WeakReference<JSObject>? reference))
                 {
-                    Debug.Assert(reference.Target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsId} / target: {reference.Target}");
-                    SafeHandleRelease((AnyRef)reference.Target);
+                    reference.TryGetTarget(out JSObject? target);
+                    Debug.Assert(target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsId}");
+                    SafeHandleRelease(target);
                 }
                 else
                 {

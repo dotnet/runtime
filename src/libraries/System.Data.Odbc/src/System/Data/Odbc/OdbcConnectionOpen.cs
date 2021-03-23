@@ -32,7 +32,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                // TODO-NULLABLE: This seems like it returns null if the connection is open, whereas the docs say it should throw
+                // https://github.com/dotnet/runtime/issues/44289: This seems like it returns null if the connection is open, whereas the docs say it should throw
                 // InvalidOperationException
                 return OuterConnection.Open_GetServerVersion()!;
             }

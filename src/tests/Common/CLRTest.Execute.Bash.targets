@@ -64,7 +64,7 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GenerateBashExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(MSBuildProjectName).sh"
-    DependsOnTargets="FetchExternalPropertiesForXpalt;$(BashScriptSnippetGen);GetJitDisasmBashScript;GetIlasmRoundTripBashScript">
+    DependsOnTargets="FetchExternalPropertiesForXpalt;$(BashScriptSnippetGen);GetIlasmRoundTripBashScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
@@ -264,7 +264,7 @@ fi
       <PropertyGroup>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
 
-      <BashCLRTestPreCommands Condition="'$(TargetArchitecture)' == 'wasm'">
+      <BashCLRTestPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'">
    <![CDATA[
 # Build wasm app containing the test dll
 __Command=""
@@ -274,7 +274,7 @@ else
   __Command+=" dotnet"
 fi
 
-$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
+$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` || exit $?
 
    ]]>
       </BashCLRTestPreCommands>
@@ -332,8 +332,7 @@ else
 	HARNESS_RUNNER="xharness"
 fi
 
-cd $CORE_ROOT/AndroidApps/$__NameSpace/
-$__Command $HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__NameSpace" --app=apk/bin/$__NameSpace.apk --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100
+$__Command $HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__Category" --app="$__TestBinaryBase/$__Category.apk" --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100 -v
 CLRTestExitCode=$?
 
 # Exist code of xharness is zero when tests finished successfully
@@ -454,7 +453,6 @@ $(BashEnvironmentVariables)
 $(BashCLRTestEnvironmentCompatibilityCheck)
 $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
-$(JitDisasmBashScript)
 $(IlasmRoundTripBashScript)
 # Allow precommands to override the ExePath
 ExePath=$(InputAssemblyName)

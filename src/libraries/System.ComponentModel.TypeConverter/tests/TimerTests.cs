@@ -3,7 +3,7 @@
 
 using Xunit;
 using System.Threading;
-
+using System.Threading.Tasks;
 using TestTimer = System.Timers.Timer;
 
 namespace System.Timers.Tests
@@ -66,6 +66,31 @@ namespace System.Timers.Tests
 
                 timer.Stop();
                 Assert.InRange(count, target, int.MaxValue);
+            }
+        }
+
+        [Fact]
+        public async Task ElapsedEventArgs_MatchesExpectedValues()
+        {
+            using (var timer = new TestTimer(1) { AutoReset = false })
+            {
+                DateTime start = DateTime.Now;
+                var tcs = new TaskCompletionSource<ElapsedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+                timer.Elapsed += (sender, e) => tcs.SetResult(e);
+                timer.Start();
+
+                ElapsedEventArgs e = await tcs.Task;
+                Assert.False(timer.Enabled);
+
+                timer.Stop();
+                DateTime end = DateTime.Now;
+
+                const int WiggleRoomSeconds = 5;
+                Assert.Equal(DateTimeKind.Local, e.SignalTime.Kind);
+                Assert.InRange(
+                    e.SignalTime.ToUniversalTime(),
+                    start.ToUniversalTime() - TimeSpan.FromSeconds(WiggleRoomSeconds),
+                    end.ToUniversalTime() + TimeSpan.FromSeconds(WiggleRoomSeconds));
             }
         }
 

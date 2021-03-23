@@ -9,7 +9,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed class SafeAccessTokenHandle : SafeHandle
     {
-        private SafeAccessTokenHandle() : base(IntPtr.Zero, true) { }
+        public SafeAccessTokenHandle() : base(IntPtr.Zero, true) { }
 
         // 0 is an Invalid Handle
         public SafeAccessTokenHandle(IntPtr handle) : base(handle, true) { }

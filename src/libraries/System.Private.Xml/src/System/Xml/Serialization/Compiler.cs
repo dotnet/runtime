@@ -1,25 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+using System.Collections;
+using System.IO;
+using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+
 namespace System.Xml.Serialization
 {
-    using System.Reflection;
-    using System.Reflection.Emit;
-    using System.Collections;
-    using System.IO;
-    using System;
-    using System.Text;
-    using System.ComponentModel;
-    using System.Security;
-    using System.Diagnostics;
-    using System.Threading;
-    using System.Xml.Serialization.Configuration;
-    using System.Globalization;
-    using System.Runtime.Versioning;
-    using System.Runtime.CompilerServices;
-    using System.Collections.Generic;
-    using System.Linq;
-
     internal class Compiler
     {
         private readonly StringWriter _writer = new StringWriter(CultureInfo.InvariantCulture);

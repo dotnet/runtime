@@ -12,7 +12,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class TaskRtTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void RunRunTests()
         {
@@ -128,7 +128,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(future2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Future(unwrapped) w/ uncanceled token did not end in RanToCompletion state.");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void RunRunTests_Cancellation_Negative()
         {

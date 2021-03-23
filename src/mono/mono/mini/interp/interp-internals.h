@@ -99,7 +99,6 @@ typedef enum {
 
 /* 
  * Structure representing a method transformed for the interpreter 
- * This is domain specific
  */
 typedef struct InterpMethod InterpMethod;
 struct InterpMethod {
@@ -125,9 +124,10 @@ struct InterpMethod {
 	MonoType *rtype;
 	MonoType **param_types;
 	MonoJitInfo *jinfo;
-	MonoDomain *domain;
 
+	// This doesn't include the size of stack locals
 	guint32 total_locals_size;
+	// The size of locals that map to the execution stack
 	guint32 stack_size;
 	guint32 alloca_size;
 	int num_clauses; // clauses
@@ -185,8 +185,6 @@ typedef struct FrameClauseArgs FrameClauseArgs;
 
 /* State of the interpreter main loop */
 typedef struct {
-	stackval *sp;
-	unsigned char *vt_sp;
 	const unsigned short  *ip;
 } InterpState;
 
@@ -225,6 +223,11 @@ typedef struct {
 	guchar *stack_pointer;
 	/* Used for allocation of localloc regions */
 	FrameDataAllocator data_stack;
+	/* Used when a thread self-suspends at a safepoint in the interpreter, points to the
+	 * currently executing frame. (If a thread self-suspends somewhere else in the runtime, this
+	 * is NULL - the LMF will point to the InterpFrame before the thread exited the interpreter)
+	 */
+	InterpFrame *safepoint_frame;
 } ThreadContext;
 
 typedef struct {
@@ -258,7 +261,7 @@ void
 mono_interp_transform_init (void);
 
 InterpMethod *
-mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *error);
+mono_interp_get_imethod (MonoMethod *method, MonoError *error);
 
 void
 mono_interp_print_code (InterpMethod *imethod);

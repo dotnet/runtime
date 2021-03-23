@@ -1,14 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Text;
+using System.Diagnostics;
 
 namespace System.Text
 {
     // If we find issues with this or if more libraries need this behavior we will revisit the solution.
     internal static partial class EncodingHelper
     {
+        /// <summary>Hardcoded Encoding.UTF8.CodePage to avoid accessing Encoding.Unicode and forcing it into existence unnecessarily.</summary>
+        private const int Utf8CodePage = 65001;
+
+#if DEBUG
+        static EncodingHelper() => Debug.Assert(Utf8CodePage == Encoding.UTF8.CodePage);
+#endif
+
         // Since only a minimum set of encodings are available by default,
         // Console encoding might not be available and require provider registering.
         // To avoid encoding exception in Console APIs we fallback to OSEncoding.
@@ -27,12 +33,12 @@ namespace System.Text
         {
             int defaultEncCodePage = Encoding.GetEncoding(0).CodePage;
 
-            if ((defaultEncCodePage == codepage) || defaultEncCodePage != Encoding.UTF8.CodePage)
+            if (defaultEncCodePage == codepage || defaultEncCodePage != Utf8CodePage)
             {
                 return Encoding.GetEncoding(codepage);
             }
 
-            if (codepage != Encoding.UTF8.CodePage)
+            if (codepage != Utf8CodePage)
             {
                 return new OSEncoding(codepage);
             }

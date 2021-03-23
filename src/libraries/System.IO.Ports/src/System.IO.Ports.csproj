@@ -120,8 +120,10 @@
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\IO\Ports\SafeSerialDeviceHandle.Unix.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Unix.cs" />
-    <Compile Include="Interop\Unix\Interop.Termios.cs" />
-    <Compile Include="Interop\Unix\Interop.Serial.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.IO.Ports.Native\Interop.Termios.cs"
+             Link="Common\Interop\Unix\System.IO.Ports.Native\Interop.Termios.cs"/>
+    <Compile Include="$(CommonPath)Interop\Unix\System.IO.Ports.Native\Interop.Serial.cs"
+             Link="Common\Interop\Unix\System.IO.Ports.Native\Interop.Serial.cs"/>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
@@ -135,7 +137,7 @@
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <ProjectReference Condition="'$(TargetsWindows)' == 'true'" Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 </Project>

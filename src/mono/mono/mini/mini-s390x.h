@@ -80,6 +80,7 @@ struct SeqPointInfo {
 #define MONO_ARCH_HAVE_OP_TAILCALL_REG			1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES			1
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX	1
+#define MONO_ARCH_HAVE_UNWIND_BACKTRACE 		1
 
 #define S390_STACK_ALIGNMENT		 8
 #define S390_FIRST_ARG_REG 		s390_r2
@@ -142,7 +143,7 @@ struct SeqPointInfo {
 
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
-#define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1 // FIXME?
+#define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0 // FIXME?
 
 /*-----------------------------------------------*/
 /* Macros used to generate instructions          */
@@ -157,10 +158,9 @@ struct SeqPointInfo {
 #define S390_ALIGN(v, a)	(((a) > 0 ? (((v) + ((a) - 1)) & ~((a) - 1)) : (v)))
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,func) do {			\
-		MonoS390StackFrame *sframe;				\
-		__asm__ volatile("lgr   %0,%%r15" : "=r" (sframe));	\
-		MONO_CONTEXT_SET_BP ((ctx), sframe->prev);		\
-		MONO_CONTEXT_SET_SP ((ctx), sframe->prev);		\
+		void *sp = __builtin_frame_address (0);			\
+		MONO_CONTEXT_SET_BP ((ctx), sp);			\
+		MONO_CONTEXT_SET_SP ((ctx), sp);			\
 		MONO_CONTEXT_SET_IP ((ctx), func);			\
 	} while (0)
 

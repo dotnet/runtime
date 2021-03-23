@@ -3,6 +3,7 @@
 
 using Internal.Cryptography;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
@@ -24,6 +25,7 @@ namespace System.Security.Cryptography
 
         public static new SHA384 Create() => new Implementation();
 
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new SHA384? Create(string hashName) => (SHA384?)CryptoConfig.CreateFromName(hashName);
 
         /// <summary>

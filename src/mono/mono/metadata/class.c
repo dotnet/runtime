@@ -40,7 +40,6 @@
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-string.h>
@@ -128,9 +127,6 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 
 	error_init (error);
 
-	if (!mono_verifier_verify_typeref_row (image, (type_token & 0xffffff) - 1, error))
-		return NULL;
-
 	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
 
 	name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
@@ -197,7 +193,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		break;
 	}
 
-	if (idx > image->tables [MONO_TABLE_ASSEMBLYREF].rows) {
+	if (mono_metadata_table_bounds_check (image, MONO_TABLE_ASSEMBLYREF, idx)) {
 		mono_error_set_bad_image (error, image, "Image with invalid assemblyref token %08x.", idx);
 		return NULL;
 	}
@@ -209,14 +205,12 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 	/* If the assembly did not load, register this as a type load exception */
 	if (image->references [idx - 1] == REFERENCE_MISSING){
 		MonoAssemblyName aname;
+		memset (&aname, 0, sizeof (MonoAssemblyName));
 		char *human_name;
 		
 		mono_assembly_get_assemblyref (image, idx - 1, &aname);
 		human_name = mono_stringify_assembly_name (&aname);
-		gboolean refonly = FALSE;
-		if (image->assembly)
-			refonly = mono_asmctx_get_kind (&image->assembly->context) == MONO_ASMCTX_REFONLY;
-		mono_error_set_simple_file_not_found (error, human_name, refonly);
+		mono_error_set_simple_file_not_found (error, human_name);
 		g_free (human_name);
 		return NULL;
 	}
@@ -1553,9 +1547,6 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC) //no need to decode static fields
 			continue;
 
-		if (!mono_verifier_verify_field_signature (image, cols [MONO_FIELD_SIGNATURE], error))
-			goto fail;
-
 		sig = mono_metadata_blob_heap (image, cols [MONO_FIELD_SIGNATURE]);
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
@@ -1615,27 +1606,18 @@ mono_error_set_for_class_failure (MonoError *oerror, const MonoClass *klass)
 /*
  * mono_class_alloc:
  *
- *   Allocate memory for some data belonging to CLASS, either from its image's mempool,
- * or from the heap.
+ *   Allocate memory for data belonging to CLASS.
  */
 gpointer
 mono_class_alloc (MonoClass *klass, int size)
 {
-	MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
-	if (gklass)
-		return mono_image_set_alloc (gklass->owner, size);
-	else
-		return mono_image_alloc (m_class_get_image (klass), size);
+	return m_class_alloc (klass, size);
 }
 
 gpointer
 (mono_class_alloc0) (MonoClass *klass, int size)
 {
-	gpointer res;
-
-	res = mono_class_alloc (klass, size);
-	memset (res, 0, size);
-	return res;
+	return m_class_alloc0 (klass, size);
 }
 
 #define mono_class_new0(klass,struct_type, n_structs)		\
@@ -2713,19 +2695,12 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token)
 	}
 
 	case MONO_TOKEN_TYPE_REF: {
-		ERROR_DECL (error);
 		guint32 cols [MONO_TYPEREF_SIZE];
 		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
 		guint tidx = mono_metadata_token_index (type_token);
 
 		if (tidx > t->rows)
 			return g_strdup_printf ("Invalid type token 0x%08x", type_token);
-
-		if (!mono_verifier_verify_typeref_row (image, tidx - 1, error)) {
-			char *msg = g_strdup_printf ("Invalid type token 0x%08x due to '%s'", type_token, mono_error_get_message (error));
-			mono_error_cleanup (error);
-			return msg;
-		}
 
 		mono_metadata_decode_row (t, tidx-1, cols, MONO_TYPEREF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
@@ -2757,8 +2732,8 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 			return g_strdup (image->assembly_name);
 		return g_strdup_printf ("%s", image->name ? image->name : "[Could not resolve assembly name");
 	case MONO_TOKEN_TYPE_REF: {
-		ERROR_DECL (error);
 		MonoAssemblyName aname;
+		memset (&aname, 0, sizeof (MonoAssemblyName));
 		guint32 cols [MONO_TYPEREF_SIZE];
 		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
 		guint32 idx = mono_metadata_token_index (type_token);
@@ -2766,11 +2741,6 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 		if (idx > t->rows)
 			return g_strdup_printf ("Invalid type token 0x%08x", type_token);
 	
-		if (!mono_verifier_verify_typeref_row (image, idx - 1, error)) {
-			char *msg = g_strdup_printf ("Invalid type token 0x%08x due to '%s'", type_token, mono_error_get_message (error));
-			mono_error_cleanup (error);
-			return msg;
-		}
 		mono_metadata_decode_row (t, idx-1, cols, MONO_TYPEREF_SIZE);
 
 		idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLUTION_SCOPE_BITS;
@@ -5886,6 +5856,23 @@ is_valid_family_access (MonoClass *access_klass, MonoClass *member_klass, MonoCl
 }
 
 static gboolean
+ignores_access_checks_to (MonoAssembly *accessing, MonoAssembly *accessed)
+{
+	if (!accessing || !accessed)
+		return FALSE;
+
+	mono_assembly_load_friends (accessing);
+	for (GSList *tmp = accessing->ignores_checks_assembly_names; tmp; tmp = tmp->next) {
+		MonoAssemblyName *victim = (MonoAssemblyName *)tmp->data;
+		if (!victim->name)
+			continue;
+		if (!g_ascii_strcasecmp (accessed->aname.name, victim->name))
+			return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
 can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 {
 	GSList *tmp;
@@ -5893,13 +5880,6 @@ can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 		return TRUE;
 	if (!accessed || !accessing)
 		return FALSE;
-
-	/* extra safety under CoreCLR - the runtime does not verify the strongname signatures
-	 * anywhere so untrusted friends are not safe to access platform's code internals */
-	if (mono_security_core_clr_enabled ()) {
-		if (!mono_security_core_clr_can_access_internals (accessing->image, accessed->image))
-			return FALSE;
-	}
 
 	mono_assembly_load_friends (accessed);
 	for (tmp = accessed->friend_assembly_names; tmp; tmp = tmp->next) {
@@ -5917,7 +5897,7 @@ can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 		}
 		return TRUE;
 	}
-	return FALSE;
+	return ignores_access_checks_to (accessing, accessed);
 }
 
 /*
@@ -5979,9 +5959,6 @@ can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 	MonoAssembly *access_klass_assembly = m_class_get_image (access_klass)->assembly;
 	MonoAssembly *member_klass_assembly = m_class_get_image (member_klass)->assembly;
 
-	if (access_klass_assembly && m_class_get_image (access_klass)->assembly->corlib_internal)
-		return TRUE;
-
 	if (m_class_get_element_class (access_klass) && !m_class_is_enumtype (access_klass)) {
 		access_klass = m_class_get_element_class (access_klass);
 		access_klass_assembly = m_class_get_image (access_klass)->assembly;
@@ -6019,7 +5996,9 @@ can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 		return member_klass_nested_in && can_access_type (access_klass, member_klass_nested_in);
 
 	case TYPE_ATTRIBUTE_NESTED_PRIVATE:
-		return is_nesting_type (member_klass, access_klass) && member_klass_nested_in && can_access_type (access_klass, member_klass_nested_in);
+		if (is_nesting_type (member_klass, access_klass) && member_klass_nested_in && can_access_type (access_klass, member_klass_nested_in))
+			return TRUE;
+		return ignores_access_checks_to (access_klass_assembly, member_klass_assembly);
 
 	case TYPE_ATTRIBUTE_NESTED_FAMILY:
 		return mono_class_has_parent_and_ignore_generics (access_klass, m_class_get_nested_in (member_klass)); 
@@ -6044,8 +6023,6 @@ can_access_member (MonoClass *access_klass, MonoClass *member_klass, MonoClass* 
 {
 	MonoClass *member_generic_def;
 	MonoAssembly *access_klass_assembly = m_class_get_image (access_klass)->assembly;
-	if (access_klass_assembly && access_klass_assembly->corlib_internal)
-		return TRUE;
 
 	MonoGenericClass *access_gklass = mono_class_try_get_generic_class (access_klass);
 	if (((access_gklass && access_gklass->container_class) ||
@@ -6070,7 +6047,7 @@ can_access_member (MonoClass *access_klass, MonoClass *member_klass, MonoClass* 
 		/* same compilation unit */
 		return m_class_get_image (access_klass) == member_klass_image;
 	case FIELD_ATTRIBUTE_PRIVATE:
-		return access_klass == member_klass;
+		return (access_klass == member_klass) || ignores_access_checks_to (access_klass_assembly, member_klass_image->assembly);
 	case FIELD_ATTRIBUTE_FAM_AND_ASSEM:
 		if (is_valid_family_access (access_klass, member_klass, context_klass) &&
 		    can_access_internals (access_klass_assembly, member_klass_image->assembly))
@@ -6284,10 +6261,8 @@ gboolean mono_type_is_valid_enum_basetype (MonoType * type) {
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-#if ENABLE_NETCORE
 	case MONO_TYPE_R8:
 	case MONO_TYPE_R4:
-#endif
 		return TRUE;
 	default:
 		return FALSE;
@@ -6392,11 +6367,6 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 
 		/* first_field_idx and idx points into the fieldptr table */
 		mono_metadata_decode_table_row (image, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
-
-		if (!mono_verifier_verify_field_signature (image, cols [MONO_FIELD_SIGNATURE], error)) {
-			mono_class_set_type_load_failure (klass, "%s", mono_error_get_message (error));
-			return;
-		}
 
 		sig = mono_metadata_blob_heap (image, cols [MONO_FIELD_SIGNATURE]);
 

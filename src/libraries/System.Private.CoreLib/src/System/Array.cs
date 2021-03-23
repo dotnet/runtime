@@ -319,6 +319,7 @@ namespace System
 
         // Make a new array which is a shallow copy of the original array.
         //
+        [Intrinsic]
         public object Clone()
         {
             return MemberwiseClone();

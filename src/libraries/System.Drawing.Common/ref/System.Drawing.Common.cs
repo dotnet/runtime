@@ -232,7 +232,7 @@ namespace System.Drawing
         public CharacterRange(int First, int Length) { throw null; }
         public int First { get { throw null; } set { } }
         public int Length { get { throw null; } set { } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Drawing.CharacterRange cr1, System.Drawing.CharacterRange cr2) { throw null; }
         public static bool operator !=(System.Drawing.CharacterRange cr1, System.Drawing.CharacterRange cr2) { throw null; }
@@ -322,7 +322,7 @@ namespace System.Drawing
         public System.Drawing.GraphicsUnit Unit { get { throw null; } }
         public object Clone() { throw null; }
         public void Dispose() { }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         ~Font() { }
         public static System.Drawing.Font FromHdc(System.IntPtr hdc) { throw null; }
         public static System.Drawing.Font FromHfont(System.IntPtr hfont) { throw null; }
@@ -376,7 +376,7 @@ namespace System.Drawing
         public static System.Drawing.FontFamily GenericSerif { get { throw null; } }
         public string Name { get { throw null; } }
         public void Dispose() { }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         ~FontFamily() { }
         public int GetCellAscent(System.Drawing.FontStyle style) { throw null; }
         public int GetCellDescent(System.Drawing.FontStyle style) { throw null; }
@@ -774,7 +774,7 @@ namespace System.Drawing
     {
         internal ImageAnimator() { }
         public static void Animate(System.Drawing.Image image, System.EventHandler onFrameChangedHandler) { }
-        public static bool CanAnimate(System.Drawing.Image? image) { throw null; }
+        public static bool CanAnimate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Drawing.Image? image) { throw null; }
         public static void StopAnimate(System.Drawing.Image image, System.EventHandler onFrameChangedHandler) { }
         public static void UpdateFrames() { }
         public static void UpdateFrames(System.Drawing.Image image) { }
@@ -1266,7 +1266,7 @@ namespace System.Drawing
         public ToolboxBitmapAttribute(string imageFile) { }
         public ToolboxBitmapAttribute(System.Type t) { }
         public ToolboxBitmapAttribute(System.Type t, string name) { }
-        public override bool Equals(object? value) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.Drawing.Image? GetImage(object? component) { throw null; }
         public System.Drawing.Image? GetImage(object? component, bool large) { throw null; }
@@ -1660,7 +1660,7 @@ namespace System.Drawing.Drawing2D
         public float OffsetY { get { throw null; } }
         public System.Drawing.Drawing2D.Matrix Clone() { throw null; }
         public void Dispose() { }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         ~Matrix() { }
         public override int GetHashCode() { throw null; }
         public void Invert() { }
@@ -2246,7 +2246,7 @@ namespace System.Drawing.Imaging
         public static System.Drawing.Imaging.FrameDimension Page { get { throw null; } }
         public static System.Drawing.Imaging.FrameDimension Resolution { get { throw null; } }
         public static System.Drawing.Imaging.FrameDimension Time { get { throw null; } }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -2364,7 +2364,7 @@ namespace System.Drawing.Imaging
         public static System.Drawing.Imaging.ImageFormat Png { get { throw null; } }
         public static System.Drawing.Imaging.ImageFormat Tiff { get { throw null; } }
         public static System.Drawing.Imaging.ImageFormat Wmf { get { throw null; } }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -2557,7 +2557,7 @@ namespace System.Drawing.Printing
         public int Right { get { throw null; } set { } }
         public int Top { get { throw null; } set { } }
         public object Clone() { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Drawing.Printing.Margins? m1, System.Drawing.Printing.Margins? m2) { throw null; }
         public static bool operator !=(System.Drawing.Printing.Margins? m1, System.Drawing.Printing.Margins? m2) { throw null; }

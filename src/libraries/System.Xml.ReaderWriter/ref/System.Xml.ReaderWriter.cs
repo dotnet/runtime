@@ -318,7 +318,7 @@ namespace System.Xml
         public bool PreserveWhitespace { get { throw null; } set { } }
         public override System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { throw null; } }
         public System.Xml.Schema.XmlSchemaSet Schemas { get { throw null; } set { } }
-        public virtual System.Xml.XmlResolver XmlResolver { set { } }
+        public virtual System.Xml.XmlResolver? XmlResolver { set { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeChanged { add { } remove { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeChanging { add { } remove { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeInserted { add { } remove { } }
@@ -760,7 +760,7 @@ namespace System.Xml
         public bool IsEmpty { get { throw null; } }
         public string Name { get { throw null; } }
         public string Namespace { get { throw null; } }
-        public override bool Equals(object? other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Xml.XmlQualifiedName? a, System.Xml.XmlQualifiedName? b) { throw null; }
         public static bool operator !=(System.Xml.XmlQualifiedName? a, System.Xml.XmlQualifiedName? b) { throw null; }
@@ -1138,7 +1138,9 @@ namespace System.Xml
     {
         public XmlUrlResolver() { }
         public System.Net.Cache.RequestCachePolicy CachePolicy { set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public override System.Net.ICredentials? Credentials { set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public System.Net.IWebProxy? Proxy { set { } }
         public override object? GetEntity(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
         public override System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
@@ -2290,7 +2292,7 @@ namespace System.Xml.Schema
         public static System.Xml.Schema.XmlSchemaComplexType? GetBuiltInComplexType(System.Xml.XmlQualifiedName qualifiedName) { throw null; }
         public static System.Xml.Schema.XmlSchemaSimpleType GetBuiltInSimpleType(System.Xml.Schema.XmlTypeCode typeCode) { throw null; }
         public static System.Xml.Schema.XmlSchemaSimpleType? GetBuiltInSimpleType(System.Xml.XmlQualifiedName qualifiedName) { throw null; }
-        public static bool IsDerivedFrom(System.Xml.Schema.XmlSchemaType? derivedType, System.Xml.Schema.XmlSchemaType? baseType, System.Xml.Schema.XmlSchemaDerivationMethod except) { throw null; }
+        public static bool IsDerivedFrom([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Xml.Schema.XmlSchemaType? derivedType, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Xml.Schema.XmlSchemaType? baseType, System.Xml.Schema.XmlSchemaDerivationMethod except) { throw null; }
     }
     public partial class XmlSchemaUnique : System.Xml.Schema.XmlSchemaIdentityConstraint
     {

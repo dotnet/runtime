@@ -113,6 +113,12 @@
       <argument>ILLink</argument>
       <argument>IL2075</argument>
       <property name="Scope">member</property>
+      <property name="Target">M:Microsoft.VisualBasic.CompilerServices.IDOUtils.CreateInvoker(System.Int32)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
       <property name="Target">M:Microsoft.VisualBasic.CompilerServices.LateBinding.InternalLateSet(System.Object,System.Type@,System.String,System.Object[],System.String[],System.Boolean,Microsoft.VisualBasic.CallType)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">

@@ -26,15 +26,19 @@
     <Compile Include="LocalEndPointTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />
+    <Compile Include="ReceiveFrom.cs" />
     <Compile Include="ReceiveMessageFrom.cs" />
-    <Compile Include="ReceiveMessageFromAsync.cs" />
     <Compile Include="SafeHandleTest.cs" />
     <Compile Include="SelectTest.cs" />
     <Compile Include="SendPacketsAsync.cs" />
     <Compile Include="SendPacketsElementTest.cs" />
     <Compile Include="SendFile.cs" />
     <Compile Include="OSSupport.cs" />
-    <Compile Include="SendReceive.cs" />
+    <Compile Include="SendReceive\SendReceive.cs" />
+    <Compile Include="SendReceive\SendReceiveMisc.cs" />
+    <Compile Include="SendReceive\SendReceiveNonParallel.cs" />
+    <Compile Include="SendReceive\SendReceiveTcpClient.cs" />
+    <Compile Include="SendReceive\SendReceiveUdpClient.cs" />
     <Compile Include="SendTo.cs" />
     <Compile Include="SocketDuplicationTests.cs" />
     <Compile Include="SocketTestHelper.cs" />
@@ -48,6 +52,7 @@
     <Compile Include="Shutdown.cs" />
     <Compile Include="SocketAsyncEventArgsTest.cs" />
     <Compile Include="SocketOptionNameTest.cs" />
+    <Compile Include="SocketTaskExtensionsTest.cs" />
     <Compile Include="MulticastOptionTest.cs" />
     <Compile Include="UdpClientTest.cs" />
     <Compile Include="UnixDomainSocketTest.cs" />
@@ -94,7 +99,9 @@
     <Compile Include="$(CommonTestPath)Tests\System\IO\StreamConformanceTests.cs" Link="Common\System\IO\StreamConformanceTests.cs" />
     <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
   </ItemGroup>
 </Project>

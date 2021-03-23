@@ -57,7 +57,7 @@ namespace BinaryPrimitivesReverseEndianness
              * SIGN-EXTENDED VALUE TESTS
              */
 
-            Span<byte> spanInt16 = BitConverter.IsLittleEndian ? s_bufferLE.AsSpan().Slice(2) : s_bufferBE;
+            Span<byte> spanInt16 = BitConverter.IsLittleEndian ? s_bufferLE.AsSpan(2) : s_bufferBE;
             short swappedInt16 = BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<short>(spanInt16));
             if (swappedInt16 != ConstantUInt16Expected)
             {

@@ -12,8 +12,6 @@ namespace System.Diagnostics
     // similar functionality through an API specific to Unix.
     public sealed partial class ProcessStartInfo
     {
-        private const bool CaseSensitiveEnvironmentVariables = true;
-
         [SupportedOSPlatform("windows")]
         public string PasswordInClearText
         {

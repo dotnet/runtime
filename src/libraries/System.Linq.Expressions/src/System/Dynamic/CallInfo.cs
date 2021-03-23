@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 
 namespace System.Dynamic
@@ -82,7 +83,7 @@ namespace System.Dynamic
         /// </summary>
         /// <param name="obj">The instance of <see cref="CallInfo"/> to compare with the current instance.</param>
         /// <returns>true if the specified instance is equal to the current one otherwise, false.</returns>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is CallInfo other && ArgumentCount == other.ArgumentCount && ArgumentNames.ListEquals(other.ArgumentNames);
         }

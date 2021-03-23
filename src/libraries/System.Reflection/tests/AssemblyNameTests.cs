@@ -34,6 +34,21 @@ namespace System.Reflection.Tests
             yield return new object[] { "\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B", "\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B" };
         }
 
+        public static IEnumerable<object[]> Names_TestDataRequiresEscaping()
+        {
+            yield return new object[] { " name ", "\" name \"" };
+            yield return new object[] { "na,me", "na\\,me" };
+            yield return new object[] { "na=me", "na\\=me" };
+            yield return new object[] { "na\\me", "na\\\\me" };
+            yield return new object[] { "na\'me", "\"na\\'me\"" };
+            yield return new object[] { "na\"me", "\"na\\\"me\"" };
+            yield return new object[] { "na\tme", "na\\tme" };
+            yield return new object[] { "na\0me", "na\0me" };
+            yield return new object[] { "na\bme", "na\bme" };
+            yield return new object[] { "name\r", "\"name\\r\"" };
+            yield return new object[] { "name\n", "\"name\\n\"" };
+        }
+
         [Fact]
         public void Ctor_Empty()
         {
@@ -44,6 +59,8 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Names_TestData))]
+        [InlineData(" name ", "name")]
+        [InlineData("\tname\t", "name")]
         public void Ctor_String(string name, string expectedName)
         {
             AssemblyName assemblyName = new AssemblyName(name);
@@ -60,6 +77,17 @@ namespace System.Reflection.Tests
         [InlineData("           ", typeof(FileLoadException))]
         [InlineData("  \t \r \n ", typeof(FileLoadException))]
         public void Ctor_String_Invalid(string assemblyName, Type exceptionType)
+        {
+            Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
+        }
+
+        [Theory]
+        [InlineData("na,me", typeof(FileLoadException))]
+        [InlineData("na=me", typeof(FileLoadException))]
+        [InlineData("na\'me", typeof(FileLoadException))]
+        [InlineData("na\"me", typeof(FileLoadException))]
+        [ActiveIssue ("https://github.com/dotnet/runtime/issues/45032", TestRuntimes.Mono)]
+        public void Ctor_String_Invalid_Issue(string assemblyName, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
         }
@@ -354,11 +382,32 @@ namespace System.Reflection.Tests
         [MemberData(nameof(Names_TestData))]
         [InlineData(null, null)]
         [InlineData("", "")]
+        [InlineData(" name ", " name ")]
+        [InlineData("\tname\t", "\tname\t")]
         public void Name_Set(string name, string expectedName)
         {
             AssemblyName assemblyName = new AssemblyName("MyAssemblyName");
             assemblyName.Name = name;
             Assert.Equal(expectedName, assemblyName.Name);
+        }
+
+        [Theory]
+        [MemberData(nameof(Names_TestData))]
+        [MemberData(nameof(Names_TestDataRequiresEscaping))]
+        [InlineData(null, "")]
+        public void Name_Set_FullName(string name, string expectedName)
+        {
+            AssemblyName assemblyName = new AssemblyName("MyAssemblyName");
+            assemblyName.Name = name;
+            Assert.Equal(expectedName, assemblyName.FullName);
+        }
+
+        [Fact]
+        public void Name_Set_FullName_Invalid()
+        {
+            AssemblyName assemblyName = new AssemblyName("MyAssemblyName");
+            assemblyName.Name = "";
+            Assert.Throws<FileLoadException>(() => assemblyName.FullName);
         }
 
         [Fact]

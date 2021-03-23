@@ -376,7 +376,7 @@ namespace Microsoft.VisualBasic
         public static void FilePut(int FileNumber, float Value, long RecordNumber = (long)-1) { }
         public static void FilePut(int FileNumber, string Value, long RecordNumber = (long)-1, bool StringIsFixedLength = false) { }
         public static void FilePut(int FileNumber, System.ValueType Value, long RecordNumber = (long)-1) { }
-        [System.ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static void FilePut(object FileNumber, object Value, object RecordNumber) { }
         public static void FilePutObject(int FileNumber, object Value, long RecordNumber = (long)-1) { }
         public static void FileWidth(int FileNumber, int RecordWidth) { }
@@ -394,12 +394,16 @@ namespace Microsoft.VisualBasic
         public static void Input(int FileNumber, ref object Value) { }
         public static void Input(int FileNumber, ref float Value) { }
         public static void Input(int FileNumber, ref string Value) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static string InputString(int FileNumber, int CharCount) { throw null; }
         public static void Kill(string PathName) { }
         public static string LineInput(int FileNumber) { throw null; }
         public static long Loc(int FileNumber) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static void Lock(int FileNumber) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static void Lock(int FileNumber, long Record) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static void Lock(int FileNumber, long FromRecord, long ToRecord) { }
         public static long LOF(int FileNumber) { throw null; }
         public static void MkDir(string Path) { }
@@ -415,8 +419,11 @@ namespace Microsoft.VisualBasic
         public static Microsoft.VisualBasic.SpcInfo SPC(short Count) { throw null; }
         public static Microsoft.VisualBasic.TabInfo TAB() { throw null; }
         public static Microsoft.VisualBasic.TabInfo TAB(short Column) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static void Unlock(int FileNumber) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static void Unlock(int FileNumber, long Record) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static void Unlock(int FileNumber, long FromRecord, long ToRecord) { }
         public static void Write(int FileNumber, params object[] Output) { }
         public static void WriteLine(int FileNumber, params object[] Output) { }
@@ -606,7 +613,7 @@ namespace Microsoft.VisualBasic
         public static string FormatNumber(object? Expression, int NumDigitsAfterDecimal = -1, Microsoft.VisualBasic.TriState IncludeLeadingDigit = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState UseParensForNegativeNumbers = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState GroupDigits = Microsoft.VisualBasic.TriState.UseDefault) { throw null; }
         public static string FormatPercent(object? Expression, int NumDigitsAfterDecimal = -1, Microsoft.VisualBasic.TriState IncludeLeadingDigit = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState UseParensForNegativeNumbers = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState GroupDigits = Microsoft.VisualBasic.TriState.UseDefault) { throw null; }
         public static char GetChar(string str, int Index) { throw null; }
-        public static int InStr(int StartPos, string? String1, string? String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static int InStr(int Start, string? String1, string? String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
         public static int InStr(string? String1, string? String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
         public static int InStrRev(string? StringCheck, string? StringMatch, int Start = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
         public static string? Join(object?[] SourceArray, string? Delimiter = " ") { throw null; }

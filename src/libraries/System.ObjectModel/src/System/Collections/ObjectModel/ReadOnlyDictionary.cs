@@ -161,7 +161,7 @@ namespace System.Collections.ObjectModel
                     return null;
                 }
 
-                if (m_dictionary.TryGetValue((TKey)key, out TValue value))
+                if (m_dictionary.TryGetValue((TKey)key, out TValue? value))
                 {
                     return value;
                 }

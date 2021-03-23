@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -103,6 +104,7 @@ namespace System.Linq.Expressions
         /// <param name="newExpression">A <see cref="NewExpression"/> to set the <see cref="ListInitExpression.NewExpression"/> property equal to.</param>
         /// <param name="initializers">An array of <see cref="Expression"/> objects to use to populate the <see cref="ListInitExpression.Initializers"/> collection.</param>
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ListInit"/> and the <see cref="ListInitExpression.NewExpression"/> property set to the specified value.</returns>
+        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static ListInitExpression ListInit(NewExpression newExpression, params Expression[] initializers)
         {
             return ListInit(newExpression, initializers as IEnumerable<Expression>);
@@ -114,6 +116,7 @@ namespace System.Linq.Expressions
         /// <param name="newExpression">A <see cref="NewExpression"/> to set the <see cref="ListInitExpression.NewExpression"/> property equal to.</param>
         /// <param name="initializers">An <see cref="IEnumerable{T}"/> that contains <see cref="Expressions.ElementInit"/> objects to use to populate the <see cref="ListInitExpression.Initializers"/> collection.</param>
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ListInit"/> and the <see cref="ListInitExpression.NewExpression"/> property set to the specified value.</returns>
+        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static ListInitExpression ListInit(NewExpression newExpression, IEnumerable<Expression> initializers)
         {
             ContractUtils.RequiresNotNull(newExpression, nameof(newExpression));
@@ -136,6 +139,7 @@ namespace System.Linq.Expressions
         /// <param name="addMethod">A <see cref="MethodInfo"/> that represents an instance method named "Add" (case insensitive), that adds an element to a collection.</param>
         /// <param name="initializers">An array of <see cref="Expression"/> objects to use to populate the <see cref="ListInitExpression.Initializers"/> collection.</param>
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ListInit"/> and the <see cref="ListInitExpression.NewExpression"/> property set to the specified value.</returns>
+        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static ListInitExpression ListInit(NewExpression newExpression, MethodInfo? addMethod, params Expression[] initializers)
         {
             return ListInit(newExpression, addMethod, initializers as IEnumerable<Expression>);
@@ -148,6 +152,7 @@ namespace System.Linq.Expressions
         /// <param name="addMethod">A <see cref="MethodInfo"/> that represents an instance method named "Add" (case insensitive), that adds an element to a collection.</param>
         /// <param name="initializers">An <see cref="IEnumerable{T}"/> that contains <see cref="Expression"/> objects to use to populate the Initializers collection.</param>
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ListInit"/> and the <see cref="ListInitExpression.NewExpression"/> property set to the specified value.</returns>
+        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static ListInitExpression ListInit(NewExpression newExpression, MethodInfo? addMethod, IEnumerable<Expression> initializers)
         {
             if (addMethod == null)

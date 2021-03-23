@@ -1,5 +1,5 @@
 ﻿<Project>
-  <ItemGroup>
+  <ItemGroup Condition="'$(GeneratePackage)' == 'true'">
     <BuildRID Include="linux-arm">
       <Platform>arm</Platform>
     </BuildRID>

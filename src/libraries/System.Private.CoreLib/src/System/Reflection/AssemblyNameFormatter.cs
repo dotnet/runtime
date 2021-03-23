@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
+using System.Diagnostics;
 using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
@@ -10,18 +10,13 @@ namespace System.Reflection
 {
     internal static class AssemblyNameFormatter
     {
-        public static string ComputeDisplayName(string? name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags, AssemblyContentType contentType)
+        public static string ComputeDisplayName(string name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags = 0, AssemblyContentType contentType = 0)
         {
             const int PUBLIC_KEY_TOKEN_LEN = 8;
-
-            if (name == string.Empty)
-                throw new FileLoadException();
+            Debug.Assert(name.Length != 0);
 
             StringBuilder sb = new StringBuilder();
-            if (name != null)
-            {
-                sb.AppendQuoted(name);
-            }
+            sb.AppendQuoted(name);
 
             if (version != null)
             {
@@ -99,24 +94,27 @@ namespace System.Reflection
 
             for (int i = 0; i < s.Length; i++)
             {
-                bool addedEscape = false;
-                foreach (KeyValuePair<char, string> kv in EscapeSequences)
+                switch (s[i])
                 {
-                    string escapeReplacement = kv.Value;
-                    if (!(s[i] == escapeReplacement[0]))
-                        continue;
-                    if ((s.Length - i) < escapeReplacement.Length)
-                        continue;
-                    if (s.AsSpan(i, escapeReplacement.Length).SequenceEqual(escapeReplacement))
-                    {
+                    case '\\':
+                    case ',':
+                    case '=':
+                    case '\'':
+                    case '"':
                         sb.Append('\\');
-                        sb.Append(kv.Key);
-                        addedEscape = true;
-                    }
+                        break;
+                    case '\t':
+                        sb.Append("\\t");
+                        continue;
+                    case '\r':
+                        sb.Append("\\r");
+                        continue;
+                    case '\n':
+                        sb.Append("\\n");
+                        continue;
                 }
 
-                if (!addedEscape)
-                    sb.Append(s[i]);
+                sb.Append(s[i]);
             }
 
             if (needsQuoting)
@@ -135,16 +133,5 @@ namespace System.Reflection
 
             return new Version(major, minor, build, revision);
         }
-
-        public static KeyValuePair<char, string>[] EscapeSequences =
-        {
-            new KeyValuePair<char, string>('\\', "\\"),
-            new KeyValuePair<char, string>(',', ","),
-            new KeyValuePair<char, string>('=', "="),
-            new KeyValuePair<char, string>('\'', "'"),
-            new KeyValuePair<char, string>('\"', "\""),
-            new KeyValuePair<char, string>('n', Environment.NewLineConst),
-            new KeyValuePair<char, string>('t', "\t"),
-        };
     }
 }

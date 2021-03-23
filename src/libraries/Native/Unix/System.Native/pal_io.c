@@ -40,6 +40,15 @@
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
+#elif defined(__sun)
+#ifndef _KERNEL
+#define _KERNEL
+#define UNDEF_KERNEL
+#endif
+#include <sys/procfs.h>
+#ifdef UNDEF_KERNEL
+#undef _KERNEL
+#endif
 #endif
 
 #if HAVE_STAT64
@@ -418,7 +427,10 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
         return errno == 0 ? -1 : errno;
     }
 #else
-    int error = readdir_r(dir, entry, &result);
+    int error;
+
+    // EINTR isn't documented, happens in practice on macOS.
+    while ((error = readdir_r(dir, entry, &result)) && errno == EINTR);
 
     // positive error number returned -> failure
     if (error != 0)
@@ -464,12 +476,27 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
 
 DIR* SystemNative_OpenDir(const char* path)
 {
-    return opendir(path);
+    DIR *result;
+
+    // EINTR isn't documented, happens in practice on macOS.
+    while ((result = opendir(path)) == NULL && errno == EINTR);
+
+    return result;
 }
 
 int32_t SystemNative_CloseDir(DIR* dir)
 {
-    return closedir(dir);
+    int32_t result;
+
+    result = closedir(dir);
+
+    // EINTR isn't documented, happens in practice on macOS.
+    if (result < 0 && errno == EINTR)
+    {
+        result = 0;
+    }
+
+    return result;
 }
 
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
@@ -632,8 +659,16 @@ int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 
 int32_t SystemNative_FSync(intptr_t fd)
 {
+    int fileDescriptor = ToFileDescriptor(fd);
+
     int32_t result;
-    while ((result = fsync(ToFileDescriptor(fd))) < 0 && errno == EINTR);
+    while ((result = 
+#if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
+    fcntl(fileDescriptor, F_FULLFSYNC)
+#else
+    fsync(fileDescriptor)
+#endif
+    < 0) && errno == EINTR);
     return result;
 }
 
@@ -1148,14 +1183,17 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
         while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
     }
-    if (ret != 0)
+    // If we copied to a filesystem (eg EXFAT) that does not preserve POSIX ownership, all files appear
+    // to be owned by root. If we aren't running as root, then we won't be an owner of our new file, and 
+    // attempting to copy metadata to it will fail with EPERM. We have copied successfully, we just can't
+    // copy metadata. The best thing we can do is skip copying the metadata.
+    if (ret != 0 && errno != EPERM)
     {
         return -1;
     }
-
     // Then copy permissions.
     while ((ret = fchmod(outFd, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
-    if (ret != 0)
+    if (ret != 0 && errno != EPERM) // See EPERM comment above
     {
         return -1;
     }
@@ -1243,8 +1281,27 @@ char* SystemNative_RealPath(const char* path)
     return realpath(path, NULL);
 }
 
+static int16_t ConvertLockType(int16_t managedLockType)
+{
+    // the managed enum Interop.Sys.LockType has no 1:1 mapping with corresponding Unix values
+    // which can be different per distro:
+    // https://github.com/torvalds/linux/blob/fcadab740480e0e0e9fa9bd272acd409884d431a/arch/alpha/include/uapi/asm/fcntl.h#L48-L50
+    // https://github.com/freebsd/freebsd-src/blob/fb8c2f743ab695f6004650b58bf96972e2535b20/sys/sys/fcntl.h#L277-L279
+    switch (managedLockType)
+    {
+        case 0:
+            return F_RDLCK;
+        case 1:
+            return F_WRLCK;
+        default:
+            assert_msg(managedLockType == 2, "Unknown Lock Type", (int)managedLockType);
+            return F_UNLCK;
+    }
+}
+
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {
+    int16_t unixLockType = ConvertLockType(lockType);
     if (offset < 0 || length < 0)
     {
         errno = EINVAL;
@@ -1257,7 +1314,7 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
     struct flock lockArgs;
 #endif
 
-    lockArgs.l_type = lockType;
+    lockArgs.l_type = unixLockType;
     lockArgs.l_whence = SEEK_SET;
     lockArgs.l_start = (off_t)offset;
     lockArgs.l_len = (off_t)length;
@@ -1287,4 +1344,34 @@ int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 #else
     return false;
 #endif
+}
+
+int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
+{
+#ifdef __sun
+    char statusFilename[64];
+    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/psinfo", pid);
+
+    intptr_t fd;
+    while ((fd = open(statusFilename, O_RDONLY)) < 0 && errno == EINTR);
+    if (fd < 0)
+    {
+        return 0;
+    }
+
+    psinfo_t status;
+    int result = Common_Read(fd, &status, sizeof(psinfo_t));
+    close(fd);
+    if (result >= 0)
+    {
+        processStatus->ResidentSetSize = status.pr_rssize * 1024; // pr_rssize is in Kbytes
+        return 1;
+    }
+
+    return 0;
+#else
+    (void)pid, (void)processStatus;
+    errno = ENOTSUP;
+    return -1;
+#endif // __sun
 }

@@ -325,6 +325,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void LoadedFiles_ContainsMultipleDllsAndSomeNonDll_ShouldOnlyContainDlls()
         {
                 // Add one text file

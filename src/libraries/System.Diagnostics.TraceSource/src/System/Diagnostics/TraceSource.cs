@@ -11,7 +11,7 @@ namespace System.Diagnostics
 {
     public class TraceSource
     {
-        private static readonly List<WeakReference> s_tracesources = new List<WeakReference>();
+        private static readonly List<WeakReference<TraceSource>> s_tracesources = new List<WeakReference<TraceSource>>();
         private static int s_LastCollectionCount;
 
         private volatile SourceSwitch? _internalSwitch;
@@ -40,7 +40,7 @@ namespace System.Diagnostics
             lock (s_tracesources)
             {
                 _pruneCachedTraceSources();
-                s_tracesources.Add(new WeakReference(this));
+                s_tracesources.Add(new WeakReference<TraceSource>(this));
             }
         }
 
@@ -50,11 +50,10 @@ namespace System.Diagnostics
             {
                 if (s_LastCollectionCount != GC.CollectionCount(2))
                 {
-                    List<WeakReference> buffer = new List<WeakReference>(s_tracesources.Count);
+                    List<WeakReference<TraceSource>> buffer = new List<WeakReference<TraceSource>>(s_tracesources.Count);
                     for (int i = 0; i < s_tracesources.Count; i++)
                     {
-                        TraceSource? tracesource = ((TraceSource?)s_tracesources[i].Target);
-                        if (tracesource != null)
+                        if (s_tracesources[i].TryGetTarget(out _))
                         {
                             buffer.Add(s_tracesources[i]);
                         }
@@ -153,8 +152,7 @@ namespace System.Diagnostics
                 _pruneCachedTraceSources();
                 for (int i = 0; i < s_tracesources.Count; i++)
                 {
-                    TraceSource? tracesource = ((TraceSource?)s_tracesources[i].Target);
-                    if (tracesource != null)
+                    if (s_tracesources[i].TryGetTarget(out TraceSource? tracesource))
                     {
                         tracesource.Refresh();
                     }

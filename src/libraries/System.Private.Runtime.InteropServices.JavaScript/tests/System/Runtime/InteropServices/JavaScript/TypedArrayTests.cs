@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var clamped = new byte[50];
             Uint8ClampedArray from = Uint8ClampedArray.From(clamped);
-            Assert.True(from.Length == 50);
+            Assert.Equal(50, from.Length);
             Assert.Equal("[object Uint8ClampedArray]", objectPrototype.Call(from));
         }
 
@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var array = new byte[50];
             Uint8Array from = Uint8Array.From(array);
-            Assert.True(from.Length == 50);
+            Assert.Equal(50, from.Length);
             Assert.Equal("[object Uint8Array]", objectPrototype.Call(from));
         }
 
@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var array = new ushort[50];
             Uint16Array from = Uint16Array.From(array);
-            Assert.True(from.Length == 50);
+            Assert.Equal(50, from.Length);
             Assert.Equal("[object Uint16Array]", objectPrototype.Call(from));
         }
 
@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var array = new uint[50];
             Uint32Array from = Uint32Array.From(array);
-            Assert.True(from.Length == 50);
+            Assert.Equal(50, from.Length);
             Assert.Equal("[object Uint32Array]", objectPrototype.Call(from));
         }
 
@@ -63,7 +63,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var array = new sbyte[50];
             Int8Array from = Int8Array.From(array);
-            Assert.True(from.Length == 50);
+            Assert.Equal(50, from.Length);
             Assert.Equal("[object Int8Array]", objectPrototype.Call(from));
         }
 
@@ -73,7 +73,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var array = new short[50];
             Int16Array from = Int16Array.From(array);
-            Assert.True(from.Length == 50);
+            Assert.Equal(50, from.Length);
             Assert.Equal("[object Int16Array]", objectPrototype.Call(from));
         }
 
@@ -83,7 +83,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var array = new int[50];
             Int32Array from = Int32Array.From(array);
-            Assert.True(from.Length == 50);
+            Assert.Equal(50, from.Length);
             Assert.Equal("[object Int32Array]", objectPrototype.Call(from));
         }
 
@@ -93,7 +93,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var array = new float[50];
             Float32Array from = Float32Array.From(array);
-            Assert.True(from.Length == 50);
+            Assert.Equal(50, from.Length);
             Assert.Equal("[object Float32Array]", objectPrototype.Call(from));
         }
 
@@ -103,7 +103,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var array = new double[50];
             Float64Array from = Float64Array.From(array);
-            Assert.True(from.Length == 50);
+            Assert.Equal(50, from.Length);
             Assert.Equal("[object Float64Array]", objectPrototype.Call(from));
         }
 
@@ -112,7 +112,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void Uint8ClampedArrayFromSharedArrayBuffer(Function objectPrototype)
         {
             Uint8ClampedArray from = new Uint8ClampedArray(new SharedArrayBuffer(50));
-            Assert.True(from.Length == 50);
+            Assert.Equal(50, from.Length);
             Assert.Equal("[object Uint8ClampedArray]", objectPrototype.Call(from));
         }
 
@@ -121,7 +121,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void Uint8ArrayFromSharedArrayBuffer(Function objectPrototype)
         {
             Uint8Array from = new Uint8Array(new SharedArrayBuffer(50));
-            Assert.True(from.Length == 50);
+            Assert.Equal(50, from.Length);
             Assert.Equal("[object Uint8Array]", objectPrototype.Call(from));
         }
 
@@ -130,7 +130,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void Uint16ArrayFromSharedArrayBuffer(Function objectPrototype)
         {
             Uint16Array from = new Uint16Array(new SharedArrayBuffer(50));
-            Assert.True(from.Length == 25);
+            Assert.Equal(25, from.Length);
             Assert.Equal("[object Uint16Array]", objectPrototype.Call(from));
         }
 
@@ -139,7 +139,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void Uint32ArrayFromSharedArrayBuffer(Function objectPrototype)
         {
             Uint32Array from = new Uint32Array(new SharedArrayBuffer(40));
-            Assert.True(from.Length == 10);
+            Assert.Equal(10, from.Length);
             Assert.Equal("[object Uint32Array]", objectPrototype.Call(from));
         }
 

@@ -1,0 +1,7 @@
+<Project>
+  <ItemGroup>
+    <ResolvedMatchingContract Include="$(ContractAssemblyPath)" />
+  </ItemGroup>
+
+  <Import Project="..\Directory.Build.targets" />
+</Project>

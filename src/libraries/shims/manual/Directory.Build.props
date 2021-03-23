@@ -11,8 +11,6 @@
 
   <PropertyGroup>
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
-    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(OutDirName)'))</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)</IntermediateOutputPath>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
 
@@ -20,7 +18,8 @@
     <ReferencePath Include="$(NetCoreAppCurrentRuntimePath)System.*.dll;
                             $(NetCoreAppCurrentRuntimePath)Microsoft.Win32.*.dll;
                             $(NetCoreAppCurrentRuntimePath)netstandard.dll"
-                   Exclude="$(NetCoreAppCurrentRuntimePath)$(MSBuildProjectName).dll" />
+                   Exclude="$(NetCoreAppCurrentRuntimePath)$(MSBuildProjectName).dll;
+                            $(NetCoreAppCurrentRuntimePath)System.*.Native.dll" />
     <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
 </Project>

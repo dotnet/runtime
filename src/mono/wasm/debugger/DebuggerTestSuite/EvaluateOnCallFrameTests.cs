@@ -49,26 +49,26 @@ namespace DebuggerTests
                var dateTime = new DateTime(2010, 9, 8, 7, 6, 5 + bias);
                var DTProp = dateTime.AddMinutes(10);
 
-                foreach (var pad in new[] { String.Empty, "  " })
-                {
-                    var padded_prefix = pad + prefix;
-                    await EvaluateOnCallFrameAndCheck(id,
-                        ($"{padded_prefix}a", TNumber(4)),
+               foreach (var pad in new[] { String.Empty, "  " })
+               {
+                   var padded_prefix = pad + prefix;
+                   await EvaluateOnCallFrameAndCheck(id,
+                       ($"{padded_prefix}a", TNumber(4)),
 
-                        // fields
-                        ($"{padded_prefix}dateTime.TimeOfDay", TValueType("System.TimeSpan", dateTime.TimeOfDay.ToString())),
-                        ($"{padded_prefix}dateTime", TDateTime(dateTime)),
-                        ($"{padded_prefix}dateTime.TimeOfDay.Minutes", TNumber(dateTime.TimeOfDay.Minutes)),
+                       // fields
+                       ($"{padded_prefix}dateTime.TimeOfDay", TValueType("System.TimeSpan", dateTime.TimeOfDay.ToString())),
+                       ($"{padded_prefix}dateTime", TDateTime(dateTime)),
+                       ($"{padded_prefix}dateTime.TimeOfDay.Minutes", TNumber(dateTime.TimeOfDay.Minutes)),
 
-                        // properties
-                        ($"{padded_prefix}DTProp.TimeOfDay.Minutes", TNumber(DTProp.TimeOfDay.Minutes)),
-                        ($"{padded_prefix}DTProp", TDateTime(DTProp)),
-                        ($"{padded_prefix}DTProp.TimeOfDay", TValueType("System.TimeSpan", DTProp.TimeOfDay.ToString())),
+                       // properties
+                       ($"{padded_prefix}DTProp.TimeOfDay.Minutes", TNumber(DTProp.TimeOfDay.Minutes)),
+                       ($"{padded_prefix}DTProp", TDateTime(DTProp)),
+                       ($"{padded_prefix}DTProp.TimeOfDay", TValueType("System.TimeSpan", DTProp.TimeOfDay.ToString())),
 
-                        ($"{padded_prefix}IntProp", TNumber(9)),
-                        ($"{padded_prefix}NullIfAIsNotZero", TObject("DebuggerTests.EvaluateTestsClassWithProperties", is_null: true))
-                    );
-                }
+                       ($"{padded_prefix}IntProp", TNumber(9)),
+                       ($"{padded_prefix}NullIfAIsNotZero", TObject("DebuggerTests.EvaluateTestsClassWithProperties", is_null: true))
+                   );
+               }
            });
 
         [Theory]
@@ -145,13 +145,13 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-                // sc_arg
-                {
+               // sc_arg
+               {
                    var (sc_arg, _) = await EvaluateOnCallFrame(id, "sc_arg");
                    await CheckValue(sc_arg, TObject("DebuggerTests.SimpleClass"), nameof(sc_arg));
 
-                    // Check that we did get the correct object
-                    var sc_arg_props = await GetProperties(sc_arg["objectId"]?.Value<string>());
+                   // Check that we did get the correct object
+                   var sc_arg_props = await GetProperties(sc_arg["objectId"]?.Value<string>());
                    await CheckProps(sc_arg_props, new
                    {
                        X = TNumber(10),
@@ -167,8 +167,8 @@ namespace DebuggerTests
                        ("sc_arg.Id + (sc_arg.X==10 ? \"_is_ten\" : \"_not_ten\")", TString($"sc#Id_is_ten")));
                }
 
-                // local_gs
-                {
+               // local_gs
+               {
                    var (local_gs, _) = await EvaluateOnCallFrame(id, "local_gs");
                    await CheckValue(local_gs, TValueType("DebuggerTests.SimpleGenericStruct<int>"), nameof(local_gs));
 
@@ -221,28 +221,28 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-                foreach(var pad in new [] { String.Empty, "  "})
-                {
-                    var padded_prefix = pad + prefix;
-                    await EvaluateOnCallFrameAndCheck(id,
-                        // overridden
-                        ($"{padded_prefix}FirstName + \"_foo\"", TString("DerivedClass#FirstName_foo")),
-                        ($"{padded_prefix}DateTimeForOverride.Date.Year", TNumber(2190)),
-                        ($"{padded_prefix}DateTimeForOverride.Date.Year - 10", TNumber(2180)),
-                        ($"\"foo_\" + {padded_prefix}StringPropertyForOverrideWithAutoProperty", TString("foo_DerivedClass#StringPropertyForOverrideWithAutoProperty")),
+               foreach (var pad in new[] { String.Empty, "  " })
+               {
+                   var padded_prefix = pad + prefix;
+                   await EvaluateOnCallFrameAndCheck(id,
+                       // overridden
+                       ($"{padded_prefix}FirstName + \"_foo\"", TString("DerivedClass#FirstName_foo")),
+                       ($"{padded_prefix}DateTimeForOverride.Date.Year", TNumber(2190)),
+                       ($"{padded_prefix}DateTimeForOverride.Date.Year - 10", TNumber(2180)),
+                       ($"\"foo_\" + {padded_prefix}StringPropertyForOverrideWithAutoProperty", TString("foo_DerivedClass#StringPropertyForOverrideWithAutoProperty")),
 
-                        // private
-                        ($"{padded_prefix}_stringField + \"_foo\"", TString("DerivedClass#_stringField_foo")),
-                        ($"{padded_prefix}_stringField", TString("DerivedClass#_stringField")),
-                        ($"{padded_prefix}_dateTime.Second + 4", TNumber(7)),
-                        ($"{padded_prefix}_DTProp.Second + 4", TNumber(13)),
+                       // private
+                       ($"{padded_prefix}_stringField + \"_foo\"", TString("DerivedClass#_stringField_foo")),
+                       ($"{padded_prefix}_stringField", TString("DerivedClass#_stringField")),
+                       ($"{padded_prefix}_dateTime.Second + 4", TNumber(7)),
+                       ($"{padded_prefix}_DTProp.Second + 4", TNumber(13)),
 
-                        // inherited public
-                        ($"\"foo_\" + {padded_prefix}Base_AutoStringProperty", TString("foo_base#Base_AutoStringProperty")),
-                        // inherited private
-                        ($"{padded_prefix}_base_dateTime.Date.Year - 10", TNumber(2124))
-                    );
-                }
+                       // inherited public
+                       ($"\"foo_\" + {padded_prefix}Base_AutoStringProperty", TString("foo_base#Base_AutoStringProperty")),
+                       // inherited private
+                       ($"{padded_prefix}_base_dateTime.Date.Year - 10", TNumber(2124))
+                   );
+               }
            });
 
         [Fact]
@@ -322,8 +322,8 @@ namespace DebuggerTests
                var dt_local = new DateTime(2020, 3, 4, 5, 6, 7);
                var dt_this = new DateTime(2010, 9, 8, 7, 6, 5);
 
-                // At EvaluateShadow
-                {
+               // At EvaluateShadow
+               {
                    var id0 = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                    await EvaluateOnCallFrameAndCheck(id0,
                        ("dateTime", TDateTime(dt_local)),
@@ -339,38 +339,38 @@ namespace DebuggerTests
                        ("dateTime", "ReferenceError"),
                        ("this.dateTime", "ReferenceError"));
 
-                    // obj available only on the -1 frame
-                    await EvaluateOnCallFrameAndCheck(id1, ("obj.IntProp", TNumber(7)));
+                   // obj available only on the -1 frame
+                   await EvaluateOnCallFrameAndCheck(id1, ("obj.IntProp", TNumber(7)));
                }
 
                await SetBreakpointInMethod("debugger-test.dll", type_name, "SomeMethod", 1);
                pause_location = await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0, "SomeMethod");
 
-                // At SomeMethod
+               // At SomeMethod
 
-                // TODO: change types also.. so, that `this` is different!
+               // TODO: change types also.. so, that `this` is different!
 
-                // Check frame0
-                {
+               // Check frame0
+               {
                    var id0 = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-                    // 'me' and 'dateTime' are reversed in this method
-                    await EvaluateOnCallFrameAndCheck(id0,
-                       ("dateTime", is_valuetype ? TValueType(type_name) : TObject(type_name)),
-                       ("this.dateTime", TDateTime(dt_this)),
-                       ("me", TDateTime(dt_local)),
+                   // 'me' and 'dateTime' are reversed in this method
+                   await EvaluateOnCallFrameAndCheck(id0,
+                      ("dateTime", is_valuetype ? TValueType(type_name) : TObject(type_name)),
+                      ("this.dateTime", TDateTime(dt_this)),
+                      ("me", TDateTime(dt_local)),
 
-                       // local variable shadows field, but isn't "live" yet
-                       ("DTProp", TString(null)),
+                      // local variable shadows field, but isn't "live" yet
+                      ("DTProp", TString(null)),
 
-                       // access field via `this.`
-                       ("this.DTProp", TDateTime(dt_this.AddMinutes(10))));
+                      // access field via `this.`
+                      ("this.DTProp", TDateTime(dt_this.AddMinutes(10))));
 
                    await EvaluateOnCallFrameFail(id0, ("obj", "ReferenceError"));
                }
 
-                // check frame1
-                {
+               // check frame1
+               {
                    var id1 = pause_location["callFrames"][1]["callFrameId"].Value<string>();
 
                    await EvaluateOnCallFrameAndCheck(id1,
@@ -388,15 +388,15 @@ namespace DebuggerTests
                    await EvaluateOnCallFrameFail(id1, ("obj", "ReferenceError"));
                }
 
-                // check frame2
-                {
+               // check frame2
+               {
                    var id2 = pause_location["callFrames"][2]["callFrameId"].Value<string>();
 
-                    // Only obj should be available
-                    await EvaluateOnCallFrameFail(id2,
-                       ("dateTime", "ReferenceError"),
-                       ("this.dateTime", "ReferenceError"),
-                       ("me", "ReferenceError"));
+                   // Only obj should be available
+                   await EvaluateOnCallFrameFail(id2,
+                      ("dateTime", "ReferenceError"),
+                      ("this.dateTime", "ReferenceError"),
+                      ("me", "ReferenceError"));
 
                    await EvaluateOnCallFrameAndCheck(id2, ("obj", is_valuetype ? TValueType(type_name) : TObject(type_name)));
                }
@@ -405,32 +405,23 @@ namespace DebuggerTests
         [Fact]
         public async Task JSEvaluate()
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
             var bp_loc = "/other.js";
             var line = 76;
             var col = 1;
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                await SetBreakpoint(bp_loc, line, col);
+            await SetBreakpoint(bp_loc, line, col);
 
-                var eval_expr = "window.setTimeout(function() { eval_call_on_frame_test (); }, 1)";
-                var result = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), ctx.token);
-                var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
+            var eval_expr = "window.setTimeout(function() { eval_call_on_frame_test (); }, 1)";
+            var result = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), token);
+            var pause_location = await insp.WaitFor(Inspector.PAUSE);
 
-                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-                await EvaluateOnCallFrameFail(id,
-                    ("me.foo", null),
-                    ("obj.foo.bar", null));
+            await EvaluateOnCallFrameFail(id,
+                ("me.foo", null),
+                ("obj.foo.bar", null));
 
-                await EvaluateOnCallFrame(id, "obj.foo", expect_ok: true);
-            });
+            await EvaluateOnCallFrame(id, "obj.foo", expect_ok: true);
         }
 
         [Fact]
@@ -441,23 +432,23 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-                // Use '.' on a primitive member
-                await EvaluateOnCallFrameFail(id,
-                   //BUG: TODO:
-                   //("a)", "CompilationError"),
+               // Use '.' on a primitive member
+               await EvaluateOnCallFrameFail(id,
+                  //BUG: TODO:
+                  //("a)", "CompilationError"),
 
-                   ("this.a.", "ReferenceError"),
-                   ("a.", "ReferenceError"),
+                  ("this.a.", "ReferenceError"),
+                  ("a.", "ReferenceError"),
 
-                   ("this..a", "CompilationError"),
-                   (".a.", "ReferenceError"),
+                  ("this..a", "CompilationError"),
+                  (".a.", "ReferenceError"),
 
-                   ("me.foo", "ReferenceError"),
+                  ("me.foo", "ReferenceError"),
 
-                   ("this.a + non_existant", "ReferenceError"),
+                  ("this.a + non_existant", "ReferenceError"),
 
-                   ("this.NullIfAIsNotZero.foo", "ReferenceError"),
-                   ("NullIfAIsNotZero.foo", "ReferenceError"));
+                  ("this.NullIfAIsNotZero.foo", "ReferenceError"),
+                  ("NullIfAIsNotZero.foo", "ReferenceError"));
            });
 
         [Fact]

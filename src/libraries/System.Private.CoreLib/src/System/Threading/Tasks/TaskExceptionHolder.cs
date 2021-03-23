@@ -277,17 +277,16 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Wraps the exception dispatch infos into a new read-only collection. By calling this method,
-        /// the holder assumes exceptions to have been "observed", such that the finalization
+        /// The holder assumes exceptions to have been "observed", such that the finalization
         /// check will be subsequently skipped.
         /// </summary>
-        internal ReadOnlyCollection<ExceptionDispatchInfo> GetExceptionDispatchInfos()
+        internal List<ExceptionDispatchInfo> GetExceptionDispatchInfos()
         {
             List<ExceptionDispatchInfo>? exceptions = m_faultExceptions;
             Debug.Assert(exceptions != null, "Expected an initialized list.");
             Debug.Assert(exceptions.Count > 0, "Expected at least one exception.");
             MarkAsHandled(false);
-            return new ReadOnlyCollection<ExceptionDispatchInfo>(exceptions);
+            return exceptions;
         }
 
         /// <summary>

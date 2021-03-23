@@ -45,7 +45,7 @@
     <TestGrouping Include="$(TestBinDir)JIT\Methodical\e*\**;
                            $(TestBinDir)JIT\Methodical\E*\**"
                   Exclude="$(TestBinDir)JIT\Methodical\eh\**">
-      <TestGroup>JIT.Methodical.e-iE-I</TestGroup>
+      <TestGroup>JIT.Methodical.eE</TestGroup>
       <XUnitWrapperDll>$(TestBinDir)JIT\Methodical\JIT.Methodical.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
 
@@ -57,7 +57,7 @@
                            $(TestBinDir)JIT\Methodical\G*\**;
                            $(TestBinDir)JIT\Methodical\H*\**;
                            $(TestBinDir)JIT\Methodical\I*\**">
-      <TestGroup>JIT.Methodical.e-iE-I</TestGroup>
+      <TestGroup>JIT.Methodical.f-iF-I</TestGroup>
       <XUnitWrapperDll>$(TestBinDir)JIT\Methodical\JIT.Methodical.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
 

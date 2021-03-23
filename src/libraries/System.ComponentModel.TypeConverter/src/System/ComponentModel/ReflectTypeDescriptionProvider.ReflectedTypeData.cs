@@ -79,70 +79,65 @@ namespace System.ComponentModel
                     // We append base class attributes to this array so when walking we will
                     // walk from Length - 1 to zero.
                     //
-                    Attribute[] attrArray = ReflectGetAttributes(_type);
+
+                    var attributes = new List<Attribute>(ReflectGetAttributes(_type));
                     Type baseType = _type.BaseType;
 
                     while (baseType != null && baseType != typeof(object))
                     {
-                        Attribute[] baseArray = ReflectGetAttributes(baseType);
-                        Attribute[] temp = new Attribute[attrArray.Length + baseArray.Length];
-                        Array.Copy(attrArray, temp, attrArray.Length);
-                        Array.Copy(baseArray, 0, temp, attrArray.Length, baseArray.Length);
-                        attrArray = temp;
+                        attributes.AddRange(ReflectGetAttributes(baseType));
                         baseType = baseType.BaseType;
                     }
 
                     // Next, walk the type's interfaces. We append these to
                     // the attribute array as well.
-                    int ifaceStartIdx = attrArray.Length;
+                    int ifaceStartIdx = attributes.Count;
                     Type[] interfaces = _type.GetInterfaces();
                     for (int idx = 0; idx < interfaces.Length; idx++)
                     {
-                        Type iface = interfaces[idx];
-
                         // Only do this for public interfaces.
+                        Type iface = interfaces[idx];
                         if ((iface.Attributes & (TypeAttributes.Public | TypeAttributes.NestedPublic)) != 0)
                         {
                             // No need to pass an instance into GetTypeDescriptor here because, if someone provided a custom
                             // provider based on object, it already would have hit.
-                            AttributeCollection ifaceAttrs = TypeDescriptor.GetAttributes(iface);
-                            if (ifaceAttrs.Count > 0)
-                            {
-                                Attribute[] temp = new Attribute[attrArray.Length + ifaceAttrs.Count];
-                                Array.Copy(attrArray, temp, attrArray.Length);
-                                ifaceAttrs.CopyTo(temp, attrArray.Length);
-                                attrArray = temp;
-                            }
+                            attributes.AddRange(TypeDescriptor.GetAttributes(iface).Attributes);
                         }
                     }
 
-                    // Finally, put all these attributes in a dictionary and filter out the duplicates.
-                    OrderedDictionary attrDictionary = new OrderedDictionary(attrArray.Length);
-
-                    for (int idx = 0; idx < attrArray.Length; idx++)
+                    // Finally, filter out duplicates.
+                    if (attributes.Count != 0)
                     {
-                        bool addAttr = true;
-                        if (idx >= ifaceStartIdx)
+                        var filter = new HashSet<object>(attributes.Count);
+                        int next = 0;
+
+                        for (int idx = 0; idx < attributes.Count; idx++)
                         {
-                            for (int ifaceSkipIdx = 0; ifaceSkipIdx < s_skipInterfaceAttributeList.Length; ifaceSkipIdx++)
+                            Attribute attr = attributes[idx];
+
+                            bool addAttr = true;
+                            if (idx >= ifaceStartIdx)
                             {
-                                if (s_skipInterfaceAttributeList[ifaceSkipIdx].IsInstanceOfType(attrArray[idx]))
+                                for (int ifaceSkipIdx = 0; ifaceSkipIdx < s_skipInterfaceAttributeList.Length; ifaceSkipIdx++)
                                 {
-                                    addAttr = false;
-                                    break;
+                                    if (s_skipInterfaceAttributeList[ifaceSkipIdx].IsInstanceOfType(attr))
+                                    {
+                                        addAttr = false;
+                                        break;
+                                    }
                                 }
                             }
+
+                            if (addAttr && filter.Add(attr.TypeId))
+                            {
+                                attributes[next++] = attributes[idx];
+                            }
                         }
 
-                        if (addAttr && !attrDictionary.Contains(attrArray[idx].TypeId))
-                        {
-                            attrDictionary[attrArray[idx].TypeId] = attrArray[idx];
-                        }
+                        attributes.RemoveRange(next, attributes.Count - next);
                     }
 
-                    attrArray = new Attribute[attrDictionary.Count];
-                    attrDictionary.Values.CopyTo(attrArray, 0);
-                    _attributes = new AttributeCollection(attrArray);
+                    _attributes = new AttributeCollection(attributes.ToArray());
                 }
 
                 return _attributes;

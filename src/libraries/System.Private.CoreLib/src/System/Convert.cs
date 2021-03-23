@@ -378,12 +378,12 @@ namespace System
         private static void ThrowUInt64OverflowException() { throw new OverflowException(SR.Overflow_UInt64); }
 
         // Conversions to Boolean
-        public static bool ToBoolean(object? value)
+        public static bool ToBoolean([NotNullWhen(true)] object? value)
         {
             return value == null ? false : ((IConvertible)value).ToBoolean(null);
         }
 
-        public static bool ToBoolean(object? value, IFormatProvider? provider)
+        public static bool ToBoolean([NotNullWhen(true)] object? value, IFormatProvider? provider)
         {
             return value == null ? false : ((IConvertible)value).ToBoolean(provider);
         }
@@ -444,14 +444,14 @@ namespace System
             return value != 0;
         }
 
-        public static bool ToBoolean(string? value)
+        public static bool ToBoolean([NotNullWhen(true)] string? value)
         {
             if (value == null)
                 return false;
             return bool.Parse(value);
         }
 
-        public static bool ToBoolean(string? value, IFormatProvider? provider)
+        public static bool ToBoolean([NotNullWhen(true)] string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return false;

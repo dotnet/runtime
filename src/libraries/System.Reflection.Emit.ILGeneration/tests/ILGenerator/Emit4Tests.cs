@@ -46,6 +46,39 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void TestEmitCalliManagedBlittable()
+        {
+            int a = 1, b = 1, result = 2;
+
+            ModuleBuilder moduleBuilder = Helpers.DynamicModule();
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("T", TypeAttributes.Public);
+            Type returnType = typeof(int);
+
+            MethodBuilder methodBuilder = typeBuilder.DefineMethod("F",
+                MethodAttributes.Public | MethodAttributes.Static, returnType, new Type[] { typeof(IntPtr), typeof(int), typeof(int) });
+            methodBuilder.SetImplementationFlags(MethodImplAttributes.NoInlining);
+
+            MethodInfo method = typeof(ILGeneratorEmit4).GetMethod(nameof(ILGeneratorEmit4.Int32Sum), BindingFlags.NonPublic | BindingFlags.Static) ?? throw new InvalidOperationException("method is null");
+            IntPtr funcPtr = method.MethodHandle.GetFunctionPointer();
+
+            ILGenerator il = methodBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldarg_2);
+            il.Emit(OpCodes.Ldarg_0);
+            il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, returnType, new Type[] { typeof(int), typeof(int) }, null);
+            il.Emit(OpCodes.Ret);
+
+            Type dynamicType = typeBuilder.CreateType();
+
+            object resultValue = dynamicType
+                .GetMethod("F", BindingFlags.Public | BindingFlags.Static)
+                .Invoke(null, new object[] { funcPtr, a, b });
+
+            Assert.IsType(returnType, resultValue);
+            Assert.Equal(result, resultValue);
+        }
+
+        [Fact]
         public void TestDynamicMethodEmitCalliBlittable()
         {
             int a = 1, b = 1, result = 2;

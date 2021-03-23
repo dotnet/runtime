@@ -258,14 +258,14 @@ namespace System.Diagnostics
             string? processName = s_processName;
             if (processName is null)
             {
-                try
+                if (OperatingSystem.IsBrowser()) // Process isn't supported on Browser
+                {
+                    s_processName = processName = string.Empty;
+                }
+                else
                 {
                     using Process process = Process.GetCurrentProcess();
                     s_processName = processName = process.ProcessName;
-                }
-                catch (PlatformNotSupportedException) // Process isn't supported on Browser
-                {
-                    s_processName = processName = string.Empty;
                 }
             }
 

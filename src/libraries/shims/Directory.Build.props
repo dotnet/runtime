@@ -20,7 +20,7 @@
     <HasMatchingContract>true</HasMatchingContract>
     <NETFrameworkReferenceAssemblyTFM>net48</NETFrameworkReferenceAssemblyTFM>
     <NetFxRefPath>$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.$(NETFrameworkReferenceAssemblyTFM)\$(MicrosoftNetFrameworkReferenceAssembliesVersion)\build\.NETFramework\v4.8\</NetFxRefPath>
-    <NETStandard21RefPath>$(NuGetPackageRoot)netstandard.library\$(NETStandardLibraryVersion)\build\netstandard2.1\ref\</NETStandard21RefPath>
+    <NETStandard21RefPath>$(NuGetPackageRoot)netstandard.library.ref\$(NETStandardLibraryRefVersion)\ref\netstandard2.1\</NETStandard21RefPath>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' or '$(MSBuildProjectName)' == 'mscorlib' or '$(MSBuildProjectName)' == 'netstandard'">

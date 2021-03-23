@@ -3002,6 +3002,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         result.SetBadDateTimeFailure();
                         return false;
                     }
+                    str.Index--;
                 }
                 else if (ch == 'Z' || ch == 'z')
                 {

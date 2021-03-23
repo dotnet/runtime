@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -40,7 +40,9 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
              Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
-         Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EnumProcessModules.cs"
@@ -99,7 +101,7 @@
              Link="Common\Interop\Windows\Kernel32\Interop.CreateProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TerminateProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.TerminateProcess.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_SafeProcessHandle.cs"
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
              Link="Common\Interop\Windows\kernel32\Interop.GetCurrentProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OpenProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.OpenProcess.cs" />
@@ -143,8 +145,10 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetPriorityClass.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetPriorityClass.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.SetPriorityClass.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeProcessHandle.cs"
-             Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeFileHandle.cs"
+         Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeFileHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeWaitHandle.cs"
+             Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeWaitHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ProcessWaitHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.ProcessWaitHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken.cs"
@@ -222,8 +226,6 @@
     <Compile Include="System\Diagnostics\ProcessStartInfo.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitState.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
-             Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\IO\StringParser.cs"
              Link="Common\System\IO\StringParser.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -277,6 +279,8 @@
              Link="Common\Interop\Linux\Interop.cgroups.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.cs"
              Link="Common\Interop\Linux\Interop.ProcFsStat.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.ParseMapModules.cs"
+             Link="Common\Interop\Linux\Interop.ProcFsStat.ParseMapModules.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs"
              Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SchedGetSetAffinity.cs"
@@ -337,9 +341,7 @@
     <Reference Include="System.Diagnostics.FileVersionInfo" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.FileSystem.DriveInfo" />
-    <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />

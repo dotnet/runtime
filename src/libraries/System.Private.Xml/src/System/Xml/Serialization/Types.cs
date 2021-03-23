@@ -1216,7 +1216,7 @@ namespace System.Xml.Serialization
 
         private static TypeFlags GetConstructorFlags(Type type, ref Exception? exception)
         {
-            ConstructorInfo? ctor = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic, Array.Empty<Type>());
+            ConstructorInfo? ctor = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic, Type.EmptyTypes);
             if (ctor != null)
             {
                 TypeFlags flags = TypeFlags.HasDefaultConstructor;
@@ -1243,7 +1243,7 @@ namespace System.Xml.Serialization
         {
             if (typeof(IEnumerable).IsAssignableFrom(type))
             {
-                MethodInfo? enumerator = type.GetMethod("GetEnumerator", Array.Empty<Type>());
+                MethodInfo? enumerator = type.GetMethod("GetEnumerator", Type.EmptyTypes);
 
                 if (enumerator == null || !typeof(IEnumerator).IsAssignableFrom(enumerator.ReturnType))
                 {
@@ -1267,7 +1267,7 @@ namespace System.Xml.Serialization
                     {
                         // and finally private interface implementation
                         flags |= TypeFlags.UsePrivateImplementation;
-                        enumerator = type.GetMethod("System.Collections.IEnumerable.GetEnumerator", BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic, Array.Empty<Type>());
+                        enumerator = type.GetMethod("System.Collections.IEnumerable.GetEnumerator", BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic, Type.EmptyTypes);
                     }
                 }
                 if (enumerator == null || !typeof(IEnumerator).IsAssignableFrom(enumerator.ReturnType))

@@ -105,7 +105,7 @@ namespace System
 
         // Used for comparing two boxed Char objects.
         //
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is char))
             {

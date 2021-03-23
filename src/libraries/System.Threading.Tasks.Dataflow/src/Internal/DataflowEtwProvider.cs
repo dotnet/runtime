@@ -130,17 +130,17 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(block != null, "Block needed for the ETW event.");
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                Task completionTask = Common.GetPotentiallyNotSupportedCompletionTask(block);
+                Task? completionTask = Common.GetPotentiallyNotSupportedCompletionTask(block);
                 bool blockIsCompleted = completionTask != null && completionTask.IsCompleted;
                 Debug.Assert(blockIsCompleted, "Block must be completed for this event to be valid.");
                 if (blockIsCompleted)
                 {
-                    var reason = (BlockCompletionReason)completionTask.Status;
+                    var reason = (BlockCompletionReason)completionTask!.Status;
                     string exceptionData = string.Empty;
 
                     if (completionTask.IsFaulted)
                     {
-                        try { exceptionData = string.Join(Environment.NewLine, completionTask.Exception.InnerExceptions.Select(e => e.ToString())); }
+                        try { exceptionData = string.Join(Environment.NewLine, completionTask.Exception!.InnerExceptions.Select(e => e.ToString())); }
                         catch { }
                     }
 

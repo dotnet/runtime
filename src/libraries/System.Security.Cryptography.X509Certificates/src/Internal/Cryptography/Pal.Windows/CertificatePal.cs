@@ -377,7 +377,7 @@ namespace Internal.Cryptography.Pal
                     {
                         CERT_EXTENSION* pCertExtension = pCertInfo->rgExtension + i;
                         string oidValue = Marshal.PtrToStringAnsi(pCertExtension->pszObjId)!;
-                        Oid oid = new Oid(oidValue);
+                        Oid oid = new Oid(oidValue, friendlyName: null);
                         bool critical = pCertExtension->fCritical != 0;
                         byte[] rawData = pCertExtension->Value.ToByteArray();
 

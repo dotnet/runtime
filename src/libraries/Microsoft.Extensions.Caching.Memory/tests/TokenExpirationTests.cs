@@ -207,6 +207,35 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Null(result);
         }
 
+        [Fact]
+        public void PostEvictionCallbacksGetInvokedWhenMemoryCacheEntriesExpireWithAnActiveChangeToken()
+        {
+            using var cache = new MemoryCache(new MemoryCacheOptions());
+            var key = new object();
+
+            var cts = new CancellationTokenSource();
+            var callbackInvoked = new ManualResetEvent(false);
+
+            cache.Set(key, new object(), new MemoryCacheEntryOptions
+            {
+                ExpirationTokens = { new CancellationChangeToken(cts.Token) },
+                PostEvictionCallbacks =
+                {
+                    new PostEvictionCallbackRegistration()
+                    {
+                        EvictionCallback = (key, value, reason, state) => ((ManualResetEvent)state).Set(),
+                        State = callbackInvoked
+                    }
+                }
+            });
+
+            Assert.True(cache.TryGetValue(key, out _));
+
+            cts.Cancel();
+            Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(10)));
+            Assert.False(cache.TryGetValue(key, out _));
+        }
+
         internal class TestToken : IChangeToken
         {
             private bool _hasChanged;

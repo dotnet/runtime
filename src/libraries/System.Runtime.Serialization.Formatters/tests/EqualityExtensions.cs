@@ -7,7 +7,6 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
-using System.Data.SqlClient;
 using System.Data.SqlTypes;
 using System.DirectoryServices.ActiveDirectory;
 using System.Drawing;
@@ -1135,8 +1134,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // Different by design for those exceptions
             if (!((@this is SecurityException ||
                 @this is XmlSyntaxException ||
-                @this is ThreadAbortException ||
-                @this is SqlException) && !isSamePlatform))
+                @this is ThreadAbortException) && !isSamePlatform))
             {
                 if (!(@this is ActiveDirectoryServerDownException ||
                     @this is SocketException ||
@@ -1146,11 +1144,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 }
             }
 
-            // Different by design for those exceptions
-            if (!(@this is SqlException))
-            {
-                Assert.Equal(@this.Source, other.Source);
-            }
+            Assert.Equal(@this.Source, other.Source);
 
             Assert.Equal(@this.HelpLink, other.HelpLink);
 
@@ -1175,7 +1169,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     @this is ThreadAbortException) && !isSamePlatform))
                 {
                     if (!(@this is ActiveDirectoryServerDownException ||
-                        @this is SqlException ||
                         @this is NetworkInformationException ||
                         @this is SocketException))
                     {

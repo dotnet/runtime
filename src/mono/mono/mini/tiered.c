@@ -90,7 +90,7 @@ mini_tiered_init (void)
 	mono_coop_cond_init (&compilation_wait);
 	mono_coop_mutex_init (&compilation_mutex);
 
-	mono_thread_create_internal (mono_domain_get (), compiler_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL, error);
+	mono_thread_create_internal (mono_get_root_domain (), compiler_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL, error);
 	mono_error_assert_ok (error);
 }
 
@@ -114,7 +114,7 @@ mini_tiered_record_callsite (gpointer ip, MonoMethod *target_method, int patch_k
 }
 
 void
-mini_tiered_inc (MonoDomain *domain, MonoMethod *method, MiniTieredCounter *tcnt, int tier_level)
+mini_tiered_inc (MonoMethod *method, MiniTieredCounter *tcnt, int tier_level)
 {
 	if (G_UNLIKELY (tcnt->hotness == threshold [tier_level] && !tcnt->promoted)) {
 		tcnt->promoted = TRUE;
@@ -123,7 +123,6 @@ mini_tiered_inc (MonoDomain *domain, MonoMethod *method, MiniTieredCounter *tcnt
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TIERED, "tiered: queued %s", mono_method_full_name (method, TRUE));
 
 		MiniTieredPatchPointContext *ppc = g_new0 (MiniTieredPatchPointContext, 1);
-		ppc->domain = domain;
 		ppc->target_method = method;
 		ppc->tier_level = tier_level;
 
