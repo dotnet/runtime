@@ -4150,6 +4150,7 @@ class Config(object):
 
     def get_filename(self):
         if Config.library_file:
+            print ("returning library_file: " + Config.library_file + "\n")
             return Config.library_file
 
         import platform
@@ -4164,6 +4165,8 @@ class Config(object):
 
         if Config.library_path:
             file = Config.library_path + '/' + file
+
+        print ("get_filename: returning file " + file + "\n")
 
         return file
 

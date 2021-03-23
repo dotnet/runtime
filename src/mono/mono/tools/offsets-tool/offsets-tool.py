@@ -277,7 +277,7 @@ class OffsetsTool:
 			clang_args.append ("-D" + define)
 		
 		clang.cindex.Config.set_library_file (args.libclang)
-		
+		print ("Set clang library file: " + args.libclang + "\n");
 		for srcfile in srcfiles:
 			src = args.mono_path + "/" + srcfile
 			file_args = clang_args[:]
