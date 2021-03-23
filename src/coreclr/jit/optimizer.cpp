@@ -8130,7 +8130,7 @@ void Compiler::optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, Basic
             return;
         }
     }
-    else  if (t1->gtOper == GT_NE && t2->gtOper == GT_EQ)
+    else if (t1->gtOper == GT_NE && t2->gtOper == GT_EQ)
     {
         if (it1val == 0 && it2val == 0 && it3val == 0)
         {
@@ -8177,9 +8177,8 @@ void Compiler::optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, Basic
         }
     }
 
-    //
     // Now update the trees
-    //
+
     GenTree* cmpOp1 = gtNewOperNode(foldOp, foldType, c1, c2);
     if (bool1 && bool2)
     {
