@@ -22,12 +22,7 @@ namespace System.IO
 
             Interop.libc.AttrList attrList = default;
             attrList.bitmapCount = Interop.libc.AttrList.ATTR_BIT_MAP_COUNT;
-            attrList.reserved = 0;
             attrList.commonAttr = Interop.libc.AttrList.ATTR_CMN_CRTIME;
-            attrList.dirAttr = 0;
-            attrList.fileAttr = 0;
-            attrList.forkAttr = 0;
-            attrList.volAttr = 0;
 
             // Try to set the attribute on the file system entry using setattrlist,
             // otherwise fall back to the method used on other unix platforms as the

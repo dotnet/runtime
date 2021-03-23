@@ -111,7 +111,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [PlatformSpecific(~(TestPlatforms.Browser | TestPlatforms.Windows))]
         public void SettingUpdatesPropertiesOnSymlink()
         {
             // This test makes sure that the times are set on the symlink itself.

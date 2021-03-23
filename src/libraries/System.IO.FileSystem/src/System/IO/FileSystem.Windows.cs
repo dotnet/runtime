@@ -158,7 +158,7 @@ namespace System.IO
                 Interop.Kernel32.GenericOperations.GENERIC_WRITE,
                 FileShare.ReadWrite | FileShare.Delete,
                 FileMode.Open,
-                (asDirectory ? Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS : 0) | Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT);
+                asDirectory ? Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS : 0);
 
             if (handle.IsInvalid)
             {

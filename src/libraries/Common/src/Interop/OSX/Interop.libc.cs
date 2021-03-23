@@ -11,13 +11,13 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct AttrList
         {
-            [MarshalAs(UnmanagedType.U2)] public ushort bitmapCount;
-            [MarshalAs(UnmanagedType.U2)] public ushort reserved;
-            [MarshalAs(UnmanagedType.U4)] public uint commonAttr;
-            [MarshalAs(UnmanagedType.U4)] public uint volAttr;
-            [MarshalAs(UnmanagedType.U4)] public uint dirAttr;
-            [MarshalAs(UnmanagedType.U4)] public uint fileAttr;
-            [MarshalAs(UnmanagedType.U4)] public uint forkAttr;
+            public ushort bitmapCount;
+            public ushort reserved;
+            public uint commonAttr;
+            public uint volAttr;
+            public uint dirAttr;
+            public uint fileAttr;
+            public uint forkAttr;
 
             public const ushort ATTR_BIT_MAP_COUNT = 5;
             public const uint ATTR_CMN_CRTIME = 0x00000200;
