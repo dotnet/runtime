@@ -704,8 +704,6 @@ void Compiler::fgRemoveCheapPred(BasicBlock* block, BasicBlock* blockPred)
     assert(!fgComputePredsDone);
     assert(fgCheapPredsValid);
 
-    flowList* oldEdge = nullptr;
-
     assert(block != nullptr);
     assert(blockPred != nullptr);
     assert(block->bbCheapPreds != nullptr);

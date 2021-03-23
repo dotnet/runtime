@@ -4,6 +4,7 @@
 #nullable disable
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml.Xsl.IlGen;
 using System.Xml.Xsl.Qil;
@@ -35,6 +36,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Constructor.
         /// </summary>
+        [RequiresUnreferencedCode("This method will create a copy that uses earlybound types which cannot be statically analyzed.")]
         public XmlQueryStaticData(XmlWriterSettings defaultWriterSettings, IList<WhitespaceRule> whitespaceRules, StaticDataManager staticData)
         {
             Debug.Assert(defaultWriterSettings != null && staticData != null);
@@ -70,6 +72,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Deserialize XmlQueryStaticData object from a byte array.
         /// </summary>
+        [RequiresUnreferencedCode("This method will create EarlyBoundInfo from passed in ebTypes array which cannot be statically analyzed.")]
         public XmlQueryStaticData(byte[] data, Type[] ebTypes)
         {
             MemoryStream dataStream = new MemoryStream(data, /*writable:*/false);

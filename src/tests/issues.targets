@@ -8,6 +8,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_22888/test22888/*">
             <Issue>https://github.com/dotnet/runtime/issues/13703</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
+            <Issue>https://github.com/dotnet/runtime/issues/49881</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
@@ -324,9 +327,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
             <Issue>Varargs supported on this platform</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/WinRT/NETClients/Bindings/NETClientBindings/*">
-            <Issue>WindowsXamlManager and DesktopWindowXamlSource are supported for apps targeting Windows version 10.0.18226.0 and later.</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x86 specific excludes -->
@@ -354,9 +354,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
             <Issue>Varargs supported on this platform</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/WinRT/NETClients/Bindings/NETClientBindings/*">
-            <Issue>WindowsXamlManager and DesktopWindowXamlSource are supported for apps targeting Windows version 10.0.18226.0 and later.</Issue>
         </ExcludeList>
     </ItemGroup>
 
