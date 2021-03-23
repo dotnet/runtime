@@ -52,6 +52,7 @@ public:
         , m_managed_app(args.managed_application)
         , m_core_servicing(args.core_servicing)
         , m_is_framework_dependent(is_framework_dependent)
+        , m_has_additional_probing_paths(false)
     {
         int lowest_framework = static_cast<int>(m_fx_definitions.size()) - 1;
         int root_framework = -1;
@@ -90,6 +91,8 @@ public:
 
         setup_additional_probes(args.probe_paths);
         setup_probe_config(args);
+
+        m_has_additional_probing_paths = m_additional_probes.size() > 0;
     }
 
     bool valid(pal::string_t* errors)
@@ -170,6 +173,11 @@ public:
     bool is_framework_dependent() const
     {
         return m_is_framework_dependent;
+    }
+
+    bool has_additional_probe_paths() const
+    {
+        return m_has_additional_probing_paths;
     }
 
     void get_app_dir(pal::string_t *app_dir) const
@@ -272,6 +280,9 @@ private:
 
     // Is the deps file for an app using shared frameworks?
     const bool m_is_framework_dependent;
+
+    // There are additional probing paths
+    bool m_has_additional_probing_paths;
 };
 
 #endif // DEPS_RESOLVER_H

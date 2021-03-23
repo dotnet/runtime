@@ -314,8 +314,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 // If the deps json has the package name and version, then someone has already done rid selection and
                 // put the right asset in the dir. So checking just package name and version would suffice.
                 // No need to check further for the exact asset relative sub path.
-                entry.to_dir_path(probe_dir, false, candidate, found_in_bundle);
-                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && pal::file_exists(candidate->c_str()))
+                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, false, candidate, found_in_bundle, m_has_additional_probing_paths))
                 {
                     assert(!found_in_bundle);
                     trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
@@ -334,8 +333,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             {
                 if (entry.is_rid_specific)
                 {
-                    entry.to_rel_path(deps_dir, true, false, candidate);
-                    if (pal::file_exists(candidate->c_str()))
+                    if (entry.to_rel_path(deps_dir, true, false, candidate, m_has_additional_probing_paths))
                     {
                         trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                         return true;
@@ -344,8 +342,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 else
                 {
                     // Non-rid assets, lookup in the published dir.
-                    entry.to_dir_path(deps_dir, true, candidate, found_in_bundle);
-                    if (pal::file_exists(candidate->c_str()))
+                    if (entry.to_dir_path(deps_dir, true, candidate, found_in_bundle, m_has_additional_probing_paths))
                     {
                         trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                         return true;
@@ -355,14 +352,10 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 
             trace::verbose(_X("    Skipping... not found in deps dir '%s'"), deps_dir.c_str());
         }
-        else
+        else if (entry.to_full_path(probe_dir, config.only_serviceable_assets, candidate, m_has_additional_probing_paths))
         {
-            entry.to_full_path(probe_dir, config.only_serviceable_assets, candidate);
-            if (pal::file_exists(candidate->c_str()))
-            {
-                trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
-                return true;
-            }
+            trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
+            return true;
         }
 
         trace::verbose(_X("    Skipping... not found in probe dir '%s'"), probe_dir.c_str());
