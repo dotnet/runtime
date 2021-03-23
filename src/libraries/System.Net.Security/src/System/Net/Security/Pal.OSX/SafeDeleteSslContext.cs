@@ -175,8 +175,10 @@ namespace System.Net
 
                 return OSStatus_noErr;
             }
-            catch
+            catch (Exception e)
             {
+                if (NetEventSource.Log.IsEnabled())
+                    NetEventSource.Error(this, $"WritingToConnection failed: {e.Message}");
                 return OSStatus_writErr;
             }
         }
@@ -209,8 +211,10 @@ namespace System.Net
                 *dataLength = (void*)transferred;
                 return OSStatus_noErr;
             }
-            catch
+            catch (Exception e)
             {
+                if (NetEventSource.Log.IsEnabled())
+                    NetEventSource.Error(this, $"ReadFromConnectionfailed: {e.Message}");
                 return OSStatus_readErr;
             }
         }
