@@ -237,11 +237,19 @@ namespace Mono.Linker.Steps
 			foreach (var body in _unreachableBodies) {
 				Annotations.SetAction (body.Method, MethodAction.ConvertToThrow);
 			}
+		}
 
+		bool ProcessInternalsVisibleAttributes ()
+		{
+			bool marked_any = false;
 			foreach (var attr in _ivt_attributes) {
-				if (IsInternalsVisibleAttributeAssemblyMarked (attr.Attribute))
+				if (!Annotations.IsMarked (attr.Attribute) && IsInternalsVisibleAttributeAssemblyMarked (attr.Attribute)) {
 					MarkCustomAttribute (attr.Attribute, new DependencyInfo (DependencyKind.AssemblyOrModuleAttribute, attr.Provider), null);
+					marked_any = true;
+				}
 			}
+
+			return marked_any;
 
 			bool IsInternalsVisibleAttributeAssemblyMarked (CustomAttribute ca)
 			{
@@ -359,7 +367,7 @@ namespace Mono.Linker.Steps
 
 		void Process ()
 		{
-			while (ProcessPrimaryQueue () || ProcessMarkedPending () || ProcessLazyAttributes () || ProcessLateMarkedAttributes () || MarkFullyPreservedAssemblies ()) {
+			while (ProcessPrimaryQueue () || ProcessMarkedPending () || ProcessLazyAttributes () || ProcessLateMarkedAttributes () || MarkFullyPreservedAssemblies () || ProcessInternalsVisibleAttributes ()) {
 
 				// deal with [TypeForwardedTo] pseudo-attributes
 
