@@ -171,7 +171,7 @@ namespace System.DirectoryServices
             }
         }
 
-        private class PropertyEnumerator : IDictionaryEnumerator, IDisposable
+        private sealed class PropertyEnumerator : IDictionaryEnumerator, IDisposable
         {
             private readonly DirectoryEntry _entry;               // clone (to be disposed)
             private readonly DirectoryEntry _parentEntry;         // original entry to pass to PropertyValueCollection
@@ -191,7 +191,7 @@ namespace System.DirectoryServices
                 GC.SuppressFinalize(this);
             }
 
-            protected virtual void Dispose(bool disposing)
+            private void Dispose(bool disposing)
             {
                 if (disposing)
                 {
@@ -278,7 +278,7 @@ namespace System.DirectoryServices
             public virtual IEnumerator GetEnumerator() => new ValuesEnumerator(props);
         }
 
-        private class KeysCollection : ValuesCollection
+        private sealed class KeysCollection : ValuesCollection
         {
             public KeysCollection(PropertyCollection props) : base(props)
             {
@@ -335,7 +335,7 @@ namespace System.DirectoryServices
             public void Reset() => _currentIndex = -1;
         }
 
-        private class KeysEnumerator : ValuesEnumerator
+        private sealed class KeysEnumerator : ValuesEnumerator
         {
             public KeysEnumerator(PropertyCollection collection) : base(collection)
             {

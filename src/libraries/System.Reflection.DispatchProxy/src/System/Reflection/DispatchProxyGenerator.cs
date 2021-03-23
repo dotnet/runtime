@@ -145,7 +145,7 @@ namespace System.Reflection
             return generatedProxyType;
         }
 
-        private class GeneratedTypeInfo
+        private sealed class GeneratedTypeInfo
         {
             public GeneratedTypeInfo(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type generatedType,
@@ -160,7 +160,7 @@ namespace System.Reflection
             public MethodInfo[] MethodInfos { get; }
         }
 
-        private class ProxyAssembly
+        private sealed class ProxyAssembly
         {
             private readonly AssemblyBuilder _ab;
             private readonly ModuleBuilder _mb;
@@ -232,7 +232,7 @@ namespace System.Reflection
             }
         }
 
-        private class ProxyBuilder
+        private sealed class ProxyBuilder
         {
             private readonly ProxyAssembly _assembly;
             private readonly TypeBuilder _tb;
@@ -718,7 +718,7 @@ namespace System.Reflection
                 }
             }
 
-            private class ParametersArray
+            private sealed class ParametersArray
             {
                 private readonly ILGenerator _il;
                 private readonly Type[] _paramTypes;
@@ -747,7 +747,7 @@ namespace System.Reflection
                 }
             }
 
-            private class GenericArray<T>
+            private sealed class GenericArray<T>
             {
                 private readonly ILGenerator _il;
                 private readonly LocalBuilder _lb;

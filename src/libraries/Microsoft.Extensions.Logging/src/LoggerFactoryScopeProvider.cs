@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Logging
             return newScope;
         }
 
-        private class Scope : IDisposable
+        private sealed class Scope : IDisposable
         {
             private readonly LoggerFactoryScopeProvider _provider;
             private bool _isDisposed;
@@ -128,7 +128,7 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private class ActivityLogScope : IReadOnlyList<KeyValuePair<string, object>>
+        private sealed class ActivityLogScope : IReadOnlyList<KeyValuePair<string, object>>
         {
             private string _cachedToString;
             private const int MaxItems = 5;
@@ -220,7 +220,7 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private class ActivityBaggageLogScopeWrapper : IEnumerable<KeyValuePair<string, string?>>
+        private sealed class ActivityBaggageLogScopeWrapper : IEnumerable<KeyValuePair<string, string?>>
         {
             private readonly IEnumerable<KeyValuePair<string, string?>> _items;
 

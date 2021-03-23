@@ -222,7 +222,7 @@ namespace System.Linq.Parallel
         // (possibly partitioned) data source.
         //
 
-        private class AssociativeAggregationOperatorEnumerator<TKey> : QueryOperatorEnumerator<TIntermediate, int>
+        private sealed class AssociativeAggregationOperatorEnumerator<TKey> : QueryOperatorEnumerator<TIntermediate, int>
         {
             private readonly QueryOperatorEnumerator<TInput, TKey> _source; // The source data.
             private readonly AssociativeAggregationOperator<TInput, TIntermediate, TOutput> _reduceOperator; // The operator.

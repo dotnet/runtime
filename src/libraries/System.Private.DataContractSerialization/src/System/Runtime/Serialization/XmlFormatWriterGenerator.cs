@@ -41,7 +41,7 @@ namespace System.Runtime.Serialization
         ///          changes to how IL generated could affect how data is serialized and what gets access to data,
         ///          therefore we mark it for review so that changes to generation logic are reviewed.
         /// </SecurityNote>
-        private class CriticalHelper
+        private sealed class CriticalHelper
         {
             private CodeGenerator _ilg = null!; // initialized in GenerateXXXWriter
             private ArgBuilder _xmlWriterArg = null!; // initialized in InitArgs

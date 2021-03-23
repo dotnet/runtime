@@ -71,7 +71,7 @@ namespace System.Linq.Parallel
         // The actual enumerator that walks over the specified range.
         //
 
-        private class RangeEnumerator : QueryOperatorEnumerator<int, int>
+        private sealed class RangeEnumerator : QueryOperatorEnumerator<int, int>
         {
             private readonly int _from; // The initial value.
             private readonly int _count; // How many values to yield.

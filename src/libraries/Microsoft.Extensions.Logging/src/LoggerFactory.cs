@@ -277,7 +277,7 @@ namespace Microsoft.Extensions.Logging
             public bool ShouldDispose;
         }
 
-        private class DisposingLoggerFactory : ILoggerFactory
+        private sealed class DisposingLoggerFactory : ILoggerFactory
         {
             private readonly ILoggerFactory _loggerFactory;
 
