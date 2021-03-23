@@ -34,7 +34,8 @@ internal static partial class Interop
             int sourceLength,
             RSAEncryptionPaddingMode paddingMode,
             IntPtr digestAlgorithm,
-            ref byte destination);
+            ref byte destination,
+            int destinationLength);
 
         internal static int RsaDecrypt(
             SafeEvpPKeyHandle pkey,
@@ -49,7 +50,8 @@ internal static partial class Interop
                 source.Length,
                 paddingMode,
                 digestAlgorithm,
-                ref MemoryMarshal.GetReference(destination));
+                ref MemoryMarshal.GetReference(destination),
+                destination.Length);
 
             if (written < 0)
             {

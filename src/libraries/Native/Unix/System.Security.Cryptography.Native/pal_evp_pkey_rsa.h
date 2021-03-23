@@ -30,7 +30,8 @@ PALEXPORT int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
                                           int32_t sourceLen,
                                           RsaPaddingMode padding,
                                           const EVP_MD* digest,
-                                          uint8_t* destination);
+                                          uint8_t* destination,
+                                          int32_t destinationLen);
 
 /*
 Shims the EVP_PKEY_get1_RSA method.
