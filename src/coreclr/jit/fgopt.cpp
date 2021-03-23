@@ -2687,8 +2687,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
     //
     if (block->NumSucc(this) == 1)
     {
-        // Use BBJ_ALWAYS for a switch with only a default clause, or with only one unique successor.
-        BasicBlock* uniqueSucc = jmpTab[0];
+// Use BBJ_ALWAYS for a switch with only a default clause, or with only one unique successor.
 
 #ifdef DEBUG
         if (verbose)

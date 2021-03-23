@@ -1,5 +1,17 @@
 <Project>
   <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
+    <ItemGroup>
+      <OptimizationMibcFiles Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PublishReadyToRunCrossgen2ExtraArgsList Include="--targetarch:$(TargetArchitecture)"/>
+
+      <!-- Only use mibc files if UsingToolIbcOptimization is false. Allows enabling/disabling using ibc instead of mibc data -->
+      <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(Configuration)' == 'Release'" Include="@(OptimizationMibcFiles->'-m:%(Identity)')"/>
+      <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(Configuration)' == 'Release'" Include="--embed-pgo-data"/>
+    </ItemGroup>
+
     <!-- The following property group can be simplified once runtime repo switches over to SDK 6.0 drop -->
     <PropertyGroup>
       <CrossDir />
@@ -7,7 +19,7 @@
       <Crossgen2Dir>$(CoreCLRArtifactsPath)\$(CrossDir)\crossgen2</Crossgen2Dir>
       <Crossgen2Exe>$(Crossgen2Dir)\crossgen2$(ExeSuffix)</Crossgen2Exe>
       <PublishReadyToRunUseCrossgen2>true</PublishReadyToRunUseCrossgen2>
-      <PublishReadyToRunCrossgen2ExtraArgs>--targetarch:$(TargetArchitecture)</PublishReadyToRunCrossgen2ExtraArgs>
+      <PublishReadyToRunCrossgen2ExtraArgs>@(PublishReadyToRunCrossgen2ExtraArgsList)</PublishReadyToRunCrossgen2ExtraArgs>
 
       <JitTargetOSComponent>unix</JitTargetOSComponent>
       <JitTargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</JitTargetOSComponent>

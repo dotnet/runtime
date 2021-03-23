@@ -194,7 +194,7 @@ namespace System.Xml.Xsl
         //------------------------------------------------
         // Load compiled stylesheet from a Type
         //------------------------------------------------
-
+        [RequiresUnreferencedCode("This method will get fields and types from the assembly of the passed in compiledStylesheet and call their constructors which cannot be statically analyzed")]
         public void Load(Type compiledStylesheet)
         {
             Reset();
@@ -238,6 +238,7 @@ namespace System.Xml.Xsl
                 throw new ArgumentException(SR.Format(SR.Xslt_NotCompiledStylesheet, compiledStylesheet.FullName), nameof(compiledStylesheet));
         }
 
+        [RequiresUnreferencedCode("This method will call into constructors of the earlyBoundTypes array which cannot be statically analyzed.")]
         public void Load(MethodInfo executeMethod, byte[] queryData, Type[]? earlyBoundTypes)
         {
             Reset();

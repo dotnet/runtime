@@ -292,8 +292,17 @@
   <data name="Cryptography_X509_StoreReadOnly" xml:space="preserve">
     <value>The X509 certificate store is read-only.</value>
   </data>
+  <data name="Cryptography_X509_StoreRemoveFailure" xml:space="preserve">
+    <value>The X509 certificate could not be removed from the store.</value>
+  </data>
   <data name="Cryptography_X509_StoreCannotCreate" xml:space="preserve">
     <value>The platform does not have a definition for an X509 certificate store named '{0}' with a StoreLocation of '{1}', and does not support creating it.</value>
+  </data>
+  <data name="Cryptography_X509_StoreDSAPrivateKeyNotSupported" xml:space="preserve">
+    <value>Adding a DSA private key to the store is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_X509_StoreEnumerateFailure" xml:space="preserve">
+    <value>Failed to enumerate certificates from the store.</value>
   </data>
   <data name="Cryptography_X509_NoPemCertificate" xml:space="preserve">
     <value>The certificate contents do not contain a PEM with a CERTIFICATE label, or the content is malformed.</value>

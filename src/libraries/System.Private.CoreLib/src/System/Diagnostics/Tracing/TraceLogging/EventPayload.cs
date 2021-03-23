@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tracing
     /// EventSource APIs.
     /// Preserving the order of the elements as they were found inside user defined types is the most important characteristic of this class.
     /// </summary>
-    internal class EventPayload : IDictionary<string, object?>
+    internal sealed class EventPayload : IDictionary<string, object?>
     {
         internal EventPayload(List<string> payloadNames, List<object?> payloadValues)
         {

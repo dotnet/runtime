@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace Microsoft.Extensions.Options
 {
@@ -15,9 +16,9 @@ namespace Microsoft.Extensions.Options
         IOptionsFactory<TOptions>
         where TOptions : class
     {
-        private readonly IEnumerable<IConfigureOptions<TOptions>> _setups;
-        private readonly IEnumerable<IPostConfigureOptions<TOptions>> _postConfigures;
-        private readonly IEnumerable<IValidateOptions<TOptions>> _validations;
+        private readonly IConfigureOptions<TOptions>[] _setups;
+        private readonly IPostConfigureOptions<TOptions>[] _postConfigures;
+        private readonly IValidateOptions<TOptions>[] _validations;
 
         /// <summary>
         /// Initializes a new instance with the specified options configurations.
@@ -35,9 +36,9 @@ namespace Microsoft.Extensions.Options
         /// <param name="validations">The validations to run.</param>
         public OptionsFactory(IEnumerable<IConfigureOptions<TOptions>> setups, IEnumerable<IPostConfigureOptions<TOptions>> postConfigures, IEnumerable<IValidateOptions<TOptions>> validations)
         {
-            _setups = setups;
-            _postConfigures = postConfigures;
-            _validations = validations;
+            _setups = setups as IConfigureOptions<TOptions>[] ?? setups.ToArray();
+            _postConfigures = postConfigures as IPostConfigureOptions<TOptions>[] ?? postConfigures.ToArray();
+            _validations = validations as IValidateOptions<TOptions>[] ?? validations.ToArray();
         }
 
         /// <summary>

@@ -134,7 +134,7 @@ namespace System
             }
         }
 
-        internal class RuntimeTypeCache
+        internal sealed class RuntimeTypeCache
         {
             private const int MAXNAMELEN = 1024;
 
@@ -203,7 +203,7 @@ namespace System
                 }
             }
 
-            private class MemberInfoCache<T> where T : MemberInfo
+            private sealed class MemberInfoCache<T> where T : MemberInfo
             {
                 #region Private Data Members
 
@@ -3920,7 +3920,7 @@ namespace System.Reflection
     // reliable in the presence of asynchronous exceptions.
     internal struct CerHashtable<K, V> where K : class
     {
-        private class Table
+        private sealed class Table
         {
             // Note that m_keys and m_values arrays are immutable to allow lock-free reads. A new instance
             // of CerHashtable has to be allocated to grow the size of the hashtable.
