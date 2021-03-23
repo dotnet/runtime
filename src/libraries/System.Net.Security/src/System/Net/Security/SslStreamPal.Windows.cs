@@ -112,8 +112,9 @@ namespace System.Net.Security
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
+            Console.WriteLine("AcquireCredentialsHandle called for {0} {1}", UseNewCryptoApi, isServer);
             // New crypto API supports TLS1.3 but it does not allow to force NULL encryption.
-            return !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
+            return true || !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
                         AcquireCredentialsHandleSchannelCred(certificateContext?.Certificate, protocols, policy, isServer) :
                         AcquireCredentialsHandleSchCredentials(certificateContext?.Certificate, protocols, policy, isServer);
         }
@@ -125,6 +126,20 @@ namespace System.Net.Security
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
             Interop.SspiCli.CredentialUse direction;
+
+            Console.WriteLine("AcquireCredentialsHandleSchannelCred  called!!!!");
+
+            IntPtr storeHandle = (IntPtr)0;
+            //X509Store store = new X509Store("Enterprise Trust", StoreLocation.CurrentUser);
+            X509Store store = new X509Store("teststore", StoreLocation.CurrentUser);
+            store.Open(OpenFlags.ReadOnly);
+            storeHandle = store.StoreHandle;
+            Console.WriteLine("Enterprise Trust opened {0} {1} ({2}) count={3}", store, store.Name, storeHandle, store.Certificates.Count);
+            foreach (var c in store.Certificates)
+            {
+                Console.WriteLine("Got {0}", c.Subject);
+            }
+
 
             if (!isServer)
             {
@@ -161,8 +176,33 @@ namespace System.Net.Security
                 certificateHandle = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
                 secureCredential.paCred = &certificateHandle;
             }
+            secureCredential.hRootStore = storeHandle;
+            Console.WriteLine("ALL API with {0}", secureCredential.hRootStore);
 
-            return AcquireCredentialsHandle(direction, &secureCredential);
+
+            SafeFreeCredentials cred =  AcquireCredentialsHandle(direction, &secureCredential);
+            //Console.WriteLine("Got creed = {0} {1}", cred, cred.DangerousGetHandle());
+            if (isServer&& cred != null)
+            {
+
+                Interop.SspiCli.SecPkgCred_ClientCertPolicy clientCertPolicy;
+                clientCertPolicy.dwFlags = 0;
+                clientCertPolicy.dwCertFlags = 0;
+                clientCertPolicy.fCheckRevocationFreshnessTime = false;
+                clientCertPolicy.fOmitUsageCheck = false;
+                clientCertPolicy.pwszSslCtlIdentifier = null;
+                clientCertPolicy.pwszSslCtlStoreName = null;
+                clientCertPolicy.dwRevocationFreshnessTime = 0;
+                clientCertPolicy.dwUrlRetrievalTimeout = 0;
+                clientCertPolicy.guid[0] = 11;
+                clientCertPolicy.guid[1] = 22;
+
+                Interop.SspiCli.CredHandle credentialHandle = cred._handle;
+                Interop.SECURITY_STATUS status = Interop.SspiCli.SetCredentialsAttributesW(ref credentialHandle, (long)Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_CERT_POLICY, ref clientCertPolicy, 48); // sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy));
+                Console.WriteLine("SetCredentialsAttributesW finished with {0} {1} {1:x}", status, (int)status);
+
+            }
+            return cred!;
         }
 
         // This function uses new crypto API to support TLS 1.3 and beyond.
@@ -171,11 +211,18 @@ namespace System.Net.Security
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
             Interop.SspiCli.SCH_CREDENTIALS.Flags flags;
             Interop.SspiCli.CredentialUse direction;
+            IntPtr storeHandle = (IntPtr)0;
 
+            Console.WriteLine("AcquireCredentialsHandleSchCredentials called!!!!");
             if (isServer)
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
                 flags = Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
+
+                X509Store store = new X509Store("Enterprise Trust", StoreLocation.CurrentUser);
+                Console.WriteLine("Enterprise Trust opened {0} {1}", store, store.Name);
+                store.Open(OpenFlags.ReadOnly);
+                storeHandle = store.StoreHandle;
             }
             else
             {
@@ -207,7 +254,8 @@ namespace System.Net.Security
             Interop.SspiCli.SCH_CREDENTIALS credential = default;
             credential.dwVersion = Interop.SspiCli.SCH_CREDENTIALS.CurrentVersion;
             credential.dwFlags = flags;
-
+            credential.hRootStore = storeHandle;
+            Console.WriteLine("hRootStore = {0}", storeHandle);
             Interop.Crypt32.CERT_CONTEXT *certificateHandle = null;
             if (certificate != null)
             {

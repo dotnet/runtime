@@ -66,6 +66,7 @@ internal static partial class Interop
             SECPKG_ATTR_LOCAL_CERT_CONTEXT = 0x54,     // returns PCCERT_CONTEXT
             SECPKG_ATTR_ROOT_STORE = 0x55,             // returns HCERTCONTEXT to the root store
             SECPKG_ATTR_ISSUER_LIST_EX = 0x59,         // returns SecPkgContext_IssuerListInfoEx
+            SECPKG_ATTR_CLIENT_CERT_POLICY = 0x60,     // sets    SecPkgCred_ClientCertCtlPolicy
             SECPKG_ATTR_CONNECTION_INFO = 0x5A,        // returns SecPkgContext_ConnectionInfo
             SECPKG_ATTR_CIPHER_INFO = 0x64,            // returns SecPkgContext_CipherInfo
             SECPKG_ATTR_UI_INFO = 0x68, // sets SEcPkgContext_UiInfo
@@ -316,6 +317,26 @@ internal static partial class Interop
             }
         }
 
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal unsafe struct SecPkgCred_ClientCertPolicy
+        {
+            public int dwFlags;
+            public fixed byte guid[16];
+            public int dwCertFlags;
+            public int dwUrlRetrievalTimeout;
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool fCheckRevocationFreshnessTime;
+            public int dwRevocationFreshnessTime;
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool fOmitUsageCheck;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string? pwszSslCtlStoreName;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string? pwszSslCtlIdentifier;
+            //LPWSTR pwszSslCtlStoreName; ç Here is the named cert store you can set.
+            //LPWSTR pwszSslCtlIdentifier;
+        }
+
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, SetLastError = true)]
         internal static extern int EncryptMessage(
               ref CredHandle contextHandle,
@@ -473,5 +494,12 @@ internal static partial class Interop
             [In] string domainName,
             [In] string password,
             [Out] out SafeSspiAuthDataHandle authData);
+
+        [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern SECURITY_STATUS SetCredentialsAttributesW(
+            [In] ref CredHandle handlePtr,
+            [In] long ulAttribute,
+            [In] ref SecPkgCred_ClientCertPolicy pBuffer,
+            [In] long cbBuffer);
     }
 }
