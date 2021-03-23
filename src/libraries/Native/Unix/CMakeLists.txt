@@ -255,7 +255,6 @@ elseif(CLR_CMAKE_TARGET_TVOS)
     # System.Security.Cryptography.Native is intentionally disabled on tvOS
     # it is only used for interacting with OpenSSL which isn't useful there
 elseif(CLR_CMAKE_TARGET_ANDROID)
-    message("Using Android Native Crypto")
     add_subdirectory(System.Security.Cryptography.Native.Android)
 else()
     add_subdirectory(System.Globalization.Native)
