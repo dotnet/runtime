@@ -200,32 +200,21 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
     }
 
     // EE Thread-required check
-    switch (testmask & EE_THREAD_Mask)
+    if (testmask & EE_THREAD_Required)
     {
-        case EE_THREAD_Required:
-            if (!((EEThreadViolation|BadDebugState) & m_pClrDebugState->ViolationMask()))
+        if (!((EEThreadViolation|BadDebugState) & m_pClrDebugState->ViolationMask()))
+        {
+            if (m_pThread == NULL)
             {
-                if (m_pThread == NULL)
-                {
-                    CONTRACT_ASSERT("EE_THREAD_REQUIRED encountered with no current EE Thread object in TLS.",
-                                    Contract::EE_THREAD_Required,
-                                    Contract::EE_THREAD_Mask,
-                                    m_contractStackRecord.m_szFunction,
-                                    m_contractStackRecord.m_szFile,
-                                    m_contractStackRecord.m_lineNum
-                                   );
-                }
+                CONTRACT_ASSERT("EE_THREAD_REQUIRED encountered with no current EE Thread object in TLS.",
+                                Contract::EE_THREAD_Required,
+                                Contract::EE_THREAD_Required,
+                                m_contractStackRecord.m_szFunction,
+                                m_contractStackRecord.m_szFile,
+                                m_contractStackRecord.m_lineNum
+                                );
             }
-            break;
-
-        case EE_THREAD_Not_Required:
-            break;
-
-        case EE_THREAD_Disabled:
-            break;
-
-        default:
-            UNREACHABLE();
+        }
     }
 }
 #endif // ENABLE_CONTRACTS

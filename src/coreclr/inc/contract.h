@@ -54,14 +54,6 @@
 //                              then it's ok for this function to as well.  If LIMITED_METHOD_CONTRACT is specified,
 //                              however, then CANNOT_TAKE_LOCK is assumed.
 //
-//      EE_THREAD_NOT_REQUIRED  the function does not assume an EE Thread object is available in TLS.
-//                              Either GetThread() is never called, or any code path that requires a Thread
-//                              has another code path that deals with the absence of a Thread.  Any call to
-//                              to GetThread() must be bracketed with BEGIN_GETTHREAD_ALLOWED /
-//                              END_GETTHREAD_ALLOWED to avoid bogus asserts (the short-form
-//                              GetThreadNULLOk() may be used as well).  However, this is only allowed if visual
-//                              inspection of the call site makes it patently obvious that the function deals
-//                              appropriately with the GetThread() == NULL case.
 //      -or- EE_THREAD_REQUIRED the function requires an EE Thread object in TLS (i.e., GetThread() != NULL)
 //                              If this contract is used, we will ASSERT on entry to the function that
 //                              GetThread() != NULL.
@@ -918,16 +910,9 @@ class BaseContract
         HOST_NoCalls            = 0x00001000,
         HOST_Disabled           = 0x00000000,   // the default
 
-        // This enforces the EE_THREAD_NOT_REQUIRED contract by clearing
-        // ClrDebugState::m_allowGetThread in its scope.  That causes raw calls
-        // to GetThread() to assert, unless inside a temporary "don't worry it's ok" scope
-        // via BEGIN/END_GETTHREAD_ALLOWED.  Useful for enforcing our docs that
-        // state certain unmanaged API entrypoints (e.g., some from profiling API)
-        // are callable without an EE Thread in TLS.
-        EE_THREAD_Mask          = 0x0000C000,
-        EE_THREAD_Disabled      = 0x00000000,   // the default
+        // This enforces the EE_THREAD_REQUIRED contract
         EE_THREAD_Required      = 0x00004000,
-        EE_THREAD_Not_Required  = 0x00008000,
+        EE_THREAD_Disabled      = 0x00000000,   // the default
 
         // These enforce the CAN_TAKE_LOCK / CANNOT_TAKE_LOCK contracts
         CAN_TAKE_LOCK_Mask      = 0x00060000,

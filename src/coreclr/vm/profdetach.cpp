@@ -153,7 +153,6 @@ HRESULT ProfilingAPIDetach::RequestProfilerDetach(DWORD dwExpectedCompletionMill
         // Crst is used so GC may be triggered
         GC_TRIGGERS;
         MODE_ANY;
-        EE_THREAD_NOT_REQUIRED;
         // Crst is used to synchronize the initialization of ProfilingAPIDetach internal structure
         CAN_TAKE_LOCK;
         PRECONDITION(ProfilingAPIUtility::GetStatusCrst() != NULL);
