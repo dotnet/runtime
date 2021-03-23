@@ -108,7 +108,7 @@ namespace System.Xml
 
             for (Entry? e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
-                if (e.hashCode == hashCode && TextEquals(e.str, key, start, len))
+                if (e.hashCode == hashCode && e.str.AsSpan().SequenceEqual(key.AsSpan(start, len)))
                 {
                     return e.str;
                 }
@@ -171,7 +171,7 @@ namespace System.Xml
 
             for (Entry? e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
-                if (e.hashCode == hashCode && TextEquals(e.str, key, start, len))
+                if (e.hashCode == hashCode && e.str.AsSpan().SequenceEqual(key.AsSpan(start, len)))
                 {
                     return e.str;
                 }
@@ -243,12 +243,6 @@ namespace System.Xml
             _entries = newEntries;
             _mask = newMask;
         }
-
-        private static bool TextEquals(string str1, char[] str2, int str2Start, int str2Length)
-        {
-            return str1.AsSpan().SequenceEqual(str2.AsSpan(str2Start, str2Length));
-        }
-
         private static int ComputeHash32(char[] key, int start, int len)
         {
             // We rely on string.GetHashCode(ROS<char>) being randomized.
