@@ -1333,10 +1333,9 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
     {
         unsigned   varNum = compiler->lvaTrackedIndexToLclNum(varIndex);
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-        regNumber  regNum = getVarReg(map, varIndex);
 
         regNumber oldRegNum = varDsc->GetRegNum();
-        regNumber newRegNum = regNum;
+        regNumber newRegNum = getVarReg(map, varIndex);
 
         if (oldRegNum != newRegNum)
         {
@@ -2315,6 +2314,13 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
         // (since these unreachable blocks can have reachable successors).
         assert((block != compiler->fgFirstBB) || (prevBlock != nullptr));
         JITDUMP("\n\nNo predecessor; ");
+
+        if (block->bbJumpKind == BBJ_THROW && ((block->bbFlags & BBF_SHARED_THROW) != 0))
+        {
+            assert((block->bbFlags & BBF_DONT_REMOVE) != 0);
+            JITDUMP(" - Shared throw block; ");
+            return nullptr;
+        }
         return prevBlock;
     }
 
