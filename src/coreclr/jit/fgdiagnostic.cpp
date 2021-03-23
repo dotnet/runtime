@@ -826,7 +826,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
             const char* rootTreeOpName = "n/a";
             if (block->lastNode() != nullptr)
             {
-                // lastNode is firstStmt->GetRootNode() in case of non-LIR
                 rootTreeOpName = GenTree::OpName(block->lastNode()->OperGet());
             }
 
