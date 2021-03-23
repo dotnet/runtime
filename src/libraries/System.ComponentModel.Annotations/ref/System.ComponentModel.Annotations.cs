@@ -189,9 +189,9 @@ namespace System.ComponentModel.DataAnnotations
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class MaxLengthAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed. Ensure it is preserved.")]
         public MaxLengthAttribute() { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed. Ensure it is preserved.")]
         public MaxLengthAttribute(int length) { }
         public int Length { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
@@ -207,7 +207,7 @@ namespace System.ComponentModel.DataAnnotations
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class MinLengthAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed. Ensure it is preserved.")]
         public MinLengthAttribute(int length) { }
         public int Length { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }

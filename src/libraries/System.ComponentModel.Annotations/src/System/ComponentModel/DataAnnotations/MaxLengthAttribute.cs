@@ -114,7 +114,7 @@ namespace System.ComponentModel.DataAnnotations
 
     internal static class CountPropertyHelper
     {
-        internal const string RequiresUnreferencedCodeMessage = "Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed.";
+        internal const string RequiresUnreferencedCodeMessage = "Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed. Ensure it is preserved.";
 
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public static bool TryGetCount(object value, out int count)
