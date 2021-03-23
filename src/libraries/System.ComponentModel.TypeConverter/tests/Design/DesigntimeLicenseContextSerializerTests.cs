@@ -26,10 +26,9 @@ namespace System.ComponentModel.Design.Tests
                     new Tuple<bool, string>(true, "key" ),
                     new Tuple<bool, string>(false, "" ),
                     new Tuple<bool, string>(true, "" ),
-            })
+                })
                 {
                     {
-                        AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
                         if (!useBinaryFormatter)
                         {
                             AppContext.SetSwitch(enableBinaryFormatterInTypeConverter, false);
@@ -77,7 +76,6 @@ namespace System.ComponentModel.Design.Tests
             {
                 foreach (var key in new System.Collections.Generic.List<string>() { "key", "" })
                 {
-                    AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
                     AppContext.SetSwitch(enableBinaryFormatterInTypeConverter, true);
                     AppContext.SetSwitch(enableBinaryFormatter, true);
                     var context = new DesigntimeLicenseContext();
