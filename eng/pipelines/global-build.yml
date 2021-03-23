@@ -93,6 +93,21 @@ jobs:
       timeoutInMinutes: 90
 
 #
+# Build Libraries AllConfigurations. This excercises the code path where we build libraries for all
+# configurations on a non Windows operating system.
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: debug
+    platforms:
+    - Linux_x64
+    jobParameters:
+      nameSuffix: Libraries_AllConfigurations
+      buildArgs: -subset libs -allconfigurations
+      timeoutInMinutes: 90
+
+#
 # SourceBuild Build
 #
 - template: /eng/pipelines/common/platform-matrix.yml
