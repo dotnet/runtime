@@ -6310,13 +6310,13 @@ public:
 
         /* The following values are set only for iterator loops, i.e. has the flag LPFLG_ITER set */
 
-        GenTree*   lpIterTree;    // The "i = i <op> const" tree
-        unsigned   lpIterVar();   // iterator variable #
-        int        lpIterConst(); // the constant with which the iterator is incremented
-        genTreeOps lpIterOper();  // the type of the operation on the iterator (ASG_ADD, ASG_SUB, etc.)
-        void       VERIFY_lpIterTree();
+        GenTree*   lpIterTree;          // The "i = i <op> const" tree
+        unsigned   lpIterVar() const;   // iterator variable #
+        int        lpIterConst() const; // the constant with which the iterator is incremented
+        genTreeOps lpIterOper() const;  // the type of the operation on the iterator (ASG_ADD, ASG_SUB, etc.)
+        void       VERIFY_lpIterTree() const;
 
-        var_types lpIterOperType(); // For overflow instructions
+        var_types lpIterOperType() const; // For overflow instructions
 
         union {
             int lpConstInit; // initial constant value of iterator                           : Valid if LPFLG_CONST_INIT
@@ -6324,69 +6324,74 @@ public:
                                 // LPFLG_VAR_INIT
         };
 
-        /* The following is for LPFLG_ITER loops only (i.e. the loop condition is "i RELOP const or var" */
+        // The following is for LPFLG_ITER loops only (i.e. the loop condition is "i RELOP const or var"
 
-        GenTree*   lpTestTree;   // pointer to the node containing the loop test
-        genTreeOps lpTestOper(); // the type of the comparison between the iterator and the limit (GT_LE, GT_GE, etc.)
-        void       VERIFY_lpTestTree();
+        GenTree*   lpTestTree;         // pointer to the node containing the loop test
+        genTreeOps lpTestOper() const; // the type of the comparison between the iterator and the limit (GT_LE, GT_GE,
+                                       // etc.)
+        void VERIFY_lpTestTree() const;
 
-        bool     lpIsReversed(); // true if the iterator node is the second operand in the loop condition
-        GenTree* lpIterator();   // the iterator node in the loop test
-        GenTree* lpLimit();      // the limit node in the loop test
+        bool     lpIsReversed() const; // true if the iterator node is the second operand in the loop condition
+        GenTree* lpIterator() const;   // the iterator node in the loop test
+        GenTree* lpLimit() const;      // the limit node in the loop test
 
-        int lpConstLimit();    // limit   constant value of iterator - loop condition is "i RELOP const" : Valid if
-                               // LPFLG_CONST_LIMIT
-        unsigned lpVarLimit(); // the lclVar # in the loop condition ( "i RELOP lclVar" )                : Valid if
-                               // LPFLG_VAR_LIMIT
-        bool lpArrLenLimit(Compiler* comp, ArrIndex* index); // The array length in the loop condition ( "i RELOP
-                                                             // arr.len" or "i RELOP arr[i][j].len" )  : Valid if
-                                                             // LPFLG_ARRLEN_LIMIT
+        // Limit constant value of iterator - loop condition is "i RELOP const"
+        // : Valid if LPFLG_CONST_LIMIT
+        int lpConstLimit() const;
+
+        // The lclVar # in the loop condition ( "i RELOP lclVar" )
+        // : Valid if LPFLG_VAR_LIMIT
+        unsigned lpVarLimit() const;
+
+        // The array length in the loop condition ( "i RELOP arr.len" or "i RELOP arr[i][j].len" )
+        // : Valid if LPFLG_ARRLEN_LIMIT
+        bool lpArrLenLimit(Compiler* comp, ArrIndex* index) const;
 
         // Returns "true" iff "*this" contains the blk.
-        bool lpContains(BasicBlock* blk)
+        bool lpContains(BasicBlock* blk) const
         {
             return lpFirst->bbNum <= blk->bbNum && blk->bbNum <= lpBottom->bbNum;
         }
         // Returns "true" iff "*this" (properly) contains the range [first, bottom] (allowing firsts
         // to be equal, but requiring bottoms to be different.)
-        bool lpContains(BasicBlock* first, BasicBlock* bottom)
+        bool lpContains(BasicBlock* first, BasicBlock* bottom) const
         {
             return lpFirst->bbNum <= first->bbNum && bottom->bbNum < lpBottom->bbNum;
         }
 
         // Returns "true" iff "*this" (properly) contains "lp2" (allowing firsts to be equal, but requiring
         // bottoms to be different.)
-        bool lpContains(const LoopDsc& lp2)
+        bool lpContains(const LoopDsc& lp2) const
         {
             return lpContains(lp2.lpFirst, lp2.lpBottom);
         }
 
         // Returns "true" iff "*this" is (properly) contained by the range [first, bottom]
         // (allowing firsts to be equal, but requiring bottoms to be different.)
-        bool lpContainedBy(BasicBlock* first, BasicBlock* bottom)
+        bool lpContainedBy(BasicBlock* first, BasicBlock* bottom) const
         {
             return first->bbNum <= lpFirst->bbNum && lpBottom->bbNum < bottom->bbNum;
         }
 
         // Returns "true" iff "*this" is (properly) contained by "lp2"
         // (allowing firsts to be equal, but requiring bottoms to be different.)
-        bool lpContainedBy(const LoopDsc& lp2)
+        bool lpContainedBy(const LoopDsc& lp2) const
         {
             return lpContains(lp2.lpFirst, lp2.lpBottom);
         }
 
         // Returns "true" iff "*this" is disjoint from the range [top, bottom].
-        bool lpDisjoint(BasicBlock* first, BasicBlock* bottom)
+        bool lpDisjoint(BasicBlock* first, BasicBlock* bottom) const
         {
             return bottom->bbNum < lpFirst->bbNum || lpBottom->bbNum < first->bbNum;
         }
         // Returns "true" iff "*this" is disjoint from "lp2".
-        bool lpDisjoint(const LoopDsc& lp2)
+        bool lpDisjoint(const LoopDsc& lp2) const
         {
             return lpDisjoint(lp2.lpFirst, lp2.lpBottom);
         }
         // Returns "true" iff the loop is well-formed (see code for defn).
-        bool lpWellFormed()
+        bool lpWellFormed() const
         {
             return lpFirst->bbNum <= lpTop->bbNum && lpTop->bbNum <= lpEntry->bbNum &&
                    lpEntry->bbNum <= lpBottom->bbNum &&
@@ -6426,9 +6431,9 @@ protected:
                           BasicBlock*   lpBottom,
                           unsigned char lpExitCnt,
                           BasicBlock*   lpExit,
-                          unsigned      parentLoop = BasicBlock::NOT_IN_LOOP);
-    void optPrintLoopInfo(unsigned lnum);
-    void optPrintLoopRecording(unsigned lnum);
+                          unsigned      parentLoop = BasicBlock::NOT_IN_LOOP) const;
+    void optPrintLoopInfo(unsigned lnum) const;
+    void optPrintLoopRecording(unsigned lnum) const;
 
     void optCheckPreds();
 #endif
@@ -6492,7 +6497,7 @@ protected:
     void optCopyBlkDest(BasicBlock* from, BasicBlock* to);
 
     // Returns true if 'block' is an entry block for any loop in 'optLoopTable'
-    bool optIsLoopEntry(BasicBlock* block);
+    bool optIsLoopEntry(BasicBlock* block) const;
 
     // The depth of the loop described by "lnum" (an index into the loop table.) (0 == top level)
     unsigned optLoopDepth(unsigned lnum)

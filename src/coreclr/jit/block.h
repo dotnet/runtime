@@ -44,6 +44,9 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 // This define is used with string concatenation to put this in printf format strings  (Note that %u means unsigned int)
 #define FMT_BB "BB%02u"
 
+// Use this format for loop table indices.
+#define FMT_LP "L%02u"
+
 // And this format for profile weights
 #define FMT_WT "%.7g"
 

@@ -1087,6 +1087,17 @@ public:
         return TypeIs(type) || TypeIs(rest...);
     }
 
+    static bool OperIs(genTreeOps operCompare, genTreeOps oper)
+    {
+        return operCompare == oper;
+    }
+
+    template <typename... T>
+    static bool OperIs(genTreeOps operCompare, genTreeOps oper, T... rest)
+    {
+        return OperIs(operCompare, oper) || OperIs(operCompare, rest...);
+    }
+
     bool OperIs(genTreeOps oper) const
     {
         return OperGet() == oper;

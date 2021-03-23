@@ -16643,7 +16643,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 #ifdef DEBUG
                         if (verbose)
                         {
-                            printf("Removing loop L%02u (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
+                            printf("Removing loop " FMT_LP " (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
                                    optLoopTable[loopNum].lpFirst->bbNum, optLoopTable[loopNum].lpBottom->bbNum);
                         }
 #endif

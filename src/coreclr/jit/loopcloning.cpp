@@ -241,7 +241,7 @@ JitExpandArrayStack<LcOptInfo*>* LoopCloneContext::GetLoopOptInfo(unsigned loopN
 //
 void LoopCloneContext::CancelLoopOptInfo(unsigned loopNum)
 {
-    JITDUMP("Cancelling loop cloning for loop L%02u\n", loopNum);
+    JITDUMP("Cancelling loop cloning for loop " FMT_LP "\n", loopNum);
     optInfo[loopNum] = nullptr;
     if (conditions[loopNum] != nullptr)
     {
@@ -454,7 +454,7 @@ void LoopCloneContext::EvaluateConditions(unsigned loopNum, bool* pAllTrue, bool
 
     JitExpandArrayStack<LC_Condition>& conds = *conditions[loopNum];
 
-    JITDUMP("Evaluating %d loop cloning conditions for loop L%02u\n", conds.Size(), loopNum);
+    JITDUMP("Evaluating %d loop cloning conditions for loop " FMT_LP "\n", conds.Size(), loopNum);
 
     assert(conds.Size() > 0);
     for (unsigned i = 0; i < conds.Size(); ++i)

@@ -176,6 +176,10 @@ exception occurs.
     9. Constant initializations and constant limits must be non-negative (REVIEW: why? The
        implementation does use `unsigned` to represent them.)
 
+    10. The cloned loop (the slow path) is not added to the loop table, meaning certain
+       downstream optimization passes do not see them. See
+       https://github.com/dotnet/runtime/issues/43713.
+
     Assumptions
 
     1. The assumption is that the optimization candidates collected during the
