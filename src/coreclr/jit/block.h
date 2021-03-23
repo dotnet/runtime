@@ -452,6 +452,7 @@ struct BasicBlock : private LIR::Range
 #define BBF_PATCHPOINT                     MAKE_BBFLAG(36) // Block is a patchpoint
 #define BBF_HAS_CLASS_PROFILE              MAKE_BBFLAG(37) // BB contains a call needing a class profile
 #define BBF_LOOP_ALIGN                     MAKE_BBFLAG(39) // Block is lexically the first block in a loop we intend to align.
+#define BBF_THROW_CANDIDATE                MAKE_BBFLAG(40) // Block is a candidate to be converted to BBJ_THROW
 
 // clang-format on
 

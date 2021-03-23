@@ -9588,7 +9588,7 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
     // guarantee slow performance for that block. Instead cache the return value
     // of CORINFO_HELP_STRCNS and go to cache first giving reasonable perf.
 
-    if (compCurBB->bbJumpKind == BBJ_THROW)
+    if ((compCurBB->bbJumpKind == BBJ_THROW) || (compCurBB->bbFlags & BBF_THROW_CANDIDATE))
     {
         CorInfoHelpFunc helper = info.compCompHnd->getLazyStringLiteralHelper(tree->AsStrCon()->gtScpHnd);
         if (helper != CORINFO_HELP_UNDEF)
@@ -16921,6 +16921,34 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
     *lnot = *loadw = false;
 
     fgCurrentlyInUseArgTemps = hashBv::Create(this);
+
+    // Check if the current block is a candidate to be converted to BBJ_THROW
+    if (block->bbJumpKind != BBJ_THROW)
+    {
+        auto hasNoReturns = [](GenTree** tree, fgWalkData* data) -> fgWalkResult {
+            if ((*tree)->IsCall())
+            {
+                GenTreeCall* call = (*tree)->AsCall();
+                if (call->IsNoReturn() || data->compiler->fgIsThrow(call))
+                {
+                    return WALK_ABORT;
+                }
+            }
+            return WALK_CONTINUE;
+        };
+
+        // Look for no-return calls inside the current basic block
+        // QMARKs aren't expected to exist at this points.
+        for (Statement* stmt : block->Statements())
+        {
+            GenTree*     expr    = stmt->GetRootNode();
+            fgWalkResult walkRes = fgWalkTreePre(&expr, hasNoReturns, nullptr);
+            if (walkRes == WALK_ABORT)
+            {
+                block->bbFlags |= BBF_THROW_CANDIDATE;
+            }
+        }
+    }
 
     for (Statement* stmt : block->Statements())
     {
