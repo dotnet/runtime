@@ -2308,19 +2308,43 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
 
     if (block->bbPreds == nullptr)
     {
-        // We may have unreachable blocks, due to optimization.
-        // We don't want to set the predecessor as null in this case, since that will result in
-        // unnecessary DummyDefs, and possibly result in inconsistencies requiring resolution
-        // (since these unreachable blocks can have reachable successors).
         assert((block != compiler->fgFirstBB) || (prevBlock != nullptr));
         JITDUMP("\n\nNo predecessor; ");
 
+        // The shared throw blocks do not have predecessor because no block's bbJumpDest points to
+        // them. For such blocks, we want to return the fact that predecessor is indeed null instead
+        // of returning prevBlock. Returning prevBlock will be wrong, because LSRA would think that
+        // the variable is live in registers based on the lexical flow, but that won't be true from
+        // control flow perspective.
+        // Example:
+        //
+        // IG05:
+        //      ...         ; V01 is in 'rdi'
+        //      JNE IG07
+        //      ...
+        // IG06:
+        //      ...
+        //      ...         ; V01 is in 'rbx'
+        //      JMP IG08
+        // IG07:
+        //      ...         ; LSRA thinks V01 is in 'rbx' if IG06 is set as previous block of IG07.
+        //      ....
+        //      CALL CORINFO_HELP_RNGCHKFAIL
+        //      ...
+        // IG08:
+        //      ...
+        //      ...
         if (block->bbJumpKind == BBJ_THROW && ((block->bbFlags & BBF_SHARED_THROW) != 0))
         {
             assert((block->bbFlags & BBF_DONT_REMOVE) != 0);
             JITDUMP(" - Shared throw block; ");
             return nullptr;
         }
+
+        // We may have unreachable blocks, due to optimization.
+        // We don't want to set the predecessor as null in this case, since that will result in
+        // unnecessary DummyDefs, and possibly result in inconsistencies requiring resolution
+        // (since these unreachable blocks can have reachable successors).
         return prevBlock;
     }
 
