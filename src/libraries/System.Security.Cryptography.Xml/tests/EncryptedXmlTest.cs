@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             using (Aes aes = Aes.Create())
             {
-                byte[] keydata = convert.FromBase64String("o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
+                byte[] keydata = Convert.FromBase64String("o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
                 aes.Mode = CipherMode.CBC;
                 aes.KeySize = 256;
                 aes.Key = keydata;
