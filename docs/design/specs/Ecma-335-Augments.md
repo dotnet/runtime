@@ -479,8 +479,9 @@ method body can also be used to implement a given instance or static virtual dec
 
 (Change first paragraph)
 
-The .override directive specifies that a virtual method shall be implemented (overridden), in this type,
-by a virtual instance method with a different name or a non-virtual static method, but with the same signature.
+The .override directive specifies that a virtual instance or static method shall be implemented (overridden),
+in this type, by a virtual instance or static method with a different name but with the same signature;
+the overridden and overriding virtual method must be of the same type (both must be either instance or static).
 This directive can be used to provide an implementation for a virtual method inherited from a base class, or
 a virtual method specified in an interface implemented by this type. The .override directive specifies a Method
 Implementation (MethodImpl) in the metadata (§II.15.1.4).
