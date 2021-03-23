@@ -13,8 +13,8 @@ namespace Internal.Cryptography
     //
     internal static partial class AsymmetricAlgorithmHelpers
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
         public static byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
             // The classes that call us are sealed and their base class has checked this already.
@@ -26,32 +26,13 @@ namespace Internal.Cryptography
 #if NET5_0_OR_GREATER
             ReadOnlySpan<byte> source = data.AsSpan(offset, count);
 
-            if (hashAlgorithm == HashAlgorithmName.MD5)
-            {
-                return MD5.HashData(source);
-            }
-
-            if (hashAlgorithm == HashAlgorithmName.SHA1)
-            {
-                return SHA1.HashData(source);
-            }
-
-            if (hashAlgorithm == HashAlgorithmName.SHA256)
-            {
-                return SHA256.HashData(source);
-            }
-
-            if (hashAlgorithm == HashAlgorithmName.SHA384)
-            {
-                return SHA384.HashData(source);
-            }
-
-            if (hashAlgorithm == HashAlgorithmName.SHA512)
-            {
-                return SHA512.HashData(source);
-            }
-
-            throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
+            return
+                hashAlgorithm == HashAlgorithmName.SHA256 ? SHA256.HashData(source) :
+                hashAlgorithm == HashAlgorithmName.SHA1 ? SHA1.HashData(source) :
+                hashAlgorithm == HashAlgorithmName.SHA512 ? SHA512.HashData(source) :
+                hashAlgorithm == HashAlgorithmName.SHA384 ? SHA384.HashData(source) :
+                hashAlgorithm == HashAlgorithmName.MD5 ? MD5.HashData(source) :
+                throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 #else
             using (HashAlgorithm hasher = GetHashAlgorithm(hashAlgorithm))
             {
@@ -72,40 +53,21 @@ namespace Internal.Cryptography
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
         public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
             // The classes that call us are sealed and their base class has checked this already.
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
 #if NET5_0_OR_GREATER
-            if (hashAlgorithm == HashAlgorithmName.MD5)
-            {
-                return MD5.TryHashData(source, destination, out bytesWritten);
-            }
-
-            if (hashAlgorithm == HashAlgorithmName.SHA1)
-            {
-                return SHA1.TryHashData(source, destination, out bytesWritten);
-            }
-
-            if (hashAlgorithm == HashAlgorithmName.SHA256)
-            {
-                return SHA256.TryHashData(source, destination, out bytesWritten);
-            }
-
-            if (hashAlgorithm == HashAlgorithmName.SHA384)
-            {
-                return SHA384.TryHashData(source, destination, out bytesWritten);
-            }
-
-            if (hashAlgorithm == HashAlgorithmName.SHA512)
-            {
-                return SHA512.TryHashData(source, destination, out bytesWritten);
-            }
-
-            throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
+            return
+                hashAlgorithm == HashAlgorithmName.SHA256 ? SHA256.TryHashData(source, destination, out bytesWritten) :
+                hashAlgorithm == HashAlgorithmName.SHA1 ? SHA1.TryHashData(source, destination, out bytesWritten) :
+                hashAlgorithm == HashAlgorithmName.SHA512 ? SHA512.TryHashData(source, destination, out bytesWritten) :
+                hashAlgorithm == HashAlgorithmName.SHA384 ? SHA384.TryHashData(source, destination, out bytesWritten) :
+                hashAlgorithm == HashAlgorithmName.MD5 ? MD5.TryHashData(source, destination, out bytesWritten) :
+                throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 #else
             using (HashAlgorithm hasher = GetHashAlgorithm(hashAlgorithm))
             {
@@ -114,14 +76,14 @@ namespace Internal.Cryptography
 #endif
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
         private static HashAlgorithm GetHashAlgorithm(HashAlgorithmName hashAlgorithmName) =>
-            hashAlgorithmName == HashAlgorithmName.MD5 ? MD5.Create() :
-            hashAlgorithmName == HashAlgorithmName.SHA1 ? SHA1.Create() :
             hashAlgorithmName == HashAlgorithmName.SHA256 ? SHA256.Create() :
-            hashAlgorithmName == HashAlgorithmName.SHA384 ? SHA384.Create() :
+            hashAlgorithmName == HashAlgorithmName.SHA1 ? SHA1.Create() :
             hashAlgorithmName == HashAlgorithmName.SHA512 ? SHA512.Create() :
+            hashAlgorithmName == HashAlgorithmName.SHA384 ? SHA384.Create() :
+            hashAlgorithmName == HashAlgorithmName.MD5 ? MD5.Create() :
             throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
     }
 }
