@@ -121,7 +121,7 @@ namespace Generators
 
                                     string className = classDef.Identifier.ToString();
                                     string name = className;
-                                    string guid = "";
+                                    string guid = string.Empty;
 
                                     SeparatedSyntaxList<AttributeArgumentSyntax>? args = ca.ArgumentList?.Arguments;
                                     if (args is not null)
@@ -186,7 +186,7 @@ namespace Generators
                                 
                                 // check if we care about this child class def
                                 // we only care about "Tasks" and "Keywords" classes.
-                                if (classChildIdentifier == "Tasks")
+                                if (classChildIdentifier == "Task")
                                 {
                                     eventSourceClass.TaskMap = GetTasksMap(classChild);
                                 }

@@ -7,7 +7,6 @@ using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
@@ -43,18 +42,19 @@ namespace Generators
             sb.AppendLine("  <events xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
             sb.Append("<provider name=\"").Append(providerName).
                Append("\" guid=\"{").Append(providerGuid.ToString()).Append("}");
-               /*
-            if (dllName != null)
-                sb.Append("\" resourceFileName=\"").Append(dllName).Append("\" messageFileName=\"").Append(dllName);
-                */
             string symbolsName = providerName.Replace("-", "").Replace('.', '_');  // Period and - are illegal replace them.
             sb.Append("\" symbol=\"").Append(symbolsName);
             sb.AppendLine("\">");
 
             keywordTab = keywordMap;
             taskTab = taskMap;
-            
-            
+
+            // TODO: Remove these once we figure out a long-term localization replacement solution
+            stringTab.Add("event_TaskCompleted", "Task {2} completed.");
+            stringTab.Add("event_TaskScheduled", "Task {2} scheduled to TaskScheduler {0}.");
+            stringTab.Add("event_TaskStarted", "Task {2} executing.");
+            stringTab.Add("event_TaskWaitBegin", "Beginning wait ({3}) on Task {2}.");
+            stringTab.Add("event_TaskWaitEnd", "Ending wait on Task {2}.");
         }
 
         public void AddOpcode(string name, int value)
@@ -71,6 +71,7 @@ namespace Generators
             }
 
             taskTab[value] = name;
+            stringTab.Add($"keyword_{name}", name);
         }
 
         public void AddKeyword(string name, ulong value)
@@ -397,8 +398,6 @@ namespace Generators
 
         public string CreateManifestString()
         {
-            // TODO: Add maps, keywords, tasks, channels generation logic.
-            
             Span<char> ulongHexScratch = stackalloc char[16]; // long enough for ulong.MaxValue formatted as hex
             // Write out the tasks
             if (taskTab != null)
@@ -425,7 +424,7 @@ namespace Generators
                     ulong hexValue = (ulong)Convert.ToInt64(maps[enumName][fieldName]);
                     string hexValueFormatted = hexValue.ToString("x", CultureInfo.InvariantCulture);
                     sb.Append("   <").Append("map value=\"0x").Append(hexValueFormatted).Append('"');
-                    WriteMessageAttrib(sb, "map", enumName + "." + fieldName, enumName);
+                    WriteMessageAttrib(sb, "map", enumName + "." + fieldName, fieldName);
                     sb.AppendLine("/>");
                 }
                 sb.AppendLine("  </valueMap>");
@@ -464,7 +463,6 @@ namespace Generators
             // TODO: StringTable? (localization)
             // Output the localization information.
 
-            /*
             sb.AppendLine("<localization>");
 
             var sortedStrings = new string[stringTab.Keys.Count];
@@ -476,14 +474,16 @@ namespace Generators
             sb.AppendLine("  <stringTable>");
             foreach (string stringKey in sortedStrings)
             {
-                string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
-                sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
+                stringTab.TryGetValue(stringKey, out string val);
+                if (val != null)
+                {
+                    sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
+                }
             }
             sb.AppendLine("  </stringTable>");
             sb.AppendLine(" </resources>");
 
             sb.AppendLine("</localization>");
-            */
             sb.AppendLine("</instrumentationManifest>");
 
             return sb.ToString();
@@ -530,6 +530,15 @@ namespace Generators
                 }
             }
         }
+        private string? GetLocalizedMessage(string key, CultureInfo ci, bool etwFormat)
+        {
+            string? value = null;
+            if (etwFormat && value == null)
+                stringTab.TryGetValue(key, out value);
+
+            return value;
+        }
+
 
 
 /*        private string CreateManifestString()
@@ -728,7 +737,7 @@ namespace Generators
             sb.AppendLine("  <stringTable>");
             foreach (string stringKey in sortedStrings)
             {
-                string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
+                string? val = stringTab.TryGetValue(stringKey, out value);
                 sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
             }
             sb.AppendLine("  </stringTable>");
@@ -850,7 +859,6 @@ namespace Generators
         private readonly StringBuilder templates;
 
         private readonly string providerName;
-//        private readonly ResourceManager? resources;      // Look up localized strings here.
 //        private readonly EventManifestOptions flags;
         private readonly IList<string> errors;           // list of currently encountered errors
         private readonly Dictionary<string, List<int>> perEventByteArrayArgIndices;  // "event_name" -> List_of_Indices_of_Byte[]_Arg
