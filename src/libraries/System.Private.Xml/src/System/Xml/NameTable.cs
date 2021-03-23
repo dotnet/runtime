@@ -30,7 +30,7 @@ namespace System.Xml
         //
         // Fields
         //
-        private Entry[] _entries;
+        private Entry?[] _entries;
         private int _count;
         private int _mask;
 
@@ -42,7 +42,7 @@ namespace System.Xml
         public NameTable()
         {
             _mask = 31;
-            _entries = new Entry[_mask + 1];
+            _entries = new Entry?[_mask + 1];
         }
 
         //
@@ -221,8 +221,8 @@ namespace System.Xml
         private void Grow()
         {
             int newMask = _mask * 2 + 1;
-            Entry[] oldEntries = _entries;
-            Entry[] newEntries = new Entry[newMask + 1];
+            Entry?[] oldEntries = _entries;
+            Entry?[] newEntries = new Entry?[newMask + 1];
 
             // use oldEntries.Length to eliminate the range check
             for (int i = 0; i < oldEntries.Length; i++)
