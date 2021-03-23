@@ -71,23 +71,13 @@
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(EmscriptenSdkToolsPath)' == '' and '$(EMSDK_PATH)' != ''">
-    <EmscriptenSdkToolsPath>$([MSBuild]::EnsureTrailingSlash($(EMSDK_PATH)))</EmscriptenSdkToolsPath>
-    <EmSdkUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'bin'))</EmSdkUpstreamBinPath>
-
-    <EmscriptenNodeToolsPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'node', '12.18.1_64bit'))</EmscriptenNodeToolsPath>
-    <EmscriptenPythonToolsPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'python', '3.7.4-2_64bit'))</EmscriptenPythonToolsPath>
-
-    <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
-  </PropertyGroup>
-
   <!-- Having this separate target allows users to cleanly add After/BeforeTargets for this -->
   <Target Name="WasmBuildApp" AfterTargets="$(WasmBuildAppAfterThisTarget)" />
 
   <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
-    <Error Condition="'$(EmscriptenSdkToolsPath)' == ''" Text="Emscripten sdk not found. Either set EMSDK_PATH, or ensure that webassembly workload is installed" />
-    <Error Condition="!Exists($(EmscriptenSdkToolsPath))" Text="Cannot find EmscriptenSdkToolsPath=$(EmscriptenSdkToolsPath), EMSDK_PATH=$(EMSDK_PATH)" />
+    <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
+           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
 
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
@@ -203,7 +193,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_BeforeWasmBuildApp" DependsOnTargets="_SetWasmBuildNativeDefaults">
+  <Target Name="_BeforeWasmBuildApp" DependsOnTargets="_SetupEmscripten;_SetWasmBuildNativeDefaults">
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <Error Condition="@(WasmAssembliesToBundle->Count()) == 0" Text="WasmAssembliesToBundle item is empty. No assemblies to process" />
@@ -222,18 +212,63 @@
       <_WasmIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm'))</_WasmIntermediateOutputPath>
     </PropertyGroup>
 
+    <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
+    <PropertyGroup>
+      <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_SetupEmscripten">
+    <!-- If $(Emscripten*ToolsPath) etc propeties are already set (by the workload pack),
+         then prefer that, and ignore $(EMSDK_PATH) -->
+
+    <!-- If $(Emscripten*ToolsPath) etc propeties are *not* set (by the workload pack),
+    then try to construct the same properties based on $(EMSDK_PATH) -->
+    <PropertyGroup Condition="'$(EmscriptenSdkToolsPath)' == '' and '$(EMSDK_PATH)' != ''">
+      <EmscriptenSdkToolsPath>$([MSBuild]::EnsureTrailingSlash($(EMSDK_PATH)))</EmscriptenSdkToolsPath>
+      <EmSdkUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'bin'))</EmSdkUpstreamBinPath>
+
+      <EmscriptenNodeToolsPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'node', '12.18.1_64bit'))</EmscriptenNodeToolsPath>
+      <EmscriptenPythonToolsPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'python', '3.7.4-2_64bit'))</EmscriptenPythonToolsPath>
+
+      <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenSdkToolsPath)' == '' or !Exists('$(EmscriptenSdkToolsPath)'))">%24(EmscriptenSdkToolsPath)=$(EmscriptenSdkToolsPath) </_EMSDKMissingPaths>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenNodeToolsPath)' == '' or !Exists('$(EmscriptenNodeToolsPath)'))">%24(EmscriptenNodeToolsPath)=$(EmscriptenNodeToolsPath) </_EMSDKMissingPaths>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmSdkUpstreamBinPath)' == '' or !Exists('$(EmSdkUpstreamBinPath)'))">%24(EmSdkUpstreamBinPath)=$(EmSdkUpstreamBinPath) </_EMSDKMissingPaths>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_EMSDKMissingErrorMessage Condition="'$(EMSDK_PATH)' == '' and '$(EmscriptenSdkToolsPath)' == ''">Could not find emscripten sdk. Either set %24(EMSDK_PATH), or use workloads to get the sdk.</_EMSDKMissingErrorMessage>
+
+      <_EMSDKMissingErrorMessage Condition="'$(_EMSDKMissingErrorMessage)' == '' and '$(_UsingEMSDK_PATH)' != 'true' and '$(_EMSDKMissingPaths)' != ''">Emscripten from the workload is missing some paths: $(_EMSDKMissingPaths).</_EMSDKMissingErrorMessage>
+      <_EMSDKMissingErrorMessage Condition="'$(_EMSDKMissingErrorMessage)' == '' and '$(_UsingEMSDK_PATH)' == 'true' and !Exists($(EMSDK_PATH))">Could not find Emscripten sdk at %24(EMSDK_PATH)=$(EMSDK_PATH) .</_EMSDKMissingErrorMessage>
+      <_EMSDKMissingErrorMessage Condition="'$(_EMSDKMissingErrorMessage)' == '' and '$(_UsingEMSDK_PATH)' == 'true' and '$(_EMSDKMissingPaths)' != ''">Specified Emscripten sdk at %24(EMSDK_PATH)=$(EMSDK_PATH) is missing some paths: $(_EMSDKMissingPaths).</_EMSDKMissingErrorMessage>
+
+      <_IsEMSDKMissing Condition="'$(_EMSDKMissingErrorMessage)' != ''">true</_IsEMSDKMissing>
+    </PropertyGroup>
+
     <PropertyGroup>
       <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
       <EmscriptenNodeToolsPath   Condition="'$(EmscriptenNodeToolsPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
       <EmscriptenPythonToolsPath Condition="'$(EmscriptenPythonToolsPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenPythonToolsPath)))</EmscriptenPythonToolsPath>
+      <EmSdkUpstreamBinPath      Condition="'$(EmSdkUpstreamBinPath)' != ''"     >$([MSBuild]::NormalizeDirectory($(EmSdkUpstreamBinPath)))</EmSdkUpstreamBinPath>
     </PropertyGroup>
 
+    <!-- Environment variables required for running emsdk commands like `emcc` -->
     <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != ''">
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
     </ItemGroup>
 
+    <!-- Paths to be added to environment variable `PATH` -->
     <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' != 'true'">
       <_EmscriptenAddPATH Include="$(EmscriptenPythonToolsPath)bin" />
       <_EmscriptenAddPATH Include="$(EmscriptenSdkToolsPath)emscripten" />
@@ -277,27 +312,15 @@
 
       <EmscriptenEnvVars Include="PATH=$(_EmscriptenAddPATHProperty):$(PATH)" Condition="'$(OS)' != 'Windows_NT'" />
     </ItemGroup>
-
-    <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
-    <PropertyGroup>
-      <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
-    </PropertyGroup>
-    <ItemGroup>
-      <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_SetWasmBuildNativeDefaults">
-    <PropertyGroup>
-      <_IsEMSDKMissing Condition="'$(EmscriptenSdkToolsPath)' == '' or !Exists('$(EmscriptenSdkToolsPath)')">true</_IsEMSDKMissing>
-    </PropertyGroup>
-
     <!-- if already set, maybe by a user projects, then a missing emsdk is an error -->
     <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
-           Text="Cannot find emscripten sdk, required for building native files. %24(EMSDK_PATH)=$(EMSDK_PATH), EmscriptenSdkToolsPath: $(EmscriptenSdkToolsPath)" />
+           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
 
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
-           Text="Cannot find emscripten sdk, required for AOT'ing assemblies. %24(EMSDK_PATH)=$(EMSDK_PATH), EmscriptenSdkToolsPath: $(EmscriptenSdkToolsPath)" />
+           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
@@ -308,7 +331,7 @@
 
     <!-- If we want to default to true, and sdk is missing, then just warn, and set it to false -->
     <Warning Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
-             Text="Cannot find emscripten sdk, required for building native files. %24(EMSDK_PATH)=$(EMSDK_PATH), EmscriptenSdkToolsPath: $(EmscriptenSdkToolsPath) . Skipping native relinking" />
+             Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'">false</WasmBuildNative>
