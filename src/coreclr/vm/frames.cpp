@@ -106,7 +106,7 @@ void Frame::Log() {
              frameType,
              DBG_ADDR(GetReturnAddressPtr()) ));
 
-    _ASSERTE(GetThread()->PreemptiveGCDisabled());
+    _ASSERTE(GetThreaNotOk()->PreemptiveGCDisabled());
 }
 
 //-----------------------------------------------------------------------
@@ -1099,9 +1099,9 @@ BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef)
     CONTRACT_VIOLATION(ThrowsViolation);
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE ();
     IsProtectedByGCFrameStruct d = {ppObjectRef, 0};
-    GetThread()->StackWalkFrames(IsProtectedByGCFrameStackWalkFramesCallback, &d);
+    GetThreaNotOk()->StackWalkFrames(IsProtectedByGCFrameStackWalkFramesCallback, &d);
 
-    GCFrame* pGCFrame = GetThread()->GetGCFrame();
+    GCFrame* pGCFrame = GetThreaNotOk()->GetGCFrame();
     while (pGCFrame != NULL)
     {
         if (pGCFrame->Protects(ppObjectRef)) {

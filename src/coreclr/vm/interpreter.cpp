@@ -3232,7 +3232,7 @@ ExitEvalLoop:;
 
         if (handleException)
         {
-            GetThread()->SafeSetThrowables(orThrowable
+            GetThreaNotOk()->SafeSetThrowables(orThrowable
                 DEBUG_ARG(ThreadExceptionState::STEC_CurrentTrackerEqualNullOkForInterpreter));
             goto EvalLoop;
         }
@@ -8673,7 +8673,7 @@ void Interpreter::Rethrow()
         MODE_COOPERATIVE;
     } CONTRACTL_END
 
-    OBJECTREF throwable = GetThread()->LastThrownObject();
+    OBJECTREF throwable = GetThreaNotOk()->LastThrownObject();
     COMPlusThrow(throwable);
 }
 

@@ -55,7 +55,7 @@ void CallDescrWorkerWithHandler(
 #if defined(FEATURE_MULTICOREJIT) && defined(_DEBUG)
 
     // For multicore JITting, background thread should not call managed code, except when calling system code (e.g. throwing managed exception)
-    if (GetThread()->HasThreadStateNC(Thread::TSNC_CallingManagedCodeDisabled))
+    if (GetThreaNotOk()->HasThreadStateNC(Thread::TSNC_CallingManagedCodeDisabled))
     {
         AssertMulticoreJitAllowedModule(pCallDescrData->pTarget);
     }
@@ -538,7 +538,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     if (transitionToPreemptive)
     {
         GCPreemp transitionIfILStub(transitionToPreemptive);
-        DWORD* pLastError = &GetThread()->m_dwLastErrorInterp;
+        DWORD* pLastError = &GetThreaNotOk()->m_dwLastErrorInterp;
         CallDescrWorkerInternal(&callDescrData);
         *pLastError = GetLastError();
     }

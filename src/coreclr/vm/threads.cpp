@@ -3344,13 +3344,13 @@ void Thread::DoAppropriateWaitWorkerAlertableHelper(WaitMode mode)
 void MarkOSAlertableWait()
 {
     LIMITED_METHOD_CONTRACT;
-    GetThread()->SetThreadStateNC (Thread::TSNC_OSAlertableWait);
+    GetThreaNotOk()->SetThreadStateNC (Thread::TSNC_OSAlertableWait);
 }
 
 void UnMarkOSAlertableWait()
 {
     LIMITED_METHOD_CONTRACT;
-    GetThread()->ResetThreadStateNC (Thread::TSNC_OSAlertableWait);
+    GetThreaNotOk()->ResetThreadStateNC (Thread::TSNC_OSAlertableWait);
 }
 
 //--------------------------------------------------------------------
@@ -4142,7 +4142,7 @@ void Thread::UserSleep(INT32 time)
     }
     CONTRACTL_END;
 
-    INCONTRACT(_ASSERTE(!GetThread()->GCNoTrigger()));
+    INCONTRACT(_ASSERTE(!GetThreaNotOk()->GCNoTrigger()));
 
     DWORD   res;
 
@@ -5931,7 +5931,7 @@ void CleanStackForFastGCStress ()
     }
     size_t* buffer = (size_t*) _alloca (nBytes);
     memset(buffer, 0, nBytes);
-    GetThread()->m_pCleanedStackBase = &nBytes;
+    GetThreaNotOk()->m_pCleanedStackBase = &nBytes;
 }
 
 void Thread::ObjectRefFlush(Thread* thread)
@@ -8244,7 +8244,7 @@ void DeadlockAwareLock::LeaveLock()
     CONTRACTL_END;
 
     CONSISTENCY_CHECK(m_pHoldingThread == GetThread());
-    CONSISTENCY_CHECK(GetThread()->m_pBlockingLock.Load() == NULL);
+    CONSISTENCY_CHECK(GetThreaNotOk()->m_pBlockingLock.Load() == NULL);
 
     m_pHoldingThread = NULL;
 }

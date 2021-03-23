@@ -182,6 +182,8 @@ typedef DPTR(OBJECTREF) PTR_OBJECTREF;
 typedef DPTR(PTR_OBJECTREF) PTR_PTR_OBJECTREF;
 
 EXTERN_C Thread* STDCALL GetThread();
+EXTERN_C Thread* STDCALL GetThreaNotOk();
+
 Thread* GetThreadNULLOk();
 
 void SetThread(Thread*);

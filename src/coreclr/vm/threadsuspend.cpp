@@ -1840,7 +1840,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
     CONTRACTL {
         NOTHROW;
     // any thread entering with `PreemptiveGCDisabled` should be prepared to switch mode, thus GC_TRIGGERS
-        if ((GetThread() != NULL) && GetThread()->PreemptiveGCDisabled()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if ((GetThread() != NULL) && GetThreaNotOk()->PreemptiveGCDisabled()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -2347,7 +2347,7 @@ void Thread::PerformPreemptiveGC()
         // BUG(github #10318) - when not using allocation contexts, the alloc lock
         // must be acquired here. Until fixed, this assert prevents random heap corruption.
         _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-        GCHeapUtilities::GetGCHeap()->StressHeap(GetThread()->GetAllocContext());
+        GCHeapUtilities::GetGCHeap()->StressHeap(GetThreaNotOk()->GetAllocContext());
         m_bGCStressing = FALSE;
     }
     m_GCOnTransitionsOK = TRUE;
@@ -2651,7 +2651,7 @@ extern "C" PCONTEXT __stdcall GetCurrentSavedRedirectContext()
     PCONTEXT pContext;
 
     BEGIN_PRESERVE_LAST_ERROR;
-    pContext = GetThread()->GetSavedRedirectContext();
+    pContext = GetThreaNotOk()->GetSavedRedirectContext();
     END_PRESERVE_LAST_ERROR;
 
     return pContext;

@@ -451,7 +451,7 @@ void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDI
     CONTEXT* pAbortContext = NULL;
     if (fAborting)
     {
-        pAbortContext = GetThread()->GetAbortContext();
+        pAbortContext = GetThreaNotOk()->GetAbortContext();
     }
 
 #ifndef TARGET_UNIX
@@ -4390,7 +4390,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
             {
                 // We have reached the frame that will handle the exception.
                 ex.GetExceptionRecord()->ExceptionFlags |= EXCEPTION_TARGET_UNWIND;
-                ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
+                ExceptionTracker* pTracker = GetThreaNotOk()->GetExceptionState()->GetCurrentExceptionTracker();
                 pTracker->TakeExceptionPointersOwnership(&ex);
             }
 
@@ -4437,7 +4437,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
                 // frames, it doesn't attempt to scan the reclaimed stack range.
                 // We also need to reset the scanned stack range since the scanned frames will be
                 // obsolete after the unwind of the native frames completes.
-                ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
+                ExceptionTracker* pTracker = GetThreaNotOk()->GetExceptionState()->GetCurrentExceptionTracker();
                 pTracker->CleanupBeforeNativeFramesUnwind();
             }
 
@@ -4479,7 +4479,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
     PVOID handlerData;
 
 #ifdef FEATURE_HIJACK
-    GetThread()->UnhijackThread();
+    GetThreaNotOk()->UnhijackThread();
 #endif
 
     controlPc = GetIP(frameContext);
@@ -4575,7 +4575,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
         {
             // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
-            if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+            if (!GetThreaNotOk()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
             {
                 LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                 _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
@@ -4591,7 +4591,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         if (gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
         {
             // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
-            if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+            if (!GetThreaNotOk()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
             {
                 LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                 _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
@@ -4634,7 +4634,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
 
             if (controlPc == 0)
             {
-                if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+                if (!GetThreaNotOk()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
                 {
                     LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                     _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
@@ -5138,7 +5138,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
     if (ex->GetExceptionRecord()->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
     {
-        GetThread()->SetExecutingOnAltStack();
+        GetThreaNotOk()->SetExecutingOnAltStack();
         Thread::VirtualUnwindToFirstManagedCallFrame(ex->GetContextRecord());
         EEPolicy::HandleFatalStackOverflow(&ex->ExceptionPointers, FALSE);
         UNREACHABLE();
@@ -5660,7 +5660,7 @@ FixContextHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
         // We've pushed a Frame, but it is not initialized yet, so we
         // must not be in preemptive mode
         //
-        CONSISTENCY_CHECK(GetThread()->PreemptiveGCDisabled());
+        CONSISTENCY_CHECK(GetThreaNotOk()->PreemptiveGCDisabled());
 
         FixContextForFaultingExceptionFrame(pExceptionRecord, pNewContext);
     }
@@ -5963,7 +5963,7 @@ ReverseComUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
 {
     if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
     {
-        ComMethodFrame::DoSecondPassHandlerCleanup(GetThread()->GetFrame());
+        ComMethodFrame::DoSecondPassHandlerCleanup(GetThreaNotOk()->GetFrame());
     }
     return ExceptionContinueSearch;
 }

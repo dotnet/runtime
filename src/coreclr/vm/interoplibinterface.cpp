@@ -419,7 +419,7 @@ namespace
                 // The GC thread doesn't have to take the lock
                 // since all other threads access in cooperative mode
                 PRECONDITION(
-                    (IsLockHeld() && GetThread()->PreemptiveGCDisabled())
+                    (IsLockHeld() && GetThreaNotOk()->PreemptiveGCDisabled())
                     || Debug_IsLockedViaThreadSuspension());
             }
             CONTRACTL_END;

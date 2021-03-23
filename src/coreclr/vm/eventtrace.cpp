@@ -4702,7 +4702,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         NOTHROW;
         GC_TRIGGERS;
         PRECONDITION(GetThread() != NULL);
-        PRECONDITION(GetThread()->GetThrowable() != NULL);
+        PRECONDITION(GetThreaNotOk()->GetThrowable() != NULL);
     } CONTRACTL_END;
 
     if(!(bIsReThrownException || bIsNewException))

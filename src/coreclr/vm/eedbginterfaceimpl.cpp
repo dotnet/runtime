@@ -645,7 +645,7 @@ void EEDbgInterfaceImpl::DisablePreemptiveGC(void)
     }
     CONTRACTL_END;
 
-    ::GetThread()->DisablePreemptiveGC();
+    ::GetThreaNotOk()->DisablePreemptiveGC();
 }
 
 void EEDbgInterfaceImpl::EnablePreemptiveGC(void)
@@ -657,7 +657,7 @@ void EEDbgInterfaceImpl::EnablePreemptiveGC(void)
     }
     CONTRACTL_END;
 
-    ::GetThread()->EnablePreemptiveGC();
+    ::GetThreaNotOk()->EnablePreemptiveGC();
 }
 
 bool EEDbgInterfaceImpl::IsPreemptiveGCDisabled(void)
@@ -669,7 +669,7 @@ bool EEDbgInterfaceImpl::IsPreemptiveGCDisabled(void)
     }
     CONTRACTL_END;
 
-    return ::GetThread()->PreemptiveGCDisabled() != 0;
+    return ::GetThreaNotOk()->PreemptiveGCDisabled() != 0;
 }
 
 DWORD EEDbgInterfaceImpl::MethodDescIsStatic(MethodDesc *pFD)

@@ -1743,7 +1743,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // BUG(github #10318) - when not using allocation contexts, the alloc lock
     // must be acquired here. Until fixed, this assert prevents random heap corruption.
     assert(GCHeapUtilities::UseThreadAllocationContexts());
-    GCHeapUtilities::GetGCHeap()->StressHeap(GetThread()->GetAllocContext());
+    GCHeapUtilities::GetGCHeap()->StressHeap(GetThreaNotOk()->GetAllocContext());
 
     // StressHeap can exit early w/o forcing a SuspendEE to trigger the instruction update
     // We can not rely on the return code to determine if the instruction update happened

@@ -576,7 +576,7 @@ void    ThreadLocalModule::AllocateDynamicClass(MethodTable *pMT)
         {
             if (!pMT->Collectible())
             {
-                GetThread()->m_ThreadLocalBlock.AllocateStaticFieldObjRefPtrs(dwNumHandleStatics,
+                GetThreaNotOk()->m_ThreadLocalBlock.AllocateStaticFieldObjRefPtrs(dwNumHandleStatics,
                         &((NormalDynamicEntry *)pDynamicStatics)->m_pGCStatics);
             }
             else

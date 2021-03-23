@@ -8818,7 +8818,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
                                        objectId));
 
     
-    _ASSERTE((GetThread() == NULL) || (GetThread()->PreemptiveGCDisabled()));
+    _ASSERTE((GetThread() == NULL) || (GetThreaNotOk()->PreemptiveGCDisabled()));
     
 
     // Announce we are using the generation table now
@@ -10317,7 +10317,7 @@ HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecifi
 
     // ELT3 Fast-Path hooks should be NULL when ELT intermediary is used.
     _ASSERTE(g_profControlBlock.pProfInterface->GetEnter3Hook() == NULL);
-    _ASSERTE(GetThread()->PreemptiveGCDisabled());
+    _ASSERTE(GetThreaNotOk()->PreemptiveGCDisabled());
     _ASSERTE(platformSpecificHandle != NULL);
 
     // Set up a frame
@@ -10489,7 +10489,7 @@ HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecifi
 
     // ELT3 Fast-Path hooks should be NULL when ELT intermediary is used.
     _ASSERTE(g_profControlBlock.pProfInterface->GetLeave3Hook() == NULL);
-    _ASSERTE(GetThread()->PreemptiveGCDisabled());
+    _ASSERTE(GetThreaNotOk()->PreemptiveGCDisabled());
     _ASSERTE(platformSpecificHandle != NULL);
 
     // Set up a frame
@@ -10621,7 +10621,7 @@ HCIMPL2(EXTERN_C void, ProfileTailcall, UINT_PTR clientData, void * platformSpec
 
     // ELT3 fast-path hooks should be NULL when ELT intermediary is used.
     _ASSERTE(g_profControlBlock.pProfInterface->GetTailcall3Hook() == NULL);
-    _ASSERTE(GetThread()->PreemptiveGCDisabled());
+    _ASSERTE(GetThreaNotOk()->PreemptiveGCDisabled());
     _ASSERTE(platformSpecificHandle != NULL);
 
     // Set up a frame

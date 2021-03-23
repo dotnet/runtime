@@ -2631,11 +2631,11 @@ public:
 private:
     inline static void SetPreparingAbortForHolder()
     {
-        GetThread()->SetPreparingAbort();
+        GetThreaNotOk()->SetPreparingAbort();
     }
     inline static void ResetPreparingAbortForHolder()
     {
-        GetThread()->ResetPreparingAbort();
+        GetThreaNotOk()->ResetPreparingAbort();
     }
     typedef StateHolder<Thread::SetPreparingAbortForHolder, Thread::ResetPreparingAbortForHolder> PreparingAbortHolder;
 
@@ -5711,7 +5711,7 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
             m_pClrDebugState->ViolationMaskReset( GCViolation );
 
-            GetThread()->BeginForbidGC(szFile, lineNum);
+            GetThreaNotOk()->BeginForbidGC(szFile, lineNum);
 
             m_ContractStackRecord.m_szFunction = szFunction;
             m_ContractStackRecord.m_szFile     = (char*)szFile;
@@ -5735,7 +5735,7 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
         m_pClrDebugState->ViolationMaskReset( GCViolation );
 
-        GetThread()->BeginForbidGC(szFile, lineNum);
+        GetThreaNotOk()->BeginForbidGC(szFile, lineNum);
 
         m_ContractStackRecord.m_szFunction = szFunction;
         m_ContractStackRecord.m_szFile     = (char*)szFile;
@@ -5751,7 +5751,7 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
         if (m_fConditional)
         {
-            GetThread()->EndForbidGC();
+            GetThreaNotOk()->EndForbidGC();
             *m_pClrDebugState = m_oldClrDebugState;
         }
     }
@@ -6186,7 +6186,7 @@ inline void SetTypeHandleOnThreadForAlloc(TypeHandle th)
     // event is not enabled we still need to set it because it may not be enabled here but by the
     // time we are checking in GC, the event is enabled - we don't want GC to read a random value
     // from before in this case.
-    GetThread()->SetTHAllocContextObj(th);
+    GetThreaNotOk()->SetTHAllocContextObj(th);
 }
 
 #endif // CROSSGEN_COMPILE

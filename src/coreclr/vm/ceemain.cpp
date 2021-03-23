@@ -603,7 +603,7 @@ void EESocketCleanupHelper(bool isExecutingOnAltStack)
 
     if (isExecutingOnAltStack)
     {
-        GetThread()->SetExecutingOnAltStack();
+        GetThreaNotOk()->SetExecutingOnAltStack();
     }
 
     // Close the debugger transport socket first

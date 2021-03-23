@@ -1570,7 +1570,7 @@ void RCW::RemoveMemoryPressure()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION((GetThread()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) == 0);
+        PRECONDITION((GetThreaNotOk()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) == 0);
     }
     CONTRACTL_END;
 
@@ -1782,7 +1782,7 @@ void RCW::Cleanup()
     // if the wrapper is still in the cache.  Also, if we can't switch to coop mode,
     // we're guaranteed to have already decoupled the RCW from its object.
 #ifdef _DEBUG
-    if (!(GetThread()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative))
+    if (!(GetThreaNotOk()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative))
     {
         GCX_COOP();
 
@@ -1801,7 +1801,7 @@ void RCW::Cleanup()
 
         // Remove the memory pressure caused by this RCW (if present)
         // If we're in a shutdown situation, we can ignore the memory pressure.
-        if ((GetThread()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) == 0 && !g_fForbidEnterEE)
+        if ((GetThreaNotOk()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) == 0 && !g_fForbidEnterEE)
             RemoveMemoryPressure();
     }
 
@@ -2077,7 +2077,7 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
     if (hr == CO_E_OBJNOTCONNECTED || hr == RPC_E_INVALID_OBJECT || hr == RPC_E_INVALID_OBJREF || hr == CO_E_OBJNOTREG)
     {
         // set apartment state
-        GetThread()->SetApartment(Thread::AS_InMTA);
+        GetThreaNotOk()->SetApartment(Thread::AS_InMTA);
 
         // Release the stream of the IUnkEntry to force UnmarshalIUnknownForCurrContext
         // to remarshal to the stream.

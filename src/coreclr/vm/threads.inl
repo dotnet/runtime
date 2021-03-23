@@ -44,6 +44,13 @@ EXTERN_C inline Thread* STDCALL GetThread()
     return pThread;
 }
 
+EXTERN_C inline Thread* STDCALL GetThreaNotOk()
+{
+    Thread* pThread = gCurrentThreadInfo.m_pThread;
+
+    return pThread;
+}
+
 EXTERN_C inline AppDomain* STDCALL GetAppDomain()
 {
     return AppDomain::GetCurrentDomain();

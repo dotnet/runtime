@@ -672,7 +672,7 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
         else
         {
             // Exception is preallocated.
-            PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = GetThread()->GetExceptionState()->GetUEWatsonBucketTracker();
+            PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = GetThreaNotOk()->GetExceptionState()->GetUEWatsonBucketTracker();
             if ((IsThrowableThreadAbortException(targetException) && pUEWatsonBucketTracker->CapturedForThreadAbort())||
                 (pUEWatsonBucketTracker->CapturedAtReflectionInvocation()))
             {
@@ -713,7 +713,7 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
         // since it already contains the watson buckets inside the object.
         if (CLRException::IsPreallocatedExceptionObject(targetException))
         {
-            PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = GetThread()->GetExceptionState()->GetUEWatsonBucketTracker();
+            PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = GetThreaNotOk()->GetExceptionState()->GetUEWatsonBucketTracker();
             BOOL fCopyWatsonBuckets = TRUE;
             PTR_VOID pBuckets = pUEWatsonBucketTracker->RetrieveWatsonBuckets();
             if (pBuckets != NULL)

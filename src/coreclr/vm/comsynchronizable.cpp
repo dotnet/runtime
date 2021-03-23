@@ -152,7 +152,7 @@ void ThreadNative::KickOffThread_Worker(LPVOID ptr)
 
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__START_CALLBACK);
     DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(GetThread()->GetExposedObjectRaw());
+    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(GetThreaNotOk()->GetExposedObjectRaw());
 
     CALL_MANAGED_METHOD_NORET(args);
 }
@@ -470,7 +470,7 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
     if ((iTime < 0) && (iTime != INFINITE_TIMEOUT))
         COMPlusThrowArgumentOutOfRange(W("millisecondsTimeout"), W("ArgumentOutOfRange_NeedNonNegOrNegative1"));
 
-    GetThread()->UserSleep(iTime);
+    GetThreaNotOk()->UserSleep(iTime);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -507,7 +507,7 @@ NOINLINE static Object* GetCurrentThreadHelper()
     OBJECTREF   refRetVal  = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, refRetVal);
-    refRetVal = GetThread()->GetExposedObject();
+    refRetVal = GetThreaNotOk()->GetExposedObject();
     HELPER_METHOD_FRAME_END();
 
     FC_INNER_EPILOG();
@@ -517,7 +517,7 @@ NOINLINE static Object* GetCurrentThreadHelper()
 FCIMPL0(Object*, ThreadNative::GetCurrentThread)
 {
     FCALL_CONTRACT;
-    OBJECTHANDLE ExposedObject = GetThread()->m_ExposedObject;
+    OBJECTHANDLE ExposedObject = GetThreaNotOk()->m_ExposedObject;
     _ASSERTE(ExposedObject != 0); //Thread's constructor always initializes its GCHandle
     Object* result = *((Object**) ExposedObject);
     if (result != 0)
@@ -566,7 +566,7 @@ FCIMPL1(void, ThreadNative::Initialize, ThreadBaseObject* pThisUNSAFE)
 
     PREFIX_ASSUME(unstarted != NULL);
 
-    if (GetThread()->GetDomain()->IgnoreUnhandledExceptions())
+    if (GetThreaNotOk()->GetDomain()->IgnoreUnhandledExceptions())
     {
         unstarted->SetThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions);
     }

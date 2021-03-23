@@ -23,7 +23,7 @@ FCIMPL2(void*, TailCallHelp::AllocTailCallArgBuffer, INT32 size, void* gcDesc)
 
     _ASSERTE(size >= 0);
 
-    void* result = GetThread()->GetTailCallTls()->AllocArgBuffer(size, gcDesc);
+    void* result = GetThreaNotOk()->GetTailCallTls()->AllocArgBuffer(size, gcDesc);
 
     if (result == NULL)
         FCThrow(kOutOfMemoryException);

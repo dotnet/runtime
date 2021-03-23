@@ -152,7 +152,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
             BOOL GotException;                                          \
             ParamType param;                                            \
         } __EEparam;                                                    \
-        __EEparam.fGCDisabled = GetThread()->PreemptiveGCDisabled();    \
+        __EEparam.fGCDisabled = GetThreaNotOk()->PreemptiveGCDisabled();    \
         __EEparam.GotException = TRUE;                                  \
         __EEparam.param = paramRef;                                     \
         PAL_TRY(__EEParam *, __pEEParam, &__EEparam)                    \
@@ -165,11 +165,11 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
             __pEEParam->GotException = FALSE;                                       \
         } PAL_FINALLY {                                                             \
             if (__EEparam.GotException) {                                           \
-                if (__EEparam.fGCDisabled != GetThread()->PreemptiveGCDisabled()) { \
+                if (__EEparam.fGCDisabled != GetThreaNotOk()->PreemptiveGCDisabled()) { \
                     if (__EEparam.fGCDisabled)                                      \
-                        GetThread()->DisablePreemptiveGC();                         \
+                        GetThreaNotOk()->DisablePreemptiveGC();                         \
                     else                                                            \
-                        GetThread()->EnablePreemptiveGC();                          \
+                        GetThreaNotOk()->EnablePreemptiveGC();                          \
                 }                                                                   \
             }
 
@@ -288,7 +288,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         }                                                                                           \
         catch (PAL_SEHException& ex)                                                                \
         {                                                                                           \
-            if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))           \
+            if (!GetThreaNotOk()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))           \
             {                                                                                       \
                 LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);  \
                 _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);                                 \

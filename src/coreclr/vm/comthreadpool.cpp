@@ -948,7 +948,7 @@ HANDLE QCALLTYPE AppDomainTimerNative::CreateAppDomainTimer(INT32 dueTime, INT32
     _ASSERTE(dueTime >= 0);
     _ASSERTE(timerId >= 0);
 
-    AppDomain* pAppDomain = GetThread()->GetDomain();
+    AppDomain* pAppDomain = GetThreaNotOk()->GetDomain();
 
     ThreadpoolMgr::TimerInfoContext* timerContext = new ThreadpoolMgr::TimerInfoContext();
     timerContext->TimerId = timerId;

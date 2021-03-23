@@ -2317,7 +2317,7 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
-        GetThread()->DisableStressHeap();
+        GetThreaNotOk()->DisableStressHeap();
     }
 #endif // _DEBUG
 
@@ -2651,7 +2651,7 @@ HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
-        GetThread()->DisableStressHeap();
+        GetThreaNotOk()->DisableStressHeap();
     }
 #endif // _DEBUG
 
@@ -2804,7 +2804,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
-        GetThread()->DisableStressHeap();
+        GetThreaNotOk()->DisableStressHeap();
     }
 #endif // _DEBUG
 
@@ -4115,7 +4115,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
         // If the flag indicating ForeignExceptionRaise has been set,
         // then do not clear the "_stackTrace" field of the exception object.
-        if (GetThread()->GetExceptionState()->IsRaisingForeignException())
+        if (GetThreaNotOk()->GetExceptionState()->IsRaisingForeignException())
         {
             ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
         }
@@ -4141,7 +4141,7 @@ HCIMPL0(void, IL_Rethrow)
 
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
 
-    OBJECTREF throwable = GetThread()->GetThrowable();
+    OBJECTREF throwable = GetThreaNotOk()->GetThrowable();
     if (throwable != NULL)
     {
         RaiseTheExceptionInternalOnly(throwable, TRUE);
@@ -4440,7 +4440,7 @@ void DoJITFailFast ()
     {
         // Fire an ETW FailFast event
         FireEtwFailFast(W("Unsafe buffer security check failure: Buffer overrun detected"),
-                       (const PVOID)GetThread()->GetFrame()->GetIP(),
+                       (const PVOID)GetThreaNotOk()->GetFrame()->GetIP(),
                        STATUS_STACK_BUFFER_OVERRUN,
                        COR_E_EXECUTIONENGINE,
                        GetClrInstanceId());
@@ -4711,7 +4711,7 @@ HCIMPL0(VOID, JIT_PollGC)
         return;
 
     // Does someone want this thread stopped?
-    if (!GetThread()->CatchAtSafePointOpportunistic())
+    if (!GetThreaNotOk()->CatchAtSafePointOpportunistic())
         return;
 
     // Tailcall to the slow helper

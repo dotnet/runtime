@@ -64,7 +64,7 @@ UINT32 TypeIDMap::LookupTypeID(PTR_MethodTable pMT)
     CONTRACTL {
         NOTHROW;
         PRECONDITION(CheckPointer(GetThread()));
-        if (GetThread()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
+        if (GetThreaNotOk()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
     } CONTRACTL_END;
 
     UINT32 id = (UINT32) m_mtMap.LookupValue((UPTR)dac_cast<TADDR>(pMT), 0);
@@ -80,7 +80,7 @@ PTR_MethodTable TypeIDMap::LookupType(UINT32 id)
     CONTRACTL {
         NOTHROW;
         PRECONDITION(CheckPointer(GetThread()));
-        if (GetThread()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
+        if (GetThreaNotOk()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
         PRECONDITION(id <= TypeIDProvider::MAX_TYPE_ID);
     } CONTRACTL_END;
 
@@ -137,7 +137,7 @@ UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
         m_idMap.InsertValue((UPTR)id, (UPTR)pMT >> 1);
         m_mtMap.InsertValue((UPTR)pMT, (UPTR)id);
         m_entryCount++;
-        CONSISTENCY_CHECK(GetThread()->GetDomain()->IsCompilationDomain() ||
+        CONSISTENCY_CHECK(GetThreaNotOk()->GetDomain()->IsCompilationDomain() ||
                           (LookupType(id) == pMT));
     }
 #else // DACCESS_COMPILE

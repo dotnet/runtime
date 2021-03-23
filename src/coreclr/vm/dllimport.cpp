@@ -2911,7 +2911,7 @@ DWORD STDMETHODCALLTYPE FalseGetLastError()
 {
     WRAPPER_NO_CONTRACT;
 
-    return GetThread()->m_dwLastError;
+    return GetThreaNotOk()->m_dwLastError;
 }
 
 void PInvokeStaticSigInfo::BestGuessNDirectDefaults(MethodDesc* pMD)

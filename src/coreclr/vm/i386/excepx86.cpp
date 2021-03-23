@@ -172,7 +172,7 @@ Frame *GetCurrFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame)
         pFrame = ((FrameHandlerExRecord *)pEstablisherFrame)->GetCurrFrame();
 
     // Assert that the exception frame is on the thread or that the exception frame is the top frame.
-    _ASSERTE(GetThread() == NULL || GetThread()->GetFrame() == (Frame*)-1 || GetThread()->GetFrame() <= pFrame);
+    _ASSERTE(GetThread() == NULL || GetThreaNotOk()->GetFrame() == (Frame*)-1 || GetThreaNotOk()->GetFrame() <= pFrame);
 
     return pFrame;
 }
@@ -1952,7 +1952,7 @@ PEXCEPTION_REGISTRATION_RECORD GetPrevSEHRecord(EXCEPTION_REGISTRATION_RECORD *n
 VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH)
 {
     WRAPPER_NO_CONTRACT;
-    *GetThread()->GetExceptionListPtr() = pSEH;
+    *GetThreaNotOk()->GetExceptionListPtr() = pSEH;
 }
 
 // Note that this logic is copied below, in PopSEHRecords

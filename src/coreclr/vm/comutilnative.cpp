@@ -132,7 +132,7 @@ FCIMPL0(VOID, ExceptionNative::PrepareForForeignExceptionRaise)
 {
     FCALL_CONTRACT;
 
-    PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
+    PTR_ThreadExceptionState pCurTES = GetThreaNotOk()->GetExceptionState();
 
 	// Set a flag against the TES to indicate this is a foreign exception raise.
 	pCurTES->SetRaisingForeignException();

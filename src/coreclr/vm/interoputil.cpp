@@ -1171,7 +1171,7 @@ HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk)
         // Catching and just swallowing an exception means we need to tell
         // the SO code that it should go back to normal operation, as it
         // currently thinks that the exception is still on the fly.
-        GetThread()->GetCurrentStackGuard()->RestoreCurrentGuard();
+        GetThreaNotOk()->GetCurrentStackGuard()->RestoreCurrentGuard();
 #endif
     }
     PAL_ENDTRY;
@@ -1227,7 +1227,7 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
         // Catching and just swallowing an exception means we need to tell
         // the SO code that it should go back to normal operation, as it
         // currently thinks that the exception is still on the fly.
-        GetThread()->GetCurrentStackGuard()->RestoreCurrentGuard();
+        GetThreaNotOk()->GetCurrentStackGuard()->RestoreCurrentGuard();
 #endif
     }
     PAL_ENDTRY;
@@ -1485,7 +1485,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
         // COM+ objects are now apartment agile), we only care that a CoInitializeEx
         // has been performed on this thread by us.
         if (fCoInitCurrentThread)
-            GetThread()->SetApartment(Thread::AS_InMTA);
+            GetThreaNotOk()->SetApartment(Thread::AS_InMTA);
 
         // set the finalizer event
         FinalizerThread::EnableFinalization();

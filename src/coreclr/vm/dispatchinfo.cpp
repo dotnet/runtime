@@ -1893,7 +1893,7 @@ void DispatchInfo::InvokeMemberDebuggerWrapper(
         {}
     } param(NumByrefArgs, iSrcArg);
 
-    param.pFrame = GetThread()->GetFrame(); // Inherited from NotifyOfCHFFilterWrapperParam
+    param.pFrame = GetThreaNotOk()->GetFrame(); // Inherited from NotifyOfCHFFilterWrapperParam
     param.pThis = this;
     param.pDispMemberInfo = pDispMemberInfo;
     param.pObjs = pObjs;

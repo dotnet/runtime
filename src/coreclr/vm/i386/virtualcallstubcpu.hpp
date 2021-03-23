@@ -703,7 +703,7 @@ PCODE StubCallSite::GetCallerAddress()
         return m_returnAddr;
 
     // Find the tailcallframe in the frame chain and get the actual caller from the first TailCallFrame
-    return TailCallFrame::FindTailCallFrame(GetThread()->GetFrame())->GetCallerAddress();
+    return TailCallFrame::FindTailCallFrame(GetThreaNotOk()->GetFrame())->GetCallerAddress();
 #endif // UNIX_X86_ABI
 }
 

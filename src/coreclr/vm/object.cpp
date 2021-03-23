@@ -34,7 +34,7 @@ DWORD Object::ComputeHashCode()
     do
     {
         // we use the high order bits in this case because they're more random
-        hashCode = GetThread()->GetNewHashCode() >> (32-HASHCODE_BITS);
+        hashCode = GetThreaNotOk()->GetNewHashCode() >> (32-HASHCODE_BITS);
     }
     while (hashCode == 0);   // need to enforce hashCode != 0
 

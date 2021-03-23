@@ -138,7 +138,7 @@ public:
     }
 
     // Place a patch at the given addr, and then when it's hit
-    // call GetThread()->GetFrame()->TraceFrame() to get the next TraceDestination.
+    // call GetThreaNotOk()->GetFrame()->TraceFrame() to get the next TraceDestination.
     // This address must be safe to run a callstack at.
     void InitForFramePush(PCODE addr)
     {

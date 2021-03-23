@@ -1727,7 +1727,7 @@ MethodDesc* SystemDomain::GetCallersMethod(StackCrawlMark* stackMark)
     ZeroMemory(&cdata, sizeof(CallersDataWithStackMark));
     cdata.stackMark = stackMark;
 
-    GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
+    GetThreaNotOk()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
 
     if(cdata.pFoundMethod) {
         return cdata.pFoundMethod;
@@ -1752,7 +1752,7 @@ MethodTable* SystemDomain::GetCallersType(StackCrawlMark* stackMark)
     ZeroMemory(&cdata, sizeof(CallersDataWithStackMark));
     cdata.stackMark = stackMark;
 
-    GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
+    GetThreaNotOk()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
 
     if(cdata.pFoundMethod) {
         return cdata.pFoundMethod->GetMethodTable();
@@ -1779,7 +1779,7 @@ Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
     ZeroMemory(&cdata, sizeof(CallersDataWithStackMark));
     cdata.stackMark = stackMark;
 
-    GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
+    GetThreaNotOk()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
 
     if(cdata.pFoundMethod) {
         return cdata.pFoundMethod->GetModule();
@@ -2899,10 +2899,10 @@ void AppDomain::LoadDomainFile(DomainFile *pFile,
 FileLoadLevel AppDomain::GetThreadFileLoadLevel()
 {
     WRAPPER_NO_CONTRACT;
-    if (GetThread()->GetLoadLevelLimiter() == NULL)
+    if (GetThreaNotOk()->GetLoadLevelLimiter() == NULL)
         return FILE_ACTIVE;
     else
-        return (FileLoadLevel)(GetThread()->GetLoadLevelLimiter()->GetLoadLevel()-1);
+        return (FileLoadLevel)(GetThreaNotOk()->GetLoadLevelLimiter()->GetLoadLevel()-1);
 }
 
 
@@ -4301,7 +4301,7 @@ void AppDomain::RaiseExitProcessEvent()
     // Only finalizer thread during shutdown can call this function.
     _ASSERTE ((g_fEEShutDown&ShutDown_Finalize1) && GetThread() == FinalizerThread::GetFinalizerThread());
 
-    _ASSERTE (GetThread()->PreemptiveGCDisabled());
+    _ASSERTE (GetThreaNotOk()->PreemptiveGCDisabled());
 
     MethodDescCallSite onProcessExit(METHOD__APPCONTEXT__ON_PROCESS_EXIT);
     onProcessExit.Call(NULL);
@@ -4321,7 +4321,7 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 
     _ASSERTE(pThrowable != NULL && IsProtectedByGCFrame(pThrowable));
 
-    _ASSERTE(this == GetThread()->GetDomain());
+    _ASSERTE(this == GetThreaNotOk()->GetDomain());
 
     OBJECTREF orDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__UNHANDLED_EXCEPTION)->GetStaticOBJECTREF();
     if (orDelegate == NULL)

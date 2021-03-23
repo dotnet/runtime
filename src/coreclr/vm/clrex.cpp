@@ -800,7 +800,7 @@ OBJECTREF CLRException::GetThrowableFromExceptionRecord(EXCEPTION_RECORD *pExcep
 
     if (IsComPlusException(pExceptionRecord))
     {
-        return GetThread()->LastThrownObject();
+        return GetThreaNotOk()->LastThrownObject();
     }
 
     return NULL;
@@ -2130,7 +2130,7 @@ OBJECTREF CLRLastThrownObjectException::CreateThrowable()
 
     DEBUG_STMT(Validate());
 
-    return GetThread()->LastThrownObject();
+    return GetThreaNotOk()->LastThrownObject();
 } // OBJECTREF CLRLastThrownObjectException::CreateThrowable()
 
 #if defined(_DEBUG)

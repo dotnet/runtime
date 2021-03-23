@@ -6812,7 +6812,7 @@ void CEEInfo::setMethodAttribs (
 #ifndef CROSSGEN_COMPILE
     if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT))
     {
-        PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
+        PrepareCodeConfig *config = GetThreaNotOk()->GetCurrentPrepareCodeConfig();
         if (config != nullptr)
         {
             if (attribs & CORINFO_FLG_SWITCHED_TO_MIN_OPT)
@@ -10454,7 +10454,7 @@ HRESULT CEEInfo::GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers)
 
     GCX_COOP();
 
-    OBJECTREF throwable = GetThread()->LastThrownObject();
+    OBJECTREF throwable = GetThreaNotOk()->LastThrownObject();
     hr = GetExceptionHResult(throwable);
 
     EE_TO_JIT_TRANSITION();
@@ -10478,7 +10478,7 @@ uint32_t CEEInfo::GetErrorMessage(__inout_ecount(bufferLength) char16_t* buffer,
 
     GCX_COOP();
 
-    OBJECTREF throwable = GetThread()->LastThrownObject();
+    OBJECTREF throwable = GetThreaNotOk()->LastThrownObject();
 
     if (throwable != NULL)
     {
@@ -12647,7 +12647,7 @@ CorJitResult invokeCompileMethod(EEJitManager *jitMgr,
     // from the JIT
     //
 
-    _ASSERTE(GetThread()->PreemptiveGCDisabled() == FALSE);
+    _ASSERTE(GetThreaNotOk()->PreemptiveGCDisabled() == FALSE);
 
     return ret;
 }

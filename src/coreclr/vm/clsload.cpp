@@ -3691,7 +3691,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        PendingTypeLoadHolder * pCurrent = GetThread()->GetPendingTypeLoad();
+        PendingTypeLoadHolder * pCurrent = GetThreaNotOk()->GetPendingTypeLoad();
 
         while (pCurrent != NULL)
         {
@@ -3785,7 +3785,7 @@ retry:
         // otherwise lead to deadlock. We will speculatively proceed with the type load to make it fail in the right spot,
         // in backward compatible way. In case the type load succeeds, we will only let one type win in PublishType.
         //
-        if (typeHnd.IsNull() && GetThread()->HasThreadStateNC(Thread::TSNC_LoadsTypeViolation))
+        if (typeHnd.IsNull() && GetThreaNotOk()->HasThreadStateNC(Thread::TSNC_LoadsTypeViolation))
         {
             PendingTypeLoadHolder ptlh(pLoadingEntry);
             typeHnd = DoIncrementalLoad(pTypeKey, TypeHandle(), CLASS_LOAD_BEGIN);
@@ -3901,7 +3901,7 @@ retry:
     {
         LOG((LF_CLASSLOADER, LL_INFO10, "Caught an exception loading: %x, %0x (Module)\n", pTypeKey->IsConstructed() ? pTypeKey->ComputeHash() : pTypeKey->GetTypeToken(), pTypeKey->GetModule()));
 
-        if (!GetThread()->HasThreadStateNC(Thread::TSNC_LoadsTypeViolation))
+        if (!GetThreaNotOk()->HasThreadStateNC(Thread::TSNC_LoadsTypeViolation))
         {
             // Fix up the loading entry.
             Exception *pException = GET_EXCEPTION();

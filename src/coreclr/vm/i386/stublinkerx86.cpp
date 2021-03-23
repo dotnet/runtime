@@ -3310,7 +3310,7 @@ extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
     // Find the upper bound of the stack and address range of KERNEL32.  This
     // is where we expect the unwind to stop.
     //
-    void *pvStackTop = GetThread()->GetCachedStackBase();
+    void *pvStackTop = GetThreaNotOk()->GetCachedStackBase();
 
     if (!g_pfnGetModuleInformation)
     {

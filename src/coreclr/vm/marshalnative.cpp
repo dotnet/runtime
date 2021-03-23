@@ -411,7 +411,7 @@ FCIMPL0(int, MarshalNative::GetLastWin32Error)
 {
     FCALL_CONTRACT;
 
-    return (UINT32)(GetThread()->m_dwLastError);
+    return (UINT32)(GetThreaNotOk()->m_dwLastError);
 }
 FCIMPLEND
 
@@ -423,7 +423,7 @@ FCIMPL1(void, MarshalNative::SetLastWin32Error, int error)
 {
     FCALL_CONTRACT;
 
-    GetThread()->m_dwLastError = (DWORD)error;
+    GetThreaNotOk()->m_dwLastError = (DWORD)error;
 }
 FCIMPLEND
 

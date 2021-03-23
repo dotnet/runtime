@@ -850,7 +850,7 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
         pData->TargetThread->GetInternal() == GetThread())
     {
         // Null target thread specifies current thread.
-        GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY, pStartFrame);
+        GetThreaNotOk()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY, pStartFrame);
     }
     else
     {
