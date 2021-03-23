@@ -348,6 +348,8 @@ namespace System.Runtime.InteropServices.JavaScript
             return result.Replace("'", "\"");
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         private static unsafe IntPtr GetMethodPointer (Type type, string name, out Type? returnType) {
             var info = type.GetMethod(
                 name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
@@ -364,6 +366,8 @@ namespace System.Runtime.InteropServices.JavaScript
             return tmp.ptr;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         private static unsafe string GetAndEscapeStringProperty (object? instance, Type type, string name) {
             var info = type.GetProperty(
                 name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
@@ -406,6 +410,8 @@ namespace System.Runtime.InteropServices.JavaScript
             return result;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr, out object? instance) {
             instance = null;
             if (typePtr == IntPtr.Zero)
