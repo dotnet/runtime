@@ -10005,15 +10005,15 @@ void Compiler::gtDispNodeName(GenTree* tree)
         switch (tree->AsBoundsChk()->gtThrowKind)
         {
             case SCK_RNGCHK_FAIL:
+            {
+                bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " %s_Rng", name);
+                if (tree->AsBoundsChk()->gtIndRngFailBB != nullptr)
                 {
-                    bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " %s_Rng", name);
-                    if (tree->AsBoundsChk()->gtIndRngFailBB != nullptr)
-                    {
-                        bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " -> " FMT_BB,
-                                                tree->AsBoundsChk()->gtIndRngFailBB->bbNum);
-                    }
-                    break;
+                    bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " -> " FMT_BB,
+                                            tree->AsBoundsChk()->gtIndRngFailBB->bbNum);
                 }
+                break;
+            }
             case SCK_ARG_EXCPN:
                 sprintf_s(bufp, sizeof(buf), " %s_Arg", name);
                 break;
