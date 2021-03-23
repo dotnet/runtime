@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         public IList<LoggerFilterRule> Rules => RulesInternal;
 
-        // Concrete represenation of the rule list
+        // Concrete representation of the rule list
         internal List<LoggerFilterRule> RulesInternal { get; } = new List<LoggerFilterRule>();
     }
 }
