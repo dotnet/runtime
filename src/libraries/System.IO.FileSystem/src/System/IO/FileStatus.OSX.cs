@@ -28,7 +28,7 @@ namespace System.IO
             // otherwise fall back to the method used on other unix platforms as the
             // path may either be on an unsupported volume type (for setattrlist) or it
             // could be another error (eg. no file) which the fallback implementation can throw.
-            bool succeeded = Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), Interop.libc.FSOPT_NOFOLLOW) == 0;
+            bool succeeded = Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW)) == 0;
             if (!succeeded)
             {
                 SetCreationTime_StandardUnixImpl(path, time);
