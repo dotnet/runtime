@@ -750,6 +750,7 @@ namespace System.PrivateUri.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49932", TestPlatforms.Android)]
         public static void Uri_DoesNotLockOnString()
         {
             // Don't intern the string we lock on
