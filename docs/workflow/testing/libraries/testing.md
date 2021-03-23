@@ -15,7 +15,7 @@ build.cmd/sh -subset libs.tests
 build.cmd/sh -subset libs.tests -test -c Release
 ```
 
-- The following builds all tests for x86 architecture (**for x86 it's mandatory to build clr** even if you want to run libs tests only):
+- The following builds all tests for x86 architecture (**for any architecture it's mandatory to build a runtime (coreclr or mono)** even if you want to run libs tests only):
 ```
 build.cmd/sh -subset clr+libs.pretest -rc Release -arch x86
 ```
