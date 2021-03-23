@@ -104,7 +104,7 @@ namespace System.Xml
                 throw new ArgumentOutOfRangeException(nameof(len));
             }
 
-            int hashCode = ComputeHash32(key, start, len);
+            int hashCode = string.GetHashCode(key.AsSpan(start, len));
 
             for (Entry? e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
@@ -167,7 +167,7 @@ namespace System.Xml
                 return null;
             }
 
-            int hashCode = ComputeHash32(key, start, len);
+            int hashCode = string.GetHashCode(key.AsSpan(start, len));
 
             for (Entry? e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
@@ -242,12 +242,6 @@ namespace System.Xml
 
             _entries = newEntries;
             _mask = newMask;
-        }
-        private static int ComputeHash32(char[] key, int start, int len)
-        {
-            // We rely on string.GetHashCode(ROS<char>) being randomized.
-
-            return string.GetHashCode(key.AsSpan(start, len));
         }
     }
 }
