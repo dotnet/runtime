@@ -219,7 +219,7 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
         // over to a brand new STA as necessary.  We have to notice this happening, so
         // we can adjust the delegate we are going to invoke on.
 
-        _ASSERTE(GetThread() == pThread);        // Now that it's started
+        _ASSERTE(GetThreadNULLOk() == pThread);        // Now that it's started
 
         KickOffThread_Args args;
         args.share = NULL;
@@ -719,7 +719,7 @@ FCIMPL2(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, I
         // running, and if it's running we have to be in the thread's
         // context.
         if ((!ThreadNotStarted(thread) && !ThreadIsRunning(thread)) ||
-            (!ThreadNotStarted(thread) && (GetThread() != thread)))
+            (!ThreadNotStarted(thread) && (GetThreadNULLOk() != thread)))
             ok = FALSE;
         else
         {

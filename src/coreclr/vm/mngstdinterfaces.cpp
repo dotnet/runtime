@@ -214,7 +214,7 @@ LPVOID MngStdItfBase::ForwardCallToManagedView(
             _ASSERTE(Lr.Obj->GetMethodTable()->IsComObjectType());
 
             {
-                RCWHolder pRCW(GetThread());
+                RCWHolder pRCW(GetThreaNotOk());
                 RCWPROTECT_BEGIN(pRCW, Lr.Obj);
 
                 // Get the IUnknown on the current thread.

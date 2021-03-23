@@ -1332,7 +1332,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     DWORD start = GetTickCount();
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreaNotOk();
 
     {
         // 1 marks background thread

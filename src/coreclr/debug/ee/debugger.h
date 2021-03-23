@@ -3910,7 +3910,7 @@ HANDLE OpenWin32EventOrThrow(
       if ((m_pRCThread == NULL) || !m_pRCThread->IsRCThreadReady()) { THROWS; } else { NOTHROW; }
 
 #define MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT \
-      if ((m_pRCThread == NULL) || !m_pRCThread->IsRCThreadReady() || (GetThread() != NULL)) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
+      if ((m_pRCThread == NULL) || !m_pRCThread->IsRCThreadReady() || (GetThreadNULLOk() != NULL)) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
 
 #define GC_TRIGGERS_FROM_GETJITINFO if (GetThreadNULLOk() != NULL) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
 

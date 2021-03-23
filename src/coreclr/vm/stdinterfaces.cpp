@@ -471,7 +471,7 @@ ClassInfo_GetClassInfo(IUnknown* pUnk, ITypeInfo** ppTI)
                 SyncBlock* pBlock = pWrap->GetSyncBlock();
                 _ASSERTE(pBlock);
 
-                RCWHolder pRCW(GetThread());
+                RCWHolder pRCW(GetThreaNotOk());
                 RCWPROTECT_BEGIN(pRCW, pBlock);
 
                 hr = pRCW->SafeQueryInterfaceRemoteAware(IID_IProvideClassInfo, (IUnknown**)&pProvClassInfo);

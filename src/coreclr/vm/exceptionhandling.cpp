@@ -5882,7 +5882,7 @@ NOT_BIT64_ARG(IN     ULONG               MemoryStackFp),
     //
     // We check for thread object since this function is the personality routine of the UMThunk
     // and we can landup here even when thread creation (within the thunk) fails.
-    if (GetThread() != NULL)
+    if (GetThreadNULLOk() != NULL)
     {
         SetReversePInvokeEscapingUnhandledExceptionStatus(IS_UNWINDING(pExceptionRecord->ExceptionFlags),
             MemoryStackFp

@@ -1312,7 +1312,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
 
     BYTE * savedInstrPtr = &gcCover->savedCode[offset];
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (!pThread)
     {
         // No thread at the moment so we aren't doing coverage for this function.
@@ -1399,7 +1399,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     _ASSERTE(codeInfo.GetNativeCodeVersion() == nativeCodeVersion);
     DWORD offset = codeInfo.GetRelOffset();
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     _ASSERTE(pThread);
 
     // There is a race condition with the computation of `atCall`. Multiple threads could enter

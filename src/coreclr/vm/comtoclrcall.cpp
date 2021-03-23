@@ -505,7 +505,7 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
     //
     HRESULT hr = S_OK;
 
-    pThread = GetThread();
+    pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         pThread = SetupThreadNoThrow();

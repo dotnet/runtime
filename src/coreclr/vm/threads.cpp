@@ -768,7 +768,7 @@ Thread* SetupThread()
 
     Holder<Thread*,DoNothing<Thread*>,DeleteThread> threadHolder(pThread);
 
-    SetupTLSForThread(pThread);
+    SetupTLSForThread();
 
     if (!pThread->InitThread() ||
         !pThread->PrepareApartmentAndContext())
@@ -1184,7 +1184,7 @@ void InitThreadManager()
 #endif // FEATURE_WRITEBARRIER_COPY
 
 #ifndef TARGET_UNIX
-    _ASSERTE(GetThread() == NULL);
+    _ASSERTE(GetThreadNULLOk() == NULL);
 
     size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo);
 
@@ -1822,7 +1822,7 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
         // Initialization must happen in the following order - hosts like SQL Server depend on this.
         //
 
-        SetupTLSForThread(this);
+        SetupTLSForThread();
 
         fCanCleanupCOMState = TRUE;
         res = PrepareApartmentAndContext();
@@ -1864,7 +1864,7 @@ FAILURE:
 
         SetThreadState(TS_FailStarted);
 
-        if (GetThread() != NULL && IsAbortRequested())
+        if (GetThreadNULLOk() != NULL && IsAbortRequested())
             UnmarkThreadForAbort();
 
         if (!fKeepTLS)
@@ -1977,7 +1977,7 @@ void Thread::HandleThreadStartupFailure()
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
 
     struct ProtectArgs
     {
@@ -7456,7 +7456,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     // HasStarted() must have already been performed by our caller
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
 
     Thread *pThread = GetThread();
 #ifdef FEATURE_EH_FUNCLETS
@@ -8295,7 +8295,7 @@ BOOL dbgOnly_IsSpecialEEThread()
     #endif
 
     //<TODO>Clean this up</TODO>
-    if (GetThread() == NULL)
+    if (GetThreadNULLOk() == NULL)
         return TRUE;
 
 

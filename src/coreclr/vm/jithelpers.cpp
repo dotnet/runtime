@@ -2267,7 +2267,7 @@ HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
         // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
         // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
         // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
+        Thread *thread = GetThreaNotOk();
 
         TypeHandle typeHandle(typeHnd_);
         _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
@@ -2359,7 +2359,7 @@ HCIMPL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
         // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
         // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
         // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
+        Thread *thread = GetThreaNotOk();
 
         SIZE_T totalSize = StringObject::GetSize(stringLength);
 
@@ -2521,7 +2521,7 @@ HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, IN
         // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
         // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
         // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
+        Thread *thread = GetThreaNotOk();
 
         MethodTable *pArrayMT = (MethodTable *)arrayMT;
 
@@ -2584,7 +2584,7 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, I
         // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
         // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
         // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
+        Thread *thread = GetThreaNotOk();
 
         SIZE_T totalSize = componentCount * sizeof(void *);
         _ASSERTE(totalSize / sizeof(void *) == componentCount);
@@ -3772,7 +3772,7 @@ HCIMPL3(void, JIT_MonTryEnter_Portable, Object* obj, INT32 timeOut, BYTE* pbLock
         goto FramedLockHelper;
     }
 
-    pCurThread = GetThread();
+    pCurThread = GetThreaNotOk();
 
     if (pCurThread->CatchAtSafePointOpportunistic())
     {
@@ -3869,7 +3869,7 @@ FCIMPL1(void, JIT_MonExit_Portable, Object* obj)
     }
 
     // Handle the simple case without erecting helper frame
-    action = obj->LeaveObjMonitorHelper(GetThread());
+    action = obj->LeaveObjMonitorHelper(GetThreaNotOk());
     if (action == AwareLock::LeaveHelperAction_None)
     {
         return;
@@ -3899,7 +3899,7 @@ HCIMPL_MONHELPER(JIT_MonExitWorker_Portable, Object* obj)
     }
 
     // Handle the simple case without erecting helper frame
-    action = obj->LeaveObjMonitorHelper(GetThread());
+    action = obj->LeaveObjMonitorHelper(GetThreaNotOk());
     if (action == AwareLock::LeaveHelperAction_None)
     {
         MONHELPER_STATE(*pbLockTaken = 0;)
@@ -3945,8 +3945,7 @@ HCIMPL_MONHELPER(JIT_MonEnterStatic_Portable, AwareLock *lock)
 
     MONHELPER_STATE(_ASSERTE(pbLockTaken != NULL && *pbLockTaken == 0));
 
-    Thread *pCurThread = GetThread();
-
+    Thread *pCurThread = GetThreaNotOk();
     if (pCurThread->CatchAtSafePointOpportunistic())
     {
         goto FramedLockHelper;
@@ -4020,7 +4019,7 @@ HCIMPL_MONHELPER(JIT_MonExitStatic_Portable, AwareLock *lock)
     MONHELPER_STATE(if (*pbLockTaken == 0) return;)
 
     // Handle the simple case without erecting helper frame
-    AwareLock::LeaveHelperAction action = lock->LeaveHelper(GetThread());
+    AwareLock::LeaveHelperAction action = lock->LeaveHelper(GetThreaNotOk());
     if (action == AwareLock::LeaveHelperAction_None)
     {
         MONHELPER_STATE(*pbLockTaken = 0;)
@@ -4732,7 +4731,7 @@ HCIMPL0(void, JIT_PInvokeEndRarePath)
 
     FCALL_CONTRACT;
 
-    Thread *thread = GetThread();
+    Thread *thread = GetThreaNotOk();
 
     // We need to disable the implicit FORBID GC region that exists inside an FCALL
     // in order to call RareDisablePreemptiveGC().
@@ -4793,7 +4792,7 @@ HCIMPL0(void, JIT_RareDisableHelper)
 
     FCALL_CONTRACT;
 
-    Thread *thread = GetThread();
+    Thread *thread = GetThreaNotOk();
 
     // We need to disable the implicit FORBID GC region that exists inside an FCALL
     // in order to call RareDisablePreemptiveGC().
@@ -4858,7 +4857,7 @@ FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 
     FC_GC_POLL_NOT_NEEDED();
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreaNotOk();
     return pThread->GetThreadId();
 }
 FCIMPLEND
@@ -5160,7 +5159,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     // If we get here, we have code to transition to...
     _ASSERTE(osrMethodCode != NULL);
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
 #ifdef FEATURE_HIJACK
     // We can't crawl the stack of a thread that currently has a hijack pending
@@ -5337,7 +5336,7 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
     // The JIT messed up and is initializing a frame that is already live on the stack?!?!?!?!
     _ASSERTE(pFrame != pThread->GetFrame());
@@ -5501,7 +5500,7 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
 void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
-    _ASSERTE(frame->currentThread == GetThread());
+    _ASSERTE(frame->currentThread == GetThreadNULLOk());
 
     // Manually inline the fast path in Thread::EnablePreemptiveGC().
     // This is a trade off with GC suspend performance. We are opting
@@ -5523,7 +5522,7 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeF
 void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
-    _ASSERTE(frame->currentThread == GetThread());
+    _ASSERTE(frame->currentThread == GetThreadNULLOk());
 
     // Manually inline the fast path in Thread::EnablePreemptiveGC().
     // This is a trade off with GC suspend performance. We are opting

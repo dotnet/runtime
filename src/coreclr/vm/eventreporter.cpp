@@ -546,9 +546,7 @@ StackWalkAction LogCallstackForEventReporterCallback(
 //
 void LogCallstackForEventReporterWorker(EventReporter& reporter)
 {
-    Thread* pThread = GetThread();
-    _ASSERTE (pThread);
-
+    Thread* pThread = GetThreaNotOk();
     SmallStackSString WordAt;
 
     if (!WordAt.LoadResource(CCompRC::Optional, IDS_ER_WORDAT))
@@ -670,7 +668,7 @@ void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo)
 
     if (ShouldLogInEventLog())
     {
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         EventReporter reporter(EventReporter::ERT_UnhandledException);
         EX_TRY
         {

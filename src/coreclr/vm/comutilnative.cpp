@@ -521,9 +521,7 @@ FCIMPL0(EXCEPTION_POINTERS*, ExceptionNative::GetExceptionPointers)
 
     EXCEPTION_POINTERS* retVal = NULL;
 
-    Thread *pThread = GetThread();
-    _ASSERTE(pThread);
-
+    Thread *pThread = GetThreaNotOk();
     if (pThread->IsExceptionInProgress())
     {
         retVal = pThread->GetExceptionState()->GetExceptionPointers();
@@ -539,9 +537,7 @@ FCIMPL0(INT32, ExceptionNative::GetExceptionCode)
 
     INT32 retVal = 0;
 
-    Thread *pThread = GetThread();
-    _ASSERTE(pThread);
-
+    Thread *pThread = GetThreaNotOk();
     if (pThread->IsExceptionInProgress())
     {
         retVal = pThread->GetExceptionState()->GetExceptionCode();
@@ -1056,7 +1052,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
     FCALL_CONTRACT;
 
     INT64 currentAllocated = 0;
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
     gc_alloc_context* ac = pThread->GetAllocContext();
     currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 

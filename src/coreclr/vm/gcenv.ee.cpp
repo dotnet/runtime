@@ -87,10 +87,10 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     // the threadstore lock.
 
     _ASSERTE(dbgOnly_IsSpecialEEThread() ||
-                GetThread() == NULL ||
+                GetThreadNULLOk() == NULL ||
                 // this is for background GC threads which always call this when EE is suspended.
                 IsGCSpecialThread() ||
-                (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
+                (GetThreadNULLOk() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
 
     Frame* pTopFrame = pThread->GetFrame();
     Object ** topStack = (Object **)pTopFrame;
@@ -376,7 +376,7 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = ::GetThread();
+    Thread* pThread = ::GetThreadNULLOk();
     if (!pThread)
     {
         return nullptr;
@@ -425,7 +425,7 @@ bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = ::GetThread();
+    Thread* pThread = ::GetThreadNULLOk();
     
     return (pThread && pThread->PreemptiveGCDisabled());
 }
@@ -434,7 +434,7 @@ bool GCToEEInterface::EnablePreemptiveGC()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = ::GetThread();
+    Thread* pThread = ::GetThreadNULLOk();
 
     if (pThread && pThread->PreemptiveGCDisabled())
     {
@@ -449,7 +449,7 @@ void GCToEEInterface::DisablePreemptiveGC()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = ::GetThread();
+    Thread* pThread = ::GetThreadNULLOk();
     if (pThread)
     {
         pThread->DisablePreemptiveGC();
@@ -460,7 +460,7 @@ Thread* GCToEEInterface::GetThread()
 {
     WRAPPER_NO_CONTRACT;
 
-    return ::GetThread();
+    return ::GetThreadNULLOk();
 }
 
 //

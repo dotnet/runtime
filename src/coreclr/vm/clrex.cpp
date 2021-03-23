@@ -80,7 +80,7 @@ OBJECTREF CLRException::GetThrowable()
         return NULL;
     }
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
     if (pThread->IsRudeAbortInitiated()) {
         return GetBestThreadAbortException();
@@ -622,10 +622,8 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
     }
     CONTRACTL_END;
 
-    Thread* pThread = GetThread();
-
     // Can't have a throwable without a Thread.
-    _ASSERTE(pThread != NULL);
+    Thread* pThread = GetThreaNotOk();
 
     if (NULL == pException)
     {
@@ -848,7 +846,7 @@ void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * sz
 
     if (g_fEEStarted)
     {
-        pThread = GetThread();
+        pThread = GetThreadNULLOk();
         exceptionCode = GetCurrentExceptionCode();
     }
 
@@ -1359,7 +1357,7 @@ OBJECTREF EEArgumentException::CreateThrowable()
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
 
     ProtectArgsStruct prot;
     memset(&prot, 0, sizeof(ProtectArgsStruct));
@@ -2150,7 +2148,7 @@ CLRLastThrownObjectException* CLRLastThrownObjectException::Validate()
 
     GCPROTECT_BEGIN(throwable);
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreaNotOk();
     throwable = pThread->LastThrownObject();
 
     DWORD dwCurrentExceptionCode = GetCurrentExceptionCode();
@@ -2237,7 +2235,7 @@ void GetLastThrownObjectExceptionFromThread(Exception **ppException)
     CONTRACTL_END;
 
     // If the Thread has been set up, then the LastThrownObject may make sense...
-    if (GetThread())
+    if (GetThreadNULLOk())
     {
         // give back an object that knows about Threads and their exceptions.
         *ppException = new CLRLastThrownObjectException();

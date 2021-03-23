@@ -365,8 +365,7 @@ FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
     // then check if it covered everything that was needed, and we ask ThreadpoolMgr whether
     // we need a thread adjustment, before setting up the frame.
     //
-    Thread *pThread = GetThread();
-    _ASSERTE (pThread);
+    Thread *pThread = GetThreaNotOk();
 
     INT32 priority = pThread->ResetManagedThreadObjectInCoopMode(ThreadNative::PRIORITY_NORMAL);
 
@@ -469,7 +468,7 @@ RegisterWaitForSingleObjectCallback_Worker(LPVOID ptr)
 
 VOID NTAPI RegisterWaitForSingleObjectCallback(PVOID delegateInfo, BOOLEAN TimerOrWaitFired)
 {
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         ClrFlsSetThreadType(ThreadType_Threadpool_Worker);
@@ -528,7 +527,7 @@ FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
     HANDLE hWaitHandle = gc.waitObject->GetWaitHandle();
     _ASSERTE(hWaitHandle);
 
-    Thread* pCurThread = GetThread();
+    Thread* pCurThread = GetThreadNULLOk();
     _ASSERTE( pCurThread);
 
     DelegateInfoHolder delegateInfo = DelegateInfo::MakeDelegateInfo(
@@ -781,7 +780,7 @@ void __stdcall BindIoCompletionCallbackStubEx(DWORD ErrorCode,
                                               LPOVERLAPPED lpOverlapped,
                                               BOOL setStack)
 {
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         // TODO: how do we notify user of OOM here?
@@ -913,7 +912,7 @@ void AppDomainTimerCallback_Worker(LPVOID ptr)
 
 VOID WINAPI AppDomainTimerCallback(PVOID callbackState, BOOLEAN timerOrWaitFired)
 {
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         // TODO: how do we notify user of OOM here?

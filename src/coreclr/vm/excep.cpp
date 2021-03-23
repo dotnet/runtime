@@ -4881,7 +4881,7 @@ lDone: ;
 #ifdef _DEBUG
         char buffer[200];
         sprintf_s(buffer, 200, "\nInternal error: Uncaught exception was thrown from IP = %p in UnhandledExceptionFilter_Worker on thread 0x%08x\n",
-                param.ExceptionEIP, ((GetThread() == NULL) ? NULL : GetThreaNotOk()->GetThreadId()));
+                param.ExceptionEIP, ((GetThreadNULLOk() == NULL) ? NULL : GetThreaNotOk()->GetThreadId()));
         PrintToStdErrA(buffer);
         _ASSERTE(!"Unexpected exception in UnhandledExceptionFilter_Worker");
 #endif
@@ -6571,7 +6571,7 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
     // Even if a debugger is not attached, we must let the debugger handle the exception in case it's coming from a
     // patch-skipper.
     if ((!IsComPlusException(pExceptionRecord)) &&
-        (GetThread() != NULL) &&
+        (GetThreadNULLOk() != NULL) &&
         (g_pDebugInterface != NULL) &&
         g_pDebugInterface->FirstChanceNativeException(pExceptionRecord,
                                                       pContext,
@@ -8732,7 +8732,7 @@ BOOL SetupWatsonBucketsForNonPreallocatedExceptions(OBJECTREF oThrowable /* = NU
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         NOTHROW;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
     }
     CONTRACTL_END;
 
@@ -8849,7 +8849,7 @@ BOOL SetupWatsonBucketsForEscapingPreallocatedExceptions()
         GC_TRIGGERS;
         MODE_ANY;
         NOTHROW;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
     }
     CONTRACTL_END;
 
@@ -8978,7 +8978,7 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
         GC_TRIGGERS;
         MODE_ANY;
         NOTHROW;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
     }
     CONTRACTL_END;
 
@@ -9157,7 +9157,7 @@ BOOL IsThrowableThreadAbortException(OBJECTREF oThrowable)
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         NOTHROW;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(oThrowable != NULL);
     }
     CONTRACTL_END;
@@ -9206,7 +9206,7 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         NOTHROW;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(oPreAllocThrowable != NULL);
         PRECONDITION(CLRException::IsPreallocatedExceptionObject(oPreAllocThrowable));
         PRECONDITION(IsWatsonEnabled());
@@ -9265,7 +9265,7 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         NOTHROW;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(oPreAllocThrowable != NULL);
         PRECONDITION(CLRException::IsPreallocatedExceptionObject(oPreAllocThrowable));
         PRECONDITION(IsWatsonEnabled());
@@ -9429,7 +9429,7 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
         GC_TRIGGERS;
         MODE_ANY;
         NOTHROW;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(refException != NULL);
         PRECONDITION(IsWatsonEnabled());
     }
@@ -9689,7 +9689,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
         GC_TRIGGERS;
         MODE_ANY;
         NOTHROW;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(!(GetThreaNotOk()->GetExceptionState()->GetFlags()->GotWatsonBucketDetails()));
         PRECONDITION(adjustedIp != NULL);
         PRECONDITION(IsWatsonEnabled());
@@ -10215,7 +10215,7 @@ BOOL CopyWatsonBucketsToThrowable(PTR_VOID pUnmanagedBuckets, OBJECTREF oTargetT
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         THROWS;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(pUnmanagedBuckets != NULL);
         PRECONDITION(!CLRException::IsPreallocatedExceptionObject((oTargetThrowable == NULL)?GetThreaNotOk()->GetThrowable():oTargetThrowable));
         PRECONDITION(IsWatsonEnabled());
@@ -10304,7 +10304,7 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
         GC_TRIGGERS;
         MODE_ANY;
         NOTHROW;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(IsWatsonEnabled());
     }
     CONTRACTL_END;
@@ -10869,7 +10869,7 @@ PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEH
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         NOTHROW;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(oThrowable != NULL);
     }
     CONTRACTL_END;
@@ -11054,7 +11054,7 @@ BOOL ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(ExceptionN
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(notificationType  != UnhandledExceptionHandler);
     }
     CONTRACTL_END;

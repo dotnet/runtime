@@ -1027,7 +1027,7 @@ class Thread
 #endif // DACCESS_COMPILE
     friend class ProfToEEInterfaceImpl;     // HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *phThread);
 
-    friend void SetupTLSForThread(Thread* pThread);
+    friend void SetupTLSForThread();
 
     friend class CheckAsmOffsets;
 

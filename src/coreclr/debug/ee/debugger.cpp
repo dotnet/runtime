@@ -1777,7 +1777,7 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
     // This ensures the debuggee is actually stopped at startup, and
     // this gives the debugger a chance to call SetDesiredNGENFlags before we
     // set s_fCanChangeNgenFlags to FALSE.
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
     SENDIPCEVENT_RAW_END;
 
     pDbgLockHolder->Acquire();
@@ -7936,7 +7936,7 @@ bool Debugger::FirstChanceManagedException(Thread *pThread, SIZE_T currentIP, SI
 
     LOG((LF_CORDB, LL_INFO10000, "D::FCE: First chance exception, TID:0x%x, \n", GetThreadIdHelper(pThread)));
 
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
 
 #ifdef _DEBUG
     static ConfigDWORD d_fce;
@@ -7980,7 +7980,7 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
     // @@@
     // Implements DebugInterface
     // Call by EE/exception. Must be on managed thread
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
 
     // Quick check.
     if (!CORDebuggerAttached())
@@ -8048,7 +8048,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
 {
     CONTRACTL
     {
-        if ((GetThread() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
+        if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
         {
             NOTHROW;
             GC_NOTRIGGER;
@@ -8080,7 +8080,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     // useful information for the debugger and, in fact, it may be a completely
     // internally handled runtime exception, so we should do nothing.
     //
-    if ((GetThread() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
+    if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }

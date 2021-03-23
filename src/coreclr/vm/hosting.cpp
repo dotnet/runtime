@@ -274,7 +274,7 @@ BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(dwSleepMSec < 10000 || GetThread() == NULL || !GetThreaNotOk()->PreemptiveGCDisabled());
+        PRECONDITION(dwSleepMSec < 10000 || GetThreadNULLOk() == NULL || !GetThreaNotOk()->PreemptiveGCDisabled());
     }
     CONTRACTL_END;
 

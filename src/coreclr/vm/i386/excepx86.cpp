@@ -172,7 +172,7 @@ Frame *GetCurrFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame)
         pFrame = ((FrameHandlerExRecord *)pEstablisherFrame)->GetCurrFrame();
 
     // Assert that the exception frame is on the thread or that the exception frame is the top frame.
-    _ASSERTE(GetThread() == NULL || GetThreaNotOk()->GetFrame() == (Frame*)-1 || GetThreaNotOk()->GetFrame() <= pFrame);
+    _ASSERTE(GetThreadNULLOk() == NULL || GetThreaNotOk()->GetFrame() == (Frame*)-1 || GetThreaNotOk()->GetFrame() <= pFrame);
 
     return pFrame;
 }

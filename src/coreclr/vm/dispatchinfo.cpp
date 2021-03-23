@@ -1258,7 +1258,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
     BOOL bPropValIsByref = FALSE;
     EnumMemberTypes MemberType;
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreaNotOk();
     AppDomain* pAppDomain = pThread->GetDomain();
 
     SafeArrayHolder pSA(NULL);

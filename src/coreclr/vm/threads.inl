@@ -47,7 +47,7 @@ EXTERN_C inline Thread* STDCALL GetThread()
 EXTERN_C inline Thread* STDCALL GetThreaNotOk()
 {
     Thread* pThread = gCurrentThreadInfo.m_pThread;
-
+    _ASSERTE(pThread);
     return pThread;
 }
 

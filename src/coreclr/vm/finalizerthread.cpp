@@ -35,7 +35,7 @@ BOOL FinalizerThread::IsCurrentThreadFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return GetThread() == g_pFinalizerThread;
+    return GetThreadNULLOk() == g_pFinalizerThread;
 }
 
 void FinalizerThread::EnableFinalization()
@@ -94,7 +94,7 @@ void FinalizerThread::FinalizeAllObjects()
 
     Object* fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
     // Finalize everyone
     while (fobj && !fQuitFinalizer)
@@ -355,7 +355,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();
 
     _ASSERTE(s_FinalizerThreadOK);
-    _ASSERTE(GetThread() == GetFinalizerThread());
+    _ASSERTE(GetThreadNULLOk() == GetFinalizerThread());
 
     // finalizer should always park in default domain
 
@@ -488,8 +488,6 @@ void FinalizerThread::FinalizerThreadWait(DWORD timeout)
 #endif // FEATURE_COMINTEROP
 
         GCX_PREEMP();
-
-        Thread *pThread = GetThread();
 
         ULONGLONG startTime = CLRGetTickCount64();
         ULONGLONG endTime;

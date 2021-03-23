@@ -1035,7 +1035,7 @@ FCIMPL2(Object*, MarshalNative::InternalCreateWrapperOfType, Object* objUNSAFE, 
         // Validate that the source object is a valid COM object.
         _ASSERTE(pObjMT->IsComObjectType());
 
-        RCWHolder pRCW(GetThread());
+        RCWHolder pRCW(GetThreaNotOk());
 
         RCWPROTECT_BEGIN(pRCW, gc.obj);
 
@@ -1054,7 +1054,7 @@ FCIMPL2(Object*, MarshalNative::InternalCreateWrapperOfType, Object* objUNSAFE, 
 
         // Create the duplicate wrapper object.
         {
-            RCWHolder pNewRCW(GetThread());
+            RCWHolder pNewRCW(GetThreaNotOk());
             pRCW->CreateDuplicateWrapper(pNewWrapMT, &pNewRCW);
 
             gc.refRetVal = pNewRCW->GetExposedObject();

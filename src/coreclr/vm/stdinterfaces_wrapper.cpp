@@ -213,7 +213,7 @@ BOOL IsCurrentDomainValid(ComCallWrapper* pWrap)
 {
     CONTRACTL { NOTHROW; GC_TRIGGERS; MODE_ANY; } CONTRACTL_END;
 
-    return IsCurrentDomainValid(pWrap, GetThread());
+    return IsCurrentDomainValid(pWrap, GetThreaNotOk());
 }
 
 struct AppDomainSwitchToPreemptiveHelperArgs

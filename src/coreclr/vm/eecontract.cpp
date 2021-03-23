@@ -32,7 +32,7 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
     // Many of the checks below result in calls to GetThread()
     // that work just fine if GetThread() returns NULL, so temporarily
     // allow such calls.
-    m_pThread = GetThread();
+    m_pThread = GetThreadNULLOk();
     m_pClrDebugState = GetClrDebugState();
 
     // Call our base DoChecks.

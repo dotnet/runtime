@@ -387,7 +387,7 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         // create a wrapper for this COM object
         pNewRCW = RCW::CreateRCW(pUnk, dwSyncBlockIndex, RCW::CF_None, pMTClass);
 
-        RCWHolder pRCW(GetThread());
+        RCWHolder pRCW(GetThreaNotOk());
         pRCW.InitNoCheck(pNewRCW);
 
         // we used containment
@@ -750,7 +750,7 @@ BOOL RCWCache::FindOrInsertWrapper_NoLock(IUnknown* pIdentity, RCWHolder* pRCW, 
         }
         else
         {
-            RCWHolder pTempRCW(GetThread());
+            RCWHolder pTempRCW(GetThreaNotOk());
 
             // Assume that we already have a sync block for this object.
             pTempRCW.InitNoCheck(pRawRCW);
@@ -947,7 +947,7 @@ VOID RCWCleanupList::AddWrapper(RCW* pRCW)
     CONTRACTL_END;
 
     // For the global cleanup list, this is called only from the finalizer thread
-    _ASSERTE(this != g_pRCWCleanupList || GetThread() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE(this != g_pRCWCleanupList || GetThreaNotOk() == FinalizerThread::GetFinalizerThread());
 
     {
         CrstHolder ch(&m_lock);
@@ -1008,7 +1008,7 @@ VOID RCWCleanupList::CleanupAllWrappers()
         MODE_ANY;
 
         // For the global cleanup list, this is called only from the finalizer thread
-        PRECONDITION( (this != g_pRCWCleanupList) || (GetThread() == FinalizerThread::GetFinalizerThread()));
+        PRECONDITION( (this != g_pRCWCleanupList) || (GetThreaNotOk() == FinalizerThread::GetFinalizerThread()));
     }
     CONTRACTL_END;
 
@@ -1119,7 +1119,7 @@ VOID RCWCleanupList::CleanupWrappersInCurrentCtxThread(BOOL fWait, BOOL fManualC
         return;
 
     // Find out our STA (if any)
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
     LPVOID pCurrCtxCookie = GetCurrentCtxCookie();
 
     Thread::ApartmentState aptState = pThread->GetApartment();
@@ -1241,7 +1241,7 @@ HRESULT RCWCleanupList::ReleaseRCWListInCorrectCtx(LPVOID pData)
     // into cooperative GC mode. This "fix" will prevent us from doing so.
     if (g_fEEShutDown & ShutDown_Finalize2)
     {
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (pThread && !FinalizerThread::IsCurrentThreadFinalizer())
             pThread->SetThreadStateNC(Thread::TSNC_UnsafeSkipEnterCooperative);
     }
@@ -1254,7 +1254,7 @@ HRESULT RCWCleanupList::ReleaseRCWListInCorrectCtx(LPVOID pData)
     //  the MTA context), we will infinitely loop.  So, we short circuit this with ctxTried.
 
     Thread *pHeadThread = pHead->GetSTAThread();
-    BOOL fCorrectThread = (pHeadThread == NULL) ? TRUE : (pHeadThread == GetThread());
+    BOOL fCorrectThread = (pHeadThread == NULL) ? TRUE : (pHeadThread == GetThreadNULLOk());
     BOOL fCorrectCookie = (pCurrCtxCookie == NULL) ? TRUE : (pHead->GetWrapperCtxCookie() == pCurrCtxCookie);
 
     if ( pHead->IsFreeThreaded() || // Avoid context transition if the list is for free threaded RCW
@@ -1281,7 +1281,7 @@ HRESULT RCWCleanupList::ReleaseRCWListInCorrectCtx(LPVOID pData)
     // Reset the bit indicating we cannot transition into cooperative GC mode.
     if (g_fEEShutDown & ShutDown_Finalize2)
     {
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (pThread && !FinalizerThread::IsCurrentThreadFinalizer())
             pThread->ResetThreadStateNC(Thread::TSNC_UnsafeSkipEnterCooperative);
     }
@@ -1432,8 +1432,7 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
     // track the thread that created this wrapper
     // if this thread is an STA thread, then when the STA dies
     // we need to cleanup this wrapper
-    m_pCreatorThread  = GetThread();
-    _ASSERTE(m_pCreatorThread != NULL);
+    m_pCreatorThread  = GetThreaNotOk();
 
     m_pRCWCache = RCWCache::GetRCWCache();
 
@@ -2479,7 +2478,7 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
     }
     else
     {
-        RCWHolder pRCW(GetThread());
+        RCWHolder pRCW(GetThreaNotOk());
         RCWPROTECT_BEGIN(pRCW, oref);
 
         // This should not be called for interfaces that are in the normal portion of the
@@ -2618,7 +2617,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
 
     if (thCastTo.IsInterface())
     {
-        RCWHolder pRCW(GetThread());
+        RCWHolder pRCW(GetThreaNotOk());
         pRCW.Init(*pObj);
 
         // Retrieve the IID of the interface.
@@ -2771,7 +2770,7 @@ IUnknown *ComObject::GetComIPFromRCW(OBJECTREF *pObj, MethodTable* pIntfTable)
 
     SafeComHolder<IUnknown> pIUnk;
 
-    RCWHolder pRCW(GetThread());
+    RCWHolder pRCW(GetThreaNotOk());
     RCWPROTECT_BEGIN(pRCW, *pObj);
 
     pIUnk = pRCW->GetComIPFromRCW(pIntfTable);

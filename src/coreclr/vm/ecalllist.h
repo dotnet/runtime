@@ -568,7 +568,7 @@ FCFuncStart(gMathFFuncs)
 FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
-    FCFuncElement("InternalGetCurrentThread", GetThread)
+    FCFuncElement("InternalGetCurrentThread", GetThreaNotOk)
     QCFuncElement("StartInternal", ThreadNative::Start)
 #undef Sleep
     FCFuncElement("SleepInternal", ThreadNative::Sleep)

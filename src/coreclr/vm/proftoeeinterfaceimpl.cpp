@@ -2939,7 +2939,7 @@ HRESULT ProfToEEInterfaceImpl::GetRVAStaticAddress(ClassID classId,
         return E_INVALIDARG;
     }
 
-    if (GetThread() == NULL)
+    if (GetThreadNULLOk() == NULL)
     {
         return CORPROF_E_NOT_MANAGED_THREAD;
     }
@@ -3211,12 +3211,12 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress(ClassID classId,
     //
     // Verify the value of threadId, which must be the current thread ID or NULL, which means using curernt thread ID.
     //
-    if ((threadId != NULL) && (threadId != ((ThreadID)GetThread())))
+    if ((threadId != NULL) && (threadId != ((ThreadID)GetThreadNULLOk())))
     {
         return E_INVALIDARG;
     }
 
-    threadId = reinterpret_cast<ThreadID>(GetThread());
+    threadId = reinterpret_cast<ThreadID>(GetThreadNULLOk());
     AppDomainID appDomainId = reinterpret_cast<AppDomainID>(GetAppDomain());
 
     //
@@ -3288,12 +3288,12 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
 
     if (threadId == NULL)
     {
-        if (GetThread() == NULL)
+        if (GetThreadNULLOk() == NULL)
         {
             return CORPROF_E_NOT_MANAGED_THREAD;
         }
 
-        threadId = reinterpret_cast<ThreadID>(GetThread());
+        threadId = reinterpret_cast<ThreadID>(GetThreadNULLOk());
     }
 
     //
@@ -8749,7 +8749,7 @@ HRESULT ProfToEEInterfaceImpl::GetNotifiedExceptionClauseInfo(COR_PRF_EX_CLAUSE_
     EHClauseInfo*         pCurrentEHClauseInfo = NULL;
 
     // notification requires that we are on a managed thread with an exception in flight
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
 
     // If pThread is null, then the thread has never run managed code
     if (pThread == NULL)
@@ -8818,7 +8818,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
                                        objectId));
 
     
-    _ASSERTE((GetThread() == NULL) || (GetThreaNotOk()->PreemptiveGCDisabled()));
+    _ASSERTE((GetThreadNULLOk() == NULL) || (GetThreaNotOk()->PreemptiveGCDisabled()));
     
 
     // Announce we are using the generation table now
@@ -8908,12 +8908,12 @@ HRESULT ProfToEEInterfaceImpl::SetupThreadForReJIT()
     HRESULT hr = S_OK;
     EX_TRY
     {
-        if (GetThread() == NULL)
+        if (GetThreadNULLOk() == NULL)
         {
             SetupThread();
         }
 
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         pThread->SetProfilerCallbackStateFlags(COR_PRF_CALLBACKSTATE_REJIT_WAS_CALLED);
     }
     EX_CATCH_HRESULT(hr);
@@ -9928,7 +9928,7 @@ HRESULT ProfToEEInterfaceImpl::InitializeCurrentThread()
             LL_INFO10,
             "**PROF: InitializeCurrentThread.\n"));
 
-    SetupTLSForThread(GetThread());
+    SetupTLSForThread();
 
     return S_OK;
 }

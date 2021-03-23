@@ -799,7 +799,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
             STRESS_LOG1(LF_EH, LL_INFO100,                                              \
                 "EX_RETHROW " INDEBUG(__FILE__) " line %d\n", __LINE__);                \
             __pException.SuppressRelease();                                             \
-            if ((!__state.DidCatchCxx()) && (GetThread() != NULL))                      \
+            if ((!__state.DidCatchCxx()) && (GetThreadNULLOk() != NULL))                      \
             {                                                                           \
                 if (GetThreaNotOk()->PreemptiveGCDisabled())                                \
                 {                                                                       \
@@ -908,7 +908,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
     {                                                               \
         HRESULT *__phr = (phresult);                                \
         *__phr = S_OK;                                              \
-        _ASSERTE(GetThread() == NULL ||                             \
+        _ASSERTE(GetThreadNULLOk() == NULL ||                             \
                     !GetThreaNotOk()->PreemptiveGCDisabled());          \
         MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk());        \
         if (CURRENT_THREAD == NULL)                                 \

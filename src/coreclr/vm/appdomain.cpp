@@ -1115,7 +1115,7 @@ void SystemDomain::DetachBegin()
     // yet).
 
     // TODO: we should really not running managed DLLMain during process detach.
-    if (GetThread() == NULL)
+    if (GetThreadNULLOk() == NULL)
     {
         return;
     }

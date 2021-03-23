@@ -25,14 +25,14 @@
 //      CLR_TO_PROFILER_ENTRYPOINT (typical choice)
 //          This is used for calling ICorProfilerCallback* methods that either have no
 //          ThreadID parameters, or if they do have a ThreadID parameter, the parameter's
-//          value is always the *current* ThreadID (i.e., param == GetThread()).  This will
+//          value is always the *current* ThreadID (i.e., param == GetThreadNULLOk()).  This will
 //          also force a mode switch to preemptive before calling the profiler.
 //      CLR_TO_PROFILER_ENTRYPOINT_FOR_THREAD
 //          Similar to above, except these are used for ICorProfilerCallback* methods that
 //          specify a ThreadID parameter whose value may not always be the *current*
 //          ThreadID.  You must specify the ThreadID as the first parameter to these
 //          macros.  The macro will then use your ThreadID rather than that of the current
-//          GetThread(), to assert that the callback is currently allowed for that
+//          GetThreadNULLOk(), to assert that the callback is currently allowed for that
 //          ThreadID (i.e., that we have not yet issued a ThreadDestroyed() for that
 //          ThreadID).
 //
@@ -4463,7 +4463,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionThrown(
                                 LL_INFO1000,
                                 "**PROF: ExceptionThrown. ObjectID: 0x%p. ThreadID: 0x%p\n",
                                 thrownObjectId,
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -4499,7 +4499,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionSearchFunctionEnter(
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: ExceptionSearchFunctionEnter. ThreadID: 0x%p, functionId: 0x%p\n",
-                                GetThread(),
+                                GetThreadNULLOk(),
                                 functionId));
 
     {
@@ -4535,7 +4535,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionSearchFunctionLeave()
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: ExceptionSearchFunctionLeave. ThreadID: 0x%p\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -4570,7 +4570,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionSearchFilterEnter(FunctionID functionId)
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: ExceptionSearchFilterEnter. ThreadID: 0x%p, functionId: 0x%p\n",
-                                GetThread(),
+                                GetThreadNULLOk(),
                                 functionId));
 
     {
@@ -4606,7 +4606,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionSearchFilterLeave()
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: ExceptionFilterLeave. ThreadID: 0x%p\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -4641,7 +4641,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionSearchCatcherFound(FunctionID functionId
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: ExceptionSearchCatcherFound.  ThreadID: 0x%p\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -4691,7 +4691,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionUnwindFunctionEnter(FunctionID functionI
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: ExceptionUnwindFunctionEnter. ThreadID: 0x%p, functionId: 0x%p\n",
-        GetThread(),
+        GetThreadNULLOk(),
         functionId));
 
     {
@@ -4730,7 +4730,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionUnwindFunctionLeave()
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: ExceptionUnwindFunctionLeave. ThreadID: 0x%p\n",
-        GetThread()));
+        GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -4768,7 +4768,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionUnwindFinallyEnter(FunctionID functionId
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: ExceptionUnwindFinallyEnter. ThreadID: 0x%p, functionId: 0x%p\n",
-        GetThread(),
+        GetThreadNULLOk(),
         functionId));
 
     {
@@ -4807,7 +4807,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionUnwindFinallyLeave()
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: ExceptionUnwindFinallyLeave. ThreadID: 0x%p\n",
-        GetThread()));
+        GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -4844,7 +4844,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionCatcherEnter(FunctionID functionId, Obje
         kEE2PNoTrigger,
         (LF_CORPROF,
         LL_INFO1000, "**PROF: ExceptionCatcherEnter.        ThreadID: 0x%p, functionId: 0x%p\n",
-        GetThread(),
+        GetThreadNULLOk(),
         functionId));
 
     {
@@ -4881,7 +4881,7 @@ HRESULT EEToProfInterfaceImpl::ExceptionCatcherLeave()
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: ExceptionCatcherLeave.        ThreadID: 0x%p\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
 
     {
@@ -5018,7 +5018,7 @@ HRESULT EEToProfInterfaceImpl::RuntimeSuspendStarted(
         (LF_CORPROF,
         LL_INFO100,
         "**PROF: RuntimeSuspendStarted. ThreadID 0x%p.\n",
-        GetThread()));
+        GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5056,7 +5056,7 @@ HRESULT EEToProfInterfaceImpl::RuntimeSuspendFinished()
         (LF_CORPROF,
         LL_INFO100,
         "**PROF: RuntimeSuspendFinished. ThreadID 0x%p.\n",
-        GetThread()));
+        GetThreadNULLOk()));
 
 
     {
@@ -5100,7 +5100,7 @@ HRESULT EEToProfInterfaceImpl::RuntimeSuspendAborted()
         (LF_CORPROF,
         LL_INFO100,
         "**PROF: RuntimeSuspendAborted. ThreadID 0x%p.\n",
-        GetThread()));
+        GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5136,7 +5136,7 @@ HRESULT EEToProfInterfaceImpl::RuntimeResumeStarted()
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO100,
                                 "**PROF: RuntimeResumeStarted. ThreadID 0x%p.\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5170,7 +5170,7 @@ HRESULT EEToProfInterfaceImpl::RuntimeResumeFinished()
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO100,
                                 "**PROF: RuntimeResumeFinished. ThreadID 0x%p.\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5261,7 +5261,7 @@ HRESULT EEToProfInterfaceImpl::RuntimeThreadSuspended(ThreadID suspendedThreadId
         // (4) from occurring until 3) is completely done.  It's sufficient to determine we're in 3) by noting
         // whether the callback is reporting that a thread is "suspending itself" (i.e., suspendedThreadId == threadId)
 
-        ForbidSuspendThreadHolder forbidSuspendThread((Thread *) suspendedThreadId == GetThread());
+        ForbidSuspendThreadHolder forbidSuspendThread((Thread *) suspendedThreadId == GetThreadNULLOk());
 
         {
             // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5362,7 +5362,7 @@ HRESULT EEToProfInterfaceImpl::RemotingClientInvocationStarted()
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: RemotingClientInvocationStarted. ThreadID: 0x%p\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5397,7 +5397,7 @@ HRESULT EEToProfInterfaceImpl::RemotingClientSendingMessage(GUID *pCookie, BOOL 
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: RemotingClientSendingMessage. ThreadID: 0x%p\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5432,7 +5432,7 @@ HRESULT EEToProfInterfaceImpl::RemotingClientReceivingReply(GUID * pCookie, BOOL
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: RemotingClientReceivingReply. ThreadID: 0x%p\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5467,7 +5467,7 @@ HRESULT EEToProfInterfaceImpl::RemotingClientInvocationFinished()
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: RemotingClientInvocationFinished. ThreadID: 0x%p\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5502,7 +5502,7 @@ HRESULT EEToProfInterfaceImpl::RemotingServerReceivingMessage(GUID *pCookie, BOO
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: RemotingServerReceivingMessage. ThreadID: 0x%p\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5537,7 +5537,7 @@ HRESULT EEToProfInterfaceImpl::RemotingServerInvocationStarted()
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: RemotingServerInvocationStarted. ThreadID: 0x%p\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5572,7 +5572,7 @@ HRESULT EEToProfInterfaceImpl::RemotingServerInvocationReturned()
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: RemotingServerInvocationReturned. ThreadID: 0x%p\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
@@ -5607,7 +5607,7 @@ HRESULT EEToProfInterfaceImpl::RemotingServerSendingReply(GUID *pCookie, BOOL fI
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO1000,
                                 "**PROF: RemotingServerSendingReply. ThreadID: 0x%p\n",
-                                GetThread()));
+                                GetThreadNULLOk()));
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,

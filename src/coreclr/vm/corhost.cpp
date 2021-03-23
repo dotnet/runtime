@@ -1071,7 +1071,7 @@ HRESULT CorHost2::GetCLRControl(ICLRControl** pCLRControl)
 // Note: Sampling profilers also use this function to initialize TLS for a unmanaged
 // sampling thread so that initialization can be done in advance to avoid deadlocks.
 // See ProfToEEInterfaceImpl::InitializeCurrentThread for more details.
-void SetupTLSForThread(Thread* pThread)
+void SetupTLSForThread()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;

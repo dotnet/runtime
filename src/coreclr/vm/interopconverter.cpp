@@ -130,7 +130,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
     }
     else
     {
-        RCWHolder pRCW(GetThread());
+        RCWHolder pRCW(GetThreaNotOk());
         RCWPROTECT_BEGIN(pRCW, pBlock);
 
         // The interface will be returned addref'ed.
@@ -242,7 +242,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
     }
     else
     {
-        RCWHolder pRCW(GetThread());
+        RCWHolder pRCW(GetThreaNotOk());
 
         // This code is hot, use a simple RCWHolder check (i.e. don't increment the use count on the RCW).
         // @TODO: Cache IDispatch so we don't have to QI every time we come here.
@@ -334,7 +334,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
     {
         SafeComHolder<IUnknown> pUnkHolder;
 
-        RCWHolder pRCW(GetThread());
+        RCWHolder pRCW(GetThreaNotOk());
         RCWPROTECT_BEGIN(pRCW, pBlock);
 
         // The interface will be returned addref'ed.
@@ -387,7 +387,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
         return;
     }
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreaNotOk();
 
     IUnknown* pOuter = pUnk;
     SafeComHolder<IUnknown> pAutoOuterUnk = NULL;

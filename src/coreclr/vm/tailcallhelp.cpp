@@ -36,7 +36,7 @@ FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr
 {
     FCALL_CONTRACT;
 
-    Thread* thread = GetThread();
+    Thread* thread = GetThreaNotOk();
 
     *retAddr = thread->GetReturnAddress(retAddrSlot);
     return thread->GetTailCallTls();
