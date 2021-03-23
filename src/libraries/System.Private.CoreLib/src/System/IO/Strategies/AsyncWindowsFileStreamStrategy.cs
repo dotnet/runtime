@@ -13,8 +13,8 @@ namespace System.IO.Strategies
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
-        internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access)
-            : base(handle, access)
+        internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
+            : base(handle, access, share)
         {
         }
 
@@ -98,7 +98,6 @@ namespace System.IO.Strategies
                 if (_fileHandle.ThreadPoolBinding == null)
                 {
                     // We should close the handle so that the handle is not open until SafeFileHandle GC
-                    Debug.Assert(!_exposedHandle, "Are we closing handle that we exposed/not own, how?");
                     _fileHandle.Dispose();
                 }
             }
@@ -142,18 +141,16 @@ namespace System.IO.Strategies
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
+            long positionBefore = _filePosition;
             if (CanSeek)
             {
                 long len = Length;
 
-                // Make sure we are reading from the position that we think we are
-                VerifyOSHandlePosition();
-
-                if (destination.Length > len - _filePosition)
+                if (positionBefore + destination.Length > len)
                 {
-                    if (_filePosition <= len)
+                    if (positionBefore <= len)
                     {
-                        destination = destination.Slice(0, (int)(len - _filePosition));
+                        destination = destination.Slice(0, (int)(len - positionBefore));
                     }
                     else
                     {
@@ -163,23 +160,17 @@ namespace System.IO.Strategies
 
                 // Now set the position to read from in the NativeOverlapped struct
                 // For pipes, we should leave the offset fields set to 0.
-                intOverlapped->OffsetLow = unchecked((int)_filePosition);
-                intOverlapped->OffsetHigh = (int)(_filePosition >> 32);
+                intOverlapped->OffsetLow = unchecked((int)positionBefore);
+                intOverlapped->OffsetHigh = (int)(positionBefore >> 32);
 
                 // When using overlapped IO, the OS is not supposed to
                 // touch the file pointer location at all.  We will adjust it
-                // ourselves. This isn't threadsafe.
-
-                // WriteFile should not update the file pointer when writing
-                // in overlapped mode, according to MSDN.  But it does update
-                // the file pointer when writing to a UNC path!
-                // So changed the code below to seek to an absolute
-                // location, not a relative one.  ReadFile seems consistent though.
-                SeekCore(_fileHandle, destination.Length, SeekOrigin.Current);
+                // ourselves, but only in memory. This isn't threadsafe.
+                _filePosition += destination.Length;
             }
 
             // queue an async ReadFile operation and pass in a packed overlapped
-            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination.Span, intOverlapped, out int errorCode);
+            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination.Span, false, intOverlapped, out int errorCode);
 
             // ReadFile, the OS version, will return 0 on failure.  But
             // my ReadFileNative wrapper returns -1.  My wrapper will return
@@ -208,7 +199,7 @@ namespace System.IO.Strategies
                 {
                     if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
                     {
-                        SeekCore(_fileHandle, 0, SeekOrigin.Current);
+                        _filePosition = positionBefore;
                     }
 
                     completionSource.ReleaseNativeResource();
@@ -269,32 +260,23 @@ namespace System.IO.Strategies
             FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, _preallocatedOverlapped, 0, source);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
+            long positionBefore = _filePosition;
             if (CanSeek)
             {
-                // Make sure we set the length of the file appropriately.
-                long len = Length;
-
-                // Make sure we are writing to the position that we think we are
-                VerifyOSHandlePosition();
-
-                if (_filePosition + source.Length > len)
-                {
-                    SetLengthCore(_filePosition + source.Length);
-                }
-
                 // Now set the position to read from in the NativeOverlapped struct
                 // For pipes, we should leave the offset fields set to 0.
-                intOverlapped->OffsetLow = (int)_filePosition;
-                intOverlapped->OffsetHigh = (int)(_filePosition >> 32);
+                intOverlapped->OffsetLow = (int)positionBefore;
+                intOverlapped->OffsetHigh = (int)(positionBefore >> 32);
 
                 // When using overlapped IO, the OS is not supposed to
                 // touch the file pointer location at all.  We will adjust it
-                // ourselves.  This isn't threadsafe.
-                SeekCore(_fileHandle, source.Length, SeekOrigin.Current);
+                // ourselves, but only in memory.  This isn't threadsafe.
+                _filePosition += source.Length;
+                UpdateLengthOnChangePosition();
             }
 
             // queue an async WriteFile operation and pass in a packed overlapped
-            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source.Span, intOverlapped, out int errorCode);
+            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source.Span, false, intOverlapped, out int errorCode);
 
             // WriteFile, the OS version, will return 0 on failure.  But
             // my WriteFileNative wrapper returns -1.  My wrapper will return
@@ -320,7 +302,7 @@ namespace System.IO.Strategies
                 {
                     if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
                     {
-                        SeekCore(_fileHandle, 0, SeekOrigin.Current);
+                        _filePosition = positionBefore;
                     }
 
                     completionSource.ReleaseNativeResource();
@@ -382,24 +364,18 @@ namespace System.IO.Strategies
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
             Debug.Assert(CanRead, "_parent.CanRead");
 
-            bool canSeek = CanSeek;
-            if (canSeek)
-            {
-                VerifyOSHandlePosition();
-            }
-
             try
             {
                 await FileStreamHelpers
-                    .AsyncModeCopyToAsync(_fileHandle, _path, canSeek, _filePosition, destination, bufferSize, cancellationToken)
+                    .AsyncModeCopyToAsync(_fileHandle, _path, CanSeek, _filePosition, destination, bufferSize, cancellationToken)
                     .ConfigureAwait(false);
             }
             finally
             {
                 // Make sure the stream's current position reflects where we ended up
-                if (!_fileHandle.IsClosed && canSeek)
+                if (!_fileHandle.IsClosed && CanSeek)
                 {
-                    SeekCore(_fileHandle, 0, SeekOrigin.End);
+                    _filePosition = Length;
                 }
             }
         }

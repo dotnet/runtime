@@ -16,13 +16,8 @@ namespace System.Xml.Xsl.IlGen
     /// <summary>
     /// Static QilExpression type helper methods.
     /// </summary>
-    internal class XmlILTypeHelper
+    internal static class XmlILTypeHelper
     {
-        // Not creatable
-        private XmlILTypeHelper()
-        {
-        }
-
         /// <summary>
         /// Return the default Clr data type that will be used to store instances of the QilNode's type.
         /// </summary>

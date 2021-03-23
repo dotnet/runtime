@@ -25,6 +25,8 @@
   <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+packs</DefaultSubsets>
+    <!-- On Windows mono is supported for x86/x64 only -->
+    <DefaultSubsets Condition="'$(TargetOS)' == 'windows' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64'">clr+libs+host+packs</DefaultSubsets>
   </PropertyGroup>
 
   <!-- Init _subset here in to allow RuntimeFlavor to be set as early as possible -->

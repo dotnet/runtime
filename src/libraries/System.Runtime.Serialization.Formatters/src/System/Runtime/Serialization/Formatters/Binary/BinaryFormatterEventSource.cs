@@ -93,7 +93,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             WriteEvent(EventId_DeserializingObject, typeName);
         }
 
-        public class Keywords
+        public static class Keywords
         {
             public const EventKeywords Serialization = (EventKeywords)1;
             public const EventKeywords Deserialization = (EventKeywords)2;

@@ -613,7 +613,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Private helper class to encapsulate a ValidationAttribute with the failed value and the user-visible
         ///     target name against which it was validated.
         /// </summary>
-        private class ValidationError
+        private sealed class ValidationError
         {
             private readonly object? _value;
             private readonly ValidationAttribute? _validationAttribute;

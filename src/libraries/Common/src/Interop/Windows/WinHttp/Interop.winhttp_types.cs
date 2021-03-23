@@ -5,9 +5,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class WinHttp
+    internal static partial class WinHttp
     {
         public const uint ERROR_SUCCESS = 0;
         public const uint ERROR_FILE_NOT_FOUND = 2;

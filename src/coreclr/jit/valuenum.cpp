@@ -8138,12 +8138,22 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             if (tree->gtFlags & GTF_IND_INVARIANT)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
-                tree->gtVNPair =
-                    ValueNumPair(vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, ValueNumStore::VNForROH(),
-                                                         addrNvnp.GetLiberal()),
-                                 vnStore->VNForMapSelect(VNK_Conservative, TYP_REF, ValueNumStore::VNForROH(),
-                                                         addrNvnp.GetConservative()));
-                tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+
+                // Is it a string literal? (it's always non-null)
+                if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_STR_HDL))
+                {
+                    tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_StrCns, addrNvnp);
+                    assert(addrXvnp.BothEqual() && (addrXvnp.GetLiberal() == ValueNumStore::VNForEmptyExcSet()));
+                }
+                else
+                {
+                    tree->gtVNPair =
+                        ValueNumPair(vnStore->VNForMapSelect(VNK_Liberal, TYP_REF, ValueNumStore::VNForROH(),
+                                                             addrNvnp.GetLiberal()),
+                                     vnStore->VNForMapSelect(VNK_Conservative, TYP_REF, ValueNumStore::VNForROH(),
+                                                             addrNvnp.GetConservative()));
+                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+                }
             }
             else if (isVolatile)
             {
@@ -9598,7 +9608,7 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_STRCNS:
-            vnf = VNF_StrCns;
+            vnf = VNF_LazyStrCns;
             break;
 
         case CORINFO_HELP_CHKCASTCLASS:

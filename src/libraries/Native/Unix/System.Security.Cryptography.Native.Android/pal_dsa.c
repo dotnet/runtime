@@ -7,18 +7,6 @@
 #include "pal_bignum.h"
 #include "pal_misc.h"
 
-#define INIT_LOCALS(name, ...) \
-    enum { __VA_ARGS__, count_##name }; \
-    jobject name[count_##name] = { 0 } \
-
-#define RELEASE_LOCALS_ENV(name, releaseFn) \
-do { \
-    for (int i = 0; i < count_##name; ++i) \
-    { \
-        releaseFn(env, name[i]); \
-    } \
-} while(0)
-
 int32_t AndroidCryptoNative_DsaGenerateKey(jobject* dsa, int32_t bits)
 {
     assert(dsa);
@@ -226,7 +214,7 @@ int32_t AndroidCryptoNative_GetDsaParameters(
     assert(gLength);
     assert(yLength);
     assert(xLength);
-    
+
     JNIEnv* env = GetJNIEnv();
 
     INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec, privateKey, privateKeySpec);
@@ -283,7 +271,7 @@ int32_t AndroidCryptoNative_DsaKeyCreateByExplicitParameters(
         assert(false);
         return 0;
     }
-    
+
     JNIEnv* env = GetJNIEnv();
 
     INIT_LOCALS(bn, P, Q, G, Y, X);

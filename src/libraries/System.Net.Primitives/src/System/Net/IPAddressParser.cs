@@ -13,7 +13,7 @@ using System.Buffers.Binary;
 
 namespace System.Net
 {
-    internal class IPAddressParser
+    internal static class IPAddressParser
     {
         private const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
 

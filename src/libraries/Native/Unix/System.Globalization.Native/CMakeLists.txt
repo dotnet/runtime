@@ -14,8 +14,10 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_options(-Wno-unknown-warning-option)
 
     if (NOT CLR_CMAKE_TARGET_ANDROID)
-        execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
-        set(ICU_HOMEBREW_INC_PATH "${brew_prefix}/opt/icu4c/include")
+        if (CLR_CMAKE_TARGET_OSX)
+            execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
+            set(ICU_HOMEBREW_INC_PATH "${brew_prefix}/opt/icu4c/include")
+        endif()
 
         find_path(UTYPES_H "unicode/utypes.h" PATHS ${ICU_HOMEBREW_INC_PATH})
         if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)

@@ -18,7 +18,7 @@ namespace System.Xml.Serialization
             WriteEvent(EventIds.XmlSerializerExpired, serializerName, type);
         }
 
-        public class EventIds
+        public static class EventIds
         {
             public const int XmlSerializerExpired = 1;
         }

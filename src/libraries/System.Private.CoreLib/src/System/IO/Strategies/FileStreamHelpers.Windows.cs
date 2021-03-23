@@ -19,7 +19,7 @@ namespace System.IO.Strategies
         private const int ERROR_HANDLE_EOF = 38;
         private const int ERROR_IO_PENDING = 997;
 
-        private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
         {
             if (UseLegacyStrategy)
             {
@@ -27,8 +27,8 @@ namespace System.IO.Strategies
             }
 
             WindowsFileStreamStrategy strategy = isAsync
-                ? new AsyncWindowsFileStreamStrategy(handle, access)
-                : new SyncWindowsFileStreamStrategy(handle, access);
+                ? new AsyncWindowsFileStreamStrategy(handle, access, share)
+                : new SyncWindowsFileStreamStrategy(handle, access, share);
 
             return EnableBufferingIfNeeded(strategy, bufferSize);
         }
@@ -333,7 +333,7 @@ namespace System.IO.Strategies
         }
 
         // __ConsoleStream also uses this code.
-        internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, NativeOverlapped* overlapped, out int errorCode)
+        internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, bool syncUsingOverlapped, NativeOverlapped* overlapped, out int errorCode)
         {
             Debug.Assert(handle != null, "handle != null");
 
@@ -343,13 +343,24 @@ namespace System.IO.Strategies
             fixed (byte* p = &MemoryMarshal.GetReference(bytes))
             {
                 r = overlapped != null ?
-                    Interop.Kernel32.ReadFile(handle, p, bytes.Length, IntPtr.Zero, overlapped) :
-                    Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, IntPtr.Zero);
+                    (syncUsingOverlapped
+                        ? Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, overlapped)
+                        : Interop.Kernel32.ReadFile(handle, p, bytes.Length, IntPtr.Zero, overlapped))
+                    : Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, IntPtr.Zero);
             }
 
             if (r == 0)
             {
                 errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+
+                if (syncUsingOverlapped && errorCode == Interop.Errors.ERROR_HANDLE_EOF)
+                {
+                    // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfile#synchronization-and-file-position :
+                    // "If lpOverlapped is not NULL, then when a synchronous read operation reaches the end of a file,
+                    // ReadFile returns FALSE and GetLastError returns ERROR_HANDLE_EOF"
+                    return numBytesRead;
+                }
+
                 return -1;
             }
             else
@@ -359,7 +370,7 @@ namespace System.IO.Strategies
             }
         }
 
-        internal static unsafe int WriteFileNative(SafeFileHandle handle, ReadOnlySpan<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
+        internal static unsafe int WriteFileNative(SafeFileHandle handle, ReadOnlySpan<byte> buffer, bool syncUsingOverlapped, NativeOverlapped* overlapped, out int errorCode)
         {
             Debug.Assert(handle != null, "handle != null");
 
@@ -369,8 +380,10 @@ namespace System.IO.Strategies
             fixed (byte* p = &MemoryMarshal.GetReference(buffer))
             {
                 r = overlapped != null ?
-                    Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :
-                    Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, IntPtr.Zero);
+                    (syncUsingOverlapped
+                        ? Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, overlapped)
+                        : Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped))
+                    : Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, IntPtr.Zero);
             }
 
             if (r == 0)
@@ -460,7 +473,7 @@ namespace System.IO.Strategies
                             }
 
                             // Kick off the read.
-                            synchronousSuccess = ReadFileNative(handle, copyBuffer, readAwaitable._nativeOverlapped, out errorCode) >= 0;
+                            synchronousSuccess = ReadFileNative(handle, copyBuffer, false, readAwaitable._nativeOverlapped, out errorCode) >= 0;
                         }
 
                         // If the operation did not synchronously succeed, it either failed or initiated the asynchronous operation.

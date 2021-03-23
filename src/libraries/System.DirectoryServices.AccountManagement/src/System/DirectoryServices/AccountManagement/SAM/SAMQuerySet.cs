@@ -314,7 +314,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private static readonly Hashtable s_filterPropertiesTable = CreateFilterPropertiesTable();
 
-        private class FilterPropertyTableEntry
+        private sealed class FilterPropertyTableEntry
         {
             internal string winNTPropertyName;
             internal MatcherDelegate matcher;

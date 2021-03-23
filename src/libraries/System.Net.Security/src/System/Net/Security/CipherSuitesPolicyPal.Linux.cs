@@ -184,7 +184,7 @@ namespace System.Net.Security
             }
         }
 
-        private class OpenSslStringBuilder : StreamWriter
+        private sealed class OpenSslStringBuilder : StreamWriter
         {
             private const string SSL_TXT_Separator = ":";
             private static readonly byte[] EmptyString = new byte[1] { 0 };
