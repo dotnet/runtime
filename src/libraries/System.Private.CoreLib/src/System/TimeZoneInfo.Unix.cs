@@ -52,7 +52,7 @@ namespace System
             _id = id;
 
             // Handle UTC and its aliases
-            if (UtcAliases.Contains($"\n{_id}\n", StringComparison.OrdinalIgnoreCase))
+            if (DelimitedStringContains(_id, UtcAliases, '\n', StringComparison.OrdinalIgnoreCase))
             {
                 _standardDisplayName = GetUtcStandardDisplayName();
                 _daylightDisplayName = _standardDisplayName;
@@ -125,7 +125,7 @@ namespace System
             // Attempt to populate the fields backing the StandardName, DaylightName, and DisplayName from globalization data.
             GetDisplayName(_id, Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture.Name, ref _standardDisplayName);
             GetDisplayName(_id, Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture.Name, ref _daylightDisplayName);
-            GetFullValueForDisplayNameField(_id, _baseUtcOffset, _standardDisplayName, uiCulture, ref _displayName);
+            GetFullValueForDisplayNameField(_id, _baseUtcOffset, uiCulture, ref _displayName);
 
             // TZif supports seconds-level granularity with offsets but TimeZoneInfo only supports minutes since it aligns
             // with DateTimeOffset, SQL Server, and the W3C XML Specification
@@ -144,7 +144,7 @@ namespace System
         }
 
         // Helper function that builds the value backing the DisplayName field from gloablization data.
-        private static void GetFullValueForDisplayNameField(string timeZoneId, TimeSpan baseUtcOffset, string? standardName, CultureInfo uiCulture, ref string? displayName)
+        private static void GetFullValueForDisplayNameField(string timeZoneId, TimeSpan baseUtcOffset, CultureInfo uiCulture, ref string? displayName)
         {
             // There are a few diffent ways we might show the display name depending on the data.
             // The algorithm used below should avoid duplicating the same words while still achieving the
@@ -156,10 +156,7 @@ namespace System
 
             // Try to get the generic name for this time zone.
             string? genericName = null;
-            if (!GlobalizationMode.Invariant)
-            {
-                GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.Generic, uiCulture.Name, ref genericName);
-            }
+            GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.Generic, uiCulture.Name, ref genericName);
 
             if (genericName == null)
             {
@@ -216,7 +213,7 @@ namespace System
             }
 
             // Also use location names in some special cases.  (See the list at the top of this file.)
-            if (ZonesThatUseLocationName.Contains($"\n{timeZoneId}\n", StringComparison.OrdinalIgnoreCase))
+            if (DelimitedStringContains(timeZoneId, ZonesThatUseLocationName, '\n', StringComparison.OrdinalIgnoreCase))
             {
                 displayName = $"{baseOffsetText} {genericLocationName}";
                 return;
@@ -1966,6 +1963,33 @@ namespace System
                 standardDisplayName = InvariantUtcStandardDisplayName;
 
             return standardDisplayName;
+        }
+
+        // Optimized string contains function to ensure exact match without allocating extra strings or arrays.
+        // Each distinct substring within the source string must be separated by the delimiter.
+        // The source must also start and end with the delimiter.
+        private static bool DelimitedStringContains(string pattern, string source, char delimiter, StringComparison comparison)
+        {
+            Debug.Assert(source.Length > 1);
+
+            int index = 1;
+            do
+            {
+                index = source.IndexOf(pattern, index, comparison);
+                if (index < 0)
+                {
+                    return false;
+                }
+
+                if (index + pattern.Length < source.Length && source[index - 1] == delimiter && source[index + pattern.Length] == delimiter)
+                {
+                    return true;
+                }
+
+                index += pattern.Length;
+            } while (index < source.Length);
+
+            return false;
         }
     }
 }

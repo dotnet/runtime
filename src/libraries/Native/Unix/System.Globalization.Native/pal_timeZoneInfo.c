@@ -18,11 +18,6 @@ static const UChar GENERIC_PATTERN_UCHAR[] = {'v', 'v', 'v', 'v', '\0'};        
 static const UChar GENERIC_LOCATION_PATTERN_UCHAR[] = {'V', 'V', 'V', 'V', '\0'};  // u"VVVV"
 static const UChar EXEMPLAR_CITY_PATTERN_UCHAR[] = {'V', 'V', 'V', '\0'};          // u"VVV"
 
-// Declare some private functions, implemented later in this file.
-void GetTimeZoneDisplayName_FromCalendar(const char* locale, const UChar* timeZoneId, const UDate timestamp, UCalendarDisplayNameType type, UChar* result, int32_t resultLength, UErrorCode* err);
-void GetTimeZoneDisplayName_FromPattern(const char* locale, const UChar* timeZoneId, const UDate timestamp, const UChar* pattern, UChar* result, int32_t resultLength, UErrorCode* err);
-void FixupTimeZoneGenericDisplayName(const char* locale, const UChar* timeZoneId, const UDate timestamp, UChar* genericName, UErrorCode* err);
-
 /*
 Convert Windows Time Zone Id to IANA Id
 */
@@ -62,6 +57,226 @@ int32_t GlobalizationNative_IanaIdToWindowsId(const UChar* ianaId, UChar* window
 
     // Failed
     return 0;
+}
+
+/*
+Private function to get the standard and daylight names from the ICU Calendar API.
+*/
+void GetTimeZoneDisplayName_FromCalendar(const char* locale, const UChar* timeZoneId, const UDate timestamp, UCalendarDisplayNameType type, UChar* result, int32_t resultLength, UErrorCode* err)
+{
+    // Examples: "Pacific Standard Time"  (standard)
+    //           "Pacific Daylight Time"  (daylight)
+
+    // (-1 == timeZoneId is null terminated)
+    UCalendar* calendar = ucal_open(timeZoneId, -1, locale, UCAL_DEFAULT, err);
+    if (U_SUCCESS(*err))
+    {
+        ucal_setMillis(calendar, timestamp, err);
+        if (U_SUCCESS(*err))
+        {
+           ucal_getTimeZoneDisplayName(calendar, type, locale, result, resultLength, err);
+        }
+
+        ucal_close(calendar);
+    }
+}
+
+/*
+Private function to get the various forms of generic time zone names using patterns with the ICU Date Formatting API.
+*/
+void GetTimeZoneDisplayName_FromPattern(const char* locale, const UChar* timeZoneId, const UDate timestamp, const UChar* pattern, UChar* result, int32_t resultLength, UErrorCode* err)
+{
+    // (-1 == timeZoneId and pattern are null terminated)
+    UDateFormat* dateFormatter = udat_open(UDAT_PATTERN, UDAT_PATTERN, locale, timeZoneId, -1, pattern, -1, err);
+    if (U_SUCCESS(*err))
+    {
+        udat_format(dateFormatter, timestamp, result, resultLength, NULL, err);
+        udat_close(dateFormatter);    
+    }
+}
+
+/*
+Private function to modify the generic display name to better suit our needs.
+*/
+void FixupTimeZoneGenericDisplayName(const char* locale, const UChar* timeZoneId, const UDate timestamp, UChar* genericName, UErrorCode* err)
+{
+    // By default, some time zones will still give a standard name instead of the generic
+    // non-location name.
+    //
+    // For example, given the following zones and their English results:
+    //     America/Denver  => "Mountain Time"
+    //     America/Phoenix => "Mountain Standard Time"
+    //
+    // We prefer that all time zones in the same metazone have the same generic name,
+    // such that they are grouped together when combined with their base offset, location
+    // and sorted alphabetically.  For example:
+    //
+    //     (UTC-07:00) Mountain Time (Denver)
+    //     (UTC-07:00) Mountain Time (Phoenix)
+    //
+    // Without modification, they would show as:
+    //
+    //     (UTC-07:00) Mountain Standard Time (Phoenix)
+    //     (UTC-07:00) Mountain Time (Denver)
+    //
+    // When combined with the rest of the time zones, having them not grouped together
+    // makes it harder to locate the correct time zone from a list.
+    //
+    // The reason we get the standard name is because TR35 (LDML) defines a rule that
+    // states that metazone generic names should use standard names if there is no DST
+    // transition within a +/- 184 day range near the timestamp being translated.
+    //
+    // See the "Type Fallback" section in:
+    // https://www.unicode.org/reports/tr35/tr35-dates.html#Using_Time_Zone_Names
+    //
+    // This might make sense when attached to an exact timestamp, but doesn't work well
+    // when using the generic name to pick a time zone from a list.
+    // Note that this test only happens when the generic name comes from a metazone.
+    //
+    // ICU implements this test in TZGNCore::formatGenericNonLocationName in
+    // https://github.com/unicode-org/icu/blob/master/icu4c/source/i18n/tzgnames.cpp
+    // (Note the kDstCheckRange 184-day constant.)
+    //
+    // The rest of the code below is a workaround for this issue.  When the generic
+    // name and standard name match, we search through the other time zones for one
+    // having the same base offset and standard name but a shorter generic name.
+    // That will at least keep them grouped together, though note that if there aren't
+    // any found that means all of them are using the standard name.
+    //
+    // If ICU ever adds an API to get a generic name that doesn't perform the
+    // 184-day check on metazone names, then test for the existence of that new API
+    // and use that instead of this workaround.  Keep the workaround for when the
+    // new API is not available.
+
+    // Get the standard name for this time zone.  (-1 == timeZoneId is null terminated)
+    // Note that we leave the calendar open and close it later so we can also get the base offset.
+    UChar standardName[DISPLAY_NAME_LENGTH];
+    UCalendar* calendar = ucal_open(timeZoneId, -1, locale, UCAL_DEFAULT, err);
+    if (U_FAILURE(*err))
+    {
+        return;
+    }
+
+    ucal_setMillis(calendar, timestamp, err);
+    if (U_FAILURE(*err))
+    {
+        ucal_close(calendar);
+        return;
+    }
+
+    ucal_getTimeZoneDisplayName(calendar, UCAL_STANDARD, locale, standardName, DISPLAY_NAME_LENGTH, err);
+    if (U_FAILURE(*err))
+    {
+        ucal_close(calendar);
+        return;
+    }
+
+    // Ensure the generic name is the same as the standard name.
+    if (u_strcmp(genericName, standardName) != 0)
+    {
+        ucal_close(calendar);
+        return;
+    }
+
+    // Get some details for later comparison.
+    const int32_t originalGenericNameActualLength = u_strlen(genericName);
+    const int32_t baseOffset = ucal_get(calendar, UCAL_ZONE_OFFSET, err);
+    if (U_FAILURE(*err))
+    {
+        ucal_close(calendar);
+        return;
+    }
+
+    // Allocate some additional strings for test values.
+    UChar testTimeZoneId[TZID_LENGTH];
+    UChar testDisplayName[DISPLAY_NAME_LENGTH];
+    UChar testDisplayName2[DISPLAY_NAME_LENGTH];
+
+    // Enumerate over all the time zones having the same base offset.
+    UEnumeration* pEnum = ucal_openTimeZoneIDEnumeration(UCAL_ZONE_TYPE_CANONICAL_LOCATION, NULL, &baseOffset, err);
+    if (U_FAILURE(*err))
+    {
+        uenum_close(pEnum);
+        ucal_close(calendar);
+        return;
+    }
+
+    int count = uenum_count(pEnum, err);
+    if (U_FAILURE(*err))
+    {
+        uenum_close(pEnum);
+        ucal_close(calendar);
+        return;
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        // Get a time zone id from the enumeration to test with.
+        int32_t testIdLength;
+        const char* testId = uenum_next(pEnum, &testIdLength, err);
+        if (U_FAILURE(*err))
+        {
+            // There shouldn't be a failure in enumeration, but if there was then exit.
+            uenum_close(pEnum);
+            ucal_close(calendar);
+            return;
+        }
+
+        // Make a UChar[] version of the test time zone id for use in the API calls.
+        u_uastrcpy(testTimeZoneId, testId);
+
+        // Get the standard name from the test time zone.
+        GetTimeZoneDisplayName_FromCalendar(locale, testTimeZoneId, timestamp, UCAL_STANDARD, testDisplayName, DISPLAY_NAME_LENGTH, err);
+        if (U_FAILURE(*err))
+        {
+            // Failed, but keep trying through the rest of the loop in case the failure is specific to this test zone.
+            continue;
+        }
+
+        // See if the test time zone has a different standard name.
+        if (u_strcmp(testDisplayName, standardName) != 0)
+        {
+            // It has a different standard name. We can't use it.
+            continue;
+        }
+
+        // Get the generic name from the test time zone.
+        GetTimeZoneDisplayName_FromPattern(locale, testTimeZoneId, timestamp, GENERIC_PATTERN_UCHAR, testDisplayName, DISPLAY_NAME_LENGTH, err);
+        if (U_FAILURE(*err))
+        {
+            // Failed, but keep trying through the rest of the loop in case the failure is specific to this test zone.
+            continue;
+        }
+
+        // See if the test time zone has a longer (or same size) generic name.
+        if (u_strlen(testDisplayName) >= originalGenericNameActualLength)
+        {
+            // The test time zone's generic name isn't any shorter than the one we already have.
+            continue;
+        }
+
+        // We probably have found a better generic name.  But just to be safe, make sure the test zone isn't
+        // using a generic name that is specific to a particular location.  For example, "Antarctica/Troll"
+        // uses "Troll Time" as a generic name, but "Greenwich Mean Time" as a standard name.  We don't
+        // want other zones that use "Greenwich Mean Time" to be labeled as "Troll Time".
+
+        GetTimeZoneDisplayName_FromPattern(locale, testTimeZoneId, timestamp, GENERIC_LOCATION_PATTERN_UCHAR, testDisplayName2, DISPLAY_NAME_LENGTH, err);
+        if (U_FAILURE(*err))
+        {
+            // Failed, but keep trying through the rest of the loop in case the failure is specific to this test zone.
+            continue;
+        }
+
+        if (u_strcmp(testDisplayName, testDisplayName2) != 0)
+        {
+            // We have found a better generic name.  Use it.
+            u_strcpy(genericName, testDisplayName);
+            break;
+        }
+    }
+
+    uenum_close(pEnum);
+    ucal_close(calendar);
 }
 
 /*
@@ -122,179 +337,4 @@ ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName, c
     }
 
     return GetResultCode(err);
-}
-
-/*
-Private function to get the standard and daylight names from the ICU Calendar API.
-*/
-void GetTimeZoneDisplayName_FromCalendar(const char* locale, const UChar* timeZoneId, const UDate timestamp, UCalendarDisplayNameType type, UChar* result, int32_t resultLength, UErrorCode* err)
-{
-    // Examples: "Pacific Standard Time"  (standard)
-    //           "Pacific Daylight Time"  (daylight)
-
-    // (-1 == timeZoneId is null terminated)
-    UCalendar* calendar = ucal_open(timeZoneId, -1, locale, UCAL_DEFAULT, err);
-    if (U_FAILURE(*err)) goto exit;
-
-    ucal_setMillis(calendar, timestamp, err);
-    if (U_FAILURE(*err)) goto exit;
-
-    ucal_getTimeZoneDisplayName(calendar, type, locale, result, resultLength, err);
-
-    exit:
-    ucal_close(calendar);
-}
-
-/*
-Private function to get the various forms of generic time zone names using patterns with the ICU Date Formatting API.
-*/
-void GetTimeZoneDisplayName_FromPattern(const char* locale, const UChar* timeZoneId, const UDate timestamp, const UChar* pattern, UChar* result, int32_t resultLength, UErrorCode* err)
-{
-    // (-1 == timeZoneId and pattern are null terminated)
-    UDateFormat* dateFormatter = udat_open(UDAT_PATTERN, UDAT_PATTERN, locale, timeZoneId, -1, pattern, -1, err);
-    if (U_FAILURE(*err)) goto exit;
-
-    udat_format(dateFormatter, timestamp, result, resultLength, NULL, err);
-
-    exit:
-    udat_close(dateFormatter);
-}
-
-/*
-Private function to modify the generic display name to better suit our needs.
-*/
-void FixupTimeZoneGenericDisplayName(const char* locale, const UChar* timeZoneId, const UDate timestamp, UChar* genericName, UErrorCode* err)
-{
-    // By default, some time zones will still give a standard name instead of the generic
-    // non-location name.
-    //
-    // For example, given the following zones and their English results:
-    //     America/Denver  => "Mountain Time"
-    //     America/Phoenix => "Mountain Standard Time"
-    //
-    // We prefer that all time zones in the same metazone have the same generic name,
-    // such that they are grouped together when combined with their base offset, location
-    // and sorted alphabetically.  For example:
-    //
-    //     (UTC-07:00) Mountain Time (Denver)
-    //     (UTC-07:00) Mountain Time (Phoenix)
-    //
-    // Without modification, they would show as:
-    //
-    //     (UTC-07:00) Mountain Standard Time (Phoenix)
-    //     (UTC-07:00) Mountain Time (Denver)
-    //
-    // When combined with the rest of the time zones, having them not grouped together
-    // makes it harder to locate the correct time zone from a list.
-    //
-    // The reason we get the standard name is because TR35 (LDML) defines a rule that
-    // states that metazone generic names should use standard names if there is no DST
-    // transition within a +/- 184 day range near the timestamp being translated.
-    //
-    // See the "Type Fallback" section in:
-    // https://www.unicode.org/reports/tr35/tr35-dates.html#Using_Time_Zone_Names
-    //
-    // This might make sense when attached to an exact timestamp, but doesn't work well
-    // when using the generic name to pick a time zone from a list.
-    // Note that this test only happens when the generic name comes from a metazone.
-    //
-    // ICU implements this test in TZGNCore::formatGenericNonLocationName in
-    // https://github.com/unicode-org/icu/blob/master/icu4c/source/i18n/tzgnames.cpp
-    // (Note the kDstCheckRange 184-day constant.)
-    //
-    // The rest of the code below is a workaround for this issue.  When the generic
-    // name and standard name match, we search through the other time zones for one
-    // having the same base offset and standard name but a shorter generic name.
-    // That will at least keep them grouped together, though note that if there aren't
-    // any found that means all of them are using the standard name.
-    //
-    // If ICU ever adds an API to get a generic name that doesn't perform the
-    // 184-day check on metazone names, then test for the existence of that new API
-    // and use that instead of this workaround.  Keep the workaround for when the
-    // new API is not available.
-
-    // Get the standard name for this time zone.  (-1 == timeZoneId is null terminated)
-    // Note that we leave the calendar open and close it later so we can also get the base offset.
-    UChar standardName[DISPLAY_NAME_LENGTH];
-    UCalendar* calendar = ucal_open(timeZoneId, -1, locale, UCAL_DEFAULT, err);
-    if (U_FAILURE(*err)) goto exit;
-
-    ucal_setMillis(calendar, timestamp, err);
-    if (U_FAILURE(*err)) goto exit;
-
-    ucal_getTimeZoneDisplayName(calendar, UCAL_STANDARD, locale, standardName, DISPLAY_NAME_LENGTH, err);
-    if (U_FAILURE(*err)) goto exit;
-
-    // See if the generic name is the same as the standard name.
-    if (u_strcmp(genericName, standardName) == 0)
-    {
-        // Get some details for later comparison.
-        const int32_t originalGenericNameActualLength = u_strlen(genericName);
-        const int32_t baseOffset = ucal_get(calendar, UCAL_ZONE_OFFSET, err);
-        if (U_FAILURE(*err)) goto exit;
-
-        // Allocate some additional strings for test values.
-        UChar testTimeZoneId[TZID_LENGTH];
-        UChar testDisplayName[DISPLAY_NAME_LENGTH];
-        UChar testDisplayName2[DISPLAY_NAME_LENGTH];
-
-        // Enumerate over all the time zones having the same base offset.
-        UEnumeration* pEnum = ucal_openTimeZoneIDEnumeration(UCAL_ZONE_TYPE_CANONICAL_LOCATION, NULL, &baseOffset, err);
-        if (U_FAILURE(*err)) goto exitEnum;
-
-        int count = uenum_count(pEnum, err);
-        if (U_FAILURE(*err)) goto exitEnum;
-
-        for (int i = 0; i < count; i++)
-        {
-            // Get a time zone id from the enumeration to test with.
-            int32_t testIdLength;
-            const char* testId = uenum_next(pEnum, &testIdLength, err);
-            if (U_FAILURE(*err)) goto exitEnum;
-            u_uastrcpy(testTimeZoneId, testId);
-
-            // Get the standard name from the test time zone.
-            GetTimeZoneDisplayName_FromCalendar(locale, testTimeZoneId, timestamp, UCAL_STANDARD, testDisplayName, DISPLAY_NAME_LENGTH, err);
-            if (U_FAILURE(*err)) goto exitEnum;
-
-            // See if the test time zone has a different standard name.
-            if (u_strcmp(testDisplayName, standardName) != 0)
-            {
-                // It has a different standard name. We can't use it.
-                continue;
-            }
-
-            // Get the generic name from the test time zone.
-            GetTimeZoneDisplayName_FromPattern(locale, testTimeZoneId, timestamp, GENERIC_PATTERN_UCHAR, testDisplayName, DISPLAY_NAME_LENGTH, err);
-            if (U_FAILURE(*err)) goto exitEnum;
-
-            // See if the test time zone has a longer (or same size) generic name.
-            if (u_strlen(testDisplayName) >= originalGenericNameActualLength)
-            {
-                // The test time zone's generic name isn't any shorter than the one we already have.
-                continue;
-            }
-
-            // We probably have found a better generic name.  But just to be safe, make sure the test zone isn't
-            // using a generic name that is specific to a particular location.  For example, "Antarctica/Troll"
-            // uses "Troll Time" as a generic name, but "Greenwich Mean Time" as a standard name.  We don't
-            // want other zones that use "Greenwich Mean Time" to be labeled as "Troll Time".
-
-            GetTimeZoneDisplayName_FromPattern(locale, testTimeZoneId, timestamp, GENERIC_LOCATION_PATTERN_UCHAR, testDisplayName2, DISPLAY_NAME_LENGTH, err);
-            if (U_FAILURE(*err)) goto exitEnum;
-
-            if (u_strcmp(testDisplayName, testDisplayName2) != 0)
-            {
-                // We have found a better generic name.  Use it.
-                u_strcpy(genericName, testDisplayName);
-                break;
-            }
-        }
-
-        exitEnum:
-        uenum_close(pEnum);
-    }
-
-    exit:
-    ucal_close(calendar);
 }

@@ -59,7 +59,7 @@
 // The following APIs are not supported in the ICU versions less than 52. We need to define them manually.
 // We have to do runtime check before using the pointers to these APIs. That is why these are listed in the FOR_ALL_OPTIONAL_ICU_FUNCTIONS list.
 U_CAPI int32_t U_EXPORT2 ucal_getTimeZoneIDForWindowsID(const UChar* winid, int32_t len, const char* region, UChar* id, int32_t idCapacity, UErrorCode* status);
-U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len,UChar* winid, int32_t winidCapacity, UErrorCode* status);
+U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len, UChar* winid, int32_t winidCapacity, UErrorCode* status);
 #endif
 
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
