@@ -172,7 +172,9 @@ PAL_time(PAL_time_t *tloc)
     PERF_ENTRY(time);
     ENTRY( "time( tloc=%p )\n",tloc );
 
-    result = time(tloc);
+    time_t t;
+    result = time(&t);
+    *tloc = t;
 
     LOGEXIT( "time returning %#lx\n",result );
     PERF_EXIT(time);
