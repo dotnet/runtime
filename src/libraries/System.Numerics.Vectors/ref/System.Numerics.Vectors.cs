@@ -304,6 +304,7 @@ namespace System.Numerics
         public float Y;
         public Vector2(float value) { throw null; }
         public Vector2(float x, float y) { throw null; }
+        public Vector2(System.ReadOnlySpan<float> values) { throw null; }
         public static System.Numerics.Vector2 One { get { throw null; } }
         public static System.Numerics.Vector2 UnitX { get { throw null; } }
         public static System.Numerics.Vector2 UnitY { get { throw null; } }
@@ -313,6 +314,8 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Clamp(System.Numerics.Vector2 value1, System.Numerics.Vector2 min, System.Numerics.Vector2 max) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(System.Span<float> destination) { }
+        public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static float Distance(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static System.Numerics.Vector2 Divide(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
@@ -361,6 +364,7 @@ namespace System.Numerics
         public Vector3(System.Numerics.Vector2 value, float z) { throw null; }
         public Vector3(float value) { throw null; }
         public Vector3(float x, float y, float z) { throw null; }
+        public Vector3(System.ReadOnlySpan<float> values) { throw null; }
         public static System.Numerics.Vector3 One { get { throw null; } }
         public static System.Numerics.Vector3 UnitX { get { throw null; } }
         public static System.Numerics.Vector3 UnitY { get { throw null; } }
@@ -371,6 +375,8 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Clamp(System.Numerics.Vector3 value1, System.Numerics.Vector3 min, System.Numerics.Vector3 max) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(System.Span<float> destination) { }
+        public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector3 Cross(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
         public static float Distance(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
@@ -420,6 +426,7 @@ namespace System.Numerics
         public Vector4(System.Numerics.Vector3 value, float w) { throw null; }
         public Vector4(float value) { throw null; }
         public Vector4(float x, float y, float z, float w) { throw null; }
+        public Vector4(System.ReadOnlySpan<float> values) { throw null; }
         public static System.Numerics.Vector4 One { get { throw null; } }
         public static System.Numerics.Vector4 UnitW { get { throw null; } }
         public static System.Numerics.Vector4 UnitX { get { throw null; } }
@@ -431,6 +438,8 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Clamp(System.Numerics.Vector4 value1, System.Numerics.Vector4 min, System.Numerics.Vector4 max) { throw null; }
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(System.Span<float> destination) { }
+        public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static float Distance(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 Divide(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
