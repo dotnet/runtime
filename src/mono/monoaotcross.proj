@@ -41,7 +41,7 @@
 
     <MSBuild Targets="BuildMono"
              Projects="$(MSBuildThisFileDirectory)mono.proj"
-             Properties="RealTargetOS=$(TargetOS);BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+             Properties="RealTargetOS=$(TargetOS);RealTargetArchitecture=$(TargetArchitecture);BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
 
     <ItemGroup>
       <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid.ToLower())\**" />
