@@ -17764,12 +17764,6 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     cond1Block->bbJumpDest = remainderBlock;
     cond2Block->bbJumpDest = remainderBlock;
 
-    // Set the weights; some are guesses.
-    asgBlock->inheritWeight(block);
-    cond1Block->inheritWeight(block);
-    cond2Block->inheritWeightPercentage(cond1Block, 50);
-    helperBlock->inheritWeightPercentage(cond2Block, 50);
-
     // Append cond1 as JTRUE to cond1Block
     GenTree*   jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condExpr);
     Statement* jmpStmt = fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX());
