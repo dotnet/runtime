@@ -680,7 +680,7 @@ namespace System.Net.WebSockets
             public const int SendPayloadSpecified = 1;
         }
 
-        private class PayloadReceiveResult
+        private sealed class PayloadReceiveResult
         {
             public int Count { get; set; }
             public bool EndOfMessage { get; }

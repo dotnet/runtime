@@ -46,4 +46,11 @@
     <!-- Make sure that NETStandard.Library package never gets added as a dependency for .NET 4.6.1 -->
     <SuppressMetaPackage Include="NETStandard.Library" TargetFramework="net461" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- add 3.1 to validation, using 3.0 RIDs -->
+    <DefaultValidateFramework Include="netcoreapp3.1">
+      <RuntimeIDs>@(NETCoreApp30RIDs)</RuntimeIDs>
+    </DefaultValidateFramework>
+  </ItemGroup>
 </Project>

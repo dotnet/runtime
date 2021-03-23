@@ -462,10 +462,10 @@ fi
 if [[ "$__BuildArch" == wasm ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == iOS ]]; then
+elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == tvOS ]]; then
+elif [[ "$__TargetOS" == tvOS || "$__TargetOS" == tvOSSimulator ]]; then
     # nothing to do here
     true
 elif [[ "$__TargetOS" == Android ]]; then

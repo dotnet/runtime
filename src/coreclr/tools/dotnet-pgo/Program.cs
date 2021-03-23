@@ -28,6 +28,9 @@ using Internal.Pgo;
 using System.Reflection.PortableExecutable;
 using ILCompiler.IBC;
 using ILCompiler;
+using System.Runtime.Serialization.Json;
+using System.Text.Json;
+using System.Text.Encodings.Web;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
@@ -241,6 +244,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             if (!commandLineOptions.DetailedProgressMessages)
                 s_logger.HideDetailedMessages();
 
+            if (commandLineOptions.DumpMibc)
+            {
+                return InnerDumpMain(commandLineOptions);
+            }
             if (commandLineOptions.InputFilesToMerge != null)
             {
                 return InnerMergeMain(commandLineOptions);
@@ -249,6 +256,103 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 return InnerProcessTraceFileMain(commandLineOptions);
             }
+        }
+
+        static int InnerDumpMain(CommandLineOptions commandLineOptions)
+        {
+            if ((commandLineOptions.InputFileToDump == null) || (!commandLineOptions.InputFileToDump.Exists))
+            {
+                PrintUsage(commandLineOptions, "Valid input file must be specified");
+                return -8;
+            }
+
+            if (commandLineOptions.OutputFileName == null)
+            {
+                PrintUsage(commandLineOptions, "Output filename must be specified");
+                return -8;
+            }
+
+            PrintDetailedMessage($"Opening {commandLineOptions.InputFileToDump}");
+            var mibcPeReader = MIbcProfileParser.OpenMibcAsPEReader(commandLineOptions.InputFileToDump.FullName);
+            var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(new PEReader[] { mibcPeReader });
+
+            PrintDetailedMessage($"Parsing {commandLineOptions.InputFileToDump}");
+            var profileData = MIbcProfileParser.ParseMIbcFile(tsc, mibcPeReader, null, onlyDefinedInAssembly: null);
+
+            using (FileStream outputFile = new FileStream(commandLineOptions.OutputFileName.FullName, FileMode.Create, FileAccess.Write))
+            {
+                JsonWriterOptions options = new JsonWriterOptions();
+                options.Indented = true;
+                options.SkipValidation = false;
+                options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+
+                using Utf8JsonWriter jsonWriter = new Utf8JsonWriter(outputFile, options);
+                jsonWriter.WriteStartObject();
+                jsonWriter.WriteStartArray("Methods");
+                foreach (MethodProfileData data in profileData.GetAllMethodProfileData())
+                {
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WriteString("Method", data.Method.ToString());
+                    if (data.CallWeights != null)
+                    {
+                        jsonWriter.WriteStartArray("CallWeights");
+                        foreach (var callWeight in data.CallWeights)
+                        {
+                            jsonWriter.WriteString("Method", callWeight.Key.ToString());
+                            jsonWriter.WriteNumber("Weight", callWeight.Value);
+                        }
+                        jsonWriter.WriteEndArray();
+                    }
+                    if (data.ExclusiveWeight != 0)
+                    {
+                        jsonWriter.WriteNumber("ExclusiveWeight", data.ExclusiveWeight);
+                    }
+                    if (data.SchemaData != null)
+                    {
+                        jsonWriter.WriteStartArray("InstrumentationData");
+                        foreach (var schemaElem in data.SchemaData)
+                        {
+                            jsonWriter.WriteStartObject();
+                            jsonWriter.WriteNumber("ILOffset", schemaElem.ILOffset);
+                            jsonWriter.WriteString("InstrumentationKind", schemaElem.InstrumentationKind.ToString());
+                            jsonWriter.WriteNumber("Other", schemaElem.Other);
+                            if (schemaElem.DataHeldInDataLong)
+                            {
+                                jsonWriter.WriteNumber("Data", schemaElem.DataLong);
+                            }
+                            else
+                            {
+                                if (schemaElem.DataObject == null)
+                                {
+                                    // No data associated with this item
+                                }
+                                else if (schemaElem.DataObject.Length == 1)
+                                {
+                                    jsonWriter.WriteString("Data", schemaElem.DataObject.GetValue(0).ToString());
+                                }
+                                else
+                                {
+                                    jsonWriter.WriteStartArray("Data");
+                                    foreach (var dataElem in schemaElem.DataObject)
+                                    {
+                                        jsonWriter.WriteStringValue(dataElem.ToString());
+                                    }
+                                    jsonWriter.WriteEndArray();
+                                }
+                            }
+                            jsonWriter.WriteEndObject();
+                        }
+                        jsonWriter.WriteEndArray();
+                    }
+
+                    jsonWriter.WriteEndObject();
+                }
+                jsonWriter.WriteEndArray();
+                jsonWriter.WriteEndObject();
+            }
+            PrintMessage($"Generated {commandLineOptions.OutputFileName}");
+
+            return 0;
         }
 
 

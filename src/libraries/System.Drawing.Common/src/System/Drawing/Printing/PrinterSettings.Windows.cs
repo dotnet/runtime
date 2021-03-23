@@ -1650,7 +1650,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        private class ArrayEnumerator : IEnumerator
+        private sealed class ArrayEnumerator : IEnumerator
         {
             private readonly object[] _array;
             private readonly int _endIndex;

@@ -1,5 +1,5 @@
 {
     "configProperties": {
-        "System.IO.UseLegacyFileStream": true
+        "System.IO.UseNet5CompatFileStream": false
     }
 }

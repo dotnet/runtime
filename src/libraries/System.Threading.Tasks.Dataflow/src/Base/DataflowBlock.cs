@@ -2695,7 +2695,7 @@ namespace System.Threading.Tasks.Dataflow
         /// Target block that synchronously accepts all messages offered to it and drops them.
         /// </summary>
         /// <typeparam name="TInput">The type of the messages this block can accept.</typeparam>
-        private class NullTargetBlock<TInput> : ITargetBlock<TInput>
+        private sealed class NullTargetBlock<TInput> : ITargetBlock<TInput>
         {
             private Task? _completion;
 

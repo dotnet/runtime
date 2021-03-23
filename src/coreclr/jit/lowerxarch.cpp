@@ -5158,7 +5158,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
     var_types           baseType    = node->gtSIMDBaseType;
-    unsigned            simdSize    = node->gtSIMDSize;
 
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();

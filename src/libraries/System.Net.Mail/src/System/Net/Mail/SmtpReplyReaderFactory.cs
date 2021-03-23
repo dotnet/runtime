@@ -367,7 +367,7 @@ namespace System.Net.Mail
             }
         }
 
-        private class ReadLinesAsyncResult : LazyAsyncResult
+        private sealed class ReadLinesAsyncResult : LazyAsyncResult
         {
             private StringBuilder? _builder;
             private ArrayList? _lines;

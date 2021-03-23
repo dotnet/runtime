@@ -150,7 +150,7 @@ namespace System.Xml.Xsl.Qil
         // Helper methods
         //-----------------------------------------------
 
-        private class ObjectHashtable : Hashtable
+        private sealed class ObjectHashtable : Hashtable
         {
             protected override bool KeyEquals(object? item, object key)
             {
