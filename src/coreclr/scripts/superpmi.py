@@ -1599,11 +1599,11 @@ class SuperPMIReplay:
 
                 logging.info("Running SuperPMI replay of %s", mch_file)
 
-                flags = common_flags
+                flags = common_flags.copy()
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
                 flags += [
-                    "-f", fail_mcl_file,  # Failing mc List
+                    "-f", fail_mcl_file  # Failing mc List
                 ]
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]

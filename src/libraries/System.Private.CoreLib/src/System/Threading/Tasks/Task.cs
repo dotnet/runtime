@@ -224,7 +224,7 @@ namespace System.Threading.Tasks
         // need to be accessed during the life cycle of a Task, so we don't want to instantiate them every time.  Once
         // one of these properties needs to be written, we will instantiate a ContingentProperties object and set
         // the appropriate property.
-        internal class ContingentProperties
+        internal sealed class ContingentProperties
         {
             // Additional context
 
@@ -6487,7 +6487,7 @@ namespace System.Threading.Tasks
     }
 
     // Proxy class for better debugging experience
-    internal class SystemThreadingTasks_TaskDebugView
+    internal sealed class SystemThreadingTasks_TaskDebugView
     {
         private readonly Task m_task;
 

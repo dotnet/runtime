@@ -23,7 +23,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    public abstract class Compilation : ICompilation
+    public abstract class Compilation : ICompilation, IDisposable
     {
         protected readonly DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
         protected readonly NodeFactory _nodeFactory;
@@ -67,6 +67,7 @@ namespace ILCompiler
             _methodILCache = new ILCache(ilProvider, NodeFactory.CompilationModuleGroup);
         }
 
+        public abstract void Dispose();
         public abstract void Compile(string outputFileName);
         public abstract void WriteDependencyLog(string outputFileName);
 
@@ -218,6 +219,7 @@ namespace ILCompiler
     {
         void Compile(string outputFileName);
         void WriteDependencyLog(string outputFileName);
+        void Dispose();
     }
 
     public sealed class ReadyToRunCodegenCompilation : Compilation
@@ -638,5 +640,10 @@ namespace ILCompiler
         }
 
         public ISymbolNode GetFieldRvaData(FieldDesc field) => NodeFactory.CopiedFieldRva(field);
+
+        public override void Dispose()
+        {
+            _corInfoImpls?.Clear();
+        }
     }
 }

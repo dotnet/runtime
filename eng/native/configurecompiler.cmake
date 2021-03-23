@@ -63,10 +63,6 @@ if (MSVC)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
   # can handle addresses larger than 2 gigabytes
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE")
-  #Compatible with Data Execution Prevention
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NXCOMPAT")
-  #Use address space layout randomization
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DYNAMICBASE")
   #shrink pdb size
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /PDBCOMPRESS")
 
@@ -79,10 +75,6 @@ if (MSVC)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /PDBCOMPRESS")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:1572864")
-
-  # Debug build specific flags
-  set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /NOVCFEATURE")
-  set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "${CMAKE_SHARED_LINKER_FLAGS_CHECKED} /NOVCFEATURE")
 
   # Checked build specific flags
   add_linker_flag(/INCREMENTAL:NO CHECKED) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
@@ -210,11 +202,7 @@ elseif (CLR_CMAKE_HOST_ARCH_I386)
   set(ARCH_HOST_NAME x86)
   add_definitions(-DHOST_X86)
 elseif (CLR_CMAKE_HOST_ARCH_ARM)
-  if (ARM_SOFTFP)
-    set(ARCH_HOST_NAME armel)
-  else ()
-    set(ARCH_HOST_NAME arm)
-  endif ()
+  set(ARCH_HOST_NAME arm)
   add_definitions(-DHOST_ARM)
 elseif (CLR_CMAKE_HOST_ARCH_ARM64)
   set(ARCH_HOST_NAME arm64)
@@ -283,11 +271,7 @@ elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
 elseif (CLR_CMAKE_TARGET_ARCH_ARM)
     set(ARCH_SOURCES_DIR arm)
-    if (ARM_SOFTFP)
-      set(ARCH_TARGET_NAME armel)
-    else ()
-      set(ARCH_TARGET_NAME arm)
-    endif ()
+    set(ARCH_TARGET_NAME arm)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_ARM>)
 elseif (CLR_CMAKE_TARGET_ARCH_I386)
     set(ARCH_TARGET_NAME x86)

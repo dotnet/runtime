@@ -436,6 +436,13 @@ namespace System.Text.Encodings.Web.Tests
         private readonly char _allowedChar; // representative allowed char for this encoder
         private readonly char _disallowedChar; // representative never-allowed char for this encoder
 
+        // U+2D2E is in the Georgian Supplement block but is not currently assigned, hence disallowed by all inbox encoders.
+        // U+2D2E is an interesting test case because both U+002D ('-') and U+002E ('.') are allowed by all inbox encoders,
+        // so using U+2D2E exercises our UTF-16 -> ASCII narrowing paths to make sure that the narrowing process doesn't
+        // inadvertently treat a single non-ASCII BMP char as two independent ASCII chars. IF U+2D2E is ever assigned in
+        // the future, this could cause unit tests to fail, but we'll deal with that problem when (if?) the time comes.
+        private const char BmpExtendedDisallowedChar = '\u2d2e';
+
         protected InboxEncoderCommonTestBase(TextEncoder encoder, char allowedChar, char disallowedChar)
         {
             Assert.NotNull(encoder);
@@ -477,7 +484,7 @@ namespace System.Text.Encodings.Web.Tests
 
             for (int i = 96; i >= 0; i--)
             {
-                span[i] = _disallowedChar; // make this char invalid
+                span[i] = _disallowedChar; // make this char invalid (ASCII)
                 Assert.Equal(-1, _encoder.FindFirstCharacterToEncodeUtf16(span.Slice(0, i)));
             }
         }
@@ -499,7 +506,12 @@ namespace System.Text.Encodings.Web.Tests
 
                 _boundedChars.MakeWriteable();
                 span.Fill(bmpAllowedChar); // make buffer all-valid
-                span[i] = _disallowedChar; //  make this char invalid
+                span[i] = _disallowedChar; //  make this char invalid (ASCII)
+                _boundedChars.MakeReadonly();
+                Assert.Equal(i, _encoder.FindFirstCharacterToEncodeUtf16(span));
+
+                _boundedChars.MakeWriteable();
+                span[i] = BmpExtendedDisallowedChar; // make this char invaid (BMP extended)
                 _boundedChars.MakeReadonly();
                 Assert.Equal(i, _encoder.FindFirstCharacterToEncodeUtf16(span));
 

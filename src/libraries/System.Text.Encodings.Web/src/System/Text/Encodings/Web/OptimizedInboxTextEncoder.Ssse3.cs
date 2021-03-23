@@ -15,10 +15,10 @@ namespace System.Text.Encodings.Web
             Debug.Assert(Ssse3.IsSupported);
             Debug.Assert(BitConverter.IsLittleEndian);
 
-            var vecZero = Vector128<byte>.Zero;
-            var vec0x7 = Vector128.Create((byte)0x7);
-            var vecPowersOfTwo = Vector128.Create(1, 2, 4, 8, 16, 32, 64, 128, 0, 0, 0, 0, 0, 0, 0, 0);
-            var allowedCodePoints = _allowedAsciiCodePoints.AsVector;
+            Vector128<byte> vecZero = Vector128<byte>.Zero;
+            Vector128<byte> vec0x7 = Vector128.Create((byte)0x7);
+            Vector128<byte> vecPowersOfTwo = Vector128.Create(1, 2, 4, 8, 16, 32, 64, 128, 0, 0, 0, 0, 0, 0, 0, 0);
+            Vector128<byte> allowedCodePoints = _allowedAsciiCodePoints.AsVector;
             int pmovmskb;
 
             nuint i = 0;
@@ -135,10 +135,10 @@ namespace System.Text.Encodings.Web
             Debug.Assert(Ssse3.IsSupported);
             Debug.Assert(BitConverter.IsLittleEndian);
 
-            var vecZero = Vector128<byte>.Zero;
-            var vec0x7 = Vector128.Create((byte)0x7);
-            var vecPowersOfTwo = Vector128.Create(1, 2, 4, 8, 16, 32, 64, 128, 0, 0, 0, 0, 0, 0, 0, 0);
-            var allowedCodePoints = _allowedAsciiCodePoints.AsVector;
+            Vector128<byte> vecZero = Vector128<byte>.Zero;
+            Vector128<byte> vec0x7 = Vector128.Create((byte)0x7);
+            Vector128<byte> vecPowersOfTwo = Vector128.Create(1, 2, 4, 8, 16, 32, 64, 128, 0, 0, 0, 0, 0, 0, 0, 0);
+            Vector128<byte> allowedCodePoints = _allowedAsciiCodePoints.AsVector;
             int pmovmskb;
 
             nuint i = 0;

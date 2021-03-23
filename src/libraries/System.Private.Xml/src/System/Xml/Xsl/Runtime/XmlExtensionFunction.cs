@@ -9,6 +9,7 @@ using System.Xml.Schema;
 using System.Reflection;
 using System.Globalization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -57,6 +58,7 @@ namespace System.Xml.Xsl.Runtime
         private string _namespaceUri;                // Extension object identifier
         private string _name;                        // Name of this method
         private int _numArgs;                        // Argument count
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         private Type _objectType;                    // Type of the object which will be searched for matching methods
         private BindingFlags _flags;                 // Modifiers that were used to search for a matching signature
         private int _hashCode;                       // Pre-computed hashcode
@@ -95,7 +97,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Initialize, but do not bind.
         /// </summary>
-        public void Init(string name, string namespaceUri, int numArgs, Type objectType, BindingFlags flags)
+        public void Init(string name, string namespaceUri, int numArgs, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicMethods)] Type objectType, BindingFlags flags)
         {
             _name = name;
             _namespaceUri = namespaceUri;

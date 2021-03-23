@@ -4323,7 +4323,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_RET_EXPR))
                 {
                     GenTreeCall* call = impStackTop().val->AsRetExpr()->gtInlineCandidate->AsCall();
-                    if (call->gtFlags & CORINFO_FLG_JIT_INTRINSIC)
+                    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
                     {
                         if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Threading_Thread_get_CurrentThread)
                         {
@@ -4458,10 +4458,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Array_Clone:
             case NI_System_Collections_Generic_Comparer_get_Default:
             case NI_System_Collections_Generic_EqualityComparer_get_Default:
+            case NI_System_Object_MemberwiseClone:
+            case NI_System_Threading_Thread_get_CurrentThread:
             {
-                // Flag for later handling during devirtualization.
+                // Flag for later handling.
                 isSpecial = true;
                 break;
             }
@@ -5321,22 +5324,20 @@ bool Compiler::verMergeEntryStates(BasicBlock* block, bool* changed)
 /*****************************************************************************
  * 'logMsg' is true if a log message needs to be logged. false if the caller has
  *   already logged it (presumably in a more detailed fashion than done here)
- * 'bVerificationException' is true for a verification exception, false for a
- *   "call unauthorized by host" exception.
  */
 
 void Compiler::verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg))
 {
     block->bbJumpKind = BBJ_THROW;
     block->bbFlags |= BBF_FAILED_VERIFICATION;
+    block->bbFlags &= ~BBF_IMPORTED;
 
     impCurStmtOffsSet(block->bbCodeOffs);
 
-#ifdef DEBUG
-    // we need this since BeginTreeList asserts otherwise
+    // Clear the statement list as it exists so far; we're only going to have a verification exception.
     impStmtList = impLastStmt = nullptr;
-    block->bbFlags &= ~BBF_IMPORTED;
 
+#ifdef DEBUG
     if (logMsg)
     {
         JITLOG((LL_ERROR, "Verification failure: while compiling %s near IL offset %x..%xh \n", info.compFullName,
@@ -21277,7 +21278,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         derivedResolvedToken.tokenScope   = info.compCompHnd->getMethodModule(derivedMethod);
         derivedResolvedToken.tokenContext = *pContextHandle;
         derivedResolvedToken.token        = info.compCompHnd->getMethodDefFromMethod(derivedMethod);
-        derivedResolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
+        derivedResolvedToken.tokenType    = CORINFO_TOKENKIND_DevirtualizedMethod;
         derivedResolvedToken.hClass       = derivedClass;
         derivedResolvedToken.hMethod      = derivedMethod;
 
