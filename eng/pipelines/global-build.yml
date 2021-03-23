@@ -133,5 +133,5 @@ jobs:
     - SourceBuild_Linux_x64
     jobParameters:
       nameSuffix: SourceBuild
-      buildArgs: -subset clr+libs+host+packs /p:DotNetBuildFromSource=true
+      buildArgs: -subset clr+libs+host+packs /p:DotNetBuildFromSource=true --portableBuild false
       timeoutInMinutes: 90
