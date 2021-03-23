@@ -2,7 +2,7 @@
 
 We use the OSS testing framework [xunit](http://xunit.github.io/).
 
-To build the tests and run them you can call the libraries build script. **For every architecture it's mandatory to build a runtime (clr or mono)** even if you want to run libs tests only.
+To build the tests and run them you can call the libraries build script. For libraries tests to work, you must have built the coreclr or mono runtime for them to run on.
 
 **Examples**
 - The following shows how to build only the tests but not run them:
@@ -32,7 +32,7 @@ build.cmd/sh -subset clr+libs.tests -test -rc Release
 
 - The following builds mono and libs for x86 architecture and runs all tests:
 ```
-build.cmd/sh -subset mono+libs.tests -test -arch x86
+build.cmd/sh -subset mono+libs+libs.tests -test -arch x86
 ```
 
 - The following example shows how to pass extra msbuild properties to ignore tests ignored in CI:
