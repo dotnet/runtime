@@ -245,11 +245,16 @@
       <_EmscriptenAddPATH Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))" />
     </ItemGroup>
     <PropertyGroup>
-      <_EmscriptenAddPATHProperty>@(_EmscriptenAddPATH -> '%(Identity)', ':')</_EmscriptenAddPATHProperty>
+      <_EmscriptenAddPATHProperty Condition="'$(OS)' == 'Windows_NT'">@(_EmscriptenAddPATH -> '%(Identity)', '%3B')</_EmscriptenAddPATHProperty>
+      <_EmscriptenAddPATHProperty Condition="'$(OS)' != 'Windows_NT'">@(_EmscriptenAddPATH -> '%(Identity)', ':')</_EmscriptenAddPATHProperty>
     </PropertyGroup>
 
     <ItemGroup>
-      <EmscriptenEnvVars Include="PATH=$(_EmscriptenAddPATHProperty);$(PATH)" Condition="'$(OS)' == 'Windows_NT'" />
+      <!-- semicolon is a msbuild property separator. It is also the path separator on windows.
+           So, we need to escape it here, so the paths don't get split up when converting
+           to string[] for passing to Exec task -->
+      <EmscriptenEnvVars Include="PATH=$(_EmscriptenAddPATHProperty)%3B$([MSBuild]::Escape($(PATH)))" Condition="'$(OS)' == 'Windows_NT'" />
+
       <EmscriptenEnvVars Include="PATH=$(_EmscriptenAddPATHProperty):$(PATH)" Condition="'$(OS)' != 'Windows_NT'" />
     </ItemGroup>
 
