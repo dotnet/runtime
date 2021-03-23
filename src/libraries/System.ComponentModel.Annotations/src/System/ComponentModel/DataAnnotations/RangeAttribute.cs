@@ -46,6 +46,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="type">The type of the range parameters. Must implement IComparable.</param>
         /// <param name="minimum">The minimum allowable value.</param>
         /// <param name="maximum">The maximum allowable value.</param>
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public RangeAttribute(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             string minimum,
@@ -204,8 +205,7 @@ namespace System.ComponentModel.DataAnnotations
                                                             comparableType.FullName));
                     }
 
-                    // use OperandType here so the trimmer doesn't warn about the 'type' field on a compiler generated type
-                    TypeConverter converter = TypeDescriptor.GetConverter(OperandType);
+                    TypeConverter converter = GetOperandTypeConverter();
                     IComparable min = (IComparable)(ParseLimitsInInvariantCulture
                         ? converter.ConvertFromInvariantString((string)minimum)
                         : converter.ConvertFromString((string)minimum));
@@ -229,5 +229,10 @@ namespace System.ComponentModel.DataAnnotations
                 }
             }
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor that allows this code to be called is marked with RequiresUnreferencedCode.")]
+        private TypeConverter GetOperandTypeConverter() =>
+            TypeDescriptor.GetConverter(OperandType);
     }
 }

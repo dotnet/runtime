@@ -1770,6 +1770,14 @@ public:
         return true;
     }
 
+    //------------------------------------------------------------------------
+    // GetExitCount: Return the exit count computed for the loop
+    //
+    unsigned char GetExitCount() const
+    {
+        return exitCount;
+    }
+
 private:
     //------------------------------------------------------------------------
     // FindEntry: See if given HEAD flows to valid ENTRY between given TOP and BOTTOM
@@ -2463,7 +2471,13 @@ void Compiler::optFindNaturalLoops()
                 loopsThisMethod++;
 
                 /* keep track of the number of exits */
-                loopExitCountTable.record(static_cast<unsigned>(exitCount));
+                loopExitCountTable.record(static_cast<unsigned>(search.GetExitCount()));
+
+                // Note that we continue to look for loops even if
+                // (optLoopCount == MAX_LOOP_NUM), in contrast to the !COUNT_LOOPS code below.
+                // This gives us a better count and stats. Hopefully it doesn't affect actual codegen.
+                CLANG_FORMAT_COMMENT_ANCHOR;
+
 #else  // COUNT_LOOPS
                 assert(recordedLoop);
                 if (optLoopCount == MAX_LOOP_NUM)
@@ -2483,7 +2497,10 @@ void Compiler::optFindNaturalLoops()
             }
         }
     }
+
+#if !COUNT_LOOPS
 NO_MORE_LOOPS:
+#endif // !COUNT_LOOPS
 
 #if COUNT_LOOPS
     loopCountTable.record(loopsThisMethod);
@@ -3696,7 +3713,6 @@ void Compiler::optUnrollLoops()
         incr = incr->AsOp()->gtOp2;
 
         GenTree* init = initStmt->GetRootNode();
-        GenTree* test = testStmt->GetRootNode();
 
         /* Make sure everything looks ok */
         if ((init->gtOper != GT_ASG) || (init->AsOp()->gtOp1->gtOper != GT_LCL_VAR) ||

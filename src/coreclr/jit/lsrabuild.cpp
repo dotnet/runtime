@@ -286,9 +286,8 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
     }
     if (useRefPosition->isFixedRegRef && !useRegConflict)
     {
-        useReg                               = useRefPosition->assignedReg();
-        useRegRecord                         = getRegisterRecord(useReg);
-        RefPosition* currFixedRegRefPosition = useRegRecord->recentRefPosition;
+        useReg       = useRefPosition->assignedReg();
+        useRegRecord = getRegisterRecord(useReg);
 
         // We know that useRefPosition is a fixed use, so the nextRefPosition must not be null.
         RefPosition* nextFixedRegRefPosition = useRegRecord->getNextRefPosition();
@@ -3802,7 +3801,6 @@ void LinearScan::HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* c
 //
 int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 {
-    GenTree* dst  = tree;
     GenTree* addr = tree->gtGetOp1();
     GenTree* src  = tree->gtGetOp2();
 
@@ -3810,7 +3808,6 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
     // is an indir through an lea, we need to actually instantiate the
     // lea in a register
     assert(!addr->isContained() && !src->isContained());
-    int       srcCount       = 2;
     regMaskTP addrCandidates = RBM_ARG_0;
     regMaskTP srcCandidates  = RBM_ARG_1;
 

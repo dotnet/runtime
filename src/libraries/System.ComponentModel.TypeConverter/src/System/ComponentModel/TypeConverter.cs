@@ -13,6 +13,8 @@ namespace System.ComponentModel
     /// </summary>
     public class TypeConverter
     {
+        internal const string RequiresUnreferencedCodeMessage = "Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.";
+
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object in the
         /// given source type to the native type of the converter.
