@@ -178,17 +178,13 @@ namespace System.Net.Http
             s_http2ConnectionPreface.AsSpan().CopyTo(_outgoingBuffer.AvailableSpan);
             _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
-            // Send SETTINGS frame.  Disable push promise.
+            // Send SETTINGS frame.  Disable push promise & set initial window size.
             FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, 2*FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
             _outgoingBuffer.Commit(FrameHeader.Size);
             BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
             _outgoingBuffer.Commit(2);
             BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, 0);
             _outgoingBuffer.Commit(4);
-
-            // Send SETTINGS frame.  Set initial window size.
-            //FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
-            //_outgoingBuffer.Commit(FrameHeader.Size);
             BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.InitialWindowSize);
             _outgoingBuffer.Commit(2);
             BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, DefaultInitialWindowSize);
