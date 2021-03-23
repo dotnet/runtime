@@ -120,7 +120,7 @@
       <EmccFlags Condition="'$(WasmEnableES6)' == 'true'">$(EmccFlags) -s MODULARIZE=1 -s EXPORT_ES6=1</EmccFlags>
       <EmccConfigurationFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1</EmccConfigurationFlags>
       <EmccConfigurationFlags Condition="'$(Configuration)' == 'Release'">-Oz --llvm-opts 2 -DENABLE_NETCORE=1</EmccConfigurationFlags>
-      <StripCmd>$(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NativeBinDir)/dotnet.wasm -o $(NativeBinDir)/dotnet.wasm</StripCmd>
+      <StripCmd>&quot;$(EMSDK_PATH)/upstream/bin/wasm-opt&quot; --strip-dwarf &quot;$(NativeBinDir)/dotnet.wasm&quot; -o &quot;$(NativeBinDir)/dotnet.wasm&quot;</StripCmd>
       <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
       <WasmVersionFile>$(WasmObjDir)\emcc-version.txt</WasmVersionFile>
       <MonoIncludeDir>$(MonoArtifactsPath)include/mono-2.0</MonoIncludeDir>
@@ -139,11 +139,11 @@
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
 
-    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -I$(MonoIncludeDir) runtime/corebindings.c -c -o $(MonoObjDir)corebindings.o"
+    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -I&quot;$(MonoIncludeDir)&quot; runtime/corebindings.c -c -o &quot;$(MonoObjDir)corebindings.o&quot;"
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -DCORE_BINDINGS -I$(MonoObjDir) -I$(MonoIncludeDir) runtime/driver.c -c -o $(MonoObjDir)driver.o"
+    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -DCORE_BINDINGS -I&quot;$(MonoObjDir.TrimEnd('\/'))&quot; -I&quot;$(MonoIncludeDir)&quot; runtime/driver.c -c -o &quot;$(MonoObjDir)driver.o&quot;"
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
@@ -151,11 +151,11 @@
           DestinationFolder="$(MonoObjDir)"
           SkipUnchangedFiles="true" />
 
-    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -DGEN_PINVOKE=1 -I$(MonoObjDir) -I$(MonoIncludeDir) runtime/pinvoke.c -c -o $(MonoObjDir)pinvoke.o"
+    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -DGEN_PINVOKE=1 -I&quot;$(MonoObjDir.TrimEnd('\/'))&quot; -I&quot;$(MonoIncludeDir)&quot; runtime/pinvoke.c -c -o &quot;$(MonoObjDir)pinvoke.o&quot;"
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library $(SystemNativeDir)\pal_random.js $(MonoObjDir)/driver.o $(MonoObjDir)/pinvoke.o $(MonoObjDir)/corebindings.o @(MonoLibFiles->'%(FullPath)', ' ') -o $(NativeBinDir)/dotnet.js &amp;&amp; $(StripCmd)"
+    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library &quot;$(SystemNativeDir)\pal_random.js&quot; &quot;$(MonoObjDir)/driver.o&quot; &quot;$(MonoObjDir)/pinvoke.o&quot; &quot;$(MonoObjDir)/corebindings.o&quot; &quot;@(MonoLibFiles->'%(FullPath)', '&quot; &quot;')&quot; -o &quot;$(NativeBinDir)/dotnet.js&quot; &amp;&amp; $(StripCmd)"
           EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 

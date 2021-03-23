@@ -68,4 +68,4 @@ set "__VCBuildArch="
 
 :: Set CMakePath by evaluating the output from set-cmake-path.ps1.
 :: In case of a failure the output is "exit /b 1".
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "%~dp0set-cmake-path.ps1"') do %%a
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass -File "%~dp0set-cmake-path.ps1"') do %%a

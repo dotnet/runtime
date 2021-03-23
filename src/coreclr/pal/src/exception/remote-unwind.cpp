@@ -1451,15 +1451,16 @@ StepWithCompactEncodingArm64(const libunwindInfo* info, compact_unwind_encoding_
 
     context->Sp = callerSp;
 
-    // return address is stored in Lr
-    context->Pc = context->Lr;
-
     unw_word_t addr = callerSp;
 
     if (hasFrame &&
         !ReadCompactEncodingRegisterPair(info, &addr, &context->Lr, &context->Fp)) {
             return false;
     }
+
+    // unwound return address is stored in Lr
+    context->Pc = context->Lr;
+
     if (compactEncoding & UNWIND_ARM64_FRAME_X19_X20_PAIR &&
         !ReadCompactEncodingRegisterPair(info, &addr, &context->X[19], &context->X[20])) {
             return false;

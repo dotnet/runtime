@@ -29,14 +29,13 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "No attributes are supplied.")]
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public override PropertyDescriptorCollection GetProperties()
         {
             return GetProperties(null);
         }
 
-        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public override PropertyDescriptorCollection GetProperties(Attribute[] attributes)
         {
             PropertyDescriptorCollection properties = new PropertyDescriptorCollection(null);
