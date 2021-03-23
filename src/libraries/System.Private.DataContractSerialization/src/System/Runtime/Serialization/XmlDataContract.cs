@@ -111,7 +111,7 @@ namespace System.Runtime.Serialization
 
         public override bool IsBuiltInDataContract => UnderlyingType == Globals.TypeOfXmlElement || UnderlyingType == Globals.TypeOfXmlNodeArray;
 
-        private class XmlDataContractCriticalHelper : DataContract.DataContractCriticalHelper
+        private sealed class XmlDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private DataContractDictionary? _knownDataContracts;
             private bool _isKnownTypeAttributeChecked;

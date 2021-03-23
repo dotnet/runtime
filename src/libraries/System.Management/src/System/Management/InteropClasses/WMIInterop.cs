@@ -1380,7 +1380,7 @@ namespace System.Management
     internal class MTAHelper
     {
 
-        private class MTARequest
+        private sealed class MTARequest
         {
             public AutoResetEvent evtDone = new AutoResetEvent(false);
             public Type typeToCreate;

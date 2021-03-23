@@ -8,5 +8,6 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public PreAllocatedOverlapped(System.Threading.IOCompletionCallback callback, object? state, object? pinData) { }
         public void Dispose() { }
+        internal bool IsUserObject(byte[]? buffer) => false;
     }
 }

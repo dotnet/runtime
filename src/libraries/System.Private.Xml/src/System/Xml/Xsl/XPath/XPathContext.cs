@@ -96,7 +96,7 @@ namespace System.Xml.Xsl.XPath {
             return context;
         }
 
-        private class Replacer : QilActiveVisitor {
+        private sealed class Replacer : QilActiveVisitor {
             QilIterator from, to;
 
             public Replacer(QilFactory f) : base(f) {}

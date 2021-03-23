@@ -743,7 +743,7 @@ namespace System.DirectoryServices.AccountManagement
             Principal = User | Computer | Group
         }
 
-        private class PropertyMappingTableEntry
+        private sealed class PropertyMappingTableEntry
         {
             internal string propertyName;                  // PAPI name
             internal string suggestedWinNTPropertyName;    // WinNT attribute name

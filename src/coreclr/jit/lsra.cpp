@@ -816,9 +816,8 @@ void LinearScan::setBlockSequence()
 
     assert(blockSequenceWorkList == nullptr);
 
-    bool addedInternalBlocks = false;
-    verifiedAllBBs           = false;
-    hasCriticalEdges         = false;
+    verifiedAllBBs   = false;
+    hasCriticalEdges = false;
     BasicBlock* nextBlock;
     // We use a bbNum of 0 for entry RefPositions.
     // The other information in blockInfo[0] will never be used.
@@ -2943,16 +2942,10 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         REG_NUM = 0x0001, // It has a lower register number.
     };
 
-    LsraLocation bestLocation   = MinLocation;
-    LsraLocation farRefLocation = MinLocation;
-
     // These are used in the post-selection updates, and must be set for any selection.
     regMaskTP freeCandidates    = RBM_NONE;
     regMaskTP matchingConstants = RBM_NONE;
     regMaskTP unassignedSet     = RBM_NONE;
-
-    // These must be set prior to their use in the associated heuristics.
-    unsigned int thisSpillWeight = 0;
 
     // We'll set this to short-circuit remaining heuristics when we have a single candidate.
     bool found = false;
@@ -3295,8 +3288,6 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         float thisSpillWeight = getWeight(refPosition);
         // The  spill weight for the best candidate we've found so far.
         float bestSpillWeight = FloatingPointUtils::infinite_float();
-        // True if we found registers with lower spill weight than this refPosition.
-        bool foundLowerSpillWeight = false;
 
         for (regMaskTP spillCandidates = selector.candidates; spillCandidates != RBM_NONE;)
         {
@@ -3503,9 +3494,8 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
             // the current interval to a previous assignment, we don't remember the previous interval.
             // Note that we need to compute this condition before calling unassignPhysReg, which wil reset
             // assignedInterval->physReg.
-            regMaskTP freePrefCandidates = (selector.candidates & preferences & freeCandidates);
-            bool      wasThisAssigned    = ((prevRegBit & preferences) == foundRegBit);
-            bool      wasAssigned        = (((foundRegBit & unassignedSet) != RBM_NONE) && !wasThisAssigned &&
+            bool wasThisAssigned = ((prevRegBit & preferences) == foundRegBit);
+            bool wasAssigned     = (((foundRegBit & unassignedSet) != RBM_NONE) && !wasThisAssigned &&
                                 (assignedInterval != nullptr) && (assignedInterval->physReg == foundReg));
             unassignPhysReg(availablePhysRegRecord ARM_ARG(currentInterval->registerType));
             if ((matchingConstants & foundRegBit) != RBM_NONE)
@@ -3740,11 +3730,6 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
     Interval* currentInterval = refPosition->getInterval();
     assert(currentInterval != nullptr);
     assert(currentInterval->isActive);
-
-    bool         foundFreeReg = false;
-    RegRecord*   bestPhysReg  = nullptr;
-    LsraLocation bestLocation = MinLocation;
-    regMaskTP    candidates   = refPosition->registerAssignment;
 
     // Save the relatedInterval, if any, so that it doesn't get modified during allocation.
     Interval* savedRelatedInterval   = currentInterval->relatedInterval;
@@ -4217,8 +4202,8 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         return;
     }
 
-    regNumber victimAssignedReg = assignedInterval->physReg;
-    assignedInterval->physReg   = REG_NA;
+    // regNumber victimAssignedReg = assignedInterval->physReg;
+    assignedInterval->physReg = REG_NA;
 
     bool spill = assignedInterval->isActive && nextRefPosition != nullptr;
     if (spill)
@@ -4706,10 +4691,9 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         return;
     }
 
-    unsigned    predBBNum         = blockInfo[currentBlock->bbNum].predBBNum;
-    VarToRegMap predVarToRegMap   = getOutVarToRegMap(predBBNum);
-    VarToRegMap inVarToRegMap     = getInVarToRegMap(currentBlock->bbNum);
-    bool        hasCriticalInEdge = blockInfo[currentBlock->bbNum].hasCriticalInEdge;
+    unsigned    predBBNum       = blockInfo[currentBlock->bbNum].predBBNum;
+    VarToRegMap predVarToRegMap = getOutVarToRegMap(predBBNum);
+    VarToRegMap inVarToRegMap   = getInVarToRegMap(currentBlock->bbNum);
 
     // If this block enters an exception region, all incoming vars are on the stack.
     if (predBBNum == 0)
@@ -5033,7 +5017,6 @@ void LinearScan::processBlockEndLocations(BasicBlock* currentBlock)
         VarSetOps::Assign(compiler, currentLiveVars, registerCandidateVars);
     }
 #endif // DEBUG
-    regMaskTP       liveRegs = RBM_NONE;
     VarSetOps::Iter iter(compiler, currentLiveVars);
     unsigned        varIndex = 0;
     while (iter.NextElem(&varIndex))
@@ -5180,7 +5163,7 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
             regsToFree &= ~(nextRegBit << 1);
         }
 #endif
-        freeRegister(getRegisterRecord(nextReg));
+        freeRegister(regRecord);
     }
 }
 
@@ -5252,7 +5235,6 @@ void LinearScan::allocateRegisters()
     }
 
 #ifdef DEBUG
-    regNumber lastAllocatedReg = REG_NA;
     if (VERBOSE)
     {
         dumpRefPositions("BEFORE ALLOCATION");
@@ -5331,7 +5313,6 @@ void LinearScan::allocateRegisters()
 
         Interval*      currentInterval = nullptr;
         Referenceable* currentReferent = nullptr;
-        bool           isInternalRef   = false;
         RefType        refType         = currentRefPosition->refType;
 
         currentReferent = currentRefPosition->referent;
@@ -5939,9 +5920,8 @@ void LinearScan::allocateRegisters()
                     regNumber copyReg = assignCopyReg(currentRefPosition);
                     assert(copyReg != REG_NA);
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, copyReg));
-                    lastAllocatedRefPosition     = currentRefPosition;
-                    bool         unassign        = false;
-                    RefPosition* nextRefPosition = currentRefPosition->nextRefPosition;
+                    lastAllocatedRefPosition = currentRefPosition;
+                    bool unassign            = false;
                     if (currentInterval->isWriteThru)
                     {
                         if (currentRefPosition->refType == RefTypeDef)
@@ -6126,8 +6106,7 @@ void LinearScan::allocateRegisters()
             // is not used, etc.
             // If this is an UpperVector we'll neither free it nor preference it
             // (it will be freed when it is used).
-            bool stillInReg = true;
-            bool unassign   = false;
+            bool unassign = false;
             if (!currentInterval->IsUpperVector())
             {
                 if (currentInterval->isWriteThru)
@@ -7349,9 +7328,6 @@ void LinearScan::resolveRegisters()
                (refPosIterator->refType != RefTypeParamDef && refPosIterator->refType != RefTypeZeroInit));
     }
 
-    BasicBlock* insertionBlock = compiler->fgFirstBB;
-    GenTree*    insertionPoint = LIR::AsRange(insertionBlock).FirstNonPhiNode();
-
     // write back assignments
     for (block = startBlockSequence(); block != nullptr; block = moveToNextBlock())
     {
@@ -7718,7 +7694,6 @@ void LinearScan::resolveRegisters()
                     regNumber initialReg     = (initialRegMask == RBM_NONE || interval->firstRefPosition->spillAfter)
                                                ? REG_STK
                                                : genRegNumFromMask(initialRegMask);
-                    regNumber sourceReg = (varDsc->lvIsRegArg) ? varDsc->GetArgReg() : REG_STK;
 
 #ifdef TARGET_ARM
                     if (varTypeIsMultiReg(varDsc))
@@ -8259,16 +8234,12 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         return;
     }
     VARSET_TP sameResolutionSet(VarSetOps::MakeEmpty(compiler));
-    VARSET_TP sameLivePathsSet(VarSetOps::MakeEmpty(compiler));
-    VARSET_TP singleTargetSet(VarSetOps::MakeEmpty(compiler));
     VARSET_TP diffResolutionSet(VarSetOps::MakeEmpty(compiler));
 
     // Get the outVarToRegMap for this block
     VarToRegMap outVarToRegMap = getOutVarToRegMap(block->bbNum);
     unsigned    succCount      = block->NumSucc(compiler);
     assert(succCount > 1);
-    VarToRegMap firstSuccInVarToRegMap = nullptr;
-    BasicBlock* firstSucc              = nullptr;
 
     // First, determine the live regs at the end of this block so that we know what regs are
     // available to copy into.
@@ -8370,9 +8341,6 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     while (outResolutionSetIter.NextElem(&outResolutionSetVarIndex))
     {
         regNumber fromReg             = getVarReg(outVarToRegMap, outResolutionSetVarIndex);
-        bool      isMatch             = true;
-        bool      isSame              = false;
-        bool      maybeSingleTarget   = false;
         bool      maybeSameLivePaths  = false;
         bool      liveOnlyAtSplitEdge = true;
         regNumber sameToReg           = REG_NA;
@@ -8499,7 +8467,6 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 
             // Now collect the resolution set for just this edge, if any.
             // Check only the vars in diffResolutionSet that are live-in to this successor.
-            bool        needsResolution   = false;
             VarToRegMap succInVarToRegMap = getInVarToRegMap(succBlock->bbNum);
             VARSET_TP   edgeResolutionSet(VarSetOps::Intersection(compiler, diffResolutionSet, succBlock->bbLiveIn));
             VarSetOps::Iter iter(compiler, edgeResolutionSet);
@@ -8840,7 +8807,9 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         (resolveType == ResolveSharedCritical) ? REG_NA : getTempRegForResolution(fromBlock, toBlock, TYP_INT);
 #endif // !TARGET_XARCH
     regNumber tempRegFlt = REG_NA;
-    regNumber tempRegDbl = REG_NA; // Used only for ARM
+#ifdef TARGET_ARM
+    regNumber tempRegDbl = REG_NA;
+#endif
     if ((compiler->compFloatingPointUsed) && (resolveType != ResolveSharedCritical))
     {
 #ifdef TARGET_ARM
@@ -9985,11 +9954,8 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
         {
             GenTree* tree = node;
 
-            genTreeOps oper      = tree->OperGet();
-            int        produce   = tree->IsValue() ? ComputeOperandDstCount(tree) : 0;
-            int        consume   = ComputeAvailableSrcCount(tree);
-            regMaskTP  killMask  = RBM_NONE;
-            regMaskTP  fixedMask = RBM_NONE;
+            int produce = tree->IsValue() ? ComputeOperandDstCount(tree) : 0;
+            int consume = ComputeAvailableSrcCount(tree);
 
             lsraDispNode(tree, mode, produce != 0 && mode != LSRA_DUMP_REFPOS);
 
@@ -10402,8 +10368,7 @@ void LinearScan::dumpRegRecordHeader()
     regTableIndent = shortRefPositionDumpWidth + allocationInfoWidth;
 
     // BBnn printed left-justified in the NAME Typeld and allocationInfo space.
-    int bbDumpWidth = regColumnWidth + 1 + refTypeInfoWidth + allocationInfoWidth;
-    int bbNumWidth  = (int)log10((double)compiler->fgBBNumMax) + 1;
+    int bbNumWidth = (int)log10((double)compiler->fgBBNumMax) + 1;
     // In the unlikely event that BB numbers overflow the space, we'll simply omit the predBB
     int predBBNumDumpSpace = regTableIndent - locationAndRPNumWidth - bbNumWidth - 9; // 'BB' + ' PredBB'
     if (predBBNumDumpSpace < bbNumWidth)
@@ -10615,7 +10580,6 @@ void LinearScan::dumpNewBlock(BasicBlock* currentBlock, LsraLocation location)
 //
 void LinearScan::dumpRefPositionShort(RefPosition* refPosition, BasicBlock* currentBlock)
 {
-    BasicBlock*         block                  = currentBlock;
     static RefPosition* lastPrintedRefPosition = nullptr;
     if (refPosition == lastPrintedRefPosition)
     {

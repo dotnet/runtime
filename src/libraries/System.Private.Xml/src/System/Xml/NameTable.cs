@@ -15,7 +15,7 @@ namespace System.Xml
         //
         // Private types
         //
-        private class Entry
+        private sealed class Entry
         {
             internal string str;
             internal int hashCode;

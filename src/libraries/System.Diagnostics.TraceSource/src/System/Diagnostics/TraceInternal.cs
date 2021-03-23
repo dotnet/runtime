@@ -11,7 +11,7 @@ namespace System.Diagnostics
 {
     internal static class TraceInternal
     {
-        private class TraceProvider : DebugProvider
+        private sealed class TraceProvider : DebugProvider
         {
 #pragma warning disable CS8770 // Method lacks `[DoesNotReturn]` annotation to match overridden member.
             public override void Fail(string? message, string? detailMessage) { TraceInternal.Fail(message, detailMessage); }

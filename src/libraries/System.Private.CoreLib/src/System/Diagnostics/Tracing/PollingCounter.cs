@@ -89,7 +89,7 @@ namespace System.Diagnostics.Tracing
     /// This is the payload that is sent in the with EventSource.Write
     /// </summary>
     [EventData]
-    internal class PollingPayloadType
+    internal sealed class PollingPayloadType
     {
         public PollingPayloadType(CounterPayload payload) { Payload = payload; }
         public CounterPayload Payload { get; set; }

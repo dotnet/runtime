@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Options.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class OptionsFactoryTest
     {
         [Fact]

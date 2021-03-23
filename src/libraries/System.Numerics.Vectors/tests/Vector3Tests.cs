@@ -126,6 +126,7 @@ namespace System.Numerics.Tests
 
         // A test for Distance (Vector3f, Vector3f)
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49824")]
         public void Vector3DistanceTest()
         {
             Vector3 a = new Vector3(1.0f, 2.0f, 3.0f);

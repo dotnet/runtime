@@ -12982,29 +12982,37 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 			continue;
 		if (!m->is_inflated)
 			continue;
+		if (mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE))
+			continue;
 
-		ctx = mono_method_get_context (m);
-		/* For simplicity, add instances which reference the assembly we are compiling */
-		if (((ctx->class_inst && inst_references_image (ctx->class_inst, acfg->image)) ||
-			 (ctx->method_inst && inst_references_image (ctx->method_inst, acfg->image))) &&
-			!mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) {
-			//printf ("%s\n", mono_method_full_name (m, TRUE));
+		if (acfg->aot_opts.dedup_include) {
+			/* Add all instances from the profile */
 			add_profile_method (acfg, m);
 			count ++;
-		} else if (m_class_get_image (m->klass) == acfg->image &&
-			((ctx->class_inst && is_local_inst (ctx->class_inst, acfg->image)) ||
-			 (ctx->method_inst && is_local_inst (ctx->method_inst, acfg->image))) &&
-			!mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE))  {
-			/* Add instances where the gtd is in the assembly and its inflated with types from this assembly or corlib */
-			//printf ("%s\n", mono_method_full_name (m, TRUE));
-			add_profile_method (acfg, m);
-			count ++;
+		} else {
+			ctx = mono_method_get_context (m);
+			/* For simplicity, add instances which reference the assembly we are compiling */
+			if (((ctx->class_inst && inst_references_image (ctx->class_inst, acfg->image)) ||
+				 (ctx->method_inst && inst_references_image (ctx->method_inst, acfg->image)))) {
+				//printf ("%s\n", mono_method_full_name (m, TRUE));
+				add_profile_method (acfg, m);
+				count ++;
+			} else if (m_class_get_image (m->klass) == acfg->image &&
+					   ((ctx->class_inst && is_local_inst (ctx->class_inst, acfg->image)) ||
+						(ctx->method_inst && is_local_inst (ctx->method_inst, acfg->image)))) {
+				/* Add instances where the gtd is in the assembly and its inflated with types from this assembly or corlib */
+				//printf ("%s\n", mono_method_full_name (m, TRUE));
+				add_profile_method (acfg, m);
+				count ++;
+			} else {
+				//printf ("SKIP: %s (%s)\n", mono_method_get_full_name (m), acfg->image->name);
+			}
+			/*
+			 * FIXME: We might skip some instances, for example:
+			 * Foo<Bar> won't be compiled when compiling Foo's assembly since it doesn't match the first case,
+			 * and it won't be compiled when compiling Bar's assembly if Foo's assembly is not loaded.
+			 */
 		}
-		/*
-		 * FIXME: We might skip some instances, for example:
-		 * Foo<Bar> won't be compiled when compiling Foo's assembly since it doesn't match the first case,
-		 * and it won't be compiled when compiling Bar's assembly if Foo's assembly is not loaded.
-		 */
 	}
 
 	printf ("Added %d methods from profile.\n", count);
