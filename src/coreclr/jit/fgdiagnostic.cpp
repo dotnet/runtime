@@ -822,10 +822,19 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
             {
                 fprintf(fgxFile, "\n            loopHead=\"true\"");
             }
+
+            const char* rootTreeOpName = "n/a";
+            if (block->lastNode() != nullptr)
+            {
+                // lastNode is firstStmt->GetRootNode() in case of non-LIR
+                rootTreeOpName = GenTree::OpName(block->lastNode()->OperGet());
+            }
+
             fprintf(fgxFile, "\n            weight=");
             fprintfDouble(fgxFile, ((double)block->bbWeight) / weightDivisor);
             fprintf(fgxFile, "\n            codeEstimate=\"%d\"", fgGetCodeEstimate(block));
             fprintf(fgxFile, "\n            startOffset=\"%d\"", block->bbCodeOffs);
+            fprintf(fgxFile, "\n            rootTreeOp=\"%s\"", rootTreeOpName);
             fprintf(fgxFile, "\n            endOffset=\"%d\"", block->bbCodeOffsEnd);
             fprintf(fgxFile, ">");
             fprintf(fgxFile, "\n        </block>");
