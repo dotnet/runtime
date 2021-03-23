@@ -6,8 +6,7 @@ trigger:
   batch: true
   branches:
     include:
-    - master
-    - dev/infrastructure
+    - main
     - release/*.*
   paths:
     include:
@@ -27,8 +26,7 @@ trigger:
 pr:
   branches:
     include:
-    - master
-    - dev/infrastructure
+    - main
     - release/*.*
   paths:
     include:
@@ -63,3 +61,21 @@ jobs:
       nameSuffix: Runtime_Release
       buildArgs: -s clr+libs -c $(_BuildConfig)
       extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+
+#
+# Build Release config vertical for Browser-wasm
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: release
+    platforms:
+    - Browser_wasm
+    jobParameters:
+      testGroup: innerloop
+      timeoutInMinutes: 120
+      nameSuffix: Runtime_Release
+      buildArgs: -s mono+libs -c $(_BuildConfig) -p:WasmBuildNative=false
+      extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+      extraStepsParameters:
+          extraTestArgs: '/p:WasmBuildNative=false'

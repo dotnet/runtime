@@ -835,6 +835,36 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task ArgumentDeserialization_Honors_JsonInclude()
+        {
+            Point_MembersHave_JsonInclude point = new Point_MembersHave_JsonInclude(1, 2,3);
+
+            string json = JsonSerializer.Serialize(point);
+            Assert.Contains(@"""X"":1", json);
+            Assert.Contains(@"""Y"":2", json);
+            //We should add another test for non-public members
+            //when https://github.com/dotnet/runtime/issues/31511 is implemented
+            Assert.Contains(@"""Z"":3", json);
+
+            point = await Serializer.DeserializeWrapper<Point_MembersHave_JsonInclude>(json);
+            point.Verify();
+        }
+
+        [Fact]
+        public async Task ArgumentDeserialization_Honors_JsonNumberHandling()
+        {
+            ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes obj = await Serializer.DeserializeWrapper<ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes>(ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes.s_json);
+            obj.Verify();
+
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Contains(@"""A"":1", json);
+            Assert.Contains(@"""B"":""NaN""", json);
+            Assert.Contains(@"""C"":2", json);
+            Assert.Contains(@"""D"":""3""", json);
+            Assert.Contains(@"""E"":""4""", json);
+        }
+
+        [Fact]
         public async Task ArgumentDeserialization_Honors_JsonPropertyName()
         {
             Point_MembersHave_JsonPropertyName point = new Point_MembersHave_JsonPropertyName(1, 2);

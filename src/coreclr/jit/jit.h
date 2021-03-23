@@ -26,25 +26,6 @@
 #define ZERO 0
 
 #ifdef _MSC_VER
-// These don't seem useful, so turning them off is no big deal
-#pragma warning(disable : 4065) // "switch statement contains 'default' but no 'case' labels" (happens due to #ifdefs)
-#pragma warning(disable : 4510) // can't generate default constructor
-#pragma warning(disable : 4511) // can't generate copy constructor
-#pragma warning(disable : 4512) // can't generate assignment constructor
-#pragma warning(disable : 4610) // user defined constructor required
-#pragma warning(disable : 4211) // nonstandard extension used (char name[0] in structs)
-#pragma warning(disable : 4127) // conditional expression constant
-#pragma warning(disable : 4201) // "nonstandard extension used : nameless struct/union"
-
-// Depending on the code base, you may want to not disable these
-#pragma warning(disable : 4245) // assigning signed / unsigned
-#pragma warning(disable : 4146) // unary minus applied to unsigned
-
-#pragma warning(disable : 4100) // unreferenced formal parameter
-#pragma warning(disable : 4291) // new operator without delete (only in emitX86.cpp)
-#endif
-
-#ifdef _MSC_VER
 #define CHECK_STRUCT_PADDING 0 // Set this to '1' to enable warning C4820 "'bytes' bytes padding added after
                                // construct 'member_name'" on interesting structs/classes
 #else
@@ -386,6 +367,27 @@ typedef ptrdiff_t ssize_t;
 #define FLD_GLOBAL_DS ((CORINFO_FIELD_HANDLE)-4)
 #define FLD_GLOBAL_FS ((CORINFO_FIELD_HANDLE)-8)
 
+class GlobalJitOptions
+{
+public:
+#ifdef FEATURE_HFA
+#define FEATURE_HFA_FIELDS_PRESENT
+#ifdef CONFIGURABLE_ARM_ABI
+    // These are safe to have globals as they cannot change once initialized within the process.
+    static LONG compUseSoftFPConfigured;
+    static bool compFeatureHfa;
+#else  // !CONFIGURABLE_ARM_ABI
+    static const bool compFeatureHfa = true;
+#endif // CONFIGURABLE_ARM_ABI
+#else  // !FEATURE_HFA
+    static const bool compFeatureHfa = false;
+#endif // FEATURE_HFA
+
+#ifdef FEATURE_HFA
+#undef FEATURE_HFA
+#endif
+};
+
 /*****************************************************************************/
 
 #include "vartype.h"
@@ -508,7 +510,7 @@ typedef ptrdiff_t ssize_t;
 
 #if DUMP_GC_TABLES
 #pragma message("NOTE: this non-debug build has GC ptr table dumping always enabled!")
-const bool dspGCtbls = true;
+const bool            dspGCtbls      = true;
 #endif
 
 /*****************************************************************************/
@@ -548,6 +550,9 @@ const bool dspGCtbls = true;
 #define DISPTREERANGE(range, t)                                                                                        \
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->gtDispTreeRange(range, t);
+#define DISPBLOCK(b)                                                                                                   \
+    if (JitTls::GetCompiler()->verbose)                                                                                \
+        JitTls::GetCompiler()->fgTableDispBasicBlock(b);
 #define VERBOSE JitTls::GetCompiler()->verbose
 #else // !DEBUG
 #define JITDUMP(...)
@@ -559,6 +564,7 @@ const bool dspGCtbls = true;
 #define DISPSTMT(t)
 #define DISPRANGE(range)
 #define DISPTREERANGE(range, t)
+#define DISPBLOCK(b)
 #define VERBOSE 0
 #endif // !DEBUG
 
@@ -749,6 +755,8 @@ private:
 
 #ifdef TARGET_XARCH
 #define FEATURE_LOOP_ALIGN 1
+#else
+#define FEATURE_LOOP_ALIGN 0
 #endif
 
 #define CLFLG_MAXOPT                                                                                                   \

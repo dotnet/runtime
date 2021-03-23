@@ -43,5 +43,7 @@ namespace Microsoft.Win32.SafeHandles
             safeHandle.SetHandle(handle);
             return safeHandle;
         }
+
+        internal SafeEcKeyHandle DuplicateHandle() => DuplicateHandle(DangerousGetHandle());
     }
 }

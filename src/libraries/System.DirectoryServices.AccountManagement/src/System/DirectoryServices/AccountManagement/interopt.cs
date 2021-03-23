@@ -14,19 +14,15 @@ namespace System.DirectoryServices.AccountManagement
     using System.Security;
     using System.Text;
 
-    internal class Constants
+    internal static class Constants
     {
-        private Constants() { }
         internal static byte[] GUID_USERS_CONTAINER_BYTE = new byte[] { 0xa9, 0xd1, 0xca, 0x15, 0x76, 0x88, 0x11, 0xd1, 0xad, 0xed, 0x00, 0xc0, 0x4f, 0xd8, 0xd5, 0xcd };
         internal static byte[] GUID_COMPUTRS_CONTAINER_BYTE = new byte[] { 0xaa, 0x31, 0x28, 0x25, 0x76, 0x88, 0x11, 0xd1, 0xad, 0xed, 0x00, 0xc0, 0x4f, 0xd8, 0xd5, 0xcd };
         internal static byte[] GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER_BYTE = new byte[] { 0x22, 0xb7, 0x0c, 0x67, 0xd5, 0x6e, 0x4e, 0xfb, 0x91, 0xe9, 0x30, 0x0f, 0xca, 0x3d, 0xc1, 0xaa };
     }
 
-    internal class SafeNativeMethods
+    internal static class SafeNativeMethods
     {
-        // To stop the compiler from autogenerating a constructor for this class
-        private SafeNativeMethods() { }
-
         [DllImport("kernel32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "GetCurrentThreadId", CharSet = CharSet.Unicode)]
         public static extern int GetCurrentThreadId();
 
@@ -34,11 +30,8 @@ namespace System.DirectoryServices.AccountManagement
         public static extern int LsaNtStatusToWinError(int ntStatus);
     }
 
-    internal class UnsafeNativeMethods
+    internal static class UnsafeNativeMethods
     {
-        // To stop the compiler from autogenerating a constructor for this class
-        private UnsafeNativeMethods() { }
-
         [DllImport(ExternDll.Activeds, ExactSpelling = true, EntryPoint = "ADsOpenObject", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
         private static extern int IntADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject);
         public static int ADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject)

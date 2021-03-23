@@ -28,7 +28,9 @@ typedef enum {
 	FRAME_TYPE_INTERP_TO_MANAGED = 5,
 	/* same, but with MonoContext */
 	FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX = 6,
-	FRAME_TYPE_NUM = 7
+	/* Frame for transitioning to interpreted code */
+	FRAME_TYPE_INTERP_ENTRY = 7,
+	FRAME_TYPE_NUM = 8
 } MonoStackFrameType;
 
 typedef enum {
@@ -64,8 +66,6 @@ typedef struct {
 	 * Not valid if ASYNC_CONTEXT is true.
 	 */
 	MonoMethod *actual_method;
-	/* The domain containing the code executed by this frame */
-	MonoDomain *domain;
 	/* Whenever method is a user level method */
 	gboolean managed;
 	/*

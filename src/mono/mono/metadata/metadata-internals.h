@@ -219,6 +219,7 @@ struct _MonoAssembly {
 	MonoAssemblyName aname;
 	MonoImage *image;
 	GSList *friend_assembly_names; /* Computed by mono_assembly_load_friends () */
+	GSList *ignores_checks_assembly_names; /* Computed by mono_assembly_load_friends () */
 	guint8 friend_assembly_names_inited;
 	guint8 dynamic;
 	MonoAssemblyContext context;
@@ -674,17 +675,9 @@ struct _MonoDynamicImage {
 	GHashTable *blob_cache;
 	GHashTable *standalonesig_cache;
 	GList *array_methods;
-	GPtrArray *gen_params;
-	MonoGHashTable *token_fixups;
-	GHashTable *method_to_table_idx;
-	GHashTable *field_to_table_idx;
 	GHashTable *method_aux_hash;
 	GHashTable *vararg_aux_hash;
 	MonoGHashTable *generic_def_objects;
-	/*
-	 * Maps final token values to the object they describe.
-	 */
-	MonoGHashTable *remapped_tokens;
 	gboolean initial_image;
 	guint32 pe_kind, machine;
 	char *strong_name;
@@ -910,7 +903,7 @@ int
 mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
 
 void
-mono_image_load_enc_delta (MonoDomain *domain, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
+mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
 #endif /* ENABLE_METADATA_UPDATE */
 
 gpointer
@@ -980,6 +973,7 @@ mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_i
 gboolean
 mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index);
 
+/* token_index is 1-based */
 static inline gboolean
 mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
 {
@@ -1088,7 +1082,6 @@ mono_assembly_name_parse_full 		     (const char	   *name,
 
 gboolean
 mono_assembly_fill_assembly_name_full (MonoImage *image, MonoAssemblyName *aname, gboolean copyBlobs);
-
 
 MONO_API guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner);
 

@@ -53,7 +53,6 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/w32file.h>
-#include <mono/metadata/w32socket.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/metadata-internals.h>
@@ -82,8 +81,6 @@
 #include <mono/metadata/seq-points-data.h>
 #include <mono/metadata/icall-table.h>
 #include <mono/metadata/handle.h>
-#include <mono/metadata/w32mutex.h>
-#include <mono/metadata/w32semaphore.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/loader-internals.h>
@@ -1620,7 +1617,7 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoStackCrawlMark *stack_mark, 
 	MonoAssembly *assembly = NULL;
 	gboolean type_resolve = FALSE;
 	MonoImage *rootimage = NULL;
-	MonoAssemblyLoadContext *alc = mono_domain_ambient_alc (mono_domain_get ());
+	MonoAssemblyLoadContext *alc = mono_alc_get_ambient ();
 
 	error_init (error);
 
@@ -2544,7 +2541,6 @@ typedef struct {
 	MonoArrayHandle iface_array;
 	MonoGenericContext *context;
 	MonoError *error;
-	MonoDomain *domain;
 	int next_idx;
 } FillIfaceArrayData;
 
@@ -2606,8 +2602,7 @@ ves_icall_RuntimeType_GetInterfaces (MonoReflectionTypeHandle ref_type, MonoErro
 		goto_if_nok (error, fail);
 	}
 
-	MonoDomain *domain;
-	domain = MONO_HANDLE_DOMAIN (ref_type);
+	MonoDomain *domain = mono_get_root_domain ();
 
 	int len;
 	len = g_hash_table_size (iface_hash);
@@ -2625,7 +2620,6 @@ ves_icall_RuntimeType_GetInterfaces (MonoReflectionTypeHandle ref_type, MonoErro
 	goto_if_nok (error, fail);
 	data.context = context;
 	data.error = error;
-	data.domain = domain;
 	data.next_idx = 0;
 
 	g_hash_table_foreach (iface_hash, fill_iface_array, &data);
@@ -3133,9 +3127,6 @@ ves_icall_RuntimeType_get_DeclaringMethod (MonoReflectionTypeHandle ref_type, Mo
 	method = mono_type_get_generic_param_owner (type)->owner.method;
 	g_assert (method);
 
-	MonoDomain *domain;
-	domain = MONO_HANDLE_DOMAIN (ref_type);
-
 	MONO_HANDLE_ASSIGN (ret, mono_method_get_object_handle (method, method->klass, error));
 leave:
 	return ret;
@@ -3628,12 +3619,10 @@ write_enum_value (void *mem, int type, guint64 value)
 MonoObjectHandle
 ves_icall_System_Enum_ToObject (MonoReflectionTypeHandle enumType, guint64 value, MonoError *error)
 {
-	MonoDomain *domain; 
 	MonoClass *enumc;
 	MonoObjectHandle resultHandle;
 	MonoType *etype;
 
-	domain = MONO_HANDLE_DOMAIN (enumType);
 	enumc = mono_class_from_mono_type_internal (MONO_HANDLE_GETVAL (enumType, type));
 
 	mono_class_init_checked (enumc, error);
@@ -4380,7 +4369,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssemblyHand
 
 	MonoTypeNameParse info;
 	gboolean type_resolve;
-	MonoAssemblyLoadContext *alc = mono_domain_ambient_alc (mono_domain_get ());
+	MonoAssemblyLoadContext *alc = mono_alc_get_ambient ();
 
 	/* On MS.NET, this does not fire a TypeResolve event */
 	type_resolve = TRUE;
@@ -4615,7 +4604,7 @@ fail:
 }
 
 static MonoAssemblyName*
-create_referenced_assembly_name (MonoDomain *domain, MonoImage *image, int i, MonoError *error)
+create_referenced_assembly_name (MonoImage *image, int i, MonoError *error)
 {
 	MonoAssemblyName *aname = g_new0 (MonoAssemblyName, 1);
 
@@ -4641,7 +4630,6 @@ GPtrArray*
 ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflectionAssemblyHandle assembly, MonoError *error) 
 {
 	error_init (error);
-	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly);
 	MonoAssembly *ass = MONO_HANDLE_GETVAL(assembly, assembly);
 	MonoImage *image = ass->image;
 	int count;
@@ -4658,7 +4646,7 @@ ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflec
 	GPtrArray *result = g_ptr_array_sized_new (count);
 
 	for (int i = 0; i < count; i++) {
-		MonoAssemblyName *aname = create_referenced_assembly_name (domain, image, i, error);
+		MonoAssemblyName *aname = create_referenced_assembly_name (image, i, error);
 		if (!is_ok (error))
 			break;
 		g_ptr_array_add (result, aname);
@@ -5125,12 +5113,12 @@ ves_icall_System_Reflection_Assembly_GetExecutingAssembly (MonoStackCrawlMark *s
 MonoReflectionAssemblyHandle
 ves_icall_System_Reflection_Assembly_GetEntryAssembly (MonoError *error)
 {
-	MonoDomain* domain = mono_domain_get ();
+	MonoAssembly *assembly = mono_runtime_get_entry_assembly ();
 
-	if (!domain->entry_assembly)
+	if (!assembly)
 		return MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 
-	return mono_assembly_get_object_handle (domain->entry_assembly, error);
+	return mono_assembly_get_object_handle (assembly, error);
 }
 
 MonoReflectionAssemblyHandle
@@ -5213,13 +5201,12 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 
 	error_init (error);
 
-	MonoDomain *domain = MONO_HANDLE_DOMAIN (fname);
 	filename = mono_string_handle_to_utf8 (fname, error);
 	return_if_nok (error);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "InternalGetAssemblyName (\"%s\")", filename);
 
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	image = mono_image_open_a_lot (alc, filename, &status, FALSE);
 
 	if (!image){
@@ -5275,7 +5262,7 @@ mono_module_type_is_visible (MonoTableInfo *tdef, MonoImage *image, int type)
 }
 
 static void
-image_get_type (MonoDomain *domain, MonoImage *image, MonoTableInfo *tdef, int table_idx, int count, MonoArrayHandle res, MonoArrayHandle exceptions, MonoBoolean exportedOnly, MonoError *error)
+image_get_type (MonoImage *image, MonoTableInfo *tdef, int table_idx, int count, MonoArrayHandle res, MonoArrayHandle exceptions, MonoBoolean exportedOnly, MonoError *error)
 {
 	error_init (error);
 	HANDLE_FUNCTION_ENTER ();
@@ -5295,7 +5282,7 @@ image_get_type (MonoDomain *domain, MonoImage *image, MonoTableInfo *tdef, int t
 }
 
 static MonoArrayHandle
-mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArrayHandleOut exceptions, MonoBoolean exportedOnly, MonoError *error)
+mono_module_get_types (MonoImage *image, MonoArrayHandleOut exceptions, MonoBoolean exportedOnly, MonoError *error)
 {
 	MonoTableInfo *tdef = &image->tables [MONO_TABLE_TYPEDEF];
 	int i, count;
@@ -5319,7 +5306,7 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArrayHandleOut 
 	count = 0;
 	for (i = 1; i < tdef->rows; ++i) {
 		if (!exportedOnly || mono_module_type_is_visible (tdef, image, i+1)) {
-			image_get_type (domain, image, tdef, i + 1, count, res, exceptions, exportedOnly, error);
+			image_get_type (image, tdef, i + 1, count, res, exceptions, exportedOnly, error);
 			return_val_if_nok (error, NULL_HANDLE_ARRAY);
 			count++;
 		}
@@ -5329,12 +5316,12 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArrayHandleOut 
 }
 
 static void
-append_module_types (MonoDomain *domain, MonoArrayHandleOut res, MonoArrayHandleOut exceptions, MonoImage *image, MonoBoolean exportedOnly, MonoError *error)
+append_module_types (MonoArrayHandleOut res, MonoArrayHandleOut exceptions, MonoImage *image, MonoBoolean exportedOnly, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
 	MonoArrayHandle ex2 = MONO_HANDLE_NEW (MonoArray, NULL);
-	MonoArrayHandle res2 = mono_module_get_types (domain, image, ex2, exportedOnly, error);
+	MonoArrayHandle res2 = mono_module_get_types (image, ex2, exportedOnly, error);
 	goto_if_nok (error, leave);
 
 	/* Append the new types to the end of the array */
@@ -5380,13 +5367,12 @@ assembly_get_types (MonoReflectionAssemblyHandle assembly_handle, MonoBoolean ex
 	MonoArrayHandle exceptions = MONO_HANDLE_NEW(MonoArray, NULL);
 	int i;
 
-	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly_handle);
 	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_handle, assembly);
 
 	g_assert (!assembly_is_dynamic (assembly));
 	MonoImage *image = assembly->image;
 	MonoTableInfo *table = &image->tables [MONO_TABLE_FILE];
-	MonoArrayHandle res = mono_module_get_types (domain, image, exceptions, exportedOnly, error);
+	MonoArrayHandle res = mono_module_get_types (image, exceptions, exportedOnly, error);
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
 	/* Append data from all modules in the assembly */
@@ -5396,7 +5382,7 @@ assembly_get_types (MonoReflectionAssemblyHandle assembly_handle, MonoBoolean ex
 			return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
 			if (loaded_image) {
-				append_module_types (domain, res, exceptions, loaded_image, exportedOnly, error);
+				append_module_types (res, exceptions, loaded_image, exportedOnly, error);
 				return_val_if_nok (error, NULL_HANDLE_ARRAY);
 			}
 		}
@@ -5825,8 +5811,7 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	g_assert (image_base);
 	// TODO: use dpdb_bytes
 
-	MonoDomain *domain = mono_domain_get ();
-	mono_image_load_enc_delta (domain, image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
+	mono_image_load_enc_delta (image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
 	mono_error_set_pending_exception (error);
 }
 #endif
@@ -5919,14 +5904,12 @@ ves_icall_System_Reflection_RuntimeModule_GetMDStreamVersion (MonoImage *image, 
 MonoArrayHandle
 ves_icall_System_Reflection_RuntimeModule_InternalGetTypes (MonoImage *image, MonoError *error)
 {
-	MonoDomain *domain = mono_domain_get ();
-
 	if (!image) {
 		MonoArrayHandle arr = mono_array_new_handle (mono_defaults.runtimetype_class, 0, error);
 		return arr;
 	} else {
 		MonoArrayHandle exceptions = MONO_HANDLE_NEW (MonoArray, NULL);
-		MonoArrayHandle res = mono_module_get_types (domain, image, exceptions, FALSE, error);
+		MonoArrayHandle res = mono_module_get_types (image, exceptions, FALSE, error);
 		return_val_if_nok (error, MONO_HANDLE_CAST(MonoArray, NULL_HANDLE));
 
 		int n = mono_array_handle_length (exceptions);
@@ -6653,10 +6636,10 @@ void
 ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHandle exception, MonoStringHandle errorSource, MonoError *error)
 {
 	if (MONO_HANDLE_IS_NULL (message)) {
-		g_warning ("CLR: Managed code called FailFast without specifying a reason.");
+		g_warning ("Process terminated.");
 	} else {
 		char *msg = mono_string_handle_to_utf8 (message, error);
-		g_warning ("CLR: Managed code called FailFast, saying \"%s\"", msg);
+		g_warning ("Process terminated due to \"%s\"", msg);
 #ifndef DISABLE_CRASH_REPORTING
 		char *old_msg = mono_crash_save_failfast_msg (msg);
 		g_free (old_msg);
@@ -6687,69 +6670,6 @@ mono_icall_get_windows_folder_path (int folder, MonoError *error)
 }
 #endif /* !HOST_WIN32 */
 
-static MonoArrayHandle
-mono_icall_get_logical_drives (MonoError *error)
-{
-	gunichar2 buf [256], *ptr, *dname;
-	gunichar2 *u16;
-	guint initial_size = 127, size = 128;
-	gint ndrives;
-	MonoArrayHandle result = NULL_HANDLE_ARRAY;
-	MonoStringHandle drivestr;
-	gint len;
-
-	buf [0] = '\0';
-	ptr = buf;
-
-	while (size > initial_size) {
-		size = (guint) mono_w32file_get_logical_drive (initial_size, ptr, error);
-		if (!is_ok (error))
-			goto leave;
-		if (size > initial_size) {
-			if (ptr != buf)
-				g_free (ptr);
-			ptr = (gunichar2 *)g_malloc0 ((size + 1) * sizeof (gunichar2));
-			initial_size = size;
-			size++;
-		}
-	}
-
-	/* Count strings */
-	dname = ptr;
-	ndrives = 0;
-	do {
-		while (*dname++);
-		ndrives++;
-	} while (*dname);
-
-	dname = ptr;
-	result = mono_array_new_handle (mono_defaults.string_class, ndrives, error);
-	goto_if_nok (error, leave);
-
-	drivestr = MONO_HANDLE_NEW (MonoString, NULL);
-	ndrives = 0;
-	do {
-		len = 0;
-		u16 = dname;
-		while (*u16) {
-			u16++; len ++;
-		}
-		MonoString *s = mono_string_new_utf16_checked (dname, len, error);
-		goto_if_nok (error, leave);
-		MONO_HANDLE_ASSIGN_RAW (drivestr, s);
-
-		mono_array_handle_setref (result, ndrives, drivestr);
-		ndrives ++;
-		while (*dname++);
-	} while (*dname);
-
-leave:
-	if (ptr != buf)
-		g_free (ptr);
-
-	return result;
-}
-
 MonoBoolean
 ves_icall_System_Environment_get_HasShutdownStarted (void)
 {
@@ -6768,32 +6688,6 @@ ves_icall_System_Environment_get_TickCount64 (void)
 {
 	return mono_msec_boottime ();
 }
-
-#ifndef PLATFORM_NO_DRIVEINFO
-MonoBoolean
-ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, gint32 path_name_length, guint64 *free_bytes_avail,
-						guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes,
-						gint32 *error)
-{
-	g_assert (error);
-	g_assert (free_bytes_avail);
-	g_assert (total_number_of_bytes);
-	g_assert (total_number_of_free_bytes);
-
-	// FIXME check for embedded nuls here or managed
-
-	*error = ERROR_SUCCESS;
-	*free_bytes_avail = (guint64)-1;
-	*total_number_of_bytes = (guint64)-1;
-	*total_number_of_free_bytes = (guint64)-1;
-
-	gboolean result = mono_w32file_get_disk_free_space (path_name, free_bytes_avail, total_number_of_bytes, total_number_of_free_bytes);
-	if (!result)
-		*error = mono_w32error_get_last ();
-
-	return result;
-}
-#endif /* PLATFORM_NO_DRIVEINFO */
 
 gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)

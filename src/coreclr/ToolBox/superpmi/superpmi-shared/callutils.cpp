@@ -215,25 +215,6 @@ CallType CallUtils::GetDirectCallSiteInfo(MethodContext*            mc,
 // SuperPMI's method context replaying instead of directly making calls into the JIT/EE interface.
 //-------------------------------------------------------------------------------------------------
 
-// Stolen from Compiler::impMethodInfo_hasRetBuffArg (in the importer)
-bool CallUtils::HasRetBuffArg(MethodContext* mc, CORINFO_SIG_INFO args)
-{
-    if (args.retType != CORINFO_TYPE_VALUECLASS && args.retType != CORINFO_TYPE_REFANY)
-    {
-        return false;
-    }
-
-#if defined(TARGET_AMD64)
-    // We don't need a return buffer if:
-    //   i) TYP_STRUCT argument that can fit into a single register and
-    //  ii) Power of two sized TYP_STRUCT on AMD64.
-    unsigned size = mc->repGetClassSize(args.retTypeClass);
-    return (size > sizeof(void*)) || ((size & (size - 1)) != 0);
-#else
-    return true;
-#endif
-}
-
 // Originally from src/jit/ee_il_dll.cpp
 const char* CallUtils::GetMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE method, const char** classNamePtr)
 {

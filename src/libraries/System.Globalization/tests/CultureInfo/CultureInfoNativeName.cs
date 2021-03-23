@@ -12,14 +12,14 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { CultureInfo.CurrentCulture.Name, CultureInfo.CurrentCulture.NativeName };
             
-            if (PlatformDetection.IsNotBrowser)
+            if (PlatformDetection.IsNotUsingLimitedCultures)
             {
                 yield return new object[] { "en-US", "English (United States)" };
                 yield return new object[] { "en-CA", "English (Canada)" };
             }
             else
             {
-                // Browser's ICU doesn't contain CultureInfo.NativeName
+                // Mobile / Browser ICU doesn't contain CultureInfo.NativeName
                 yield return new object[] { "en-US", "en (US)" };
                 yield return new object[] { "en-CA", "en (CA)" };
             }

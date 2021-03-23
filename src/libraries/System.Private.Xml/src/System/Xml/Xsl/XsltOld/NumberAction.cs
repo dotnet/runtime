@@ -33,7 +33,7 @@ namespace System.Xml.Xsl.XsltOld
         private static readonly FormatInfo s_defaultFormat = new FormatInfo(false, "0");
         private static readonly FormatInfo s_defaultSeparator = new FormatInfo(true, ".");
 
-        private class NumberingFormat : NumberFormatterBase
+        private sealed class NumberingFormat : NumberFormatterBase
         {
             private NumberingSequence _seq;
             private int _cMinLen;

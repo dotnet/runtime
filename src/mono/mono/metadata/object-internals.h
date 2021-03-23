@@ -568,8 +568,6 @@ struct _MonoInternalThread {
 	 * longer */
 	MonoLongLivedThreadData *longlived;
 	MonoBoolean threadpool_thread;
-	MonoBoolean thread_interrupt_requested;
-	int stack_size;
 	guint8	apartment_state;
 	gint32 managed_id;
 	guint32 small_id;
@@ -617,7 +615,7 @@ TYPED_HANDLE_DECL (MonoDelegate);
  * a new 'install' function for every callback.
  */
 typedef struct {
-	gpointer (*create_ftnptr) (MonoDomain *domain, gpointer addr);
+	gpointer (*create_ftnptr) (gpointer addr);
 	gpointer (*get_addr_from_ftnptr) (gpointer descr);
 	char*    (*get_runtime_build_info) (void);
 	const char*    (*get_runtime_build_version) (void);
@@ -630,10 +628,10 @@ typedef struct {
 	void     (*init_delegate) (MonoDelegateHandle delegate, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error);
 	MonoObject* (*runtime_invoke) (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error);
 	void*    (*compile_method) (MonoMethod *method, MonoError *error);
-	gpointer (*create_jit_trampoline) (MonoDomain *domain, MonoMethod *method, MonoError *error);
+	gpointer (*create_jit_trampoline) (MonoMethod *method, MonoError *error);
 	/* used to free a dynamic method */
-	void     (*free_method) (MonoDomain *domain, MonoMethod *method);
-	gpointer (*create_delegate_trampoline) (MonoDomain *domain, MonoClass *klass);
+	void     (*free_method) (MonoMethod *method);
+	gpointer (*create_delegate_trampoline) (MonoClass *klass);
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
 	void     (*install_state_summarizer) (void);
 	gboolean (*is_interpreter_enabled) (void);
@@ -641,7 +639,7 @@ typedef struct {
 	void (*free_mem_manager)(MonoMemoryManager*);
 #ifdef ENABLE_METADATA_UPDATE
 	void     (*metadata_update_init) (MonoError *error);
-	void     (*metadata_update_published) (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation);
+	void     (*metadata_update_published) (MonoAssemblyLoadContext *alc, uint32_t generation);
 #endif
 } MonoRuntimeCallbacks;
 
@@ -682,7 +680,7 @@ MonoMethod *
 mono_get_delegate_end_invoke_checked (MonoClass *klass, MonoError *error);
 
 void
-mono_runtime_free_method    (MonoDomain *domain, MonoMethod *method);
+mono_runtime_free_method    (MonoMethod *method);
 
 void
 mono_install_callbacks      (MonoRuntimeCallbacks *cbs);
@@ -1495,7 +1493,7 @@ MonoArray*
 ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n);
 
 gpointer
-mono_create_ftnptr (MonoDomain *domain, gpointer addr);
+mono_create_ftnptr (gpointer addr);
 
 gpointer
 mono_get_addr_from_ftnptr (gpointer descr);
@@ -1574,7 +1572,7 @@ guint32
 mono_method_get_imt_slot (MonoMethod *method);
 
 void
-mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtable,
+mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 											gpointer *vtable_slot,
 											MonoMethod *method, gpointer code);
 
@@ -1597,7 +1595,7 @@ gboolean
 mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error);
 
 void
-mono_method_clear_object (MonoDomain *domain, MonoMethod *method);
+mono_method_clear_object (MonoMethod *method);
 
 gsize*
 mono_class_compute_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields);
@@ -1661,6 +1659,9 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 
 MonoObjectHandle
 mono_static_field_get_value_handle (MonoClassField *field, MonoError *error);
+
+gpointer
+mono_special_static_field_get_offset (MonoClassField *field, MonoError *error);
 
 gboolean
 mono_property_set_value_handle (MonoProperty *prop, MonoObjectHandle obj, void **params, MonoError *error);

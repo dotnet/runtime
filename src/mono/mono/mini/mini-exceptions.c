@@ -207,7 +207,7 @@ static int
 mono_get_seq_point_for_native_offset (MonoMethod *method, gint32 native_offset)
 {
 	SeqPoint sp;
-	if (mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, native_offset, NULL, &sp))
+	if (mono_find_prev_seq_point_for_native_offset (method, native_offset, NULL, &sp))
 		return sp.il_offset;
 	return -1;
 }
@@ -677,7 +677,6 @@ mono_find_jit_info_ext (MonoJitTlsData *jit_tls,
 	}
 
 	frame->native_offset = -1;
-	frame->domain = mono_get_root_domain ();
 	frame->async_context = async;
 	frame->frame_addr = MONO_CONTEXT_GET_SP (ctx);
 
@@ -763,7 +762,7 @@ unwinder_unwind_frame (Unwinder *unwinder,
 		}
 
 		if (!unwinder->in_interp)
-			return unwinder_unwind_frame (unwinder, jit_tls, prev_ji, ctx, new_ctx, trace, lmf, save_locations, frame);
+			frame->type = FRAME_TYPE_INTERP_ENTRY;
 		return TRUE;
 	} else {
 		gboolean res = mono_find_jit_info_ext (jit_tls, prev_ji, ctx, new_ctx, trace, lmf,
@@ -1124,7 +1123,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			sf->il_offset = location->il_offset;
 		} else {
 			SeqPoint sp;
-			if (mono_find_prev_seq_point_for_native_offset (domain, jinfo_get_method (ji), sf->native_offset, NULL, &sp))
+			if (mono_find_prev_seq_point_for_native_offset (jinfo_get_method (ji), sf->native_offset, NULL, &sp))
 				sf->il_offset = sp.il_offset;
 			else
 				sf->il_offset = -1;
@@ -1259,7 +1258,6 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 	gboolean get_reg_locations = unwind_options & MONO_UNWIND_REG_LOCATIONS;
 	gboolean async = mono_thread_info_is_async_context ();
 	Unwinder unwinder;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	memset (&frame, 0, sizeof (StackFrameInfo));
 
@@ -1275,7 +1273,6 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 			guint8 *ip = (guint8*)l->data;
 			memset (&frame, 0, sizeof (StackFrameInfo));
 			frame.ji = mini_jit_info_table_find (ip);
-			frame.domain = domain;
 			if (!frame.ji || frame.ji->is_trampoline)
 				continue;
 			frame.type = FRAME_TYPE_MANAGED;
@@ -1343,7 +1340,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 				if (crash_context)
 					seq_points = (MonoSeqPointInfo *) frame.ji->seq_points;
 				else
-					seq_points = mono_get_seq_points (domain, jinfo_get_method (frame.ji));
+					seq_points = mono_get_seq_points (jinfo_get_method (frame.ji));
 
 				SeqPoint sp;
 				if (seq_points && mono_seq_point_find_prev_by_native_offset (seq_points, frame.native_offset, &sp))
@@ -1877,6 +1874,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			case FRAME_TYPE_TRAMPOLINE:
 			case FRAME_TYPE_INTERP_TO_MANAGED:
 			case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+			case FRAME_TYPE_INTERP_ENTRY:
 				continue;
 			case FRAME_TYPE_INTERP:
 			case FRAME_TYPE_MANAGED:
@@ -2132,7 +2130,6 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 		mono_error_assert_ok (error);
 		if (*dynamic_methods) {
 			/* These methods could go away anytime, so save a reference to them in the exception object */
-			MonoDomain *domain = mono_domain_get ();
 			int methods_len = g_slist_length (*dynamic_methods);
 			MonoArray *old_methods = mono_ex->dynamic_methods;
 			int old_methods_len = 0;
@@ -2150,11 +2147,7 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 			int index = old_methods_len;
 
 			for (GSList *l = *dynamic_methods; l; l = l->next) {
-				g_assert (domain->method_to_dyn_method);
-
-				mono_domain_lock (domain);
-				MonoGCHandle dis_link = (MonoGCHandle)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
-				mono_domain_unlock (domain);
+				MonoGCHandle dis_link = mono_method_to_dyn_method ((MonoMethod*)l->data);
 
 				if (dis_link) {
 					MonoObject *o = mono_gchandle_get_target_internal (dis_link);
@@ -2286,6 +2279,15 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		case FRAME_TYPE_TRAMPOLINE:
 		case FRAME_TYPE_INTERP_TO_MANAGED:
 		case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+			*ctx = new_ctx;
+			continue;
+		case FRAME_TYPE_INTERP_ENTRY:
+			if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
+				/*
+				 * There might be AOTed frames above the intepreted frames which can handle the exception,
+				 * so stop first pass, the caller will rethrow the exception, starting the process again.
+				 */
+				return MONO_FIRST_PASS_UNHANDLED;
 			*ctx = new_ctx;
 			continue;
 		case FRAME_TYPE_INTERP:
@@ -2742,6 +2744,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			case FRAME_TYPE_MANAGED_TO_NATIVE:
 			case FRAME_TYPE_TRAMPOLINE:
 			case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+			case FRAME_TYPE_INTERP_ENTRY:
 				*ctx = new_ctx;
 				continue;
 			case FRAME_TYPE_INTERP_TO_MANAGED:
@@ -3324,7 +3327,7 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 	if (frame->ji && frame->type != FRAME_TYPE_TRAMPOLINE)
 		method = jinfo_get_method (frame->ji);
 
-	if (method && frame->domain) {
+	if (method) {
 		gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, NULL);
 		g_string_append_printf (p, "  %s\n", location);
 		g_free (location);
@@ -3443,7 +3446,11 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 
 	mono_walk_stack_with_ctx (print_stack_frame_to_string, &ctx, MONO_UNWIND_LOOKUP_ALL, text);
 
+#if HOST_WASM
+	mono_runtime_printf_err ("%s", text->str); //to print the native callstack
+#else
 	mono_runtime_printf ("%s", text->str);
+#endif	
 
 #if HOST_WIN32 && TARGET_WIN32 && _DEBUG
 	OutputDebugStringA(text->str);

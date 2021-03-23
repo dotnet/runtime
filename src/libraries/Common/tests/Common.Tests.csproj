@@ -18,8 +18,6 @@
              Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Marvin.cs"
-             Link="Common\System\Marvin.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
              Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
@@ -79,7 +77,6 @@
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
     <Compile Include="Tests\System\IO\StringParserTests.cs" />
-    <Compile Include="Tests\System\MarvinTests.cs" />
     <Compile Include="Tests\System\Net\HttpDateParserTests.cs" />
     <Compile Include="Tests\System\PasteArgumentsTests.cs" />
     <Compile Include="Tests\System\Security\IdentityHelperTests.cs" />
@@ -105,11 +102,9 @@
              Link="System\IO\PathInternal.cs" />
     <Compile Include="System\IO\ConnectedStreams.cs" Link="System\IO\ConnectedStreams.cs" />
     <Compile Include="Tests\System\IO\ConnectedStreamsTests.cs" />
-    <Compile Include="Tests\System\IO\StreamConformanceTests.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="Common\System\Net\StreamBuffer.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs"
@@ -153,5 +148,8 @@
     <Folder Include="Common\System\Security\Cryptography\" />
     <Folder Include="System\Net\Sockets\" />
     <Folder Include="System\Net\VirtualNetwork\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
 </Project>

@@ -15,7 +15,7 @@ Porting the .NET Runtime to a new architecture typically follows along the
 following path.
 
 As engineering continues along the development path, it is best if the logic can
-be placed into the master repository of the runtime as soon as possible. This
+be placed into the main branch of the runtime as soon as possible. This
 will have 2 major effects.
 
 1.  Individual commits are easier to review.
@@ -228,7 +228,7 @@ Notable components
     very machine specific paths.
 
 4.  The unwinder. The unwinder is used to unwind stacks on non-Windows platforms.
-    It is located in https://github.com/dotnet/runtime/tree/master/src/coreclr/unwinder.
+    It is located in https://github.com/dotnet/runtime/tree/main/src/coreclr/unwinder.
 
 4.  System.Private.CoreLib/System.Reflection. There is little to no architecture
     specific work here that is necessary for bringup. Nice-to-have work involves
@@ -267,12 +267,12 @@ there are also architecture specific components.
 4. jitsupport.cpp - Depending on how the features of the CPU are exposed, there
    may need to be code to call OS apis to gather information about CPU features.
 
-5. pal arch directory - https://github.com/dotnet/runtime/tree/master/src/coreclr/pal/src/arch
+5. pal arch directory - https://github.com/dotnet/runtime/tree/main/src/coreclr/pal/src/arch
    This directory primarily contains assembly stubs for architecture specific
    handling of signals and exceptions.
 
 In addition to the PAL source code, there is a comprehensive set of PAL tests located
-in https://github.com/dotnet/runtime/tree/master/src/coreclr/pal/tests.
+in https://github.com/dotnet/runtime/tree/main/src/coreclr/pal/tests.
 
 CLR VM
 ------

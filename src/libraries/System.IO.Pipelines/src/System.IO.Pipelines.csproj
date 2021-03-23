@@ -2,11 +2,12 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+         Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\IO\Pipelines\BufferSegment.cs" />
     <Compile Include="System\IO\Pipelines\CompletionData.cs" />
@@ -30,6 +31,7 @@
     <Compile Include="System\IO\Pipelines\PipeWriterStream.cs" />
     <Compile Include="System\IO\Pipelines\ReadResult.cs" />
     <Compile Include="System\IO\Pipelines\ResultFlags.cs" />
+    <Compile Include="System\IO\Pipelines\SequencePipeReader.cs" />
     <Compile Include="System\IO\Pipelines\StreamPipeExtensions.cs" />
     <Compile Include="System\IO\Pipelines\StreamPipeReader.cs" />
     <Compile Include="System\IO\Pipelines\StreamPipeReaderOptions.cs" />
@@ -47,7 +49,7 @@
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\CancellationTokenExtensions.netstandard.cs" />
   </ItemGroup>
-   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
                          $(TargetFramework.StartsWith('net4'))">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />

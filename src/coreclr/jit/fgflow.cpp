@@ -272,7 +272,7 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
                 // If our caller has given us the old edge weights
                 // then we will use them.
                 //
-                flow->setEdgeWeights(oldEdge->edgeWeightMin(), oldEdge->edgeWeightMax());
+                flow->setEdgeWeights(oldEdge->edgeWeightMin(), oldEdge->edgeWeightMax(), block);
             }
             else
             {
@@ -284,17 +284,17 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
                 // otherwise it is the same as the edge's max weight.
                 if (blockPred->NumSucc() > 1)
                 {
-                    flow->setEdgeWeights(BB_ZERO_WEIGHT, newWeightMax);
+                    flow->setEdgeWeights(BB_ZERO_WEIGHT, newWeightMax, block);
                 }
                 else
                 {
-                    flow->setEdgeWeights(flow->edgeWeightMax(), newWeightMax);
+                    flow->setEdgeWeights(flow->edgeWeightMax(), newWeightMax, block);
                 }
             }
         }
         else
         {
-            flow->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT);
+            flow->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, block);
         }
     }
 
@@ -703,8 +703,6 @@ void Compiler::fgRemoveCheapPred(BasicBlock* block, BasicBlock* blockPred)
 {
     assert(!fgComputePredsDone);
     assert(fgCheapPredsValid);
-
-    flowList* oldEdge = nullptr;
 
     assert(block != nullptr);
     assert(blockPred != nullptr);

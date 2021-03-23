@@ -1000,7 +1000,10 @@ mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int to
 	GList *list = image->delta_image;
 	MonoImage *dmeta;
 	MonoTableInfo *table;
+	/* result row, 0-based */
 	int ridx;
+
+	int original_token = mono_metadata_make_token (table_index, token_index);
 
 	uint32_t exposed_gen = mono_metadata_update_get_thread_generation ();
 	do {
@@ -1011,7 +1014,8 @@ mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int to
 			return TRUE;
 		list = list->next;
 		table = &dmeta->tables [table_index];
-		ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (table_index, token_index + 1)) - 1;
+		/* mono_image_relative_delta_index returns a 1-based index */
+		ridx = mono_image_relative_delta_index (dmeta, original_token) - 1;
 	} while (ridx < 0 || ridx >= table->rows);
 
 	return FALSE;
@@ -4779,7 +4783,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 
 	if (local_var_sig_tok) {
 		int idx = mono_metadata_token_index (local_var_sig_tok) - 1;
-		if (mono_metadata_table_bounds_check (m, MONO_TABLE_STANDALONESIG, idx)) {
+		if (mono_metadata_table_bounds_check (m, MONO_TABLE_STANDALONESIG, idx + 1)) {
 			mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%08x", idx);
 			goto fail;
 		}
@@ -7155,7 +7159,17 @@ handle_enum:
 		if (mspec) {
 			switch (mspec->native) {
 			case MONO_NATIVE_STRUCT:
-				*conv = MONO_MARSHAL_CONV_OBJECT_STRUCT;
+				// [MarshalAs(UnmanagedType.Struct)]
+				// object field;
+				//
+				// becomes a VARIANT
+				//
+				// [MarshalAs(UnmangedType.Struct)]
+				// SomeClass field;
+				//
+				// becomes uses the CONV_OBJECT_STRUCT conversion
+				if (t != MONO_TYPE_OBJECT)
+					*conv = MONO_MARSHAL_CONV_OBJECT_STRUCT;
 				return MONO_NATIVE_STRUCT;
 			case MONO_NATIVE_CUSTOM:
 				return MONO_NATIVE_CUSTOM;

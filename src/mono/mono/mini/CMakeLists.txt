@@ -26,7 +26,7 @@ include(../eglib/CMakeLists.txt)
 include(../utils/CMakeLists.txt)
 include(../metadata/CMakeLists.txt)
 include(../sgen/CMakeLists.txt)
-if(HOST_WIN32)  # TODO: hook up HAVE_SYS_ZLIB instead
+if(INTERNAL_ZLIB)  # TODO: hook up HAVE_SYS_ZLIB instead
   include(../zlib/CMakeLists.txt)
 endif()
 
@@ -45,11 +45,17 @@ if(ENABLE_PERFTRACING)
 
 endif(ENABLE_PERFTRACING)
 
+if(HOST_WIN32)
+  # /OPT:ICF merges idential functions breaking mono_lookup_icall_symbol ()
+  add_link_options(/OPT:NOICF)
+endif()
+
 # ICU
 if(HAVE_SYS_ICU)
   if(STATIC_ICU)
     set(pal_icushim_sources_base
         pal_icushim_static.c)
+    add_definitions(-DSTATIC_ICU=1)
   else()
     set(pal_icushim_sources_base
         pal_icushim.c)
@@ -69,7 +75,7 @@ if(HAVE_SYS_ICU)
       ${pal_icushim_sources_base})
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
   set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_DEFINITIONS OSX_ICU_LIBRARY_PATH="${OSX_ICU_LIBRARY_PATH}")
-  set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I${ICU_INCLUDEDIR} -I${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/System.Globalization.Native/ -I${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/Common/ ${ICU_FLAGS}")
+  set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I\"${ICU_INCLUDEDIR}\" -I\"${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/System.Globalization.Native/\" -I\"${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/Common/\" ${ICU_FLAGS}")
   if(TARGET_WIN32)
       set_source_files_properties(${icu_shim_sources} PROPERTIES LANGUAGE CXX)
   endif()
@@ -143,6 +149,7 @@ set(mini_common_sources
     arch-stubs.c
     llvm-runtime.h
     llvm-intrinsics.h
+    llvm-intrinsics-types.h
     type-checking.c
     lldb.h
     lldb.c
@@ -341,6 +348,9 @@ if(NOT DISABLE_SHARED_LIBS)
   if(ICU_LDFLAGS)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
   endif()
+  if(NOT TARGET_WASM AND STATIC_ICU)
+    set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
+  endif ()
   if(TARGET_DARWIN)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
   endif()

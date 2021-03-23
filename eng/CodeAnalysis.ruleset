@@ -40,7 +40,7 @@
     <Rule Id="CA1047" Action="Warning" />       <!-- Do not declare protected member in sealed type -->
     <Rule Id="CA1050" Action="Warning" />       <!-- Declare types in namespaces -->
     <Rule Id="CA1051" Action="None" />          <!-- Do not declare visible instance fields -->
-    <Rule Id="CA1052" Action="None" />          <!-- Static holder types should be Static or NotInheritable -->
+    <Rule Id="CA1052" Action="Warning" />       <!-- Static holder types should be Static or NotInheritable -->
     <Rule Id="CA1054" Action="None" />          <!-- Uri parameters should not be strings -->
     <Rule Id="CA1055" Action="None" />          <!-- Uri return values should not be strings -->
     <Rule Id="CA1056" Action="None" />          <!-- Uri properties should not be strings -->
@@ -116,6 +116,8 @@
     <Rule Id="CA1836" Action="Warning" />       <!-- Prefer IsEmpty over Count -->
     <Rule Id="CA1837" Action="Warning" />       <!-- Use 'Environment.ProcessId' -->
     <Rule Id="CA1838" Action="Warning" />       <!-- Avoid 'StringBuilder' parameters for P/Invokes -->
+    <Rule Id="CA1839" Action="Warning" />       <!-- Use 'Environment.ProcessPath' -->
+    <Rule Id="CA1840" Action="Warning" />       <!-- Use 'Environment.CurrentManagedThreadId' -->
     <Rule Id="CA2000" Action="None" />          <!-- Dispose objects before losing scope -->
     <Rule Id="CA2002" Action="None" />          <!-- Do not lock on objects with weak identity -->
     <Rule Id="CA2007" Action="Warning" />       <!-- Consider calling ConfigureAwait on the awaited task -->
@@ -155,8 +157,7 @@
     <Rule Id="CA2237" Action="None" />          <!-- Mark ISerializable types with serializable -->
     <Rule Id="CA2241" Action="Warning" />       <!-- Provide correct arguments to formatting methods -->
     <Rule Id="CA2242" Action="Warning" />       <!-- Test for NaN correctly -->
-    <!-- CA2243 temporarily disabled: https://github.com/dotnet/roslyn-analyzers/issues/3635 -->
-    <Rule Id="CA2243" Action="None" />          <!-- Attribute string literals should parse correctly -->
+    <Rule Id="CA2243" Action="Warning" />       <!-- Attribute string literals should parse correctly -->
     <Rule Id="CA2244" Action="None" />          <!-- Do not duplicate indexed element initializations -->
     <Rule Id="CA2245" Action="Warning" />       <!-- Do not assign a property to itself. -->
     <Rule Id="CA2246" Action="None" />          <!-- Assigning symbol and its member in the same statement. -->
@@ -485,6 +486,9 @@
     <Rule Id="IDE0082" Action="Warning" />      <!-- ConvertTypeOfToNameOf -->
     <Rule Id="IDE0083" Action="Hidden" />       <!-- UseNotPattern -->
     <Rule Id="IDE0084" Action="Hidden" />       <!-- UseIsNotExpression -->
+    <Rule Id="IDE0090" Action="Hidden" />       <!-- UseNew -->
+    <Rule Id="IDE0100" Action="Hidden" />       <!-- RemoveRedundantEquality -->
+    <Rule Id="IDE0110" Action="Hidden" />       <!-- RemoveUnnecessaryDiscard -->
     <Rule Id="IDE1001" Action="Hidden" />       <!-- AnalyzerChanged -->
     <Rule Id="IDE1002" Action="Hidden" />       <!-- AnalyzerDependencyConflict -->
     <Rule Id="IDE1003" Action="Hidden" />       <!-- MissingAnalyzerReference -->

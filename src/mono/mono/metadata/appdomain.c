@@ -58,7 +58,6 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/w32socket.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
@@ -93,8 +92,12 @@ typedef struct
 static gboolean no_exec = FALSE;
 
 static int n_appctx_props;
-static gunichar2 **appctx_keys;
-static gunichar2 **appctx_values;
+static char **appctx_keys;
+static char **appctx_values;
+
+static MonovmRuntimeConfigArguments *runtime_config_arg;
+static MonovmRuntimeConfigArgumentsCleanup runtime_config_cleanup_fn;
+static gpointer runtime_config_user_data;
 
 static const char *
 mono_check_corlib_version_internal (void);
@@ -117,17 +120,17 @@ mono_domain_assembly_search (MonoAssemblyLoadContext *alc, MonoAssembly *request
 static void
 mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error_out);
 
-static gboolean
-mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assembly, gpointer user_data, MonoAssemblyContextKind *out_asmctx);
-
 static void
 add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht);
 
 static void
 add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass);
 
+static const char *
+runtimeconfig_json_get_buffer (MonovmRuntimeConfigArguments *arg, MonoFileMap **file_map, gpointer *buf_handle);
+
 static void
-mono_context_set_default_context (MonoDomain *domain);
+runtimeconfig_json_read_props (const char *ptr, const char **endp, int nprops, gunichar2 **dest_keys, gunichar2 **dest_values);
 
 static MonoLoadFunc load_function = NULL;
 
@@ -140,9 +143,6 @@ mono_class_get_appdomain_class (void)
 {
 	return mono_defaults.object_class;
 }
-
-static MonoDomain *
-mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain);
 
 void
 mono_install_runtime_load (MonoLoadFunc func)
@@ -324,21 +324,10 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_locks_tracer_init ();
 
 	/* mscorlib is loaded before we install the load hook */
-	mono_domain_fire_assembly_load (mono_domain_default_alc (domain), mono_defaults.corlib->assembly, NULL, error);
+	mono_domain_fire_assembly_load (mono_alc_get_default (), mono_defaults.corlib->assembly, NULL, error);
 	goto_if_nok (error, exit);
 
 exit:
-	HANDLE_FUNCTION_RETURN ();
-}
-
-static void
-mono_context_set_default_context (MonoDomain *domain)
-{
-	if (mono_runtime_get_no_exec ())
-		return;
-
-	HANDLE_FUNCTION_ENTER ();
-	mono_context_set_handle (MONO_HANDLE_NEW (MonoAppContext, domain->default_context));
 	HANDLE_FUNCTION_RETURN ();
 }
 
@@ -431,34 +420,6 @@ exit:
 void
 mono_context_init (MonoDomain *domain)
 {
-	ERROR_DECL (error);
-	mono_context_init_checked (domain, error);
-	mono_error_cleanup (error);
-}
-
-void
-mono_context_init_checked (MonoDomain *domain, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER ();
-
-	MonoClass *klass;
-	MonoAppContextHandle context;
-
-	error_init (error);
-	if (mono_runtime_get_no_exec ())
-		goto exit;
-
-	klass = mono_class_load_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
-	context = MONO_HANDLE_CAST (MonoAppContext, mono_object_new_pinned_handle (klass, error));
-	goto_if_nok (error, exit);
-
-	MONO_HANDLE_SETVAL (context, domain_id, gint32, domain->domain_id);
-	MONO_HANDLE_SETVAL (context, context_id, gint32, 0);
-	mono_threads_register_app_context (context, error);
-	mono_error_assert_ok (error);
-	domain->default_context = MONO_HANDLE_RAW (context);
-exit:
-	HANDLE_FUNCTION_RETURN ();
 }
 
 /**
@@ -654,7 +615,7 @@ gboolean
 mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 {
 	gboolean res;
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 
 	mono_mem_manager_lock (memory_manager);
 	res = mono_mempool_contains_addr (memory_manager->mp, vtable_slot);
@@ -894,16 +855,10 @@ static void
 mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error_out)
 {
 	ERROR_DECL (error);
-	MonoDomain *domain = mono_alc_domain (alc);
+	MonoDomain *domain = mono_get_root_domain ();
 
 	g_assert (assembly);
 	g_assert (domain);
-
-	if (!MONO_BOOL (domain->domain))
-		goto leave; // This can happen during startup
-
-	if (mono_runtime_get_no_exec ())
-		goto leave;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading assembly %s (%p) into domain %s (%p) and ALC %p", assembly->aname.name, assembly, domain->friendly_name, domain, alc);
 
@@ -916,26 +871,14 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 	mono_alc_assemblies_unlock (alc);
 	mono_domain_assemblies_unlock (domain);
 
-	if (assembly->context.kind != MONO_ASMCTX_INTERNAL)
+	if (!MONO_BOOL (domain->domain))
+		goto leave; // This can happen during startup
+
+	if (!mono_runtime_get_no_exec () && assembly->context.kind != MONO_ASMCTX_INTERNAL)
 		mono_domain_fire_assembly_load_event (domain, assembly, error_out);
 
 leave:
 	mono_error_cleanup (error);
-}
-
-static gboolean
-mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assembly, gpointer user_data, MonoAssemblyContextKind *out_asmctx)
-{
-	MonoDomain *domain = mono_domain_get ();
-	char **search_path = NULL;
-
-        for (search_path = domain->search_path; search_path && *search_path; search_path++) {
-		if (mono_path_filename_in_basedir (fname, *search_path)) {
-			*out_asmctx = MONO_ASMCTX_DEFAULT;
-			return TRUE;
-		}
-	}
-	return FALSE;
 }
 
 /**
@@ -944,15 +887,8 @@ mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assemb
 MonoDomain *
 mono_domain_from_appdomain (MonoAppDomain *appdomain_raw)
 {
-	return mono_domain_get ();
-}
-
-MonoDomain *
-mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain)
-{
 	return mono_get_root_domain ();
 }
-
 
 static gboolean
 try_load_from (MonoAssembly **assembly,
@@ -1067,11 +1003,9 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 			      gpointer user_data,
 			      MonoError *error)
 {
-	MonoDomain *domain = mono_alc_domain (alc);
 	MonoAssembly *result = NULL;
 
 	g_assert (alc);
-	g_assert (domain == mono_domain_get ());
 
 	MonoAssemblyCandidatePredicate predicate = NULL;
 	void* predicate_ud = NULL;
@@ -1090,7 +1024,7 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 
 		char *base_dir = get_app_context_base_directory (error);
 		search_path [0] = base_dir;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain (%p) ApplicationBase is %s", domain, base_dir);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "ApplicationBase is %s", base_dir);
 
 		result = real_load (search_path, aname->culture, aname->name, &req);
 
@@ -1315,13 +1249,21 @@ void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values)
 {
 	n_appctx_props = nprops;
-	appctx_keys = g_new0 (gunichar2*, nprops);
-	appctx_values = g_new0 (gunichar2*, nprops);
+	appctx_keys = g_new0 (char *, n_appctx_props);
+	appctx_values = g_new0 (char *, n_appctx_props);
 
 	for (int i = 0; i < nprops; ++i) {
-		appctx_keys [i] = g_utf8_to_utf16 (keys [i], strlen (keys [i]), NULL, NULL, NULL);
-		appctx_values [i] = g_utf8_to_utf16 (values [i], strlen (values [i]), NULL, NULL, NULL);
+		appctx_keys [i] = g_strdup (keys [i]);
+		appctx_values [i] = g_strdup (values [i]);
 	}
+}
+
+void
+mono_runtime_register_runtimeconfig_json_properties (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void *user_data)
+{
+	runtime_config_arg = arg;
+	runtime_config_cleanup_fn = cleanup_fn;
+	runtime_config_user_data = user_data;
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE (appctx, "System", "AppContext")
@@ -1332,27 +1274,121 @@ mono_runtime_install_appctx_properties (void)
 {
 	ERROR_DECL (error);
 	gpointer args [3];
+	int n_runtimeconfig_json_props = 0;
+	int n_combined_props;
+	gunichar2 **combined_keys;
+	gunichar2 **combined_values;
+	MonoFileMap *runtimeconfig_json_map = NULL;
+	gpointer runtimeconfig_json_map_handle = NULL;
+	const char *buffer_start = runtimeconfig_json_get_buffer (runtime_config_arg, &runtimeconfig_json_map, &runtimeconfig_json_map_handle);
+	const char *buffer = buffer_start;
 
 	MonoMethod *setup = mono_class_get_method_from_name_checked (mono_class_get_appctx_class (), "Setup", 3, 0, error);
 	g_assert (setup);
 
 	// FIXME: TRUSTED_PLATFORM_ASSEMBLIES is very large
 
+	// Combine and convert properties
+	if (buffer)
+		n_runtimeconfig_json_props = mono_metadata_decode_value (buffer, &buffer);
+
+	n_combined_props = n_appctx_props + n_runtimeconfig_json_props;
+	combined_keys = g_new0 (gunichar2 *, n_combined_props);
+	combined_values = g_new0 (gunichar2 *, n_combined_props);
+
+	for (int i = 0; i < n_appctx_props; ++i) {
+		combined_keys [i] = g_utf8_to_utf16 (appctx_keys [i], -1, NULL, NULL, NULL);
+		combined_values [i] = g_utf8_to_utf16 (appctx_values [i], -1, NULL, NULL, NULL);
+	}
+
+	runtimeconfig_json_read_props (buffer, &buffer, n_runtimeconfig_json_props, combined_keys + n_appctx_props, combined_values + n_appctx_props);
+
 	/* internal static unsafe void Setup(char** pNames, char** pValues, int count) */
-	args [0] = appctx_keys;
-	args [1] = appctx_values;
-	args [2] = &n_appctx_props;
+	args [0] = combined_keys;
+	args [1] = combined_values;
+	args [2] = &n_combined_props;
 
 	mono_runtime_invoke_checked (setup, NULL, args, error);
 	mono_error_assert_ok (error);
 
+	if (runtimeconfig_json_map != NULL) {
+		mono_file_unmap ((gpointer)buffer_start, runtimeconfig_json_map_handle);
+		mono_file_map_close (runtimeconfig_json_map);
+	}
+
+	// Call user defined cleanup function
+	if (runtime_config_cleanup_fn)
+		(*runtime_config_cleanup_fn) (runtime_config_arg, runtime_config_user_data);
+
 	/* No longer needed */
+	for (int i = 0; i < n_combined_props; ++i) {
+		g_free (combined_keys [i]);
+		g_free (combined_values [i]);
+	}
+	g_free (combined_keys);
+	g_free (combined_values);
 	for (int i = 0; i < n_appctx_props; ++i) {
 		g_free (appctx_keys [i]);
 		g_free (appctx_values [i]);
 	}
 	g_free (appctx_keys);
 	g_free (appctx_values);
+
 	appctx_keys = NULL;
 	appctx_values = NULL;
+	if (runtime_config_arg) {
+		runtime_config_arg = NULL;
+		runtime_config_cleanup_fn = NULL;
+		runtime_config_user_data = NULL;
+	}
+}
+
+static const char *
+runtimeconfig_json_get_buffer (MonovmRuntimeConfigArguments *arg, MonoFileMap **file_map, gpointer *buf_handle)
+{
+	if (arg != NULL) {
+		switch (arg->kind) {
+		case 0: {
+			char *buffer = NULL;
+			guint64 file_len = 0;
+
+			*file_map = mono_file_map_open (arg->runtimeconfig.name.path);
+			g_assert (*file_map);
+			file_len = mono_file_map_size (*file_map);
+			g_assert (file_len > 0);
+			buffer = (char *)mono_file_map (file_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (*file_map), 0, buf_handle);
+			g_assert (buffer);
+			return buffer;
+		}
+		case 1: {
+			*file_map = NULL;
+			*buf_handle = NULL;
+			return arg->runtimeconfig.data.data;
+		}
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	*file_map = NULL;
+	*buf_handle = NULL;
+	return NULL;	
+}
+
+static void
+runtimeconfig_json_read_props (const char *ptr, const char **endp, int nprops, gunichar2 **dest_keys, gunichar2 **dest_values)
+{
+	for (int i = 0; i < nprops; ++i) {
+		int str_len;
+
+		str_len = mono_metadata_decode_value (ptr, &ptr);
+		dest_keys [i] = g_utf8_to_utf16 (ptr, str_len, NULL, NULL, NULL);
+		ptr += str_len;
+
+		str_len = mono_metadata_decode_value (ptr, &ptr);
+		dest_values [i] = g_utf8_to_utf16 (ptr, str_len, NULL, NULL, NULL);
+		ptr += str_len;
+	}
+
+	*endp = ptr;
 }

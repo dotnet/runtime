@@ -40,6 +40,7 @@
 #include <mono/utils/memcheck.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
@@ -188,7 +189,6 @@ convert_value (MonoCompile *cfg, MonoType *type, MonoInst *ins);
 /* helper methods signatures */
 
 /* type loading helpers */
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (debuggable_attribute, "System.Diagnostics", "DebuggableAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (iequatable, "System", "IEquatable`1")
 static GENERATE_GET_CLASS_WITH_CACHE (geqcomparer, "System.Collections.Generic", "GenericEqualityComparer`1");
 
@@ -3326,7 +3326,7 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 		MonoMethod* method = get_method_nofail (klass, "Box", 1, 0);
 
 		if (context_used) {
-			if (cfg->llvm_only && cfg->gsharedvt) {
+			if (cfg->llvm_only) {
 				MonoInst *addr = emit_get_rgctx_method (cfg, context_used, method,
 														MONO_RGCTX_INFO_METHOD_FTNDESC);
 				return mini_emit_llvmonly_calli (cfg, mono_method_signature_internal (method), &val, addr);
@@ -3645,9 +3645,9 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		EMIT_NEW_AOTCONST (cfg, tramp_ins, MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, del_tramp);
 	} else {
 		if (virtual_)
-			trampoline = mono_create_delegate_virtual_trampoline (cfg->domain, klass, method);
+			trampoline = mono_create_delegate_virtual_trampoline (klass, method);
 		else
-			trampoline = mono_create_delegate_trampoline_info (cfg->domain, klass, method);
+			trampoline = mono_create_delegate_trampoline_info (klass, method);
 		EMIT_NEW_PCONST (cfg, tramp_ins, trampoline);
 	}
 
@@ -5339,58 +5339,12 @@ is_exception_class (MonoClass *klass)
 static gboolean
 is_jit_optimizer_disabled (MonoMethod *m)
 {
-	ERROR_DECL (error);
 	MonoAssembly *ass = m_class_get_image (m->klass)->assembly;
-	MonoCustomAttrInfo* attrs;
-	MonoClass *klass;
-	int i;
-	gboolean val = FALSE;
 
 	g_assert (ass);
 	if (ass->jit_optimizer_disabled_inited)
 		return ass->jit_optimizer_disabled;
-
-	klass = mono_class_try_get_debuggable_attribute_class ();
-
-	if (!klass) {
-		/* Linked away */
-		ass->jit_optimizer_disabled = FALSE;
-		mono_memory_barrier ();
-		ass->jit_optimizer_disabled_inited = TRUE;
-		return FALSE;
-	}
-
-	attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, error);
-	mono_error_cleanup (error); /* FIXME don't swallow the error */
-	if (attrs) {
-		for (i = 0; i < attrs->num_attrs; ++i) {
-			MonoCustomAttrEntry *attr = &attrs->attrs [i];
-			const gchar *p;
-			MonoMethodSignature *sig;
-
-			if (!attr->ctor || attr->ctor->klass != klass)
-				continue;
-			/* Decode the attribute. See reflection.c */
-			p = (const char*)attr->data;
-			g_assert (read16 (p) == 0x0001);
-			p += 2;
-
-			// FIXME: Support named parameters
-			sig = mono_method_signature_internal (attr->ctor);
-			if (sig->param_count != 2 || sig->params [0]->type != MONO_TYPE_BOOLEAN || sig->params [1]->type != MONO_TYPE_BOOLEAN)
-				continue;
-			/* Two boolean arguments */
-			p ++;
-			val = *p;
-		}
-		mono_custom_attrs_free (attrs);
-	}
-
-	ass->jit_optimizer_disabled = val;
-	mono_memory_barrier ();
-	ass->jit_optimizer_disabled_inited = TRUE;
-
-	return val;
+	return mono_assembly_is_jit_optimizer_disabled (ass);
 }
 
 gboolean
@@ -6156,7 +6110,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	/* SkipVerification is not allowed if core-clr is enabled */
-	if (!dont_verify && mini_assembly_can_skip_verification (cfg->domain, method)) {
+	if (!dont_verify && mini_assembly_can_skip_verification (method)) {
 		dont_verify = TRUE;
 		dont_verify_stloc = TRUE;
 	}
@@ -9535,10 +9489,10 @@ calli_end:
 				CHECK_CFG_ERROR;
 				CHECK_TYPELOAD (klass);
 			}
-			mono_domain_lock (cfg->domain);
-			if (cfg->domain->special_static_fields)
-				addr = g_hash_table_lookup (cfg->domain->special_static_fields, field);
-			mono_domain_unlock (cfg->domain);
+
+			addr = mono_special_static_field_get_offset (field, cfg->error);
+			CHECK_CFG_ERROR;
+			CHECK_TYPELOAD (klass);
 
 			is_special_static = mono_class_field_is_special_static (field);
 
@@ -10881,11 +10835,13 @@ mono_ldptr:
 			constrained_class = NULL;
 			break;
 		}
-		case MONO_CEE_MONO_LDDOMAIN:
+		case MONO_CEE_MONO_LDDOMAIN: {
+			MonoDomain *domain = mono_get_root_domain ();
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-			EMIT_NEW_PCONST (cfg, ins, cfg->compile_aot ? NULL : cfg->domain);
+			EMIT_NEW_PCONST (cfg, ins, cfg->compile_aot ? NULL : domain);
 			*sp++ = ins;
 			break;
+		}
 		case MONO_CEE_MONO_SAVE_LAST_ERROR:
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 

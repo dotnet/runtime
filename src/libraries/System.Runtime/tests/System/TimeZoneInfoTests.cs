@@ -81,6 +81,47 @@ namespace System.Tests
             Assert.NotNull(utc.ToString());
         }
 
+        //  Due to ICU size limitations, full daylight/standard names are not included.
+        //  name abbreviations, if available, are used instead
+        public static IEnumerable<object []> Platform_TimeZoneNamesTestData()
+        {
+            if (PlatformDetection.IsBrowser)
+                return new TheoryData<TimeZoneInfo, string, string, string>
+                {
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) PST", "PST", "PDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) AEST", "AEST", "AEDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) AWST", "AWST", "AWDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) +0330", "+0330", "+0430" },
+
+                    { s_NewfoundlandTz, "(UTC-03:30) NST", "NST", "NDT" },
+                    { s_catamarcaTz, "(UTC-03:00) -03", "-03", "-02" }
+                };
+            else
+                return new TheoryData<TimeZoneInfo, string, string, string>
+                {
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Standard Time", "Pacific Standard Time", "Pacific Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Australian Eastern Standard Time", "Australian Eastern Standard Time", "Australian Eastern Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australian Western Standard Time", "Australian Western Standard Time", "Australian Western Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) +0330", "+0330", "+0430" },
+
+                    { s_NewfoundlandTz, "(UTC-03:30) NST", "NST", "NDT" },
+                    { s_catamarcaTz, "(UTC-03:00) -03", "-03", "-02" }
+                };
+        }
+
+        [Theory]
+        [MemberData(nameof(Platform_TimeZoneNamesTestData))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void Platform_TimeZoneNames(TimeZoneInfo tzi, string displayName, string standardName, string daylightName)
+        {
+            if (PlatformDetection.IsBrowser)
+            {
+                // Console.WriteLine($"DisplayName: {tzi.DisplayName}, StandardName: {tzi.StandardName}, DaylightName: {tzi.DaylightName}");
+                Assert.Equal($"DisplayName: {tzi.DisplayName}, StandardName: {tzi.StandardName}, DaylightName: {tzi.DaylightName}",
+                            $"DisplayName: {displayName}, StandardName: {standardName}, DaylightName: {daylightName}");
+            }
+        }
+
         [Fact]
         public static void ConvertTime()
         {
@@ -1778,6 +1819,69 @@ namespace System.Tests
             Assert.Equal(offset, s_casablancaTz.GetUtcOffset(dt));
         }
 
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Windows)]
+        public static void TestSplittingRulesWhenReported()
+        {
+            // This test confirm we are splitting the rules which span multiple years on Linux
+            // we use "America/Los_Angeles" which has the rule covering 2/9/1942 to 8/14/1945
+            // with daylight transition by 01:00:00. This rule should be split into 3 rules:
+            //      - rule 1 from 2/9/1942 to 12/31/1942
+            //      - rule 2 from 1/1/1943 to 12/31/1944
+            //      - rule 3 from 1/1/1945 to 8/14/1945
+            TimeZoneInfo.AdjustmentRule[] rules = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific).GetAdjustmentRules();
+
+            bool ruleEncountered = false;
+            for (int i = 0; i < rules.Length; i++)
+            {
+                if (rules[i].DateStart == new DateTime(1942, 2, 9))
+                {
+                    Assert.True(i + 2 <= rules.Length - 1);
+                    TimeSpan daylightDelta = TimeSpan.FromHours(1);
+
+                    // DateStart                  : 2/9/1942 12:00:00 AM (Unspecified)
+                    // DateEnd                    : 12/31/1942 12:00:00 AM (Unspecified)
+                    // DaylightDelta              : 01:00:00
+                    // DaylightTransitionStart    : ToD:02:00:00 M:2, D:9, W:1, DoW:Sunday, FixedDate:True
+                    // DaylightTransitionEnd      : ToD:23:59:59.9990000 M:12, D:31, W:1, DoW:Sunday, FixedDate:True
+
+                    Assert.Equal(new DateTime(1942, 12, 31), rules[i].DateEnd);
+                    Assert.Equal(daylightDelta, rules[i].DaylightDelta);
+                    Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 2, 0, 0), 2, 9), rules[i].DaylightTransitionStart);
+                    Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 23, 59, 59, 999), 12, 31), rules[i].DaylightTransitionEnd);
+
+                    // DateStart                  : 1/1/1943 12:00:00 AM (Unspecified)
+                    // DateEnd                    : 12/31/1944 12:00:00 AM (Unspecified)
+                    // DaylightDelta              : 01:00:00
+                    // DaylightTransitionStart    : ToD:00:00:00 M:1, D:1, W:1, DoW:Sunday, FixedDate:True
+                    // DaylightTransitionEnd      : ToD:23:59:59.9990000 M:12, D:31, W:1, DoW:Sunday, FixedDate:True
+
+                    Assert.Equal(new DateTime(1943, 1, 1), rules[i + 1].DateStart);
+                    Assert.Equal(new DateTime(1944, 12, 31), rules[i + 1].DateEnd);
+                    Assert.Equal(daylightDelta, rules[i + 1].DaylightDelta);
+                    Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 0, 0, 0), 1, 1), rules[i + 1].DaylightTransitionStart);
+                    Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 23, 59, 59, 999), 12, 31), rules[i + 1].DaylightTransitionEnd);
+
+                    // DateStart                  : 1/1/1945 12:00:00 AM (Unspecified)
+                    // DateEnd                    : 8/14/1945 12:00:00 AM (Unspecified)
+                    // DaylightDelta              : 01:00:00
+                    // DaylightTransitionStart    : ToD:00:00:00 M:1, D:1, W:1, DoW:Sunday, FixedDate:True
+                    // DaylightTransitionEnd      : ToD:15:59:59.9990000 M:8, D:14, W:1, DoW:Sunday, FixedDate:True
+
+                    Assert.Equal(new DateTime(1945, 1, 1), rules[i + 2].DateStart);
+                    Assert.Equal(new DateTime(1945, 8, 14), rules[i + 2].DateEnd);
+                    Assert.Equal(daylightDelta, rules[i + 2].DaylightDelta);
+                    Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 0, 0, 0), 1, 1), rules[i + 2].DaylightTransitionStart);
+                    Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 15, 59, 59, 999), 8, 14), rules[i + 2].DaylightTransitionEnd);
+
+                    ruleEncountered = true;
+                    break;
+                }
+            }
+
+            Assert.True(ruleEncountered, "The 1942 rule of America/Los_Angeles not found.");
+        }
+
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Linux will use local mean time for DateTimes before standard time came into effect.
         // in 1996 Europe/Lisbon changed from standard time to DST without changing the UTC offset
@@ -2276,12 +2380,23 @@ namespace System.Tests
                     {
                         string offset = Regex.Match(tzi.DisplayName, @"(-|)[0-9]{2}:[0-9]{2}").Value;
                         TimeSpan ts = TimeSpan.Parse(offset);
-                        if (tzi.BaseUtcOffset != ts && tzi.Id.IndexOf("Morocco", StringComparison.Ordinal) >= 0)
+                        if (PlatformDetection.IsWindows &&
+                            tzi.BaseUtcOffset != ts &&
+                            (tzi.Id.Contains("Morocco")  || tzi.Id.Contains("Volgograd")))
                         {
                             // Windows data can report display name with UTC+01:00 offset which is not matching the actual BaseUtcOffset.
                             // We special case this in the test to avoid the test failures like:
                             //      01:00 != 00:00:00, dn:(UTC+01:00) Casablanca, sn:Morocco Standard Time
-                            Assert.True(tzi.BaseUtcOffset == new TimeSpan(0, 0, 0), $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
+                            //      04:00 != 03:00:00, dn:(UTC+04:00) Volgograd, sn:Volgograd Standard Time
+                            if (tzi.Id.Contains("Morocco"))
+                            {
+                                Assert.True(tzi.BaseUtcOffset == new TimeSpan(0, 0, 0), $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
+                            }
+                            else
+                            {
+                                // Volgograd, Russia
+                                Assert.True(tzi.BaseUtcOffset == new TimeSpan(3, 0, 0), $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
+                            }
                         }
                         else
                         {
@@ -2298,6 +2413,39 @@ namespace System.Tests
             TimeZoneInfo utcObject = TimeZoneInfo.GetSystemTimeZones().Single(x => x.Id.Equals("UTC", StringComparison.OrdinalIgnoreCase));
             Assert.True(ReferenceEquals(utcObject, TimeZoneInfo.Utc));
             Assert.True(ReferenceEquals(TimeZoneInfo.FindSystemTimeZoneById("UTC"), TimeZoneInfo.Utc));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData("Pacific Standard Time", "America/Los_Angeles")]
+        [InlineData("AUS Eastern Standard Time", "Australia/Sydney")]
+        [InlineData("GMT Standard Time", "Europe/London")]
+        [InlineData("Tonga Standard Time", "Pacific/Tongatapu")]
+        [InlineData("W. Australia Standard Time", "Australia/Perth")]
+        [InlineData("E. South America Standard Time", "America/Sao_Paulo")]
+        [InlineData("E. Africa Standard Time", "Africa/Nairobi")]
+        [InlineData("W. Europe Standard Time", "Europe/Berlin")]
+        [InlineData("Russian Standard Time", "Europe/Moscow")]
+        [InlineData("Libya Standard Time", "Africa/Tripoli")]
+        [InlineData("South Africa Standard Time", "Africa/Johannesburg")]
+        [InlineData("Morocco Standard Time", "Africa/Casablanca")]
+        [InlineData("Argentina Standard Time", "America/Argentina/Catamarca")]
+        [InlineData("Newfoundland Standard Time", "America/St_Johns")]
+        [InlineData("Iran Standard Time", "Asia/Tehran")]
+        public static void UsingAlternativeTimeZoneIdsTest(string windowsId, string ianaId)
+        {
+            if (PlatformDetection.ICUVersion.Major >= 52)
+            {
+                TimeZoneInfo tzi1 = TimeZoneInfo.FindSystemTimeZoneById(ianaId);
+                TimeZoneInfo tzi2 = TimeZoneInfo.FindSystemTimeZoneById(windowsId);
+
+                Assert.Equal(tzi1.BaseUtcOffset,  tzi2.BaseUtcOffset);
+                Assert.NotEqual(tzi1.Id,  tzi2.Id);
+            }
+            else
+            {
+                Assert.Throws<TimeZoneNotFoundException>(() => TimeZoneInfo.FindSystemTimeZoneById(s_isWindows ? ianaId : windowsId));
+                TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(s_isWindows ? windowsId : ianaId);
+            }
         }
 
         // We test the existence of a specific English time zone name to avoid failures on non-English platforms.
@@ -2346,7 +2494,7 @@ namespace System.Tests
         [InlineData("America/Jujuy")]
         [InlineData("America/Mendoza")]
         [InlineData("America/Indianapolis")]
-        public static void ChangeLocalTimeZone(string id) 
+        public static void ChangeLocalTimeZone(string id)
         {
             string originalTZ = Environment.GetEnvironmentVariable("TZ");
             try {
@@ -2357,7 +2505,7 @@ namespace System.Tests
                 TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(id);
 
                 Assert.Equal(tz.StandardName, localtz.StandardName);
-                Assert.Equal(tz.DisplayName, localtz.DisplayName); 
+                Assert.Equal(tz.DisplayName, localtz.DisplayName);
             }
             finally {
                 TimeZoneInfo.ClearCachedData();

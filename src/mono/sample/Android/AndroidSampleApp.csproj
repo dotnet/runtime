@@ -8,6 +8,7 @@
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
+    <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
@@ -23,6 +24,10 @@
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  
+  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
+  </PropertyGroup>
 
   <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
@@ -39,6 +44,8 @@
       </AotInputAssemblies>
     </ItemGroup>
 
+    <MakeDir Directories="$(_MobileIntermediateOutputPath)" 
+             Condition="'$(ForceAOT)' == 'true'"/>
     <RemoveDir Directories="$(ApkDir)" />
 
     <PropertyGroup>
@@ -48,23 +55,16 @@
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
     </PropertyGroup>
 
-    <!-- TODO: delete once we switch to Android Crypto -->
-    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
-          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
-          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
-    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
-          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
-          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
-
     <Message Importance="High" Text="Path: $(PublishDir)" />
     <Message Importance="High" Text="SourceDir: $(OutputPath)" />
 
-    <MonoAOTCompiler
-        Condition="'$(ForceAOT)' == 'true'"
+    <MonoAOTCompiler Condition="'$(ForceAOT)' == 'true'"
         CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\android-$(TargetArchitecture)\mono-aot-cross"
+        OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
+        AotModulesTablePath="$(BundleDir)\modules.c"
         UseLLVM="$(UseLLVM)"
         LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\android-$(TargetArchitecture)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
@@ -72,13 +72,15 @@
 
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
-        SourceDir="$(PublishDir)"
         ProjectName="HelloAndroid"
         ForceInterpreter="$(MonoForceInterpreter)"
+        ForceAOT="$(ForceAOT)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
+        Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(AssemblyName).dll"
         StripDebugSymbols="$(StripDebugSymbols)"
-        OutputDir="$(ApkDir)">
+        OutputDir="$(ApkDir)"
+        AppDir="$(PublishDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>

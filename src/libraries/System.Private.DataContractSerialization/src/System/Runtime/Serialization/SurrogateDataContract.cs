@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization
         [MethodImpl(MethodImplOptions.NoInlining)]
         private object GetUninitializedObject(Type objType)
         {
-            return FormatterServices.GetUninitializedObject(objType);
+            return RuntimeHelpers.GetUninitializedObject(objType);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -78,7 +78,7 @@ namespace System.Runtime.Serialization
             return newObj;
         }
 
-        private class SurrogateDataContractCriticalHelper : DataContract.DataContractCriticalHelper
+        private sealed class SurrogateDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private readonly ISerializationSurrogate serializationSurrogate;
 

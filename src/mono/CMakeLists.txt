@@ -6,6 +6,11 @@ endif()
 
 project(mono)
 
+set(CMAKE_C_FLAGS_CHECKED "")
+set(CMAKE_CXX_FLAGS_CHECKED "")
+set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
+set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
+
 include(GNUInstallDirs)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
@@ -72,7 +77,6 @@ endif()
 #
 set(MONO_CORLIB_VERSION 1A5E0066-58DC-428A-B21C-0AD6CDAE2789)
 
-set(DISABLE_APPDOMAINS 1)
 set(DISABLE_CLEANUP 1)
 set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
@@ -180,7 +184,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   # See man cmake-toolchains(7) on which variables
   # control cross-compiling to ios
-  add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
   set(HOST_DARWIN 1)
   set(HOST_IOS 1)
@@ -223,6 +226,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(DISABLE_SHARED_LIBS 1)
   # sys/random.h exists, but its not found
   set(HAVE_SYS_RANDOM_H 1)
+  set(INTERNAL_ZLIB 1)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
   set(EXE_SUFFIX ".exe")
@@ -231,6 +235,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_NO_SYMLINKS 1)
   set(MONO_KEYWORD_THREAD "__declspec (thread)")
   set(MONO_ZERO_LEN_ARRAY 1)
+  set(INTERNAL_ZLIB 1)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
   add_compile_options(/W3)   # set warning level 3
   add_compile_options(/EHsc) # set exception handling behavior
@@ -509,19 +514,22 @@ elseif(HOST_OSX)
   include(FindPkgConfig)
   # FIXME: Handle errors
   # Defines ICU_INCLUDEDIR/ICU_LIBDIR
-  set(ENV{PKG_CONFIG_PATH} "{$PKG_CONFIG_PATH}:/usr/local/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig")
+  execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(ENV{PKG_CONFIG_PATH} "{$PKG_CONFIG_PATH}:${brew_prefix}/lib/pkgconfig:${brew_prefix}/opt/icu4c/lib/pkgconfig")
   pkg_check_modules(ICU icu-uc)
   set(OSX_ICU_LIBRARY_PATH /usr/lib/libicucore.dylib)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)
 elseif(HOST_WASM)
-  #set(ICU_CFLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE")
-  set(ICU_FLAGS "-DPALEXPORT=\"\" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
+  set(ICU_FLAGS "-DPALEXPORT=\"\" -DU_DISABLE_RENAMING -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
   set(ICU_LIBS "icucore")
 elseif(HOST_IOS)
-  # FIXME:
+  set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
+  set(HAVE_SYS_ICU 1)
+  set(STATIC_ICU 1)
+  set(ICU_LIBS icuuc icui18n icudata)
 elseif(HOST_ANDROID)
   set(ICU_FLAGS "-DPALEXPORT=\"\" -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
   set(HAVE_SYS_ICU 1)
@@ -699,6 +707,9 @@ endif()
 ### End of OS specific checks
 
 add_subdirectory(mono)
+if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCATALYST)
+  add_subdirectory(dbi)
+endif()
 
 configure_file(cmake/config.h.in config.h)
 configure_file(cmake/eglib-config.h.cmake.in mono/eglib/eglib-config.h)  # TODO: eglib-config.h is not needed, we're using hardcoded eglib-config.hw

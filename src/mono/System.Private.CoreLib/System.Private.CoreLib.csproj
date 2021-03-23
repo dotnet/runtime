@@ -254,15 +254,9 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLock.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.Mono.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
-      <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Environment.Unix.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\EventWaitHandle.Unix.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Mutex.Unix.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Semaphore.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
 
       <Compile Include="$(BclSourcesRoot)\System\IO\MonoIOError.cs" />

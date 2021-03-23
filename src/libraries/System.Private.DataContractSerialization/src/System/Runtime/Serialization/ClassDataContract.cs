@@ -678,7 +678,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-        private class ClassDataContractCriticalHelper : DataContract.DataContractCriticalHelper
+        private sealed class ClassDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private static Type[]? s_serInfoCtorArgs;
 

@@ -4230,7 +4230,6 @@ void CodeGen::genCodeForShiftLong(GenTree* tree)
 void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
 {
     GenTree* data = storeInd->Data();
-    GenTree* addr = storeInd->Addr();
 
     assert(data->OperIsShift() || data->OperIsRotate());
 
@@ -4265,7 +4264,6 @@ void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
         // We must have the number of bits to shift stored in ECX, since we constrained this node to
         // sit in ECX. In case this didn't happen, LSRA expects the code generator to move it since it's a single
         // register destination requirement.
-        regNumber shiftReg = shiftBy->GetRegNum();
         genCopyRegIfNeeded(shiftBy, REG_RCX);
 
         // The shiftBy operand is implicit, so call the unary version of emitInsRMW.
@@ -8949,5 +8947,62 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #endif // TARGET_AMD64
 
 #endif // PROFILING_SUPPORTED
+
+//------------------------------------------------------------------------
+// genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
+//
+void CodeGen::genPushCalleeSavedRegisters()
+{
+    assert(compiler->compGeneratingProlog);
+
+    // x86/x64 doesn't support push of xmm/ymm regs, therefore consider only integer registers for pushing onto stack
+    // here. Space for float registers to be preserved is stack allocated and saved as part of prolog sequence and not
+    // here.
+    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+
+#if ETW_EBP_FRAMED
+    if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
+    {
+        noway_assert(!"Used register RBM_FPBASE as a scratch register!");
+    }
+#endif
+
+    // On X86/X64 we have already pushed the FP (frame-pointer) prior to calling this method
+    if (isFramePointerUsed())
+    {
+        rsPushRegs &= ~RBM_FPBASE;
+    }
+
+#ifdef DEBUG
+    if (compiler->compCalleeRegsPushed != genCountBits(rsPushRegs))
+    {
+        printf("Error: unexpected number of callee-saved registers to push. Expected: %d. Got: %d ",
+               compiler->compCalleeRegsPushed, genCountBits(rsPushRegs));
+        dspRegMask(rsPushRegs);
+        printf("\n");
+        assert(compiler->compCalleeRegsPushed == genCountBits(rsPushRegs));
+    }
+#endif // DEBUG
+
+    // Push backwards so we match the order we will pop them in the epilog
+    // and all the other code that expects it to be in this order.
+    for (regNumber reg = REG_INT_LAST; rsPushRegs != RBM_NONE; reg = REG_PREV(reg))
+    {
+        regMaskTP regBit = genRegMask(reg);
+
+        if ((regBit & rsPushRegs) != 0)
+        {
+            inst_RV(INS_push, reg, TYP_REF);
+            compiler->unwindPush(reg);
+#ifdef USING_SCOPE_INFO
+            if (!doubleAlignOrFramePointerUsed())
+            {
+                psiAdjustStackLevel(REGSIZE_BYTES);
+            }
+#endif // USING_SCOPE_INFO
+            rsPushRegs &= ~regBit;
+        }
+    }
+}
 
 #endif // TARGET_XARCH

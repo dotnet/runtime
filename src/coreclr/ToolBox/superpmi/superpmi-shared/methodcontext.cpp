@@ -632,7 +632,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
         case CORINFO_TYPE_PTR:
         case CORINFO_TYPE_BYREF:
         case CORINFO_TYPE_CLASS:
-            return sizeof(void*);
+            return (int)SpmiTargetPointerSize();
 
         case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_VALUECLASS:
@@ -1015,8 +1015,12 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
     key.method      = CastHandle(method);
     key.context     = CastHandle(context);
 
-    AssertCodeMsg(InitClass != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", key.method);
-    AssertCodeMsg(InitClass->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", key.method);
+    if ((InitClass == nullptr) || (InitClass->GetIndex(key) == -1))
+    {
+        // We could try additional inlines with stress modes, just reject them.
+        return CORINFO_INITCLASS_DONT_INLINE;
+    }
+
     CorInfoInitClassResult result = (CorInfoInitClassResult)InitClass->Get(key);
 
     DEBUG_REP(dmpInitClass(key, result));
@@ -3554,6 +3558,9 @@ void MethodContext::dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {
+    AssertCodeMsg(GetStaticFieldCurrentClass != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", CastHandle(field));
+    AssertCodeMsg(GetStaticFieldCurrentClass->GetIndex(CastHandle(field)) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", CastHandle(field));
+
     Agnostic_GetStaticFieldCurrentClass value = GetStaticFieldCurrentClass->Get(CastHandle(field));
 
     if (pIsSpeculative != nullptr)
@@ -4098,6 +4105,7 @@ void MethodContext::recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
     else
         value.B = 0;
     GetGSCookie->Add((DWORD)0, value);
+    DEBUG_REC(dmpGetGSCookie(0, value));
 }
 void MethodContext::dmpGetGSCookie(DWORD key, DLDL value)
 {
@@ -4105,6 +4113,21 @@ void MethodContext::dmpGetGSCookie(DWORD key, DLDL value)
 }
 void MethodContext::repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
 {
+    if (GetGSCookie == nullptr)
+    {
+        // fake the result because for the codegen it is just a constant.
+        if (pCookieVal != nullptr)
+        {
+            *pCookieVal = (GSCookie)0x06000000;
+        }
+        if (ppCookieVal != nullptr)
+        {
+            *ppCookieVal = (GSCookie*)0x06000001;
+        }
+        return;
+    }
+
+    AssertCodeMsg(GetGSCookie->GetIndex(0) != -1, EXCEPTIONCODE_MC, "Didn't find GetGSCookie");
     DLDL value;
 
     value = GetGSCookie->Get((DWORD)0);
@@ -6658,6 +6681,58 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
     buff += t;
     len -= t;
 
+    // Fingerprint the root method PGO data (if any) and append it to the ID info.
+    //
+    if ((GetPgoInstrumentationResults != nullptr) &&
+        (GetPgoInstrumentationResults->GetIndex(CastHandle(pInfo->ftn)) != -1))
+    {
+        ICorJitInfo::PgoInstrumentationSchema* schema = nullptr;
+        UINT32 schemaCount = 0;
+        BYTE* schemaData = nullptr;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(pInfo->ftn, &schema, &schemaCount, &schemaData);
+
+        size_t minOffset = (size_t) ~0;
+        size_t maxOffset = 0;
+        uint32_t totalCount = 0;
+
+        if (SUCCEEDED(pgoHR))
+        {
+            // Locate the range of the counter data.
+            //
+            for (UINT32 i = 0; i < schemaCount; i++)
+            {
+                if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
+                    || (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount))
+                {
+                    if (schema[i].Offset < minOffset)
+                    {
+                        minOffset = schema[i].Offset;
+                    }
+
+                    if (schema[i].Offset > maxOffset)
+                    {
+                        maxOffset = schema[i].Offset;
+                    }
+
+                    totalCount += *(uint32_t*)(schemaData + schema[i].Offset);
+                }
+            }
+
+            // Hash the counter values.
+            //
+            if (minOffset < maxOffset)
+            {
+                char pgoHash[MD5_HASH_BUFFER_SIZE];
+                dumpMD5HashToBuffer(schemaData + minOffset, (int)(maxOffset + sizeof(int) - minOffset), pgoHash,
+                                    MD5_HASH_BUFFER_SIZE);
+
+                t = sprintf_s(buff, len, " Pgo Counters %u, Count %u, Hash: %s", schemaCount, totalCount, pgoHash);
+                buff += t;
+                len -= t;
+            }
+        }
+    }
+
     return (int)(buff - obuff);
 }
 
@@ -6688,6 +6763,44 @@ int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, in
     }
 
     return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
+}
+
+bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile)
+{
+    hasEdgeProfile = false;
+    hasClassProfile = false;
+
+    // Obtain the Method Info structure for this method
+    CORINFO_METHOD_INFO  info;
+    unsigned             flags = 0;
+    repCompileMethod(&info, &flags);
+
+    if ((GetPgoInstrumentationResults != nullptr) &&
+        (GetPgoInstrumentationResults->GetIndex(CastHandle(info.ftn)) != -1))
+    {
+        ICorJitInfo::PgoInstrumentationSchema* schema = nullptr;
+        UINT32 schemaCount = 0;
+        BYTE* schemaData = nullptr;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, &schema, &schemaCount, &schemaData);
+
+        if (SUCCEEDED(pgoHR))
+        {
+            for (UINT32 i = 0; i < schemaCount; i++)
+            {
+                hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
+                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+
+                if (hasEdgeProfile && hasClassProfile)
+                {
+                    break;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 MethodContext::Environment MethodContext::cloneEnvironment()

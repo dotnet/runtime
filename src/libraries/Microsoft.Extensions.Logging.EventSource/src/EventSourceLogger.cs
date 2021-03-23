@@ -149,7 +149,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// ActivityScope is just a IDisposable that knows how to send the ActivityStop event when it is
         /// desposed.  It is part of the BeginScope() support.
         /// </summary>
-        private class ActivityScope : IDisposable
+        private sealed class ActivityScope : IDisposable
         {
             private readonly string _categoryName;
             private readonly int _activityID;

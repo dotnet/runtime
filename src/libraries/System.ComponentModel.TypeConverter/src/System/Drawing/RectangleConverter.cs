@@ -41,7 +41,7 @@ namespace System.Drawing
                 char sep = culture.TextInfo.ListSeparator[0];
                 string[] tokens = text.Split(sep);
                 int[] values = new int[tokens.Length];
-                TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
+                TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
                 for (int i = 0; i < values.Length; i++)
                 {
                     // Note: ConvertFromString will raise exception if value cannot be converted.
@@ -76,7 +76,7 @@ namespace System.Drawing
                     }
 
                     string sep = culture.TextInfo.ListSeparator + " ";
-                    TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
+                    TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
 
                     // Note: ConvertToString will raise exception if value cannot be converted.
                     var args = new string[]
@@ -129,6 +129,7 @@ namespace System.Drawing
 
         private static readonly string[] s_propertySort = { "X", "Y", "Width", "Height" };
 
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             PropertyDescriptorCollection props = TypeDescriptor.GetProperties(typeof(Rectangle), attributes);

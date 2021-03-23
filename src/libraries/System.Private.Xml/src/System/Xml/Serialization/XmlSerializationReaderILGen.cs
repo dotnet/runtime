@@ -36,7 +36,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private class Member
+        private sealed class Member
         {
             private readonly string _source;
             private readonly string _arrayName;

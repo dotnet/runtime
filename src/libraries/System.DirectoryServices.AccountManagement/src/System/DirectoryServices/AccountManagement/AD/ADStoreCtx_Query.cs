@@ -310,7 +310,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private static Hashtable s_filterPropertiesTable;
 
-        private class FilterPropertyTableEntry
+        private sealed class FilterPropertyTableEntry
         {
             internal string suggestedADPropertyName;
             internal FilterConverterDelegate converter;

@@ -49,11 +49,11 @@ namespace System.Reflection
         PropertyInfo[] GetProperties(BindingFlags bindingAttr);
 
         // Return an array of members which match the passed in name.
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(System.Type.GetAllMembers)]
         MemberInfo[] GetMember(string name, BindingFlags bindingAttr);
 
         // Return an array of all of the members defined for this object.
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(System.Type.GetAllMembers)]
         MemberInfo[] GetMembers(BindingFlags bindingAttr);
 
         // Description of the Binding Process.

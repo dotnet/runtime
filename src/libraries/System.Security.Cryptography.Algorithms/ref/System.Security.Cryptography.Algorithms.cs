@@ -691,7 +691,7 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.RSAEncryptionPadding OaepSHA512 { get { throw null; } }
         public static System.Security.Cryptography.RSAEncryptionPadding Pkcs1 { get { throw null; } }
         public static System.Security.Cryptography.RSAEncryptionPadding CreateOaep(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.RSAEncryptionPadding? other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.RSAEncryptionPadding? left, System.Security.Cryptography.RSAEncryptionPadding? right) { throw null; }
@@ -782,7 +782,7 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.RSASignaturePadding Pkcs1 { get { throw null; } }
         public static System.Security.Cryptography.RSASignaturePadding Pss { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public bool Equals(System.Security.Cryptography.RSASignaturePadding? other) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.RSASignaturePadding? other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.RSASignaturePadding? left, System.Security.Cryptography.RSASignaturePadding? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.RSASignaturePadding? left, System.Security.Cryptography.RSASignaturePadding? right) { throw null; }

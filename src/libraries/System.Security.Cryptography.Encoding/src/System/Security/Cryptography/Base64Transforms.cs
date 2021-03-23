@@ -372,7 +372,7 @@ namespace System.Security.Cryptography
         }
     }
 
-    internal class ThrowHelper
+    internal static class ThrowHelper
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount)

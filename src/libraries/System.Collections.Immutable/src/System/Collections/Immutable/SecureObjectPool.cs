@@ -10,7 +10,7 @@ namespace System.Collections.Immutable
     /// <summary>
     /// Object pooling utilities.
     /// </summary>
-    internal class SecureObjectPool
+    internal static class SecureObjectPool
     {
         /// <summary>
         /// The ever-incrementing (and wrap-on-overflow) integer for owner id's.

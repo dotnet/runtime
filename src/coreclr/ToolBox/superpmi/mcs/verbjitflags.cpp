@@ -24,6 +24,26 @@ int verbJitFlags::DoWork(const char* nameOfInput)
         mc->repGetJitFlags(&corJitFlags, sizeof(corJitFlags));
         unsigned long long rawFlags = corJitFlags.GetFlagsRaw();
 
+        // We co-opt unused flag bits to note if there's pgo data,
+        // and if so, what kind
+        //
+        bool hasEdgeProfile = false;
+        bool hasClassProfile = false;
+        if (mc->hasPgoData(hasEdgeProfile, hasClassProfile))
+        {
+            rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_PGO);
+
+            if (hasEdgeProfile)
+            {
+                rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_EDGE_PROFILE);
+            }
+
+            if (hasClassProfile)
+            {
+                rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE);
+            }
+        }
+
         int index = flagMap.GetIndex(rawFlags);
         if (index == -1)
         {

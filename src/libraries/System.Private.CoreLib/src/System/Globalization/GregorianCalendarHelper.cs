@@ -4,7 +4,7 @@
 namespace System.Globalization
 {
     // Gregorian Calendars use Era Info
-    internal class EraInfo
+    internal sealed class EraInfo
     {
         internal int era;          // The value of the era.
         internal long ticks;    // The time in ticks when the era starts
@@ -45,7 +45,7 @@ namespace System.Globalization
     // This calendar recognizes two era values:
     // 0 CurrentEra (AD)
     // 1 BeforeCurrentEra (BC)
-    internal class GregorianCalendarHelper
+    internal sealed class GregorianCalendarHelper
     {
         // 1 tick = 100ns = 10E-7 second
         // Number of ticks per time unit

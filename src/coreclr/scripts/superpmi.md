@@ -73,7 +73,7 @@ python f:\gh\runtime\src\coreclr\scripts\superpmi.py replay -filter tests
 To generate ASM diffs, use the `asmdiffs` command. This requires a "diff" and "baseline"
 JIT. By default, the "diff" JIT is determined automatically as for the "replay" command,
 described above. Also by default, the baseline JIT is determined based on comparing the
-state of your branch with the `master` branch, and downloading an appropriate baseline JIT from the JIT
+state of your branch with the `main` branch, and downloading an appropriate baseline JIT from the JIT
 rolling build system. Alternatively, you can specify the path to a baseline JIT
 compiler using the `-base_jit_path` argument.
 

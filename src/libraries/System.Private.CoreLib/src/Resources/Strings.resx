@@ -2998,6 +2998,9 @@
   <data name="Overflow_Int64" xml:space="preserve">
     <value>Value was either too large or too small for an Int64.</value>
   </data>
+  <data name="Overflow_MutexReacquireCount" xml:space="preserve">
+    <value>The current thread attempted to reacquire a mutex that has reached its maximum acquire count.</value>
+  </data>
   <data name="Overflow_NegateTwosCompNum" xml:space="preserve">
     <value>Negating the minimum value of a twos complement number is invalid.</value>
   </data>
@@ -3262,8 +3265,8 @@
   <data name="Task_ContinueWith_NotOnAnything" xml:space="preserve">
     <value>The specified TaskContinuationOptions excluded all continuation kinds.</value>
   </data>
-  <data name="Task_Delay_InvalidDelay" xml:space="preserve">
-    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0 or a positive integer less than or equal to the maximum allowed timer duration.</value>
+  <data name="Task_InvalidTimerTimeSpan" xml:space="preserve">
+    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0, or a positive integer less than or equal to the maximum allowed timer duration.</value>
   </data>
   <data name="Task_Delay_InvalidMillisecondsDelay" xml:space="preserve">
     <value>The value needs to be either -1 (signifying an infinite timeout), 0 or a positive integer.</value>
@@ -3576,6 +3579,9 @@
   </data>
   <data name="InvalidOperation_InvalidComUnRegFunctionSig" xml:space="preserve">
     <value>COM unregister function must have a System.Type parameter and a void return type.</value>
+  </data>
+  <data name="InvalidOperation_InvalidHandle" xml:space="preserve">
+    <value>The handle is invalid.</value>
   </data>
   <data name="InvalidOperation_MultipleComRegFunctions" xml:space="preserve">
     <value>Type '{0}' has more than one COM registration function.</value>

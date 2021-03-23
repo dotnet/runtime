@@ -5755,6 +5755,15 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	return ctx->regs [reg];
 }
 
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	if (reg == ppc_r1)
+		return (host_mgreg_t)(gsize)&MONO_CONTEXT_GET_SP (ctx);
+
+	return &ctx->regs [reg];
+}
+
 guint32
 mono_arch_get_patch_offset (guint8 *code)
 {
@@ -5943,7 +5952,7 @@ mono_arch_skip_single_step (MonoContext *ctx)
  *   See mini-amd64.c for docs.
  */
 SeqPointInfo*
-mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+mono_arch_get_seq_point_info (guint8 *code)
 {
 	NOT_IMPLEMENTED;
 	return NULL;

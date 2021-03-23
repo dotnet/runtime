@@ -75,6 +75,7 @@ namespace System.Diagnostics
         private string? _spanId;
 
         private byte _w3CIdFlags;
+        private byte _parentTraceFlags;
 
         private TagsLinkedList? _tags;
         private BaggageLinkedList? _baggage;
@@ -213,6 +214,9 @@ namespace System.Diagnostics
         /// </summary>
         public string? ParentId
         {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
             get
             {
                 // if we represented it as a traceId-spanId, convert it to a string.
@@ -220,7 +224,9 @@ namespace System.Diagnostics
                 {
                     if (_parentSpanId != null)
                     {
-                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-00";
+                        Span<char> flagsChars = stackalloc char[2];
+                        HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
+                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
                         Interlocked.CompareExchange(ref _parentId, parentId, null);
                     }
                     else if (Parent != null)
@@ -551,6 +557,7 @@ namespace System.Diagnostics
                 _traceId = traceId.ToHexString();     // The child will share the parent's traceId.
                 _parentSpanId = spanId.ToHexString();
                 ActivityTraceFlags = activityTraceFlags;
+                _parentTraceFlags = (byte) activityTraceFlags;
             }
             return this;
         }
@@ -1072,6 +1079,7 @@ namespace System.Diagnostics
                 }
 
                 activity.ActivityTraceFlags = parentContext.TraceFlags;
+                activity._parentTraceFlags = (byte) parentContext.TraceFlags;
                 activity._traceState = parentContext.TraceState;
             }
 
@@ -1323,7 +1331,7 @@ namespace System.Diagnostics
         }
 
         // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
-        private class LinkedList<T> : IEnumerable<T>
+        private sealed class LinkedList<T> : IEnumerable<T>
         {
             private LinkedListNode<T> _first;
             private LinkedListNode<T> _last;
@@ -1371,7 +1379,7 @@ namespace System.Diagnostics
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
+        private sealed class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
         {
             private LinkedListNode<KeyValuePair<string, string?>>? _first;
 
@@ -1453,10 +1461,12 @@ namespace System.Diagnostics
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
+        private sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
         {
             private LinkedListNode<KeyValuePair<string, object?>>? _first;
             private LinkedListNode<KeyValuePair<string, object?>>? _last;
+
+            private StringBuilder? _stringBuilder;
 
             public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, object?>>(firstValue));
 
@@ -1618,6 +1628,37 @@ namespace System.Diagnostics
 
                     current = current.Next;
                 };
+            }
+
+            public override string ToString()
+            {
+                lock (this)
+                {
+                    if (_first == null)
+                    {
+                        return string.Empty;
+                    }
+
+                    _stringBuilder ??= new StringBuilder();
+                    _stringBuilder.Append(_first.Value.Key);
+                    _stringBuilder.Append(':');
+                    _stringBuilder.Append(_first.Value.Value);
+
+                    LinkedListNode<KeyValuePair<string, object?>>? current = _first.Next;
+                    while (current != null)
+                    {
+                        _stringBuilder.Append(", ");
+                        _stringBuilder.Append(current.Value.Key);
+                        _stringBuilder.Append(':');
+                        _stringBuilder.Append(current.Value.Value);
+
+                        current = current.Next;
+                    }
+
+                    string result = _stringBuilder.ToString();
+                    _stringBuilder.Clear();
+                    return result;
+                }
             }
         }
 

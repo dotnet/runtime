@@ -575,6 +575,12 @@ CLEAN_UP:
             LogError("Failed to delete file after MCS /merge failed. GetLastError()=%u", GetLastError());
         }
     }
+    else
+    {
+        // if no files found to merge, then there was some problem.
+        LogError("No files found to merge.");
+        result = (totalSize == 0) ? 1 : 0;
+    }
     delete[] nameOfOutputFileAsWchar;
 
     return result;

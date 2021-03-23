@@ -1670,6 +1670,7 @@ stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	case FRAME_TYPE_TRAMPOLINE:
 	case FRAME_TYPE_INTERP_TO_MANAGED:
 	case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+	case FRAME_TYPE_INTERP_ENTRY:
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
 	case FRAME_TYPE_INTERP:
@@ -1725,7 +1726,7 @@ async_stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer 
 		MonoMethod *method;
 		method = frame->ji->async ? NULL : frame->actual_method;
 
-		return d->func (method, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
+		return d->func (method, mono_get_root_domain (), frame->ji->code_start, frame->native_offset, d->user_data);
 	default:
 		g_assert_not_reached ();
 		return FALSE;

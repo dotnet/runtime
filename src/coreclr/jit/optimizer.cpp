@@ -1770,6 +1770,14 @@ public:
         return true;
     }
 
+    //------------------------------------------------------------------------
+    // GetExitCount: Return the exit count computed for the loop
+    //
+    unsigned char GetExitCount() const
+    {
+        return exitCount;
+    }
+
 private:
     //------------------------------------------------------------------------
     // FindEntry: See if given HEAD flows to valid ENTRY between given TOP and BOTTOM
@@ -2463,7 +2471,13 @@ void Compiler::optFindNaturalLoops()
                 loopsThisMethod++;
 
                 /* keep track of the number of exits */
-                loopExitCountTable.record(static_cast<unsigned>(exitCount));
+                loopExitCountTable.record(static_cast<unsigned>(search.GetExitCount()));
+
+                // Note that we continue to look for loops even if
+                // (optLoopCount == MAX_LOOP_NUM), in contrast to the !COUNT_LOOPS code below.
+                // This gives us a better count and stats. Hopefully it doesn't affect actual codegen.
+                CLANG_FORMAT_COMMENT_ANCHOR;
+
 #else  // COUNT_LOOPS
                 assert(recordedLoop);
                 if (optLoopCount == MAX_LOOP_NUM)
@@ -2483,7 +2497,10 @@ void Compiler::optFindNaturalLoops()
             }
         }
     }
+
+#if !COUNT_LOOPS
 NO_MORE_LOOPS:
+#endif // !COUNT_LOOPS
 
 #if COUNT_LOOPS
     loopCountTable.record(loopsThisMethod);
@@ -3696,7 +3713,6 @@ void Compiler::optUnrollLoops()
         incr = incr->AsOp()->gtOp2;
 
         GenTree* init = initStmt->GetRootNode();
-        GenTree* test = testStmt->GetRootNode();
 
         /* Make sure everything looks ok */
         if ((init->gtOper != GT_ASG) || (init->AsOp()->gtOp1->gtOper != GT_LCL_VAR) ||
@@ -4423,8 +4439,8 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to %f (exit loop)\n", bTest->bbNum, bTest->bbNext->bbNum,
                 testToAfterWeight);
 
-        edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight);
-        edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight);
+        edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight, bTest->bbJumpDest);
+        edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight, bTest->bbNext);
 
         // Adjust edges out of block, using the same distribution.
         //
@@ -4444,8 +4460,8 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to %f (avoid loop)\n", block->bbNum,
                 block->bbJumpDest->bbNum, blockToAfterWeight);
 
-        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight);
-        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight);
+        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, block->bbNext);
+        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, block->bbJumpDest);
 
 #ifdef DEBUG
         // Verify profile for the two target blocks is consistent.
@@ -5068,7 +5084,7 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
             {
                 LcJaggedArrayOptInfo* arrIndexInfo = optInfo->AsLcJaggedArrayOptInfo();
                 compCurBB                          = arrIndexInfo->arrIndex.useBlock;
-                optRemoveRangeCheck(arrIndexInfo->arrIndex.bndsChks[arrIndexInfo->dim], arrIndexInfo->stmt);
+                optRemoveCommaBasedRangeCheck(arrIndexInfo->arrIndex.bndsChks[arrIndexInfo->dim], arrIndexInfo->stmt);
                 DBEXEC(dynamicPath, optDebugLogLoopCloning(arrIndexInfo->arrIndex.useBlock, arrIndexInfo->stmt));
             }
             break;
@@ -7578,17 +7594,25 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                     loopSkippedCount = head->bbJumpDest->bbWeight;
                 }
 
+                JITDUMP("%s; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT "\n",
+                        fgHaveValidEdgeWeights ? "valid edge weights" : "no edge weights", loopEnteredCount,
+                        loopSkippedCount);
+
                 BasicBlock::weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
 
+                JITDUMP("%s; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
+                        fgHaveValidEdgeWeights ? "valid edge weights" : "no edge weights", loopEnteredCount,
+                        loopSkippedCount, loopTakenRatio);
+
                 // Calculate a good approximation of the preHead's block weight
-                BasicBlock::weight_t preHeadWeight = (head->bbWeight * loopTakenRatio) + 0.5f;
-                preHead->setBBWeight(max(preHeadWeight, 1));
+                BasicBlock::weight_t preHeadWeight = (head->bbWeight * loopTakenRatio);
+                preHead->setBBProfileWeight(preHeadWeight);
                 noway_assert(!preHead->isRunRarely());
             }
         }
     }
 
-    // Link in the preHead block.
+    // Link in the preHead block
     fgInsertBBbefore(top, preHead);
 
     // Ideally we would re-run SSA and VN if we optimized by doing loop hoisting.
@@ -7639,8 +7663,9 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
        All predecessors of 'beg', (which is the entry in the loop)
        now have to jump to 'preHead', unless they are dominated by 'head' */
 
-    preHead->bbRefs = 0;
-    fgAddRefPred(preHead, head);
+    preHead->bbRefs                 = 0;
+    flowList* const edgeToPreHeader = fgAddRefPred(preHead, head);
+    edgeToPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, preHead);
     bool checkNestedLoops = false;
 
     for (flowList* pred = top->bbPreds; pred; pred = pred->flNext)
@@ -7722,7 +7747,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
     noway_assert(!fgGetPredForBlock(top, preHead));
     fgRemoveRefPred(top, head);
-    fgAddRefPred(top, preHead);
+    flowList* const edgeFromPreHeader = fgAddRefPred(top, preHead);
+    edgeFromPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, top);
 
     /*
         If we found at least one back-edge in the flowgraph pointing to the top/entry of the loop
@@ -8201,23 +8227,33 @@ void Compiler::AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLAS
 }
 
 //------------------------------------------------------------------------------
-// optRemoveRangeCheck : Given an array index node, mark it as not needing a range check.
+// optRemoveRangeCheck : Given an indexing node, mark it as not needing a range check.
 //
 // Arguments:
-//    tree   -  Range check tree
-//    stmt   -  Statement the tree belongs to
-
-void Compiler::optRemoveRangeCheck(GenTree* tree, Statement* stmt)
+//    check  -  Range check tree, the raw CHECK node (ARRAY, SIMD or HWINTRINSIC).
+//    comma  -  GT_COMMA to which the "check" belongs, "nullptr" if the check is a standalone one.
+//    stmt   -  Statement the indexing nodes belong to.
+//
+// Return Value:
+//    Rewritten "check" - no-op if it has no side effects or the tree that contains them.
+//
+// Assumptions:
+//    This method is capable of removing checks of two kinds: COMMA-based and standalone top-level ones.
+//    In case of a COMMA-based check, "check" must be a non-null first operand of a non-null COMMA.
+//    In case of a standalone check, "comma" must be null and "check" - "stmt"'s root.
+//
+GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt)
 {
 #if !REARRANGE_ADDS
     noway_assert(!"can't remove range checks without REARRANGE_ADDS right now");
 #endif
 
-    noway_assert(tree->gtOper == GT_COMMA);
+    noway_assert(stmt != nullptr);
+    noway_assert((comma != nullptr && comma->OperIs(GT_COMMA) && comma->gtGetOp1() == check) ||
+                 (check != nullptr && check->OperIsBoundsCheck() && comma == nullptr));
+    noway_assert(check->OperIsBoundsCheck());
 
-    GenTree* bndsChkTree = tree->AsOp()->gtOp1;
-
-    noway_assert(bndsChkTree->OperIsBoundsCheck());
+    GenTree* tree = comma != nullptr ? comma : check;
 
 #ifdef DEBUG
     if (verbose)
@@ -8229,19 +8265,40 @@ void Compiler::optRemoveRangeCheck(GenTree* tree, Statement* stmt)
 
     // Extract side effects
     GenTree* sideEffList = nullptr;
-    gtExtractSideEffList(bndsChkTree, &sideEffList, GTF_ASG);
+    gtExtractSideEffList(check, &sideEffList, GTF_ASG);
 
-    // Just replace the bndsChk with a NOP as an operand to the GT_COMMA, if there are no side effects.
-    tree->AsOp()->gtOp1 = (sideEffList != nullptr) ? sideEffList : gtNewNothingNode();
-    // TODO-CQ: We should also remove the GT_COMMA, but in any case we can no longer CSE the GT_COMMA.
-    tree->gtFlags |= GTF_DONT_CSE;
+    if (sideEffList != nullptr)
+    {
+        // We've got some side effects.
+        if (tree->OperIs(GT_COMMA))
+        {
+            // Make the comma handle them.
+            tree->AsOp()->gtOp1 = sideEffList;
+        }
+        else
+        {
+            // Make the statement execute them instead of the check.
+            stmt->SetRootNode(sideEffList);
+            tree = sideEffList;
+        }
+    }
+    else
+    {
+        check->gtBashToNOP();
+    }
+
+    if (tree->OperIs(GT_COMMA))
+    {
+        // TODO-CQ: We should also remove the GT_COMMA, but in any case we can no longer CSE the GT_COMMA.
+        tree->gtFlags |= GTF_DONT_CSE;
+    }
 
     gtUpdateSideEffects(stmt, tree);
 
-    /* Recalculate the GetCostSz(), etc... */
+    // Recalculate the GetCostSz(), etc...
     gtSetStmtInfo(stmt);
 
-    /* Re-thread the nodes if necessary */
+    // Re-thread the nodes if necessary
     if (fgStmtListThreaded)
     {
         fgSetStmtSeq(stmt);
@@ -8254,6 +8311,44 @@ void Compiler::optRemoveRangeCheck(GenTree* tree, Statement* stmt)
         gtDispTree(tree);
     }
 #endif
+
+    return check;
+}
+
+//------------------------------------------------------------------------------
+// optRemoveStandaloneRangeCheck : A thin wrapper over optRemoveRangeCheck that removes standalone checks.
+//
+// Arguments:
+//    check - The standalone top-level CHECK node.
+//    stmt  - The statement "check" is a root node of.
+//
+// Return Value:
+//    If "check" has no side effects, it is retuned, bashed to a no-op.
+//    If it has side effects, the tree that executes them is returned.
+//
+GenTree* Compiler::optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt)
+{
+    assert(check != nullptr);
+    assert(stmt != nullptr);
+    assert(check == stmt->GetRootNode());
+
+    return optRemoveRangeCheck(check, nullptr, stmt);
+}
+
+//------------------------------------------------------------------------------
+// optRemoveCommaBasedRangeCheck : A thin wrapper over optRemoveRangeCheck that removes COMMA-based checks.
+//
+// Arguments:
+//    comma - GT_COMMA of which the first operand is the CHECK to be removed.
+//    stmt  - The statement "comma" belongs to.
+//
+void Compiler::optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt)
+{
+    assert(comma != nullptr && comma->OperIs(GT_COMMA));
+    assert(stmt != nullptr);
+    assert(comma->gtGetOp1()->OperIsBoundsCheck());
+
+    optRemoveRangeCheck(comma->gtGetOp1()->AsBoundsChk(), comma, stmt);
 }
 
 /*****************************************************************************
@@ -8453,24 +8548,38 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
 //
 //  TODO-CQ: CLONE: After morph make sure this method extracts values before morph.
 //
-//  STMT      void(IL 0x007...0x00C)
-//  [000023] -A-XG+------              *  ASG       int
-//  [000022] D----+-N----              +--*  LCL_VAR   int    V06 tmp1
-//  [000048] ---XG+------              \--*  COMMA     int
-//  [000041] ---X-+------                 +--*  ARR_BOUNDS_CHECK_Rng void
-//  [000020] -----+------                 |  +--*  LCL_VAR   int    V04 loc0
-//  [000040] ---X-+------                 |  \--*  ARR_LENGTH int
-//  [000019] -----+------                 |     \--*  LCL_VAR   ref    V00 arg0
-//  [000021] a--XG+------                 \--*  IND       int
-//  [000047] -----+------                    \--*  ADD       byref
-//  [000038] -----+------                       +--*  LCL_VAR   ref    V00 arg0
-//  [000046] -----+------                       \--*  ADD       long
-//  [000044] -----+------                          +--*  LSH       long
-//  [000042] -----+------                          |  +--*  CAST      long < -int
-//  [000039] i----+------                          |  |  \--*  LCL_VAR   int    V04 loc0
-//  [000043] -----+-N----                          |  \--*  CNS_INT   long   2
-//  [000045] -----+------                          \--*  CNS_INT   long   16 Fseq[#FirstElem]
-
+//  Example tree to pattern match:
+//
+// *  COMMA     int
+// +--*  ARR_BOUNDS_CHECK_Rng void
+// |  +--*  LCL_VAR   int    V02 loc1
+// |  \--*  ARR_LENGTH int
+// |     \--*  LCL_VAR   ref    V00 arg0
+// \--*  IND       int
+//    \--*  ADD       byref
+//       +--*  LCL_VAR   ref    V00 arg0
+//       \--*  ADD       long
+//          +--*  LSH       long
+//          |  +--*  CAST      long <- int
+//          |  |  \--*  LCL_VAR   int    V02 loc1
+//          |  \--*  CNS_INT   long   2
+//          \--*  CNS_INT   long   16 Fseq[#FirstElem]
+//
+// Note that byte arrays don't require the LSH to scale the index, so look like this:
+//
+// *  COMMA     ubyte
+// +--*  ARR_BOUNDS_CHECK_Rng void
+// |  +--*  LCL_VAR   int    V03 loc2
+// |  \--*  ARR_LENGTH int
+// |     \--*  LCL_VAR   ref    V00 arg0
+// \--*  IND       ubyte
+//    \--*  ADD       byref
+//       +--*  LCL_VAR   ref    V00 arg0
+//       \--*  ADD       long
+//          +--*  CAST      long <- int
+//          |  \--*  LCL_VAR   int    V03 loc2
+//          \--*  CNS_INT   long   16 Fseq[#FirstElem]
+//
 bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum)
 {
     if (tree->gtOper != GT_COMMA)
@@ -8544,15 +8653,20 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     {
         return false;
     }
-    if (si->gtOper != GT_LSH)
+    GenTree* index;
+    if (si->gtOper == GT_LSH)
     {
-        return false;
+        GenTree* scale = si->gtGetOp2();
+        index          = si->gtGetOp1();
+        if (scale->gtOper != GT_CNS_INT)
+        {
+            return false;
+        }
     }
-    GenTree* scale = si->gtGetOp2();
-    GenTree* index = si->gtGetOp1();
-    if (scale->gtOper != GT_CNS_INT)
+    else
     {
-        return false;
+        // No scale (e.g., byte array).
+        index = si;
     }
 #ifdef TARGET_64BIT
     if (index->gtOper != GT_CAST)
@@ -9308,11 +9422,11 @@ void Compiler::optOptimizeBools()
             BasicBlock::weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
             if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
             {
-                edge1->setEdgeWeights(edgeSumMin, edgeSumMax);
+                edge1->setEdgeWeights(edgeSumMin, edgeSumMax, b1->bbJumpDest);
             }
             else
             {
-                edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT);
+                edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, b1->bbJumpDest);
             }
 
             /* Get rid of the second block (which is a BBJ_COND) */
@@ -9562,35 +9676,38 @@ void Compiler::optRemoveRedundantZeroInits()
                             bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                             bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
 
-                            if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
-                                (lclDsc->lvIsStructField &&
-                                 BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
-                                (!lclDsc->lvTracked && !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
+                            if (!bbInALoop || bbIsReturn)
                             {
-                                // We are guaranteed to have a zero initialization in the prolog or a
-                                // dominating explicit zero initialization and the local hasn't been redefined
-                                // between the prolog and this explicit zero initialization so the assignment
-                                // can be safely removed.
-                                if (tree == stmt->GetRootNode())
+                                if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
+                                    (lclDsc->lvIsStructField &&
+                                     BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
+                                    (!lclDsc->lvTracked && !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
                                 {
-                                    fgRemoveStmt(block, stmt);
-                                    removedExplicitZeroInit      = true;
-                                    lclDsc->lvSuppressedZeroInit = 1;
-
-                                    if (lclDsc->lvTracked)
+                                    // We are guaranteed to have a zero initialization in the prolog or a
+                                    // dominating explicit zero initialization and the local hasn't been redefined
+                                    // between the prolog and this explicit zero initialization so the assignment
+                                    // can be safely removed.
+                                    if (tree == stmt->GetRootNode())
                                     {
-                                        removedTrackedDefs   = true;
-                                        unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
-                                        *pDefsCount          = (*pDefsCount) - 1;
+                                        fgRemoveStmt(block, stmt);
+                                        removedExplicitZeroInit      = true;
+                                        lclDsc->lvSuppressedZeroInit = 1;
+
+                                        if (lclDsc->lvTracked)
+                                        {
+                                            removedTrackedDefs   = true;
+                                            unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
+                                            *pDefsCount          = (*pDefsCount) - 1;
+                                        }
                                     }
                                 }
-                            }
 
-                            if (treeOp->gtOp1->OperIs(GT_LCL_VAR))
-                            {
-                                BitVecOps::AddElemD(&bitVecTraits, zeroInitLocals, lclNum);
+                                if (treeOp->gtOp1->OperIs(GT_LCL_VAR))
+                                {
+                                    BitVecOps::AddElemD(&bitVecTraits, zeroInitLocals, lclNum);
+                                }
+                                *pRefCount = 0;
                             }
-                            *pRefCount = 0;
                         }
 
                         if (!removedExplicitZeroInit && treeOp->gtOp1->OperIs(GT_LCL_VAR) &&

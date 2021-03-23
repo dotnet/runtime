@@ -9,6 +9,9 @@
       Required public items/properties:
       - $(WasmMainJSPath)
       - @(WasmAssembliesToBundle)    - list of assemblies to package as the wasm app
+          - %(_InternalForceInterpret) metadata   - if true, then skips this assembly from the AOT step.
+                                                    Error for this to be set with AOTMode=LLVMOnly
+
       - $(EMSDK_PATH)      - points to the emscripten sdk location.
 
       Public properties (optional):
@@ -19,9 +22,12 @@
       - $(WasmLinkIcalls)    - Whenever to link out unused icalls. Defaults to $(WasmBuildNative).
       - $(RunAOTCompilation) - Defaults to false.
       - $(WasmDebugLevel)
+      - $(WasmNativeDebugSymbols) - Build with native debug symbols, useful only with `$(RunAOTCompilation)`, or `$(WasmBuildNative)`
+                                    Defaults to true.
+      - $(WasmDedup)         - Whenever to dedup generic instances when using AOT. Defaults to true.
 
       - $(WasmProfilers)     - Profilers to use
-      - $(AOTMode)           - Defaults to `LLVMOnly`
+      - $(AOTMode)           - Defaults to `AotInterp`
       - $(AOTProfilePath)    - profile data file to be used for profile-guided optimization
       - $(InvariantGlobalization)       - Whenever to disable ICU. Defaults to false.
 
@@ -35,7 +41,7 @@
                                               packaging, or app bundle generation, eg. Blazor.
 
       - $(WasmStripAOTAssemblies)           - Whether to run `mono-cil-strip` on the assemblies.
-                                              Defaults to true
+                                              Always set to false!
 
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
                                               is what triggers the wasm app building. Defaults to `Publish`.
@@ -58,8 +64,11 @@
   -->
 
   <PropertyGroup>
-    <WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>
-    <WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>
+    <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
+    <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
+
+    <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>-->
+    <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
   </PropertyGroup>
 
@@ -67,8 +76,9 @@
   <Target Name="WasmBuildApp" AfterTargets="$(WasmBuildAppAfterThisTarget)" />
 
   <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
-    <Error Condition="'@(_WasmAssemblies)' == ''" Text="Item _WasmAssemblies is empty" />
+    <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
     <Error Condition="'$(EMSDK_PATH)' == ''" Text="%24(EMSDK_PATH) should be set to emscripten sdk" />
+    <Error Condition="!Exists($(EMSDK_PATH))" Text="Cannot find EMSDK_PATH=$(EMSDK_PATH)" />
 
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
@@ -77,21 +87,48 @@
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
     </ItemGroup>
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_WasmAssemblies->Distinct())">
+      <_AotInputAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
+      <_AOT_InternalForceInterpretAssemblies Include="@(_WasmAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
 
-      <_WasmAssemblies Remove="@(_WasmAssemblies)" />
+      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
 
-      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native" />
+      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
       <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net6.0" />
     </ItemGroup>
 
     <PropertyGroup>
-      <AOTMode Condition="'$(AOTMode)' == '' and '$(AOTProfilePath)' != ''">AotInterp</AOTMode>
-      <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnly</AOTMode>
+      <!--<AOTMode Condition="'$(AOTMode)' == '' and '$(AOTProfilePath)' != ''">AotInterp</AOTMode>-->
+      <AOTMode Condition="'$(AOTMode)' == ''">AotInterp</AOTMode>
     </PropertyGroup>
+
+    <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOT_InternalForceInterpretAssemblies->Count()) > 0"
+           Text="Builing in AOTMode=LLVMonly, but found some assemblies marked as _InternalForceInterpret: @(_AOT_InternalForceInterpretAssemblies)" />
+
+    <Message Text="AOT'ing @(_AotInputAssemblies->Count()) assemblies" Importance="High" />
+
+    <!-- Dedup -->
+    <PropertyGroup Condition="'$(WasmDedup)' == 'true'">
+      <_WasmDedupAssembly>$(_WasmIntermediateOutputPath)\aot-instances.dll</_WasmDedupAssembly>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'$(WasmDedup)' == 'true'" File="$(_WasmIntermediateOutputPath)/aot-instances.cs" Overwrite="true" Lines="" />
+    <Csc
+      Condition="'$(WasmDedup)' == 'true'"
+      Sources="$(_WasmIntermediateOutputPath)\aot-instances.cs"
+      OutputAssembly="$(_WasmDedupAssembly)"
+      TargetType="library"
+      Deterministic="true"
+      References="@(ReferencePath)"
+      ToolExe="$(CscToolExe)"
+      ToolPath="$(CscToolPath)" />
+    <ItemGroup Condition="'$(WasmDedup)' == 'true'">
+      <_AotInputAssemblies Include="$(_WasmDedupAssembly)">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </_AotInputAssemblies>
+    </ItemGroup>
 
     <MonoAOTCompiler
       CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
@@ -106,70 +143,111 @@
       AotModulesTablePath="$(_WasmIntermediateOutputPath)driver-gen.c"
       UseLLVM="true"
       DisableParallelAot="true"
+      DedupAssembly="$(_WasmDedupAssembly)"
       LLVMPath="$(EMSDK_PATH)\upstream\bin">
-      <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssemblies" />
+      <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssembliesInternal" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </MonoAOTCompiler>
+
+    <ItemGroup>
+      <!-- Add back the interpreter-only assemblies -->
+      <_WasmAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
+    </ItemGroup>
   </Target>
 
   <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
   <Target Name="_WasmStripAOTAssemblies" Condition="'$(RunAOTCompilation)' == 'true' and '$(WasmStripAOTAssemblies)' == 'true' and '$(AOTMode)' != 'AotInterp' and '$(ArchiveTests)' != 'true'">
     <PropertyGroup>
-      <_WasmStrippedAssembliesPath>$([System.IO.Path]::GetFullPath('$(_WasmIntermediateOutputPath)\stripped-assemblies\'))</_WasmStrippedAssembliesPath>
+      <_WasmStrippedAssembliesPath>$([MSBuild]::NormalizeDirectory($(_WasmIntermediateOutputPath), 'stripped-assemblies'))</_WasmStrippedAssembliesPath>
     </PropertyGroup>
 
     <ItemGroup>
-      <_WasmStrippedAssemblies Include="@(_WasmAssemblies->'$(_WasmStrippedAssembliesPath)\%(FileName)%(Extension)')" OriginalPath="%(_WasmAssemblies.Identity)" />
+      <_WasmStrippedAssemblies
+              Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'"
+              Include="@(_WasmAssembliesInternal->'$(_WasmStrippedAssembliesPath)%(FileName)%(Extension)')"
+              OriginalPath="%(_WasmAssembliesInternal.Identity)" />
+      <_WasmInterpOnlyAssembly Include="@(_WasmAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
     </ItemGroup>
 
     <!-- Run mono-cil-strip on the assemblies -->
     <!-- TODO: replace this with a linker task -->
     <MakeDir Directories="$(_WasmStrippedAssembliesPath)" />
-    <Exec Command="mono-cil-strip -q %(_WasmStrippedAssemblies.OriginalPath) %(_WasmStrippedAssemblies.Identity)" />
+    <Exec Command='mono-cil-strip -q "%(_WasmStrippedAssemblies.OriginalPath)" "%(_WasmStrippedAssemblies.Identity)"' />
 
     <ItemGroup>
-      <_WasmAssemblies Remove="@(_WasmAssemblies)" />
-      <_WasmAssemblies Include="@(_WasmStrippedAssemblies)" />
+      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
+      <_WasmAssembliesInternal Include="@(_WasmStrippedAssemblies);@(_WasmInterpOnlyAssembly)" />
     </ItemGroup>
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">
     <WasmLoadAssembliesAndReferences
-      Assemblies="@(_WasmAssemblies)"
+      Assemblies="@(_WasmAssembliesInternal)"
       AssemblySearchPaths="@(WasmAssemblySearchPaths)"
       SkipMissingAssemblies="$(WasmSkipMissingAssemblies)">
       <Output TaskParameter="ReferencedAssemblies" ItemName="_TmpWasmAssemblies" />
     </WasmLoadAssembliesAndReferences>
 
     <ItemGroup>
-      <_WasmAssemblies Remove="@(_WasmAssemblies)" />
-      <_WasmAssemblies Include="@(_TmpWasmAssemblies)" />
+      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
+      <_WasmAssembliesInternal Include="@(_TmpWasmAssemblies)" />
     </ItemGroup>
   </Target>
 
-  <Target Name="_BeforeWasmBuildApp">
+  <Target Name="_BeforeWasmBuildApp" DependsOnTargets="_SetWasmBuildNativeDefaults">
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
+    <Error Condition="@(WasmAssembliesToBundle->Count()) == 0" Text="WasmAssembliesToBundle item is empty. No assemblies to process" />
 
     <PropertyGroup>
       <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
-      <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
+      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$(OutputPath)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
-      <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross$(_ExeExt)</MonoAotCrossCompilerPath>
+
+      <MicrosoftNetCoreAppRuntimePackRidNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir), 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
+      <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'cross', $(PackageRID), 'mono-aot-cross$(_ExeExt)'))</MonoAotCrossCompilerPath>
+      <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::EnsureTrailingSlash($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
 
       <!-- emcc, and mono-aot-cross don't like relative paths for output files -->
-      <_WasmIntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)\wasm\'))</_WasmIntermediateOutputPath>
+      <_WasmIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm'))</_WasmIntermediateOutputPath>
     </PropertyGroup>
 
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
     <PropertyGroup>
-      <MicrosoftNetCoreAppRuntimePackRidDir Condition="!HasTrailingSlash('$(MicrosoftNetCoreAppRuntimePackRidDir)')">$(MicrosoftNetCoreAppRuntimePackRidDir)\</MicrosoftNetCoreAppRuntimePackRidDir>
+      <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
     </PropertyGroup>
     <ItemGroup>
-        <_WasmAssemblies Include="@(WasmAssembliesToBundle)" />
+      <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="_SetWasmBuildNativeDefaults">
+    <PropertyGroup>
+      <_IsEMSDKMissing Condition="'$(EMSDK_PATH)' == '' or !Exists('$(EMSDK_PATH)')">true</_IsEMSDKMissing>
+    </PropertyGroup>
+
+    <!-- if already set, maybe by a user projects, then a missing emsdk is an error -->
+    <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+           Text="Cannot find emscripten sdk, required for building native files. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
+
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+           Text="Cannot find emscripten sdk, required for AOT'ing assemblies. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
+
+    <PropertyGroup>
+      <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
+    </PropertyGroup>
+
+    <!-- If we want to default to true, and sdk is missing, then just warn, and set it to false -->
+    <Warning Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+             Text="Cannot find emscripten sdk, required for building native files. %24(EMSDK_PATH)=$(EMSDK_PATH). Skipping native relinking" />
+
+    <PropertyGroup>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'">false</WasmBuildNative>
+    </PropertyGroup>
   </Target>
 
   <Target Name="_WasmCoreBuild" BeforeTargets="WasmBuildApp" DependsOnTargets="$(WasmBuildAppDependsOn)" />
@@ -186,17 +264,17 @@
 
     <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
 
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.timezones.blat" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
     </ItemGroup>
 
     <WasmAppBuilder
       AppDir="$(WasmAppDir)"
       MainJS="$(WasmMainJSPath)"
-      Assemblies="@(_WasmAssemblies)"
+      Assemblies="@(_WasmAssembliesInternal)"
       InvariantGlobalization="$(InvariantGlobalization)"
       SatelliteAssemblies="@(WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
@@ -213,8 +291,10 @@
   </Target>
 
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp;_WasmStripAOTAssemblies;_GenerateDriverGenC;_CheckEmccIsExpectedVersion" Condition="'$(WasmBuildNative)' == 'true'">
+    <Error Condition="'$(EMSDK_PATH)' == ''" Text="%24(EMSDK_PATH) should be set to emscripten sdk" />
+
     <PropertyGroup>
-      <EmccFlagsFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-flags.txt</EmccFlagsFile>
+      <EmccFlagsFile>$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-flags.txt'))</EmccFlagsFile>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
     </PropertyGroup>
@@ -225,8 +305,10 @@
 
     <PropertyGroup>
       <EmccFlags>$(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
+      <EmccFlags Condition="'$(_WasmDevel)' == 'true'">-O0 $(EmccFlags)</EmccFlags>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
       <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
+      <EmccFlags Condition="'$(InvariantGlobalization)' == 'true'">$(EmccFlags) -DINVARIANT_GLOBALIZATION=1</EmccFlags>
     </PropertyGroup>
 
    <ItemGroup>
@@ -237,17 +319,19 @@
    <!--This pinvoke-table.h will be used instead of the one in the runtime pack because of -I$(_WasmIntermediateOutputPath) -->
    <PInvokeTableGenerator
      Modules="@(_WasmPInvokeModules)"
-     Assemblies="@(_WasmAssemblies)"
+     Assemblies="@(_WasmAssembliesInternal)"
      OutputPath="$(_WasmIntermediateOutputPath)pinvoke-table.h" />
 
    <!-- ICall table generation -->
-   <Exec Condition="'$(WasmLinkIcalls)' == 'true'" Command="$(MonoAotCrossCompilerPath) --print-icall-table > $(_WasmIntermediateOutputPath)/runtime-icall-table.h" />
+   <Exec Condition="'$(WasmLinkIcalls)' == 'true'" Command='"$(MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmIntermediateOutputPath)runtime-icall-table.h"' />
    <IcallTableGenerator Condition="'$(WasmLinkIcalls)' == 'true'"
-     RuntimeIcallTableFile="$(_WasmIntermediateOutputPath)/runtime-icall-table.h"
-     Assemblies="@(_WasmAssemblies)"
-     OutputPath="$(_WasmIntermediateOutputPath)/icall-table.h" />
+     RuntimeIcallTableFile="$(_WasmIntermediateOutputPath)runtime-icall-table.h"
+     Assemblies="@(_WasmAssembliesInternal)"
+     OutputPath="$(_WasmIntermediateOutputPath)icall-table.h" />
    <PropertyGroup>
      <EmccFlags Condition="'$(WasmLinkIcalls)' == 'true'">$(EmccFlags) -DLINK_ICALLS=1</EmccFlags>
+     <_WasmIncludeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include'))</_WasmIncludeDir>
+     <_WasmSrcDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src'))</_WasmSrcDir>
    </PropertyGroup>
 
    <ItemGroup>
@@ -258,41 +342,54 @@
      <_WasmRuntimePackNativeLibs Include="libSystem.Native.a"/>
      <_WasmRuntimePackNativeLibs Include="libSystem.IO.Compression.Native.a"/>
      <_WasmRuntimePackNativeLibs Include="libmono-profiler-aot.a"/>
-     <_WasmRuntimePackNativeLibs Include="libicuuc.a" Condition="'$(InvariantGlobalization)' != 'true'" />
-     <_WasmRuntimePackNativeLibs Include="libicui18n.a" Condition="'$(InvariantGlobalization)' != 'true'" />
-     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidDir)\native\%(FileName)%(Extension)')" />
+     <_WasmRuntimePackNativeLibs Include="libicuuc.a" />
+     <_WasmRuntimePackNativeLibs Include="libicui18n.a" />
 
-     <_WasmObjects Include="$(_WasmIntermediateOutputPath)driver.o"/>
-     <_WasmObjects Include="$(_WasmIntermediateOutputPath)pinvoke.o"/>
-     <_WasmObjects Include="$(_WasmIntermediateOutputPath)corebindings.o"/>
+     <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)driver.o"/>
+     <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)pinvoke.o"/>
+     <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)corebindings.o"/>
+     <_WasmObjectsToBuild SourcePath="$(_WasmSrcDir)%(FileName).c" />
 
-     <_BitcodeFile Include="%(_WasmAssemblies.LlvmBitcodeFile)" />
+     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(FileName)%(Extension)')" />
+     <_WasmObjects Include="@(_WasmObjectsToBuild)" />
+
+     <_DotnetJSSrcFile Include="$(_WasmSrcDir)library_mono.js" />
+     <_DotnetJSSrcFile Include="$(_WasmSrcDir)binding_support.js" />
+     <_DotnetJSSrcFile Include="$(_WasmSrcDir)dotnet_support.js" />
+     <_DotnetJSSrcFile Include="$(_WasmSrcDir)pal_random.js" />
+
+     <_AOTAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'" />
+     <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
    </ItemGroup>
 
-   <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_WasmAssemblies->Count())"
-     Text="Bug: Number of assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_WasmAssemblies->Count())" />
+   <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_AOTAssemblies->Count())"
+          Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_AOTAssemblies->Count())" />
 
    <PropertyGroup>
-     <_WasmIncludeDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/include</_WasmIncludeDir>
-     <_WasmSrcDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/src</_WasmSrcDir>
-     <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 -I$(_WasmIntermediateOutputPath) -I$(_WasmIncludeDir)/mono-2.0 -I$(_WasmIncludeDir)/wasm</EmccCFlags>
+     <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 "-I$(_WasmIncludeDir)mono-2.0" "-I$(_WasmIncludeDir)wasm"</EmccCFlags>
+     <EmccCFlags Condition="'$(WasmNativeDebugSymbols)' == 'true'">$(EmccCFlags) -g</EmccCFlags>
+
+     <!--
+          For path c:\foo\bar\ quoting would make it "c:\foo\bar\"
+          .. which escapes the closing quote. So, instead make it
+            c:\foo\bar\ -> "c:\foo\bar\."
+     -->
+     <EmccCFlags Condition="$(_WasmIntermediateOutputPath.EndsWith('\')) ">$(EmccCFlags) "-I$(_WasmIntermediateOutputPath)."</EmccCFlags>
+     <EmccCFlags Condition="!$(_WasmIntermediateOutputPath.EndsWith('\'))">$(EmccCFlags) "-I$(_WasmIntermediateOutputPath)"</EmccCFlags>
+
      <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
      <_WasmOptCommand>$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'bin', 'wasm-opt$(_ExeExt)'))</_WasmOptCommand>
    </PropertyGroup>
 
-    <RunWithEmSdkEnv Command="emcc $(EmccCFlags) $(_WasmSrcDir)/driver.c -c -o $(_WasmIntermediateOutputPath)driver.o" EmSdkPath="$(EMSDK_PATH)" />
-    <RunWithEmSdkEnv Command="emcc $(EmccCFlags) $(_WasmSrcDir)/corebindings.c -c -o $(_WasmIntermediateOutputPath)corebindings.o" EmSdkPath="$(EMSDK_PATH)" />
-    <RunWithEmSdkEnv Command="emcc $(EmccCFlags) $(_WasmSrcDir)/pinvoke.c -c -o $(_WasmIntermediateOutputPath)pinvoke.o" EmSdkPath="$(EMSDK_PATH)" />
-    <RunWithEmSdkEnv Command="emcc $(EmccLDFlags) --js-library $(_WasmSrcDir)/library_mono.js --js-library $(_WasmSrcDir)/binding_support.js --js-library $(_WasmSrcDir)/dotnet_support.js --js-library $(_WasmSrcDir)/pal_random.js @(_WasmAssemblies->'%(LlvmBitcodeFile)', ' ') @(_WasmObjects, ' ') -o $(_WasmIntermediateOutputPath)dotnet.js" EmSdkPath="$(EMSDK_PATH)" />
-    <RunWithEmSdkEnv Command="$(_WasmOptCommand) --strip-dwarf $(_WasmIntermediateOutputPath)dotnet.wasm -o $(_WasmIntermediateOutputPath)dotnet.wasm" Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EmSdkPath="$(EMSDK_PATH)" />
+    <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
+    <RunWithEmSdkEnv Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.SourcePath)" -c -o "%(_WasmObjectsToBuild.Identity)"' EmSdkPath="$(EMSDK_PATH)" />
+    <RunWithEmSdkEnv Command="emcc $(EmccLDFlags) @(_DotnetJSSrcFile->'--js-library &quot;%(Identity)&quot;', ' ') @(_BitcodeFile->'&quot;%(Identity)&quot;', ' ') @(_WasmObjects->'&quot;%(Identity)&quot;', ' ') -o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" EmSdkPath="$(EMSDK_PATH)" />
+    <RunWithEmSdkEnv Command='"$(_WasmOptCommand)" --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EmSdkPath="$(EMSDK_PATH)" />
 
     <ItemGroup>
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)\dotnet.wasm" />
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)\dotnet.js" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js" />
     </ItemGroup>
-
-    <!-- If a bundle wouldn't be generated, then copy the files to app dir -->
-    <Copy SourceFiles="@(WasmNativeAsset)" DestinationFolder="$(WasmAppDir)" Condition="'$(WasmGenerateAppBundle)' != 'true'" />
   </Target>
 
   <Target Name="_GenerateDriverGenC" Condition="'$(RunAOTCompilation)' != 'true' and '$(WasmProfilers)' != ''">
@@ -322,7 +419,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunV8ScriptPath)." />
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
-      Lines="v8 --expose_wasm runtime.js -- --run $(WasmMainAssemblyFileName) $*"
+      Lines="v8 --expose_wasm runtime.js -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
       Overwrite="true">
     </WriteLinesToFile>
 
@@ -330,11 +427,11 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <FileWrites Include="$(WasmRunV8ScriptPath)" />
     </ItemGroup>
 
-    <Exec Command="chmod a+x $(WasmRunV8ScriptPath)" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunV8ScriptPath)" />
   </Target>
 
   <Target Name="_CheckEmccIsExpectedVersion">
-    <ReadLinesFromFile File="$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt">
+    <ReadLinesFromFile File="$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-version.txt'))">
         <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
     </ReadLinesFromFile>
 
@@ -356,7 +453,13 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
 
   <Target Name="_AfterWasmBuildApp">
     <ItemGroup>
-      <WasmAssembliesFinal Include="@(_WasmAssemblies)" />
+      <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" LlvmBitCodeFile="" />
     </ItemGroup>
+
+    <!-- $(WasmResolveAssembliesBeforeBuild) can add more assemblies, so no point checking the count in that case -->
+    <Error Condition="'$(WasmResolveAssembliesBeforeBuild)' != 'true' and @(WasmAssembliesFinal->Distinct()->Count()) != @(WasmAssembliesToBundle->Distinct()->Count()) and '$(WasmDedup)' != 'true'"
+      Text="Bug: The wasm build started with @(WasmAssembliesToBundle->Count()) assemblies, but completed with @(WasmAssembliesFinal->Count()).
+      WasmAssembliesToBundle: @(WasmAssembliesToBundle)
+      WasmAssembliesFinal: @(WasmAssembliesFinal)" />
   </Target>
 </Project>

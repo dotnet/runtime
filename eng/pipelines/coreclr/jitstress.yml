@@ -1,17 +1,11 @@
 trigger: none
 
 schedules:
-- cron: "0 4 * * 1,3,5"
-  displayName: Mon, Wed, Fri at 8:00 PM (UTC-8:00)
+- cron: "0 4 * * *"
+  displayName: Daily at 8:00 PM (UTC-8:00)
   branches:
     include:
-    - master
-  always: true
-- cron: "0 4 * * 0,2,4,6"
-  displayName: Sun, Tue, Thu, Sat at 8:00 PM (UTC-8:00)
-  branches:
-    include:
-    - release/*.*
+    - main
   always: true
 
 jobs:
@@ -21,7 +15,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
-    # Linux tests are built on the OSX machines.
+    - OSX_arm64
     - OSX_x64
     - Linux_arm
     - Linux_arm64
@@ -48,7 +42,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platforms:
-    # Linux tests are built on the OSX machines.
+    - OSX_arm64
     - OSX_x64
     - Linux_arm
     - Linux_arm64

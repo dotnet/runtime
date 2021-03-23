@@ -14,6 +14,10 @@ Note: Irrespective of `$(EMSDK_PATH)`'s value, `provision-wasm` will always inst
 Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building targets from that will have it set. But you might need to set it manually if
 you are directly using the `dotnet build`, or `build.sh`.
 
+### Windows dependencies
+
+Windows build [requirements](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md)
+
 ## Building
 
 * To build the whole thing, with libraries:
@@ -26,7 +30,33 @@ you are directly using the `dotnet build`, or `build.sh`.
 
 ### Note: Additional msbuild arguments can be passed with: `make build-all MSBUILD_ARGS="/p:a=b"`
 
+### Windows
+
+* To build everything
+
+`build.cmd -os Browser -subset mono+libs` in the repo top level directory.
+
 # Running tests
+
+## Installation of JavaScript engines
+
+The latest engines can be installed with jsvu (JavaScript engine Version Updater https://github.com/GoogleChromeLabs/jsvu)
+
+* Install npm with brew:
+
+`brew install npm`
+
+* Install jsvu with npm:
+
+`npm install jsvu -g`
+
+* Run jsvu:
+
+`jsvu`
+
+Add `~/.jsvu` to your `PATH`:
+
+`export PATH="${HOME}/.jsvu:${PATH}"`
 
 ## Libraries tests
 

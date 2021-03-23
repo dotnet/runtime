@@ -7,12 +7,12 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ReplicationCursor
     {
-        private readonly string _serverDN;
+        private readonly string? _serverDN;
         private readonly DateTime _syncTime;
         private readonly bool _advanced;
-        private string _sourceServer;
+        private string? _sourceServer;
 
-        private readonly DirectoryServer _server;
+        private readonly DirectoryServer _server = null!;
 
         private ReplicationCursor() { }
 
@@ -42,13 +42,13 @@ namespace System.DirectoryServices.ActiveDirectory
             _server = server;
         }
 
-        public string PartitionName { get; }
+        public string PartitionName { get; } = null!;
 
         public Guid SourceInvocationId { get; }
 
         public long UpToDatenessUsn { get; }
 
-        public string SourceServer
+        public string? SourceServer
         {
             get
             {

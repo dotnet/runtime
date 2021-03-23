@@ -26,7 +26,7 @@ Required Testing: Validation of the behavior of the affected APIs.
 ## Stress Testing ##
 Stress testing must run for at least **48 hours** against a debug build.
 
-Stress testing for checked and release builds can be run locally. Please following the instructions described in [gc-stress-run-readme.md](https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/coreclr/gc-stress-run-readme.md). You can also request it on pull requests with The .NET CI infrastructure with the trigger phrase:
+Stress testing for checked and release builds can be run locally. Please following the instructions described in [gc-stress-run-readme.md](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/gc-stress-run-readme.md). You can also request it on pull requests with The .NET CI infrastructure with the trigger phrase:
 
 ```
 @dotnet_bot test <platform> <flavor> gc_reliability_framework

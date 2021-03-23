@@ -15,7 +15,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 Licensed under the Apache License, Version 2.0.
 
 Available at
-https://github.com/dotnet/aspnetcore/blob/master/LICENSE.txt
+https://github.com/dotnet/aspnetcore/blob/main/LICENSE.txt
 
 License notice for Slicing-by-8
 -------------------------------

@@ -111,7 +111,7 @@ function Get-Help() {
   Write-Host ".\build.cmd mono.corelib+libs.pretest -rc debug -c release"
   Write-Host ""
   Write-Host ""
-  Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
+  Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md"
 }
 
 if ($help) {
@@ -244,6 +244,17 @@ foreach ($argument in $PSBoundParameters.Keys)
 }
 
 $failedBuilds = @()
+
+if ($os -eq "Browser") {
+  # override default arch for Browser, we only support wasm
+  $arch = "wasm"
+
+  if ($ninja -ne $True) {
+    # we need ninja for emscripten on windows
+    $ninja = $True
+    $arguments += " /p:Ninja=$ninja"
+  }
+}
 
 foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";

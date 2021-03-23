@@ -54,6 +54,12 @@ bool       Compiler::s_pJitFunctionFileInitialized = false;
 MethodSet* Compiler::s_pJitMethodSet               = nullptr;
 #endif // DEBUG
 
+#ifdef CONFIGURABLE_ARM_ABI
+// static
+bool GlobalJitOptions::compFeatureHfa          = false;
+LONG GlobalJitOptions::compUseSoftFPConfigured = 0;
+#endif // CONFIGURABLE_ARM_ABI
+
 /*****************************************************************************
  *
  *  Little helpers to grab the current cycle counter value; this is done
@@ -468,49 +474,6 @@ var_types Compiler::getJitGCType(BYTE gcType)
     return result;
 }
 
-#ifdef ARM_SOFTFP
-//---------------------------------------------------------------------------
-// IsSingleFloat32Struct:
-//    Check if the given struct type contains only one float32 value type
-//
-// Arguments:
-//    clsHnd     - the handle for the struct type
-//
-// Return Value:
-//    true if the given struct type contains only one float32 value type,
-//    false otherwise.
-//
-
-bool Compiler::isSingleFloat32Struct(CORINFO_CLASS_HANDLE clsHnd)
-{
-    for (;;)
-    {
-        // all of class chain must be of value type and must have only one field
-        if (!info.compCompHnd->isValueClass(clsHnd) || info.compCompHnd->getClassNumInstanceFields(clsHnd) != 1)
-        {
-            return false;
-        }
-
-        CORINFO_CLASS_HANDLE* pClsHnd   = &clsHnd;
-        CORINFO_FIELD_HANDLE  fldHnd    = info.compCompHnd->getFieldInClass(clsHnd, 0);
-        CorInfoType           fieldType = info.compCompHnd->getFieldType(fldHnd, pClsHnd);
-
-        switch (fieldType)
-        {
-            case CORINFO_TYPE_VALUECLASS:
-                clsHnd = *pClsHnd;
-                break;
-
-            case CORINFO_TYPE_FLOAT:
-                return true;
-
-            default:
-                return false;
-        }
-    }
-}
-#endif // ARM_SOFTFP
-
 #ifdef TARGET_X86
 //---------------------------------------------------------------------------
 // isTrivialPointerSizedStruct:
@@ -623,53 +586,44 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
 
     var_types useType = TYP_UNKNOWN;
 
-// Start by determining if we have an HFA/HVA with a single element.
-#ifdef FEATURE_HFA
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-    // Arm64 Windows VarArg methods arguments will not classify HFA types, they will need to be treated
-    // as if they are not HFA types.
-    if (!isVarArg)
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+    // Start by determining if we have an HFA/HVA with a single element.
+    if (GlobalJitOptions::compFeatureHfa)
     {
-        switch (structSize)
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        // Arm64 Windows VarArg methods arguments will not classify HFA types, they will need to be treated
+        // as if they are not HFA types.
+        if (!isVarArg)
+#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
         {
-            case 4:
-            case 8:
-#ifdef TARGET_ARM64
-            case 16:
-#endif // TARGET_ARM64
+            switch (structSize)
             {
-                var_types hfaType;
-#ifdef ARM_SOFTFP
-                // For ARM_SOFTFP, HFA is unsupported so we need to check in another way.
-                // This matters only for size-4 struct because bigger structs would be processed with RetBuf.
-                if (isSingleFloat32Struct(clsHnd))
+                case 4:
+                case 8:
+#ifdef TARGET_ARM64
+                case 16:
+#endif // TARGET_ARM64
                 {
-                    hfaType = TYP_FLOAT;
-                }
-#else  // !ARM_SOFTFP
-                hfaType = GetHfaType(clsHnd);
-#endif // ARM_SOFTFP
-                // We're only interested in the case where the struct size is equal to the size of the hfaType.
-                if (varTypeIsValidHfaType(hfaType))
-                {
-                    if (genTypeSize(hfaType) == structSize)
+                    var_types hfaType = GetHfaType(clsHnd);
+                    // We're only interested in the case where the struct size is equal to the size of the hfaType.
+                    if (varTypeIsValidHfaType(hfaType))
                     {
-                        useType = hfaType;
-                    }
-                    else
-                    {
-                        return TYP_UNKNOWN;
+                        if (genTypeSize(hfaType) == structSize)
+                        {
+                            useType = hfaType;
+                        }
+                        else
+                        {
+                            return TYP_UNKNOWN;
+                        }
                     }
                 }
             }
-        }
-        if (useType != TYP_UNKNOWN)
-        {
-            return useType;
+            if (useType != TYP_UNKNOWN)
+            {
+                return useType;
+            }
         }
     }
-#endif // FEATURE_HFA
 
     // Now deal with non-HFA/HVA structs.
     switch (structSize)
@@ -1513,6 +1467,8 @@ void Compiler::compShutdown()
             fclose(jitTimeLogFile);
         }
     }
+
+    JitTimer::Shutdown();
 #endif // FEATURE_JIT_METHOD_PERF
 
 #if COUNT_AST_OPERS
@@ -2656,7 +2612,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopAdaptive       = true;
     opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
     opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
+    opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
 #endif
+
     if (opts.compJitAlignLoopAdaptive)
     {
         opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1) - 1;
@@ -2808,8 +2766,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (!altJitConfig || opts.altJit)
     {
-        LPCWSTR dumpIRFormat = nullptr;
-
         // We should only enable 'verboseDump' when we are actually compiling a matching method
         // and not enable it when we are just considering inlining a matching method.
         //
@@ -2876,11 +2832,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     // Profile data
     //
-    fgPgoSchema                  = nullptr;
-    fgPgoData                    = nullptr;
-    fgPgoSchemaCount             = 0;
-    fgPgoQueryResult             = E_FAIL;
-    fgProfileData_ILSizeMismatch = false;
+    fgPgoSchema      = nullptr;
+    fgPgoData        = nullptr;
+    fgPgoSchemaCount = 0;
+    fgPgoQueryResult = E_FAIL;
+    fgPgoFailReason  = nullptr;
+
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         fgPgoQueryResult = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema,
@@ -2892,12 +2849,22 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         //
         // We will discard the IBC data in this case
         //
-        if (FAILED(fgPgoQueryResult) && (fgPgoSchema != nullptr))
+        if (FAILED(fgPgoQueryResult))
         {
-            fgProfileData_ILSizeMismatch = true;
-            fgPgoData                    = nullptr;
-            fgPgoSchema                  = nullptr;
+            fgPgoFailReason = (fgPgoSchema != nullptr) ? "No matching PGO data" : "No PGO data";
+            fgPgoData       = nullptr;
+            fgPgoSchema     = nullptr;
         }
+        // Optionally, discard the profile data.
+        //
+        else if (JitConfig.JitDisablePGO() != 0)
+        {
+            fgPgoFailReason  = "PGO data available, but JitDisablePGO != 0";
+            fgPgoQueryResult = E_FAIL;
+            fgPgoData        = nullptr;
+            fgPgoSchema      = nullptr;
+        }
+
 #ifdef DEBUG
         // A successful result implies a non-NULL fgPgoSchema
         //
@@ -3273,6 +3240,27 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif // FEATURE_FASTTAILCALL
 
+#ifdef CONFIGURABLE_ARM_ABI
+    opts.compUseSoftFP        = jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI);
+    unsigned int softFPConfig = opts.compUseSoftFP ? 2 : 1;
+    unsigned int oldSoftFPConfig =
+        InterlockedCompareExchange(&GlobalJitOptions::compUseSoftFPConfigured, softFPConfig, 0);
+    if (oldSoftFPConfig != softFPConfig && oldSoftFPConfig != 0)
+    {
+        // There are no current scenarios where the abi can change during the lifetime of a process
+        // that uses the JIT. If such a change occurs, either compFeatureHfa will need to change to a TLS static
+        // or we will need to have some means to reset the flag safely.
+        NO_WAY("SoftFP ABI setting changed during lifetime of process");
+    }
+
+    GlobalJitOptions::compFeatureHfa = !opts.compUseSoftFP;
+#elif defined(ARM_SOFTFP) && defined(TARGET_ARM)
+    // Armel is unconditionally enabled in the JIT. Verify that the VM side agrees.
+    assert(jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));
+#elif defined(TARGET_ARM)
+    assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));
+#endif // CONFIGURABLE_ARM_ABI
+
     opts.compScopeInfo = opts.compDbgInfo;
 
 #ifdef LATE_DISASM
@@ -3389,9 +3377,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             printf("OPTIONS: optimized using profile data\n");
         }
 
-        if (fgProfileData_ILSizeMismatch)
+        if (fgPgoFailReason != nullptr)
         {
-            printf("OPTIONS: discarded IBC profile data due to mismatch in ILSize\n");
+            printf("OPTIONS: %s\n", fgPgoFailReason);
         }
 
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
@@ -3592,6 +3580,31 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
 
     assert(hash < MAX_STRESS_WEIGHT && weight <= MAX_STRESS_WEIGHT);
     return (hash < weight);
+}
+
+//------------------------------------------------------------------------
+// compPromoteFewerStructs: helper to determine if the local
+//   should not be promoted under a stress mode.
+//
+// Arguments:
+//   lclNum - local number to test
+//
+// Returns:
+//   true if this local should not be promoted.
+//
+// Notes:
+//   Reject ~50% of the potential promotions if STRESS_PROMOTE_FEWER_STRUCTS is active.
+//
+bool Compiler::compPromoteFewerStructs(unsigned lclNum)
+{
+    bool       rejectThisPromo = false;
+    const bool promoteLess     = compStressCompile(STRESS_PROMOTE_FEWER_STRUCTS, 50);
+    if (promoteLess)
+    {
+
+        rejectThisPromo = (((info.compMethodHash() ^ lclNum) & 1) == 0);
+    }
+    return rejectThisPromo;
 }
 
 #endif // DEBUG
@@ -3797,28 +3810,28 @@ void Compiler::compSetOptimizationLevel()
 
 #if 0
     // The code in this #if can be used to debug optimization issues according to method hash.
-	// To use, uncomment, rebuild and set environment variables minoptshashlo and minoptshashhi.
+    // To use, uncomment, rebuild and set environment variables minoptshashlo and minoptshashhi.
 #ifdef DEBUG
     unsigned methHash = info.compMethodHash();
     char* lostr = getenv("minoptshashlo");
     unsigned methHashLo = 0;
-	if (lostr != nullptr)
-	{
-		sscanf_s(lostr, "%x", &methHashLo);
-		char* histr = getenv("minoptshashhi");
-		unsigned methHashHi = UINT32_MAX;
-		if (histr != nullptr)
-		{
-			sscanf_s(histr, "%x", &methHashHi);
-			if (methHash >= methHashLo && methHash <= methHashHi)
-			{
-				printf("MinOpts for method %s, hash = %08x.\n",
-					info.compFullName, methHash);
-				printf("");         // in our logic this causes a flush
-				theMinOptsValue = true;
-			}
-		}
-	}
+    if (lostr != nullptr)
+    {
+        sscanf_s(lostr, "%x", &methHashLo);
+        char* histr = getenv("minoptshashhi");
+        unsigned methHashHi = UINT32_MAX;
+        if (histr != nullptr)
+        {
+            sscanf_s(histr, "%x", &methHashHi);
+            if (methHash >= methHashLo && methHash <= methHashHi)
+            {
+                printf("MinOpts for method %s, hash = %08x.\n",
+                    info.compFullName, methHash);
+                printf("");         // in our logic this causes a flush
+                theMinOptsValue = true;
+            }
+        }
+    }
 #endif
 #endif
 
@@ -4374,7 +4387,7 @@ void Compiler::EndPhase(Phases phase)
 //  code:CILJit::compileMethod function.
 //
 //  For an overview of the structure of the JIT, see:
-//   https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/jit/ryujit-overview.md
+//   https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md
 //
 //  Also called for inlinees, though they will only be run through the first few phases.
 //
@@ -5586,25 +5599,19 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if (JitConfig.EnableExtraSuperPmiQueries())
     {
-        // Get the assembly name, to aid finding any particular SuperPMI method context function
-        (void)info.compCompHnd->getAssemblyName(
-            info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+        // This call to getClassModule/getModuleAssembly/getAssemblyName fails in crossgen2 due to these
+        // APIs being unimplemented. So disable this extra info for pre-jit mode. See
+        // https://github.com/dotnet/runtime/issues/48888.
+        if (!compileFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        {
+            // Get the assembly name, to aid finding any particular SuperPMI method context function
+            (void)info.compCompHnd->getAssemblyName(
+                info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+        }
     }
 #endif // DEBUG
 
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
-
-#if defined(DEBUG) || defined(LATE_DISASM)
-    const char* classNamePtr;
-
-    info.compMethodName = eeGetMethodName(info.compMethodHnd, &classNamePtr);
-    unsigned len        = (unsigned)roundUp(strlen(classNamePtr) + 1);
-    info.compClassName  = getAllocator(CMK_DebugOnly).allocate<char>(len);
-    strcpy_s((char*)info.compClassName, len, classNamePtr);
-
-    info.compFullName  = eeGetMethodFullName(info.compMethodHnd);
-    info.compPerfScore = 0.0;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
 
 #ifdef DEBUG
     if (!compIsForInlining())
@@ -7575,7 +7582,7 @@ void Compiler::compDispCallArgStats(FILE* fout)
 CritSecObject       CompTimeSummaryInfo::s_compTimeSummaryLock;
 CompTimeSummaryInfo CompTimeSummaryInfo::s_compTimeSummary;
 #if MEASURE_CLRAPI_CALLS
-double JitTimer::s_cyclesPerSec = CycleTimer::CyclesPerSecond();
+double JitTimer::s_cyclesPerSec = CachedCyclesPerSecond();
 #endif
 #endif // FEATURE_JIT_METHOD_PERF
 
@@ -7770,7 +7777,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
         return;
     }
     // Otherwise...
-    double countsPerSec = CycleTimer::CyclesPerSecond();
+    double countsPerSec = CachedCyclesPerSecond();
     if (countsPerSec == 0.0)
     {
         fprintf(f, "Processor does not have a high-frequency timer.\n");
@@ -8164,6 +8171,10 @@ void JitTimer::CLRApiCallLeave(unsigned apix)
 
 CritSecObject JitTimer::s_csvLock;
 
+// It's expensive to constantly open and close the file, so open it once and close it
+// when the process exits. This should be accessed under the s_csvLock.
+FILE* JitTimer::s_csvFile = nullptr;
+
 LPCWSTR Compiler::JitTimeLogCsv()
 {
     LPCWSTR jitTimeLogCsv = JitConfig.JitTimeLogCsv();
@@ -8180,40 +8191,45 @@ void JitTimer::PrintCsvHeader()
 
     CritSecHolder csvLock(s_csvLock);
 
-    FILE* fp = _wfopen(jitTimeLogCsv, W("a"));
-    if (fp != nullptr)
+    if (s_csvFile == nullptr)
+    {
+        s_csvFile = _wfopen(jitTimeLogCsv, W("a"));
+    }
+    if (s_csvFile != nullptr)
     {
         // Seek to the end of the file s.t. `ftell` doesn't lie to us on Windows
-        fseek(fp, 0, SEEK_END);
+        fseek(s_csvFile, 0, SEEK_END);
 
         // Write the header if the file is empty
-        if (ftell(fp) == 0)
+        if (ftell(s_csvFile) == 0)
         {
-            fprintf(fp, "\"Method Name\",");
-            fprintf(fp, "\"Assembly or SPMI Index\",");
-            fprintf(fp, "\"IL Bytes\",");
-            fprintf(fp, "\"Basic Blocks\",");
-            fprintf(fp, "\"Min Opts\",");
-            fprintf(fp, "\"Loops Cloned\",");
+            fprintf(s_csvFile, "\"Method Name\",");
+            fprintf(s_csvFile, "\"Assembly or SPMI Index\",");
+            fprintf(s_csvFile, "\"IL Bytes\",");
+            fprintf(s_csvFile, "\"Basic Blocks\",");
+            fprintf(s_csvFile, "\"Min Opts\",");
+            fprintf(s_csvFile, "\"Loops\",");
+            fprintf(s_csvFile, "\"Loops Cloned\",");
 
             for (int i = 0; i < PHASE_NUMBER_OF; i++)
             {
-                fprintf(fp, "\"%s\",", PhaseNames[i]);
+                fprintf(s_csvFile, "\"%s\",", PhaseNames[i]);
                 if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
                 {
-                    fprintf(fp, "\"Node Count After %s\",", PhaseNames[i]);
+                    fprintf(s_csvFile, "\"Node Count After %s\",", PhaseNames[i]);
                 }
             }
 
-            InlineStrategy::DumpCsvHeader(fp);
+            InlineStrategy::DumpCsvHeader(s_csvFile);
 
-            fprintf(fp, "\"Executable Code Bytes\",");
-            fprintf(fp, "\"GC Info Bytes\",");
-            fprintf(fp, "\"Total Bytes Allocated\",");
-            fprintf(fp, "\"Total Cycles\",");
-            fprintf(fp, "\"CPS\"\n");
+            fprintf(s_csvFile, "\"Executable Code Bytes\",");
+            fprintf(s_csvFile, "\"GC Info Bytes\",");
+            fprintf(s_csvFile, "\"Total Bytes Allocated\",");
+            fprintf(s_csvFile, "\"Total Cycles\",");
+            fprintf(s_csvFile, "\"CPS\"\n");
+
+            fflush(s_csvFile);
         }
-        fclose(fp);
     }
 }
 
@@ -8227,8 +8243,14 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         return;
     }
 
-    // eeGetMethodFullName uses locks, so don't enter crit sec before this call.
-    const char* methName = comp->eeGetMethodFullName(comp->info.compMethodHnd);
+// eeGetMethodFullName uses locks, so don't enter crit sec before this call.
+#if defined(DEBUG) || defined(LATE_DISASM)
+    // If we already have computed the name because for some reason we're generating the CSV
+    // for a DEBUG build (presumably not for the time info), just re-use it.
+    const char* methName = comp->info.compFullName;
+#else
+    const char*          methName  = comp->eeGetMethodFullName(comp->info.compMethodHnd);
+#endif
 
     // Try and access the SPMI index to report in the data set.
     //
@@ -8241,22 +8263,27 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
 
     CritSecHolder csvLock(s_csvLock);
 
-    FILE* fp = _wfopen(jitTimeLogCsv, W("a"));
-    fprintf(fp, "\"%s\",", methName);
+    if (s_csvFile == nullptr)
+    {
+        return;
+    }
+
+    fprintf(s_csvFile, "\"%s\",", methName);
     if (index != 0)
     {
-        fprintf(fp, "%d,", index);
+        fprintf(s_csvFile, "%d,", index);
     }
     else
     {
         const char* methodAssemblyName = comp->info.compCompHnd->getAssemblyName(
             comp->info.compCompHnd->getModuleAssembly(comp->info.compCompHnd->getClassModule(comp->info.compClassHnd)));
-        fprintf(fp, "\"%s\",", methodAssemblyName);
+        fprintf(s_csvFile, "\"%s\",", methodAssemblyName);
     }
-    fprintf(fp, "%u,", comp->info.compILCodeSize);
-    fprintf(fp, "%u,", comp->fgBBcount);
-    fprintf(fp, "%u,", comp->opts.MinOpts());
-    fprintf(fp, "%u,", comp->optLoopsCloned);
+    fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
+    fprintf(s_csvFile, "%u,", comp->fgBBcount);
+    fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
+    fprintf(s_csvFile, "%u,", comp->optLoopCount);
+    fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
     unsigned __int64 totCycles = 0;
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
     {
@@ -8264,22 +8291,35 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         {
             totCycles += m_info.m_cyclesByPhase[i];
         }
-        fprintf(fp, "%I64u,", m_info.m_cyclesByPhase[i]);
+        fprintf(s_csvFile, "%I64u,", m_info.m_cyclesByPhase[i]);
 
         if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
-            fprintf(fp, "%u,", m_info.m_nodeCountAfterPhase[i]);
+            fprintf(s_csvFile, "%u,", m_info.m_nodeCountAfterPhase[i]);
         }
     }
 
-    comp->m_inlineStrategy->DumpCsvData(fp);
+    comp->m_inlineStrategy->DumpCsvData(s_csvFile);
 
-    fprintf(fp, "%u,", comp->info.compNativeCodeSize);
-    fprintf(fp, "%Iu,", comp->compInfoBlkSize);
-    fprintf(fp, "%Iu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
-    fprintf(fp, "%I64u,", m_info.m_totalCycles);
-    fprintf(fp, "%f\n", CycleTimer::CyclesPerSecond());
-    fclose(fp);
+    fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
+    fprintf(s_csvFile, "%Iu,", comp->compInfoBlkSize);
+    fprintf(s_csvFile, "%Iu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
+    fprintf(s_csvFile, "%I64u,", m_info.m_totalCycles);
+    fprintf(s_csvFile, "%f\n", CachedCyclesPerSecond());
+
+    fflush(s_csvFile);
+}
+
+// Perform process shutdown actions.
+//
+// static
+void JitTimer::Shutdown()
+{
+    CritSecHolder csvLock(s_csvLock);
+    if (s_csvFile != nullptr)
+    {
+        fclose(s_csvFile);
+    }
 }
 
 // Completes the timing of the current method, and adds it to "sum".
