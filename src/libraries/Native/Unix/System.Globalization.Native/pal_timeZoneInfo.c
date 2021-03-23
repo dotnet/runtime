@@ -62,7 +62,7 @@ int32_t GlobalizationNative_IanaIdToWindowsId(const UChar* ianaId, UChar* window
 /*
 Private function to get the standard and daylight names from the ICU Calendar API.
 */
-void GetTimeZoneDisplayName_FromCalendar(const char* locale, const UChar* timeZoneId, const UDate timestamp, UCalendarDisplayNameType type, UChar* result, int32_t resultLength, UErrorCode* err)
+static void GetTimeZoneDisplayName_FromCalendar(const char* locale, const UChar* timeZoneId, const UDate timestamp, UCalendarDisplayNameType type, UChar* result, int32_t resultLength, UErrorCode* err)
 {
     // Examples: "Pacific Standard Time"  (standard)
     //           "Pacific Daylight Time"  (daylight)
@@ -84,7 +84,7 @@ void GetTimeZoneDisplayName_FromCalendar(const char* locale, const UChar* timeZo
 /*
 Private function to get the various forms of generic time zone names using patterns with the ICU Date Formatting API.
 */
-void GetTimeZoneDisplayName_FromPattern(const char* locale, const UChar* timeZoneId, const UDate timestamp, const UChar* pattern, UChar* result, int32_t resultLength, UErrorCode* err)
+static void GetTimeZoneDisplayName_FromPattern(const char* locale, const UChar* timeZoneId, const UDate timestamp, const UChar* pattern, UChar* result, int32_t resultLength, UErrorCode* err)
 {
     // (-1 == timeZoneId and pattern are null terminated)
     UDateFormat* dateFormatter = udat_open(UDAT_PATTERN, UDAT_PATTERN, locale, timeZoneId, -1, pattern, -1, err);
@@ -98,7 +98,7 @@ void GetTimeZoneDisplayName_FromPattern(const char* locale, const UChar* timeZon
 /*
 Private function to modify the generic display name to better suit our needs.
 */
-void FixupTimeZoneGenericDisplayName(const char* locale, const UChar* timeZoneId, const UDate timestamp, UChar* genericName, UErrorCode* err)
+static void FixupTimeZoneGenericDisplayName(const char* locale, const UChar* timeZoneId, const UDate timestamp, UChar* genericName, UErrorCode* err)
 {
     // By default, some time zones will still give a standard name instead of the generic
     // non-location name.
