@@ -436,7 +436,6 @@ private:
         Statement* CreateFatCallStmt(GenTree* actualCallAddress, GenTree* hiddenArgument)
         {
             Statement*   fatStmt = compiler->gtCloneStmt(stmt);
-            GenTree*     fatTree = fatStmt->GetRootNode();
             GenTreeCall* fatCall = GetCall(fatStmt);
             fatCall->gtCallAddr  = actualCallAddress;
             AddHiddenArgument(fatCall, hiddenArgument);
@@ -867,7 +866,6 @@ private:
         {
             GenTree* tree = callStmt->GetRootNode();
             assert(tree->OperIs(GT_ASG));
-            GenTreeOp*   asg  = tree->AsOp();
             GenTreeCall* call = tree->gtGetOp2()->AsCall();
             return call;
         }

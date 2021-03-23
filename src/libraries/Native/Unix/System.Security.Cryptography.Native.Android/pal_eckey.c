@@ -19,7 +19,7 @@ EC_KEY* AndroidCryptoNative_NewEcKey(jobject curveParameters, jobject keyPair)
     return keyInfo;
 }
 
-EC_KEY* AndroidCryptoNative_NewEcKeyFromPublicKey(JNIEnv *env, jobject /*ECPublicKey*/ publicKey)
+EC_KEY* AndroidCryptoNative_NewEcKeyFromKeys(JNIEnv *env, jobject /*ECPublicKey*/ publicKey, jobject /*ECPrivateKey*/ privateKey)
 {
     assert(publicKey != NULL);
 
@@ -27,7 +27,7 @@ EC_KEY* AndroidCryptoNative_NewEcKeyFromPublicKey(JNIEnv *env, jobject /*ECPubli
         return NULL;
 
     jobject curveParameters = (*env)->CallObjectMethod(env, publicKey, g_ECPublicKeyGetParams);
-    return AndroidCryptoNative_NewEcKey(ToGRef(env, curveParameters), AndroidCryptoNative_CreateKeyPair(env, publicKey, NULL));
+    return AndroidCryptoNative_NewEcKey(ToGRef(env, curveParameters), AndroidCryptoNative_CreateKeyPair(env, publicKey, privateKey));
 }
 
 #pragma clang diagnostic push
@@ -49,7 +49,7 @@ void AndroidCryptoNative_EcKeyDestroy(EC_KEY* r)
                 {
                     (*env)->CallVoidMethod(env, privateKey, g_destroy);
                     ReleaseLRef(env, privateKey);
-                    CheckJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
+                    (void)TryClearJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
                 }
             }
 

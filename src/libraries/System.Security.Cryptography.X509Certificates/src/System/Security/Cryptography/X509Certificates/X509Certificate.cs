@@ -350,10 +350,14 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual byte[] GetCertHash(HashAlgorithmName hashAlgorithm)
         {
             ThrowIfInvalid();
+            return GetCertHash(hashAlgorithm, Pal!);
+        }
 
+        private static byte[] GetCertHash(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
+        {
             using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
             {
-                hasher.AppendData(Pal!.RawData);
+                hasher.AppendData(certPal.RawData);
                 return hasher.GetHashAndReset();
             }
         }
@@ -382,7 +386,12 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            return GetCertHash(hashAlgorithm).ToHexStringUpper();
+            return GetCertHashString(hashAlgorithm, Pal!);
+        }
+
+        internal static string GetCertHashString(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
+        {
+            return GetCertHash(hashAlgorithm, certPal).ToHexStringUpper();
         }
 
         // Only use for internal purposes when the returned byte[] will not be mutated

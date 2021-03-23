@@ -54,8 +54,6 @@ set __CreatePdb=
 set __CopyNativeTestBinaries=0
 set __CopyNativeProjectsAfterCombinedTestBuild=true
 set __SkipGenerateLayout=0
-set __LocalCoreFXConfig=%__BuildType%
-set __SkipFXRestoreArg=
 set __GenerateLayoutOnly=0
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
@@ -272,7 +270,6 @@ powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\
   %__RepoRootDir%\src\tests\build.proj -warnAsError:0 /t:BatchRestorePackages /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
-  %__SkipFXRestoreArg%^
   !__Logging! %__CommonMSBuildArgs% %__PriorityArg% %__BuildNeedTargetArg% %__UnprocessedBuildArgs%
 
 if errorlevel 1 (
@@ -333,7 +330,6 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__UnprocessedBuildArgs!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:CopyNativeProjectBinaries=!__CopyNativeProjectsAfterCombinedTestBuild!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:__SkipPackageRestore=true
-        set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__SkipFXRestoreArg!
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
@@ -348,7 +344,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
             goto     :Exit_Failure
         )
     ) else (
-        set __MSBuildBuildArgs=!__RepoRootDir!\src\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__BuildNeedTargetArg! !__SkipFXRestoreArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
+        set __MSBuildBuildArgs=!__RepoRootDir!\src\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__BuildNeedTargetArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
@@ -374,7 +370,7 @@ if "%__CopyNativeTestBinaries%" == "1" goto :SkipManagedBuild
 REM Check that we've built about as many tests as we expect. This is primarily intended to prevent accidental changes that cause us to build
 REM drastically fewer Pri-1 tests than expected.
 echo %__MsgPrefix%Check the managed tests build
-echo Running: dotnet msbuild %__RepoRootDir%\src\tests\run.proj /t:CheckTestBuild /nodeReuse:false /p:CLRTestPriorityToBuild=%__Priority% %__SkipFXRestoreArg% %__msbuildArgs% %__unprocessedBuildArgs%
+echo Running: dotnet msbuild %__RepoRootDir%\src\tests\run.proj /t:CheckTestBuild /nodeReuse:false /p:CLRTestPriorityToBuild=%__Priority% %__msbuildArgs% %__unprocessedBuildArgs%
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
     %__RepoRootDir%\src\tests\run.proj /t:CheckTestBuild /nodeReuse:false /p:CLRTestPriorityToBuild=%__Priority% %__msbuildArgs% %__unprocessedBuildArgs%
 if errorlevel 1 (
@@ -423,7 +419,6 @@ powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng
   %__RepoRootDir%\src\tests\run.proj /t:CreateTestOverlay /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
-  %__SkipFXRestoreArg%^
   !__Logging! %__CommonMSBuildArgs% %__PriorityArg% %__BuildNeedTargetArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Create Test Overlay failed. Refer to the build log files for details:
@@ -465,7 +460,7 @@ if %%__Mono%%==1 (
 )
 
 REM Build wrappers using the local SDK's msbuild. As we move to arcade, the other builds should be moved away from run.exe as well.
-call "%__RepoRootDir%\dotnet.cmd" msbuild %__RepoRootDir%\src\tests\run.proj /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=%__TestBuildMode% !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__SkipFXRestoreArg% %__UnprocessedBuildArgs% /p:RuntimeFlavor=%RuntimeFlavor%
+call "%__RepoRootDir%\dotnet.cmd" msbuild %__RepoRootDir%\src\tests\run.proj /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=%__TestBuildMode% !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__UnprocessedBuildArgs% /p:RuntimeFlavor=%RuntimeFlavor%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: XUnit wrapper build failed. Refer to the build log files for details:
     echo     %__BuildLog%
@@ -568,7 +563,7 @@ if defined __CreatePdb (
 if defined __CompositeBuildMode (
     set __CrossgenCmd=%__CrossgenCmd% --composite
 ) else (
-    set __CrossgenCmd=%__CrossgenCmd% --large-bubble --crossgen2-parallelism 1
+    set __CrossgenCmd=%__CrossgenCmd% --crossgen2-parallelism 1
 )
 
 set __CrossgenDir=%__BinDir%

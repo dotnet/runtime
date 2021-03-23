@@ -12,7 +12,7 @@ namespace Generators
 {
     public partial class EventSourceGenerator
     {
-        private class Emitter
+        private sealed class Emitter
         {
             private readonly StringBuilder _builder = new StringBuilder(1024);
             private readonly GeneratorExecutionContext _context;

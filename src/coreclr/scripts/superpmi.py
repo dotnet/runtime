@@ -294,6 +294,8 @@ asm_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the ba
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
 asm_diff_parser.add_argument("-temp_dir", help="Specify a temporary directory used for a previous ASM diffs run (for which --skip_cleanup was used) to view the results. The replay command is skipped.")
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
+asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baselne JIT. Format is key=value, where key is the option name without leading COMPlus_...")
+asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -1597,11 +1599,11 @@ class SuperPMIReplay:
 
                 logging.info("Running SuperPMI replay of %s", mch_file)
 
-                flags = common_flags
+                flags = common_flags.copy()
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
                 flags += [
-                    "-f", fail_mcl_file,  # Failing mc List
+                    "-f", fail_mcl_file  # Failing mc List
                 ]
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
@@ -1721,6 +1723,22 @@ class SuperPMIReplayAsmDiffs:
         altjit_asm_diffs_flags = target_flags
         altjit_replay_flags = target_flags
 
+        if self.coreclr_args.jitoption:
+            logging.warning("Ignoring -jitoption; use -base_jit_option or -diff_jit_option instead");
+
+        base_option_flags = []
+        if self.coreclr_args.base_jit_option:
+            for o in self.coreclr_args.base_jit_option:
+                base_option_flags += "-jitoption", o
+        base_option_flags_for_diff_artifact = base_option_flags
+
+        diff_option_flags = []
+        diff_option_flags_for_diff_artifact = []
+        if self.coreclr_args.diff_jit_option:
+            for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+                diff_option_flags_for_diff_artifact += "-jitoption", o
+
         if self.coreclr_args.altjit:
             altjit_asm_diffs_flags += [
                 "-jitoption", "force", "AltJit=*",
@@ -1770,6 +1788,8 @@ class SuperPMIReplayAsmDiffs:
                         "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
                     ]
                     flags += altjit_asm_diffs_flags
+                    flags += base_option_flags
+                    flags += diff_option_flags
 
                     if not self.coreclr_args.sequential:
                         flags += [ "-p" ]
@@ -1858,7 +1878,7 @@ class SuperPMIReplayAsmDiffs:
                         # as the LoadLibrary path will be relative to the current directory.
                         with ChangeDir(self.coreclr_args.core_root):
 
-                            async def create_one_artifact(jit_path: str, location: str) -> str:
+                            async def create_one_artifact(jit_path: str, location: str, flags: list[str]) -> str:
                                 command = [self.superpmi_path] + flags + [jit_path, mch_file]
                                 item_path = os.path.join(location, "{}{}".format(item, extension))
                                 with open(item_path, 'w') as file_handle:
@@ -1871,8 +1891,8 @@ class SuperPMIReplayAsmDiffs:
                                 return generated_txt
 
                             # Generate diff and base JIT dumps
-                            base_txt = await create_one_artifact(self.base_jit_path, base_location)
-                            diff_txt = await create_one_artifact(self.diff_jit_path, diff_location)
+                            base_txt = await create_one_artifact(self.base_jit_path, base_location, flags + base_option_flags_for_diff_artifact)
+                            diff_txt = await create_one_artifact(self.diff_jit_path, diff_location, flags + diff_option_flags_for_diff_artifact)
 
                             if base_txt != diff_txt:
                                 jit_differences_queue.put_nowait(item)
@@ -3409,6 +3429,16 @@ def setup_args(args):
                             "diff_jit_dump",
                             lambda unused: True,
                             "Unable to set diff_jit_dump.")
+
+        coreclr_args.verify(args,
+                            "base_jit_option",
+                            lambda unused: True,
+                            "Unable to set base_jit_option.")
+
+        coreclr_args.verify(args,
+                            "diff_jit_option",
+                            lambda unused: True,
+                            "Unable to set diff_jit_option.")
 
         process_base_jit_path_arg(coreclr_args)
 

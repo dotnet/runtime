@@ -3696,7 +3696,6 @@ void Compiler::optUnrollLoops()
         incr = incr->AsOp()->gtOp2;
 
         GenTree* init = initStmt->GetRootNode();
-        GenTree* test = testStmt->GetRootNode();
 
         /* Make sure everything looks ok */
         if ((init->gtOper != GT_ASG) || (init->AsOp()->gtOp1->gtOper != GT_LCL_VAR) ||
@@ -5068,7 +5067,7 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
             {
                 LcJaggedArrayOptInfo* arrIndexInfo = optInfo->AsLcJaggedArrayOptInfo();
                 compCurBB                          = arrIndexInfo->arrIndex.useBlock;
-                optRemoveRangeCheck(arrIndexInfo->arrIndex.bndsChks[arrIndexInfo->dim], arrIndexInfo->stmt);
+                optRemoveCommaBasedRangeCheck(arrIndexInfo->arrIndex.bndsChks[arrIndexInfo->dim], arrIndexInfo->stmt);
                 DBEXEC(dynamicPath, optDebugLogLoopCloning(arrIndexInfo->arrIndex.useBlock, arrIndexInfo->stmt));
             }
             break;
@@ -8211,23 +8210,33 @@ void Compiler::AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLAS
 }
 
 //------------------------------------------------------------------------------
-// optRemoveRangeCheck : Given an array index node, mark it as not needing a range check.
+// optRemoveRangeCheck : Given an indexing node, mark it as not needing a range check.
 //
 // Arguments:
-//    tree   -  Range check tree
-//    stmt   -  Statement the tree belongs to
-
-void Compiler::optRemoveRangeCheck(GenTree* tree, Statement* stmt)
+//    check  -  Range check tree, the raw CHECK node (ARRAY, SIMD or HWINTRINSIC).
+//    comma  -  GT_COMMA to which the "check" belongs, "nullptr" if the check is a standalone one.
+//    stmt   -  Statement the indexing nodes belong to.
+//
+// Return Value:
+//    Rewritten "check" - no-op if it has no side effects or the tree that contains them.
+//
+// Assumptions:
+//    This method is capable of removing checks of two kinds: COMMA-based and standalone top-level ones.
+//    In case of a COMMA-based check, "check" must be a non-null first operand of a non-null COMMA.
+//    In case of a standalone check, "comma" must be null and "check" - "stmt"'s root.
+//
+GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt)
 {
 #if !REARRANGE_ADDS
     noway_assert(!"can't remove range checks without REARRANGE_ADDS right now");
 #endif
 
-    noway_assert(tree->gtOper == GT_COMMA);
+    noway_assert(stmt != nullptr);
+    noway_assert((comma != nullptr && comma->OperIs(GT_COMMA) && comma->gtGetOp1() == check) ||
+                 (check != nullptr && check->OperIsBoundsCheck() && comma == nullptr));
+    noway_assert(check->OperIsBoundsCheck());
 
-    GenTree* bndsChkTree = tree->AsOp()->gtOp1;
-
-    noway_assert(bndsChkTree->OperIsBoundsCheck());
+    GenTree* tree = comma != nullptr ? comma : check;
 
 #ifdef DEBUG
     if (verbose)
@@ -8239,19 +8248,40 @@ void Compiler::optRemoveRangeCheck(GenTree* tree, Statement* stmt)
 
     // Extract side effects
     GenTree* sideEffList = nullptr;
-    gtExtractSideEffList(bndsChkTree, &sideEffList, GTF_ASG);
+    gtExtractSideEffList(check, &sideEffList, GTF_ASG);
 
-    // Just replace the bndsChk with a NOP as an operand to the GT_COMMA, if there are no side effects.
-    tree->AsOp()->gtOp1 = (sideEffList != nullptr) ? sideEffList : gtNewNothingNode();
-    // TODO-CQ: We should also remove the GT_COMMA, but in any case we can no longer CSE the GT_COMMA.
-    tree->gtFlags |= GTF_DONT_CSE;
+    if (sideEffList != nullptr)
+    {
+        // We've got some side effects.
+        if (tree->OperIs(GT_COMMA))
+        {
+            // Make the comma handle them.
+            tree->AsOp()->gtOp1 = sideEffList;
+        }
+        else
+        {
+            // Make the statement execute them instead of the check.
+            stmt->SetRootNode(sideEffList);
+            tree = sideEffList;
+        }
+    }
+    else
+    {
+        check->gtBashToNOP();
+    }
+
+    if (tree->OperIs(GT_COMMA))
+    {
+        // TODO-CQ: We should also remove the GT_COMMA, but in any case we can no longer CSE the GT_COMMA.
+        tree->gtFlags |= GTF_DONT_CSE;
+    }
 
     gtUpdateSideEffects(stmt, tree);
 
-    /* Recalculate the GetCostSz(), etc... */
+    // Recalculate the GetCostSz(), etc...
     gtSetStmtInfo(stmt);
 
-    /* Re-thread the nodes if necessary */
+    // Re-thread the nodes if necessary
     if (fgStmtListThreaded)
     {
         fgSetStmtSeq(stmt);
@@ -8264,6 +8294,44 @@ void Compiler::optRemoveRangeCheck(GenTree* tree, Statement* stmt)
         gtDispTree(tree);
     }
 #endif
+
+    return check;
+}
+
+//------------------------------------------------------------------------------
+// optRemoveStandaloneRangeCheck : A thin wrapper over optRemoveRangeCheck that removes standalone checks.
+//
+// Arguments:
+//    check - The standalone top-level CHECK node.
+//    stmt  - The statement "check" is a root node of.
+//
+// Return Value:
+//    If "check" has no side effects, it is retuned, bashed to a no-op.
+//    If it has side effects, the tree that executes them is returned.
+//
+GenTree* Compiler::optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt)
+{
+    assert(check != nullptr);
+    assert(stmt != nullptr);
+    assert(check == stmt->GetRootNode());
+
+    return optRemoveRangeCheck(check, nullptr, stmt);
+}
+
+//------------------------------------------------------------------------------
+// optRemoveCommaBasedRangeCheck : A thin wrapper over optRemoveRangeCheck that removes COMMA-based checks.
+//
+// Arguments:
+//    comma - GT_COMMA of which the first operand is the CHECK to be removed.
+//    stmt  - The statement "comma" belongs to.
+//
+void Compiler::optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt)
+{
+    assert(comma != nullptr && comma->OperIs(GT_COMMA));
+    assert(stmt != nullptr);
+    assert(comma->gtGetOp1()->OperIsBoundsCheck());
+
+    optRemoveRangeCheck(comma->gtGetOp1()->AsBoundsChk(), comma, stmt);
 }
 
 /*****************************************************************************

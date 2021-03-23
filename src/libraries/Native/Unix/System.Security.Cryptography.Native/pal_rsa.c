@@ -144,11 +144,6 @@ int32_t CryptoNative_RsaSize(RSA* rsa)
     return RSA_size(rsa);
 }
 
-int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, BIGNUM* e)
-{
-    return RSA_generate_key_ex(rsa, bits, e, NULL);
-}
-
 int32_t
 CryptoNative_RsaSign(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigret, int32_t* siglen, RSA* rsa)
 {

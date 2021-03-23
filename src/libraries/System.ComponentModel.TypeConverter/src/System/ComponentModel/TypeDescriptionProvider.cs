@@ -50,7 +50,11 @@ namespace System.ComponentModel
         /// parent provider was passed. If a parent provider was passed, this
         /// method will invoke the parent provider's CreateInstance method.
         /// </summary>
-        public virtual object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
+        public virtual object CreateInstance(
+            IServiceProvider provider,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
+            Type[] argTypes,
+            object[] args)
         {
             if (_parent != null)
             {

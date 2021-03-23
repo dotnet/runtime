@@ -3318,7 +3318,14 @@ namespace Internal.JitInterface
             }
 
             if (this.MethodBeingCompiled.IsNoOptimization)
+            {
                 flags.Set(CorJitFlag.CORJIT_FLAG_MIN_OPT);
+            }
+
+            if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.CoreRTArmel)
+            {
+                flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
+            }
 
             return (uint)sizeof(CORJIT_FLAGS);
         }
