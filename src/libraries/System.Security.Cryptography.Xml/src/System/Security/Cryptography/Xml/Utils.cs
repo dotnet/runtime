@@ -10,7 +10,7 @@ using System.Xml;
 
 namespace System.Security.Cryptography.Xml
 {
-    internal class Utils
+    internal static class Utils
     {
         // The maximum number of characters in an XML document (0 means no limit).
         internal const int MaxCharactersInDocument = 0;
@@ -22,8 +22,6 @@ namespace System.Security.Cryptography.Xml
         // This should be within limits of real world scenarios.
         // Keeping this number low will preserve some stack space
         internal const int XmlDsigSearchDepth = 20;
-
-        private Utils() { }
 
         private static bool HasNamespace(XmlElement element, string prefix, string value)
         {
