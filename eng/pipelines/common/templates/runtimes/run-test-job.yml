@@ -133,11 +133,18 @@ jobs:
         - name: timeoutPerTestInMinutes
           value: 30
     - ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 360
-      # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
-      - name: timeoutPerTestInMinutes
-        value: 240
+      - ${{ if ne(parameters.archType, 'arm64') }}:
+        - name: timeoutPerTestCollectionInMinutes
+          value: 360
+        # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
+        - name: timeoutPerTestInMinutes
+          value: 240
+      - ${{ if eq(parameters.archType, 'arm64') }}:
+        - name: timeoutPerTestCollectionInMinutes
+          value: 720
+        # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
+        - name: timeoutPerTestInMinutes
+          value: 480
     - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
