@@ -619,6 +619,8 @@ EXTERN_C void WINAPI OnHijackFPTripThread();  // hijacked JIT code is returning 
 
 void CommonTripThread();
 
+void SetupTLSForThread();
+
 // When we resume a thread at a new location, to get an exception thrown, we have to
 // pretend the exception originated elsewhere.
 EXTERN_C void ThrowControlForThread(
@@ -1026,8 +1028,6 @@ class Thread
     friend class DacDbiInterfaceImpl;       // DacDbiInterfaceImpl::GetThreadHandle(HANDLE * phThread);
 #endif // DACCESS_COMPILE
     friend class ProfToEEInterfaceImpl;     // HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *phThread);
-
-    friend void SetupTLSForThread();
 
     friend class CheckAsmOffsets;
 
