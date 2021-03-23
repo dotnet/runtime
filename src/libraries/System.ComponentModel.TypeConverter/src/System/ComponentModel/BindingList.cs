@@ -1,18 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.ComponentModel
 {
     [Serializable]
     [TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class BindingList<T> : Collection<T>, IBindingList, ICancelAddNew, IRaiseItemChangedEvents
+    public class BindingList<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> :
+        Collection<T>, IBindingList, ICancelAddNew, IRaiseItemChangedEvents
     {
         private int addNewPos = -1; // Do not rename (binary serialization)
         private bool raiseListChangedEvents = true; // Do not rename (binary serialization)
@@ -40,16 +41,19 @@ namespace System.ComponentModel
 
         #region Constructors
 
+        [RequiresUnreferencedCode("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
         public BindingList() => Initialize();
 
         /// <summary>
         /// Constructor that allows substitution of the inner list with a custom list.
         /// </summary>
+        [RequiresUnreferencedCode("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
         public BindingList(IList<T> list) : base(list)
         {
             Initialize();
         }
 
+        [RequiresUnreferencedCode("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
         private void Initialize()
         {
             // Set the default value of AllowNew based on whether type T has a default constructor
@@ -190,6 +194,8 @@ namespace System.ComponentModel
             FireListChanged(ListChangedType.Reset, -1);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "BindingList ctor is marked with RequiresUnreferencedCode.")]
         protected override void InsertItem(int index, T item)
         {
             EndNew(addNewPos);
@@ -222,6 +228,8 @@ namespace System.ComponentModel
             FireListChanged(ListChangedType.ItemDeleted, index);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "BindingList ctor is marked with RequiresUnreferencedCode.")]
         protected override void SetItem(int index, T item)
         {
             if (raiseItemChangedEvents)
@@ -443,6 +451,7 @@ namespace System.ComponentModel
 
         #region Property Change Support
 
+        [RequiresUnreferencedCode("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
         private void HookPropertyChanged(T item)
         {
             // Note: inpc may be null if item is null, so always check.
@@ -465,6 +474,7 @@ namespace System.ComponentModel
             }
         }
 
+        [RequiresUnreferencedCode("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
         private void Child_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (RaiseListChangedEvents)

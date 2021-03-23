@@ -2439,7 +2439,7 @@ MethodTable::DebugDumpGCDesc(
             LOG((LF_ALWAYS, LL_ALWAYS, "GC description for '%s':\n\n", pszClassName));
         }
 
-        if (ContainsPointersOrCollectible())
+        if (ContainsPointers())
         {
             CGCDescSeries *pSeries;
             CGCDescSeries *pHighest;

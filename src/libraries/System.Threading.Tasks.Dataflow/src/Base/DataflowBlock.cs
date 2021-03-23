@@ -25,7 +25,7 @@ namespace System.Threading.Tasks.Dataflow
     /// <summary>
     /// Provides a set of static (Shared in Visual Basic) methods for working with dataflow blocks.
     /// </summary>
-    public static class DataflowBlock
+    public static partial class DataflowBlock
     {
         #region LinkTo
         /// <summary>Links the <see cref="ISourceBlock{TOutput}"/> to the specified <see cref="ITargetBlock{TOutput}"/>.</summary>
@@ -2695,7 +2695,7 @@ namespace System.Threading.Tasks.Dataflow
         /// Target block that synchronously accepts all messages offered to it and drops them.
         /// </summary>
         /// <typeparam name="TInput">The type of the messages this block can accept.</typeparam>
-        private class NullTargetBlock<TInput> : ITargetBlock<TInput>
+        private sealed class NullTargetBlock<TInput> : ITargetBlock<TInput>
         {
             private Task? _completion;
 

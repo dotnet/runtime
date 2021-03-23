@@ -165,7 +165,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Private class to store data associated with a type
         /// </summary>
-        private class TypeStoreItem : StoreItem
+        private sealed class TypeStoreItem : StoreItem
         {
             private readonly object _syncRoot = new object();
             private readonly Type _type;
@@ -231,7 +231,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Private class to store data associated with a property
         /// </summary>
-        private class PropertyStoreItem : StoreItem
+        private sealed class PropertyStoreItem : StoreItem
         {
             internal PropertyStoreItem(Type propertyType, IEnumerable<Attribute> attributes)
                 : base(attributes)

@@ -49,6 +49,10 @@
 #endif
 #include "icall-decl.h"
 
+/* Maps MonoMethod* to weak links to DynamicMethod objects */
+/* Protected by the domain lock */
+static GHashTable *method_to_dyn_method;
+
 static GENERATE_GET_CLASS_WITH_CACHE (marshal_as_attribute, "System.Runtime.InteropServices", "MarshalAsAttribute");
 #ifndef DISABLE_REFLECTION_EMIT
 static GENERATE_GET_CLASS_WITH_CACHE (module_builder, "System.Reflection.Emit", "ModuleBuilder");
@@ -3928,7 +3932,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	 * Together with this we must ensure the contents of all instances to match the created type.
 	 */
 	if (mono_class_is_gtd (klass)) {
-		MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+		MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 		struct remove_instantiations_user_data data;
 		data.klass = klass;
 		data.error = error;
@@ -3965,7 +3969,6 @@ failure_unlocked:
 
 typedef struct {
 	MonoMethod *handle;
-	MonoDomain *domain;
 } DynamicMethodReleaseData;
 
 /*
@@ -3977,18 +3980,18 @@ static void
 free_dynamic_method (void *dynamic_method)
 {
 	DynamicMethodReleaseData *data = (DynamicMethodReleaseData *)dynamic_method;
-	MonoDomain *domain = data->domain;
+	MonoDomain *domain = mono_get_root_domain ();
 	MonoMethod *method = data->handle;
 	MonoGCHandle dis_link;
 
 	mono_domain_lock (domain);
-	dis_link = g_hash_table_lookup (domain->method_to_dyn_method, method);
-	g_hash_table_remove (domain->method_to_dyn_method, method);
+	dis_link = g_hash_table_lookup (method_to_dyn_method, method);
+	g_hash_table_remove (method_to_dyn_method, method);
 	mono_domain_unlock (domain);
 	g_assert (dis_link);
 	mono_gchandle_free_internal (dis_link);
 
-	mono_runtime_free_method (domain, method);
+	mono_runtime_free_method (method);
 	g_free (data);
 }
 
@@ -4097,7 +4100,6 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 
 	release_data = g_new (DynamicMethodReleaseData, 1);
 	release_data->handle = handle;
-	release_data->domain = mono_object_get_domain_internal ((MonoObject*)mb);
 	if (!mono_gc_reference_queue_add_internal (queue, (MonoObject*)mb, release_data))
 		g_free (release_data);
 
@@ -4117,11 +4119,11 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	}
 	g_slist_free (mb->referenced_by);
 
-	domain = mono_domain_get ();
+	domain = mono_get_root_domain ();
 	mono_domain_lock (domain);
-	if (!domain->method_to_dyn_method)
-		domain->method_to_dyn_method = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (domain->method_to_dyn_method, handle, mono_gchandle_new_weakref_internal ((MonoObject *)mb, TRUE));
+	if (!method_to_dyn_method)
+		method_to_dyn_method = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (method_to_dyn_method, handle, mono_gchandle_new_weakref_internal ((MonoObject *)mb, TRUE));
 	mono_domain_unlock (domain);
 
 	goto exit;
@@ -4578,4 +4580,20 @@ ves_icall_ModuleBuilder_set_wrappers_type (MonoReflectionModuleBuilderHandle mod
 
 	g_assert (type);
 	image->wrappers_type = mono_class_from_mono_type_internal (type);
+}
+
+MonoGCHandle
+mono_method_to_dyn_method (MonoMethod *method)
+{
+	MonoGCHandle *handle;
+
+	if (!method_to_dyn_method)
+		return (MonoGCHandle)NULL;
+
+	MonoDomain *domain = mono_get_root_domain ();
+	mono_domain_lock (domain);
+	handle = (MonoGCHandle*)g_hash_table_lookup (method_to_dyn_method, method);
+	mono_domain_unlock (domain);
+
+	return handle;
 }

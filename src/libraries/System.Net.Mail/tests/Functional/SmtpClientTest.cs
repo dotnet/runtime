@@ -349,7 +349,7 @@ namespace System.Net.Mail.Tests
             using SmtpClient client = server.CreateClient();
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", body);
 
-            await client.SendMailAsync(msg).TimeoutAfter((int)TimeSpan.FromSeconds(30).TotalMilliseconds);
+            await client.SendMailAsync(msg).WaitAsync(TimeSpan.FromSeconds(30));
 
             Assert.Equal("<foo@example.com>", server.MailFrom);
             Assert.Equal("<bar@example.com>", server.MailTo);
@@ -510,7 +510,7 @@ namespace System.Net.Mail.Tests
                 MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
                 if (asyncSend)
                 {
-                    await client.SendMailAsync(msg).TimeoutAfter((int)TimeSpan.FromSeconds(30).TotalMilliseconds);
+                    await client.SendMailAsync(msg).WaitAsync(TimeSpan.FromSeconds(30));
                 }
                 else
                 {

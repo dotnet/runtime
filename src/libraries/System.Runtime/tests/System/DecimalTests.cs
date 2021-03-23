@@ -910,6 +910,60 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
+        {
+            foreach (object[] inputs in Parse_Valid_TestData())
+            {
+                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
+            }
+
+            yield return new object[] { "-123", 1, 3, NumberStyles.Number, null, 123m };
+            yield return new object[] { "-123", 0, 3, NumberStyles.Number, null, -12m };
+            yield return new object[] { 1000.ToString("N0"), 0, 4, NumberStyles.AllowThousands, null, 100m };
+            yield return new object[] { 1000.ToString("N0"), 2, 3, NumberStyles.AllowThousands, null, 0m };
+            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, 123m };
+            yield return new object[] { "1234567890123456789012345.678456", 1, 4, NumberStyles.Number, new NumberFormatInfo() { NumberDecimalSeparator = "." }, 2345m };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, decimal expected)
+        {
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+            decimal result;
+            if ((style & ~NumberStyles.Number) == 0 && style != NumberStyles.None)
+            {
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
+                {
+                    Assert.True(decimal.TryParse(value.AsSpan(offset, count), out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, decimal.Parse(value.AsSpan(offset, count)));
+                }
+
+                Assert.Equal(expected, decimal.Parse(value.AsSpan(offset, count), provider: provider));
+            }
+
+            Assert.Equal(expected, decimal.Parse(value.AsSpan(offset, count), style, provider));
+
+            Assert.True(decimal.TryParse(value.AsSpan(offset, count), style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                Assert.Throws(exceptionType, () => decimal.Parse(value.AsSpan(), style, provider));
+
+                Assert.False(decimal.TryParse(value.AsSpan(), style, provider, out decimal result));
+                Assert.Equal(0, result);
+            }
+        }
+        
         public static IEnumerable<object[]> Remainder_Valid_TestData()
         {
             decimal NegativeZero = new decimal(0, 0, 0, true, 0);
@@ -2262,60 +2316,6 @@ namespace System.Tests
         public void Round_InvalidMidpointRounding_ThrowsArgumentException(MidpointRounding mode)
         {
             AssertExtensions.Throws<ArgumentException>("mode", () => decimal.Round(1, 2, mode));
-        }
-
-        public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
-        {
-            foreach (object[] inputs in Parse_Valid_TestData())
-            {
-                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
-            }
-
-            yield return new object[] { "-123", 1, 3, NumberStyles.Number, null, 123m };
-            yield return new object[] { "-123", 0, 3, NumberStyles.Number, null, -12m };
-            yield return new object[] { 1000.ToString("N0"), 0, 4, NumberStyles.AllowThousands, null, 100m };
-            yield return new object[] { 1000.ToString("N0"), 2, 3, NumberStyles.AllowThousands, null, 0m };
-            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, 123m };
-            yield return new object[] { "1234567890123456789012345.678456", 1, 4, NumberStyles.Number, new NumberFormatInfo() { NumberDecimalSeparator = "." }, 2345m };
-        }
-
-        [Theory]
-        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
-        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, decimal expected)
-        {
-            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
-            decimal result;
-            if ((style & ~NumberStyles.Number) == 0 && style != NumberStyles.None)
-            {
-                // Use Parse(string) or Parse(string, IFormatProvider)
-                if (isDefaultProvider)
-                {
-                    Assert.True(decimal.TryParse(value.AsSpan(offset, count), out result));
-                    Assert.Equal(expected, result);
-
-                    Assert.Equal(expected, decimal.Parse(value.AsSpan(offset, count)));
-                }
-
-                Assert.Equal(expected, decimal.Parse(value.AsSpan(offset, count), provider: provider));
-            }
-
-            Assert.Equal(expected, decimal.Parse(value.AsSpan(offset, count), style, provider));
-
-            Assert.True(decimal.TryParse(value.AsSpan(offset, count), style, provider, out result));
-            Assert.Equal(expected, result);
-        }
-
-        [Theory]
-        [MemberData(nameof(Parse_Invalid_TestData))]
-        public static void Parse_Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
-        {
-            if (value != null)
-            {
-                Assert.Throws(exceptionType, () => decimal.Parse(value.AsSpan(), style, provider));
-
-                Assert.False(decimal.TryParse(value.AsSpan(), style, provider, out decimal result));
-                Assert.Equal(0, result);
-            }
         }
 
         [Fact]

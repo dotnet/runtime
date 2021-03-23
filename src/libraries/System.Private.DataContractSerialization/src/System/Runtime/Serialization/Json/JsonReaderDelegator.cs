@@ -259,7 +259,7 @@ namespace System.Runtime.Serialization.Json
             return true;
         }
 
-        private class DateTimeArrayJsonHelperWithString : ArrayHelper<string, DateTime>
+        private sealed class DateTimeArrayJsonHelperWithString : ArrayHelper<string, DateTime>
         {
             private readonly DateTimeFormat? _dateTimeFormat;
 

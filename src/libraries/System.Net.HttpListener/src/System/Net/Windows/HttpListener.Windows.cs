@@ -1780,7 +1780,7 @@ namespace System.Net
         }
 
 
-        private class DisconnectAsyncResult : IAsyncResult
+        private sealed class DisconnectAsyncResult : IAsyncResult
         {
             private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(WaitCallback);
 

@@ -35,6 +35,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public bool Warnings;
         public bool Uncompressed;
         public bool BasicProgressMessages;
+        public bool DetailedProgressMessages;
+        public List<FileInfo> InputFilesToMerge;
+        public List<AssemblyName> IncludedAssemblies = new List<AssemblyName>();
+        public bool DumpMibc = false;
+        public FileInfo InputFileToDump;
 
         public string[] HelpArgs = Array.Empty<string>();
 
@@ -78,22 +83,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             void CommonOptions()
             {
                 string traceFile = null;
-                FailIfUnspecified(syntax.DefineOption(
+                syntax.DefineOption(
                     name: "t|trace",
                     value: ref traceFile,
                     help: "Specify the trace file to be parsed.",
-                    requireValue: true));
+                    requireValue: true);
                 if (traceFile != null)
                     TraceFile = new FileInfo(traceFile);
 
-                string outputFile = null;
-                FailIfUnspecified(syntax.DefineOption(
-                    name: "o|output",
-                    value: ref outputFile,
-                    help: "Specify the output filename to be created.",
-                    requireValue: true));
-                if (outputFile != null)
-                    OutputFileName = new FileInfo(outputFile);
+                OutputOption();
 
                 int pidLocal = 0;
                 if (syntax.DefineOption(
@@ -119,21 +117,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     ClrInstanceId = clrInstanceIdLocal;
                 }
 
-                IReadOnlyList<string> referencesAsStrings = null;
-                syntax.DefineOptionList(name: "r|reference", value: ref referencesAsStrings, help: "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option.", requireValue: true);
-                List<FileInfo> referenceList = new List<FileInfo>();
-                Reference = referenceList;
-                if (referencesAsStrings != null)
-                {
-                    foreach (string pattern in referencesAsStrings)
-                    {
-                        Dictionary<string, string> paths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                        Helpers.AppendExpandedPaths(paths, pattern, false);
-                        foreach (string file in paths.Values)
-                            referenceList.Add(new FileInfo(file));
-                    }
-                }
+                Reference = DefineFileOptionList(name: "r|reference", help: "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option.");
 
+                ExcludeEventsBefore = Double.MinValue;
                 syntax.DefineOption(
                     name: "exclude-events-before",
                     value: ref ExcludeEventsBefore,
@@ -141,6 +127,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     valueConverter: Convert.ToDouble,
                     requireValue: true);
 
+                ExcludeEventsAfter = Double.MaxValue;
                 syntax.DefineOption(
                     name: "exclude-events-after",
                     value: ref ExcludeEventsAfter,
@@ -148,12 +135,37 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     valueConverter: Convert.ToDouble,
                     requireValue: true);
 
-                Verbosity verbosity = default(Verbosity);
+                VerbosityOption();
+            }
+
+            void OutputOption()
+            {
+                string outputFile = null;
+                syntax.DefineOption(
+                    name: "o|output",
+                    value: ref outputFile,
+                    help: "Specify the output filename to be created.",
+                    requireValue: true);
+                if (outputFile != null)
+                    OutputFileName = new FileInfo(outputFile);
+            }
+
+            void VerbosityOption()
+            {
+                Verbosity verbosity = Verbosity.normal;
                 syntax.DefineOption(name: "v|verbosity", value: ref verbosity, help: "Adjust verbosity level. Supported levels are minimal, normal, detailed, and diagnostic.", valueConverter: VerbosityConverter, requireValue: true);
                 BasicProgressMessages = (int)verbosity >= (int)Verbosity.normal;
                 Warnings = (int)verbosity >= (int)Verbosity.normal;
                 VerboseWarnings = (int)verbosity >= (int)Verbosity.detailed;
+                DetailedProgressMessages = (int)verbosity >= (int)Verbosity.detailed;
                 DisplayProcessedEvents = (int)verbosity >= (int)Verbosity.diagnostic;
+            }
+
+            void CompressedOption()
+            {
+                bool compressed = false;
+                syntax.DefineOption(name: "compressed", value: ref compressed, help: "Generate compressed mibc", requireValue: false);
+                Uncompressed = !compressed;
             }
 
             void HelpOption()
@@ -170,16 +182,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 GenerateCallGraph = true;
                 ProcessJitEvents = true;
                 ProcessR2REvents = true;
-#if Debug
-                    ValidateOutputFile = true;
+#if DEBUG
+                ValidateOutputFile = true;
 #else
                 ValidateOutputFile = false;
 #endif
                 CommonOptions();
-                bool compressed = false;
-                syntax.DefineOption(name: "compressed", value: ref compressed, help: "Generate compressed mibc", requireValue: false);
-                Uncompressed = !compressed;
-
+                CompressedOption();
                 HelpOption();
             }
 
@@ -217,6 +226,62 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
 #endif
 
+            var mergeCommand = syntax.DefineCommand(name: "merge", value: ref command, help: "Merge multiple Mibc profile data files into one file.");
+            if (mergeCommand.IsActive)
+            {
+                HelpArgs = new string[] { "merge", "--help", "--output", "output", "--input", "input"};
+
+                InputFilesToMerge = DefineFileOptionList(name: "i|input", help: "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option.");
+                OutputOption();
+
+                IReadOnlyList<string> assemblyNamesAsStrings = null;
+                syntax.DefineOptionList(name: "include-reference", value: ref assemblyNamesAsStrings, help: "If specified, include in Mibc file only references to the specified assemblies. Assemblies are specified as assembly names, not filenames. For instance, `System.Private.CoreLib` not `System.Private.CoreLib.dll`. Multiple --include-reference options may be specified.", requireValue: true);
+                if (assemblyNamesAsStrings != null)
+                {
+                    foreach (string asmName in assemblyNamesAsStrings)
+                    {
+                        try
+                        {
+                            IncludedAssemblies.Add(new AssemblyName(asmName));
+                        }
+                        catch
+                        {
+                            throw new FormatException($"Unable to parse '{asmName}' as an Assembly Name.");
+                        }
+                    }
+                }
+
+                VerbosityOption();
+                CompressedOption();
+                HelpOption();
+#if DEBUG
+                ValidateOutputFile = true;
+#else
+                ValidateOutputFile = false;
+#endif
+            }
+
+            var dumpCommand = syntax.DefineCommand(name: "dump", value: ref command, help: "Dump the contents of a Mibc file.");
+            if (dumpCommand.IsActive)
+            {
+                DumpMibc = true;
+                HelpArgs = new string[] { "dump", "--help", "input", "output" };
+
+                VerbosityOption();
+                HelpOption();
+
+                string inputFileToDump = null;
+                syntax.DefineParameter(name: "input", ref inputFileToDump, "Name of the input mibc file to dump.");
+                if (inputFileToDump != null)
+                    InputFileToDump = new FileInfo(inputFileToDump);
+
+                string outputFile = null;
+                syntax.DefineParameter(name: "output", ref outputFile, "Name of the output dump file.");
+                if (outputFile != null)
+                    OutputFileName = new FileInfo(outputFile);
+            }
+
+
             if (syntax.ActiveCommand == null)
             {
                 // No command specified
@@ -241,6 +306,24 @@ Example tracing commands used to generate the input to this tool:
             else
             {
                 HelpText = syntax.GetHelpText();
+            }
+
+            List<FileInfo> DefineFileOptionList(string name, string help)
+            {
+                IReadOnlyList<string> filesAsStrings = null;
+                syntax.DefineOptionList(name: name, value: ref filesAsStrings, help: help, requireValue: true);
+                List<FileInfo> referenceList = new List<FileInfo>();
+                if (filesAsStrings != null)
+                {
+                    foreach (string pattern in filesAsStrings)
+                    {
+                        Dictionary<string, string> paths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        Helpers.AppendExpandedPaths(paths, pattern, false);
+                        foreach (string file in paths.Values)
+                            referenceList.Add(new FileInfo(file));
+                    }
+                }
+                return referenceList;
             }
         }
 
@@ -280,7 +363,7 @@ Example tracing commands used to generate the input to this tool:
         private void ParseCommmandLineHelper(string[] args)
         {
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, DefineArgumentSyntax);
-            if (Help || !FileType.HasValue)
+            if (Help || (!FileType.HasValue && (InputFilesToMerge == null) && !DumpMibc))
             {
                 Help = true;
             }

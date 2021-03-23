@@ -797,7 +797,7 @@ namespace MS.Internal.Xml.XPath
         private static readonly XPathResultType[] s_temparray8 = { XPathResultType.Boolean };
         private static readonly XPathResultType[] s_temparray9 = { XPathResultType.Number };
 
-        private class ParamInfo
+        private sealed class ParamInfo
         {
             private readonly Function.FunctionType _ftype;
             private readonly int _minargs;

@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -16,7 +17,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
         }
 
-        public override ICustomTypeDescriptor GetTypeDescriptor(Type type, object instance)
+        public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object instance)
         {
             return new XTypeDescriptor<T>(base.GetTypeDescriptor(type, instance));
         }
@@ -28,11 +29,13 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
         }
 
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public override PropertyDescriptorCollection GetProperties()
         {
             return GetProperties(null);
         }
 
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public override PropertyDescriptorCollection GetProperties(Attribute[] attributes)
         {
             PropertyDescriptorCollection properties = new PropertyDescriptorCollection(null);

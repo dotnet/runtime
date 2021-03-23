@@ -56,6 +56,7 @@ namespace System.ComponentModel.Design
         /// Retrieves the property descriptor for the given page / value name. Returns
         /// null if the property couldn't be found.
         /// </summary>
+        [RequiresUnreferencedCode("The Type of DesignerOptionCollection's value cannot be statically discovered.")]
         private PropertyDescriptor GetOptionProperty(string pageName, string valueName)
         {
             if (pageName == null)
@@ -99,6 +100,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets the value of an option defined in this package.
         /// </summary>
+        [RequiresUnreferencedCode("The option value's Type cannot be statically discovered.")]
         object IDesignerOptionService.GetOptionValue(string pageName, string valueName)
         {
             PropertyDescriptor optionProp = GetOptionProperty(pageName, valueName);
@@ -108,6 +110,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Sets the value of an option defined in this package.
         /// </summary>
+        [RequiresUnreferencedCode("The option value's Type cannot be statically discovered.")]
         void IDesignerOptionService.SetOptionValue(string pageName, string valueName, object value)
         {
             PropertyDescriptor optionProp = GetOptionProperty(pageName, valueName);
@@ -185,6 +188,7 @@ namespace System.ComponentModel.Design
             /// </summary>
             public PropertyDescriptorCollection Properties
             {
+                [RequiresUnreferencedCode("The Type of DesignerOptionCollection's value cannot be statically discovered.")]
                 get
                 {
                     if (_properties == null)
@@ -450,6 +454,7 @@ namespace System.ComponentModel.Design
         {
             public override bool GetPropertiesSupported(ITypeDescriptorContext cxt) => true;
 
+            [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
             public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext cxt, object value, Attribute[] attributes)
             {
                 PropertyDescriptorCollection props = new PropertyDescriptorCollection(null);
@@ -479,7 +484,7 @@ namespace System.ComponentModel.Design
                 return base.ConvertTo(cxt, culture, value, destinationType);
             }
 
-            private class OptionPropertyDescriptor : PropertyDescriptor
+            private sealed class OptionPropertyDescriptor : PropertyDescriptor
             {
                 private readonly DesignerOptionCollection _option;
 

@@ -1623,6 +1623,13 @@ size_t GCInfo::gcInfoBlockHdrSave(
 #endif
 
     header->revPInvokeOffset = INVALID_REV_PINVOKE_OFFSET;
+    if (compiler->opts.IsReversePInvoke())
+    {
+        assert(compiler->lvaReversePInvokeFrameVar != BAD_VAR_NUM);
+        int stkOffs              = compiler->lvaTable[compiler->lvaReversePInvokeFrameVar].GetStackOffset();
+        header->revPInvokeOffset = compiler->isFramePointerUsed() ? -stkOffs : stkOffs;
+        assert(header->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET);
+    }
 
     assert((compiler->compArgSize & 0x3) == 0);
 
@@ -1724,6 +1731,15 @@ size_t GCInfo::gcInfoBlockHdrSave(
             size += sz;
             dest += (sz & mask);
         }
+    }
+
+    if (header->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
+    {
+        assert(mask == 0 || state.revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET);
+        unsigned offset = header->revPInvokeOffset;
+        unsigned sz     = encodeUnsigned(mask ? dest : NULL, offset);
+        size += sz;
+        dest += (sz & mask);
     }
 
     if (header->epilogCount)
@@ -4078,10 +4094,6 @@ void GCInfo::gcMakeRegPtrTable(
      **************************************************************************
      */
 
-    unsigned count = 0;
-
-    int lastoffset = 0;
-
     /* Count&Write untracked locals and non-enregistered args */
 
     unsigned   varNum;
@@ -4308,8 +4320,6 @@ void GCInfo::gcMakeRegPtrTable(
 
         for (regPtrDsc* genRegPtrTemp = gcRegPtrList; genRegPtrTemp != nullptr; genRegPtrTemp = genRegPtrTemp->rpdNext)
         {
-            int nextOffset = genRegPtrTemp->rpdOffs;
-
             if (genRegPtrTemp->rpdArg)
             {
                 if (genRegPtrTemp->rpdArgTypeGet() == rpdARG_KILL)

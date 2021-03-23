@@ -337,7 +337,7 @@ namespace System.Xml.Xsl.Xslt
 
         // -------------------------------------- Priority / Parent ---------------------------------------
 
-        private class Annotation
+        private sealed class Annotation
         {
             public double Priority;
             public QilLoop? Parent;
@@ -383,7 +383,7 @@ namespace System.Xml.Xsl.Xslt
             return _predicateBuilder;
         }
 
-        private class XPathPredicateEnvironment : IXPathEnvironment
+        private sealed class XPathPredicateEnvironment : IXPathEnvironment
         {
             private readonly IXPathEnvironment _baseEnvironment;
             private readonly XPathQilFactory _f;
@@ -426,7 +426,7 @@ namespace System.Xml.Xsl.Xslt
             public QilNode GetLast() { numFixupLast++; return _fixupLast; }
         }
 
-        private class XsltFunctionFocus : IFocus
+        private sealed class XsltFunctionFocus : IFocus
         {
             private readonly QilIterator _current;
 

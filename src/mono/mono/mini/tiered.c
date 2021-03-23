@@ -90,7 +90,7 @@ mini_tiered_init (void)
 	mono_coop_cond_init (&compilation_wait);
 	mono_coop_mutex_init (&compilation_mutex);
 
-	mono_thread_create_internal (mono_get_root_domain (), compiler_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL, error);
+	mono_thread_create_internal ((MonoThreadStart)compiler_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL, error);
 	mono_error_assert_ok (error);
 }
 

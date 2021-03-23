@@ -4230,7 +4230,6 @@ void CodeGen::genCodeForShiftLong(GenTree* tree)
 void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
 {
     GenTree* data = storeInd->Data();
-    GenTree* addr = storeInd->Addr();
 
     assert(data->OperIsShift() || data->OperIsRotate());
 
@@ -4265,7 +4264,6 @@ void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
         // We must have the number of bits to shift stored in ECX, since we constrained this node to
         // sit in ECX. In case this didn't happen, LSRA expects the code generator to move it since it's a single
         // register destination requirement.
-        regNumber shiftReg = shiftBy->GetRegNum();
         genCopyRegIfNeeded(shiftBy, REG_RCX);
 
         // The shiftBy operand is implicit, so call the unary version of emitInsRMW.

@@ -274,7 +274,7 @@ CONFIG_INTEGER(EnablePOPCNT, W("EnablePOPCNT"), 1)           // Enable POPCNT
 CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)
 #endif                                                       // !defined(TARGET_AMD64) && !defined(TARGET_X86)
 
-CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 0) // Enable the register allocator to support EH-write thru:
+CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the register allocator to support EH-write thru:
                                                              // partial enregistration of vars exposed on EH boundaries
 CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
                                                                    // defined or used in a multireg context.
@@ -305,6 +305,10 @@ CONFIG_INTEGER(EnableArm64Sm3,          W("EnableArm64Sm3"), 1)
 CONFIG_INTEGER(EnableArm64Sm4,          W("EnableArm64Sm4"), 1)
 CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
 #endif // defined(TARGET_ARM64)
+
+#if defined(CONFIGURABLE_ARM_ABI)
+CONFIG_INTEGER(JitSoftFP, W("JitSoftFP"), 0)
+#endif // defined(CONFIGURABLE_ARM_ABI)
 
 // clang-format on
 
@@ -439,8 +443,8 @@ CONFIG_INTEGER(JitEnableFinallyCloning, W("JitEnableFinallyCloning"), 1)
 CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 1)
 #endif // DEBUG
 
-// Overall master enable for Guarded Devirtualization. Currently not enabled by default.
-CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualization"), 0)
+// Overall master enable for Guarded Devirtualization.
+CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualization"), 1)
 
 #if defined(DEBUG)
 // Various policies for GuardedDevirtualization
@@ -453,9 +457,13 @@ CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 
 // Profile instrumentation options
-CONFIG_INTEGER(JitMinimalProfiling, W("JitMinimalProfiling"), 0)
-CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 0)
-CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 0)
+CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
+CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
+CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)
+CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)
+
+// Profile consumption options
+CONFIG_INTEGER(JitDisablePGO, W("JitDisablePGO"), 0) // Ignore pgo data
 
 // Control when Virtual Calls are expanded
 CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph

@@ -764,7 +764,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     {
         if (createDotFile)
         {
-            fprintf(fgxFile, "    BB%02u [label = \"BB%02u\\n\\n", block->bbNum, block->bbNum);
+            fprintf(fgxFile, "    " FMT_BB " [label = \"" FMT_BB "\\n\\n", block->bbNum, block->bbNum);
 
             // "Raw" Profile weight
             if (block->hasProfileWeight())
@@ -1951,8 +1951,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // so give up unless we've been told to try hard.
         return;
     }
-
-    DWORD startTickCount = GetTickCount();
 
 #if defined(FEATURE_EH_FUNCLETS)
     bool reachedFirstFunclet = false;

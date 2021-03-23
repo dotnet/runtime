@@ -68,7 +68,6 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/reflection-internals.h>
-#include <mono/metadata/w32socket.h>
 #include <mono/utils/mono-coop-mutex.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/mono-error-internals.h>
@@ -135,6 +134,7 @@ typedef struct {
 	gboolean defer;
 	int keepalive;
 	gboolean setpgid;
+	gboolean using_icordbg;
 } AgentConfig;
 
 typedef struct _InvokeData InvokeData;
@@ -1418,7 +1418,7 @@ start_debugger_thread (MonoError *error)
 {
 	MonoInternalThread *thread;
 
-	thread = mono_thread_create_internal (mono_get_root_domain (), (gpointer)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
+	thread = mono_thread_create_internal ((MonoThreadStart)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
 	return_if_nok (error);
 
 	/* Is it possible for the thread to be dead alreay ? */
@@ -2788,6 +2788,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	frame = g_new0 (StackFrame, 1);
 	frame->de.ji = info->ji;
 	frame->de.method = method;
+	frame->de.domain = mono_get_root_domain ();
 	frame->de.native_offset = info->native_offset;
 
 	frame->actual_method = actual_method;
@@ -4963,6 +4964,28 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		buffer_add_fixed_array(buf, t, addr, domain, as_vtype, parent_vtypes, len_fixed_array);
 		return;
 	}
+
+	if (agent_config.using_icordbg) {
+		switch (t->type) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_PTR:
+			buffer_add_byte (buf, t->type);
+			buffer_add_long (buf, (gssize) addr);
+			return;
+		}
+	}
+
 	switch (t->type) {
 	case MONO_TYPE_VOID:
 		buffer_add_byte (buf, t->type);
@@ -5032,6 +5055,8 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 				buffer_add_byte (buf, m_class_get_byval_arg (obj->vtable->klass)->type);
 			}
 			buffer_add_objid (buf, obj);
+			if (agent_config.using_icordbg)
+				buffer_add_long (buf, (gssize) addr);
 		}
 		break;
 	handle_vtype:
@@ -5305,7 +5330,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		/* Fall through */
 		handle_vtype:
 	case MONO_TYPE_VALUETYPE:
-		if (type == MONO_TYPE_OBJECT) {
+		if (type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
 			/* Boxed vtype */
 			int objid = decode_objid (buf, &buf, limit);
 			ErrorCode err;
@@ -5330,7 +5355,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 	handle_ref:
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t)) {
-			if (type == MONO_TYPE_OBJECT) {
+			if (type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
 				int objid = decode_objid (buf, &buf, limit);
 				ErrorCode err;
 				MonoObject *obj;
@@ -5469,16 +5494,14 @@ add_var (Buffer *buf, MonoDebugMethodJitInfo *jit, MonoType *t, MonoDebugVarInfo
 	guint32 flags;
 	int reg;
 	guint8 *addr, *gaddr;
-	host_mgreg_t reg_val;
 
 	flags = var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
 	reg = var->index & ~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
 
 	switch (flags) {
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER:
-		reg_val = mono_arch_context_get_int_reg (ctx, reg);
-
-		buffer_add_value_full (buf, t, &reg_val, domain, as_vtype, NULL, 1);
+		addr = (guint8 *)mono_arch_context_get_int_reg_address (ctx, reg);
+		buffer_add_value_full (buf, t, addr, domain, as_vtype, NULL, 1);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
 		addr = (guint8 *)mono_arch_context_get_int_reg (ctx, reg);
@@ -6390,6 +6413,26 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 	}
 }
 
+static gboolean
+module_apply_changes (MonoImage *image, MonoArray *dmeta, MonoArray *dil, MonoArray *dpdb, MonoError *error)
+{
+#ifdef ENABLE_METADATA_UPDATE
+	/* TODO: use dpdb */
+	gpointer dmeta_bytes = (gpointer)mono_array_addr_internal (dmeta, char, 0);
+	int32_t dmeta_len = mono_array_length_internal (dmeta);
+	gpointer dil_bytes = (gpointer)mono_array_addr_internal (dil, char, 0);
+	int32_t dil_len = mono_array_length_internal (dil);
+	gpointer dpdb_bytes = !dpdb ? NULL : (gpointer)mono_array_addr_internal (dpdb, char, 0);
+	int32_t dpdb_len = !dpdb ? 0 : mono_array_length_internal (dpdb);
+	mono_image_load_enc_delta (image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
+	return is_ok (error);
+#else
+	mono_error_set_not_supported (error, "");
+	return FALSE;
+#endif
+}
+	
+
 static void
 buffer_add_cattr_arg (Buffer *buf, MonoType *t, MonoDomain *domain, MonoObject *val)
 {
@@ -6694,15 +6737,13 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		tls->pending_invoke->endp = tls->pending_invoke->p + (end - p);
 		tls->pending_invoke->suspend_count = suspend_count;
 		tls->pending_invoke->nmethods = nmethods;
-		if (!CHECK_PROTOCOL_VERSION (2, 59)) { //on icordbg they send a resume after calling an invoke method
-			if (flags & INVOKE_FLAG_SINGLE_THREADED) {
-				resume_thread(THREAD_TO_INTERNAL(thread));
-			}
-			else {
-				count = suspend_count;
-				for (i = 0; i < count; ++i)
-					resume_vm();
-			}
+		if (flags & INVOKE_FLAG_SINGLE_THREADED) {
+			resume_thread(THREAD_TO_INTERNAL(thread));
+		}
+		else {
+			count = suspend_count;
+			for (i = 0; i < count; ++i)
+				resume_vm();
 		}
 		break;
 	}
@@ -6845,6 +6886,16 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_VM_STOP_BUFFERING:
 		/* Handled in the main loop */
 		break;
+	case MDBGPROT_CMD_VM_READ_MEMORY: {
+		guint8* memory = (guint8*) decode_long (p, &p, end);
+		int size = decode_int (p, &p, end);
+		buffer_add_byte_array (buf, memory, size);
+		break;
+	}
+	case MDBGPROT_CMD_VM_SET_USING_ICORDBG: {
+		agent_config.using_icordbg = TRUE;
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -7149,7 +7200,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (err != ERR_NONE)
 			return err;
 
-		buffer_add_assemblyid (buf, domain, domain->entry_assembly);
+		buffer_add_assemblyid (buf, domain, mono_runtime_get_entry_assembly ());
 		break;
 	}
 	case CMD_APPDOMAIN_GET_CORLIB: {
@@ -7176,6 +7227,12 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			mono_error_cleanup (error);
 			return ERR_INVALID_OBJECT;
 		}
+		
+		if (CHECK_PROTOCOL_VERSION(3, 0)) {
+			buffer_add_byte(buf, 1);
+			buffer_add_byte(buf, MONO_TYPE_STRING);
+		}
+
 		buffer_add_objid (buf, (MonoObject*)o);
 		break;
 	}
@@ -7447,6 +7504,15 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			return err;
 		break;
 	}
+	case MDBGPROT_CMD_ASSEMBLY_GET_PEIMAGE_ADDRESS: {
+        MonoImage* image = ass->image;
+        if (ass->dynamic) {
+            return ERR_NOT_IMPLEMENTED;
+        }
+		buffer_add_long (buf, (guint64)(gsize)image->raw_data);
+        buffer_add_int (buf, image->raw_data_len);
+        break;
+    }
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -7479,6 +7545,27 @@ module_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		g_free (basename);
 		g_free (sourcelink);
 		break;			
+	}
+	case MDBGPROT_CMD_MODULE_APPLY_CHANGES: {
+		MonoImage *image = decode_moduleid (p, &p, end, &domain, &err);
+		if (err != ERR_NONE)
+			return err;
+		int dmeta_id = decode_objid (p, &p, end);
+		int dil_id = decode_objid (p, &p, end);
+		int dpdb_id = decode_objid (p, &p, end);
+		MonoObject *dmeta, *dil, *dpdb;
+		if ((err = get_object (dmeta_id, &dmeta)) != ERR_NONE)
+			return err;
+		if ((err = get_object (dil_id, &dil)) != ERR_NONE)
+			return err;
+		if ((err = get_object_allow_null (dpdb_id, &dpdb)) != ERR_NONE)
+			return err;
+		ERROR_DECL (error);
+		if (!module_apply_changes (image, (MonoArray *)dmeta, (MonoArray *)dil, (MonoArray *)dpdb, error)) {
+			mono_error_cleanup (error);
+			return ERR_LOADER_ERROR;
+		}
+		return ERR_NONE;
 	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
@@ -8685,6 +8772,18 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_long (buf, (long)mono_stopwatch_elapsed_ms (&tls->step_time));
 		break;
 	}
+	case MDBGPROT_CMD_THREAD_GET_APPDOMAIN: {
+		DebuggerTlsData* tls;
+		mono_loader_lock ();
+		tls = (DebuggerTlsData*)mono_g_hash_table_lookup (thread_to_tls, thread);
+		mono_loader_unlock ();
+		if (tls == NULL)
+			return ERR_UNLOADED;
+		if (tls->frame_count <= 0)
+			return ERR_UNLOADED;
+		buffer_add_domainid (buf, tls->frames[0]->de.domain);
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -9394,7 +9493,6 @@ command_set_to_string (CommandSet command_set)
 }
 
 static const char* vm_cmds_str [] = {
-	"",
 	"VERSION",
 	"ALL_THREADS",
 	"SUSPEND",
@@ -9454,10 +9552,12 @@ static const char* assembly_cmds_str[] = {
 	"GET_METHOD_FROM_TOKEN",
 	"HAS_DEBUG_INFO",
 	"GET_CUSTOM_ATTRIBUTES",
+	"GET_PEIMAGE_ADDRESS"
 };
 
 static const char* module_cmds_str[] = {
 	"GET_INFO",
+	"APPLY_CHANGES",
 };
 
 static const char* field_cmds_str[] = {

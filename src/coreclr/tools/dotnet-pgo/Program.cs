@@ -25,6 +25,12 @@ using System.Diagnostics.CodeAnalysis;
 using ILCompiler.Reflection.ReadyToRun;
 using Microsoft.Diagnostics.Tools.Pgo;
 using Internal.Pgo;
+using System.Reflection.PortableExecutable;
+using ILCompiler.IBC;
+using ILCompiler;
+using System.Runtime.Serialization.Json;
+using System.Text.Json;
+using System.Text.Encodings.Web;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
@@ -63,12 +69,45 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             if (input == 0)
                 return new TypeSystemEntityOrUnknown(0);
 
-            TypeDesc type = _idParser.ResolveTypeHandle(input, false);
+            TypeDesc type = null;
+            
+            try
+            {
+                type = _idParser.ResolveTypeHandle(input, false);
+            }
+            catch
+            {}
             if (type != null)
             {
                 return new TypeSystemEntityOrUnknown(type);
             }
-            return new TypeSystemEntityOrUnknown(System.HashCode.Combine(input) | 0x7F000000);
+            // Unknown type, apply unique value, but keep the upper byte zeroed so that it can be distinguished from a token
+            return new TypeSystemEntityOrUnknown(System.HashCode.Combine(input) & 0x7FFFFF | 0x800000);
+        }
+    }
+
+    struct ProcessedMethodData
+    {
+        public ProcessedMethodData(double millisecond, MethodDesc method, string reason)
+        {
+            Millisecond = millisecond;
+            Method = method;
+            Reason = reason;
+            WeightedCallData = null;
+            ExclusiveWeight = 0;
+            InstrumentationData = null;
+        }
+
+        public readonly double Millisecond;
+        public readonly MethodDesc Method;
+        public readonly string Reason;
+        public Dictionary<MethodDesc, int> WeightedCallData;
+        public int ExclusiveWeight;
+        public PgoSchemaElem[] InstrumentationData;
+
+        public override string ToString()
+        {
+            return Method.ToString();
         }
     }
 
@@ -100,49 +139,29 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             Main(commandLineOptions.HelpArgs);
         }
 
-        static void PrintWarning(string warning)
+        public static void PrintWarning(string warning)
         {
             s_logger.PrintWarning(warning);
         }
 
-        static void PrintError(string error)
+        public static void PrintError(string error)
         {
             s_logger.PrintError(error);
         }
 
-        static void PrintMessage(string message)
+        public static void PrintMessage(string message)
         {
             s_logger.PrintMessage(message);
         }
 
-        static void PrintOutput(string output)
+        public static void PrintDetailedMessage(string message)
         {
-            s_logger.PrintOutput(output);
+            s_logger.PrintDetailedMessage(message);
         }
 
-        struct ProcessedMethodData
+        public static void PrintOutput(string output)
         {
-            public ProcessedMethodData(double millisecond, MethodDesc method, string reason)
-            {
-                Millisecond = millisecond;
-                Method = method;
-                Reason = reason;
-                WeightedCallData = null;
-                ExclusiveWeight = 0;
-                InstrumentationData = null;
-            }
-
-            public readonly double Millisecond;
-            public readonly MethodDesc Method;
-            public readonly string Reason;
-            public Dictionary<MethodDesc, int> WeightedCallData;
-            public int ExclusiveWeight;
-            public PgoSchemaElem[] InstrumentationData;
-
-            public override string ToString()
-            {
-                return Method.ToString();
-            }
+            s_logger.PrintOutput(output);
         }
 
         struct InstructionPointerRange : IComparable<InstructionPointerRange>
@@ -222,9 +241,187 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             if (!commandLineOptions.BasicProgressMessages)
                 s_logger.HideMessages();
 
+            if (!commandLineOptions.DetailedProgressMessages)
+                s_logger.HideDetailedMessages();
+
+            if (commandLineOptions.DumpMibc)
+            {
+                return InnerDumpMain(commandLineOptions);
+            }
+            if (commandLineOptions.InputFilesToMerge != null)
+            {
+                return InnerMergeMain(commandLineOptions);
+            }
+            else
+            {
+                return InnerProcessTraceFileMain(commandLineOptions);
+            }
+        }
+
+        static int InnerDumpMain(CommandLineOptions commandLineOptions)
+        {
+            if ((commandLineOptions.InputFileToDump == null) || (!commandLineOptions.InputFileToDump.Exists))
+            {
+                PrintUsage(commandLineOptions, "Valid input file must be specified");
+                return -8;
+            }
+
+            if (commandLineOptions.OutputFileName == null)
+            {
+                PrintUsage(commandLineOptions, "Output filename must be specified");
+                return -8;
+            }
+
+            PrintDetailedMessage($"Opening {commandLineOptions.InputFileToDump}");
+            var mibcPeReader = MIbcProfileParser.OpenMibcAsPEReader(commandLineOptions.InputFileToDump.FullName);
+            var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(new PEReader[] { mibcPeReader });
+
+            PrintDetailedMessage($"Parsing {commandLineOptions.InputFileToDump}");
+            var profileData = MIbcProfileParser.ParseMIbcFile(tsc, mibcPeReader, null, onlyDefinedInAssembly: null);
+
+            using (FileStream outputFile = new FileStream(commandLineOptions.OutputFileName.FullName, FileMode.Create, FileAccess.Write))
+            {
+                JsonWriterOptions options = new JsonWriterOptions();
+                options.Indented = true;
+                options.SkipValidation = false;
+                options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+
+                using Utf8JsonWriter jsonWriter = new Utf8JsonWriter(outputFile, options);
+                jsonWriter.WriteStartObject();
+                jsonWriter.WriteStartArray("Methods");
+                foreach (MethodProfileData data in profileData.GetAllMethodProfileData())
+                {
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WriteString("Method", data.Method.ToString());
+                    if (data.CallWeights != null)
+                    {
+                        jsonWriter.WriteStartArray("CallWeights");
+                        foreach (var callWeight in data.CallWeights)
+                        {
+                            jsonWriter.WriteString("Method", callWeight.Key.ToString());
+                            jsonWriter.WriteNumber("Weight", callWeight.Value);
+                        }
+                        jsonWriter.WriteEndArray();
+                    }
+                    if (data.ExclusiveWeight != 0)
+                    {
+                        jsonWriter.WriteNumber("ExclusiveWeight", data.ExclusiveWeight);
+                    }
+                    if (data.SchemaData != null)
+                    {
+                        jsonWriter.WriteStartArray("InstrumentationData");
+                        foreach (var schemaElem in data.SchemaData)
+                        {
+                            jsonWriter.WriteStartObject();
+                            jsonWriter.WriteNumber("ILOffset", schemaElem.ILOffset);
+                            jsonWriter.WriteString("InstrumentationKind", schemaElem.InstrumentationKind.ToString());
+                            jsonWriter.WriteNumber("Other", schemaElem.Other);
+                            if (schemaElem.DataHeldInDataLong)
+                            {
+                                jsonWriter.WriteNumber("Data", schemaElem.DataLong);
+                            }
+                            else
+                            {
+                                if (schemaElem.DataObject == null)
+                                {
+                                    // No data associated with this item
+                                }
+                                else if (schemaElem.DataObject.Length == 1)
+                                {
+                                    jsonWriter.WriteString("Data", schemaElem.DataObject.GetValue(0).ToString());
+                                }
+                                else
+                                {
+                                    jsonWriter.WriteStartArray("Data");
+                                    foreach (var dataElem in schemaElem.DataObject)
+                                    {
+                                        jsonWriter.WriteStringValue(dataElem.ToString());
+                                    }
+                                    jsonWriter.WriteEndArray();
+                                }
+                            }
+                            jsonWriter.WriteEndObject();
+                        }
+                        jsonWriter.WriteEndArray();
+                    }
+
+                    jsonWriter.WriteEndObject();
+                }
+                jsonWriter.WriteEndArray();
+                jsonWriter.WriteEndObject();
+            }
+            PrintMessage($"Generated {commandLineOptions.OutputFileName}");
+
+            return 0;
+        }
+
+
+        static int InnerMergeMain(CommandLineOptions commandLineOptions)
+        {
+            if (commandLineOptions.InputFilesToMerge.Count == 0)
+            {
+                PrintUsage(commandLineOptions, "--input must be specified");
+                return -8;
+            }
+
+            if (commandLineOptions.OutputFileName == null)
+            {
+                PrintUsage(commandLineOptions, "--output must be specified");
+                return -8;
+            }
+
+            PEReader[] mibcReaders = new PEReader[commandLineOptions.InputFilesToMerge.Count];
+            for (int i = 0; i < mibcReaders.Length; i++)
+            {
+                PrintMessage($"Opening {commandLineOptions.InputFilesToMerge[i].FullName}");
+                mibcReaders[i] = MIbcProfileParser.OpenMibcAsPEReader(commandLineOptions.InputFilesToMerge[i].FullName);
+            }
+
+            HashSet<string> assemblyNamesInBubble = null;
+            if (commandLineOptions.IncludedAssemblies.Count > 0)
+            {
+                assemblyNamesInBubble = new HashSet<string>();
+                foreach (var asmName in commandLineOptions.IncludedAssemblies)
+                {
+                    assemblyNamesInBubble.Add(asmName.Name);
+                }
+            }
+
+            try
+            {
+                var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(mibcReaders);
+
+                bool partialNgen = false;
+                Dictionary<MethodDesc, MethodProfileData> mergedProfileData = new Dictionary<MethodDesc, MethodProfileData>();
+                for (int i = 0; i < mibcReaders.Length; i++)
+                {
+                    var peReader = mibcReaders[i];
+                    PrintDetailedMessage($"Merging {commandLineOptions.InputFilesToMerge[i].FullName}");
+                    ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
+                }
+
+                return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+            }
+            finally
+            {
+                foreach (var peReader in mibcReaders)
+                {
+                    peReader.Dispose();
+                }
+            }
+        }
+
+        static int InnerProcessTraceFileMain(CommandLineOptions commandLineOptions)
+        { 
             if (commandLineOptions.TraceFile == null)
             {
-                PrintUsage(commandLineOptions, "--trace-file must be specified");
+                PrintUsage(commandLineOptions, "--trace must be specified");
+                return -8;
+            }
+
+            if (commandLineOptions.OutputFileName == null)
+            {
+                PrintUsage(commandLineOptions, "--output must be specified");
                 return -8;
             }
 
@@ -361,14 +558,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 {
                     PrintError($"No managed jit starting data\nWas the trace collected with provider at least \"Microsoft-Windows-DotNETRuntime:0x4000080018:5\"?");
                     return -5;
-                }
-
-                if (commandLineOptions.ProcessR2REvents)
-                {
-                    if (!p.EventsInProcess.ByEventType<R2RGetEntryPointTraceData>().Any())
-                    {
-                        PrintError($"No r2r entrypoint data. This is not an error as in this case we can examine the jitted methods only\nWas the trace collected with provider at least \"Microsoft-Windows-DotNETRuntime:0x6000080018:5\"?");
-                    }
                 }
 
                 PgoTraceProcess pgoProcess = new PgoTraceProcess(p);
@@ -517,7 +706,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                         if (method == null)
                         {
-                            if (!commandLineOptions.Warnings)
+                            if ((e.MethodNamespace == "dynamicClass") || !commandLineOptions.Warnings)
                                 continue;
 
                             PrintWarning($"Unable to parse {methodNameFromEventDirectly}");
@@ -834,434 +1023,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     }
                 }
 
-                 if (commandLineOptions.FileType.Value == PgoFileType.jittrace)
+                if (commandLineOptions.FileType.Value == PgoFileType.jittrace)
                     GenerateJittraceFile(commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.JitTraceOptions);
                 else if (commandLineOptions.FileType.Value == PgoFileType.mibc)
-                    return GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                {
+                    ILCompiler.MethodProfileData[] methodProfileData = new ILCompiler.MethodProfileData[methodsUsedInProcess.Count];
+                    for (int i = 0; i < methodProfileData.Length; i++)
+                    {
+                        ProcessedMethodData processedData = methodsUsedInProcess[i];
+                        methodProfileData[i] = new ILCompiler.MethodProfileData(processedData.Method, ILCompiler.MethodProfilingDataFlags.ReadMethodCode, processedData.ExclusiveWeight, processedData.WeightedCallData, 0xFFFFFFFF, processedData.InstrumentationData);
+                    }
+                    return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodProfileData, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                }
             }
             return 0;
-        }
-
-        class MIbcGroup : IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>
-        {
-            private static int s_emitCount = 0;
-
-            public MIbcGroup(string name, TypeSystemMetadataEmitter emitter)
-            {
-                _buffer = new BlobBuilder();
-                _il = new InstructionEncoder(_buffer);
-                _name = name;
-                _emitter = emitter;
-            }
-
-            private BlobBuilder _buffer;
-            private InstructionEncoder _il;
-            private string _name;
-            private TypeSystemMetadataEmitter _emitter;
-
-            public void AddProcessedMethodData(ProcessedMethodData processedMethodData)
-            {
-                MethodDesc method = processedMethodData.Method;
-                string reason = processedMethodData.Reason;
-
-                // Format is 
-                // ldtoken method
-                // variable amount of extra metadata about the method, Extension data is encoded via ldstr "id"
-                // pop
-
-                // Extensions generated by this emitter:
-                //
-                // ldstr "ExclusiveWeight"
-                // Any ldc.i4 or ldc.r4 or ldc.r8 instruction to indicate the exclusive weight
-                //
-                // ldstr "WeightedCallData"
-                // ldc.i4 <Count of methods called>
-                // Repeat <Count of methods called times>
-                //  ldtoken <Method called from this method>
-                //  ldc.i4 <Weight associated with calling the <Method called from this method>>
-                //
-                // ldstr "InstrumentationDataStart"
-                // Encoded ints and longs, using ldc.i4, and ldc.i8 instructions as well as ldtoken <type> instructions
-                // ldstr "InstrumentationDataEnd" as a terminator
-                try
-                {
-                    EntityHandle methodHandle = _emitter.GetMethodRef(method);
-                    _il.OpCode(ILOpCode.Ldtoken);
-                    _il.Token(methodHandle);
-                    if (processedMethodData.ExclusiveWeight != 0)
-                    {
-                        _il.LoadString(_emitter.GetUserStringHandle("ExclusiveWeight"));
-                        _il.LoadConstantI4(processedMethodData.ExclusiveWeight);
-                    }
-                    if (processedMethodData.WeightedCallData != null)
-                    {
-                        _il.LoadString(_emitter.GetUserStringHandle("WeightedCallData"));
-                        _il.LoadConstantI4(processedMethodData.WeightedCallData.Count);
-                        foreach (var entry in processedMethodData.WeightedCallData)
-                        {
-                            EntityHandle calledMethod = _emitter.GetMethodRef(entry.Key);
-                            _il.OpCode(ILOpCode.Ldtoken);
-                            _il.Token(calledMethod);
-                            _il.LoadConstantI4(entry.Value);
-                        }
-                    }
-                    if (processedMethodData.InstrumentationData != null)
-                    {
-                        _il.LoadString(_emitter.GetUserStringHandle("InstrumentationDataStart"));
-                        PgoProcessor.EncodePgoData<TypeSystemEntityOrUnknown>(processedMethodData.InstrumentationData, this, true);
-                    }
-                    _il.OpCode(ILOpCode.Pop);
-                }
-                catch (Exception ex)
-                {
-                    PrintWarning($"Exception {ex} while attempting to generate method lists");
-                }
-            }
-
-            public MethodDefinitionHandle EmitMethod()
-            {
-                s_emitCount++;
-                string basicName = "Assemblies_" + _name;
-                if (_name.Length > 200)
-                    basicName = basicName.Substring(0, 200); // Cap length of name at 200, which is reasonably small.
-
-                string methodName = basicName + "_" + s_emitCount.ToString(CultureInfo.InvariantCulture);
-                return _emitter.AddGlobalMethod(methodName, _il, 8);
-            }
-
-            bool IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitDone()
-            {
-                _il.LoadString(_emitter.GetUserStringHandle("InstrumentationDataEnd"));
-                return true;
-            }
-
-            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitLong(long value, long previousValue)
-            {
-                if ((value <= int.MaxValue) && (value >= int.MinValue))
-                {
-                    _il.LoadConstantI4(checked((int)value));
-                }
-                else
-                {
-                    _il.LoadConstantI8(value);
-                }
-            }
-
-            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitType(TypeSystemEntityOrUnknown type, TypeSystemEntityOrUnknown previousValue)
-            {
-                if (type.AsType != null)
-                {
-                    _il.OpCode(ILOpCode.Ldtoken);
-                    _il.Token(_emitter.GetTypeRef(type.AsType));
-                }
-                else
-                    _il.LoadConstantI4(type.AsUnknown);
-            }
-
-        }
-
-        private static void AddAssembliesAssociatedWithType(TypeDesc type, HashSet<string> assemblies, out string definingAssembly)
-        {
-            definingAssembly = ((MetadataType)type).Module.Assembly.GetName().Name;
-            assemblies.Add(definingAssembly);
-            AddAssembliesAssociatedWithType(type, assemblies);
-        }
-
-        private static void AddAssembliesAssociatedWithType(TypeDesc type, HashSet<string> assemblies)
-        {
-            if (type.IsPrimitive)
-                return;
-
-            if (type.Context.IsCanonicalDefinitionType(type, CanonicalFormKind.Any))
-                return;
-
-            if (type.IsParameterizedType)
-            {
-                AddAssembliesAssociatedWithType(type.GetParameterType(), assemblies);
-            }
-            else
-            {
-                assemblies.Add(((MetadataType)type).Module.Assembly.GetName().Name);
-                foreach (var instantiationType in type.Instantiation)
-                {
-                    AddAssembliesAssociatedWithType(instantiationType, assemblies);
-                }
-            }
-        }
-
-        private static void AddAssembliesAssociatedWithMethod(MethodDesc method, HashSet<string> assemblies, out string definingAssembly)
-        {
-            AddAssembliesAssociatedWithType(method.OwningType, assemblies, out definingAssembly);
-            foreach (var instantiationType in method.Instantiation)
-            {
-                AddAssembliesAssociatedWithType(instantiationType, assemblies);
-            }
-        }
-
-        static int GenerateMibcFile(TraceTypeSystemContext tsc, FileInfo outputFileName, ICollection<ProcessedMethodData> methodsToAttemptToPlaceIntoProfileData, bool validate, bool uncompressed)
-        {
-            TypeSystemMetadataEmitter emitter = new TypeSystemMetadataEmitter(new AssemblyName(outputFileName.Name), tsc);
-
-            SortedDictionary<string, MIbcGroup> groups = new SortedDictionary<string, MIbcGroup>();
-            StringBuilder mibcGroupNameBuilder = new StringBuilder();
-            HashSet<string> assembliesAssociatedWithMethod = new HashSet<string>();
-
-            foreach (var entry in methodsToAttemptToPlaceIntoProfileData)
-            {
-                MethodDesc method = entry.Method;
-                assembliesAssociatedWithMethod.Clear();
-                AddAssembliesAssociatedWithMethod(method, assembliesAssociatedWithMethod, out string definingAssembly);
-
-                string[] assemblyNames = new string[assembliesAssociatedWithMethod.Count];
-                int i = 1;
-                assemblyNames[0] = definingAssembly;
-
-                foreach (string s in assembliesAssociatedWithMethod)
-                {
-                    if (s.Equals(definingAssembly))
-                        continue;
-                    assemblyNames[i++] = s;
-                }
-
-                // Always keep the defining assembly as the first name
-                Array.Sort(assemblyNames, 1, assemblyNames.Length - 1);
-                mibcGroupNameBuilder.Clear();
-                foreach (string s in assemblyNames)
-                {
-                    mibcGroupNameBuilder.Append(s);
-                    mibcGroupNameBuilder.Append(';');
-                }
-
-                string mibcGroupName = mibcGroupNameBuilder.ToString();
-                if (!groups.TryGetValue(mibcGroupName, out MIbcGroup mibcGroup))
-                {
-                    mibcGroup = new MIbcGroup(mibcGroupName, emitter);
-                    groups.Add(mibcGroupName, mibcGroup);
-                }
-                mibcGroup.AddProcessedMethodData(entry);
-            }
-
-            var buffer = new BlobBuilder();
-            var il = new InstructionEncoder(buffer);
-
-            foreach (var entry in groups)
-            {
-                il.LoadString(emitter.GetUserStringHandle(entry.Key));
-                il.OpCode(ILOpCode.Ldtoken);
-                il.Token(entry.Value.EmitMethod());
-                il.OpCode(ILOpCode.Pop);
-            }
-
-            emitter.AddGlobalMethod("AssemblyDictionary", il, 8);
-            MemoryStream peFile = new MemoryStream();
-            emitter.SerializeToStream(peFile);
-            peFile.Position = 0;
-
-            if (outputFileName.Exists)
-            {
-                outputFileName.Delete();
-            }
-
-            if (uncompressed)
-            {
-                using (FileStream file = new FileStream(outputFileName.FullName, FileMode.Create))
-                {
-                    peFile.CopyTo(file);
-                }
-            }
-            else
-            {
-                using (ZipArchive file = ZipFile.Open(outputFileName.FullName, ZipArchiveMode.Create))
-                {
-                    var entry = file.CreateEntry(outputFileName.Name + ".dll", CompressionLevel.Optimal);
-                    using (Stream archiveStream = entry.Open())
-                    {
-                        peFile.CopyTo(archiveStream);
-                    }
-                }
-            }
-
-            PrintMessage($"Generated {outputFileName.FullName}");
-
-            if (validate)
-                return ValidateMIbcData(tsc, outputFileName, peFile.ToArray(), methodsToAttemptToPlaceIntoProfileData);
-            else
-                return 0;
-        }
-
-        struct MIbcData
-        {
-            public object MetadataObject;
-        }
-
-        static int ValidateMIbcData(TraceTypeSystemContext tsc, FileInfo outputFileName, byte[] moduleBytes, ICollection<ProcessedMethodData> methodsToAttemptToPrepare)
-        {
-            var mibcLoadedData = ReadMIbcData(tsc, outputFileName, moduleBytes).ToArray();
-            Dictionary<MethodDesc, MIbcData> mibcDict = new Dictionary<MethodDesc, MIbcData>();
-
-            foreach (var mibcData in mibcLoadedData)
-            {
-                mibcDict.Add((MethodDesc)mibcData.MetadataObject, mibcData);
-            }
-
-            bool failure = false;
-            if (methodsToAttemptToPrepare.Count != mibcLoadedData.Length)
-            {
-                PrintError($"Not same count of methods {methodsToAttemptToPrepare.Count} != {mibcLoadedData.Length}");
-                failure = true;
-            }
-
-            foreach (var entry in methodsToAttemptToPrepare)
-            {
-                MethodDesc method = entry.Method;
-                if (!mibcDict.ContainsKey(method))
-                {
-                    PrintError($"{method} not found in mibcEntryData");
-                    failure = true;
-                    continue;
-                }
-            }
-
-            if (failure)
-            {
-                return -1;
-            }
-            else
-            {
-                PrintMessage($"Validated {outputFileName.FullName}");
-                return 0;
-            }
-        }
-
-        static IEnumerable<MIbcData> ReadMIbcGroup(TypeSystemContext tsc, EcmaMethod method)
-        {
-            EcmaMethodIL ilBody = EcmaMethodIL.Create((EcmaMethod)method);
-            byte[] ilBytes = ilBody.GetILBytes();
-            int currentOffset = 0;
-            object metadataObject = null;
-            while (currentOffset < ilBytes.Length)
-            {
-                ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
-                if (opcode == ILOpcode.prefix1)
-                    opcode = 0x100 + (ILOpcode)ilBytes[currentOffset + 1];
-                switch (opcode)
-                {
-                    case ILOpcode.ldtoken:
-                        UInt32 token = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
-
-                        if (metadataObject == null)
-                            metadataObject = ilBody.GetObject((int)token);
-                        break;
-                    case ILOpcode.pop:
-                        MIbcData mibcData = new MIbcData();
-                        mibcData.MetadataObject = metadataObject;
-                        yield return mibcData;
-
-                        metadataObject = null;
-                        break;
-                }
-
-                // This isn't correct if there is a switch opcode, but since we won't do that, its ok
-                currentOffset += opcode.GetSize();
-            }
-        }
-
-        class CanonModule : ModuleDesc, IAssemblyDesc
-        {
-            public CanonModule(TypeSystemContext wrappedContext) : base(wrappedContext, null)
-            {
-            }
-
-            public override IEnumerable<MetadataType> GetAllTypes()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override MetadataType GetGlobalModuleType()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
-            {
-                TypeSystemContext context = Context;
-
-                if (context.SupportsCanon && (nameSpace == context.CanonType.Namespace) && (name == context.CanonType.Name))
-                    return Context.CanonType;
-                if (context.SupportsUniversalCanon && (nameSpace == context.UniversalCanonType.Namespace) && (name == context.UniversalCanonType.Name))
-                    return Context.UniversalCanonType;
-                else
-                {
-                    if (throwIfNotFound)
-                    {
-                        throw new TypeLoadException($"{nameSpace}.{name}");
-                    }
-                    return null;
-                }
-            }
-
-            public AssemblyName GetName()
-            {
-                return new AssemblyName("System.Private.Canon");
-            }
-        }
-
-        class CustomCanonResolver : IModuleResolver
-        {
-            CanonModule _canonModule;
-            AssemblyName _canonModuleName;
-            IModuleResolver _wrappedResolver;
-
-            public CustomCanonResolver(TypeSystemContext wrappedContext)
-            {
-                _canonModule = new CanonModule(wrappedContext);
-                _canonModuleName = _canonModule.GetName();
-                _wrappedResolver = wrappedContext;
-            }
-
-            ModuleDesc IModuleResolver.ResolveAssembly(AssemblyName name, bool throwIfNotFound)
-            {
-                if (name.Name == _canonModuleName.Name)
-                    return _canonModule;
-                else
-                    return _wrappedResolver.ResolveAssembly(name, throwIfNotFound);
-            }
-
-            ModuleDesc IModuleResolver.ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound)
-            {
-                return _wrappedResolver.ResolveModule(referencingModule, fileName, throwIfNotFound);
-            }
-        }
-
-        static IEnumerable<MIbcData> ReadMIbcData(TraceTypeSystemContext tsc, FileInfo outputFileName, byte[] moduleBytes)
-        {
-            var peReader = new System.Reflection.PortableExecutable.PEReader(System.Collections.Immutable.ImmutableArray.Create<byte>(moduleBytes));
-            var module = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
-
-            var loadedMethod = (EcmaMethod)module.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
-            EcmaMethodIL ilBody = EcmaMethodIL.Create(loadedMethod);
-            byte[] ilBytes = ilBody.GetILBytes();
-            int currentOffset = 0;
-            while (currentOffset < ilBytes.Length)
-            {
-                ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
-                if (opcode == ILOpcode.prefix1)
-                    opcode = 0x100 + (ILOpcode)ilBytes[currentOffset + 1];
-                switch (opcode)
-                {
-                    case ILOpcode.ldtoken:
-                        UInt32 token = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
-                        foreach (var data in ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject((int)token)))
-                            yield return data;
-                        break;
-                    case ILOpcode.pop:
-                        break;
-                }
-
-                // This isn't correct if there is a switch opcode, but since we won't do that, its ok
-                currentOffset += opcode.GetSize();
-            }
-            GC.KeepAlive(peReader);
         }
 
         static void GenerateJittraceFile(FileInfo outputFileName, IEnumerable<ProcessedMethodData> methodsToAttemptToPrepare, jittraceoptions jittraceOptions)

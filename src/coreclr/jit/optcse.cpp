@@ -409,7 +409,6 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     size_t   key;
     unsigned hval;
     CSEdsc*  hashDsc;
-    bool     isIntConstHash       = false;
     bool     enableSharedConstCSE = false;
     bool     isSharedConst        = false;
     int      configValue          = JitConfig.JitConstCSE();
@@ -484,28 +483,38 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     else if (enableSharedConstCSE && tree->IsIntegralConst())
     {
         assert(vnStore->IsVNConstant(vnLibNorm));
-        key = vnStore->CoercedConstantValue<size_t>(vnLibNorm);
 
-        // We don't share small offset constants when we require a reloc
+        // We don't share small offset constants when they require a reloc
         //
         if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this))
         {
-            // Make constants that have the same upper bits use the same key
-            key           = Encode_Shared_Const_CSE_Value(key);
-            isSharedConst = true;
+            // Here we make constants that have the same upper bits use the same key
+            //
+            // We create a key that encodes just the upper bits of the constant by
+            // shifting out some of the low bits, (12 or 16 bits)
+            //
+            // This is the only case where the hash key is not a ValueNumber
+            //
+            size_t constVal = vnStore->CoercedConstantValue<size_t>(vnLibNorm);
+            key             = Encode_Shared_Const_CSE_Value(constVal);
+            isSharedConst   = true;
         }
         else
         {
-            // Since we are using the sign bit as a discriminator
-            // we don't allow/expect it to be set when we need a reloc
-            //
-            assert((key & TARGET_SIGN_BIT) == 0);
+            // Use the vnLibNorm value as the key
+            key = vnLibNorm;
         }
     }
     else // Not a GT_COMMA or a GT_CNS_INT
     {
         key = vnLibNorm;
     }
+
+    // Make sure that the result of Is_Shared_Const_CSE(key) matches isSharedConst
+    // Note that when isSharedConst is true then we require that the TARGET_SIGN_BIT is set in the key
+    // and otherwise we require that we never create a ValueNumber with the TARGET_SIGN_BIT set.
+    //
+    assert(isSharedConst == Is_Shared_Const_CSE(key));
 
     // Compute the hash value for the expression
 
@@ -1186,7 +1195,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("StartMerge BB%02u\n", block->bbNum);
+            printf("StartMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
 #endif // DEBUG
@@ -1198,7 +1207,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("Merge BB%02u and BB%02u\n", block->bbNum, predBlock->bbNum);
+            printf("Merge " FMT_BB " and " FMT_BB "\n", block->bbNum, predBlock->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
@@ -1274,7 +1283,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("EndMerge BB%02u\n", block->bbNum);
+            printf("EndMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
             if (((block->bbFlags & BBF_HAS_CALL) != 0) &&
                 !BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
@@ -1442,7 +1451,7 @@ void Compiler::optValnumCSE_Availablity()
 
                     if (verbose)
                     {
-                        printf("BB%02u ", block->bbNum);
+                        printf(FMT_BB " ", block->bbNum);
                         printTreeID(tree);
 
                         printf(" %s of CSE #%02u [weight=%s]%s\n", isUse ? "Use" : "Def", CSEnum, refCntWtd2str(stmw),
@@ -2356,14 +2365,12 @@ public:
         // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
         BasicBlock::weight_t cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
 
-        bool      canEnregister = true;
-        unsigned  slotCount     = 1;
-        var_types cseLclVarTyp  = genActualType(candidate->Expr()->TypeGet());
+        bool     canEnregister = true;
+        unsigned slotCount     = 1;
         if (candidate->Expr()->TypeGet() == TYP_STRUCT)
         {
             // This is a non-enregisterable struct.
             canEnregister                  = false;
-            GenTree*             value     = candidate->Expr();
             CORINFO_CLASS_HANDLE structHnd = m_pCompiler->gtGetStructHandleIfPresent(candidate->Expr());
             if (structHnd == NO_CLASS_HANDLE)
             {

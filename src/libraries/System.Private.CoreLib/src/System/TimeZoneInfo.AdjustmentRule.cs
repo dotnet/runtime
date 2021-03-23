@@ -76,6 +76,24 @@ namespace System
                 _noDaylightTransitions = noDaylightTransitions;
             }
 
+            internal static AdjustmentRule CreateAdjustmentRule(
+                DateTime dateStart,
+                DateTime dateEnd,
+                TimeSpan daylightDelta,
+                TransitionTime daylightTransitionStart,
+                TransitionTime daylightTransitionEnd,
+                TimeSpan baseUtcOffsetDelta)
+            {
+                return new AdjustmentRule(
+                    dateStart,
+                    dateEnd,
+                    daylightDelta,
+                    daylightTransitionStart,
+                    daylightTransitionEnd,
+                    baseUtcOffsetDelta,
+                    noDaylightTransitions: false);
+            }
+
             public static AdjustmentRule CreateAdjustmentRule(
                 DateTime dateStart,
                 DateTime dateEnd,

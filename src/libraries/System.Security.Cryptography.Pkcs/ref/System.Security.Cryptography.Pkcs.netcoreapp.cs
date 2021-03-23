@@ -164,7 +164,7 @@ namespace System.Security.Cryptography.Pkcs
         public System.ReadOnlyMemory<byte> GetMessageHash() { throw null; }
         public System.ReadOnlyMemory<byte>? GetNonce() { throw null; }
         public System.Security.Cryptography.Pkcs.Rfc3161TimestampToken ProcessResponse(System.ReadOnlyMemory<byte> responseBytes, out int bytesConsumed) { throw null; }
-        public static bool TryDecode(System.ReadOnlyMemory<byte> encodedBytes, out System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest? request, out int bytesConsumed) { throw null; }
+        public static bool TryDecode(System.ReadOnlyMemory<byte> encodedBytes, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Security.Cryptography.Pkcs.Rfc3161TimestampRequest? request, out int bytesConsumed) { throw null; }
         public bool TryEncode(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class Rfc3161TimestampToken
@@ -173,10 +173,10 @@ namespace System.Security.Cryptography.Pkcs
         public System.Security.Cryptography.Pkcs.Rfc3161TimestampTokenInfo TokenInfo { get { throw null; } }
         public System.Security.Cryptography.Pkcs.SignedCms AsSignedCms() { throw null; }
         public static bool TryDecode(System.ReadOnlyMemory<byte> encodedBytes, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Security.Cryptography.Pkcs.Rfc3161TimestampToken? token, out int bytesConsumed) { throw null; }
-        public bool VerifySignatureForData(System.ReadOnlySpan<byte> data, out System.Security.Cryptography.X509Certificates.X509Certificate2? signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? extraCandidates = null) { throw null; }
-        public bool VerifySignatureForHash(System.ReadOnlySpan<byte> hash, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, out System.Security.Cryptography.X509Certificates.X509Certificate2? signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? extraCandidates = null) { throw null; }
-        public bool VerifySignatureForHash(System.ReadOnlySpan<byte> hash, System.Security.Cryptography.Oid hashAlgorithmId, out System.Security.Cryptography.X509Certificates.X509Certificate2? signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? extraCandidates = null) { throw null; }
-        public bool VerifySignatureForSignerInfo(System.Security.Cryptography.Pkcs.SignerInfo signerInfo, out System.Security.Cryptography.X509Certificates.X509Certificate2? signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? extraCandidates = null) { throw null; }
+        public bool VerifySignatureForData(System.ReadOnlySpan<byte> data, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Security.Cryptography.X509Certificates.X509Certificate2? signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? extraCandidates = null) { throw null; }
+        public bool VerifySignatureForHash(System.ReadOnlySpan<byte> hash, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Security.Cryptography.X509Certificates.X509Certificate2? signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? extraCandidates = null) { throw null; }
+        public bool VerifySignatureForHash(System.ReadOnlySpan<byte> hash, System.Security.Cryptography.Oid hashAlgorithmId, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Security.Cryptography.X509Certificates.X509Certificate2? signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? extraCandidates = null) { throw null; }
+        public bool VerifySignatureForSignerInfo(System.Security.Cryptography.Pkcs.SignerInfo signerInfo, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Security.Cryptography.X509Certificates.X509Certificate2? signerCertificate, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? extraCandidates = null) { throw null; }
     }
     public sealed partial class Rfc3161TimestampTokenInfo
     {

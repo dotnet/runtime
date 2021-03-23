@@ -167,7 +167,8 @@ mono_reflected_equal (gconstpointer a, gconstpointer b)
 }
 
 guint
-mono_reflected_hash (gconstpointer a) {
+mono_reflected_hash (gconstpointer a)
+{
 	const ReflectedEntry *ea = (const ReflectedEntry *)a;
 	/* Combine hashes for item and refclass. Identical to boost's hash_combine */
 	guint seed = mono_aligned_addr_hash (ea->item) + 0x9e3779b9;
@@ -176,24 +177,21 @@ mono_reflected_hash (gconstpointer a) {
 }
 
 static void
-clear_cached_object (MonoDomain *domain, gpointer o, MonoClass *klass)
+clear_cached_object (MonoMemoryManager *mem_manager, gpointer o, MonoClass *klass)
 {
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
-
-	mono_mem_manager_lock (memory_manager);
-
 	gpointer orig_pe, orig_value;
 	ReflectedEntry pe;
 	pe.item = o;
 	pe.refclass = klass;
 
+	mono_mem_manager_lock (mem_manager);
 
-	if (mono_conc_g_hash_table_lookup_extended (memory_manager->refobject_hash, &pe, &orig_pe, &orig_value)) {
-		mono_conc_g_hash_table_remove (memory_manager->refobject_hash, &pe);
+	if (mono_conc_g_hash_table_lookup_extended (mem_manager->refobject_hash, &pe, &orig_pe, &orig_value)) {
+		mono_conc_g_hash_table_remove (mem_manager->refobject_hash, &pe);
 		free_reflected_entry ((ReflectedEntry *)orig_pe);
 	}
 
-	mono_mem_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (mem_manager);
 }
 
 /**
@@ -332,7 +330,7 @@ mono_module_file_get_object_handle (MonoImage *image, int table_index, MonoError
 	goto_if_nok (error, fail);
 
 	table = &image->tables [MONO_TABLE_FILE];
-	g_assert (table_index < table->rows);
+	g_assert (table_index < table_info_get_rows (table));
 	mono_metadata_decode_row (table, table_index, cols, MONO_FILE_SIZE);
 
 	MONO_HANDLE_SETVAL (res, image, MonoImage*, NULL);
@@ -344,7 +342,8 @@ mono_module_file_get_object_handle (MonoImage *image, int table_index, MonoError
 
 	/* Check whenever the row has a corresponding row in the moduleref table */
 	table = &image->tables [MONO_TABLE_MODULEREF];
-	for (i = 0; i < table->rows; ++i) {
+	int rows = table_info_get_rows (table);
+	for (i = 0; i < rows; ++i) {
 		name_idx = mono_metadata_decode_row_col (table, i, MONO_MODULEREF_NAME);
 		val = mono_metadata_string_heap (image, name_idx);
 		if (strcmp (val, name) == 0)
@@ -439,7 +438,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 
 	g_assert (type != NULL);
 	klass = mono_class_from_mono_type_internal (type);
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 
 	/*we must avoid using @type as it might have come
 	 * from a mono_metadata_type_dup and the caller
@@ -645,21 +644,23 @@ mono_method_get_object_checked (MonoMethod *method, MonoClass *refclass, MonoErr
  *   Clear the cached reflection objects for the dynamic method METHOD.
  */
 void
-mono_method_clear_object (MonoDomain *domain, MonoMethod *method)
+mono_method_clear_object (MonoMethod *method)
 {
 	MonoClass *klass;
 	g_assert (method_is_dynamic (method));
 
+	MonoMemoryManager *mem_manager = mono_mem_manager_get_ambient ();
+
 	klass = method->klass;
 	while (klass) {
-		clear_cached_object (domain, method, klass);
+		clear_cached_object (mem_manager, method, klass);
 		klass = m_class_get_parent (klass);
 	}
 	/* Added by mono_param_get_objects () */
-	clear_cached_object (domain, &(method->signature), NULL);
+	clear_cached_object (mem_manager, &(method->signature), NULL);
 	klass = method->klass;
 	while (klass) {
-		clear_cached_object (domain, &(method->signature), klass);
+		clear_cached_object (mem_manager, &(method->signature), klass);
 		klass = m_class_get_parent (klass);
 	}
 }
@@ -1382,14 +1383,18 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 	paramt = &image->tables [MONO_TABLE_PARAM];
 	constt = &image->tables [MONO_TABLE_CONSTANT];
 
-	idx = mono_method_get_index (method) - 1;
-	g_assert (idx != -1);
+	idx = mono_method_get_index (method);
+	g_assert (idx != 0);
 
-	param_index = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
-	if (idx + 1 < methodt->rows)
-		lastp = mono_metadata_decode_row_col (methodt, idx + 1, MONO_METHOD_PARAMLIST);
+	/* lastp is the starting param index for the next method in the table, or
+	 * one past the last row if this is the last method
+	 */
+	/* FIXME: metadata-update : will this work with added methods ? */
+	param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
+	if (!mono_metadata_table_bounds_check (image, MONO_TABLE_METHOD, idx + 1))
+		lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 	else
-		lastp = paramt->rows + 1;
+		lastp = table_info_get_rows (paramt) + 1;
 
 	for (i = param_index; i < lastp; ++i) {
 		guint32 paramseq;
@@ -2707,7 +2712,8 @@ mono_declsec_get_flags (MonoImage *image, guint32 token)
 	if (index < 0)
 		return 0;
 
-	for (i = index; i < t->rows; i++) {
+	int rows = table_info_get_rows (t);
+	for (i = index; i < rows; i++) {
 		guint32 cols [MONO_DECL_SECURITY_SIZE];
 
 		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
@@ -2806,7 +2812,8 @@ fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityAction
 	int i;
 
 	t  = &image->tables [MONO_TABLE_DECLSECURITY];
-	for (i = index; i < t->rows; i++) {
+	int rows = table_info_get_rows (t);
+	for (i = index; i < rows; i++) {
 		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
 
 		if (cols [MONO_DECL_SECURITY_PARENT] != token)
@@ -2879,7 +2886,7 @@ mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
 	guint32 flags;
 
 	/* quick exit if no declarative security is present in the metadata */
-	if (!m_class_get_image (method->klass)->tables [MONO_TABLE_DECLSECURITY].rows)
+	if (!table_info_get_rows (&m_class_get_image (method->klass)->tables [MONO_TABLE_DECLSECURITY]))
 		return FALSE;
 
 	/* we want the original as the wrapper is "free" of the security informations */
@@ -2927,7 +2934,7 @@ mono_declsec_get_linkdemands (MonoMethod *method, MonoDeclSecurityActions* klass
 	guint32 flags;
 
 	/* quick exit if no declarative security is present in the metadata */
-	if (!m_class_get_image (method->klass)->tables [MONO_TABLE_DECLSECURITY].rows)
+	if (!table_info_get_rows (&m_class_get_image (method->klass)->tables [MONO_TABLE_DECLSECURITY]))
 		return FALSE;
 
 	/* we want the original as the wrapper is "free" of the security informations */
@@ -2976,7 +2983,7 @@ mono_declsec_get_inheritdemands_class (MonoClass *klass, MonoDeclSecurityActions
 	guint32 flags;
 
 	/* quick exit if no declarative security is present in the metadata */
-	if (!m_class_get_image (klass)->tables [MONO_TABLE_DECLSECURITY].rows)
+	if (!table_info_get_rows (&m_class_get_image (klass)->tables [MONO_TABLE_DECLSECURITY]))
 		return FALSE;
 
 	/* Here we use (or create) the class declarative cache to look for demands */
@@ -3001,7 +3008,7 @@ MonoBoolean
 mono_declsec_get_inheritdemands_method (MonoMethod *method, MonoDeclSecurityActions* demands)
 {
 	/* quick exit if no declarative security is present in the metadata */
-	if (!m_class_get_image (method->klass)->tables [MONO_TABLE_DECLSECURITY].rows)
+	if (!table_info_get_rows (&m_class_get_image (method->klass)->tables [MONO_TABLE_DECLSECURITY]))
 		return FALSE;
 
 	/* we want the original as the wrapper is "free" of the security informations */
@@ -3026,15 +3033,15 @@ static MonoBoolean
 get_declsec_action (MonoImage *image, guint32 token, guint32 action, MonoDeclSecurityEntry *entry)
 {
 	guint32 cols [MONO_DECL_SECURITY_SIZE];
-	MonoTableInfo *t;
 	int i;
 
 	int index = mono_metadata_declsec_from_index (image, token);
 	if (index == -1)
 		return FALSE;
 
-	t =  &image->tables [MONO_TABLE_DECLSECURITY];
-	for (i = index; i < t->rows; i++) {
+	MonoTableInfo *t =  &image->tables [MONO_TABLE_DECLSECURITY];
+	int rows = table_info_get_rows (t);
+	for (i = index; i < rows; i++) {
 		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
 
 		/* shortcut - index are ordered */

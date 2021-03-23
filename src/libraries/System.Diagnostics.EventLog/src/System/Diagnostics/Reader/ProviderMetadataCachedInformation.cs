@@ -20,7 +20,7 @@ namespace System.Diagnostics.Eventing.Reader
         private readonly EventLogSession _session;
         private readonly string _logfile;
 
-        private class ProviderMetadataId
+        private sealed class ProviderMetadataId
         {
             public ProviderMetadataId(string providerName, CultureInfo cultureInfo)
             {
@@ -47,7 +47,7 @@ namespace System.Diagnostics.Eventing.Reader
             public CultureInfo TheCultureInfo { get; }
         }
 
-        private class CacheItem
+        private sealed class CacheItem
         {
             public CacheItem(ProviderMetadata pm)
             {

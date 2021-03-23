@@ -1087,6 +1087,17 @@ public:
         return TypeIs(type) || TypeIs(rest...);
     }
 
+    static bool StaticOperIs(genTreeOps operCompare, genTreeOps oper)
+    {
+        return operCompare == oper;
+    }
+
+    template <typename... T>
+    static bool StaticOperIs(genTreeOps operCompare, genTreeOps oper, T... rest)
+    {
+        return StaticOperIs(operCompare, oper) || StaticOperIs(operCompare, rest...);
+    }
+
     bool OperIs(genTreeOps oper) const
     {
         return OperGet() == oper;
@@ -4547,6 +4558,8 @@ struct GenTreeCall final : public GenTree
     {
         return (gtCallMoreFlags & GTF_CALL_M_EXPANDED_EARLY) != 0;
     }
+
+    void ResetArgInfo();
 
     unsigned gtCallMoreFlags; // in addition to gtFlags
 

@@ -45,7 +45,7 @@ namespace System.Linq.Parallel
         private readonly CancellationToken _cancellationToken;
         private Mutables? _mutables;
 
-        private class Mutables
+        private sealed class Mutables
         {
             internal TLeftInput _currentLeft = default!; // The current matching left element.
             internal TLeftKey _currentLeftKey = default!; // The current index of the matching left element.
