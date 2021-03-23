@@ -3,7 +3,6 @@
   <UsingTask TaskName="WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="IcallTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <!--
       Required public items/properties:
@@ -72,13 +71,23 @@
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(EmscriptenSdkToolsPath)' == '' and '$(EMSDK_PATH)' != ''">
+    <EmscriptenSdkToolsPath>$([MSBuild]::EnsureTrailingSlash($(EMSDK_PATH)))</EmscriptenSdkToolsPath>
+    <EmSdkUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'bin'))</EmSdkUpstreamBinPath>
+
+    <EmscriptenNodeToolsPath>$(EmscriptenSdkToolsPath)node/12.18.1_64bit/</EmscriptenNodeToolsPath>
+    <EmscriptenPythonToolsPath>$(EmscriptenSdkToolsPath)python/3.7.4-2_64bit/</EmscriptenPythonToolsPath>
+
+    <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
+  </PropertyGroup>
+
   <!-- Having this separate target allows users to cleanly add After/BeforeTargets for this -->
   <Target Name="WasmBuildApp" AfterTargets="$(WasmBuildAppAfterThisTarget)" />
 
   <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
-    <Error Condition="'$(EMSDK_PATH)' == ''" Text="%24(EMSDK_PATH) should be set to emscripten sdk" />
-    <Error Condition="!Exists($(EMSDK_PATH))" Text="Cannot find EMSDK_PATH=$(EMSDK_PATH)" />
+    <Error Condition="'$(EmscriptenSdkToolsPath)' == ''" Text="Emscripten sdk not found. Either set EMSDK_PATH, or ensure that webassembly workload is installed" />
+    <Error Condition="!Exists($(EmscriptenSdkToolsPath))" Text="Cannot find EmscriptenSdkToolsPath=$(EmscriptenSdkToolsPath), EMSDK_PATH=$(EMSDK_PATH)" />
 
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
@@ -144,7 +153,7 @@
       UseLLVM="true"
       DisableParallelAot="true"
       DedupAssembly="$(_WasmDedupAssembly)"
-      LLVMPath="$(EMSDK_PATH)\upstream\bin">
+      LLVMPath="$(EmSdkUpstreamBinPath)">
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssembliesInternal" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </MonoAOTCompiler>
@@ -213,6 +222,37 @@
       <_WasmIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm'))</_WasmIntermediateOutputPath>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
+      <EmscriptenNodeToolsPath   Condition="'$(EmscriptenNodeToolsPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
+      <EmscriptenPythonToolsPath Condition="'$(EmscriptenPythonToolsPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenPythonToolsPath)))</EmscriptenPythonToolsPath>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != ''">
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' != 'true'">
+      <_EmscriptenAddPATH Include="$(EmscriptenPythonToolsPath)bin" />
+      <_EmscriptenAddPATH Include="$(EmscriptenSdkToolsPath)emscripten" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' == 'true'">
+      <_EmscriptenAddPATH Include="$(EmscriptenSdkToolsPath)" />
+      <_EmscriptenAddPATH Include="$(EmscriptenNodeToolsPath)bin" />
+      <_EmscriptenAddPATH Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_EmscriptenAddPATHProperty>@(_EmscriptenAddPATH -> '%(Identity)', ':')</_EmscriptenAddPATHProperty>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <EmscriptenEnvVars Include="PATH=$(_EmscriptenAddPATHProperty);$(PATH)" Condition="'$(OS)' == 'Windows_NT'" />
+      <EmscriptenEnvVars Include="PATH=$(_EmscriptenAddPATHProperty):$(PATH)" Condition="'$(OS)' != 'Windows_NT'" />
+    </ItemGroup>
+
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
     <PropertyGroup>
       <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
@@ -224,15 +264,15 @@
 
   <Target Name="_SetWasmBuildNativeDefaults">
     <PropertyGroup>
-      <_IsEMSDKMissing Condition="'$(EMSDK_PATH)' == '' or !Exists('$(EMSDK_PATH)')">true</_IsEMSDKMissing>
+      <_IsEMSDKMissing Condition="'$(EmscriptenSdkToolsPath)' == '' or !Exists('$(EmscriptenSdkToolsPath)')">true</_IsEMSDKMissing>
     </PropertyGroup>
 
     <!-- if already set, maybe by a user projects, then a missing emsdk is an error -->
     <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
-           Text="Cannot find emscripten sdk, required for building native files. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
+           Text="Cannot find emscripten sdk, required for building native files. %24(EMSDK_PATH)=$(EMSDK_PATH), EmscriptenSdkToolsPath: $(EmscriptenSdkToolsPath)" />
 
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
-           Text="Cannot find emscripten sdk, required for AOT'ing assemblies. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
+           Text="Cannot find emscripten sdk, required for AOT'ing assemblies. %24(EMSDK_PATH)=$(EMSDK_PATH), EmscriptenSdkToolsPath: $(EmscriptenSdkToolsPath)" />
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
@@ -243,7 +283,7 @@
 
     <!-- If we want to default to true, and sdk is missing, then just warn, and set it to false -->
     <Warning Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
-             Text="Cannot find emscripten sdk, required for building native files. %24(EMSDK_PATH)=$(EMSDK_PATH). Skipping native relinking" />
+             Text="Cannot find emscripten sdk, required for building native files. %24(EMSDK_PATH)=$(EMSDK_PATH), EmscriptenSdkToolsPath: $(EmscriptenSdkToolsPath) . Skipping native relinking" />
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'">false</WasmBuildNative>
@@ -291,7 +331,7 @@
   </Target>
 
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp;_WasmStripAOTAssemblies;_GenerateDriverGenC;_CheckEmccIsExpectedVersion" Condition="'$(WasmBuildNative)' == 'true'">
-    <Error Condition="'$(EMSDK_PATH)' == ''" Text="%24(EMSDK_PATH) should be set to emscripten sdk" />
+    <Error Condition="'$(EmscriptenSdkToolsPath)' == ''" Text="%24(EmscriptenSdkToolsPath) should be set to emscripten sdk" />
 
     <PropertyGroup>
       <EmccFlagsFile>$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-flags.txt'))</EmccFlagsFile>
@@ -378,13 +418,13 @@
      <EmccCFlags Condition="!$(_WasmIntermediateOutputPath.EndsWith('\'))">$(EmccCFlags) "-I$(_WasmIntermediateOutputPath)"</EmccCFlags>
 
      <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
-     <_WasmOptCommand>$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'bin', 'wasm-opt$(_ExeExt)'))</_WasmOptCommand>
+     <_WasmOptCommand>$([MSBuild]::NormalizePath('$(EmSdkUpstreamBinPath)', 'wasm-opt$(_ExeExt)'))</_WasmOptCommand>
    </PropertyGroup>
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
-    <RunWithEmSdkEnv Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.SourcePath)" -c -o "%(_WasmObjectsToBuild.Identity)"' EmSdkPath="$(EMSDK_PATH)" />
-    <RunWithEmSdkEnv Command="emcc $(EmccLDFlags) @(_DotnetJSSrcFile->'--js-library &quot;%(Identity)&quot;', ' ') @(_BitcodeFile->'&quot;%(Identity)&quot;', ' ') @(_WasmObjects->'&quot;%(Identity)&quot;', ' ') -o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" EmSdkPath="$(EMSDK_PATH)" />
-    <RunWithEmSdkEnv Command='"$(_WasmOptCommand)" --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EmSdkPath="$(EMSDK_PATH)" />
+    <Exec Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.SourcePath)" -c -o "%(_WasmObjectsToBuild.Identity)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Exec Command="emcc $(EmccLDFlags) @(_DotnetJSSrcFile->'--js-library &quot;%(Identity)&quot;', ' ') @(_BitcodeFile->'&quot;%(Identity)&quot;', ' ') @(_WasmObjects->'&quot;%(Identity)&quot;', ' ') -o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Exec Command='"$(_WasmOptCommand)" --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <ItemGroup>
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
@@ -435,9 +475,9 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
         <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
     </ReadLinesFromFile>
 
-    <RunWithEmSdkEnv Command="emcc --version" WorkingDirectory="$(_WasmIntermediateOutputPath)" EmSdkPath="$(EMSDK_PATH)" ConsoleToMsBuild="true">
+    <Exec Command="emcc --version" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
-    </RunWithEmSdkEnv>
+    </Exec>
 
     <!-- we want to get the first line from the output, which has the version.
          Rest of the lines are the license -->
