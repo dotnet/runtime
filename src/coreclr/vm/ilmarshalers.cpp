@@ -2146,14 +2146,31 @@ void ILLayoutClassPtrMarshalerBase::EmitConvertSpaceCLRToNative(ILCodeStream* ps
 
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
+
+    ILCodeLabel* pTypeMismatchedLabel = pslILEmit->NewCodeLabel();
+    bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, pTypeMismatchedLabel);
+    DWORD sizeLocal = pslILEmit->NewLocal(LocalDesc(ELEMENT_TYPE_I4));
+
     pslILEmit->EmitLDC(uNativeSize);
+    if (emittedTypeCheck)
+    {
+        ILCodeLabel* pHaveSizeLabel = pslILEmit->NewCodeLabel();
+        pslILEmit->EmitBR(pHaveSizeLabel);
+        pslILEmit->EmitLabel(pTypeMismatchedLabel);
+        EmitLoadManagedValue(pslILEmit);
+        pslILEmit->EmitCALL(METHOD__OBJECT__GET_TYPE, 1, 1);
+        pslILEmit->EmitCALL(METHOD__MARSHAL__SIZEOF_TYPE, 1, 1);
+        pslILEmit->EmitLabel(pHaveSizeLabel);
+    }
+    pslILEmit->EmitSTLOC(sizeLocal);
+    pslILEmit->EmitLDLOC(sizeLocal);
     pslILEmit->EmitCALL(METHOD__MARSHAL__ALLOC_CO_TASK_MEM, 1, 1);
     pslILEmit->EmitDUP();           // for INITBLK
     EmitStoreNativeValue(pslILEmit);
 
     // initialize local block we just allocated
     pslILEmit->EmitLDC(0);
-    pslILEmit->EmitLDC(uNativeSize);
+    pslILEmit->EmitLDLOC(sizeLocal);
     pslILEmit->EmitINITBLK();
 
     pslILEmit->EmitLabel(pNullRefLabel);
@@ -2178,14 +2195,31 @@ void ILLayoutClassPtrMarshalerBase::EmitConvertSpaceCLRToNativeTemp(ILCodeStream
         EmitLoadManagedValue(pslILEmit);
         pslILEmit->EmitBRFALSE(pNullRefLabel);
 
+        ILCodeLabel* pTypeMismatchedLabel = pslILEmit->NewCodeLabel();
+        bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, pTypeMismatchedLabel);
+        DWORD sizeLocal = pslILEmit->NewLocal(LocalDesc(ELEMENT_TYPE_I4));
+
         pslILEmit->EmitLDC(uNativeSize);
+        if (emittedTypeCheck)
+        {
+            ILCodeLabel* pHaveSizeLabel = pslILEmit->NewCodeLabel();
+            pslILEmit->EmitBR(pHaveSizeLabel);
+            pslILEmit->EmitLabel(pTypeMismatchedLabel);
+            EmitLoadManagedValue(pslILEmit);
+            pslILEmit->EmitCALL(METHOD__OBJECT__GET_TYPE, 1, 1);
+            pslILEmit->EmitCALL(METHOD__MARSHAL__SIZEOF_TYPE, 1, 1);
+            pslILEmit->EmitLabel(pHaveSizeLabel);
+        }
+        pslILEmit->EmitSTLOC(sizeLocal);
+        pslILEmit->EmitLDLOC(sizeLocal);
+
         pslILEmit->EmitLOCALLOC();
         pslILEmit->EmitDUP();           // for INITBLK
         EmitStoreNativeValue(pslILEmit);
 
         // initialize local block we just allocated
         pslILEmit->EmitLDC(0);
-        pslILEmit->EmitLDC(uNativeSize);
+        pslILEmit->EmitLDLOC(sizeLocal);
         pslILEmit->EmitINITBLK();
 
         pslILEmit->EmitLabel(pNullRefLabel);
