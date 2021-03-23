@@ -6524,7 +6524,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         // Otherwise we're in an inlined pinvoke late bound MD
         //
-        INDEBUG(Thread *pThread = GetThread());
+        INDEBUG(Thread *pThread = GetThreaNotOk());
         {
             _ASSERTE(pMD->ShouldSuppressGCTransition()
                 || pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());

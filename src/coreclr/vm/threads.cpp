@@ -406,7 +406,7 @@ DWORD Thread::JoinEx(DWORD timeout, WaitMode mode)
 {
     CONTRACTL {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -593,7 +593,7 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -635,7 +635,7 @@ void DeleteThread(Thread* pThread)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -681,7 +681,7 @@ Thread* SetupThread()
 {
     CONTRACTL {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -867,7 +867,7 @@ Thread* SetupUnstartedThread(BOOL bRequiresTSL)
 {
     CONTRACTL {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -1348,7 +1348,7 @@ Thread::Thread()
 {
     CONTRACTL {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -1612,7 +1612,7 @@ BOOL Thread::InitThread()
 {
     CONTRACTL {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -2336,7 +2336,7 @@ int Thread::IncExternalCount()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -2367,7 +2367,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -2535,7 +2535,7 @@ Thread::~Thread()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -2824,7 +2824,7 @@ void Thread::CleanupCOMState()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -2871,7 +2871,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -4289,7 +4289,7 @@ void Thread::SetExposedObject(OBJECTREF exposed)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -5230,7 +5230,7 @@ void ThreadStore::AddThread(Thread *newThread, BOOL bRequiresTSL)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -7151,7 +7151,7 @@ void Thread::InitContext()
 {
     CONTRACTL {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -7165,7 +7165,7 @@ void Thread::ClearContext()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 

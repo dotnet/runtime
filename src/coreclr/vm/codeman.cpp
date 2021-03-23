@@ -953,7 +953,7 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
 
     if (!pThread)
         return ScanNoReaderLock;

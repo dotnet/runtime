@@ -1610,9 +1610,7 @@ void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
 {
     STANDARD_VM_CONTRACT;
 
-    Thread* pThread = GetThread();
-    _ASSERTE(pThread);
-
+    Thread* pThread = GetThreaNotOk();
     if(state == Thread::AS_InSTA)
     {
         Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InSTA);
@@ -3548,7 +3546,7 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=T
     CONTRACTL
     {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
     }
@@ -3602,7 +3600,7 @@ LPCWSTR AppDomain::GetFriendlyName(BOOL fDebuggerCares/*=TRUE*/)
     CONTRACT (LPCWSTR)
     {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -3633,7 +3631,7 @@ LPCWSTR AppDomain::GetFriendlyNameForDebugger()
     CONTRACT (LPCWSTR)
     {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
         POSTCONDITION(CheckPointer(RETVAL));
     }
@@ -4299,7 +4297,7 @@ void AppDomain::RaiseExitProcessEvent()
     STATIC_CONTRACT_GC_TRIGGERS;
 
     // Only finalizer thread during shutdown can call this function.
-    _ASSERTE ((g_fEEShutDown&ShutDown_Finalize1) && GetThread() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE ((g_fEEShutDown&ShutDown_Finalize1) && GetThreadNULLOk() == FinalizerThread::GetFinalizerThread());
 
     _ASSERTE (GetThreaNotOk()->PreemptiveGCDisabled());
 
@@ -4536,7 +4534,7 @@ void AppDomain::ExceptionUnwind(Frame *pFrame)
     CONTRACTL_END;
 
     LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind for %8.8x\n", pFrame));
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     _ASSERTE(pThread);
 
     LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind: not first transition or abort\n"));

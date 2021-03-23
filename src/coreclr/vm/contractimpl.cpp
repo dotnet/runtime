@@ -63,8 +63,8 @@ UINT32 TypeIDMap::LookupTypeID(PTR_MethodTable pMT)
 {
     CONTRACTL {
         NOTHROW;
-        PRECONDITION(CheckPointer(GetThread()));
-        if (GetThreaNotOk()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
+        PRECONDITION(CheckPointer(GetThreadNULLOk()));
+        if (GetThreadNULLOk()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
     } CONTRACTL_END;
 
     UINT32 id = (UINT32) m_mtMap.LookupValue((UPTR)dac_cast<TADDR>(pMT), 0);
@@ -79,8 +79,8 @@ PTR_MethodTable TypeIDMap::LookupType(UINT32 id)
 {
     CONTRACTL {
         NOTHROW;
-        PRECONDITION(CheckPointer(GetThread()));
-        if (GetThreaNotOk()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
+        PRECONDITION(CheckPointer(GetThreadNULLOk()));
+        if (GetThreadNULLOk()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
         PRECONDITION(id <= TypeIDProvider::MAX_TYPE_ID);
     } CONTRACTL_END;
 

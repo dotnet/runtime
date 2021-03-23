@@ -1559,7 +1559,7 @@ static void RunMainPre()
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(GetThread() != 0);
+    _ASSERTE(GetThreadNULLOk() != 0);
     g_fWeControlLifetime = TRUE;
 }
 
@@ -1571,7 +1571,7 @@ static void RunMainPost()
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(GetThread()));
+        PRECONDITION(CheckPointer(GetThreadNULLOk()));
     }
     CONTRACTL_END
 
@@ -1627,7 +1627,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
     BEGIN_ENTRYPOINT_THROWS;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
     MethodDesc *pMeth;
     {
         // This thread looks like it wandered in -- but actually we rely on it to keep the process alive.

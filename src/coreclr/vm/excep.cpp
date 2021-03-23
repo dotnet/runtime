@@ -551,10 +551,10 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         PRECONDITION(IsProtectedByGCFrame(pInnerException));
         PRECONDITION(IsProtectedByGCFrame(pInitException));
         PRECONDITION(IsProtectedByGCFrame(pThrowable));
-        PRECONDITION(CheckPointer(GetThread()));
+        PRECONDITION(CheckPointer(GetThreadNULLOk()));
     } CONTRACTL_END;
 
-    Thread *pThread  = GetThread();
+    Thread *pThread  = GetThreadNULLOk();
     *pThrowable = NULL;
 
     // This will make sure to put the thread back to its original state if something
@@ -2631,7 +2631,7 @@ LONG RaiseExceptionFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
     if (1 == pParam->isRethrown)
     {
         // need to reset the EH info back to the original thrown exception
-        FixupOnRethrow(GetThread(), ep);
+        FixupOnRethrow(GetThreaNotOk(), ep);
 #ifdef FEATURE_EH_FUNCLETS
         // only do this once
         pParam->isRethrown++;
@@ -2707,7 +2707,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     param.isRethrown = rethrow ? 1 : 0; // normalize because we use it as a count in RaiseExceptionFilter
     param.throwable = throwable;
     param.fForStackOverflow = fForStackOverflow;
-    param.pThread = GetThread();
+    param.pThread = GetThreaNotOk();
 
     _ASSERTE(param.pThread);
     param.pExState = param.pThread->GetExceptionState();
@@ -2974,7 +2974,7 @@ void FreeExceptionData(ExceptionData *pedata)
     // <TODO>@NICE: At one point, we had the comment:
     //     (DM) Remove this when shutdown works better.</TODO>
     // This test may no longer be necessary.  Remove at own peril.
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     if (!pThread)
         return;
 
@@ -3183,7 +3183,7 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame)
     LOG((LF_EH, LL_INFO1000, "COMPlusCooprativeTransitionHandler unwinding\n"));
 
     {
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreaNotOk();
 
     // Restore us to cooperative gc mode.
         GCX_COOP();
@@ -3383,7 +3383,7 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
     }
 
 #ifndef TARGET_UNIX // Watson is supported on Windows only
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     _ASSERTE(pThread);
 
     if (pThread && (currentIP != 0))
@@ -3499,7 +3499,7 @@ BOOL IsAsyncThreadException(OBJECTREF *pThrowable) {
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_FORBID_FAULT;
 
-    if (  (GetThread() && GetThreaNotOk()->IsRudeAbort() && GetThreaNotOk()->IsRudeAbortInitiated())
+    if (  (GetThreadNULLOk() && GetThreadNULLOk()->IsRudeAbort() && GetThreadNULLOk()->IsRudeAbortInitiated())
         ||IsExceptionOfType(kThreadAbortException, pThrowable)
         ||IsExceptionOfType(kThreadInterruptedException, pThrowable)) {
         return TRUE;
@@ -3519,7 +3519,7 @@ BOOL IsUncatchable(OBJECTREF *pThrowable)
 
     _ASSERTE(pThrowable != NULL);
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
 
     if (pThread)
     {
@@ -3982,7 +3982,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
             }
             else
             {
-                g_pDebugInterface->LaunchDebuggerForUser(GetThread(), pExceptionInfo, FALSE, FALSE);
+                g_pDebugInterface->LaunchDebuggerForUser(GetThreadNULLOk(), pExceptionInfo, FALSE, FALSE);
             }
 
             return EXCEPTION_CONTINUE_SEARCH;
@@ -4203,8 +4203,7 @@ bool CheckThreadExceptionStateForInterception()
 {
     LIMITED_METHOD_CONTRACT;
 
-    Thread* pThread = GetThread();
-
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         return false;
@@ -4249,7 +4248,7 @@ BOOL ExceptionIsAlwaysSwallowed(EXCEPTION_POINTERS *pExceptionInfo)
     if (IsComPlusException(pExceptionInfo->ExceptionRecord))
     {
         // Our exception code.  Get the current exception from the thread.
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (pThread)
         {
             OBJECTREF throwable;
@@ -4508,7 +4507,7 @@ BOOL UpdateCurrentThrowable(PEXCEPTION_RECORD pExceptionRecord)
 
     BOOL useLastThrownObject = FALSE;
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreaNotOk();
 
     // GetThrowable needs cooperative.
     GCX_COOP();
@@ -4614,7 +4613,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
     }
 
     // We don't do anything when this is called from an unmanaged thread.
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
 
 #ifdef _DEBUG
     static bool bBreakOnUncaught = false;
@@ -5046,8 +5045,8 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-    Thread* pThread = GetThread();
-    if (pThread && !GetThreaNotOk()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+    Thread* pThread = GetThreadNULLOk();
+    if (pThread && !pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
     {
         // Invoke the UEF worker to perform unhandled exception processing
         ret = InternalUnhandledExceptionFilter_Worker (pExceptionInfo);
@@ -5105,7 +5104,7 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
     // various runtimes again.
     //
     // Thus, check if this UEF has already been invoked in context of this thread and runtime and if so, dont invoke it again.
-    if (GetThread() && (GetThreaNotOk()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException)))
+    if (GetThreadNULLOk() && (GetThreadNULLOk()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException)))
     {
         LOG((LF_EH, LL_INFO10, "Exiting COMUnhandledExceptionFilter since we have already done UE processing for this thread!\n"));
         return retVal;
@@ -5115,7 +5114,7 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
     retVal = InternalUnhandledExceptionFilter(pExceptionInfo);
 
     // If thread object exists, mark that this thread has done unhandled exception processing
-    if (GetThread())
+    if (GetThreadNULLOk())
     {
         LOG((LF_EH, LL_INFO100, "COMUnhandledExceptionFilter: setting TSNC_ProcessedUnhandledException\n"));
         GetThreaNotOk()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
@@ -5257,7 +5256,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
     int suppressSelectiveBreak = false; // to filter for the case where breakOnUncaught == "2"
 #endif
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
 
     //     The following reduces a window for a race during shutdown.
     if (!pThread)
@@ -5444,7 +5443,7 @@ BOOL NotifyAppDomainsOfUnhandledException(
 
     LOG((LF_EH, LL_INFO10, "In NotifyAppDomainsOfUnhandledException\n"));
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
 
     //     The following reduces a window for a race during shutdown.
     if (!pThread)
@@ -5595,8 +5594,7 @@ static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
 
     _ASSERTE(!g_fNoExceptions);
 
-    Thread* pThread = GetThread();
-    _ASSERTE(pThread);
+    Thread* pThread = GetThreaNotOk();
 
 #ifdef _DEBUG
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException) &&
@@ -6103,7 +6101,7 @@ LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress)
     // Initialize the return address
     LPVOID pRetAddress = 0;
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreaNotOk();
 
     if ((!pThread->IsAbortRequested()) ||         // if no abort has been requested
         (!pThread->IsRudeAbort() &&
@@ -6313,7 +6311,7 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThread() == pThread);
+    _ASSERTE(GetThreadNULLOk() == pThread);
 
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
 
@@ -6477,7 +6475,7 @@ bool IsGcMarker(CONTEXT* pContext, EXCEPTION_RECORD *pExceptionRecord)
         //
         // Note these "fake" AVs will be reported by the kernel as reads from
         // address 0xF...F so we also use that as a screen.
-        Thread* pThread = GetThread();
+        Thread* pThread = GetThreadNULLOk();
         if (exceptionCode == STATUS_ACCESS_VIOLATION &&
             GCStress<cfg_instr>::IsEnabled() &&
             pExceptionRecord->ExceptionInformation[0] == 0 &&
@@ -6612,7 +6610,7 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
 {
     LIMITED_METHOD_CONTRACT;
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreadNULLOk();
 
     // We may not have a managed thread object. Example is an AV on the helper thread.
     // (perhaps during StubManager::IsStub)
@@ -6811,7 +6809,7 @@ AdjustContextForJITHelpers(
         // want any explicit frames active below the resumption SP.
         //
         // Question: Why do we unwind before determining whether we will handle the exception or not?
-        UnwindFrameChain(GetThread(), (Frame*)GetSP(pContext));
+        UnwindFrameChain(GetThreaNotOk(), (Frame*)GetSP(pContext));
         fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionRecord,pContext,
                                NULL, // establisher frame (x86 only)
                                NULL  // pThread           (x86 only)
@@ -7138,7 +7136,7 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     {
         MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
 
-        pThread = GetThread();
+        pThread = GetThreadNULLOk();
 
         //
         // Since we are in an OOM situation, we test the thread object before logging since if the
@@ -7279,7 +7277,7 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
         //
         // @TODO: I'd love a way to call into the debugger with GCX_NOTRIGGER still in scope, and force them to make
         // the choice to break the no-trigger region after taking all necessary precautions.
-        if (IsDebuggerFault(pExceptionRecord, pExceptionInfo->ContextRecord, pExceptionRecord->ExceptionCode, GetThread()))
+        if (IsDebuggerFault(pExceptionRecord, pExceptionInfo->ContextRecord, pExceptionRecord->ExceptionCode, GetThreadNULLOk()))
         {
             return EXCEPTION_CONTINUE_EXECUTION;
         }
@@ -7424,7 +7422,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
 #ifdef TARGET_X86
-    CPFH_AdjustContextForThreadSuspensionRace(pContext, GetThread());
+    CPFH_AdjustContextForThreadSuspensionRace(pContext, GetThreaNotOk());
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK && !TARGET_UNIX
 
@@ -7460,7 +7458,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
             // time, then skip the check for whether or not the AV is in our impl.
             // AVs are ok on the Helper thread (for which there is no pThread object,
             // and so the AVInRuntime holder doesn't work.
-            Thread *pThread = GetThread();
+            Thread *pThread = GetThreadNULLOk();
 
             bool fAVisOk =
                 (IsDbgHelperSpecialThread() || IsETWRundownSpecialThread() ||
@@ -7893,7 +7891,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     // exceptions on this thread.  Indeed, even checking to see if the faulting
     // address is in JITted code is problematic if we have no Thread object, since
     // this thread will bypass all our locks.
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
 
     if (pThread)
     {
@@ -8085,7 +8083,7 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreaNotOk();
 
     GCX_COOP();
 
@@ -8256,7 +8254,7 @@ LONG NotifyOfCHFFilterWrapper(
     // 1) The thread object has been set up.
     // 2) The thread has an exception on it.
     // 3) The exception is the same as the one this filter is called on.
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     if ( (pThread == NULL)  ||
          (pThread->GetExceptionState()->GetContextRecord() == NULL)  ||
          (GetSP(pThread->GetExceptionState()->GetContextRecord()) != GetSP(pExceptionInfo->ContextRecord) ) )
@@ -8664,9 +8662,7 @@ void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
 
     LIMITED_METHOD_CONTRACT;
 
-    Thread *pCurThread = GetThread();
-    _ASSERTE(pCurThread);
-
+    Thread *pCurThread = GetThreaNotOk();
     if (pCurThread->GetExceptionState()->IsExceptionInProgress())
     {
         if (!fIsUnwinding)
@@ -8739,7 +8735,7 @@ BOOL SetupWatsonBucketsForNonPreallocatedExceptions(OBJECTREF oThrowable /* = NU
     // By default, assume we didnt get the buckets
     BOOL fSetupWatsonBuckets = FALSE;
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreaNotOk();
 
     struct
     {
@@ -8857,7 +8853,7 @@ BOOL SetupWatsonBucketsForEscapingPreallocatedExceptions()
     BOOL fSetupWatsonBuckets = FALSE;
     PTR_EHWatsonBucketTracker pUEWatsonBucketTracker;
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreaNotOk();
 
     // If the exception going unhandled is preallocated, then capture the Watson buckets in the UE Watson
     // bucket tracker provided its not already populated.
@@ -8982,7 +8978,7 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
     }
     CONTRACTL_END;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
     PTR_EHWatsonBucketTracker pCurWatsonBucketTracker = NULL;
     ThreadExceptionState *pExState = pThread->GetExceptionState();
@@ -9368,7 +9364,7 @@ doValidation:
         {
             if (fCaptureBucketsIfNotPresent)
             {
-                pWBTracker->CaptureUnhandledInfoForWatson(TypeOfReportedError::UnhandledException, GetThread(), &gc.oPreAllocThrowable);
+                pWBTracker->CaptureUnhandledInfoForWatson(TypeOfReportedError::UnhandledException, GetThreadNULLOk(), &gc.oPreAllocThrowable);
 
                 // Check if we have the buckets now
                 if (pWBTracker->RetrieveWatsonBuckets() != NULL)
@@ -9447,7 +9443,7 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
     GCPROTECT_BEGIN(gc);
     gc.refException = refException;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
     // If we dont already have the bucketing details for the exception
     // being thrown, then get them.
@@ -9696,7 +9692,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
     }
     CONTRACTL_END;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
     // If we dont already have the bucketing details for the exception
     // being thrown, then get them.
@@ -10321,7 +10317,7 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
     ZeroMemory(&gc, sizeof(gc));
     GCPROTECT_BEGIN(gc);
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreaNotOk();
 
     // Get the current exception state of the thread
     ThreadExceptionState* pCurExState = pThread->GetExceptionState();
@@ -11124,7 +11120,7 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
     }
     CONTRACTL_END;
 
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = GetThreadNULLOk();
     _ASSERTE(pCurThread != NULL);
 
     // Get the current AppDomain

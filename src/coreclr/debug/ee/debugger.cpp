@@ -14815,7 +14815,7 @@ HRESULT Debugger::UpdateAppDomainEntryInIPC(AppDomain *pAppDomain)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThread()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 

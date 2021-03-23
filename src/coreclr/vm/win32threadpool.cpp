@@ -990,7 +990,7 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
     CONTRACTL
     {
         NOTHROW;
-        if (GetThread()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1075,7 +1075,7 @@ void ThreadpoolMgr::MaybeAddWorkingWorker()
     CONTRACTL
     {
         NOTHROW;
-        if (GetThread()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1688,7 +1688,7 @@ void ThreadpoolMgr::RecycleMemory(LPVOID mem, enum MemType memType)
 Thread* ThreadpoolMgr::CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpArgs, BOOL *pIsCLRThread)
 {
     STATIC_CONTRACT_NOTHROW;
-    if (GetThread()) { STATIC_CONTRACT_GC_TRIGGERS;} else {DISABLED(STATIC_CONTRACT_GC_NOTRIGGER);}
+    if (GetThreadNULLOk()) { STATIC_CONTRACT_GC_TRIGGERS;} else {DISABLED(STATIC_CONTRACT_GC_NOTRIGGER);}
     STATIC_CONTRACT_MODE_ANY;
     /* cannot use contract because of SEH
     CONTRACTL
@@ -1770,7 +1770,7 @@ BOOL ThreadpoolMgr::CreateWorkerThread()
 {
     CONTRACTL
     {
-        if (GetThread()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         NOTHROW;
         MODE_ANY;   // We may try to add a worker thread while queuing a work item thru an fcall
     }
@@ -2164,7 +2164,7 @@ BOOL ThreadpoolMgr::RegisterWaitForSingleObject(PHANDLE phNewWaitObject,
     {
         THROWS;
         MODE_ANY;
-        if (GetThread()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -2860,7 +2860,7 @@ void ThreadpoolMgr::DeleteWait(WaitInfo* waitInfo)
     {
         if (waitInfo->ExternalEventSafeHandle != NULL) { THROWS;} else { NOTHROW; }
         MODE_ANY;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -2905,7 +2905,7 @@ BOOL ThreadpoolMgr::UnregisterWaitEx(HANDLE hWaitObject,HANDLE Event)
     CONTRACTL
     {
         THROWS; //NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3070,7 +3070,7 @@ BOOL ThreadpoolMgr::BindIoCompletionCallback(HANDLE FileHandle,
     CONTRACTL
     {
         THROWS;     // EnsureInitialized can throw
-        if (GetThread()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3114,7 +3114,7 @@ BOOL ThreadpoolMgr::CreateCompletionPortThread(LPVOID lpArgs)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThread()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3153,8 +3153,8 @@ DWORD WINAPI ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
     CONTRACTL
     {
         THROWS;
-        if (GetThread()) { MODE_PREEMPTIVE;} else { DISABLED(MODE_ANY);}
-        if (GetThread()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) { MODE_PREEMPTIVE;} else { DISABLED(MODE_ANY);}
+        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -3713,7 +3713,7 @@ void ThreadpoolMgr::GrowCompletionPortThreadpoolIfNeeded()
 {
     CONTRACTL
     {
-        if (GetThread()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         NOTHROW;
         MODE_ANY;
     }
@@ -4326,7 +4326,7 @@ BOOL ThreadpoolMgr::CreateTimerQueueTimer(PHANDLE phNewTimer,
     CONTRACTL
     {
         THROWS;     // EnsureInitialized, CreateAutoEvent can throw
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}  // There can be calls thru ICorThreadpool
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}  // There can be calls thru ICorThreadpool
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
     }
@@ -4561,8 +4561,8 @@ DWORD ThreadpoolMgr::FireTimers()
     CONTRACTL
     {
         THROWS;     // QueueUserWorkItem can throw
-        if (GetThread()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-        if (GetThread()) { MODE_PREEMPTIVE;} else { DISABLED(MODE_ANY);}
+        if (GetThreadNULLOk()) { GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) { MODE_PREEMPTIVE;} else { DISABLED(MODE_ANY);}
     }
     CONTRACTL_END;
 

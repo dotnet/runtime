@@ -1226,7 +1226,7 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
     } CONTRACTL_END;
 
     int stompWBCompleteActions = SWB_PASS;

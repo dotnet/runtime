@@ -28,7 +28,7 @@ class SimpleRWLock;
 class Crst;
 class Thread;
 
-Thread* GetThreadNULLOk();
+EXTERN_C Thread* STDCALL GetThreadNULLOk();
 
 // --------------------------------------------------------------------------------
 // PEImage is a PE file loaded by our "simulated LoadLibrary" mechanism.  A PEImage

@@ -3150,7 +3150,7 @@ void Module::StartUnload()
 
     if (g_IBCLogger.InstrEnabled())
     {
-        Thread * pThread = GetThread();
+        Thread * pThread = GetThreaNotOk();
         ThreadLocalIBCInfo* pInfo = pThread->GetIBCInfo();
 
         // Acquire the Crst lock before creating the IBCLoggingDisabler object.

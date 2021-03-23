@@ -288,7 +288,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     Thread * pThread;
     BOOL fToggle;
 
-    pThread = GetThread();
+    pThread = GetThreadNULLOk();
     fToggle = ((m_dwFlags & (CRST_UNSAFE_ANYMODE | CRST_UNSAFE_COOPGC | CRST_GC_NOTRIGGER_WHEN_TAKEN)) == 0)   // condition normally false
               && pThread &&  pThread->PreemptiveGCDisabled();
 
@@ -349,7 +349,7 @@ void CrstBase::Leave()
 #endif //_DEBUG
 
 #if defined(_DEBUG)
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreadNULLOk();
 #endif
 
     LeaveCriticalSection(&m_criticalsection);
@@ -702,7 +702,7 @@ BOOL CrstBase::IsSafeToTake()
     // coordinated with the GC.
     Thread * pThread;
     
-    pThread = GetThread();
+    pThread = GetThreadNULLOk();
 
     _ASSERTE(pThread == NULL ||
              (pThread->PreemptiveGCDisabled() == ((m_dwFlags & CRST_UNSAFE_COOPGC) != 0)) ||
@@ -789,8 +789,7 @@ CrstBase::CrstAndForbidSuspendForDebuggerHolder::CrstAndForbidSuspendForDebugger
     // Reentrant locks are currently not supported
     _ASSERTE((pCrst->m_dwFlags & CRST_REENTRANCY) == 0);
 
-    Thread *pThread = GetThread();
-    _ASSERTE(pThread != nullptr);
+    Thread *pThread = GetThreaNotOk();
     if (pThread->IsInForbidSuspendForDebuggerRegion())
     {
         AcquireLock(pCrst);

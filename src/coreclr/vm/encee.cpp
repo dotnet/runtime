@@ -531,8 +531,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
     // Setup a frame so that has context for the exception
     // so that gc can crawl the stack and do the right thing.
     _ASSERTE(pOrigContext);
-    Thread *pCurThread = GetThread();
-    _ASSERTE(pCurThread);
+    Thread *pCurThread = GetThreaNotOk();
     FrameWithCookie<ResumableFrame> resFrame(pOrigContext);
     resFrame.Push(pCurThread);
 
@@ -800,9 +799,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // share any code with the implementation of debugger SetIP, despite the similarities.
     LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction: Resume at EIP=0x%x\n", pNewCodeInfo->GetCodeAddress()));
 
-    Thread *pCurThread = GetThread();
-    _ASSERTE(pCurThread);
-
+    Thread *pCurThread = GetThreaNotOk();
     pCurThread->SetFilterContext(pContext);
     SetIP(pContext, pNewCodeInfo->GetCodeAddress());
 

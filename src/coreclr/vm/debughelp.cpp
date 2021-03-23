@@ -700,18 +700,6 @@ PCCOR_SIGNATURE RawSigForMethodDesc(MethodDesc* pMD)
     return(pMD->GetSig());
 }
 
-Thread * CurrentThreadInfo ()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    return GetThread ();
-}
-
 SyncBlock *GetSyncBlockForObject(UINT_PTR obj)
 {
     CONTRACTL
@@ -932,7 +920,7 @@ void PrintStackTrace()
 
     WszOutputDebugString(W("***************************************************\n"));
     PrintCallbackData cbd = {0};
-    GetThread()->StackWalkFrames(PrintStackTraceCallback, &cbd, ALLOW_ASYNC_STACK_WALK, 0);
+    GetThreaNotOk()->StackWalkFrames(PrintStackTraceCallback, &cbd, ALLOW_ASYNC_STACK_WALK, 0);
 }
 
 void PrintStackTraceToStdout()
