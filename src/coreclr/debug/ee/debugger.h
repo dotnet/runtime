@@ -2351,7 +2351,6 @@ public:
         if (g_fProcessDetach)
             return true;
 
-        BEGIN_GETTHREAD_ALLOWED;
         if (g_pEEInterface->GetThread())
         {
             return (GetThreadIdHelper(g_pEEInterface->GetThread()) == m_mutexOwner);
@@ -2360,7 +2359,6 @@ public:
         {
             return (GetCurrentThreadId() == m_mutexOwner);
         }
-        END_GETTHREAD_ALLOWED;
     }
 #endif // _DEBUG_IMPL
 

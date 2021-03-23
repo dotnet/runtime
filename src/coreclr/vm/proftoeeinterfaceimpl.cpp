@@ -8985,9 +8985,9 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
                                        "**PROF: GetObjectGeneration 0x%p.\n",
                                        objectId));
 
-    BEGIN_GETTHREAD_ALLOWED;
+    
     _ASSERTE((GetThread() == NULL) || (GetThread()->PreemptiveGCDisabled()));
-    END_GETTHREAD_ALLOWED;
+    
 
     // Announce we are using the generation table now
     CounterHolder genTableLock(&s_generationTableLock);

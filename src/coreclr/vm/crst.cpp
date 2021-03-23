@@ -288,7 +288,6 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     Thread * pThread;
     BOOL fToggle;
 
-    BEGIN_GETTHREAD_ALLOWED;
     pThread = GetThread();
     fToggle = ((m_dwFlags & (CRST_UNSAFE_ANYMODE | CRST_UNSAFE_COOPGC | CRST_GC_NOTRIGGER_WHEN_TAKEN)) == 0)   // condition normally false
               && pThread &&  pThread->PreemptiveGCDisabled();
@@ -296,7 +295,6 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
     if (fToggle) {
         pThread->EnablePreemptiveGC();
     }
-    END_GETTHREAD_ALLOWED;
 
 #ifdef _DEBUG
     PreEnter ();
@@ -329,9 +327,9 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 
     if (fToggle)
     {
-        BEGIN_GETTHREAD_ALLOWED;
+        
         pThread->DisablePreemptiveGC();
-        END_GETTHREAD_ALLOWED;
+        
     }
 }
 
@@ -703,14 +701,14 @@ BOOL CrstBase::IsSafeToTake()
     // If there is no thread object, we ignore the check since this thread isn't
     // coordinated with the GC.
     Thread * pThread;
-    BEGIN_GETTHREAD_ALLOWED;
+    
     pThread = GetThread();
 
     _ASSERTE(pThread == NULL ||
              (pThread->PreemptiveGCDisabled() == ((m_dwFlags & CRST_UNSAFE_COOPGC) != 0)) ||
              ((m_dwFlags & (CRST_UNSAFE_ANYMODE | CRST_GC_NOTRIGGER_WHEN_TAKEN)) != 0) ||
              (GCHeapUtilities::IsGCInProgress() && pThread == ThreadSuspend::GetSuspensionThread()));
-    END_GETTHREAD_ALLOWED;
+    
 
     if (m_holderthreadid.IsCurrentThread())
     {

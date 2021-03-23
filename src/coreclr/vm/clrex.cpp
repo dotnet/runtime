@@ -814,7 +814,7 @@ void CLRException::HandlerState::CleanupTry()
 
     if (m_pThread != NULL)
     {
-        BEGIN_GETTHREAD_ALLOWED;
+        
         // If there is no frame to unwind, UnwindFrameChain call is just an expensive NOP
         // due to setting up and tear down of EH records. So we avoid it if we can.
         if (m_pThread->GetFrame() < m_pFrame)
@@ -827,7 +827,7 @@ void CLRException::HandlerState::CleanupTry()
             else
                 m_pThread->EnablePreemptiveGC();
         }
-        END_GETTHREAD_ALLOWED;
+        
     }
 
     // Make sure to call the base class's CleanupTry so it can do whatever it wants to do.

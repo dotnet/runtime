@@ -366,10 +366,10 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     //
     Thread * pThread;
     bool fIsCooperative;
-    BEGIN_GETTHREAD_ALLOWED;
+    
     pThread = g_pEEInterface->GetThread();
     fIsCooperative = (pThread != NULL) && (pThread->PreemptiveGCDisabled());
-    END_GETTHREAD_ALLOWED;
+    
     if (m_fShutdownMode && !fIsCooperative)
     {
         // The big fear is that some other random thread will take the debugger-lock and then block on something else,

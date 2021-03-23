@@ -32,7 +32,6 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
     // Many of the checks below result in calls to GetThread()
     // that work just fine if GetThread() returns NULL, so temporarily
     // allow such calls.
-    BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
     m_pThread = GetThread();
     m_pClrDebugState = GetClrDebugState();
 
@@ -199,12 +198,8 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
         default:
             UNREACHABLE();
     }
-    END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
 
     // EE Thread-required check
-    // NOTE: The following must NOT be inside BEGIN/END_GETTHREAD_ALLOWED,
-    // as the change to m_pClrDebugState->m_allowGetThread below would be
-    // overwritten by END_GETTHREAD_ALLOWED.
     switch (testmask & EE_THREAD_Mask)
     {
         case EE_THREAD_Required:
@@ -220,28 +215,10 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
                                     m_contractStackRecord.m_lineNum
                                    );
                 }
-                else if (!m_pClrDebugState->IsGetThreadAllowed())
-                {
-                    // In general, it's unsafe for an EE_THREAD_NOT_REQUIRED function to
-                    // call an EE_THREAD_REQUIRED function. In cases where it is safe,
-                    // you may wrap the call to the EE_THREAD_REQUIRED function inside a
-                    // BEGIN/END_GETTHREAD_ALLOWED block, but you may only do so if the
-                    // case where GetThread() == NULL is clearly handled in a way that
-                    // prevents entry into the BEGIN/END_GETTHREAD_ALLOWED block.
-                    CONTRACT_ASSERT("EE_THREAD_REQUIRED encountered in an EE_THREAD_NOT_REQUIRED scope, without an intervening BEGIN/END_GETTHREAD_ALLOWED block.",
-                                    Contract::EE_THREAD_Required,
-                                    Contract::EE_THREAD_Mask,
-                                    m_contractStackRecord.m_szFunction,
-                                    m_contractStackRecord.m_szFile,
-                                    m_contractStackRecord.m_lineNum
-                                   );
-                }
             }
-            m_pClrDebugState->SetGetThreadAllowed();
             break;
 
         case EE_THREAD_Not_Required:
-            m_pClrDebugState->ResetGetThreadAllowed();
             break;
 
         case EE_THREAD_Disabled:

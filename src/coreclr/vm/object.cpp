@@ -464,7 +464,6 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
 
 #ifdef _DEBUG
     {
-        BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
         Thread *pThread = GetThread();
 
         if (pThread != NULL && !(pThread->PreemptiveGCDisabled()))
@@ -480,7 +479,6 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
             if (!dbgOnly_IsSpecialEEThread() && !IsGCSpecialThread())
                 _ASSERTE(!"OBJECTREF being accessed while thread is in preemptive GC mode.");
         }
-        END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
     }
 #endif
 

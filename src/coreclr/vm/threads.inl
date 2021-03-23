@@ -32,9 +32,16 @@ __declspec(selectany) __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
 EXTERN_C __thread ThreadLocalInfo gCurrentThreadInfo;
 #endif
 
-EXTERN_C inline Thread* STDCALL GetThread()
+inline Thread* GetThreadNULLOk()
 {
     return gCurrentThreadInfo.m_pThread;
+}
+
+EXTERN_C inline Thread* STDCALL GetThread()
+{
+    Thread* pThread = gCurrentThreadInfo.m_pThread;
+
+    return pThread;
 }
 
 EXTERN_C inline AppDomain* STDCALL GetAppDomain()

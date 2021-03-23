@@ -398,9 +398,8 @@ public:
 #define CONTRACT_BITMASK_SOTOLERANT           0x1 << 3
 #define CONTRACT_BITMASK_DEBUGONLY            0x1 << 4
 #define CONTRACT_BITMASK_SONOTMAINLINE        0x1 << 5
-#define CONTRACT_BITMASK_ALLOWGETTHREAD       0x1 << 6
-#define CONTRACT_BITMASK_OK_TO_LOCK           0x1 << 7
-#define CONTRACT_BITMASK_OK_TO_RETAKE_LOCK    0x1 << 8
+#define CONTRACT_BITMASK_OK_TO_LOCK           0x1 << 6
+#define CONTRACT_BITMASK_OK_TO_RETAKE_LOCK    0x1 << 7
 
 
 #define CONTRACT_BITMASK_IS_SET(whichbit)    ((m_flags & (whichbit)) != 0)
@@ -441,7 +440,6 @@ public:
         m_flags             = CONTRACT_BITMASK_OK_TO_THROW|
                               CONTRACT_BITMASK_HOSTCALLS|
                               CONTRACT_BITMASK_SOTOLERANT|
-                              CONTRACT_BITMASK_ALLOWGETTHREAD|
                               CONTRACT_BITMASK_OK_TO_LOCK|
                               CONTRACT_BITMASK_OK_TO_RETAKE_LOCK;
 
@@ -579,30 +577,6 @@ public:
     {
         STATIC_CONTRACT_LIMITED_METHOD;
         CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_DEBUGONLY);
-    }
-
-    //--//
-    BOOL IsGetThreadAllowed()
-    {
-        return CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_ALLOWGETTHREAD);
-
-    }
-    void SetGetThreadAllowed()
-    {
-        CONTRACT_BITMASK_SET(CONTRACT_BITMASK_ALLOWGETTHREAD);
-    }
-
-
-     BOOL SetGetThreadAllowed(BOOL value)
-    {
-        BOOL prevState = CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_ALLOWGETTHREAD);
-        CONTRACT_BITMASK_UPDATE(CONTRACT_BITMASK_ALLOWGETTHREAD,value);
-        return prevState;
-    }
-
-    void ResetGetThreadAllowed()
-    {
-        CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_ALLOWGETTHREAD);
     }
 
     //--//
@@ -2106,68 +2080,6 @@ class HostNoCallHolder
     }
 #endif
 
-#ifdef ENABLE_CONTRACTS_IMPL
-
-class GetThreadAllowedHolder
-{
-    public:
-    GetThreadAllowedHolder(BOOL newState)
-        {
-        m_clrDebugState = ::GetClrDebugState();
-        m_previousState = m_clrDebugState->SetGetThreadAllowed(newState);
-        }
-
-    ~GetThreadAllowedHolder()
-        {
-        m_clrDebugState->SetGetThreadAllowed(m_previousState);
-        }
-
-private:
-    BOOL m_previousState;
-    ClrDebugState* m_clrDebugState;
-};
-
-// When in an EE_THREAD_NOT_REQUIRED contracted scope, it's expected that the
-// function does not assume an EE Thread object is available in TLS.  Either
-// GetThread() is never called, or any code path that requires a Thread
-// has another code path that deals with the absence of a Thread.  Any call to
-// to GetThread() must be bracketed with BEGIN_GETTHREAD_ALLOWED /
-// END_GETTHREAD_ALLOWED to avoid bogus asserts (the short-form
-// GetThreadNULLOk() may be used as well).  However, this is only allowed if visual
-// inspection of the call site makes it patently obvious that the function deals
-// appropriately with the GetThread() == NULL case (or that case has already been
-// dealt with and control has exited before the BEGIN_GETTHREAD_ALLOWED /
-// END_GETTHREAD_ALLOWED block.
-//
-// These use holder objects, which causes the compiler to generate EH code and prevent
-// inlining.  So try to avoid these in small, downstream functions (like inline
-// EE Thread member functions).  Use the _IN_NO_THROW_REGION variants below instead.
-
-#define BEGIN_GETTHREAD_ALLOWED                                                 \
-    {                                                                           \
-        GetThreadAllowedHolder __getThreadAllowedHolder(TRUE);                  \
-
-#define END_GETTHREAD_ALLOWED                                                   \
-    }
-
-// These are lighter-weight versions of BEGIN_GETTHREAD_ALLOWED /
-// END_GETTHREAD_ALLOWED.  These don't use holders, so be sure only to
-// use these to bracket code that won't throw exceptions
-#define BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION                                       \
-    {                                                                                       \
-        ClrDebugState * __clrDebugState = ::GetClrDebugState();                   \
-        BOOL __previousState = __clrDebugState->SetGetThreadAllowed(TRUE);      \
-
-#define END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION                                         \
-        __clrDebugState->SetGetThreadAllowed(__previousState);                  \
-    }
-
-#else // ENABLE_CONTRACTS_IMPL
-#define BEGIN_GETTHREAD_ALLOWED
-#define END_GETTHREAD_ALLOWED
-#define BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION
-#define END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION
-#endif
 
 #if defined(ENABLE_CONTRACTS_IMPL)
 

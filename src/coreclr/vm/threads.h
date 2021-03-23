@@ -527,21 +527,6 @@ struct HijackArgs;
 
 #endif // FEATURE_HIJACK
 
-//***************************************************************************
-#ifdef ENABLE_CONTRACTS_IMPL
-inline Thread* GetThreadNULLOk()
-{
-    LIMITED_METHOD_CONTRACT;
-    Thread * pThread;
-    BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
-    pThread = GetThread();
-    END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
-    return pThread;
-}
-#else
-#define GetThreadNULLOk() GetThread()
-#endif
-
 // manifest constant for waiting in the exposed classlibs
 const INT32 INFINITE_TIMEOUT = -1;
 
@@ -5247,13 +5232,9 @@ protected:
         if (m_WasCoop)
         {
             // m_WasCoop is only TRUE if we've already verified there's an EE thread.
-            BEGIN_GETTHREAD_ALLOWED;
-
             _ASSERTE(m_Thread != NULL);  // Cannot switch to cooperative with no thread
             if (!m_Thread->PreemptiveGCDisabled())
                 m_Thread->DisablePreemptiveGC();
-
-            END_GETTHREAD_ALLOWED;
         }
         else
         {
@@ -5267,10 +5248,8 @@ protected:
             // when it's TRUE, so we check it for perf.
             if (THREAD_EXISTS || m_Thread != NULL)
             {
-                BEGIN_GETTHREAD_ALLOWED;
                 if (m_Thread->PreemptiveGCDisabled())
                     m_Thread->EnablePreemptiveGC();
-                END_GETTHREAD_ALLOWED;
             }
         }
 
@@ -5303,7 +5282,6 @@ protected:
 
         if (m_Thread != NULL)
         {
-            BEGIN_GETTHREAD_ALLOWED;
             m_WasCoop = m_Thread->PreemptiveGCDisabled();
 
             if (conditional && !m_WasCoop)
@@ -5311,7 +5289,6 @@ protected:
                 m_Thread->DisablePreemptiveGC();
                 _ASSERTE(m_Thread->PreemptiveGCDisabled());
             }
-            END_GETTHREAD_ALLOWED;
         }
         else
         {
@@ -5330,15 +5307,12 @@ protected:
         m_fThreadMustExist = false;
         if (m_Thread != NULL && conditional)
         {
-            BEGIN_GETTHREAD_ALLOWED;
             GCHOLDER_CHECK_FOR_PREEMP_IN_NOTRIGGER(m_Thread);
-            END_GETTHREAD_ALLOWED;
         }
 #endif  // ENABLE_CONTRACTS_IMPL
 
         if (m_Thread != NULL)
         {
-            BEGIN_GETTHREAD_ALLOWED;
             m_WasCoop = m_Thread->PreemptiveGCDisabled();
 
             if (conditional && m_WasCoop)
@@ -5346,7 +5320,6 @@ protected:
                 m_Thread->EnablePreemptiveGC();
                 _ASSERTE(!m_Thread->PreemptiveGCDisabled());
             }
-            END_GETTHREAD_ALLOWED;
         }
         else
         {

@@ -951,7 +951,7 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
     } CONTRACTL_END;
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    BEGIN_GETTHREAD_ALLOWED;
+    
 
     Thread *pThread = GetThread();
 
@@ -966,7 +966,7 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
     if (pThread->PreemptiveGCDisabled() || (pThread == ThreadSuspend::GetSuspensionThread()))
         return ScanNoReaderLock;
 
-    END_GETTHREAD_ALLOWED;
+    
 
     return ScanReaderLock;
 #else
