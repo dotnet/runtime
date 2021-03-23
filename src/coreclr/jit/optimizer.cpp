@@ -5256,8 +5256,8 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    if (!((GenTree::OperIs(loop.lpTestOper(), GT_LT, GT_LE) && (loop.lpIterOper() == GT_ADD)) ||
-          (GenTree::OperIs(loop.lpTestOper(), GT_GT, GT_GE) && (loop.lpIterOper() == GT_SUB))))
+    if (!((GenTree::StaticOperIs(loop.lpTestOper(), GT_LT, GT_LE) && (loop.lpIterOper() == GT_ADD)) ||
+          (GenTree::StaticOperIs(loop.lpTestOper(), GT_GT, GT_GE) && (loop.lpIterOper() == GT_SUB))))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP
                 ". Loop test (%s) doesn't agree with the direction (%s) of the loop.\n",
