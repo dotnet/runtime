@@ -358,6 +358,9 @@ if(NOT DISABLE_SHARED_LIBS)
     # if components are built statically, but we're building a shared lib mono,
     # link them into the library
     target_link_libraries (monosgen-shared components_static_objects)
+  else()
+    # if components are built dynamically, link the fallback stubs into the runtime
+    target_link_libraries (monosgen-shared components_stubs_objects)
   endif()
   install(TARGETS monosgen-shared LIBRARY)
 endif()
@@ -406,6 +409,8 @@ if(NOT DISABLE_EXECUTABLES)
   target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
   if (STATIC_COMPONENTS)
     target_link_libraries(mono-sgen components_static_objects)
+  else()
+    target_link_libraries(mono-sgen components_stubs_objects)
   endif()
   if(ICU_LDFLAGS)
     set_property(TARGET mono-sgen APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")

@@ -52,10 +52,6 @@ else()
 set(metadata_platform_sources ${metadata_unix_sources})
 endif()
 
-set(component_stub_sources
-  hot_reload-stub.c 
-)
-
 set(metadata_common_sources
     appdomain.c
     domain.c
@@ -240,7 +236,7 @@ set(reloc_libdir "${CMAKE_INSTALL_LIBDIR}")
 
 set_source_files_properties(../metadata/mono-config-dirs.c PROPERTIES COMPILE_DEFINITIONS "MONO_BINDIR=\"${bindir}\";MONO_ASSEMBLIES=\"${assembliesdir}\";MONO_CFG_DIR=\"${confdir}\";MONO_RELOC_LIBDIR=\"../${reloc_libdir}\"")
 
-addprefix(metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_sgen_sources};${ilgen_sources};${component_stub_sources}")
+addprefix(metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_sgen_sources};${ilgen_sources}")
 
 set(metadata_public_headers_base
 	appdomain.h

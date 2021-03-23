@@ -7,6 +7,7 @@
 #include "mono/component/component.h"
 #include "mono/component/hot_reload.h"
 #include "mono/metadata/components.h"
+#include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error-internals.h"
 
 static void
@@ -19,6 +20,15 @@ static MonoComponentHotReload fn_table = {
 	{ &hot_reload_stub_cleanup },
 	&hot_reload_stub_apply_changes,
 };
+
+#ifdef STATIC_COMPONENTS
+MONO_COMPONENT_EXPORT_ENTRYPOINT
+MonoComponentHotReload *
+mono_component_hot_reload_init (void)
+{
+	return mono_component_hot_reload_stub_init ();
+}
+#endif
 
 MonoComponentHotReload *
 mono_component_hot_reload_stub_init (void)
@@ -36,3 +46,4 @@ hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint3
 {
 	mono_error_set_not_supported (error, "Hot reload not supported in this runtime.");
 }
+
