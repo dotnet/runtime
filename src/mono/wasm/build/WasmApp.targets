@@ -244,6 +244,26 @@
       <_EmscriptenAddPATH Include="$(EmscriptenNodeToolsPath)bin" />
       <_EmscriptenAddPATH Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))" />
     </ItemGroup>
+
+    <!-- paths with trailing slash, like:
+         c:\foo\bar\
+
+          .. will become PATH=c:\foo\bar\;c:\xyz
+
+        .. which would escape the semicolon path separator. So, change
+      that to c:\foo\bar\. so the setting will become:
+
+          PATH=c:\foo\bar\.;c:\xyz
+    -->
+    <ItemGroup>
+      <_EmscriptenAddPATHFixed Include="%(_EmscriptenAddPATH.Identity)."
+                               Condition="$([MSBuild]::ValueOrDefault('%(_EmscriptenAddPATH.Identity)', '').EndsWith('\'))" />
+      <_EmscriptenAddPATHFixed Include="@(_EmscriptenAddPATH)"
+                               Condition="!$([MSBuild]::ValueOrDefault('%(_EmscriptenAddPATH.Identity)', '').EndsWith('\'))" />
+      <_EmscriptenAddPATH Remove="@(_EmscriptenAddPATH)" />
+      <_EmscriptenAddPATH Include="@(_EmscriptenAddPATHFixed)" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_EmscriptenAddPATHProperty Condition="'$(OS)' == 'Windows_NT'">@(_EmscriptenAddPATH -> '%(Identity)', '%3B')</_EmscriptenAddPATHProperty>
       <_EmscriptenAddPATHProperty Condition="'$(OS)' != 'Windows_NT'">@(_EmscriptenAddPATH -> '%(Identity)', ':')</_EmscriptenAddPATHProperty>
