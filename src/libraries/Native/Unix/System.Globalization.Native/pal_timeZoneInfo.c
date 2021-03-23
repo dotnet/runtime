@@ -287,6 +287,10 @@ ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName, c
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+    if (U_FAILURE(err))
+    {
+        return GetResultCode(err);
+    }
 
     // Note:  Due to how CLDR Metazones work, a past or future timestamp might use a different set of display names
     //        than are currently in effect.
