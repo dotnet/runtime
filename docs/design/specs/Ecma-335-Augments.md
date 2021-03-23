@@ -694,12 +694,12 @@ T Exponential<T, TFloat>(T exponent) where
 {
     T result = T.One();
     T powerOfValue = exponent;
-    TFloat factorial = (TFloat)1.0;
+    TFloat inverseFactorial = (TFloat)1.0;
     const int NumberOfTermsInMacLaurinSeries = 6;
     for (int term = 1; term <= NumberOfTermsInMacLaurinSeries; term++)
     {
-        result = T.Add(result, (IMultiplicationBy<T, TFloat>)T.Multiply(T.powerOfValue, factorial));
-        factorial /= term;
+        result = T.Add(result, (IMultiplicationBy<T, TFloat>)T.Multiply(T.powerOfValue, inverseFactorial));
+        inverseFactorial /= term;
         powerOfValue = T.Multiply(powerOfValue, exponent);
     }
 
