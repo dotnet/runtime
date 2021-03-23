@@ -54,14 +54,6 @@
 //                              then it's ok for this function to as well.  If LIMITED_METHOD_CONTRACT is specified,
 //                              however, then CANNOT_TAKE_LOCK is assumed.
 //
-//      -or- EE_THREAD_REQUIRED the function requires an EE Thread object in TLS (i.e., GetThread() != NULL)
-//                              If this contract is used, we will ASSERT on entry to the function that
-//                              GetThread() != NULL.
-//      -or-                    the default is DISABLED(EE_THREAD_REQUIRED).  i.e., we do not assert
-//                              GetThread() != NULL on entry to the function and do not assert on any
-//                              unprotected uses of GetThread().
-//                              See code:GetThreadGenericFullCheck for info on how these
-//                              contracts are enforced.
 //
 //      SUPPORTS_DAC            The function has been written to be callable from out-of-process using DAC.
 //                              In builds where DACCESS_COMPILE is defined, such functions can only call
@@ -910,10 +902,6 @@ class BaseContract
         HOST_NoCalls            = 0x00001000,
         HOST_Disabled           = 0x00000000,   // the default
 
-        // This enforces the EE_THREAD_REQUIRED contract
-        EE_THREAD_Required      = 0x00004000,
-        EE_THREAD_Disabled      = 0x00000000,   // the default
-
         // These enforce the CAN_TAKE_LOCK / CANNOT_TAKE_LOCK contracts
         CAN_TAKE_LOCK_Mask      = 0x00060000,
         CAN_TAKE_LOCK_Yes       = 0x00020000,
@@ -932,7 +920,7 @@ class BaseContract
         LOADS_TYPE_Disabled     = 0x00000000,   // the default
 
         ALL_Disabled            = THROWS_Disabled|GC_Disabled|FAULT_Disabled|MODE_Disabled|LOADS_TYPE_Disabled|
-                                  HOST_Disabled|EE_THREAD_Disabled|CAN_TAKE_LOCK_Disabled|CAN_RETAKE_LOCK_No_Disabled
+                                  HOST_Disabled|CAN_TAKE_LOCK_Disabled|CAN_RETAKE_LOCK_No_Disabled
 
     };
 
@@ -1137,7 +1125,6 @@ enum ContractViolationBits
     LoadsTypeViolation      = 0x00000040,  // suppress LOADS_TYPE tags in this scope
     TakesLockViolation      = 0x00000080,  // suppress CAN_TAKE_LOCK tags in this scope
     HostViolation           = 0x00000100,  // suppress HOST_CALLS tags in this scope
-    EEThreadViolation       = 0x00000200,  // suppress EE_THREAD_REQUIRED tags in this scope
 
     //These are not violation bits. We steal some bits out of the violation mask to serve as
     // general flag bits.
