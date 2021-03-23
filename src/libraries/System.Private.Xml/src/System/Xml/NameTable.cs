@@ -19,9 +19,9 @@ namespace System.Xml
         {
             internal string str;
             internal int hashCode;
-            internal Entry next;
+            internal Entry? next;
 
-            internal Entry(string str, int hashCode, Entry next)
+            internal Entry(string str, int hashCode, Entry? next)
             {
                 this.str = str;
                 this.hashCode = hashCode;
@@ -68,7 +68,7 @@ namespace System.Xml
 
             int hashCode = ComputeHash32(key);
 
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry? e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
                 if (e.hashCode == hashCode && e.str.Equals(key))
                 {
@@ -106,7 +106,7 @@ namespace System.Xml
 
             int hashCode = ComputeHash32(key, start, len);
 
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry? e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
                 if (e.hashCode == hashCode && TextEquals(e.str, key, start, len))
                 {
@@ -134,7 +134,7 @@ namespace System.Xml
 
             int hashCode = ComputeHash32(value);
 
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry? e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
                 if (e.hashCode == hashCode && e.str.Equals(value))
                 {
@@ -169,7 +169,7 @@ namespace System.Xml
 
             int hashCode = ComputeHash32(key, start, len);
 
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry? e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
                 if (e.hashCode == hashCode && TextEquals(e.str, key, start, len))
                 {
@@ -182,7 +182,7 @@ namespace System.Xml
 
         internal string GetOrAddEntry(string str, int hashCode)
         {
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry? e = _entries[hashCode & _mask]; e != null; e = e.next)
             {
                 if (e.hashCode == hashCode && e.str.Equals(str))
                 {
@@ -229,11 +229,11 @@ namespace System.Xml
             // use oldEntries.Length to eliminate the range check
             for (int i = 0; i < oldEntries.Length; i++)
             {
-                Entry e = oldEntries[i];
+                Entry? e = oldEntries[i];
                 while (e != null)
                 {
                     int newIndex = e.hashCode & newMask;
-                    Entry tmp = e.next;
+                    Entry? tmp = e.next;
                     e.next = newEntries[newIndex];
                     newEntries[newIndex] = e;
                     e = tmp;
