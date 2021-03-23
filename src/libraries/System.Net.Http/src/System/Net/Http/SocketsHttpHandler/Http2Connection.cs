@@ -80,12 +80,14 @@ namespace System.Net.Http
         private const int InitialConnectionBufferSize = 4096;
 #endif
 
-        private const int DefaultInitialWindowSize = 8 * 1024 * 1024;//65535;
+        private const int DefaultInitialWindowSize = 8 * 1024 * 1024;
+        private const int WindowUpdateRatio = 8;
 
         // We don't really care about limiting control flow at the connection level.
         // We limit it per stream, and the user controls how many streams are created.
         // So set the connection window size to a large value.
         private const int ConnectionWindowSize = 64 * 1024 * 1024;
+        private const int ConnectionWindowUpdateRatio = 8;
 
         // We hold off on sending WINDOW_UPDATE until we hit thi minimum threshold.
         // This value is somewhat arbitrary; the intent is to ensure it is much smaller than
@@ -93,7 +95,7 @@ namespace System.Net.Http
         // If we want to further reduce the frequency of WINDOW_UPDATEs, it's probably better to
         // increase the window size (and thus increase the threshold proportionally)
         // rather than just increase the threshold.
-        private const int ConnectionWindowThreshold = ConnectionWindowSize / 8;
+        private const int ConnectionWindowThreshold = ConnectionWindowSize / ConnectionWindowUpdateRatio;
 
         // When buffering outgoing writes, we will automatically buffer up to this number of bytes.
         // Single writes that are larger than the buffer can cause the buffer to expand beyond
