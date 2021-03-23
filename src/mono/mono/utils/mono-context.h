@@ -45,8 +45,14 @@ typedef struct _libc_xmmreg MonoContextSimdReg;
 typedef __m128d MonoContextSimdReg;
 #endif
 #elif defined(TARGET_ARM64)
+#if defined(HOST_WIN32)
+#define MONO_HAVE_SIMD_REG
+#include <emmintrin.h>
+typedef __m128d MonoContextSimdReg;
+#else
 #define MONO_HAVE_SIMD_REG
 typedef __uint128_t MonoContextSimdReg;
+#endif
 #endif
 
 /*
