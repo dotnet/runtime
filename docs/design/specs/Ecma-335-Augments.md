@@ -595,33 +595,6 @@ class DerivedFancyClass : FancyClass
 {
 }
 
-class DoublePair : IArithmetic<DoublePair>, IMultiplicationBy<DoublePair, double>
-{
-    public double Component1;
-    public double Component2;
-
-    public DoublePair(double component1, double component2)
-    {
-        Component1 = component1;
-        Component2 = component2;
-    }
-
-    static DoublePair IAddition<DoublePair>.Add(DoublePair a, DoublePair b)
-    {
-        return new DoublePair(a.Component1 + b.Component1, a.Component2 + b.Component2);
-    }
-
-    static DoublePair IMultiplication<DoublePair>.Multiply(DoublePair a, DoublePair b)
-    {
-        return new DoublePair(a.Component1 * b.Component1, a.Component2 * b.Component2);
-    }
-
-    static DoublePair IMultiplicationBy<DoublePair, double>.Multiply(DoublePair a, double b)
-    {
-        return new DoublePair(a.Component1 * b, a.Component2 * b);
-    }
-}
-
 class GenericPair<T> : IArithmetic<GenericPair<T>>, IMultiplicationBy<GenericPair<T>, T>
 {
     public T Component1;
@@ -633,12 +606,22 @@ class GenericPair<T> : IArithmetic<GenericPair<T>>, IMultiplicationBy<GenericPai
         Component2 = component2;
     }
 
+    static GenericPair<T> IAddition<GenericPair<T>>.Zero()
+    {
+        return new GenericPair<T>(0, 0);
+    }
+
     static GenericPair<T> IAddition<GenericPair<T>>.Add(GenericPair<T> a, GenericPair<T> b)
     {
         return new GenericPair<T>(a.Component1 + b.Component1, a.Component2 + b.Component2);
     }
 
-    static GenericPair<T> IMultiplication<GenericPair<T>>.Multiply(GenericPair<T> a, GenericPair<T> b)
+    static GenericPair<T> IMultiplicationBy<GenericPair<T>, GenericPair<T>>.One()
+    {
+        return new GenericPair<T>(1, 1);
+    }
+
+    static GenericPair<T> IMultiplicationBy<GenericPair<T>, GenericPair<T>>.Multiply(GenericPair<T> a, GenericPair<T> b)
     {
         return new GenericPair<T>(a.Component1 * b.Component1, a.Component2 * b.Component2);
     }
