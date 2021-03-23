@@ -306,7 +306,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.Credentials = new NetworkCredential("unused", "unused");
+                handler.Credentials = new NetworkCredential("unused", "PLACEHOLDER");
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
