@@ -675,6 +675,8 @@ T Power<T>(T t, uint power)
         powerOfT = T.Multiply(powerOfT, powerOfT);
         power >>= 1;
     }
+
+    return result;
 }
 ```
 
@@ -700,6 +702,8 @@ T Exponential<T, TFloat>(T exponent) where
         factorial /= term;
         powerOfValue = T.Multiply(powerOfValue, exponent);
     }
+
+    return result;
 }
 ```
 
