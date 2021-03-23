@@ -2264,7 +2264,22 @@ void ILLayoutClassPtrMarshalerBase::EmitClearNativeTemp(ILCodeStream* pslILEmit)
     }
 }
 
+bool ILLayoutClassPtrMarshalerBase::EmitExactTypeCheck(ILCodeStream* pslILEmit, ILCodeLabel* isNotMatchingTypeLabel)
+{
+    if (m_pargs->m_pMT->IsSealed())
+    {
+        // If the provided type cannot be derived from, then we don't need to emit the type check.
+        return false;
+    }
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitCALL(METHOD__OBJECT__GET_TYPE, 1, 1);
+    pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(m_pargs->m_pMT));
+    pslILEmit->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
+    pslILEmit->EmitCALLVIRT(pslILEmit->GetToken(CoreLibBinder::GetMethod(METHOD__OBJECT__EQUALS)), 1, 1);
+    pslILEmit->EmitBRFALSE(isNotMatchingTypeLabel);
 
+    return true;
+}
 
 void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
 {
@@ -2281,6 +2296,9 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
     pslILEmit->EmitLDC(uNativeSize);
     pslILEmit->EmitINITBLK();
 
+    ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
+    bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
+
     MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
     EmitLoadManagedValue(pslILEmit);
@@ -2290,6 +2308,18 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
     EmitLoadCleanupWorkList(pslILEmit);
 
     pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+
+    if (emittedTypeCheck)
+    {
+        pslILEmit->EmitBR(pNullRefLabel);
+
+        pslILEmit->EmitLabel(isNotMatchingTypeLabel);
+        EmitLoadManagedValue(pslILEmit);
+        EmitLoadNativeValue(pslILEmit);
+        pslILEmit->EmitLDC(0);
+        pslILEmit->EmitCALL(METHOD__MARSHAL__STRUCTURE_TO_PTR, 3, 0);
+    }
+
     pslILEmit->EmitLabel(pNullRefLabel);
 }
 
@@ -2302,6 +2332,9 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* psl
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
 
+    ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
+    bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
+
     MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
     EmitLoadManagedValue(pslILEmit);
@@ -2311,12 +2344,25 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* psl
     EmitLoadCleanupWorkList(pslILEmit);
 
     pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+    if (emittedTypeCheck)
+    {
+        pslILEmit->EmitBR(pNullRefLabel);
+
+        pslILEmit->EmitLabel(isNotMatchingTypeLabel);
+        EmitLoadNativeValue(pslILEmit);
+        EmitLoadManagedValue(pslILEmit);
+        pslILEmit->EmitCALL(METHOD__MARSHAL__PTR_TO_STRUCTURE, 2, 0);
+    }
     pslILEmit->EmitLabel(pNullRefLabel);
 }
 
 void ILLayoutClassPtrMarshaler::EmitClearNativeContents(ILCodeStream * pslILEmit)
 {
     STANDARD_VM_CONTRACT;
+
+    ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
+    ILCodeLabel* cleanedUpLabel = pslILEmit->NewCodeLabel();
+    bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
     MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
 
@@ -2327,6 +2373,19 @@ void ILLayoutClassPtrMarshaler::EmitClearNativeContents(ILCodeStream * pslILEmit
     EmitLoadCleanupWorkList(pslILEmit);
 
     pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+
+    if (emittedTypeCheck)
+    {
+        pslILEmit->EmitBR(cleanedUpLabel);
+
+        pslILEmit->EmitLabel(isNotMatchingTypeLabel);
+        EmitLoadNativeValue(pslILEmit);
+        EmitLoadManagedValue(pslILEmit);
+        pslILEmit->EmitCALL(METHOD__OBJECT__GET_TYPE, 1, 1);
+        pslILEmit->EmitCALL(METHOD__MARSHAL__DESTROY_STRUCTURE, 2, 0);
+    }
+
+    pslILEmit->EmitLabel(cleanedUpLabel);
 }
 
 
@@ -2341,6 +2400,9 @@ void ILBlittablePtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslIL
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
 
+    ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
+    bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
+
     EmitLoadNativeValue(pslILEmit);                             // dest
 
     EmitLoadManagedValue(pslILEmit);
@@ -2349,6 +2411,17 @@ void ILBlittablePtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslIL
     pslILEmit->EmitLDC(uNativeSize);                            // size
 
     pslILEmit->EmitCPBLK();
+
+    if (emittedTypeCheck)
+    {
+        pslILEmit->EmitBR(pNullRefLabel);
+
+        pslILEmit->EmitLabel(isNotMatchingTypeLabel);
+        EmitLoadManagedValue(pslILEmit);
+        EmitLoadNativeValue(pslILEmit);
+        pslILEmit->EmitLDC(0);
+        pslILEmit->EmitCALL(METHOD__MARSHAL__STRUCTURE_TO_PTR, 3, 0);
+    }
     pslILEmit->EmitLabel(pNullRefLabel);
 }
 
@@ -2359,6 +2432,9 @@ void ILBlittablePtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslIL
     ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
     UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
     int fieldDef = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
+
+    ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
+    bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
@@ -2371,12 +2447,26 @@ void ILBlittablePtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslIL
     pslILEmit->EmitLDC(uNativeSize);                            // size
 
     pslILEmit->EmitCPBLK();
+
+    if (emittedTypeCheck)
+    {
+        pslILEmit->EmitBR(pNullRefLabel);
+
+        pslILEmit->EmitLabel(isNotMatchingTypeLabel);
+        EmitLoadNativeValue(pslILEmit);
+        EmitLoadManagedValue(pslILEmit);
+        pslILEmit->EmitCALL(METHOD__MARSHAL__PTR_TO_STRUCTURE, 2, 0);
+    }
+
     pslILEmit->EmitLabel(pNullRefLabel);
 }
 
 bool ILBlittablePtrMarshaler::CanMarshalViaPinning()
 {
-    return IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && !IsFieldMarshal(m_dwMarshalFlags);
+    return IsCLRToNative(m_dwMarshalFlags) &&
+        !IsByref(m_dwMarshalFlags) &&
+        !IsFieldMarshal(m_dwMarshalFlags) &&
+        m_pargs->m_pMT->IsSealed(); // We can't marshal via pinning if we might need to marshal differently at runtime.
 }
 
 void ILBlittablePtrMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)

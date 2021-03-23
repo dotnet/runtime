@@ -1231,6 +1231,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
     m_pMT                           = NULL;
     m_pMD                           = pMD;
     m_onInstanceMethod              = onInstanceMethod;
+    // For backward compatibility reasons, some marshalers imply [In, Out] behavior when marked as [Out].
+    BOOL outImpliesInOut            = FALSE;
 
 #ifdef FEATURE_COMINTEROP
     m_fDispItf                      = FALSE;
@@ -2007,6 +2009,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     }
                     m_type = IsFieldScenario() ? MARSHAL_TYPE_BLITTABLE_LAYOUTCLASS : MARSHAL_TYPE_BLITTABLEPTR;
                     m_args.m_pMT = m_pMT;
+                    outImpliesInOut = TRUE;
                 }
                 else if (m_pMT->HasLayout())
                 {
@@ -2532,6 +2535,12 @@ lExit:
                 m_out = FALSE;
             }
 
+        }
+
+        // For marshalers that expect [Out] behavior to match [In, Out] behavior, update that here.
+        if (m_out && outImpliesInOut)
+        {
+            m_in = TRUE;
         }
     }
 
