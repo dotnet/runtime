@@ -1397,11 +1397,6 @@ retry:
                     safe_switch_to_thread();
                 }
             }
-            else if (GCToEEInterface::GetThread() == nullptr)
-            {
-                // Server GC thread - calling WaitLongerNoInstru would cause deadlock
-                YieldProcessor();           // indicate to the processor that we are spinning
-            }
             else
             {
                 WaitLongerNoInstru(i);
@@ -1551,11 +1546,6 @@ retry:
                 }
                 else
                     GCToOSInterface::YieldThread(0);
-            }
-            else if (GCToEEInterface::GetThread() == nullptr)
-            {
-                // Server GC thread - calling WaitLonger would cause deadlock
-                YieldProcessor();           // indicate to the processor that we are spinning
             }
             else
             {
@@ -3581,9 +3571,34 @@ uint8_t* region_allocator::allocate_end (uint32_t num_units)
     return alloc;
 }
 
+void region_allocator::enter_spin_lock()
+{
+    while (true)
+    {
+        if (Interlocked::CompareExchange(&region_allocator_lock.lock, 0, -1) < 0)
+            break;
+
+        while (region_allocator_lock.lock >= 0)
+        {
+            YieldProcessor();           // indicate to the processor that we are spinning
+        }
+    }
+#ifdef _DEBUG
+    region_allocator_lock.holding_thread = GCToEEInterface::GetThread();
+#endif //_DEBUG
+}
+
+void region_allocator::leave_spin_lock()
+{
+    region_allocator_lock.lock = -1;
+#ifdef _DEBUG
+    region_allocator_lock.holding_thread = (Thread*)-1;
+#endif //_DEBUG
+}
+
 uint8_t* region_allocator::allocate (uint32_t num_units)
 {
-    enter_spin_lock (&region_allocator_lock);
+    enter_spin_lock();
 
     uint32_t* current_index = region_map_start;
     uint32_t* end_index = region_map_end;
@@ -3625,7 +3640,7 @@ uint8_t* region_allocator::allocate (uint32_t num_units)
                 total_free_units -= num_units;
                 print_map ("alloc: found in free");
 
-                leave_spin_lock (&region_allocator_lock);
+                leave_spin_lock();
 
                 return region_address_of (current_free_index_start);
             }
@@ -3667,7 +3682,7 @@ uint8_t* region_allocator::allocate (uint32_t num_units)
         dprintf (REGIONS_LOG, ("couldn't find memory at the end! only %Id bytes left", (global_region_end - global_region_used)));
     }
 
-    leave_spin_lock (&region_allocator_lock);
+    leave_spin_lock();
 
     return alloc;
 }
@@ -3707,7 +3722,7 @@ bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end)
 
 void region_allocator::delete_region (uint8_t* start)
 {
-    enter_spin_lock (&region_allocator_lock);
+    enter_spin_lock();
 
     assert (is_region_aligned (start));
 
@@ -3735,7 +3750,7 @@ void region_allocator::delete_region (uint8_t* start)
     total_free_units += current_val;
     print_map ("after delete");
 
-    leave_spin_lock (&region_allocator_lock);
+    leave_spin_lock();
 }
 #endif //USE_REGIONS
 

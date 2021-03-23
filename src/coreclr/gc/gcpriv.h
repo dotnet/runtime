@@ -5331,6 +5331,9 @@ private:
 
     GCSpinLock region_allocator_lock;
 
+    void enter_spin_lock();
+    void leave_spin_lock();
+
     uint32_t* region_map_start;
     uint32_t* region_map_end;
 
