@@ -9597,7 +9597,7 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
     {
         // Quick check: if the root node of the current statement happens to be a noreturn call.
         GenTreeCall* call = compCurStmt->GetRootNode()->AsCall();
-        useLazyStrCns = call->IsNoReturn() || fgIsThrow(call);
+        useLazyStrCns     = call->IsNoReturn() || fgIsThrow(call);
     }
 
     if (useLazyStrCns)
