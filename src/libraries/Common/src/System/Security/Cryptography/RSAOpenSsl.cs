@@ -119,11 +119,12 @@ namespace System.Security.Cryptography
             SafeEvpPKeyHandle key = GetPKey();
             int keySizeBytes = Interop.Crypto.EvpPKeySize(key);
 
-            // OpenSSL does not take a length value for the destination, so it can write out of bounds.
-            // To prevent the OOB write, decrypt into a temporary buffer.
+            // OpenSSL requires that the decryption buffer be at least as large as EVP_PKEY_size.
+            // So if the destination is too small, use a temporary buffer so we can match
+            // Windows behavior of succeeding so long as the buffer can hold the final output.
             if (destination.Length < keySizeBytes)
             {
-                // RSA up through 4096 use a stackalloc
+                // RSA up through 4096 bits use a stackalloc
                 Span<byte> tmp = stackalloc byte[512];
                 byte[]? rent = null;
 
@@ -150,6 +151,8 @@ namespace System.Security.Cryptography
                     ret = true;
                 }
 
+                // Whether a stackalloc or a rented array, clear our copy of
+                // the decrypted content.
                 CryptographicOperations.ZeroMemory(tmp.Slice(0, written));
 
                 if (rent != null)
@@ -527,14 +530,14 @@ namespace System.Security.Cryptography
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
-
-                return pkeyHandle;
             }
             catch
             {
                 pkeyHandle.Dispose();
                 throw;
             }
+
+            return pkeyHandle;
         }
 
         private SafeRsaHandle GetKey()
@@ -837,15 +840,15 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(padding));
             }
 
-            if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1)
-            {
-                // Fail if any options are set other than the mode.
-                if (padding != RSAEncryptionPadding.Pkcs1)
-                {
-                    throw PaddingModeNotSupported();
-                }
-            }
-            else if (padding.Mode != RSAEncryptionPaddingMode.Oaep)
+            // There are currently two defined padding modes:
+            // * Oaep has an option (the hash algorithm)
+            // * Pkcs1 has no options
+            //
+            // Anything other than those to modes is an error,
+            // and Pkcs1 having options set is an error, so compare it to
+            // the padding struct instead of the padding mode enum.
+            if (padding.Mode != RSAEncryptionPaddingMode.Oaep &&
+                padding != RSAEncryptionPadding.Pkcs1)
             {
                 throw PaddingModeNotSupported();
             }
