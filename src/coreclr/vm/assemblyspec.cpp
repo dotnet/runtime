@@ -564,7 +564,7 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     {
         DWORD dwMachine, dwKind;
 
-        pImageInfo->GetPEKindAndMachine(&dwMachine,&dwKind);
+        pImageInfo->GetPEKindAndMachine(&dwKind, &dwMachine);
 
         MethodDescCallSite setPA(METHOD__ASSEMBLY_NAME__SET_PROC_ARCH_INDEX);
 
