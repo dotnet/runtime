@@ -45,6 +45,9 @@ typedef struct _libc_xmmreg MonoContextSimdReg;
 typedef __m128d MonoContextSimdReg;
 #endif
 #elif defined(TARGET_ARM64)
+/* We need a definition for MonoContextSimdReg even when cross-compiling
+   from Windows, but __uint128_t doesn't exist. Here __m128d is used as
+   a stand-in. This is not expected to work for Windows ARM64 native builds. */
 #if defined(HOST_WIN32)
 #define MONO_HAVE_SIMD_REG
 #include <emmintrin.h>
