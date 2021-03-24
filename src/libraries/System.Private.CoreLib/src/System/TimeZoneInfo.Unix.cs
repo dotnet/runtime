@@ -1320,33 +1320,21 @@ namespace System
                     // numbers less than 59 (up to Feb 28). Otherwise we'll skip this POSIX rule.
                     // We've never encountered any time zone file using this format for days beyond Feb 28.
 
-                    if ((uint)(date[0] - '0') <= '9'-'0')
+                    if (int.TryParse(date, out int julianDay) && julianDay < 59)
                     {
-                        int julianDay = (int) (date[0] - '0');
-                        int index = 1;
-
-                        while (index < date.Length && julianDay < 59 && ((uint)(date[index] - '0') <= '9'-'0'))
+                        int d, m;
+                        if (julianDay <= 30) // January
                         {
-                            julianDay = julianDay * 10 + (int) (date[index] - '0');
-                            index++;
-                        };
-
-                        if (julianDay < 59) // Up to Feb 28.
-                        {
-                            int d, m;
-                            if (julianDay <= 30) // January
-                            {
-                                m = 1;
-                                d = julianDay + 1;
-                            }
-                            else // February
-                            {
-                                m = 2;
-                                d = julianDay - 30;
-                            }
-
-                            return TransitionTime.CreateFixedDateRule(ParseTimeOfDay(time), m, d);
+                            m = 1;
+                            d = julianDay + 1;
                         }
+                        else // February
+                        {
+                            m = 2;
+                            d = julianDay - 30;
+                        }
+
+                        return TransitionTime.CreateFixedDateRule(ParseTimeOfDay(time), m, d);
                     }
 
                     // Since we can't support this rule, return null to indicate to skip the POSIX rule.
