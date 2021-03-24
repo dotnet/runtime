@@ -1231,7 +1231,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
     m_pMT                           = NULL;
     m_pMD                           = pMD;
     m_onInstanceMethod              = onInstanceMethod;
-    // For backward compatibility reasons, some marshalers imply [In, Out] behavior when marked as [Out].
+    // [Compat] For backward compatibility reasons, some marshalers imply [In, Out] behavior when marked as [Out].
     BOOL outImpliesInOut            = FALSE;
 
 #ifdef FEATURE_COMINTEROP
