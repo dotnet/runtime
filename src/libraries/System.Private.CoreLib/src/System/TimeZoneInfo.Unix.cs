@@ -1315,21 +1315,21 @@ namespace System
                     // For example if n is specified as 60, this means in leap year the rule will start at Mar 1,
                     // while in non leap year the rule will start at Mar 2.
                     //
-                    // This n Julian day format is very uncommon and rarely used and mostely used for convenience
-                    // to specify dates like January 1st which we can support without any major modification to the Adjustment rules.
-                    // We'll support this rule for day numbers less than 59 (up to Feb 28). Otherwise we'll
-                    // skip this POSIX rule. So far we never encountered any time zone file used this format for days beyond Feb 28.
+                    // This n Julian day format is very uncommon and mostly  used for convenience to specify dates like January 1st
+                    // which we can support without any major modification to the Adjustment rules. We'll support this rule  for day
+                    // numbers less than 59 (up to Feb 28). Otherwise we'll skip this POSIX rule.
+                    // We've never encountered any time zone file using this format for days beyond Feb 28.
 
                     if ((uint)(date[0] - '0') <= '9'-'0')
                     {
-                        int julianDay = 0;
-                        int index = 0;
+                        int julianDay = (int) (date[0] - '0');
+                        int index = 1;
 
-                        do
+                        while (index < date.Length && julianDay < 59 && ((uint)(date[index] - '0') <= '9'-'0'))
                         {
                             julianDay = julianDay * 10 + (int) (date[index] - '0');
                             index++;
-                        } while (index < date.Length && ((uint)(date[index] - '0') <= '9'-'0'));
+                        };
 
                         if (julianDay < 59) // Up to Feb 28.
                         {
@@ -1360,7 +1360,7 @@ namespace System
         }
 
         /// <summary>
-        /// Parses a string like Jn or n into month and day values.
+        /// Parses a string like Jn into month and day values.
         /// </summary>
         private static void TZif_ParseJulianDay(ReadOnlySpan<char> date, out int month, out int day)
         {
