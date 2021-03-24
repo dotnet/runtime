@@ -924,7 +924,7 @@ public:
             PRECONDITION(CheckPointer(pSB));
             PRECONDITION(m_pRCW == NULL);
             PRECONDITION(CheckPointer(m_pThread));
-            PRECONDITION(GetThread() == m_pThread);
+            PRECONDITION(GetThreadNULLOk() == m_pThread);
         }
         CONTRACTL_END;
 
@@ -982,7 +982,7 @@ public:
             SUPPORTS_DAC;
             PRECONDITION(CheckPointer(m_pThread));
             PRECONDITION(CheckPointer(m_pSB));
-            PRECONDITION(GetThread() == m_pThread);
+            PRECONDITION(GetThreadNULLOk() == m_pThread);
         }
         CONTRACTL_END;
 

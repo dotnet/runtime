@@ -2431,7 +2431,7 @@ public:
     // This constructor pushes a new GCFrame on the GC frame chain.
     //--------------------------------------------------------------------
     GCFrame(OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
-        : GCFrame(GetThread(), pObjRefs, numObjRefs, maybeInterior)
+        : GCFrame(GetThreaNotOk(), pObjRefs, numObjRefs, maybeInterior)
     {
         WRAPPER_NO_CONTRACT;
     }

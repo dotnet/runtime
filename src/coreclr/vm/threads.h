@@ -1895,7 +1895,7 @@ public:
     {
 #ifndef DACCESS_COMPILE
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(this == GetThread());
+        _ASSERTE(this == GetThreadNULLOk());
         _ASSERTE(!m_fPreemptiveGCDisabled);
         // holding a spin lock in preemp mode and transit to coop mode will cause other threads
         // spinning waiting for GC
@@ -1958,7 +1958,7 @@ public:
         LIMITED_METHOD_CONTRACT;
 
 #ifndef DACCESS_COMPILE
-        _ASSERTE(this == GetThread());
+        _ASSERTE(this == GetThreadNULLOk());
         _ASSERTE(m_fPreemptiveGCDisabled);
         // holding a spin lock in coop mode and transit to preemp mode will cause deadlock on GC
         _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
@@ -2001,7 +2001,7 @@ public:
     BOOL PreemptiveGCDisabled()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(this == GetThread());
+        _ASSERTE(this == GetThreadNULLOk());
         //
         // m_fPreemptiveGCDisabled is always modified by the thread itself, and so the thread itself
         // can read it without memory barrier.
@@ -3015,13 +3015,13 @@ public:
     static void        IncPreventAsync()
     {
         WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreaNotOk();
         FastInterlockIncrement((LONG*)&pThread->m_PreventAsync);
     }
     static void        DecPreventAsync()
     {
         WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreaNotOk();
         FastInterlockDecrement((LONG*)&pThread->m_PreventAsync);
     }
 
@@ -3195,7 +3195,7 @@ public:
     static BOOL IsAddressInCurrentStack (PTR_VOID addr)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        Thread* currentThread = GetThread();
+        Thread* currentThread = GetThreadNULLOk();
         if (currentThread == NULL)
         {
             return FALSE;
@@ -3762,7 +3762,7 @@ public:
     DWORD GetProfilerCallbackFullState()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(GetThread() == this);
+        _ASSERTE(GetThreadNULLOk() == this);
         return m_profilerCallbackState;
     }
 
@@ -3772,7 +3772,7 @@ public:
     void SetProfilerCallbackFullState(DWORD dwFullState)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(GetThread() == this);
+        _ASSERTE(GetThreadNULLOk() == this);
         m_profilerCallbackState = dwFullState;
     }
 
@@ -3781,7 +3781,7 @@ public:
     DWORD SetProfilerCallbackStateFlags(DWORD dwFlags)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(GetThread() == this);
+        _ASSERTE(GetThreadNULLOk() == this);
 
         DWORD dwRet = m_profilerCallbackState;
         m_profilerCallbackState |= dwFlags;
@@ -4170,7 +4170,7 @@ public:
         Thread * const m_pThread;
     public:
         AVInRuntimeImplOkayHolder() :
-            m_pThread(GetThread())
+            m_pThread(GetThreaNotOk())
         {
             LIMITED_METHOD_CONTRACT;
             AVInRuntimeImplOkayAcquire(m_pThread);
@@ -4818,7 +4818,7 @@ public:
         WRAPPER_NO_CONTRACT;
         // Note that GetThread() may be 0 if it is the debugger thread
         // or perhaps a concurrent GC thread.
-        return HoldingThreadStore(GetThread());
+        return HoldingThreadStore(GetThreadNULLOk());
     }
 
     static BOOL HoldingThreadStore(Thread *pThread);
@@ -5136,7 +5136,7 @@ struct PendingSync
     {
         WRAPPER_NO_CONTRACT;
 #ifdef _DEBUG
-        m_OwnerThread = GetThread();
+        m_OwnerThread = GetThreaNotOk();
 #endif
     }
     void Restore(BOOL bRemoveFromSB);
@@ -5332,7 +5332,7 @@ protected:
     {
         // This is the perf version. So we deliberately restrict the calls
         // to already setup threads to avoid the null checks and GetThread call
-        _ASSERTE(pThread && (pThread == GetThread()));
+        _ASSERTE(pThread && (pThread == GetThreadNULLOk()));
 #ifdef ENABLE_CONTRACTS_IMPL
         m_fThreadMustExist = true;
 #endif // ENABLE_CONTRACTS_IMPL
@@ -5354,7 +5354,7 @@ protected:
     {
         // This is the perf version. So we deliberately restrict the calls
         // to already setup threads to avoid the null checks and GetThread call
-        _ASSERTE(!THREAD_EXISTS || (pThread && (pThread == GetThread())));
+        _ASSERTE(!THREAD_EXISTS || (pThread && (pThread == GetThreadNULLOk())));
 #ifdef ENABLE_CONTRACTS_IMPL
         m_fThreadMustExist = !!THREAD_EXISTS;
 #endif // ENABLE_CONTRACTS_IMPL
@@ -5405,7 +5405,7 @@ public:
             STATIC_CONTRACT_MODE_COOPERATIVE;
         }
         // The thread must be non-null to enter MODE_COOP
-        this->EnterInternalCoop(GetThread(), conditional GCHOLDER_CONTRACT_ARGS_NoDtor);
+        this->EnterInternalCoop(GetThreaNotOk(), conditional GCHOLDER_CONTRACT_ARGS_NoDtor);
     }
 
     DEBUG_NOINLINE
@@ -5463,7 +5463,7 @@ public:
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         // The thread must be non-null to enter MODE_COOP
-        this->EnterInternalCoop(GetThread(), true GCHOLDER_CONTRACT_ARGS_HasDtor);
+        this->EnterInternalCoop(GetThreaNotOk(), true GCHOLDER_CONTRACT_ARGS_HasDtor);
     }
 
     DEBUG_NOINLINE
@@ -5476,7 +5476,7 @@ public:
         }
 
         // The thread must be non-null to enter MODE_COOP
-        this->EnterInternalCoop(GetThread(), conditional GCHOLDER_CONTRACT_ARGS_HasDtor);
+        this->EnterInternalCoop(GetThreaNotOk(), conditional GCHOLDER_CONTRACT_ARGS_HasDtor);
     }
 
     DEBUG_NOINLINE
@@ -5668,7 +5668,7 @@ public:
     FORCEINLINE void DoCheck()
     {
         WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (COOPERATIVE)
         {
             _ASSERTE(pThread != NULL);
@@ -5954,7 +5954,7 @@ public:
 
 #define TRIGGERSGC_NOSTOMP()  do {                                           \
                             ANNOTATION_GC_TRIGGERS;                         \
-                            Thread* curThread = GetThread();                \
+                            Thread* curThread = GetThreaNotOk();                \
                             if(curThread->GCNoTrigger())                    \
                             {                                               \
                                 CONTRACT_ASSERT("TRIGGERSGC found in a GC_NOTRIGGER region.", Contract::GC_NoTrigger, Contract::GC_Mask, __FUNCTION__, __FILE__, __LINE__); \
@@ -5964,7 +5964,7 @@ public:
 
 #define TRIGGERSGC()    do {                                                \
                             TRIGGERSGC_NOSTOMP();                           \
-                            Thread::TriggersGC(GetThread());                \
+                            Thread::TriggersGC(GetThreaNotOk());                \
                         } while(0)
 
 #else // ENABLE_CONTRACTS_IMPL
@@ -5979,7 +5979,7 @@ public:
 inline BOOL GC_ON_TRANSITIONS(BOOL val) {
     WRAPPER_NO_CONTRACT;
 #ifdef _DEBUG
-    Thread* thread = GetThread();
+    Thread* thread = GetThreadNULLOk();
     if (thread == 0)
         return(FALSE);
     BOOL ret = thread->m_GCOnTransitionsOK;
@@ -6172,8 +6172,7 @@ class DeadlockAwareLock
 
     static void ReleaseBlockingLock()
     {
-        Thread *pThread = GetThread();
-        _ASSERTE (pThread);
+        Thread *pThread = GetThreaNotOk();
         pThread->m_pBlockingLock = NULL;
     }
 public:
@@ -6210,7 +6209,7 @@ public:
     ThreadStateHolder (BOOL fNeed, DWORD state)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE (GetThread());
+        _ASSERTE (GetThreadNULLOk());
         m_fNeed = fNeed;
         m_state = state;
     }
@@ -6220,8 +6219,7 @@ public:
 
         if (m_fNeed)
         {
-            Thread *pThread = GetThread();
-            _ASSERTE (pThread);
+            Thread *pThread = GetThreaNotOk();
             FastInterlockAnd((ULONG *) &pThread->m_State, ~m_state);
         }
     }
@@ -6244,15 +6242,13 @@ class ThreadStateNCStackHolder
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE (GetThread());
+        _ASSERTE (GetThreadNULLOk());
         m_fNeed = fNeed;
         m_state = state;
 
         if (fNeed)
         {
-            Thread *pThread = GetThread();
-            _ASSERTE (pThread);
-
+            Thread *pThread = GetThreaNotOk();
             if (fNeed < 0)
             {
                 // if the state is set, reset it
@@ -6287,9 +6283,7 @@ class ThreadStateNCStackHolder
 
         if (m_fNeed)
         {
-            Thread *pThread = GetThread();
-            _ASSERTE (pThread);
-
+            Thread *pThread = GetThreaNotOk();
             if (m_fNeed < 0)
             {
                 pThread->SetThreadStateNC(m_state); // set it

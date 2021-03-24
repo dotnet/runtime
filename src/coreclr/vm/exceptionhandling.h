@@ -98,7 +98,7 @@ public:
                      PTR_EXCEPTION_RECORD  pExceptionRecord,
                      PTR_CONTEXT           pContextRecord) :
         m_pPrevNestedInfo((ExceptionTracker*)NULL),
-        m_pThread(GetThread()),
+        m_pThread(GetThreaNotOk()),
         m_hThrowable(NULL),
         m_uCatchToCallPC(NULL),
         m_pSkipToParentFunctionMD(NULL),

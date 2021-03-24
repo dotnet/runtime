@@ -194,7 +194,7 @@ void SetThread(Thread*);
 // (e.g. code refactoring), this GET_THREAD() macro will fall back to calling GetThread().
 const bool CURRENT_THREAD_AVAILABLE = false;
 Thread * const CURRENT_THREAD = NULL;
-#define GET_THREAD() (CURRENT_THREAD_AVAILABLE ? CURRENT_THREAD : GetThread())
+#define GET_THREAD() (CURRENT_THREAD_AVAILABLE ? CURRENT_THREAD : GetThreaNotOk())
 
 #define MAKE_CURRENT_THREAD_AVAILABLE() \
     Thread * __pThread = GET_THREAD(); \

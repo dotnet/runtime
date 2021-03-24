@@ -1251,7 +1251,7 @@ inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer()
     CONTRACTL_END;
 
     // Get the current thread
-    PTR_Thread pThread = dac_cast<PTR_Thread>(GetThread());
+    PTR_Thread pThread = dac_cast<PTR_Thread>(GetThreaNotOk());
 
     // Get the current module's ModuleIndex
     ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
@@ -1277,7 +1277,7 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer()
     CONTRACTL_END;
 
     // Get the current thread
-    PTR_Thread pThread = dac_cast<PTR_Thread>(GetThread());
+    PTR_Thread pThread = dac_cast<PTR_Thread>(GetThreaNotOk());
 
     // Get the current module's ModuleIndex
     ModuleIndex index = GetModuleForStatics()->GetModuleIndex();

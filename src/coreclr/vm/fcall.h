@@ -795,7 +795,7 @@ Object* FC_GCPoll(void* me, Object* objToProtect = NULL);
 
 #define FC_GC_POLL_EX(ret)                                  \
     {                                                       \
-        INCONTRACT(Thread::TriggersGC(GetThread());)        \
+        INCONTRACT(Thread::TriggersGC(GetThreaNotOk());)        \
         INCONTRACT(__fCallCheck.SetDidPoll();)              \
         if (g_TrapReturningThreads.LoadWithoutBarrier())    \
         {                                                   \
@@ -863,7 +863,7 @@ private:
         static void* __cache = 0;               \
         assertFn(__cache, (LPVOID)target);      \
         {                                       \
-            Thread *_pThread = GetThread();     \
+            Thread *_pThread = GetThreaNotOk();     \
             Thread::ObjectRefFlush(_pThread);    \
         }                                       \
         FCallCheck __fCallCheck(__FILE__, __LINE__); \
