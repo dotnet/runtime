@@ -42,8 +42,8 @@ namespace System.Buffers.Text
                         if (format.Precision != StandardFormat.NoPrecision)
                             throw new NotSupportedException(SR.Argument_GWithPrecisionNotSupported);
 
-                        Span<byte> digits = stackalloc byte[Number.DecimalNumberBufferLength];
-                        Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Decimal, digits);
+                        Span<byte> pDigits = stackalloc byte[Number.DecimalNumberBufferLength];
+                        Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Decimal, pDigits);
 
                         Number.DecimalToNumber(ref value, ref number);
                         if (number.Digits[0] == 0)
@@ -87,8 +87,8 @@ namespace System.Buffers.Text
                 case 'f':
                 case 'F':
                     {
-                        Span<byte> digits = stackalloc byte[Number.DecimalNumberBufferLength];
-                        Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Decimal, digits);
+                        Span<byte> pDigits = stackalloc byte[Number.DecimalNumberBufferLength];
+                        Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Decimal, pDigits);
 
                         Number.DecimalToNumber(ref value, ref number);
                         byte precision = (format.Precision == StandardFormat.NoPrecision) ? (byte)2 : format.Precision;
@@ -100,8 +100,8 @@ namespace System.Buffers.Text
                 case 'e':
                 case 'E':
                     {
-                        Span<byte> digits = stackalloc byte[Number.DecimalNumberBufferLength];
-                        Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Decimal, digits);
+                        Span<byte> pDigits = stackalloc byte[Number.DecimalNumberBufferLength];
+                        Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Decimal, pDigits);
 
                         Number.DecimalToNumber(ref value, ref number);
                         byte precision = (format.Precision == StandardFormat.NoPrecision) ? (byte)6 : format.Precision;

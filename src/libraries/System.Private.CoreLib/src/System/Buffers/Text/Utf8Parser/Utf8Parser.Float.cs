@@ -29,8 +29,8 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static bool TryParse(ReadOnlySpan<byte> source, out float value, out int bytesConsumed, char standardFormat = default)
         {
-            Span<byte> digits = stackalloc byte[Number.SingleNumberBufferLength];
-            Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, digits);
+            Span<byte> pDigits = stackalloc byte[Number.SingleNumberBufferLength];
+            Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, pDigits);
 
             if (TryParseNormalAsFloatingPoint(source, ref number, out bytesConsumed, standardFormat))
             {
@@ -63,8 +63,8 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static bool TryParse(ReadOnlySpan<byte> source, out double value, out int bytesConsumed, char standardFormat = default)
         {
-            Span<byte> digits = stackalloc byte[Number.DoubleNumberBufferLength];
-            Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, digits);
+            Span<byte> pDigits = stackalloc byte[Number.DoubleNumberBufferLength];
+            Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, pDigits);
 
             if (TryParseNormalAsFloatingPoint(source, ref number, out bytesConsumed, standardFormat))
             {
