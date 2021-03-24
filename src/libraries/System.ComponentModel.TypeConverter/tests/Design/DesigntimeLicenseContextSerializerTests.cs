@@ -5,7 +5,6 @@ using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -70,12 +69,12 @@ namespace System.ComponentModel.Design.Tests
 
                         Type designtimeLicenseContextSerializer = assembly.GetType("System.ComponentModel.Design.DesigntimeLicenseContextSerializer");
                         Assert.NotNull(designtimeLicenseContextSerializer);
-                        Reflection.MethodInfo deserializeMethod = designtimeLicenseContextSerializer.GetMethod("Deserialize", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Static);
+                        MethodInfo deserializeMethod = designtimeLicenseContextSerializer.GetMethod("Deserialize", BindingFlags.NonPublic | BindingFlags.Static);
 
                         using (MemoryStream stream = new MemoryStream())
                         {
                             long position = stream.Position;
-                            System.ComponentModel.Design.DesigntimeLicenseContextSerializer.Serialize(stream, key, context);
+                            DesigntimeLicenseContextSerializer.Serialize(stream, key, context);
                             stream.Seek(position, SeekOrigin.Begin);
                             VerifyStreamFormatting(stream);
                             deserializeMethod.Invoke(null, new object[] { stream, key, runtimeLicenseContext });
@@ -90,52 +89,55 @@ namespace System.ComponentModel.Design.Tests
             }
         }
 
-        [ConditionalFact(nameof(AreBinaryFormatterAndRemoteExecutorSupportedOnThisPlatform))]
-        public static void SerializeWithBinaryFormatter_DeserializeWithBinaryWriter()
+        [ConditionalTheory(nameof(AreBinaryFormatterAndRemoteExecutorSupportedOnThisPlatform))]
+        [InlineData("key")]
+        [InlineData("")]
+        public static void SerializeWithBinaryFormatter_DeserializeWithBinaryWriter(string key)
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add(enableBinaryFormatterInTypeConverter, bool.TrueString);
+            options.RuntimeConfigurationOptions.Add(enableBinaryFormatter, bool.TrueString);
+            RemoteExecutor.Invoke((key) =>
             {
-                foreach (var key in new System.Collections.Generic.List<string>() { "key", "" })
-                {
-                    AppContext.SetSwitch(enableBinaryFormatterInTypeConverter, true);
-                    AppContext.SetSwitch(enableBinaryFormatter, true);
-                    var context = new DesigntimeLicenseContext();
-                    context.SetSavedLicenseKey(typeof(int), key);
-                    var assembly = typeof(DesigntimeLicenseContextSerializer).Assembly;
-                    Type runtimeLicenseContextType = assembly.GetType("System.ComponentModel.Design.RuntimeLicenseContext");
-                    Assert.NotNull(runtimeLicenseContextType);
-                    object runtimeLicenseContext = Activator.CreateInstance(runtimeLicenseContextType);
-                    Assert.NotNull(runtimeLicenseContext);
-                    FieldInfo _savedLicenseKeys = runtimeLicenseContextType.GetField("_savedLicenseKeys", BindingFlags.NonPublic | BindingFlags.Instance);
-                    Assert.NotNull(_savedLicenseKeys);
-                    _savedLicenseKeys.SetValue(runtimeLicenseContext, new Hashtable());
+                var context = new DesigntimeLicenseContext();
+                context.SetSavedLicenseKey(typeof(int), key);
+                var assembly = typeof(DesigntimeLicenseContextSerializer).Assembly;
+                Type runtimeLicenseContextType = assembly.GetType("System.ComponentModel.Design.RuntimeLicenseContext");
+                Assert.NotNull(runtimeLicenseContextType);
+                object runtimeLicenseContext = Activator.CreateInstance(runtimeLicenseContextType);
+                Assert.NotNull(runtimeLicenseContext);
+                FieldInfo _savedLicenseKeys = runtimeLicenseContextType.GetField("_savedLicenseKeys", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.NotNull(_savedLicenseKeys);
+                _savedLicenseKeys.SetValue(runtimeLicenseContext, new Hashtable());
 
-                    using (MemoryStream stream = new MemoryStream())
+                using (MemoryStream stream = new MemoryStream())
+                {
+                    long position = stream.Position;
+                    DesigntimeLicenseContextSerializer.Serialize(stream, key, context);
+                    stream.Seek(position, SeekOrigin.Begin);
+                    VerifyStreamFormatting(stream);
+
+                    Type designtimeLicenseContextSerializer = assembly.GetType("System.ComponentModel.Design.DesigntimeLicenseContextSerializer");
+                    Assert.NotNull(designtimeLicenseContextSerializer);
+                    // Simulate deserializing a BinaryFormatted stream with enableBinaryFormatterInTypeConverter turned off.
+                    var enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization = designtimeLicenseContextSerializer.GetField("_enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization", BindingFlags.Static | BindingFlags.NonPublic);
+                    Assert.NotNull(enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization);
+                    enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization.SetValue(designtimeLicenseContextSerializer, false);
+                    MethodInfo deserializeMethod = designtimeLicenseContextSerializer.GetMethod("Deserialize", BindingFlags.NonPublic | BindingFlags.Static);
+                    Assert.NotNull(deserializeMethod);
+
+                    stream.Seek(position, SeekOrigin.Begin);
+                    try
                     {
-                        long position = stream.Position;
-                        System.ComponentModel.Design.DesigntimeLicenseContextSerializer.Serialize(stream, key, context);
-                        AppContext.SetSwitch(enableBinaryFormatter, false);
-                        Type designtimeLicenseContextSerializer = assembly.GetType("System.ComponentModel.Design.DesigntimeLicenseContextSerializer");
-                        Assert.NotNull(designtimeLicenseContextSerializer);
-                        var enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization = designtimeLicenseContextSerializer.GetField("_enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization", BindingFlags.Static | BindingFlags.NonPublic);
-                        Assert.NotNull(enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization);
-                        enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization.SetValue(designtimeLicenseContextSerializer, false);
-                        Reflection.MethodInfo deserializeMethod = designtimeLicenseContextSerializer.GetMethod("Deserialize", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Static);
-                        Assert.NotNull(deserializeMethod);
-                        stream.Seek(position, SeekOrigin.Begin);
-                        try
-                        {
-                            deserializeMethod.Invoke(null, new object[] { stream, key, runtimeLicenseContext });
-                        }
-                        catch (System.Reflection.TargetInvocationException exception)
-                        {
-                            Exception baseException = exception.GetBaseException();
-                            var baseExceptionType = baseException.GetType();
-                            Assert.IsType<NotSupportedException>(baseException);
-                        }
+                        deserializeMethod.Invoke(null, new object[] { stream, key, runtimeLicenseContext });
+                    }
+                    catch (TargetInvocationException exception)
+                    {
+                        Exception baseException = exception.GetBaseException();
+                        Assert.IsType<NotSupportedException>(baseException);
                     }
                 }
-            }).Dispose();
+            }, key, options).Dispose();
         }
     }
 }

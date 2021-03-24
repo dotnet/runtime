@@ -17,8 +17,13 @@ namespace System.ComponentModel.Design
         internal const byte BinaryWriterMagic = 255;
 
         private const string s_enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization = "System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization";
-        private static bool EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization { get; } = AppContext.TryGetSwitch(s_enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization, out bool isEnabled) ? isEnabled : false;
 
+        private static bool _enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization = AppContext.TryGetSwitch(s_enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization, out bool isEnabled) ? isEnabled : false;
+        private static bool EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization
+        {
+            get => _enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization;
+            set => _enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization = value;
+        }
         // Not creatable.
         private DesigntimeLicenseContextSerializer()
         {
