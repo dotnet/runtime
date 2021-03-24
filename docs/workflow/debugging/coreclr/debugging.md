@@ -13,7 +13,7 @@ Debugging CoreCLR on Windows
       1. Run `./build.cmd -vs coreclr.sln -a <platform> -c <configuration>`. This will create and launch the CoreCLR solution in VS for the specified architecture and configuration.
    - Method 2: Manually build and open the solution.
       1. Perform a build of the repo with the `-msbuild` flag.
-      2. Open solution \<reporoot\>\artifacts\obj\coreclr\windows.\<platform\>.\<configuration\>\ide\CoreCLR.sln in Visual Studio. \<platform\> and \<configuration\> are based
+      2. Open solution `\<reporoot>\artifacts\obj\coreclr\windows.\<platform>.\<configuration>\ide\CoreCLR.sln` in Visual Studio. `<platform>` and `<configuration>` are based
     on type of build you did. By default they are 'x64' and 'Debug'.
 2. Right-click the INSTALL project and choose ‘Set as StartUp Project’
 3. Bring up the properties page for the INSTALL project
@@ -33,7 +33,7 @@ Debugging CoreCLR on Windows
 10. Press F11 to start debugging at wmain in corerun (or set a breakpoint in source and press F5 to run to it)
     1. As an example, set a breakpoint for the EEStartup function in ceemain.cpp to break into CoreCLR startup.
 
-Steps 1-10 only need to be done once, and then (11) can be repeated whenever you want to start debugging. The above can be done with Visual Studio 2019 as writing.
+Steps 1-9 only need to be done once as long as there's been no changes to the CMake files in the repository. Afterwards, step 10 can be repeated whenever you want to start debugging. The above can be done with Visual Studio 2019 as writing.
 Keeping with latest version of Visual Studio is recommended.
 
 ### Using SOS with windbg or cdb on Windows ###
