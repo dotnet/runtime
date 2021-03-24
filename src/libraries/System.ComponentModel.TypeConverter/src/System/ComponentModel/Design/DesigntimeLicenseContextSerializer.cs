@@ -22,7 +22,6 @@ namespace System.ComponentModel.Design
         private static bool EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization
         {
             get => _enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization;
-            set => _enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization = value;
         }
         // Not creatable.
         private DesigntimeLicenseContextSerializer()
