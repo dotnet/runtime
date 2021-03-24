@@ -18,7 +18,7 @@ typedef struct RSA
     jobject privateKey; // RSAPrivateCrtKey
     jobject publicKey;  // RSAPublicCrtKey
     atomic_int refCount;
-    int32_t keyWidth;
+    int32_t keyWidthInBits;
 } RSA;
 
 #define CIPHER_ENCRYPT_MODE 1
@@ -41,4 +41,5 @@ PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
     uint8_t* p,    int32_t pLength,    uint8_t* dmp1, int32_t dmp1Length, uint8_t* q, int32_t qLength,
     uint8_t* dmq1, int32_t dmq1Length, uint8_t* iqmp, int32_t iqmpLength);
 
+RSA* AndroidCryptoNative_NewRsaFromKeys(JNIEnv* env, jobject /*RSAPublicKey*/ publicKey, jobject /*RSAPrivateKey*/ privateKey);
 RSA* AndroidCryptoNative_NewRsaFromPublicKey(JNIEnv* env, jobject /*RSAPublicKey*/ key);

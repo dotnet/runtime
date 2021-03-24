@@ -652,7 +652,6 @@ namespace System.Net.Http
                         case Http3FrameType.Headers: // Servers should not send these frames to a control stream.
                         case Http3FrameType.Data:
                         case Http3FrameType.MaxPushId:
-                        case Http3FrameType.DuplicatePush:
                         case Http3FrameType.ReservedHttp2Priority: // These frames are explicitly reserved and must never be sent.
                         case Http3FrameType.ReservedHttp2Ping:
                         case Http3FrameType.ReservedHttp2WindowUpdate:

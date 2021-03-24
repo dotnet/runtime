@@ -618,6 +618,15 @@
 		<type fullname="Mono.ValueTuple`3" preserve="fields"/>
 		<type fullname="Mono.ValueTuple`4" preserve="fields"/>
 		<type fullname="Mono.ValueTuple`5" preserve="fields"/>
+		<!-- aot-compiler.c -->
+		<type fullname="Mono.I8Enum" preserve="fields"/>
+		<type fullname="Mono.UI8Enum" preserve="fields"/>
+		<type fullname="Mono.I16Enum" preserve="fields"/>
+		<type fullname="Mono.UI16Enum" preserve="fields"/>
+		<type fullname="Mono.I32Enum" preserve="fields"/>
+		<type fullname="Mono.UI32Enum" preserve="fields"/>
+		<type fullname="Mono.I64Enum" preserve="fields"/>
+		<type fullname="Mono.UI64Enum" preserve="fields"/>
 
 		<type fullname="System.AppContext">
 			<!-- appdomain.c: mono_runtime_install_appctx_properties -->

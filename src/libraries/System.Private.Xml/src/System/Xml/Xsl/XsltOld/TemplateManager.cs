@@ -15,7 +15,7 @@ namespace System.Xml.Xsl.XsltOld
         internal ArrayList? templates;
         private readonly Stylesheet _stylesheet;    // Owning stylesheet
 
-        private class TemplateComparer : IComparer
+        private sealed class TemplateComparer : IComparer
         {
             public int Compare(object? x, object? y)
             {

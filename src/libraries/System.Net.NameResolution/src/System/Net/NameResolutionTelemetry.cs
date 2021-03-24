@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -142,6 +143,10 @@ namespace System.Net
         // WriteEvent overloads taking Span<char> are imitating string arguments
         // Span arguments are expected to be null-terminated
 
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = "Parameters to this method are primitive and are trimmer safe")]
+#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, Span<char> arg1)
         {

@@ -38,7 +38,7 @@ namespace System.DirectoryServices
         }
     }
 
-    internal class COMExceptionHelper
+    internal static class COMExceptionHelper
     {
         internal static Exception CreateFormattedComException(int hr)
         {

@@ -31,30 +31,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) sz,
-#include "typelist.h"
-#undef DEF_TP
-};
-
-const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) al,
-#include "typelist.h"
-#undef DEF_TP
-};
-
-const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) st,
-#include "typelist.h"
-#undef DEF_TP
-};
-
-const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) jitType,
-#include "typelist.h"
-#undef DEF_TP
-};
-
 void CodeGenInterface::setFramePointerRequiredEH(bool value)
 {
     m_cgFramePointerRequired = value;
@@ -2207,9 +2183,9 @@ void CodeGen::genGenerateMachineCode()
                    compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
         }
 
-        if (compiler->fgProfileData_ILSizeMismatch)
+        if (compiler->fgPgoFailReason != nullptr)
         {
-            printf("; discarded IBC profile data due to mismatch in ILSize\n");
+            printf("; %s\n", compiler->fgPgoFailReason);
         }
 
         if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
@@ -4004,40 +3980,38 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
         if (doingFloat)
         {
-#if defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
-            insCopy = ins_Copy(TYP_DOUBLE);
-            // Compute xtraReg here when we have a float argument
-            assert(xtraReg == REG_NA);
-
-            regMaskTP fpAvailMask;
-
-            fpAvailMask = RBM_FLT_CALLEE_TRASH & ~regArgMaskLive;
-#if defined(FEATURE_HFA)
-            fpAvailMask &= RBM_ALLDOUBLE;
-#else
-#if !defined(UNIX_AMD64_ABI)
-#error Error. Wrong architecture.
-#endif // !defined(UNIX_AMD64_ABI)
-#endif // defined(FEATURE_HFA)
-
-            if (fpAvailMask == RBM_NONE)
+#ifndef UNIX_AMD64_ABI
+            if (GlobalJitOptions::compFeatureHfa)
+#endif // !UNIX_AMD64_ABI
             {
-                fpAvailMask = RBM_ALLFLOAT & ~regArgMaskLive;
-#if defined(FEATURE_HFA)
-                fpAvailMask &= RBM_ALLDOUBLE;
-#else
-#if !defined(UNIX_AMD64_ABI)
-#error Error. Wrong architecture.
-#endif // !defined(UNIX_AMD64_ABI)
-#endif // defined(FEATURE_HFA)
+                insCopy = ins_Copy(TYP_DOUBLE);
+                // Compute xtraReg here when we have a float argument
+                assert(xtraReg == REG_NA);
+
+                regMaskTP fpAvailMask;
+
+                fpAvailMask = RBM_FLT_CALLEE_TRASH & ~regArgMaskLive;
+                if (GlobalJitOptions::compFeatureHfa)
+                {
+                    fpAvailMask &= RBM_ALLDOUBLE;
+                }
+
+                if (fpAvailMask == RBM_NONE)
+                {
+                    fpAvailMask = RBM_ALLFLOAT & ~regArgMaskLive;
+                    if (GlobalJitOptions::compFeatureHfa)
+                    {
+                        fpAvailMask &= RBM_ALLDOUBLE;
+                    }
+                }
+
+                assert(fpAvailMask != RBM_NONE);
+
+                // We pick the lowest avail register number
+                regMaskTP tempMask = genFindLowestBit(fpAvailMask);
+                xtraReg            = genRegNumFromMask(tempMask);
             }
-
-            assert(fpAvailMask != RBM_NONE);
-
-            // We pick the lowest avail register number
-            regMaskTP tempMask = genFindLowestBit(fpAvailMask);
-            xtraReg            = genRegNumFromMask(tempMask);
-#elif defined(TARGET_X86)
+#if defined(TARGET_X86)
             // This case shouldn't occur on x86 since NYI gets converted to an assert
             NYI("Homing circular FP registers via xtraReg");
 #endif
@@ -4684,6 +4658,12 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
+        if (varDsc->lvIsTemp && !varDsc->HasGCPtr())
+        {
+            varDsc->lvMustInit = 0;
+            continue;
+        }
+
         if (compiler->info.compInitMem || varDsc->HasGCPtr() || varDsc->lvMustInit)
         {
             if (varDsc->lvTracked)
@@ -4730,8 +4710,7 @@ void CodeGen::genCheckUseBlockInit()
                 unless they are untracked GC type or structs that contain GC pointers */
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-            if ((!varDsc->lvTracked || (varDsc->lvType == TYP_STRUCT)) && varDsc->lvOnFrame &&
-                (!varDsc->lvIsTemp || varDsc->HasGCPtr()))
+            if ((!varDsc->lvTracked || (varDsc->lvType == TYP_STRUCT)) && varDsc->lvOnFrame)
             {
 
                 varDsc->lvMustInit = true;
@@ -9562,20 +9541,26 @@ bool Compiler::IsHfa(CORINFO_CLASS_HANDLE hClass)
 
 bool Compiler::IsHfa(GenTree* tree)
 {
-#ifdef FEATURE_HFA
-    return IsHfa(gtGetStructHandleIfPresent(tree));
-#else
-    return false;
-#endif
+    if (GlobalJitOptions::compFeatureHfa)
+    {
+        return IsHfa(gtGetStructHandleIfPresent(tree));
+    }
+    else
+    {
+        return false;
+    }
 }
 
 var_types Compiler::GetHfaType(GenTree* tree)
 {
-#ifdef FEATURE_HFA
-    return GetHfaType(gtGetStructHandleIfPresent(tree));
-#else
-    return TYP_UNDEF;
-#endif
+    if (GlobalJitOptions::compFeatureHfa)
+    {
+        return GetHfaType(gtGetStructHandleIfPresent(tree));
+    }
+    else
+    {
+        return TYP_UNDEF;
+    }
 }
 
 unsigned Compiler::GetHfaCount(GenTree* tree)
@@ -9585,18 +9570,19 @@ unsigned Compiler::GetHfaCount(GenTree* tree)
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
 {
-#ifdef FEATURE_HFA
-    if (hClass != NO_CLASS_HANDLE)
+    if (GlobalJitOptions::compFeatureHfa)
     {
-        CorInfoHFAElemType elemKind = info.compCompHnd->getHFAType(hClass);
-        if (elemKind != CORINFO_HFA_ELEM_NONE)
+        if (hClass != NO_CLASS_HANDLE)
         {
-            // This type may not appear elsewhere, but it will occupy a floating point register.
-            compFloatingPointUsed = true;
+            CorInfoHFAElemType elemKind = info.compCompHnd->getHFAType(hClass);
+            if (elemKind != CORINFO_HFA_ELEM_NONE)
+            {
+                // This type may not appear elsewhere, but it will occupy a floating point register.
+                compFloatingPointUsed = true;
+            }
+            return HfaTypeFromElemKind(elemKind);
         }
-        return HfaTypeFromElemKind(elemKind);
     }
-#endif // FEATURE_HFA
     return TYP_UNDEF;
 }
 
@@ -11294,7 +11280,6 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         // genConsumeReg will return the valid register, either from the COPY
         // or from the original source.
         assert(reg != REG_NA);
-        regNumber varReg = REG_NA;
         if (isMultiRegVar)
         {
             // Each field is passed in its own register, use the field types.
@@ -11404,7 +11389,6 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         //
         // There should never be any circular dependencies, and we will check that here.
 
-        GenTreeCopyOrReload* copyNode = treeNode->AsCopyOrReload();
         // GenTreeCopyOrReload only reports the highest index that has a valid register.
         // However, we need to ensure that we consume all the registers of the child node,
         // so we use its regCount.
@@ -11530,7 +11514,6 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
     if (targetReg != REG_NA)
     {
         // We shouldn't specify a no-op move.
-        regMaskTP targetRegMask = genRegMask(targetReg);
         assert(sourceReg != targetReg);
         var_types type;
         if (op1->IsMultiRegLclVar())

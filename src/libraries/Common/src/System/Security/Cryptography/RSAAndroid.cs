@@ -587,7 +587,7 @@ namespace System.Security.Cryptography
             {
                 if (returnValue != 1)
                 {
-                throw new CryptographicException();
+                    throw new CryptographicException();
                 }
             }
 
@@ -810,6 +810,11 @@ namespace System.Security.Cryptography
                     int ret = Interop.AndroidCrypto.RsaVerificationPrimitive(signature, unwrapped, rsa);
 
                     CheckReturn(ret);
+                    if (ret == 0)
+                    {
+                        // Return value of 0 from RsaVerificationPrimitive indicates the signature could not be decrypted.
+                        return false;
+                    }
 
                     Debug.Assert(
                         ret == requiredBytes,

@@ -157,7 +157,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (dataContract.IsReference)
             {
-                throw System.ServiceModel.DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
                     XmlObjectSerializer.CreateSerializationException(SR.Format(
                         SR.JsonUnsupportedForIsReference,
                         DataContract.GetClrTypeFullName(dataContract.UnderlyingType),

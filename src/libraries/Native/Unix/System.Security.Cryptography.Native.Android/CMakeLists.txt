@@ -6,6 +6,7 @@ add_compile_options(-Wno-unused-function)
 
 set(NATIVECRYPTO_SOURCES
     pal_bignum.c
+    pal_dsa.c
     pal_ecdsa.c
     pal_ecc_import_export.c
     pal_eckey.c
@@ -22,6 +23,8 @@ set(NATIVECRYPTO_SOURCES
     pal_ssl.c
     pal_sslstream.c
     pal_x509.c
+    pal_x509chain.c
+    pal_x509store.c
 )
 
 add_library(System.Security.Cryptography.Native.Android

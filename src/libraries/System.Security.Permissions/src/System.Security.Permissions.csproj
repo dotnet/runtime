@@ -135,8 +135,6 @@
     <Compile Include="System\Security\Policy\ApplicationVersionMatch.cs" />
     <Compile Include="System\Security\Policy\CodeConnectAccess.cs" />
     <Compile Include="System\Security\Policy\CodeGroup.cs" />
-    <Compile Include="System\Security\Policy\Evidence.cs" />
-    <Compile Include="System\Security\Policy\EvidenceBase.cs" />
     <Compile Include="System\Security\Policy\FileCodeGroup.cs" />
     <Compile Include="System\Security\Policy\FirstMatchCodeGroup.cs" />
     <Compile Include="System\Security\Policy\GacInstalled.cs" />

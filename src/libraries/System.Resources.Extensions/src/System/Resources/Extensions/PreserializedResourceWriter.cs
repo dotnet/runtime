@@ -188,7 +188,7 @@ namespace System.Resources.Extensions
             _requiresDeserializingResourceReader = true;
         }
 
-        private class ResourceDataRecord
+        private sealed class ResourceDataRecord
         {
             internal readonly SerializationFormat Format;
             internal readonly object Data;

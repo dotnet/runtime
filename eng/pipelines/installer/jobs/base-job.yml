@@ -415,7 +415,7 @@ jobs:
       displayName: Build and Package
       continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
-  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
     - script: |
         du -sh $(Build.SourcesDirectory)/*
         df -h

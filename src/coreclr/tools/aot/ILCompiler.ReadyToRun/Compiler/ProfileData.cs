@@ -38,6 +38,9 @@ namespace ILCompiler
     {
         public MethodProfileData(MethodDesc method, MethodProfilingDataFlags flags, double exclusiveWeight, Dictionary<MethodDesc, int> callWeights, uint scenarioMask, PgoSchemaElem[] schemaData)
         {
+            if (method == null)
+                throw new ArgumentNullException("method");
+
             Method = method;
             Flags = flags;
             ScenarioMask = scenarioMask;
@@ -94,10 +97,14 @@ namespace ILCompiler
                         }
                     }
 
-                    var mergedSchemaData = data.SchemaData;
-                    if (mergedSchemaData == null)
+                    PgoSchemaElem[] mergedSchemaData;
+                    if (data.SchemaData == null)
                     {
                         mergedSchemaData = dataToMerge.SchemaData;
+                    }
+                    else if (dataToMerge.SchemaData == null)
+                    {
+                        mergedSchemaData = data.SchemaData;
                     }
                     else
                     {

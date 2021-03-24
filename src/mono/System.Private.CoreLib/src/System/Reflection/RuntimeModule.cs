@@ -33,7 +33,7 @@ namespace System.Reflection
 {
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class RuntimeModule : Module
+    internal sealed class RuntimeModule : Module
     {
 #pragma warning disable 649
         #region Sync with object-internals.h

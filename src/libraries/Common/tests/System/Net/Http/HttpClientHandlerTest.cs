@@ -1513,7 +1513,7 @@ namespace System.Net.Http.Functional.Tests
                         await connection.ReadRequestDataAsync(readBody: true);
                     }
                     catch { } // Eat errors from client disconnect.
-                    await clientFinished.Task.TimeoutAfter(TimeSpan.FromMinutes(2));
+                    await clientFinished.Task.WaitAsync(TimeSpan.FromMinutes(2));
                 });
             });
         }

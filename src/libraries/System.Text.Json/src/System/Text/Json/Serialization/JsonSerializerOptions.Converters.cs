@@ -96,12 +96,7 @@ namespace System.Text.Json
             // Use factory pattern to generate an EnumConverter with AllowStrings and AllowNumbers options for dictionary keys.
             // There will be one converter created for each enum type.
             JsonConverter GetEnumConverter()
-                => (JsonConverter)Activator.CreateInstance(
-                        typeof(EnumConverter<>).MakeGenericType(keyType),
-                        BindingFlags.Instance | BindingFlags.Public,
-                        binder: null,
-                        new object[] { EnumConverterOptions.AllowStrings | EnumConverterOptions.AllowNumbers, this },
-                        culture: null)!;
+                => EnumConverterFactory.Create(keyType, EnumConverterOptions.AllowStrings | EnumConverterOptions.AllowNumbers, this);
         }
 
         private ConcurrentDictionary<Type, JsonConverter>? _dictionaryKeyConverters;

@@ -3679,22 +3679,27 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
     if ((tree->gtGetOp1()->OperGet() == GT_ARR_BOUNDS_CHECK) &&
         ((tree->gtGetOp1()->gtFlags & GTF_ARR_BOUND_INBND) != 0))
     {
-        optRemoveRangeCheck(tree, stmt);
+        optRemoveCommaBasedRangeCheck(tree, stmt);
         return optAssertionProp_Update(tree, tree, stmt);
     }
     return nullptr;
 }
 
-/*****************************************************************************
- *
- *  Given a tree consisting of a Ind and a set of available assertions, we try
- *  to propagate an assertion and modify the Ind tree if we can. We pass in the
- *  root of the tree via 'stmt', for local copy prop 'stmt' will be nullptr.
- *
- *  Returns the modified tree, or nullptr if no assertion prop took place.
- *
- */
-
+//------------------------------------------------------------------------
+// optAssertionProp_Ind: see if we can prove the indirection can't cause
+//    and exception.
+//
+// Arguments:
+//   assertions  - set of live assertions
+//   tree        - tree to possibly optimize
+//   stmt        - statement containing the tree
+//
+// Returns:
+//   The modified tree, or nullptr if no assertion prop took place.
+//
+// Notes:
+//   stmt may be nullptr during local assertion prop
+//
 GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
     assert(tree->OperIsIndir());
@@ -3742,16 +3747,26 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
     return nullptr;
 }
 
-/*****************************************************************************
- *  Check if a non-null assertion can be made about the input operand "op"
- *  from the set of "assertions," or implicitly from the value number on "op."
- *
- *  Sets "pVnBased" if the assertion is value number based. If no matching
- *  assertions are found from the table, then returns "NO_ASSERTION_INDEX."
- *
- *  Note: If both VN and assertion table yield a matching assertion, "pVnBased"
- *  is only set and the return value is "NO_ASSERTION_INDEX."
- */
+//------------------------------------------------------------------------
+// optAssertionIsNonNull: see if we can prove a tree's value will be non-null
+//   based on assertions
+//
+// Arguments:
+//   op - tree to check
+//   assertions  - set of live assertions
+//   pVnBased - [out] set to true if value numbers were used
+//   pIndex - [out] the assertion used in the proof
+//
+// Returns:
+//   true if the tree's value will be non-null
+//
+// Notes:
+//   Sets "pVnBased" if the assertion is value number based. If no matching
+//    assertions are found from the table, then returns "NO_ASSERTION_INDEX."
+//
+//   If both VN and assertion table yield a matching assertion, "pVnBased"
+//   is only set and the return value is "NO_ASSERTION_INDEX."
+//
 bool Compiler::optAssertionIsNonNull(GenTree*         op,
                                      ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased)
                                          DEBUGARG(AssertionIndex* pIndex))
@@ -3769,20 +3784,35 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
         return true;
     }
 
-    AssertionIndex index = optAssertionIsNonNullInternal(op, assertions);
+    AssertionIndex index = optAssertionIsNonNullInternal(op, assertions DEBUGARG(pVnBased));
 #ifdef DEBUG
     *pIndex = index;
 #endif
     return index != NO_ASSERTION_INDEX;
 }
 
-/*****************************************************************************
- *  Check if a non-null assertion can be made about the input operand "op"
- *  from the set of "assertions."
- *
- */
-AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions)
+//------------------------------------------------------------------------
+// optAssertionIsNonNullInternal: see if we can prove a tree's value will
+//   be non-null based on assertions
+//
+// Arguments:
+//   op - tree to check
+//   assertions  - set of live assertions
+//   pVnBased - [out] set to true if value numbers were used
+//
+// Returns:
+//   index of assertion, or NO_ASSERTION_INDEX
+//
+AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
+                                                       ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased))
 {
+
+#ifdef DEBUG
+    // Initialize the out param
+    //
+    *pVnBased = false;
+#endif
+
     // If local assertion prop use lcl comparison, else use VN comparison.
     if (!optLocalAssertionProp)
     {
@@ -3791,9 +3821,32 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALAR
             return NO_ASSERTION_INDEX;
         }
 
-        ValueNum vn = op->gtVNPair.GetConservative();
+        // Look at both the top-level vn, and
+        // the vn we get by stripping off any constant adds.
+        //
+        ValueNum  vn     = vnStore->VNConservativeNormalValue(op->gtVNPair);
+        ValueNum  vnBase = vn;
+        VNFuncApp funcAttr;
 
-        // Check each assertion to find if we have a vn == or != null assertion.
+        while (vnStore->GetVNFunc(vnBase, &funcAttr) && (funcAttr.m_func == (VNFunc)GT_ADD))
+        {
+            if (vnStore->IsVNConstant(funcAttr.m_args[1]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
+            {
+                vnBase = funcAttr.m_args[0];
+            }
+            else if (vnStore->IsVNConstant(funcAttr.m_args[0]) &&
+                     varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
+            {
+                vnBase = funcAttr.m_args[1];
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // Check each assertion to find if we have a vn != null assertion.
+        //
         BitVecOps::Iter iter(apTraits, assertions);
         unsigned        index = 0;
         while (iter.NextElem(&index))
@@ -3808,10 +3861,21 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALAR
             {
                 continue;
             }
-            if (curAssertion->op1.vn != vn || curAssertion->op2.vn != ValueNumStore::VNForNull())
+
+            if (curAssertion->op2.vn != ValueNumStore::VNForNull())
             {
                 continue;
             }
+
+            if ((curAssertion->op1.vn != vn) && (curAssertion->op1.vn != vnBase))
+            {
+                continue;
+            }
+
+#ifdef DEBUG
+            *pVnBased = true;
+#endif
+
             return assertionIndex;
         }
     }
@@ -3941,10 +4005,9 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
 
 /*****************************************************************************
  *
- *  Given a tree consisting of a comma node with a bounds check, remove any
- *  redundant bounds check that has already been checked in the program flow.
+ *  Given a tree with a bounds check, remove it if it has already been checked in the program flow.
  */
-GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree)
+GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
     if (optLocalAssertionProp)
     {
@@ -4062,12 +4125,23 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
+        if (arrBndsChk == stmt->GetRootNode())
+        {
+            // We have a top-level bounds check node.
+            // This can happen when trees are broken up due to inlining.
+            // optRemoveStandaloneRangeCheck will return the modified tree (side effects or a no-op).
+            GenTree* newTree = optRemoveStandaloneRangeCheck(arrBndsChk, stmt);
+
+            return optAssertionProp_Update(newTree, arrBndsChk, stmt);
+        }
 
         // Defer actually removing the tree until processing reaches its parent comma, since
-        // optRemoveRangeCheck needs to rewrite the whole comma tree.
+        // optRemoveCommaBasedRangeCheck needs to rewrite the whole comma tree.
         arrBndsChk->gtFlags |= GTF_ARR_BOUND_INBND;
+
         return nullptr;
     }
+
     return nullptr;
 }
 
@@ -4160,7 +4234,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_ARR_BOUNDS_CHECK:
-            return optAssertionProp_BndsChk(assertions, tree);
+            return optAssertionProp_BndsChk(assertions, tree, stmt);
 
         case GT_COMMA:
             return optAssertionProp_Comma(assertions, tree, stmt);

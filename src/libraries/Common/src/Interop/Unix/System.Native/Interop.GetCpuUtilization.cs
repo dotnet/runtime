@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal partial class Sys
+    internal static partial class Sys
     {
         [StructLayout(LayoutKind.Sequential)]
         internal struct ProcessCpuInformation

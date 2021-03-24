@@ -23,6 +23,7 @@ namespace ILCompiler
         private CommandLineOptions _commandLineOptions;
         public TargetOS _targetOS;
         public TargetArchitecture _targetArchitecture;
+        private bool _armelAbi = false;
         public OptimizationMode _optimizationMode;
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _unrootedInputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -167,7 +168,10 @@ namespace ILCompiler
                 else if (_commandLineOptions.TargetArch.Equals("arm", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM;
                 else if (_commandLineOptions.TargetArch.Equals("armel", StringComparison.OrdinalIgnoreCase))
+                {
                     _targetArchitecture = TargetArchitecture.ARM;
+                    _armelAbi = true;
+                }
                 else if (_commandLineOptions.TargetArch.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM64;
                 else
@@ -316,7 +320,7 @@ namespace ILCompiler
 
                     SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
-                    var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
+                    var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.CoreRTArmel : TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
 
                     bool versionBubbleIncludesCoreLib = false;
                     if (_commandLineOptions.InputBubble)
@@ -628,6 +632,8 @@ namespace ILCompiler
 
                 if (_commandLineOptions.DgmlLogFileName != null)
                     compilation.WriteDependencyLog(_commandLineOptions.DgmlLogFileName);
+
+                compilation.Dispose();
             }
 
             return 0;

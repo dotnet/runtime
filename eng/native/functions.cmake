@@ -392,19 +392,24 @@ endfunction()
 # - creating executable pages from anonymous memory,
 # - making read-only-after-relocations (RELRO) data pages writable again.
 function(disable_pax_mprotect targetName)
-  # Try to locate the paxctl tool. Failure to find it is not fatal,
-  # but the generated executables won't work on a system where PAX is set
-  # to prevent applications to create executable memory mappings.
-  find_program(PAXCTL paxctl)
+  # Disabling PAX hardening only makes sense in systems that use Elf image formats. Particularly, looking
+  # for paxctl in macOS is problematic as it collides with popular software for that OS that performs completely
+  # unrelated functionality. Only look for it when we'll generate Elf images.
+  if (CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+    # Try to locate the paxctl tool. Failure to find it is not fatal,
+    # but the generated executables won't work on a system where PAX is set
+    # to prevent applications to create executable memory mappings.
+    find_program(PAXCTL paxctl)
 
-  if (NOT PAXCTL STREQUAL "PAXCTL-NOTFOUND")
-    add_custom_command(
-      TARGET ${targetName}
-      POST_BUILD
-      VERBATIM
-      COMMAND ${PAXCTL} -c -m $<TARGET_FILE:${targetName}>
-    )
-  endif()
+    if (NOT PAXCTL STREQUAL "PAXCTL-NOTFOUND")
+        add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        VERBATIM
+        COMMAND ${PAXCTL} -c -m $<TARGET_FILE:${targetName}>
+        )
+    endif()
+  endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 endfunction()
 
 if (CMAKE_VERSION VERSION_LESS "3.12")
@@ -468,9 +473,12 @@ function(generate_module_index Target ModuleIndexFile)
         set(scriptExt ".sh")
     endif()
 
+    set(index_timestamp ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${Target}_index.timestamp)
+
     add_custom_command(
-        OUTPUT ${ModuleIndexFile}
+        OUTPUT ${index_timestamp}
         COMMAND ${CLR_ENG_NATIVE_DIR}/genmoduleindex${scriptExt} $<TARGET_FILE:${Target}> ${ModuleIndexFile}
+        COMMAND ${CMAKE_COMMAND} -E touch ${index_timestamp}
         DEPENDS ${Target}
         COMMENT "Generating ${Target} module index file -> ${ModuleIndexFile}"
     )
@@ -482,7 +490,7 @@ function(generate_module_index Target ModuleIndexFile)
 
     add_custom_target(
         ${Target}_module_index_header
-        DEPENDS ${ModuleIndexFile}
+        DEPENDS ${index_timestamp}
     )
 endfunction(generate_module_index)
 

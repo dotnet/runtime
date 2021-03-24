@@ -752,13 +752,14 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         public async Task NonDisposedSocket_SafeHandlesCollected(bool clientAsync)
         {
-            List<WeakReference> handles = await CreateHandlesAsync(clientAsync);
-            RetryHelper.Execute(() =>
+            TimeSpan timeout = TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout);
+            List<WeakReference> handles = await CreateHandlesAsync(clientAsync).WaitAsync(timeout);
+            await RetryHelper.ExecuteAsync(() => Task.Run(() =>
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 Assert.Equal(0, handles.Count(h => h.IsAlive));
-            });
+            })).WaitAsync(timeout);
         }
 
         [Fact]

@@ -145,7 +145,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the Take or Skip.
         //
 
-        private class TakeOrSkipQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TResult, TKey>
+        private sealed class TakeOrSkipQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TResult, TKey>
         {
             private readonly QueryOperatorEnumerator<TResult, TKey> _source; // The data source to enumerate.
             private readonly int _count; // The number of elements to take or skip.
@@ -325,7 +325,7 @@ namespace System.Linq.Parallel
         // results were indexable.
         //
 
-        private class TakeOrSkipQueryOperatorResults : UnaryQueryOperatorResults
+        private sealed class TakeOrSkipQueryOperatorResults : UnaryQueryOperatorResults
         {
             private readonly TakeOrSkipQueryOperator<TResult> _takeOrSkipOp; // The operator that generated the results
             private readonly int _childCount; // The number of elements in child results

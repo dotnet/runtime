@@ -8,7 +8,7 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
     [SupportedOSPlatform("windows")]
-    internal class EnumeratorToEnumVariantMarshaler : ICustomMarshaler
+    internal sealed class EnumeratorToEnumVariantMarshaler : ICustomMarshaler
     {
         private static readonly EnumeratorToEnumVariantMarshaler s_enumeratorToEnumVariantMarshaler = new EnumeratorToEnumVariantMarshaler();
 

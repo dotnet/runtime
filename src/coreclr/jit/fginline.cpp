@@ -817,7 +817,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
 
         if (condTree->OperGet() == GT_CNS_INT)
         {
-            JITDUMP(" ... found foldable jtrue at [%06u] in BB%02u\n", dspTreeID(tree), block->bbNum);
+            JITDUMP(" ... found foldable jtrue at [%06u] in " FMT_BB "\n", dspTreeID(tree), block->bbNum);
             noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
 
             // We have a constant operand, and should have the all clear to optimize.
@@ -849,7 +849,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             // other transitively unreachable blocks.
             if (bNotTaken->bbRefs == 0)
             {
-                JITDUMP("... it looks like BB%02u is now unreachable!\n", bNotTaken->bbNum);
+                JITDUMP("... it looks like " FMT_BB " is now unreachable!\n", bNotTaken->bbNum);
             }
         }
     }
@@ -1847,8 +1847,6 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 }
                 else
                 {
-                    CORINFO_CLASS_HANDLE structType =
-                        lclVarInfo[lclNum + inlineInfo->argCnt].lclVerTypeInfo.GetClassHandle();
                     tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), // Dest
                                           gtNewIconNode(0),              // Value
                                           false,                         // isVolatile

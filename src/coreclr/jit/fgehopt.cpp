@@ -1323,7 +1323,6 @@ void Compiler::fgDebugCheckTryFinallyExits()
 {
     unsigned  XTnum            = 0;
     EHblkDsc* HBtab            = compHndBBtab;
-    unsigned  cloneCount       = 0;
     bool      allTryExitsValid = true;
     for (; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {

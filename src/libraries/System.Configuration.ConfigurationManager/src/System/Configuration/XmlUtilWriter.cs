@@ -356,7 +356,7 @@ namespace System.Configuration
         }
 
         // Class that contains the state of the writer and its underlying stream.
-        private class StreamWriterCheckpoint
+        private sealed class StreamWriterCheckpoint
         {
             internal readonly bool _isLastLineBlank;
             internal readonly int _lineNumber;

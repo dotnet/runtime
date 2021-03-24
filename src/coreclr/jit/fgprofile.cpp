@@ -281,8 +281,11 @@ public:
 //
 class BlockCountInstrumentor : public Instrumentor
 {
+private:
+    BasicBlock* m_entryBlock;
+
 public:
-    BlockCountInstrumentor(Compiler* comp) : Instrumentor(comp)
+    BlockCountInstrumentor(Compiler* comp) : Instrumentor(comp), m_entryBlock(nullptr)
     {
     }
     bool ShouldProcess(BasicBlock* block) override
@@ -349,6 +352,15 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     schema.push_back(schemaElem);
 
     m_schemaCount++;
+
+    // If this is the entry block, remember it for later.
+    // Note it might not be fgFirstBB, if we have a scratchBB.
+    //
+    if (offset == 0)
+    {
+        assert(m_entryBlock == nullptr);
+        m_entryBlock = block;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -407,11 +419,14 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
 
     // Find the address of the entry block's counter.
     //
-    BasicBlock* const block            = m_comp->fgFirstBB;
-    const int         firstSchemaIndex = block->bbCountSchemaIndex;
-    assert(block->bbCodeOffs == (IL_OFFSET)schema[firstSchemaIndex].ILOffset);
+    assert(m_entryBlock != nullptr);
+    assert(m_entryBlock->bbCodeOffs == 0);
+
+    const int firstSchemaIndex = (int)m_entryBlock->bbCountSchemaIndex;
+    assert((IL_OFFSET)schema[firstSchemaIndex].ILOffset == 0);
     assert(schema[firstSchemaIndex].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount);
-    size_t addrOfFirstExecutionCount = (size_t)(schema[firstSchemaIndex].Offset + profileMemory);
+
+    const size_t addrOfFirstExecutionCount = (size_t)(schema[firstSchemaIndex].Offset + profileMemory);
 
     GenTree* arg;
 
@@ -436,20 +451,29 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
         arg = m_comp->gtNewIconEmbMethHndNode(info.compMethodHnd);
     }
 
+    // We want to call CORINFO_HELP_BBT_FCN_ENTER just one time,
+    // the first time this method is called. So make the call conditional
+    // on the entry block's profile count.
+    //
     GenTreeCall::Use* args = m_comp->gtNewCallArgs(arg);
     GenTree*          call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
 
     // Read Basic-Block count value
+    //
     GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
 
     // Compare Basic-Block count value against zero
+    //
     GenTree*   relop = m_comp->gtNewOperNode(GT_NE, TYP_INT, valueNode, m_comp->gtNewIconNode(0, TYP_INT));
     GenTree*   colon = new (m_comp, GT_COLON) GenTreeColon(TYP_VOID, m_comp->gtNewNothingNode(), call);
     GenTree*   cond  = m_comp->gtNewQmarkNode(TYP_VOID, relop, colon);
     Statement* stmt  = m_comp->gtNewStmt(cond);
 
+    // Add this check into the scratch block entry so we only do the check once per call.
+    // If we put it in block we may be putting it inside a loop.
+    //
     m_comp->fgEnsureFirstBBisScratch();
-    m_comp->fgInsertStmtAtEnd(block, stmt);
+    m_comp->fgInsertStmtAtEnd(m_comp->fgFirstBB, stmt);
 }
 
 //------------------------------------------------------------------------
@@ -1463,35 +1487,48 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 
     // Choose instrumentation technology.
     //
+    // We enable edge profiling by default, except when:
+    // * disabled by option
+    // * we are prejitting
+    // * we are jitting osr methods
+    //
     // Currently, OSR is incompatible with edge profiling. So if OSR is enabled,
     // always do block profiling.
     //
     // Note this incompatibility only exists for methods that actually have
     // patchpoints, but we won't know that until we import.
     //
-    const bool methodMayHavePatchpoints =
-        (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0));
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
-    if ((JitConfig.JitEdgeProfiling() > 0) && !methodMayHavePatchpoints)
+    const bool prejit = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool osr    = (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0));
+    const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !osr;
+
+    if (useEdgeProfiles)
     {
         fgCountInstrumentor = new (this, CMK_Pgo) EfficientEdgeCountInstrumentor(this);
     }
     else
     {
-        if (JitConfig.JitEdgeProfiling() > 0)
-        {
-            JITDUMP("OSR and edge profiling not yet compatible; using block profiling\n");
-        }
+        JITDUMP("Using block profiling, because %s\n",
+                (JitConfig.JitEdgeProfiling() > 0) ? "edge profiles disabled" : prejit ? "prejitting" : "OSR");
 
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }
 
-    if (JitConfig.JitClassProfiling() > 0)
+    // Enable class profiling by default, when jitting.
+    // Todo: we may also want this on by default for prejitting.
+    //
+    const bool useClassProfiles = (JitConfig.JitClassProfiling() > 0) && !prejit;
+    if (useClassProfiles)
     {
         fgClassInstrumentor = new (this, CMK_Pgo) ClassProbeInstrumentor(this);
     }
     else
     {
+        JITDUMP("Not doing class profiling, because %s\n",
+                (JitConfig.JitClassProfiling() > 0) ? "class profiles disabled" : "prejit");
+
         fgClassInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
@@ -1551,13 +1588,29 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     assert(fgClassInstrumentor->SchemaCount() == info.compClassProbeCount);
 
-    // Optionally, if there were no class probes and only one count probe,
+    // Optionally, when jitting, if there were no class probes and only one count probe,
     // suppress instrumentation.
     //
-    if ((JitConfig.JitMinimalProfiling() > 0) && (fgCountInstrumentor->SchemaCount() == 1) &&
-        (fgClassInstrumentor->SchemaCount() == 0))
+    // We leave instrumentation in place when prejitting as the sample hits in the method
+    // may be used to determine if the method should be prejitted or not.
+    //
+    // For jitting, no information is conveyed by the count in a single=block method.
+    //
+    bool minimalProbeMode = false;
+
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
     {
-        JITDUMP("Not instrumenting method: only one counter, and no class probes\n");
+        minimalProbeMode = (JitConfig.JitMinimalPrejitProfiling() > 0);
+    }
+    else
+    {
+        minimalProbeMode = (JitConfig.JitMinimalJitProfiling() > 0);
+    }
+
+    if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) && (fgClassInstrumentor->SchemaCount() == 0))
+    {
+        JITDUMP(
+            "Not instrumenting method: minimal probing enabled, and method has only one counter and no class probes\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -2392,7 +2445,10 @@ void EfficientEdgeCountReconstructor::Propagate()
 {
     // We don't expect mismatches or convergence failures.
     //
-    assert(!m_mismatch);
+
+    // Mismatches are currently expected as the flow for static pgo doesn't prevent them now.
+    //    assert(!m_mismatch);
+
     assert(!m_failedToConverge);
 
     // If any issues arose during reconstruction, don't set weights.

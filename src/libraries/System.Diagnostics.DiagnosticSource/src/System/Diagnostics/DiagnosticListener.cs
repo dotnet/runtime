@@ -266,11 +266,11 @@ namespace System.Diagnostics
         /// in DiagnosticSubscription so we just define a private type for it here just so things compile.
         /// </summary>
 #if NETSTANDARD1_1
-        private class Activity {}
+        private sealed class Activity {}
 #endif
 
         // Note that Subscriptions are READ ONLY.   This means you never update any fields (even on removal!)
-        private class DiagnosticSubscription : IDisposable
+        private sealed class DiagnosticSubscription : IDisposable
         {
             internal IObserver<KeyValuePair<string, object?>> Observer = null!;
 
@@ -345,7 +345,7 @@ namespace System.Diagnostics
         /// a callback when a new listener gets created.   When a new DiagnosticListener gets created it should call
         /// OnNewDiagnosticListener so that AllListenerObservable can forward it on to all the subscribers.
         /// </summary>
-        private class AllListenerObservable : IObservable<DiagnosticListener>
+        private sealed class AllListenerObservable : IObservable<DiagnosticListener>
         {
             public IDisposable Subscribe(IObserver<DiagnosticListener> observer)
             {
