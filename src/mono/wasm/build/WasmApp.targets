@@ -239,8 +239,8 @@
       <_PythonToolsVersionedPath Condition="Exists($(_PythonToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_PythonToolsBasePath)))</_PythonToolsVersionedPath>
 
       <!-- don't set $(Emscripten*ToolsPath) if we couldn't find the versioned directories -->
-      <EmscriptenNodeToolsPath Condition="'$(_NodeToolsVersionedPath)' != '' and '$(_NodeToolsVersionedPath)' != '.'">$(_NodeToolsVersionedPath)</EmscriptenNodeToolsPath>
-      <EmscriptenPythonToolsPath Condition="'$(_PythonToolsVersionedPath)' != '' and '$(_PythonToolsVersionedPath)' != '.'">$(_PythonToolsVersionedPath)</EmscriptenPythonToolsPath>
+      <EmscriptenNodeToolsPath Condition="'$(_NodeToolsVersionedPath)' != ''">$(_NodeToolsVersionedPath)</EmscriptenNodeToolsPath>
+      <EmscriptenPythonToolsPath Condition="'$(_PythonToolsVersionedPath)' != ''">$(_PythonToolsVersionedPath)</EmscriptenPythonToolsPath>
 
       <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
     </PropertyGroup>
