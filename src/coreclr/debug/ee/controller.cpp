@@ -3249,7 +3249,7 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
     // Either this is the helper thread, or we're manipulating our own context.
     _ASSERTE(
         ThisIsHelperThreadWorker() ||
-        (thread == ::GetThread())
+        (thread == ::GetThreadNULLOk())
     );
 
     CONTEXT *context = GetManagedStoppedCtx(thread);
@@ -3324,7 +3324,7 @@ BOOL DebuggerController::DispatchExceptionHook(Thread *thread,
         MODE_ANY;
 
         // Filter context not set yet b/c we can only set it in COOP, and this may be in preemptive.
-        PRECONDITION(thread == ::GetThread());
+        PRECONDITION(thread == ::GetThreadNULLOk());
         PRECONDITION((g_pEEInterface->GetThreadFilterContext(thread) == NULL));
         PRECONDITION(CheckPointer(pException));
     }
@@ -4537,7 +4537,7 @@ void DebuggerPatchSkip::DebuggerDetachClean()
    // 2. Create a "stack walking" implementation for native code and use it to get the current IP and
    // set the IP to the right place.
 
-    Thread *thread = GetThread();
+    Thread *thread = GetThreadNULLOk();
     if (thread != NULL)
     {
         BYTE *patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
@@ -4672,7 +4672,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
         // toggled the GC mode underneath us.
         MODE_ANY;
 
-        PRECONDITION(GetThread() == thread);
+        PRECONDITION(GetThreadNULLOk() == thread);
         PRECONDITION(thread != NULL);
         PRECONDITION(CheckPointer(context));
     }
@@ -5692,7 +5692,7 @@ static bool IsTailCallThatReturns(const BYTE * ip, ControllerStackInfo* info)
 
     _ASSERTE(info->HasReturnFrame());
     LPVOID retAddr = (LPVOID)GetControlPC(&info->GetReturnFrame().registers);
-    TailCallTls* tls = GetThread()->GetTailCallTls();
+    TailCallTls* tls = GetThreaNotOk()->GetTailCallTls();
     LPVOID tailCallAwareRetAddr = tls->GetFrame()->TailCallAwareReturnAddress;
 
     LOG((LF_CORDB,LL_INFO1000, "ITCTR: ret addr is %p, tailcall aware ret addr is %p\n",
@@ -6237,7 +6237,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         while (info->HasReturnFrame() && info->m_activeFrame.md != info->GetReturnFrame().md)
         {
             StackTraceTicket ticket(info);
-            returnInfo.GetStackInfo(ticket, GetThread(), info->GetReturnFrame().fp, NULL);
+            returnInfo.GetStackInfo(ticket, GetThreaNotOk(), info->GetReturnFrame().fp, NULL);
             info = &returnInfo;
         }
 
@@ -6249,7 +6249,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         if (m_eMode == cStepOut)
         {
             StackTraceTicket ticket(info);
-            returnInfo.GetStackInfo(ticket, GetThread(), info->GetReturnFrame().fp, NULL);
+            returnInfo.GetStackInfo(ticket, GetThreaNotOk(), info->GetReturnFrame().fp, NULL);
             info = &returnInfo;
         }
         else
@@ -6326,7 +6326,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         // not to report the managed frame that was at the same SP. However the unmanaged
         // frame might be used in the mixed-mode step out case so I don't suppress it
         // there.
-        returnInfo.GetStackInfo(ticket, GetThread(), info->GetReturnFrame().fp, NULL, !(m_rgfMappingStop & STOP_UNMANAGED));
+        returnInfo.GetStackInfo(ticket, GetThreaNotOk(), info->GetReturnFrame().fp, NULL, !(m_rgfMappingStop & STOP_UNMANAGED));
         info = &returnInfo;
 
 #ifdef _DEBUG
@@ -6515,7 +6515,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
 
                 CONTRACT_VIOLATION(GCViolation); // TraceFrame GC-triggers
 
-                if (g_pEEInterface->TraceFrame(GetThread(),
+                if (g_pEEInterface->TraceFrame(GetThreaNotOk(),
                                                info->m_activeFrame.frame, FALSE,
                                                &trace, &(info->m_activeFrame.registers))
                     && g_pEEInterface->FollowTrace(&trace)
@@ -6596,9 +6596,7 @@ void DebuggerStepper::StepOut(FramePointer fp, StackTraceTicket ticket)
     LOG((LF_CORDB, LL_INFO10000, "Attempting to step out, fp:0x%x this:0x%x"
         "\n", fp.GetSPValue(), this ));
 
-    Thread *thread = GetThread();
-
-
+    Thread *thread = GetThreaNotOk();
     CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
     ControllerStackInfo info;
 
@@ -6860,7 +6858,7 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
     else
         LOG((LF_CORDB,LL_INFO10000," single step\n"));
 
-    Thread *thread = GetThread();
+    Thread *thread = GetThreaNotOk();
     CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
 
     // ControllerStackInfo doesn't report IL stubs, so if we are in an IL stub, we need
@@ -7446,7 +7444,7 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
 
     // Safe to stackwalk b/c we've already checked that our IP is in crawlable code.
     StackTraceTicket ticket(ip);
-    info.GetStackInfo(ticket, GetThread(), LEAF_MOST_FRAME, NULL);
+    info.GetStackInfo(ticket, GetThreaNotOk(), LEAF_MOST_FRAME, NULL);
 
     // This is a special case where we return from a managed method back to an IL stub.  This can
     // only happen if there's no more managed method frames closer to the root and we want to perform
@@ -7642,7 +7640,7 @@ void DebuggerStepper::PrepareForSendEvent(StackTraceTicket ticket)
     if (m_fpStepInto != LEAF_MOST_FRAME)
     {
         ControllerStackInfo csi;
-        csi.GetStackInfo(ticket, GetThread(), LEAF_MOST_FRAME, NULL);
+        csi.GetStackInfo(ticket, GetThreaNotOk(), LEAF_MOST_FRAME, NULL);
 
         if (csi.m_targetFrameFound &&
 #if !defined(FEATURE_EH_FUNCLETS)
@@ -7669,7 +7667,7 @@ void DebuggerStepper::PrepareForSendEvent(StackTraceTicket ticket)
         if (this->GetDCType() == DEBUGGER_CONTROLLER_JMC_STEPPER)
         {
             // If we're at either a patch or SS, we'll have a context.
-            CONTEXT *context = g_pEEInterface->GetThreadFilterContext(GetThread());
+            CONTEXT *context = g_pEEInterface->GetThreadFilterContext(GetThreaNotOk());
             if (context == NULL)
             {
                 void * pIP = CORDbgGetIP(reinterpret_cast<DT_CONTEXT *>(context));
@@ -7711,7 +7709,7 @@ bool DebuggerStepper::SendEvent(Thread *thread, bool fIpChanged)
     LOG((LF_CORDB, LL_INFO10000, "DS::SE m_fpStepInto:0x%x\n", m_fpStepInto.GetSPValue()));
 
     _ASSERTE(m_fReadyToSend);
-    _ASSERTE(GetThread() == thread);
+    _ASSERTE(GetThreadNULLOk() == thread);
 
     CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
     _ASSERTE(!ISREDIRECTEDTHREAD(thread));

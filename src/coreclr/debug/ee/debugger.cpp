@@ -778,7 +778,7 @@ CONTEXT * GetManagedLiveCtx(Thread * pThread)
     // We're in some Controller's Filter after hitting an exception.
     // We're not stopped.
     //_ASSERTE(!g_pDebugger->IsStopped()); <-- @todo - this fires, need to find out why.
-    _ASSERTE(GetThread() == pThread);
+    _ASSERTE(GetThreadNULLOk() == pThread);
 
     CONTEXT *pCtx = g_pEEInterface->GetThreadFilterContext(pThread);
 
@@ -1129,7 +1129,7 @@ HRESULT Debugger::SetFiberMode(bool isFiberMode)
     CONTRACTL_END;
 
 
-    Thread * pThread = ::GetThread();
+    Thread * pThread = ::GetThreadNULLOk();
 
     m_pRCThread->m_pDCB->m_bHostingInFiber = isFiberMode;
 
@@ -5957,7 +5957,7 @@ void Debugger::SuspendForGarbageCollectionCompleted()
     }
     this->m_isBlockedOnGarbageCollectionEvent = TRUE;
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreaNotOk();
 
     if (CORDBUnrecoverableError(this))
         return;
@@ -5995,7 +5995,7 @@ void Debugger::ResumeForGarbageCollectionStarted()
         return;
     }
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreaNotOk();
 
     if (CORDBUnrecoverableError(this))
         return;
@@ -6154,7 +6154,7 @@ void Debugger::SendRawUserBreakpoint(Thread * pThread)
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
 
-        PRECONDITION(pThread == GetThread());
+        PRECONDITION(pThread == GetThreadNULLOk());
 
         PRECONDITION(ThreadHoldsLock());
 
@@ -7884,7 +7884,7 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
         DebuggerEval *pDE = pfe->pDE;
 
         _ASSERTE(pDE->m_evalDuringException);
-        _ASSERTE(pDE->m_thread == GetThread());
+        _ASSERTE(pDE->m_thread == GetThreadNULLOk());
 
         // Remove the pending eval from the hash. This ensures that if we take a first chance exception during the eval
         // that we can do another nested eval properly.
@@ -8048,7 +8048,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
 {
     CONTRACTL
     {
-        if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
+        if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThreadNULLOk()))
         {
             NOTHROW;
             GC_NOTRIGGER;
@@ -8080,7 +8080,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     // useful information for the debugger and, in fact, it may be a completely
     // internally handled runtime exception, so we should do nothing.
     //
-    if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
+    if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThreadNULLOk()))
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }
@@ -8121,7 +8121,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
 
     // Stubs don't have an IL offset.
     const SIZE_T offset = (SIZE_T)ICorDebugInfo::NO_MAPPING;
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
     DWORD dwFlags = IsInterceptableException(pThread) ? DEBUG_EXCEPTION_CAN_BE_INTERCEPTED : 0;
     m_forceNonInterceptable = false;
 
@@ -8958,7 +8958,7 @@ void Debugger::SendUserBreakpoint(Thread * thread)
         MODE_ANY;
 
         PRECONDITION(thread != NULL);
-        PRECONDITION(thread == ::GetThread());
+        PRECONDITION(thread == ::GetThreadNULLOk());
     }
     CONTRACTL_END;
 

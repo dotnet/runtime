@@ -3811,7 +3811,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 
         LOG((LF_CORDB, LL_INFO100000, "D:FEHW for pDE:%08x evalType:%d\n", pDE, pDE->m_evalType));
 
-        pThread = GetThread();
+        pThread = GetThreaNotOk();
 
 #ifndef DACCESS_COMPILE
 #ifdef _DEBUG

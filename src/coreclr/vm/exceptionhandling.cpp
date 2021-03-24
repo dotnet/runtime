@@ -3401,7 +3401,7 @@ void ExceptionTracker::PopTrackers(
 
     // Only call into PopTrackers if we have a managed thread and we have an exception progress.
     // Otherwise, the call below (to PopTrackers) is a noop. If this ever changes, then this short-circuit needs to be fixed.
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = GetThreadNULLOk();
     if ((pCurThread != NULL) && (pCurThread->GetExceptionState()->IsExceptionInProgress()))
     {
         // Refer to the comment around ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException
