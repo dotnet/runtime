@@ -12546,11 +12546,14 @@ gc_heap::init_gc_heap (int  h_number)
 #endif //BGC_SERVO_TUNING
     freeable_soh_segment = 0;
     gchist_index_per_heap = 0;
-    uint8_t** b_arr = new (nothrow) (uint8_t* [MARK_STACK_INITIAL_LENGTH]);
-    if (!b_arr)
-        return 0;
+    if (gc_can_use_concurrent)
+    {
+        uint8_t** b_arr = new (nothrow) (uint8_t * [MARK_STACK_INITIAL_LENGTH]);
+        if (!b_arr)
+            return 0;
 
-    make_background_mark_stack (b_arr);
+        make_background_mark_stack(b_arr);
+    }
 #endif //BACKGROUND_GC
 
 #ifndef USE_REGIONS
