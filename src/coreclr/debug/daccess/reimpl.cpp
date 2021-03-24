@@ -77,16 +77,13 @@ EXTERN_C Thread* GetThread()
 
 EXTERN_C Thread* GetThreaNotOk()
 {
-    // In dac mode it's unlikely that the thread calling dac
-    // is actually the same "current thread" that the runtime cares
-    // about.  Fail all queries of the current thread by
-    // the runtime code to catch any inadvertent usage.
-    // Enumerating the ThreadStore is the proper way to get access
-    // to specific Thread objects.
-    DacError(E_UNEXPECTED);
-    return NULL;
+    return GetThread();
 }
 
+EXTERN_C Thread* GetThreadNULLOk()
+{
+    return GetThread();
+}
 
 BOOL
 DacGetThreadContext(Thread* thread, T_CONTEXT* context)
