@@ -242,10 +242,7 @@ namespace System.IO
             Interop.Sys.TimeSpec* buf = stackalloc Interop.Sys.TimeSpec[2];
 
             long seconds = time.ToUnixTimeSeconds();
-
-            const long TicksPerMillisecond = 10000;
-            const long TicksPerSecond = TicksPerMillisecond * 1000;
-            long nanoseconds = (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
+            long nanoseconds = UnixTimeSecondsToNanoseconds(time, seconds);
 
 #if TARGET_BROWSER
             buf[0].TvSec = seconds;
@@ -337,6 +334,13 @@ namespace System.IO
                 _fileStatusInitialized = -1;
                 throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
             }
+        }
+
+        private static long UnixTimeSecondsToNanoseconds(DateTimeOffset time, long seconds)
+        {
+            const long TicksPerMillisecond = 10000;
+            const long TicksPerSecond = TicksPerMillisecond * 1000;
+            return (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
         }
     }
 }

@@ -12,10 +12,7 @@ namespace System.IO
             Interop.Sys.TimeSpec timeSpec = default;
 
             long seconds = time.ToUnixTimeSeconds();
-
-            const long TicksPerMillisecond = 10000;
-            const long TicksPerSecond = TicksPerMillisecond * 1000;
-            long nanoseconds = (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
+            long nanoseconds = UnixTimeSecondsToNanoseconds(time, seconds);
 
             timeSpec.TvSec = seconds;
             timeSpec.TvNsec = nanoseconds;
