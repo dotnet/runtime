@@ -207,7 +207,7 @@ namespace System.Diagnostics
             string word_At = SR.GetResourceString(nameof(SR.Word_At), defaultString: "at");
             // We also want to pass in a default for inFileLineNumber.
             string inFileLineNum = SR.GetResourceString(nameof(SR.StackTrace_InFileLineNumber), defaultString: "in {0}:line {1}");
-            string inFileILOffset = SR.GetResourceString(nameof(SR.StackTrace_InFileILOffset), defaultString: "in {0}:token 0x{1}+0x{2}");
+            string inFileILOffset = SR.GetResourceString(nameof(SR.StackTrace_InFileILOffset), defaultString: "in {0}:token 0x{1:x}+0x{2:x}");
             Span<byte> bytes = stackalloc byte[4];
             bool fFirstFrame = true;
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
@@ -326,22 +326,16 @@ namespace System.Diagnostics
                             sb.Append(' ');
                             sb.AppendFormat(CultureInfo.InvariantCulture, inFileLineNum, fileName, sf.GetFileLineNumber());
                         }
-                        else if (LocalAppContextSwitches.ILOffsetToStackTrace)
+                        else if (LocalAppContextSwitches.ILOffsetToStackTrace && mb.ReflectedType != null)
                         {
+                            string assemblyName = System.IO.Path.GetFileName(mb.ReflectedType.Assembly.Location);
                             try
                             {
-                                BinaryPrimitives.WriteInt32BigEndian(bytes, mb.MetadataToken);
-                                string methodToken = HexConverter.ToString(bytes.Slice(0, 4), HexConverter.Casing.Lower).TrimStart('0');
-                                BinaryPrimitives.WriteInt32BigEndian(bytes, sf.GetILOffset());
-                                string ilOffset = HexConverter.ToString(bytes.Slice(0, 4), HexConverter.Casing.Lower).TrimStart('0');
-                                string? assemblyName = System.IO.Path.GetFileName(mb.ReflectedType?.Assembly.Location);
-                                if (assemblyName != null)
-                                {
-                                    sb.Append(' ');
-                                    sb.AppendFormat(CultureInfo.InvariantCulture, inFileILOffset, assemblyName, methodToken, ilOffset);
-                                }
+                                int token = mb.MetadataToken;
+                                sb.Append(' ');
+                                sb.AppendFormat(CultureInfo.InvariantCulture, inFileILOffset, assemblyName, token, sf.GetILOffset());
                             }
-                            catch (Exception) {}
+                            catch (System.InvalidOperationException) {}
                         }
                     }
 
