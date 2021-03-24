@@ -92,7 +92,7 @@ public:
         setup_additional_probes(args.probe_paths);
         setup_probe_config(args);
 
-        m_has_additional_probing_paths = m_additional_probes.size() > 0;
+        m_has_additional_probing_paths = m_additional_probes.size() > 0 || m_additional_deps.size() > 0;
     }
 
     bool valid(pal::string_t* errors)
