@@ -2794,7 +2794,8 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
     else
     {
         // with regions, we don't have these variables anymore
-        detailsData->saved_sweep_ephemeral_seg = 0;
+        // use special value -1 in saved_sweep_ephemeral_seg to signal the region case
+        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)-1;
         detailsData->saved_sweep_ephemeral_start = 0;
     }
     detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_lowest_address;
