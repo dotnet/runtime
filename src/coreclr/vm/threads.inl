@@ -37,7 +37,7 @@ inline Thread* GetThreadNULLOk()
     return gCurrentThreadInfo.m_pThread;
 }
 
-inline Thread* GetThread()
+inline Thread* GetThreadDoNotUse()
 {
     Thread* pThread = gCurrentThreadInfo.m_pThread;
 

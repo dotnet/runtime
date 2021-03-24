@@ -752,7 +752,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 #define PAL_SEH_RESTORE_GUARD_PAGE                                                  \
     if (__exCode == STATUS_STACK_OVERFLOW)                                          \
     {                                                                               \
-        Thread *__pThread = GetThread();                                            \
+        Thread *__pThread = GetThreadNULLOk();                                            \
         if (__pThread != NULL)                                                      \
         {                                                                           \
             __pThread->RestoreGuardPage();                                          \
