@@ -3205,10 +3205,6 @@ main_loop:
 			++ip;
 			mono_break ();
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDNULL)
-			LOCAL_VAR (ip [1], gpointer) = NULL;
-			ip += 2;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_INIT_ARGLIST) {
 			const guint16 *call_ip = frame->parent->state.ip - 6;
 			g_assert_checked (*call_ip == MINT_CALL_VARARG);
@@ -3265,6 +3261,10 @@ main_loop:
 		MINT_IN_CASE(MINT_LDC_I4)
 			LOCAL_VAR (ip [1], gint32) = READ32 (ip + 2);
 			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDC_I8_0)
+			LOCAL_VAR (ip [1], gint64) = 0;
+			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDC_I8)
 			LOCAL_VAR (ip [1], gint64) = READ64 (ip + 2);

@@ -136,6 +136,12 @@ MonoInterpStats mono_interp_stats;
 #define MINT_MOV_P MINT_MOV_4
 #endif
 
+#if SIZEOF_VOID_P == 8
+#define MINT_LDNULL MINT_LDC_I8_0
+#else
+#define MINT_LDNULL MINT_LDC_I4_0
+#endif
+
 typedef struct {
 	const gchar *op_name;
 	guint16 insn [3];
@@ -4592,7 +4598,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			td->ip += 2;
 			break;
 		}
-		case CEE_LDNULL: 
+		case CEE_LDNULL:
 			interp_add_ins (td, MINT_LDNULL);
 			push_type (td, STACK_TYPE_O, NULL);
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);

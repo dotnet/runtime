@@ -14,7 +14,6 @@ OPDEF(MINT_DEF, "def", 2, 1, 0, MintOpNoArgs)
 OPDEF(MINT_DUMMY_USE, "dummy_use", 2, 0, 1, MintOpNoArgs)
 OPDEF(MINT_BREAK, "break", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_BREAKPOINT, "breakpoint", 1, 0, 0, MintOpNoArgs)
-OPDEF(MINT_LDNULL, "ldnull", 2, 1, 0, MintOpNoArgs)
 
 OPDEF(MINT_RET, "ret", 2, 0, 1, MintOpNoArgs)
 OPDEF(MINT_RET_VOID, "ret.void", 1, 0, 0, MintOpNoArgs)
@@ -36,8 +35,10 @@ OPDEF(MINT_LDC_I4_8, "ldc.i4.8", 2, 1, 0, MintOpNoArgs)
 
 OPDEF(MINT_LDC_I4_S, "ldc.i4.s", 3, 1, 0, MintOpShortInt)
 OPDEF(MINT_LDC_I4, "ldc.i4", 4, 1, 0, MintOpInt)
-OPDEF(MINT_LDC_I8, "ldc.i8", 6, 1, 0, MintOpLongInt)
+
+OPDEF(MINT_LDC_I8_0, "ldc.i8.0", 2, 1, 0, MintOpNoArgs)
 OPDEF(MINT_LDC_I8_S, "ldc.i8.s", 3, 1, 0, MintOpShortInt)
+OPDEF(MINT_LDC_I8, "ldc.i8", 6, 1, 0, MintOpLongInt)
 
 OPDEF(MINT_LDC_R4, "ldc.r4", 4, 1, 0, MintOpFloat)
 OPDEF(MINT_LDC_R8, "ldc.r8", 6, 1, 0, MintOpDouble)
