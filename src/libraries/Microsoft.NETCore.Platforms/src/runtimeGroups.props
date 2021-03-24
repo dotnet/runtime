@@ -83,23 +83,23 @@
     <RuntimeGroup Include="ios">
       <Parent>unix</Parent>
       <Architectures>arm;x86</Architectures>
-      <Versions>8;9;10</Versions>
+      <Versions>10</Versions>
     </RuntimeGroup>
     <RuntimeGroup Include="ios">
       <Parent>unix</Parent>
       <Architectures>arm64;x64</Architectures>
-      <Versions>8;9;10;11;12;13</Versions>
+      <Versions>10;11;12;13;14</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="iossimulator">
       <Parent>ios</Parent>
       <Architectures>x86</Architectures>
-      <Versions>8;9;10</Versions>
+      <Versions>10</Versions>
     </RuntimeGroup>
     <RuntimeGroup Include="iossimulator">
       <Parent>ios</Parent>
       <Architectures>arm64;x64</Architectures>
-      <Versions>8;9;10;11;12;13</Versions>
+      <Versions>10;11;12;13;14</Versions>
     </RuntimeGroup>
 
     <!-- linux mint includes major version in Include because Parent is different for each major -->
