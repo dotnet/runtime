@@ -555,25 +555,25 @@ namespace System.Collections.Generic
         /// </summary>
         private void RemoveRootNode()
         {
-            // The idea is to replace the root node by the very last
-            // node and shorten the array by one.
-            int lastNodeIndex = _size - 1;
-            (TElement Element, TPriority Priority) lastNode = _nodes[lastNodeIndex];
+            int lastNodeIndex = --_size;
+            _version++;
+
+            if (lastNodeIndex > 0)
+            {
+                (TElement Element, TPriority Priority) lastNode = _nodes[lastNodeIndex];
+                if (_comparer == null)
+                {
+                    MoveDownDefaultComparer(lastNode, 0);
+                }
+                else
+                {
+                    MoveDownCustomComparer(lastNode, 0);
+                }
+            }
+
             if (RuntimeHelpers.IsReferenceOrContainsReferences<(TElement, TPriority)>())
             {
                 _nodes[lastNodeIndex] = default;
-            }
-
-            _size--;
-            _version++;
-
-            if (_comparer == null)
-            {
-                MoveDownDefaultComparer(lastNode, 0);
-            }
-            else
-            {
-                MoveDownCustomComparer(lastNode, 0);
             }
         }
 
