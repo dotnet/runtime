@@ -64,6 +64,8 @@ namespace System.Text.Json.Serialization
             return new JsonParameterInfo<T>();
         }
 
+        internal override Type? KeyType => null;
+
         internal override Type? ElementType => null;
 
         /// <summary>
@@ -540,10 +542,13 @@ namespace System.Text.Json.Serialization
         public abstract void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options);
 
         internal virtual T ReadWithQuotes(ref Utf8JsonReader reader)
-            => throw new InvalidOperationException();
+        {
+            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
+            return default;
+        }
 
         internal virtual void WriteWithQuotes(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, ref WriteStack state)
-            => throw new InvalidOperationException();
+            => ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
 
         internal sealed override void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
             => WriteWithQuotes(writer, (T)value, options, ref state);
