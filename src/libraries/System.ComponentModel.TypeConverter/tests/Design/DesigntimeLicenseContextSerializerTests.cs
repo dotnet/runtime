@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -16,27 +18,45 @@ namespace System.ComponentModel.Design.Tests
 
         public static bool AreBinaryFormatterAndRemoteExecutorSupportedOnThisPlatform => PlatformDetection.IsBinaryFormatterSupported && RemoteExecutor.IsSupported;
 
-        [ConditionalFact(nameof(AreBinaryFormatterAndRemoteExecutorSupportedOnThisPlatform))]
-        public static void SerializeAndDeserialize()
+        private static void VerifyStreamFormatting(Stream stream)
         {
-            RemoteExecutor.Invoke(() =>
+            AppContext.TryGetSwitch(enableBinaryFormatterInTypeConverter, out bool binaryFormatterUsageInTypeConverterIsEnabled);
+            long position = stream.Position;
+            int firstByte = stream.ReadByte();
+            if (binaryFormatterUsageInTypeConverterIsEnabled)
             {
-                foreach (var (useBinaryFormatter, key) in new System.Collections.Generic.List<Tuple<bool, string>>() {
-                    new Tuple<bool, string>(false, "key" ),
-                    new Tuple<bool, string>(true, "key" ),
-                    new Tuple<bool, string>(false, "" ),
-                    new Tuple<bool, string>(true, "" ),
-                })
+                if (firstByte != 0)
                 {
+                    Assert.False(true, "Expected this stream to have used BinaryFormatter");
+                }
+            }
+            else
+            {
+                if (firstByte != 255)
+                {
+                    Assert.False(true, "Expected this stream to have used BinaryWriter");
+                }
+            }
+            stream.Seek(position, SeekOrigin.Begin);
+        }
+
+        [ConditionalTheory(nameof(AreBinaryFormatterAndRemoteExecutorSupportedOnThisPlatform))]
+        [InlineData(false, "key")]
+        [InlineData(true, "key")]
+        [InlineData(false, "")]
+        [InlineData(true, "")]
+        public static void SerializeAndDeserialize(bool useBinaryFormatter, string key)
+        {
+            {
+                RemoteInvokeOptions options = new RemoteInvokeOptions();
+                if (useBinaryFormatter)
+                {
+                    options.RuntimeConfigurationOptions.Add(enableBinaryFormatterInTypeConverter, bool.TrueString);
+                }
+                RemoteExecutor.Invoke((key) =>
+                {
+                    Debugger.Launch();
                     {
-                        if (!useBinaryFormatter)
-                        {
-                            AppContext.SetSwitch(enableBinaryFormatterInTypeConverter, false);
-                        }
-                        else
-                        {
-                            AppContext.SetSwitch(enableBinaryFormatterInTypeConverter, true);
-                        }
                         var context = new DesigntimeLicenseContext();
                         context.SetSavedLicenseKey(typeof(int), key);
                         var assembly = typeof(DesigntimeLicenseContextSerializer).Assembly;
@@ -57,6 +77,7 @@ namespace System.ComponentModel.Design.Tests
                             long position = stream.Position;
                             System.ComponentModel.Design.DesigntimeLicenseContextSerializer.Serialize(stream, key, context);
                             stream.Seek(position, SeekOrigin.Begin);
+                            VerifyStreamFormatting(stream);
                             deserializeMethod.Invoke(null, new object[] { stream, key, runtimeLicenseContext });
                             Hashtable savedLicenseKeys = runtimeLicenseContext.GetType().GetField("_savedLicenseKeys", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(runtimeLicenseContext) as Hashtable;
                             Assert.NotNull(savedLicenseKeys);
@@ -65,8 +86,8 @@ namespace System.ComponentModel.Design.Tests
                             Assert.Equal(key, value);
                         }
                     }
-                }
-            }).Dispose();
+                }, key, options).Dispose();
+            }
         }
 
         [ConditionalFact(nameof(AreBinaryFormatterAndRemoteExecutorSupportedOnThisPlatform))]
