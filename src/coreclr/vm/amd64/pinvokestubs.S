@@ -161,7 +161,7 @@ NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
         mov             r14, rdi
 
         // Get current thread and cache it in current frame
-        call            C_FUNC(GetThreadNULLOk)
+        call            C_FUNC(PInvokeGetThreadHelper)
         mov             qword ptr [r14 + OFFSETOF__InlinedCallFrame__m_pThread], rax
 
         // pFrame->m_Next = pThread->m_pFrame;

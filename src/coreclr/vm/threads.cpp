@@ -60,6 +60,11 @@ TailCallTls::TailCallTls()
 {
 }
 
+Thread* STDCALL PInvokeGetThreadHelper()
+{
+    return GetThreadNULLOk();
+}
+
 TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size, void* gcDesc)
 {
     CONTRACTL
