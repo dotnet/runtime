@@ -4496,7 +4496,7 @@ namespace System.Tests
         [InlineData("", 0, 0, "")]
         public static void Remove(string s, int startIndex, int count, string expected)
         {
-            if (startIndex + count == s.Length && count != 0)
+            if (startIndex + count == s.Length)
             {
                 Assert.Equal(expected, s.Remove(startIndex));
             }
@@ -4512,8 +4512,8 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(-1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(-1, 0));
 
-            // Start index >= string.Length
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(s.Length));
+            // Start index > string.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(s.Length + 1));
 
             // Count < 0
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s.Remove(0, -1));

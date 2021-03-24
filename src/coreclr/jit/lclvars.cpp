@@ -3268,9 +3268,9 @@ BasicBlock::weight_t BasicBlock::getCalledCount(Compiler* comp)
 // getBBWeight -- get the normalized weight of this block
 BasicBlock::weight_t BasicBlock::getBBWeight(Compiler* comp)
 {
-    if (this->bbWeight == 0)
+    if (this->bbWeight == BB_ZERO_WEIGHT)
     {
-        return 0;
+        return BB_ZERO_WEIGHT;
     }
     else
     {
