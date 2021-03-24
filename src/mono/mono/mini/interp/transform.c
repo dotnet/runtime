@@ -2090,8 +2090,37 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		g_assert (!strcmp (tm, "get_Value"));
 		*op = MINT_LDIND_I;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Marvin")) {
-		if (!strcmp (tm, "Block"))
-			*op = MINT_INTRINS_MARVIN_BLOCK;
+		if (!strcmp (tm, "Block")) {
+			InterpInst *ldloca2 = td->last_ins;
+			if (ldloca2 != NULL && ldloca2->opcode == MINT_LDLOCA_S) {
+				InterpInst *ldloca1 = interp_prev_ins (ldloca2);
+				if (ldloca1 != NULL && ldloca1->opcode == MINT_LDLOCA_S) {
+					interp_add_ins (td, MINT_INTRINS_MARVIN_BLOCK);
+					td->last_ins->sregs [0] = ldloca1->sregs [0];
+					td->last_ins->sregs [1] = ldloca2->sregs [0];
+
+					// This intrinsic would normally receive two local refs, however, we try optimizing
+					// away both ldlocas for better codegen. This means that this intrinsic will instead
+					// modify the values of both sregs. In order to not overcomplicate the optimization
+					// passes and offset allocator with support for modifiable sregs or multi dregs, we
+					// just redefine both sregs after the intrinsic.
+					interp_add_ins (td, MINT_DEF);
+					td->last_ins->dreg = ldloca1->sregs [0];
+					interp_add_ins (td, MINT_DEF);
+					td->last_ins->dreg = ldloca2->sregs [0];
+
+					// Remove the ldlocas
+					td->locals [ldloca1->sregs [0]].indirects--;
+					td->locals [ldloca2->sregs [0]].indirects--;
+					mono_interp_stats.ldlocas_removed += 2;
+					interp_clear_ins (ldloca1);
+					interp_clear_ins (ldloca2);
+					td->sp -= 2;
+					td->ip += 5;
+					return TRUE;
+				}
+			}
+		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.InteropServices") && !strcmp (klass_name, "MemoryMarshal")) {
 		if (!strcmp (tm, "GetArrayDataReference"))
 			*op = MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF;

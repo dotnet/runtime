@@ -4896,7 +4896,7 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_MARVIN_BLOCK) {
-			interp_intrins_marvin_block (LOCAL_VAR (ip [1], guint32*), LOCAL_VAR (ip [2], guint32*));
+			interp_intrins_marvin_block ((guint32*)(locals + ip [1]), (guint32*)(locals + ip [2]));
 			ip += 3;
 			MINT_IN_BREAK;
 		}
