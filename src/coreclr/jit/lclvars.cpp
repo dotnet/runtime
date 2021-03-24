@@ -4086,22 +4086,72 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                 bool bbIsReturn            = block->bbJumpKind == BBJ_RETURN;
                 bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
 
-                if (varDsc->lvEhWriteThruCandidate || needsExplicitZeroInit)
-                {
-                    varDsc->lvEhWriteThruCandidate     = false;
-                    varDsc->lvDisqualifyForEhWriteThru = true;
-                }
-                else
-                {
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                    // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
-                    // such variable. In future, need to enable enregisteration for such variables.
-                    if (!varTypeNeedsPartialCalleeSave(varDsc->lvType))
-#endif
-                    {
-                        varDsc->lvEhWriteThruCandidate = true;
-                    }
-                }
+//                if (varDsc->lvEhWriteThruCandidate/* && needsExplicitZeroInit*/)
+//                {
+//#ifdef DEBUG
+//                    varDsc->lvDisqualifyEHVarReason = 'M'; //needsExplicitZeroInit ? 'Z' : 'M';
+//#endif // DEBUG
+//                    varDsc->lvEhWriteThruCandidate     = false;
+//                    varDsc->lvDisqualifyForEhWriteThru = true;
+//                }
+//                else
+//                {
+//#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+//                    // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
+//                    // such variable. In future, need to enable enregisteration for such variables.
+//                    if (!varTypeNeedsPartialCalleeSave(varDsc->lvType))
+//#endif
+//                    {
+//                        varDsc->lvEhWriteThruCandidate = true;
+//                    }
+//                }
+
+
+//                if (needsExplicitZeroInit)
+//                {
+//                    if (varDsc->lvEhWriteThruCandidate)
+//                    {
+//                        varDsc->lvEhWriteThruCandidate = false;
+//                        varDsc->lvDisqualifyForEhWriteThru = true;
+//#ifdef DEBUG
+//                        // Needs explicit zero and it is already defined once.
+//                        varDsc->lvDisqualifyEHVarReason = 'Z';
+//#endif // DEBUG
+//                    }
+//                    else
+//                    {
+//#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+//                        // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
+//                        // such variable. In future, need to enable enregisteration for such variables.
+//                        if (!varTypeNeedsPartialCalleeSave(varDsc->lvType))
+//#endif
+//                        {
+//                            varDsc->lvEhWriteThruCandidate = true;
+//                        }
+//                    }
+//                }
+//                else if (varDsc->lvEhWriteThruCandidate)
+//                {
+//                    varDsc->lvEhWriteThruCandidate     = false;
+//                    varDsc->lvDisqualifyForEhWriteThru = true;
+//#ifdef DEBUG
+//                    // This is a multi-definition variable
+//                    varDsc->lvDisqualifyEHVarReason = 'M';
+//#endif // DEBUG
+//
+//                }
+//                else
+//                {
+//                    // first definition
+//#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+//                    // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
+//                    // such variable. In future, need to enable enregisteration for such variables.
+//                    if (!varTypeNeedsPartialCalleeSave(varDsc->lvType))
+//#endif
+//                    {
+//                        varDsc->lvEhWriteThruCandidate = true;
+//                    }
+//                }
             }
         }
 
@@ -7354,7 +7404,14 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
         if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
         {
-            printf("H");
+            if (varDsc->lvDisqualifyEHVarReason != ' ')
+            {
+                printf("%c", varDsc->lvDisqualifyEHVarReason);
+            }
+            else
+            {
+                 printf("H");
+            }
         }
         if (varDsc->lvLclFieldExpr)
         {

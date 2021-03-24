@@ -459,6 +459,10 @@ public:
 
     unsigned char lvDisqualifyForEhWriteThru : 1; // tracks variable that are disqualified from register candidancy
 
+#ifdef DEBUG
+    unsigned char lvDisqualifyEHVarReason = ' ';
+#endif
+
 #if ASSERTION_PROP
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
