@@ -2767,7 +2767,7 @@ ep_rt_thread_handle_t
 ep_rt_thread_get_handle (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return GetThreaNotOk ();
+	return GetThreadNULLOk ();
 }
 
 static
