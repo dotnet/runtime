@@ -37,12 +37,12 @@
     <ItemGroup Condition="'@(_crossTargetJit)' != '' and '@(_crossTargetCrossgen)' != ''">
       <CrossgenTool Include="@(_crossTargetCrossgen->ClearMetadata())"
                     JitPath="@(_crossTargetJit)"
-                    DiaSymReader="$(_diaSymReaderPathIfExists)" />
+                    DiaSymReader="$(_diaSymReaderPath)" />
     </ItemGroup>
     <ItemGroup Condition="'@(_crossTargetJit)' == '' and '@(_crossTargetCrossgen)' == ''">
       <CrossgenTool Include="@(_crossgen->ClearMetadata())"
                     JitPath="@(_clrjit)"
-                    DiaSymReader="$(_diaSymReaderPathIfExists)" />
+                    DiaSymReader="$(_diaSymReaderPath)" />
     </ItemGroup>
     <ItemGroup>
       <Crossgen2Tool Include="$(Crossgen2Exe)" JitPath="$(JitLibrary)" />
