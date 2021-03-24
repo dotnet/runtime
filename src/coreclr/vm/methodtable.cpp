@@ -3821,7 +3821,7 @@ void MethodTable::GetSavedExtent(TADDR *pStart, TADDR *pEnd)
 
     TADDR start;
 
-    if (ContainsPointersOrCollectible())
+    if (ContainsPointers())
         start = dac_cast<TADDR>(this) - CGCDesc::GetCGCDescFromMT(this)->GetSize();
     else
         start = dac_cast<TADDR>(this);
@@ -5174,7 +5174,7 @@ void WalkValueTypeTypeDefOrRefs(
             IfFailThrow(sig.SkipExactlyOne());
 
             // Get number of parameters
-            ULONG argCnt;
+            uint32_t argCnt;
             IfFailThrow(sig.GetData(&argCnt));
             while (argCnt-- != 0)
             {   // Process and skip generic parameter

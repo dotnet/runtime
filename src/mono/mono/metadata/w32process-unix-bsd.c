@@ -119,67 +119,6 @@ mono_w32process_get_path (pid_t pid)
 #endif
 }
 
-static gint
-mono_w32process_get_modules_callback (struct dl_phdr_info *info, gsize size, gpointer ptr)
-{
-	if (size < offsetof (struct dl_phdr_info, dlpi_phnum) + sizeof (info->dlpi_phnum))
-		return (-1);
-
-	struct dl_phdr_info *cpy = g_calloc (1, sizeof(struct dl_phdr_info));
-	if (!cpy)
-		return (-1);
-
-	memcpy(cpy, info, sizeof(*info));
-
-	g_ptr_array_add ((GPtrArray *)ptr, cpy);
-
-	return (0);
-}
-
-GSList*
-mono_w32process_get_modules (pid_t pid)
-{
-	GSList *ret = NULL;
-	MonoW32ProcessModule *mod;
-	GPtrArray *dlarray = g_ptr_array_new();
-	gint i;
-
-	if (dl_iterate_phdr (mono_w32process_get_modules_callback, dlarray) < 0)
-		return NULL;
-
-	for (i = 0; i < dlarray->len; i++) {
-		struct dl_phdr_info *info = g_ptr_array_index (dlarray, i);
-
-		mod = g_new0 (MonoW32ProcessModule, 1);
-		mod->address_start = (gpointer)(info->dlpi_addr + info->dlpi_phdr[0].p_vaddr);
-		mod->address_end = (gpointer)(info->dlpi_addr + info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr);
-		mod->perms = g_strdup ("r--p");
-		mod->address_offset = 0;
-		mod->inode = i;
-		mod->filename = g_strdup (info->dlpi_name);
-
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: inode=%d, filename=%s, address_start=%p, address_end=%p",
-			__func__, mod->inode, mod->filename, mod->address_start, mod->address_end);
-
-		g_free (info);
-
-		if (g_slist_find_custom (ret, mod, mono_w32process_module_equals) == NULL) {
-			ret = g_slist_prepend (ret, mod);
-		} else {
-			mono_w32process_module_free (mod);
-		}
-	}
-
-	g_ptr_array_free (dlarray, TRUE);
-
-	return g_slist_reverse (ret);
-}
-
-void
-mono_w32process_platform_init_once (void)
-{
-}
-
 #else
 
 MONO_EMPTY_SOURCE_FILE (w32process_unix_bsd);

@@ -60,7 +60,7 @@
 
 #define LL_INFO10 4
 
-#define STRESS_LOG_VA(msg)                                              do { } WHILE_0
+#define STRESS_LOG_VA(level,msg)                                        do { } WHILE_0
 #define STRESS_LOG0(facility, level, msg)                               do { } WHILE_0
 #define STRESS_LOG1(facility, level, msg, data1)                        do { } WHILE_0
 #define STRESS_LOG2(facility, level, msg, data1, data2)                 do { } WHILE_0

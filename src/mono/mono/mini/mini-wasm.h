@@ -89,13 +89,10 @@ typedef struct {
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
 
-#ifdef ENABLE_NETCORE
 #define MONO_ARCH_SIMD_INTRINSICS 1
-#endif
 
 #define MONO_ARCH_INTERPRETER_SUPPORTED 1
 #define MONO_ARCH_HAS_REGISTER_ICALL 1
-#define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_LLVM_TARGET_LAYOUT "e-m:e-p:32:32-i64:64-n32:64-S128"
 #define MONO_ARCH_LLVM_TARGET_TRIPLE "wasm32-unknown-emscripten"
@@ -113,5 +110,6 @@ void mono_wasm_breakpoint_hit (void);
 void mono_wasm_user_break (void);
 
 int mono_wasm_assembly_already_added (const char *assembly_name);
+void mono_wasm_print_stack_trace (void);
 
 #endif /* __MONO_MINI_WASM_H__ */  

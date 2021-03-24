@@ -1,8 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <RunAnalyzers>false</RunAnalyzers>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <Import Project="..\..\Directory.Build.props"/>
-</Project>

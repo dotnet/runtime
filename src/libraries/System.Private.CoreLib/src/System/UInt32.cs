@@ -54,7 +54,7 @@ namespace System
             return 0;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is uint))
             {

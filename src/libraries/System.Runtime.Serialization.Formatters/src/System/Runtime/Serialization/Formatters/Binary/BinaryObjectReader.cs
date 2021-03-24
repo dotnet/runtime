@@ -1,16 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Diagnostics;
-using System.Collections;
 
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     internal sealed class ObjectReader
     {
+        private const string ObjectReaderUnreferencedCodeMessage = "ObjectReader requires unreferenced code";
+
         // System.Serializer information
         internal Stream _stream;
         internal ISurrogateSelector? _surrogates;
@@ -74,6 +76,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _binder = binder;
             _formatterEnums = formatterEnums;
         }
+
+        [RequiresUnreferencedCode("Types might be removed")]
         internal object Deserialize(BinaryParser serParser)
         {
             if (serParser == null)
@@ -162,16 +166,21 @@ namespace System.Runtime.Serialization.Formatters.Binary
             return _crossAppDomainArray[index];
         }
 
-        internal ReadObjectInfo CreateReadObjectInfo(Type objectType)
+        internal ReadObjectInfo CreateReadObjectInfo(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType)
         {
             return ReadObjectInfo.Create(objectType, _surrogates, _context, _objectManager, _serObjectInfoInit, _formatterConverter, _isSimpleAssembly);
         }
 
-        internal ReadObjectInfo CreateReadObjectInfo(Type? objectType, string[] memberNames, Type[]? memberTypes)
+        internal ReadObjectInfo CreateReadObjectInfo(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? objectType,
+            string[] memberNames,
+            Type[]? memberTypes)
         {
             return ReadObjectInfo.Create(objectType, memberNames, memberTypes, _surrogates, _context, _objectManager, _serObjectInfoInit, _formatterConverter, _isSimpleAssembly);
         }
 
+        [RequiresUnreferencedCode(ObjectReaderUnreferencedCodeMessage)]
         internal void Parse(ParseRecord pr)
         {
             switch (pr._parseTypeEnum)
@@ -218,6 +227,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private void ParseSerializedStreamHeaderEnd(ParseRecord pr) => _stack!.Pop();
 
         // New object encountered in stream
+        [RequiresUnreferencedCode(ObjectReaderUnreferencedCodeMessage)]
         private void ParseObject(ParseRecord pr)
         {
             if (!_fullDeserialization)
@@ -300,6 +310,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // End of object encountered in stream
+        [RequiresUnreferencedCode(ObjectReaderUnreferencedCodeMessage)]
         private void ParseObjectEnd(ParseRecord pr)
         {
             Debug.Assert(_stack != null);
@@ -359,6 +370,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Array object encountered in stream
+        [RequiresUnreferencedCode(ObjectReaderUnreferencedCodeMessage)]
         private void ParseArray(ParseRecord pr)
         {
             Debug.Assert(_stack != null);
@@ -524,6 +536,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
 
         // Array object item encountered in stream
+        [RequiresUnreferencedCode(ObjectReaderUnreferencedCodeMessage)]
         private void ParseArrayMember(ParseRecord pr)
         {
             Debug.Assert(_stack != null);
@@ -701,6 +714,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             objectPr._memberIndex++;
         }
 
+        [RequiresUnreferencedCode(ObjectReaderUnreferencedCodeMessage)]
         private void ParseArrayMemberEnd(ParseRecord pr)
         {
             // If this is a nested array object, then pop the stack
@@ -711,6 +725,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Object member encountered in stream
+        [RequiresUnreferencedCode(ObjectReaderUnreferencedCodeMessage)]
         private void ParseMember(ParseRecord pr)
         {
             Debug.Assert(_stack != null);
@@ -825,6 +840,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Object member end encountered in stream
+        [RequiresUnreferencedCode(ObjectReaderUnreferencedCodeMessage)]
         private void ParseMemberEnd(ParseRecord pr)
         {
             switch (pr._memberTypeEnum)
@@ -846,6 +862,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Processes a string object by getting an internal ID for it and registering it with the objectManager
+        [RequiresUnreferencedCode(ObjectReaderUnreferencedCodeMessage)]
         private void ParseString(ParseRecord pr, ParseRecord parentPr)
         {
             // Process String class
@@ -857,11 +874,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
+        [RequiresUnreferencedCode(ObjectReaderUnreferencedCodeMessage)]
         private void RegisterObject(object obj, ParseRecord pr, ParseRecord? objectPr)
         {
             RegisterObject(obj, pr, objectPr, false);
         }
 
+        [RequiresUnreferencedCode(ObjectReaderUnreferencedCodeMessage)]
         private void RegisterObject(object? obj, ParseRecord pr, ParseRecord? objectPr, bool bIsString)
         {
             if (!pr._isRegistered)
@@ -937,6 +956,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             return -1 * objectId;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         internal Type? Bind(string assemblyString, string typeString)
         {
             Type? type = null;
@@ -957,6 +977,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             public string? AssemblyName;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         internal Type? FastBindToType(string? assemblyName, string typeName)
         {
             Type? type = null;
@@ -1046,6 +1067,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             return null;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         private static void GetSimplyNamedTypeFromAssembly(Assembly assm, string typeName, ref Type? type)
         {
             // Catching any exceptions that could be thrown from a failure on assembly load
@@ -1069,6 +1091,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private string? _previousName;
         private Type? _previousType;
 
+        [RequiresUnreferencedCode("Types might be removed")]
         internal Type? GetType(BinaryAssemblyInfo assemblyInfo, string name)
         {
             Type? objectType;
@@ -1122,6 +1145,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _topLevelAssembly = topLevelAssembly;
             }
 
+            [RequiresUnreferencedCode("Types might be removed")]
             public Type? ResolveType(Assembly? assembly, string simpleTypeName, bool ignoreCase)
             {
                 if (assembly == null)

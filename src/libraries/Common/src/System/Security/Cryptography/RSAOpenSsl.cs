@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
@@ -23,9 +22,6 @@ namespace System.Security.Cryptography
     public sealed partial class RSAOpenSsl : RSA
     {
         private const int BitsPerByte = 8;
-
-        // 65537 (0x10001) in big-endian form
-        private static ReadOnlySpan<byte> DefaultExponent => new byte[] { 0x01, 0x00, 0x01 };
 
         private Lazy<SafeRsaHandle> _key;
 
@@ -591,36 +587,18 @@ namespace System.Security.Cryptography
 
         private SafeRsaHandle GenerateKey()
         {
-            SafeRsaHandle key = Interop.Crypto.RsaCreate();
-            bool generated = false;
-
-            Interop.Crypto.CheckValidOpenSslHandle(key);
-
-            try
+            using (SafeEvpPKeyHandle pkey = Interop.Crypto.RsaGenerateKey(KeySize))
             {
-                using (SafeBignumHandle exponent = Interop.Crypto.CreateBignum(DefaultExponent))
-                {
-                    // The documentation for RSA_generate_key_ex does not say that it returns only
-                    // 0 or 1, so the call marshals it back as a full Int32 and checks for a value
-                    // of 1 explicitly.
-                    int response = Interop.Crypto.RsaGenerateKeyEx(
-                        key,
-                        KeySize,
-                        exponent);
+                SafeRsaHandle rsa = Interop.Crypto.EvpPkeyGetRsa(pkey);
 
-                    CheckBoolReturn(response);
-                    generated = true;
-                }
-            }
-            finally
-            {
-                if (!generated)
+                if (rsa.IsInvalid)
                 {
-                    key.Dispose();
+                    rsa.Dispose();
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
-            }
 
-            return key;
+                return rsa;
+            }
         }
 
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>

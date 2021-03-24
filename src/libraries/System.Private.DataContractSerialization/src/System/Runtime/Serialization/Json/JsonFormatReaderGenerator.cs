@@ -43,7 +43,7 @@ namespace System.Runtime.Serialization.Json
             return _helper.GenerateGetOnlyCollectionReader(collectionContract);
         }
 
-        private class CriticalHelper
+        private sealed class CriticalHelper
         {
             private CodeGenerator _ilg = null!; // initialized in GenerateXXXReader
             private LocalBuilder _objectLocal = null!; // initialized in CreateObject and ReadCollection

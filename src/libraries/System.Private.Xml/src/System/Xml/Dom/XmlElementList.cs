@@ -22,7 +22,7 @@ namespace System.Xml
         private bool _atomized;     //whether the localname and namespaceuri are atomized
         private int _matchCount;   // cached list count. -1 means it needs reconstruction
 
-        private WeakReference? _listener;   // XmlElementListListener
+        private WeakReference<XmlElementListListener>? _listener;
 
         private XmlElementList(XmlNode parent)
         {
@@ -37,7 +37,7 @@ namespace System.Xml
             _atomized = true;
             _matchCount = -1;
             // This can be a regular reference, but it would cause some kind of loop inside the GC
-            _listener = new WeakReference(new XmlElementListListener(parent.Document, this));
+            _listener = new WeakReference<XmlElementListListener>(new XmlElementListListener(parent.Document, this));
         }
 
         ~XmlElementList()
@@ -284,8 +284,7 @@ namespace System.Xml
         {
             if (_listener != null)
             {
-                XmlElementListListener? listener = (XmlElementListListener?)_listener.Target;
-                if (listener != null)
+                if (_listener.TryGetTarget(out XmlElementListListener? listener))
                 {
                     listener.Unregister();
                 }
@@ -358,14 +357,14 @@ namespace System.Xml
 
     internal class XmlElementListListener
     {
-        private WeakReference? _elemList;
+        private WeakReference<XmlElementList>? _elemList;
         private readonly XmlDocument _doc;
         private readonly XmlNodeChangedEventHandler _nodeChangeHandler;
 
         internal XmlElementListListener(XmlDocument doc, XmlElementList elemList)
         {
             _doc = doc;
-            _elemList = new WeakReference(elemList);
+            _elemList = new WeakReference<XmlElementList>(elemList);
             _nodeChangeHandler = new XmlNodeChangedEventHandler(this.OnListChanged);
             doc.NodeInserted += _nodeChangeHandler;
             doc.NodeRemoved += _nodeChangeHandler;
@@ -377,8 +376,7 @@ namespace System.Xml
             {
                 if (_elemList != null)
                 {
-                    XmlElementList? el = (XmlElementList?)_elemList.Target;
-                    if (null != el)
+                    if (_elemList.TryGetTarget(out XmlElementList? el))
                     {
                         el.ConcurrencyCheck(args);
                     }

@@ -259,7 +259,8 @@ protected:
                 DWORD dwStubFlags,
                 int iLCIDParamIdx,
                 MethodDesc* pTargetMD)
-            : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx)
+        : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx)
+        , m_dwStubFlags(dwStubFlags)
     {
         STANDARD_VM_CONTRACT;
 
@@ -291,7 +292,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         m_slIL.Begin(dwStubFlags);
-        m_dwStubFlags = dwStubFlags;
+        _ASSERTE(m_dwStubFlags == dwStubFlags);
     }
 
     void MarshalReturn(MarshalInfo* pInfo, int argOffset)
@@ -453,7 +454,7 @@ public:
             pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pNewSig, cbNewSig);
 
             SigPointer  sigPtr(pNewSig, cbNewSig);
-            ULONG       callConvInfo;
+            uint32_t    callConvInfo;
             IfFailThrow(sigPtr.GetCallingConvInfo(&callConvInfo));
 
             if (callConvInfo & CORINFO_CALLCONV_HASTHIS)
@@ -1203,6 +1204,8 @@ public:
 
     TokenLookupMap* GetTokenLookupMap() { WRAPPER_NO_CONTRACT; return m_slIL.GetTokenLookupMap(); }
 
+    DWORD GetFlags() const { return m_dwStubFlags; }
+
 protected:
     CQuickBytes         m_qbNativeFnSigBuffer;
     NDirectStubLinker   m_slIL;
@@ -1340,7 +1343,7 @@ class PInvoke_ILStubState : public ILStubState
 public:
 
     PInvoke_ILStubState(Module* pStubModule, const Signature &signature, SigTypeContext *pTypeContext, DWORD dwStubFlags,
-                        CorPinvokeMap unmgdCallConv, int iLCIDParamIdx, MethodDesc* pTargetMD)
+                        CorInfoCallConvExtension unmgdCallConv, int iLCIDParamIdx, MethodDesc* pTargetMD)
         : ILStubState(
                 pStubModule,
                 signature,
@@ -1350,18 +1353,7 @@ public:
                 pTargetMD)
     {
         STANDARD_VM_CONTRACT;
-
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-        // x86 with non-IL stubs manually handles calling conventions
-        // for reverse P/Invokes with the x86 stub linker.
-        // Don't use the JIT calling convention support on reverse P/Invokes.
-        if (SF_IsForwardStub(dwStubFlags))
-        {
-            m_slIL.SetCallingConvention(unmgdCallConv, SF_IsVarArgStub(dwStubFlags));
-        }
-#else
         m_slIL.SetCallingConvention(unmgdCallConv, SF_IsVarArgStub(dwStubFlags));
-#endif
     }
 
 private:
@@ -1426,7 +1418,7 @@ public:
 
         if (SF_IsForwardStub(dwStubFlags))
         {
-            m_slIL.SetCallingConvention(pmCallConvStdcall, SF_IsVarArgStub(dwStubFlags));
+            m_slIL.SetCallingConvention(CorInfoCallConvExtension::Stdcall, SF_IsVarArgStub(dwStubFlags));
         }
     }
 
@@ -1623,40 +1615,22 @@ NDirectStubLinker::NDirectStubLinker(
 #endif // FEATURE_COMINTEROP
 }
 
-void NDirectStubLinker::SetCallingConvention(CorPinvokeMap unmngCallConv, BOOL fIsVarArg)
+void NDirectStubLinker::SetCallingConvention(CorInfoCallConvExtension unmngCallConv, BOOL fIsVarArg)
 {
     LIMITED_METHOD_CONTRACT;
-    ULONG uNativeCallingConv = 0;
 
 #if !defined(TARGET_X86)
     if (fIsVarArg)
     {
         // The JIT has to use a different calling convention for unmanaged vararg targets on 64-bit and ARM:
         // any float values must be duplicated in the corresponding general-purpose registers.
-        uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_NATIVEVARARG;
+        SetStubTargetCallingConv(IMAGE_CEE_CS_CALLCONV_NATIVEVARARG);
     }
     else
 #endif // !TARGET_X86
     {
-        switch (unmngCallConv)
-        {
-            case pmCallConvCdecl:
-                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_C;
-                break;
-            case pmCallConvStdcall:
-                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_STDCALL;
-                break;
-            case pmCallConvThiscall:
-                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_THISCALL;
-                break;
-            default:
-                _ASSERTE(!"Invalid calling convention.");
-                uNativeCallingConv = IMAGE_CEE_CS_CALLCONV_STDCALL;
-                break;
-        }
+        SetStubTargetCallingConv(unmngCallConv);
     }
-
-    SetStubTargetCallingConv((CorCallingConvention)uNativeCallingConv);
 }
 
 void NDirectStubLinker::EmitSetArgMarshalIndex(ILCodeStream* pcsEmit, UINT uArgIdx)
@@ -2393,10 +2367,10 @@ void NDirectStubLinker::EmitObjectValidation(ILCodeStream* pcsEmit, DWORD dwStub
 
     IfFailThrow(ptr.GetData(NULL)); // IMAGE_CEE_CS_CALLCONV_LOCAL_SIG
 
-    ULONG numLocals;
+    uint32_t numLocals;
     IfFailThrow(ptr.GetData(&numLocals));
 
-    for (ULONG i = 0; i < numLocals; i++)
+    for (uint32_t i = 0; i < numLocals; i++)
     {
         BYTE modifier;
         IfFailThrow(ptr.PeekByte(&modifier));
@@ -2522,6 +2496,36 @@ protected:
 
 #endif // FEATURE_COMINTEROP
 
+namespace
+{
+    // Use CorInfoCallConvExtension::Managed as a sentinel represent a user-provided WinApi calling convention.
+    constexpr CorInfoCallConvExtension CallConvWinApiSentinel = CorInfoCallConvExtension::Managed;
+
+    // Returns the unmanaged calling convention for callConv or CallConvWinApiSentinel
+    // if the calling convention is not provided or WinApi.
+    CorInfoCallConvExtension GetCallConvValueForPInvokeCallConv(CorPinvokeMap callConv)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        switch (callConv)
+        {
+        case 0:
+        case pmCallConvWinapi:
+            return CallConvWinApiSentinel;
+        case pmCallConvCdecl:
+            return CorInfoCallConvExtension::C;
+        case pmCallConvStdcall:
+            return CorInfoCallConvExtension::Stdcall;
+        case pmCallConvThiscall:
+            return CorInfoCallConvExtension::Thiscall;
+        case pmCallConvFastcall:
+            return CorInfoCallConvExtension::Fastcall;
+        default:
+            _ASSERTE_MSG(false, "Invalid PInvoke callconv.");
+            return CallConvWinApiSentinel;
+        }
+    }
+}
 
 void PInvokeStaticSigInfo::PreInit(Module* pModule, MethodTable * pMT)
 {
@@ -2536,7 +2540,7 @@ void PInvokeStaticSigInfo::PreInit(Module* pModule, MethodTable * pMT)
     // initialize data members
     m_wFlags = 0;
     m_pModule = pModule;
-    m_callConv = (CorPinvokeMap)0;
+    m_callConv = CallConvWinApiSentinel;
     SetBestFitMapping (TRUE);
     SetThrowOnUnmappableChar (FALSE);
     SetLinkFlags (nlfNone);
@@ -2681,7 +2685,7 @@ ErrExit:
     if (hr != S_OK)
         SetError(IDS_EE_NDIRECT_BADNATL);
 
-    InitCallConv(callConv, pMD->IsVarArg());
+    InitCallConv(GetCallConvValueForPInvokeCallConv(callConv), pMD->IsVarArg());
 
     if (throwOnError)
         ReportErrors();
@@ -2701,7 +2705,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
     PreInit(pModule, NULL);
     m_sig = sig;
     SetIsStatic (!(MetaSig::GetCallingConvention(pModule, sig) & IMAGE_CEE_CS_CALLCONV_HASTHIS));
-    InitCallConv((CorPinvokeMap)0, FALSE);
+    InitCallConv(CorInfoCallConvExtension::Managed, FALSE);
 
     ReportErrors();
 }
@@ -2741,7 +2745,7 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
             BestGuessNDirectDefaults(pMD);
 #endif
 
-        InitCallConv((CorPinvokeMap)0, pMD->IsVarArg());
+        InitCallConv(CorInfoCallConvExtension::Managed, pMD->IsVarArg());
         return;
     }
 
@@ -2760,7 +2764,7 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
     }
 
     // m_callConv
-    InitCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask), pMD->IsVarArg());
+    InitCallConv(GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask)), pMD->IsVarArg());
 
     // m_bestFit
     CorPinvokeMap bestFitMask = (CorPinvokeMap)(mappingFlags & pmBestFitMask);
@@ -2949,97 +2953,47 @@ void PInvokeStaticSigInfo::BestGuessNDirectDefaults(MethodDesc* pMD)
 
 #endif // !CROSSGEN_COMPILE
 
-inline CorPinvokeMap GetDefaultCallConv(BOOL bIsVarArg)
+CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
 {
-#ifdef TARGET_UNIX
-    return pmCallConvCdecl;
-#else // TARGET_UNIX
-    return bIsVarArg ? pmCallConvCdecl : pmCallConvStdcall;
-#endif // !TARGET_UNIX
+    return bIsVarArg ? CorInfoCallConvExtension::C : MetaSig::GetDefaultUnmanagedCallingConvention();
 }
 
-namespace
-{
-    bool TryConvertCallConvValueToPInvokeCallConv(_In_ BYTE callConv, _Out_ CorPinvokeMap *pPinvokeMapOut)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        switch (callConv)
-        {
-        case IMAGE_CEE_CS_CALLCONV_C:
-            *pPinvokeMapOut = pmCallConvCdecl;
-            return true;
-        case IMAGE_CEE_CS_CALLCONV_STDCALL:
-            *pPinvokeMapOut = pmCallConvStdcall;
-            return true;
-        case IMAGE_CEE_CS_CALLCONV_THISCALL:
-            *pPinvokeMapOut = pmCallConvThiscall;
-            return true;
-        case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-            *pPinvokeMapOut = pmCallConvFastcall;
-            return true;
-        }
-
-        return false;
-    }
-
-    HRESULT GetUnmanagedPInvokeCallingConvention(
-        _In_ Module *pModule,
-        _In_ PCCOR_SIGNATURE pSig,
-        _In_ ULONG cSig,
-        _Out_ CorPinvokeMap *pPinvokeMapOut,
-        _Out_ UINT *errorResID)
-    {
-        STANDARD_VM_CONTRACT;
-
-        CorUnmanagedCallingConvention callConvMaybe;
-        bool suppressGCTransition;
-        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pModule), pSig, cSig, &callConvMaybe, &suppressGCTransition, errorResID);
-        if (hr != S_OK)
-            return hr;
-
-        if (!TryConvertCallConvValueToPInvokeCallConv(callConvMaybe, pPinvokeMapOut))
-            return S_FALSE;
-
-        return hr;
-    }
-}
-
-void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
+void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg)
 {
     STANDARD_VM_CONTRACT;
 
-    // Convert WinAPI methods to either StdCall or CDecl based on if they are varargs or not.
-    if (callConv == pmCallConvWinapi)
-        callConv = GetDefaultCallConv(bIsVarArg);
-
-    CorPinvokeMap sigCallConv = (CorPinvokeMap)0;
+    CorInfoCallConvExtension sigCallConv = CallConvWinApiSentinel;
+    bool suppressGCTransition;
     UINT errorResID;
-    HRESULT hr = GetUnmanagedPInvokeCallingConvention(m_pModule, m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv, &errorResID);
+    HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(m_pModule), m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv, &suppressGCTransition, &errorResID);
     if (FAILED(hr))
     {
         // Set an error message specific to P/Invokes or UnmanagedFunction for bad format.
         SetError(hr == COR_E_BADIMAGEFORMAT ? IDS_EE_NDIRECT_BADNATL : errorResID);
     }
+    else if (hr == S_FALSE)
+    {
+        sigCallConv = CallConvWinApiSentinel;
+    }
 
-    // Do the same WinAPI to StdCall or CDecl for the signature calling convention as well. We need
-    // to do this before we check to make sure the PInvoke map calling convention and the
-    // signature calling convention match for compatibility reasons.
-    if (sigCallConv == pmCallConvWinapi)
-        sigCallConv = GetDefaultCallConv(bIsVarArg);
+    // Validate that either no specific calling convention is provided or that the signature calling convention
+    // matches the DllImport calling convention.
+    // If no calling convention is provided, then use the default calling convention for the platform.
 
-    if (callConv != 0 && sigCallConv != 0 && callConv != sigCallConv)
+    if (callConv != CallConvWinApiSentinel && sigCallConv != CallConvWinApiSentinel && callConv != sigCallConv)
         SetError(IDS_EE_NDIRECT_BADNATL_CALLCONV);
 
-    if (callConv == 0 && sigCallConv == 0)
+    if (callConv == CallConvWinApiSentinel && sigCallConv == CallConvWinApiSentinel)
         m_callConv = GetDefaultCallConv(bIsVarArg);
-    else if (callConv != 0)
+    else if (callConv != CallConvWinApiSentinel)
         m_callConv = callConv;
     else
         m_callConv = sigCallConv;
 
-    if (bIsVarArg && m_callConv != pmCallConvCdecl)
+    if (bIsVarArg && m_callConv != CorInfoCallConvExtension::C)
         SetError(IDS_EE_NDIRECT_BADNATL_VARARGS_CALLCONV);
+
+    _ASSERTE(m_callConv != CallConvWinApiSentinel);
 }
 
 void PInvokeStaticSigInfo::ReportErrors()
@@ -3113,7 +3067,7 @@ BOOL NDirect::MarshalingRequired(
     // point name suffix and affects alignment thunk generation on the Mac). If this method returns
     // TRUE, the stack size will be set when building the marshaling IL stub.
     DWORD dwStackSize = 0;
-    CorPinvokeMap callConv = (CorPinvokeMap)0;
+    CorInfoCallConvExtension callConv = MetaSig::GetDefaultUnmanagedCallingConvention();
 
     if (pMD != NULL)
     {
@@ -3165,7 +3119,7 @@ BOOL NDirect::MarshalingRequired(
     // Check to make certain that the signature only contains types that marshal trivially
     SigPointer ptr(pSig);
     IfFailThrow(ptr.GetCallingConvInfo(NULL));
-    ULONG numArgs;
+    uint32_t numArgs;
     IfFailThrow(ptr.GetData(&numArgs));
     numArgs++;   // +1 for return type
 
@@ -3241,7 +3195,8 @@ BOOL NDirect::MarshalingRequired(
 #endif
                 if (i > 0)
                 {
-                    dwStackSize += StackElemSize(hndArgType.GetSize());
+                    const bool isValueType = true;
+                    dwStackSize += StackElemSize(hndArgType.GetSize(), isValueType, hndArgType.IsFloatHfa());
                 }
                 break;
             }
@@ -3258,7 +3213,13 @@ BOOL NDirect::MarshalingRequired(
             {
                 if (CorTypeInfo::IsPrimitiveType(type) || type == ELEMENT_TYPE_FNPTR)
                 {
-                    if (i > 0) dwStackSize += StackElemSize(CorTypeInfo::Size(type));
+
+                    if (i > 0)
+                    {
+                        const bool isValueType = false;
+                        const bool isFloatHfa = false;
+                        dwStackSize += StackElemSize(CorTypeInfo::Size(type), isValueType, isFloatHfa);
+                    }
                 }
                 else
                 {
@@ -3460,15 +3421,15 @@ static inline UINT GetStackOffsetFromStackSize(UINT stackSize, bool fThisCall)
 // Note that this function may now throw if it fails to create
 // a stub.
 //---------------------------------------------------------
-static void CreateNDirectStubWorker(StubState*         pss,
-                                    StubSigDesc*       pSigDesc,
-                                    CorNativeLinkType  nlType,
-                                    CorNativeLinkFlags nlFlags,
-                                    CorPinvokeMap      unmgdCallConv,
-                                    DWORD              dwStubFlags,
-                                    MethodDesc         *pMD,
-                                    mdParamDef*        pParamTokenArray,
-                                    int                iLCIDArg
+static void CreateNDirectStubWorker(StubState*               pss,
+                                    StubSigDesc*             pSigDesc,
+                                    CorNativeLinkType        nlType,
+                                    CorNativeLinkFlags       nlFlags,
+                                    CorInfoCallConvExtension unmgdCallConv,
+                                    DWORD                    dwStubFlags,
+                                    MethodDesc               *pMD,
+                                    mdParamDef*              pParamTokenArray,
+                                    int                      iLCIDArg
                                     )
 {
     CONTRACTL
@@ -3493,7 +3454,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
     {
         _ASSERTE(0 == nlType);
         _ASSERTE(0 == nlFlags);
-        _ASSERTE(0 == unmgdCallConv);
+        _ASSERTE(MetaSig::GetDefaultUnmanagedCallingConvention() == unmgdCallConv);
     }
     else
     {
@@ -3512,7 +3473,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
     if (SF_IsVarArgStub(dwStubFlags))
         msig.SetTreatAsVarArg();
 
-    bool fThisCall = (unmgdCallConv == pmCallConvThiscall);
+    bool fThisCall = (unmgdCallConv == CorInfoCallConvExtension::Thiscall);
 
     pss->SetLastError(nlFlags & nlfLastError);
 
@@ -4061,24 +4022,24 @@ void NDirect::AddMethodDescChunkWithLockTaken(NDirectStubParameters* pParams, Me
 // instead of having to generate the IL first before doing the caching.
 //
 static void CreateNDirectStubAccessMetadata(
-                StubSigDesc*    pSigDesc,       // IN
-                CorPinvokeMap   unmgdCallConv,  // IN
-                DWORD*          pdwStubFlags,   // IN/OUT
-                int*            piLCIDArg,      // OUT
-                int*            pNumArgs        // OUT
+                StubSigDesc*             pSigDesc,       // IN
+                CorInfoCallConvExtension unmgdCallConv,  // IN
+                DWORD*                   pdwStubFlags,   // IN/OUT
+                int*                     piLCIDArg,      // OUT
+                int*                     pNumArgs        // OUT
                 )
 {
     STANDARD_VM_CONTRACT;
 
     if (SF_IsCOMStub(*pdwStubFlags))
     {
-        _ASSERTE(0 == unmgdCallConv);
+        _ASSERTE(MetaSig::GetDefaultUnmanagedCallingConvention() == unmgdCallConv);
     }
     else
     {
-        if (unmgdCallConv != pmCallConvStdcall &&
-            unmgdCallConv != pmCallConvCdecl &&
-            unmgdCallConv != pmCallConvThiscall)
+        if (unmgdCallConv != CorInfoCallConvExtension::Stdcall &&
+            unmgdCallConv != CorInfoCallConvExtension::C &&
+            unmgdCallConv != CorInfoCallConvExtension::Thiscall)
         {
             COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
         }
@@ -4180,10 +4141,10 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
     if (linkflags & nlfNoMangle)
         ndirectflags |= NDirectMethodDesc::kNativeNoMangle;
 
-    CorPinvokeMap callConv = pSigInfo->GetCallConv();
-    if (callConv == pmCallConvStdcall)
+    CorInfoCallConvExtension callConv = pSigInfo->GetCallConv();
+    if (callConv == CorInfoCallConvExtension::Stdcall)
         ndirectflags |= NDirectMethodDesc::kStdCall;
-    if (callConv == pmCallConvThiscall)
+    if (callConv == CorInfoCallConvExtension::Thiscall)
         ndirectflags |= NDirectMethodDesc::kThisCall;
 
     if (pNMD->GetLoaderModule()->IsSystem() && (strcmp(szLibName, "QCall") == 0))
@@ -4481,16 +4442,15 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 #endif // FEATURE_COMINTEROP
 
 MethodDesc* CreateInteropILStub(
-                         ILStubState*       pss,
-                         StubSigDesc*       pSigDesc,
-                         CorNativeLinkType  nlType,
-                         CorNativeLinkFlags nlFlags,
-                         CorPinvokeMap      unmgdCallConv,
-                         DWORD              dwStubFlags,            // NDirectStubFlags
-                         int                nParamTokens,
-                         mdParamDef*        pParamTokenArray,
-                         int                iLCIDArg,
-                         bool*              pGeneratedNewStub = nullptr
+                         ILStubState*             pss,
+                         StubSigDesc*             pSigDesc,
+                         CorNativeLinkType        nlType,
+                         CorNativeLinkFlags       nlFlags,
+                         CorInfoCallConvExtension unmgdCallConv,
+                         int                      nParamTokens,
+                         mdParamDef*              pParamTokenArray,
+                         int                      iLCIDArg,
+                         bool*                    pGeneratedNewStub = nullptr
                            )
 {
     CONTRACT(MethodDesc*)
@@ -4519,6 +4479,8 @@ MethodDesc* CreateInteropILStub(
     // pTargetMD may be null in the case of calli pinvoke
     // and vararg pinvoke.
     //
+
+    DWORD dwStubFlags = pss->GetFlags();
 
 #ifdef FEATURE_COMINTEROP
     //
@@ -4698,7 +4660,7 @@ MethodDesc* CreateInteropILStub(
                         {
                             SigPointer ptr = pSigDesc->m_sig.CreateSigPointer();
 
-                            ULONG callConvInfo;
+                            uint32_t callConvInfo;
                             IfFailThrow(ptr.GetCallingConvInfo(&callConvInfo));
 
                             BOOL fSigIsStatic = !(callConvInfo & IMAGE_CEE_CS_CALLCONV_HASTHIS);
@@ -4779,7 +4741,7 @@ MethodDesc* CreateInteropILStub(
         {
             NDirectMethodDesc *pTargetNMD = (NDirectMethodDesc *)pTargetMD;
 
-            pTargetNMD->SetStackArgumentSize(cbStackArgSize, (CorPinvokeMap)0);
+            pTargetNMD->SetStackArgumentSize(cbStackArgSize, MetaSig::GetDefaultUnmanagedCallingConvention());
         }
 #ifdef FEATURE_COMINTEROP
         else
@@ -4802,11 +4764,11 @@ MethodDesc* CreateInteropILStub(
 }
 
 MethodDesc* NDirect::CreateCLRToNativeILStub(
-                StubSigDesc*       pSigDesc,
-                CorNativeLinkType  nlType,
-                CorNativeLinkFlags nlFlags,
-                CorPinvokeMap      unmgdCallConv,
-                DWORD              dwStubFlags) // NDirectStubFlags
+                StubSigDesc*             pSigDesc,
+                CorNativeLinkType        nlType,
+                CorNativeLinkFlags       nlFlags,
+                CorInfoCallConvExtension unmgdCallConv,
+                DWORD                    dwStubFlags) // NDirectStubFlags
 {
     CONTRACT(MethodDesc*)
     {
@@ -4862,7 +4824,6 @@ MethodDesc* NDirect::CreateCLRToNativeILStub(
                 nlType,
                 nlFlags,
                 unmgdCallConv,
-                dwStubFlags,
                 numParamTokens,
                 pParamTokenArray,
                 iLCIDArg);
@@ -4935,8 +4896,7 @@ MethodDesc* NDirect::CreateFieldAccessILStub(
                 &sigDesc,
                 (CorNativeLinkType)0,
                 (CorNativeLinkFlags)0,
-                (CorPinvokeMap)0,
-                dwStubFlags,
+                MetaSig::GetDefaultUnmanagedCallingConvention(),
                 numParamTokens,
                 pParamTokenArray,
                 -1);
@@ -5044,8 +5004,7 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
         &sigDesc,
         (CorNativeLinkType)0,
         (CorNativeLinkFlags)0,
-        (CorPinvokeMap)0,
-        dwStubFlags,
+        CorInfoCallConvExtension::Managed,
         numParamTokens,
         pParamTokenArray,
         -1,
@@ -5437,7 +5396,7 @@ void CreateCLRToDispatchCOMStub(
     mdParamDef* pParamTokenArray = NULL;
 
     CreateNDirectStubAccessMetadata(&sigDesc,
-                                    (CorPinvokeMap)0,
+                                    MetaSig::GetDefaultUnmanagedCallingConvention(),
                                     &dwStubFlags,
                                     &iLCIDArg,
                                     &numArgs);
@@ -5452,7 +5411,7 @@ void CreateCLRToDispatchCOMStub(
                             &sigDesc,
                             (CorNativeLinkType)0,
                             (CorNativeLinkFlags)0,
-                            (CorPinvokeMap)0,
+                            MetaSig::GetDefaultUnmanagedCallingConvention(),
                             dwStubFlags | NDIRECTSTUB_FL_COM,
                             pMD,
                             pParamTokenArray,
@@ -6694,7 +6653,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     GCX_PREEMP();
 
     Signature signature = pVASigCookie->signature;
-    CorPinvokeMap unmgdCallConv = pmNoMangle;
+    CorInfoCallConvExtension unmgdCallConv = CorInfoCallConvExtension::Managed;
 
     DWORD dwStubFlags = NDIRECTSTUB_FL_BESTFIT;
 
@@ -6708,9 +6667,13 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         BYTE callConv = MetaSig::GetCallingConvention(pVASigCookie->pModule, signature);
 
         // Unmanaged calling convention indicates modopt should be read
-        if (callConv == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
+        if (callConv != IMAGE_CEE_CS_CALLCONV_UNMANAGED)
         {
-            CorUnmanagedCallingConvention callConvMaybe;
+            unmgdCallConv = (CorInfoCallConvExtension)callConv;
+        }
+        else
+        {
+            CorInfoCallConvExtension callConvMaybe;
             UINT errorResID;
             bool suppressGCTransition = false;
             HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(pVASigCookie->pModule), signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe, &suppressGCTransition, &errorResID);
@@ -6719,11 +6682,11 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 
             if (hr == S_OK)
             {
-                callConv = callConvMaybe;
+                unmgdCallConv = callConvMaybe;
             }
             else
             {
-                callConv = MetaSig::GetDefaultUnmanagedCallingConvention();
+                unmgdCallConv = MetaSig::GetDefaultUnmanagedCallingConvention();
             }
 
             if (suppressGCTransition)
@@ -6731,9 +6694,6 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
                 dwStubFlags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
             }
         }
-
-        if (!TryConvertCallConvValueToPInvokeCallConv(callConv, &unmgdCallConv))
-            COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
 
         LoaderHeap *pHeap = pVASigCookie->pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
         PCOR_SIGNATURE new_sig = (PCOR_SIGNATURE)(void *)pHeap->AllocMem(S_SIZE_T(signature.GetRawSigLen()));
@@ -6751,7 +6711,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         dwStubFlags |= NDIRECTSTUB_FL_CONVSIGASVARARG;
 
         // vararg P/Invoke must be cdecl
-        unmgdCallConv = pmCallConvCdecl;
+        unmgdCallConv = CorInfoCallConvExtension::C;
 
         if (((NDirectMethodDesc *)pMD)->IsClassConstructorTriggeredByILStub())
         {

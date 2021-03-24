@@ -1364,6 +1364,9 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
 
         LPVOID baseAddress = (LPVOID)(patch->address);
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#else // defined(HOST_OSX) && defined(HOST_ARM64)
         DWORD oldProt;
 
         if (!VirtualProtect(baseAddress,
@@ -1373,12 +1376,14 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         patch->opcode = CORDbgGetInstruction(patch->address);
 
         CORDbgInsertBreakpoint((CORDB_ADDRESS_TYPE *)patch->address);
         LOG((LF_CORDB, LL_EVERYTHING, "Breakpoint was inserted at %p for opcode %x\n", patch->address, patch->opcode));
 
+#if !defined(HOST_OSX) || !defined(HOST_ARM64)
         if (!VirtualProtect(baseAddress,
                             CORDbg_BREAK_INSTRUCTION_SIZE,
                             oldProt, &oldProt))
@@ -1386,6 +1391,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
+#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
     }
 // TODO: : determine if this is needed for AMD64
 #if defined(TARGET_X86) //REVISIT_TODO what is this?!
@@ -1454,6 +1460,9 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
 
         LPVOID baseAddress = (LPVOID)(patch->address);
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#else // defined(HOST_OSX) && defined(HOST_ARM64)
         DWORD oldProt;
 
         if (!VirtualProtect(baseAddress,
@@ -1468,6 +1477,7 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
             InitializePRD(&(patch->opcode));
             return false;
         }
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patch->address, patch->opcode);
 
@@ -1476,6 +1486,7 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
         //header file comment)
         InitializePRD(&(patch->opcode));
 
+#if !defined(HOST_OSX) || !defined(HOST_ARM64)
         if (!VirtualProtect(baseAddress,
                             CORDbg_BREAK_INSTRUCTION_SIZE,
                             oldProt, &oldProt))
@@ -1483,6 +1494,7 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
+#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
     }
     else
     {

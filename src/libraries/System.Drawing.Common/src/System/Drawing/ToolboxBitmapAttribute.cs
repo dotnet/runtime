@@ -55,7 +55,7 @@ namespace System.Drawing
             _largeImage = largeImage;
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value == this)
             {

@@ -14,7 +14,10 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_options(-Wno-unknown-warning-option)
 
     if (NOT CLR_CMAKE_TARGET_ANDROID)
-        set(ICU_HOMEBREW_INC_PATH "/usr/local/opt/icu4c/include")
+        if (CLR_CMAKE_TARGET_OSX)
+            execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
+            set(ICU_HOMEBREW_INC_PATH "${brew_prefix}/opt/icu4c/include")
+        endif()
 
         find_path(UTYPES_H "unicode/utypes.h" PATHS ${ICU_HOMEBREW_INC_PATH})
         if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
@@ -60,8 +63,11 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_normalization.c
     pal_timeZoneInfo.c
     pal_icushim.c
-    entrypoints.c
 )
+
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} entrypoints.c)
+endif()
 
 if (MSVC)
     set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
@@ -89,20 +95,13 @@ add_library(System.Globalization.Native-Static
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
-set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
-
-if (GEN_SHARED_LIB)
-    # this builds with libs to check for libs-level warnings
-    install (TARGETS System.Globalization.Native-Static DESTINATION .)
-else()
-    # this one builds with coreclr and used by singlefilehost.
-    # it needs to build with coreclr in order to be linkable with it on Windows
-    # coreclr and static libraries must match because linker does not permit mixing modules
-    # with different C runtimes (i.e. Debug vs. Release)
-    install (TARGETS System.Globalization.Native-Static DESTINATION lib)
+if(CLR_CMAKE_TARGET_UNIX)
+    set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 endif()
 
-if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})
+
+if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"

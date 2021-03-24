@@ -159,8 +159,6 @@ c_runtime/qsort/test1/paltest_qsort_test1
 c_runtime/qsort/test2/paltest_qsort_test2
 c_runtime/rand_srand/test1/paltest_rand_srand_test1
 c_runtime/realloc/test1/paltest_realloc_test1
-c_runtime/scalbn/test1/paltest_scalbn_test1
-c_runtime/scalbnf/test1/paltest_scalbnf_test1
 c_runtime/sin/test1/paltest_sin_test1
 c_runtime/sincos/test1/paltest_sincos_test1
 c_runtime/sincosf/test1/paltest_sincosf_test1

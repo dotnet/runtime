@@ -11,10 +11,6 @@
     <_CortypeFilePath Condition=" '$(_CortypeFilePath)' == '' ">$(MSBuildThisFileDirectory)..\inc\cortypeinfo.h</_CortypeFilePath>
     <_RexcepFilePath Condition=" '$(_RexcepFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\rexcep.h</_RexcepFilePath>
     <_ILLinkDescriptorsIntermediatePath>$(IntermediateOutputPath)ILLink.Descriptors.Combined.xml</_ILLinkDescriptorsIntermediatePath>
-    <_ILLinkTasksToolsDir>$(PkgMicrosoft_NET_ILLink_Tasks)/tools</_ILLinkTasksToolsDir>
-    <_ILLinkTasksDir>$(_ILLinkTasksToolsDir)/net472/</_ILLinkTasksDir>
-    <_ILLinkTasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_ILLinkTasksToolsDir)/net5.0/</_ILLinkTasksDir>
-    <_ILLinkTasksPath>$(_ILLinkTasksDir)ILLink.Tasks.dll</_ILLinkTasksPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,7 +26,7 @@
         of child processes, and attach a debugger to msbuild. After that you can set a bp on the exception
         you are seeing.
   -->
-  <UsingTask TaskName="CreateRuntimeRootILLinkDescriptorFile" AssemblyFile="$(_ILLinkTasksPath)" />
+  <UsingTask TaskName="CreateRuntimeRootILLinkDescriptorFile" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CreateILLinkRuntimeRootDescriptorFile"
           DependsOnTargets="_CombineILLinkTrimXmlFilePaths"
           Inputs="$(_NamespaceFilePath);$(_MscorlibFilePath);$(_CortypeFilePath);$(_RexcepFilePath);$(_ILLinkDescriptorsIntermediatePath)"
@@ -44,7 +40,7 @@
                                            RuntimeRootDescriptorFilePath="$(_ILLinkRuntimeRootDescriptorFilePath)" />
   </Target>
 
-  <UsingTask TaskName="CombineLinkerXmlFiles" AssemblyFile="$(_ILLinkTasksPath)" />
+  <UsingTask TaskName="CombineLinkerXmlFiles" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CombineILLinkTrimXmlFilePaths"
           Inputs="@(_ILLinkDescriptorsFilePaths)"
           Outputs="$(_ILLinkDescriptorsIntermediatePath)">

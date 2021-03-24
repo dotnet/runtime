@@ -586,7 +586,7 @@ namespace System.ComponentModel
             }
         }
 
-        private class PropertyDescriptorEnumerator : IDictionaryEnumerator
+        private sealed class PropertyDescriptorEnumerator : IDictionaryEnumerator
         {
             private readonly PropertyDescriptorCollection _owner;
             private int _index = -1;

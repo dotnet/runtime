@@ -43,7 +43,7 @@ namespace System.DirectoryServices.Protocols
         PhantomRoot = 2
     }
 
-    internal class UtilityHandle
+    internal static class UtilityHandle
     {
         private static readonly ConnectionHandle s_handle = new ConnectionHandle();
 
@@ -733,7 +733,7 @@ namespace System.DirectoryServices.Protocols
 
                 if (error != 0)
                 {
-                    if (Utility.IsLdapError((LdapError)error))
+                    if (LdapErrorMappings.IsLdapError(error))
                     {
                         string errorMessage = LdapErrorMappings.MapResultCode(error);
                         throw new LdapException(error, errorMessage);

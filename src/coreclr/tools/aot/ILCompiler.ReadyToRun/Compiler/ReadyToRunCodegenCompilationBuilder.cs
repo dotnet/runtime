@@ -12,6 +12,7 @@ using ILCompiler.Win32Resources;
 using Internal.IL;
 using Internal.JitInterface;
 using Internal.ReadyToRunConstants;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
@@ -28,7 +29,10 @@ namespace ILCompiler
         private string _pdbPath;
         private bool _generatePerfMapFile;
         private string _perfMapPath;
+        private Guid? _perfMapMvid;
+        private bool _generateProfileFile;
         private int _parallelism;
+        Func<MethodDesc, string> _printReproInstructions;
         private InstructionSetSupport _instructionSetSupport;
         private ProfileDataManager _profileData;
         private ReadyToRunMethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
@@ -76,6 +80,11 @@ namespace ILCompiler
                 string value = param.Substring(indexOfEquals + 1);
 
                 builder.Add(new KeyValuePair<string, string>(name, value));
+            }
+
+            if (_context.Target.Abi == TargetAbi.CoreRTArmel)
+            {
+                builder.Add(new KeyValuePair<string, string>("JitSoftFP", "1"));
             }
 
             _ryujitOptions = builder.ToArray();
@@ -144,16 +153,29 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile, string perfMapPath)
+        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile, string perfMapPath, Guid? inputModuleMvid)
         {
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
+            _perfMapMvid = inputModuleMvid;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseProfileFile(bool generateProfileFile)
+        {
+            _generateProfileFile = generateProfileFile;
             return this;
         }
 
         public ReadyToRunCodegenCompilationBuilder UseParallelism(int parallelism)
         {
             _parallelism = parallelism;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UsePrintReproInstructions(Func<MethodDesc, string> printReproInstructions)
+        {
+            _printReproInstructions = printReproInstructions;
             return this;
         }
 
@@ -218,6 +240,7 @@ namespace ILCompiler
             NodeFactory factory = new NodeFactory(
                 _context,
                 _compilationGroup,
+                _profileData,
                 _nameMangler,
                 corHeaderNode,
                 debugDirectoryNode,
@@ -237,14 +260,17 @@ namespace ILCompiler
 
                 case OptimizationMode.PreferSize:
                     corJitFlags.Add(CorJitFlag.CORJIT_FLAG_SIZE_OPT);
+                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
                     break;
 
                 case OptimizationMode.PreferSpeed:
                     corJitFlags.Add(CorJitFlag.CORJIT_FLAG_SPEED_OPT);
+                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
                     break;
 
                 default:
                     // Not setting a flag results in BLENDED_CODE.
+                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
                     break;
             }
 
@@ -267,9 +293,12 @@ namespace ILCompiler
                 generateMapFile: _generateMapFile,
                 generateMapCsvFile: _generateMapCsvFile,
                 generatePdbFile: _generatePdbFile,
+                printReproInstructions: _printReproInstructions,
                 pdbPath: _pdbPath,
                 generatePerfMapFile: _generatePerfMapFile,
                 perfMapPath: _perfMapPath,
+                perfMapMvid: _perfMapMvid,
+                generateProfileFile: _generateProfileFile,
                 _parallelism,
                 _profileData,
                 _r2rMethodLayoutAlgorithm,

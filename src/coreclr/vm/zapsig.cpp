@@ -537,7 +537,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
             if (FAILED(sp.SkipExactlyOne()))
                 RETURN(FALSE);
 
-            DWORD rank;
+            uint32_t rank;
             if (FAILED(sp.GetData(&rank)))
                 RETURN(FALSE);
 
@@ -796,7 +796,7 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
     SigPointer sig(pBuffer);
 
     // decode flags
-    DWORD methodFlags;
+    uint32_t methodFlags;
     IfFailThrow(sig.GetData(&methodFlags));
 
     TypeHandle thOwner = NULL;
@@ -820,7 +820,7 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
     if ( methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken )
     {
         // get the method desc using slot number
-        DWORD slot;
+        uint32_t slot;
         IfFailThrow(sig.GetData(&slot));
 
         _ASSERTE(!thOwner.IsNull());
@@ -886,7 +886,7 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
         if (ppMethodSpecWithVars != NULL)
             *ppMethodSpecWithVars = sig.GetPtr();
 
-        DWORD nargs;
+        uint32_t nargs;
         IfFailThrow(sig.GetData(&nargs));
         _ASSERTE(nargs > 0);
 
@@ -897,7 +897,7 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
 
         TypeHandle * pInst = (TypeHandle*) _alloca(cbMem);
 
-        for (DWORD i = 0; i < nargs; i++)
+        for (uint32_t i = 0; i < nargs; i++)
         {
             pInst[i] = sig.GetTypeHandleThrowing(pInfoModule,
                                                 pContext,
@@ -999,7 +999,7 @@ FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
 
     SigPointer sig(pBuffer);
 
-    DWORD fieldFlags;
+    uint32_t fieldFlags;
     IfFailThrow(sig.GetData(&fieldFlags));
 
     MethodTable *pOwnerMT = NULL;
@@ -1023,7 +1023,7 @@ FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
     if (fieldFlags & ENCODE_FIELD_SIG_IndexInsteadOfToken)
     {
         // get the field desc using index
-        DWORD fieldIndex;
+        uint32_t fieldIndex;
         IfFailThrow(sig.GetData(&fieldIndex));
 
         _ASSERTE(pOwnerMT != NULL);
@@ -1094,33 +1094,33 @@ void ZapSig::CopyTypeSignature(SigParser* pSigParser, SigBuilder* pSigBuilder, D
             if (type == ELEMENT_TYPE_ARRAY)
             {
                 // Copy rank
-                ULONG rank;
+                uint32_t rank;
                 IfFailThrow(pSigParser->GetData(&rank));
                 pSigBuilder->AppendData(rank);
 
                 if (rank)
                 {
                     // Copy # of sizes
-                    ULONG nsizes;
+                    uint32_t nsizes;
                     IfFailThrow(pSigParser->GetData(&nsizes));
                     pSigBuilder->AppendData(nsizes);
 
                     while (nsizes--)
                     {
                         // Copy size
-                        ULONG size;
+                        uint32_t size;
                         IfFailThrow(pSigParser->GetData(&size));
                         pSigBuilder->AppendData(size);
                     }
 
                     // Copy # of lower bounds
-                    ULONG nlbounds;
+                    uint32_t nlbounds;
                     IfFailThrow(pSigParser->GetData(&nlbounds));
                     pSigBuilder->AppendData(nlbounds);
                     while (nlbounds--)
                     {
                         // Copy lower bound
-                        ULONG lbound;
+                        uint32_t lbound;
                         IfFailThrow(pSigParser->GetData(&lbound));
                         pSigBuilder->AppendData(lbound);
                     }
@@ -1160,7 +1160,7 @@ void ZapSig::CopyTypeSignature(SigParser* pSigParser, SigBuilder* pSigBuilder, D
             IfFailThrow(pSigParser->GetToken(&token));
             pSigBuilder->AppendToken(token);
 
-            ULONG argCnt; // Get number of generic parameters
+            uint32_t argCnt; // Get number of generic parameters
             IfFailThrow(pSigParser->GetData(&argCnt));
             pSigBuilder->AppendData(argCnt);
 
@@ -1505,7 +1505,7 @@ BOOL ZapSig::EncodeMethod(
                 ThrowHR(COR_E_BADIMAGEFORMAT);
             }
 
-            ULONG numGenArgs;
+            uint32_t numGenArgs;
             IfFailThrow(sigParser.GetData(&numGenArgs));
             pSigBuilder->AppendData(numGenArgs);
 

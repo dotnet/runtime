@@ -74,7 +74,7 @@ namespace System.Runtime.InteropServices
         }
 #endif
 
-        protected void SetHandle(IntPtr handle) => this.handle = handle;
+        protected internal void SetHandle(IntPtr handle) => this.handle = handle;
 
         public IntPtr DangerousGetHandle() => handle;
 
@@ -159,6 +159,13 @@ namespace System.Runtime.InteropServices
             // If we got here we managed to update the ref count while the state
             // remained non closed. So we're done.
             success = true;
+        }
+
+        // Used by internal callers to avoid declaring a bool to pass by ref
+        internal void DangerousAddRef()
+        {
+            bool success = false;
+            DangerousAddRef(ref success);
         }
 
         public void DangerousRelease() => InternalRelease(disposeOrFinalizeOperation: false);

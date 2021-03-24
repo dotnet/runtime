@@ -50,7 +50,7 @@ namespace System.Runtime.Serialization
         ///          changes to how IL generated could affect how data is deserialized and what gets access to data,
         ///          therefore we mark it for review so that changes to generation logic are reviewed.
         /// </SecurityNote>
-        private class CriticalHelper
+        private sealed class CriticalHelper
         {
             private CodeGenerator _ilg = null!; // initialized in GenerateXXXReader
             private LocalBuilder? _objectLocal;
@@ -942,7 +942,7 @@ namespace System.Runtime.Serialization
 
         internal static object UnsafeGetUninitializedObject(Type type)
         {
-            return FormatterServices.GetUninitializedObject(type);
+            return RuntimeHelpers.GetUninitializedObject(type);
         }
 
         /// <SecurityNote>

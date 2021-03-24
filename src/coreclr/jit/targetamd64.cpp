@@ -12,8 +12,9 @@
 
 #include "target.h"
 
-const char*            Target::g_tgtCPUName  = "x64";
-const Target::ArgOrder Target::g_tgtArgOrder = ARG_ORDER_R2L;
+const char*            Target::g_tgtCPUName           = "x64";
+const Target::ArgOrder Target::g_tgtArgOrder          = ARG_ORDER_R2L;
+const Target::ArgOrder Target::g_tgtUnmanagedArgOrder = ARG_ORDER_R2L;
 
 // clang-format off
 #ifdef UNIX_AMD64_ABI

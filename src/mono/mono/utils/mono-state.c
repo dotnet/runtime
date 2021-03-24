@@ -142,7 +142,7 @@ typedef struct {
 } MonoSummaryTimeline;
 
 static const char *configured_timeline_dir;
-static MonoSummaryTimeline log;
+static MonoSummaryTimeline mlog;
 
 static void
 file_for_stage_breadcrumb (const char *directory, MonoSummaryStage stage, gchar *buff, size_t sizeof_buff)
@@ -178,7 +178,7 @@ static void
 create_stage_breadcrumb (void)
 {
 	char out_file [200];
-	file_for_stage_breadcrumb (log.directory, log.level, out_file, sizeof(out_file));
+	file_for_stage_breadcrumb (mlog.directory, mlog.level, out_file, sizeof(out_file));
 	create_breadcrumb (out_file);
 }
 
@@ -186,7 +186,7 @@ static void
 create_dump_reason_breadcrumb (const char *dump_reason)
 {
 	char out_file [200];
-	file_for_dump_reason_breadcrumb (log.directory, dump_reason, out_file, sizeof(out_file));
+	file_for_dump_reason_breadcrumb (mlog.directory, dump_reason, out_file, sizeof(out_file));
 	create_breadcrumb (out_file);
 }
 
@@ -194,7 +194,7 @@ void
 mono_create_crash_hash_breadcrumb (MonoThreadSummary *thread)
 {
 	char out_file [200];
-	file_for_hash_breadcrumb (log.directory, thread->hashes, out_file, sizeof(out_file));
+	file_for_hash_breadcrumb (mlog.directory, thread->hashes, out_file, sizeof(out_file));
 	create_breadcrumb (out_file);
 }
 
@@ -213,12 +213,12 @@ mono_summarize_set_timeline_dir (const char *directory)
 void
 mono_summarize_timeline_start (const char *dump_reason)
 {
-	memset (&log, 0, sizeof (log));
+	memset (&mlog, 0, sizeof (mlog));
 
 	if (!configured_timeline_dir)
 		return;
 
-	log.directory = configured_timeline_dir;
+	mlog.directory = configured_timeline_dir;
 	create_dump_reason_breadcrumb (dump_reason);
 	mono_summarize_timeline_phase_log (MonoSummarySetup);
 }
@@ -232,11 +232,11 @@ mono_summarize_double_fault_log (void)
 void
 mono_summarize_timeline_phase_log (MonoSummaryStage next)
 {
-	if (!log.directory)
+	if (!mlog.directory)
 		return;
 
 	MonoSummaryStage out_level;
-	switch (log.level) {
+	switch (mlog.level) {
 		case MonoSummaryNone:
 			out_level = MonoSummarySetup;
 			break;
@@ -276,25 +276,25 @@ mono_summarize_timeline_phase_log (MonoSummaryStage next)
 			break;
 
 		case MonoSummaryDone:
-			g_async_safe_printf ("Trying to log crash reporter timeline, already at done %d\n", log.level);
+			g_async_safe_printf ("Trying to log crash reporter timeline, already at done %d\n", mlog.level);
 			return;
 		default:
-			g_async_safe_printf ("Trying to log crash reporter timeline, illegal state %d\n", log.level);
+			g_async_safe_printf ("Trying to log crash reporter timeline, illegal state %d\n", mlog.level);
 			return;
 	}
 
 	g_assertf(out_level == next || next == MonoSummaryDoubleFault, "Log Error: Log transition to %d, actual expected next step is %d\n", next, out_level);
 
-	log.level = out_level;
+	mlog.level = out_level;
 	create_stage_breadcrumb ();
 	// To check, comment out normally
 	// DO NOT MERGE UNCOMMENTED
 	// As this does a lot of FILE io
 	//
-	// g_assert (out_level == mono_summarize_timeline_read_level (log.directory,  FALSE));
+	// g_assert (out_level == mono_summarize_timeline_read_level (mlog.directory,  FALSE));
 
 	if (out_level == MonoSummaryDone)
-		memset (&log, 0, sizeof (log));
+		memset (&mlog, 0, sizeof (mlog));
 
 	return;
 }
@@ -376,7 +376,7 @@ mono_summarize_timeline_read_level (const char *directory, gboolean clear)
 	char out_file [200];
 
 	if (!directory)
-		directory = log.directory;
+		directory = mlog.directory;
 
 	if (!directory)
 		return MonoSummaryNone;

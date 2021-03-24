@@ -6,7 +6,7 @@ trigger: none
 #   displayName: Sat at 2:00 AM (UTC-8:00)
 #   branches:
 #     include:
-#     - master
+#     - main
 #   always: true
 
 jobs:

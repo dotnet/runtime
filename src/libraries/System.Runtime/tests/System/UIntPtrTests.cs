@@ -456,11 +456,95 @@ namespace System.Tests
 
             yield return new object[] { "123", 0, 2, NumberStyles.Integer, null, (UIntPtr)12 };
             yield return new object[] { "123", 1, 2, NumberStyles.Integer, null, (UIntPtr)23 };
-            yield return new object[] { "4294967295", 0, 1, NumberStyles.Integer, null, 4 };
-            yield return new object[] { "4294967295", 9, 1, NumberStyles.Integer, null, 5 };
+            yield return new object[] { "4294967295", 0, 1, NumberStyles.Integer, null, (UIntPtr)4 };
+            yield return new object[] { "4294967295", 9, 1, NumberStyles.Integer, null, (UIntPtr)5 };
             yield return new object[] { "12", 0, 1, NumberStyles.HexNumber, null, (UIntPtr)0x1 };
             yield return new object[] { "12", 1, 1, NumberStyles.HexNumber, null, (UIntPtr)0x2 };
             yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (UIntPtr)10 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, UIntPtr expected)
+        {
+            UIntPtr result;
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
+            {
+                Assert.True(UIntPtr.TryParse(value.AsSpan(offset, count), out result));
+                Assert.Equal(expected, result);
+            }
+
+            Assert.Equal(expected, UIntPtr.Parse(value.AsSpan(offset, count), style, provider));
+
+            Assert.True(UIntPtr.TryParse(value.AsSpan(offset, count), style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                UIntPtr result;
+
+                // Default style and provider
+                if (style == NumberStyles.Integer && provider == null)
+                {
+                    Assert.False(UIntPtr.TryParse(value.AsSpan(), out result));
+                    Assert.Equal(default, result);
+                }
+
+                Assert.Throws(exceptionType, () => UIntPtr.Parse(value.AsSpan(), style, provider));
+
+                Assert.False(UIntPtr.TryParse(value.AsSpan(), style, provider, out result));
+                Assert.Equal(default, result);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_TestData))]
+        public static void TryFormat(UIntPtr i, string format, IFormatProvider provider, string expected)
+        {
+            char[] actual;
+            int charsWritten;
+
+            // Just right
+            actual = new char[expected.Length];
+            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected, new string(actual));
+
+            // Longer than needed
+            actual = new char[expected.Length + 1];
+            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected, new string(actual, 0, charsWritten));
+
+            // Too short
+            if (expected.Length > 0)
+            {
+                actual = new char[expected.Length - 1];
+                Assert.False(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
+                Assert.Equal(0, charsWritten);
+            }
+
+            if (format != null)
+            {
+                // Upper format
+                actual = new char[expected.Length];
+                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToUpperInvariant(), provider));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(expected.ToUpperInvariant(), new string(actual));
+
+                // Lower format
+                actual = new char[expected.Length];
+                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToLowerInvariant(), provider));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(expected.ToLowerInvariant(), new string(actual));
+            }
         }
     }
 }

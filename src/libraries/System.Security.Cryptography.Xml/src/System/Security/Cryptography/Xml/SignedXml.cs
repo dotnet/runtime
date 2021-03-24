@@ -833,7 +833,7 @@ namespace System.Security.Cryptography.Xml
             throw new CryptographicException(SR.Cryptography_Xml_InvalidReference);
         }
 
-        private class ReferenceLevelSortOrder : IComparer
+        private sealed class ReferenceLevelSortOrder : IComparer
         {
             private ArrayList _references;
             public ReferenceLevelSortOrder() { }

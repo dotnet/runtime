@@ -22,11 +22,14 @@ namespace System.Globalization
                 }
                 else
                 {
-                    int loaded = Interop.Globalization.LoadICU();
+                    int loaded = LoadICU();
                     if (loaded == 0 && !OperatingSystem.IsBrowser())
                     {
+                        // This can't go into resources, because a resource lookup requires globalization, which requires ICU
                         string message = "Couldn't find a valid ICU package installed on the system. " +
-                                        "Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.";
+                                         "Please install libicu using your package manager and try again. " +
+                                         "Alternatively you can set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support. " +
+                                         "Please see https://aka.ms/dotnet-missing-libicu for more information.";
                         Environment.FailFast(message);
                     }
 

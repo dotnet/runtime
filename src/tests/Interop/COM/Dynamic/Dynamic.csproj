@@ -2,12 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <ApplicationManifest>App.manifest</ApplicationManifest>
-    <!-- ilasm round-trip testing blocked on ILAsm supporting embedding resources. See https://github.com/dotnet/runtime/issues/11412 -->
-    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
-    <!-- Test unsupported outside of windows -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-    <!-- This test would require the runincontext.exe to include App.manifest describing the COM interfaces -->
-    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <IsManagedCOMClient>true</IsManagedCOMClient>
+    <UseManagedCOMServer>true</UseManagedCOMServer>
     <!-- This test is very slow under some GCStress variations, especially with COMPlus_HeapVerify=1, so disable it under GCStress to avoid test timeouts in the CI.
          Issue: https://github.com/dotnet/runtime/issues/39584
     -->
@@ -18,11 +14,23 @@
     <Compile Include="CollectionTest.cs" />
     <Compile Include="EventTest.cs" />
     <Compile Include="ParametersTest.cs" />
+    <Compile Include="NETServerTest.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ServerGuids.cs" />
+    <Compile Include="../ServerContracts/ServerGuids.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CoreShim.X.manifest">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Server/CMakeLists.txt" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="../NETServer/NETServer.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </ProjectReference>
   </ItemGroup>
 </Project>

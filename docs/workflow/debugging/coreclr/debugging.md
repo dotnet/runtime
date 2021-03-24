@@ -73,6 +73,10 @@ The "COMPlus_EnableDiagnostics" environment variable can be used to disable mana
 
     export COMPlus_EnableDiagnostics=0
 
+Debugging Crossgen2
+==================================
+
+Debugging Crossgen2 is described in [this](debugging-crossgen2.md) document.
 
 Using Visual Studio Code
 ========================

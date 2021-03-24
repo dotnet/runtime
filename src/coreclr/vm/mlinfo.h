@@ -490,6 +490,7 @@ private:
 
     UINT16                      GetNativeSize(MarshalType mtype);
     static bool                 IsInOnly(MarshalType mtype);
+    static bool                 IsValueClass(MarshalType mtype);
 
     static OVERRIDEPROC         GetArgumentOverrideProc(MarshalType mtype);
     static RETURNOVERRIDEPROC   GetReturnOverrideProc(MarshalType mtype);

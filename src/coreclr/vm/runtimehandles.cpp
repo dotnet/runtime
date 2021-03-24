@@ -1716,22 +1716,7 @@ void * QCALLTYPE RuntimeMethodHandle::GetFunctionPointer(MethodDesc * pMethod)
     // Ensure the method is active so
     // the function pointer can be used.
     pMethod->EnsureActive();
-
-#if defined(TARGET_X86)
-    // Deferring X86 support until a need is observed or
-    // time permits investigation into all the potential issues.
-    // https://github.com/dotnet/runtime/issues/33582
-    if (pMethod->HasUnmanagedCallersOnlyAttribute())
-    {
-        funcPtr = (void*)COMDelegate::ConvertToUnmanagedCallback(pMethod);
-    }
-    else
-    {
-        funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
-    }
-#else
     funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
-#endif
 
     END_QCALL;
 

@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Reflection;
@@ -23,17 +24,15 @@ public class WasmAppBuilder : Task
 
     [NotNull]
     [Required]
-    public string? MicrosoftNetCoreAppRuntimePackDir { get; set; }
-
-    [NotNull]
-    [Required]
     public string? MainJS { get; set; }
 
     [NotNull]
     [Required]
     public string[]? Assemblies { get; set; }
 
-    public bool EnableProfiler { get; set; }
+    [NotNull]
+    [Required]
+    public ITaskItem[]? NativeAssets { get; set; }
 
     private List<string> _fileWrites = new();
 
@@ -42,7 +41,7 @@ public class WasmAppBuilder : Task
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
-    public string? IcuDataFileName { get; set; } = "icudt.dat";
+    public string? IcuDataFileName { get; set; }
 
     public int DebugLevel { get; set; }
     public ITaskItem[]? SatelliteAssemblies { get; set; }
@@ -50,6 +49,20 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? RemoteSources { get; set; }
     public bool InvariantGlobalization { get; set; }
     public ITaskItem[]? ExtraFilesToDeploy { get; set; }
+
+    // <summary>
+    // Extra json elements to add to mono-config.js
+    //
+    // Metadata:
+    // - Value: can be a number, bool, quoted string, or json string
+    //
+    // Examples:
+    //      <WasmExtraConfig Include="enable_profiler" Value="true" />
+    //      <WasmExtraConfig Include="json" Value="{ &quot;abc&quot;: 4 }" />
+    //      <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
+    //       <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
+    // </summary>
+    public ITaskItem[]? ExtraConfig { get; set; }
 
     private class WasmAppConfig
     {
@@ -61,8 +74,8 @@ public class WasmAppBuilder : Task
         public List<object> Assets { get; } = new List<object>();
         [JsonPropertyName("remote_sources")]
         public List<string> RemoteSources { get; set; } = new List<string>();
-        [JsonPropertyName("enable_profiler")]
-        public bool EnableProfiler { get; set; } = false;
+        [JsonExtensionData]
+        public Dictionary<string, object?> Extra { get; set; } = new();
     }
 
     private class AssetEntry
@@ -114,22 +127,18 @@ public class WasmAppBuilder : Task
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
             throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
-        if (Assemblies == null)
+
+        if (Assemblies?.Length == 0)
         {
-            Log.LogError($"Assemblies should not be null.");
+            Log.LogError("Cannot build Wasm app without any assemblies");
             return false;
         }
 
         var _assemblies = new List<string>();
-        var runtimeSourceDir = Path.Join(MicrosoftNetCoreAppRuntimePackDir, "native");
-
-        foreach (var asm in Assemblies)
+        foreach (var asm in Assemblies!)
         {
             if (!_assemblies.Contains(asm))
                 _assemblies.Add(asm);
-
-            if (asm.EndsWith("System.Private.CoreLib.dll"))
-                runtimeSourceDir = Path.GetDirectoryName(asm);
         }
 
         var config = new WasmAppConfig ();
@@ -150,15 +159,11 @@ public class WasmAppBuilder : Task
             }
         }
 
-        List<string> nativeAssets = new List<string>() { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" };
-
-        if (!InvariantGlobalization)
-            nativeAssets.Add(IcuDataFileName!);
-
-        if (Path.TrimEndingDirectorySeparator(Path.GetFullPath(runtimeSourceDir)) != Path.TrimEndingDirectorySeparator(Path.GetFullPath(AppDir!)))
+        foreach (ITaskItem item in NativeAssets)
         {
-            foreach (var f in nativeAssets)
-                FileCopyChecked(Path.Join(runtimeSourceDir, f), Path.Join(AppDir, f), "NativeAssets");
+            string dest = Path.Combine(AppDir!, Path.GetFileName(item.ItemSpec));
+            if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
+                return false;
         }
         FileCopyChecked(MainJS!, Path.Join(AppDir, "runtime.js"), string.Empty);
 
@@ -231,9 +236,14 @@ public class WasmAppBuilder : Task
                 if (source != null && source.ItemSpec != null)
                     config.RemoteSources.Add(source.ItemSpec);
         }
-        if (EnableProfiler)
+
+        foreach (ITaskItem extra in ExtraConfig ?? Enumerable.Empty<ITaskItem>())
         {
-            config.EnableProfiler = true;
+            string name = extra.ItemSpec;
+            if (!TryParseExtraConfigValue(extra, out object? valueObject))
+                return false;
+
+            config.Extra[name] = valueObject;
         }
 
         string monoConfigPath = Path.Join(AppDir, "mono-config.js");
@@ -260,7 +270,52 @@ public class WasmAppBuilder : Task
             }
         }
 
-        return true;
+        return !Log.HasLoggedErrors;
+    }
+
+    private bool TryParseExtraConfigValue(ITaskItem extraItem, out object? valueObject)
+    {
+        valueObject = null;
+        string? rawValue = extraItem.GetMetadata("Value");
+        if (string.IsNullOrEmpty(rawValue))
+            return true;
+
+        if (TryConvert(rawValue, typeof(double), out valueObject) || TryConvert(rawValue, typeof(bool), out valueObject))
+            return true;
+
+        // Try parsing as a quoted string
+        if (rawValue!.Length > 1 && rawValue![0] == '"' && rawValue![^1] == '"')
+        {
+            valueObject = rawValue![1..^1];
+            return true;
+        }
+
+        // try parsing as json
+        try
+        {
+            JsonDocument jdoc = JsonDocument.Parse(rawValue);
+            valueObject = jdoc.RootElement;
+            return true;
+        }
+        catch (JsonException je)
+        {
+            Log.LogError($"ExtraConfig: {extraItem.ItemSpec} with Value={rawValue} cannot be parsed as a number, boolean, string, or json object/array: {je.Message}");
+            return false;
+        }
+    }
+
+    private static bool TryConvert(string str, Type type, out object? value)
+    {
+        value = null;
+        try
+        {
+            value = Convert.ChangeType(str, type);
+            return true;
+        }
+        catch (Exception ex) when (ex is FormatException || ex is InvalidCastException || ex is OverflowException)
+        {
+            return false;
+        }
     }
 
     private bool FileCopyChecked(string src, string dst, string label)

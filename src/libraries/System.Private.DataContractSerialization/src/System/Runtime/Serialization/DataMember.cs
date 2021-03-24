@@ -147,7 +147,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private class CriticalHelper
+        private sealed class CriticalHelper
         {
             private DataContract? _memberTypeContract;
             private string _name = null!; // Name is always initialized right after construction

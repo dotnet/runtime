@@ -10,6 +10,7 @@ set(NATIVECRYPTO_SOURCES
     pal_ecc.c
     pal_hmac.c
     pal_keyagree.c
+    pal_keyderivation.c
     pal_keychain.c
     pal_random.c
     pal_rsa.c
@@ -22,6 +23,10 @@ set(NATIVECRYPTO_SOURCES
     pal_x509.c
     pal_x509chain.c
 )
+
+if (CLR_CMAKE_TARGET_MACCATALYST)
+    add_definitions(-DTARGET_MACCATALYST)
+endif()
 
 if (CLR_CMAKE_TARGET_IOS)
     add_definitions(-DTARGET_IOS)
@@ -39,10 +44,13 @@ if (GEN_SHARED_LIB)
     )
 endif()
 
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVECRYPTO_SOURCES ${NATIVECRYPTO_SOURCES} entrypoints.c)
+endif()
+
 add_library(System.Security.Cryptography.Native.Apple-Static
     STATIC
     ${NATIVECRYPTO_SOURCES}
-    entrypoints.c
 )
 
 set_target_properties(System.Security.Cryptography.Native.Apple-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Apple CLEAN_DIRECT_OUTPUT 1)

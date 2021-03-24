@@ -42,24 +42,36 @@ public:
 public:
     void HandleCallCountingForFirstCall(MethodDesc* pMethodDesc);
     bool TrySetCodeEntryPointAndRecordMethodForCallCounting(MethodDesc* pMethodDesc, PCODE codeEntryPoint);
-    void AsyncPromoteToTier1(NativeCodeVersion tier0NativeCodeVersion, bool *scheduleTieringBackgroundWorkRef);
-    static CORJIT_FLAGS GetJitFlags(NativeCodeVersion nativeCodeVersion);
+    void AsyncPromoteToTier1(NativeCodeVersion tier0NativeCodeVersion, bool *createTieringBackgroundWorkerRef);
+    static CORJIT_FLAGS GetJitFlags(PrepareCodeConfig *config);
+
+#if !defined(DACCESS_COMPILE) && defined(_DEBUG)
+public:
+    static Thread *GetBackgroundWorkerThread()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return s_backgroundWorkerThread;
+    }
+#endif
+
+public:
+    static bool TryScheduleBackgroundWorkerWithoutGCTrigger_Locked();
+    static void CreateBackgroundWorker();
+private:
+    static DWORD WINAPI BackgroundWorkerBootstrapper0(LPVOID args);
+    static void BackgroundWorkerBootstrapper1(LPVOID args);
+    void BackgroundWorkerStart();
 
 private:
     bool IsTieringDelayActive();
-    static void WINAPI TieringDelayTimerCallback(PVOID parameter, BOOLEAN timerFired);
-    void DeactivateTieringDelay();
+    bool TryDeactivateTieringDelay();
 
 public:
     void AsyncCompleteCallCounting();
 
-public:
-    void ScheduleBackgroundWork();
 private:
-    void RequestBackgroundWork();
-    static void WINAPI DoBackgroundWorkTimerCallback(PVOID parameter, BOOLEAN timerFired);
     static DWORD StaticBackgroundWorkCallback(void* args);
-    void DoBackgroundWork();
+    bool DoBackgroundWork(UINT64 *workDurationTicksRef, UINT64 minWorkDurationTicks, UINT64 maxWorkDurationTicks);
 
 private:
     void OptimizeMethod(NativeCodeVersion nativeCodeVersion);
@@ -68,9 +80,6 @@ private:
     void ActivateCodeVersion(NativeCodeVersion nativeCodeVersion);
 
 #ifndef DACCESS_COMPILE
-private:
-    static CrstStatic s_lock;
-
 public:
     static void StaticInitialize()
     {
@@ -99,9 +108,17 @@ public:
         LockHolder(const LockHolder &) = delete;
         LockHolder &operator =(const LockHolder &) = delete;
     };
+#endif // !DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
 private:
-    class AutoResetIsBackgroundWorkScheduled;
+    static CrstStatic s_lock;
+#ifdef _DEBUG
+    static Thread *s_backgroundWorkerThread;
+#endif
+    static CLREvent s_backgroundWorkAvailableEvent;
+    static bool s_isBackgroundWorkerRunning;
+    static bool s_isBackgroundWorkerProcessingWork;
 #endif // !DACCESS_COMPILE
 
 private:
@@ -109,12 +126,9 @@ private:
     UINT32 m_countOfMethodsToOptimize;
     UINT32 m_countOfNewMethodsCalledDuringDelay;
     SArray<MethodDesc*>* m_methodsPendingCountingForTier1;
-    HANDLE m_tieringDelayTimerHandle;
-    HANDLE m_doBackgroundWorkTimerHandle;
-    bool m_isBackgroundWorkScheduled;
     bool m_tier1CallCountingCandidateMethodRecentlyRecorded;
     bool m_isPendingCallCountingCompletion;
-    bool m_recentlyRequestedCallCountingCompletionAgain;
+    bool m_recentlyRequestedCallCountingCompletion;
 
 #endif // FEATURE_TIERED_COMPILATION
 };

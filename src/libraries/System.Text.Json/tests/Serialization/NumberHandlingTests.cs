@@ -359,6 +359,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49936", TestPlatforms.Android)]
         public static void Number_AsCollectionElement_RoundTrip()
         {
             RunAsCollectionElementTest(JsonNumberTestData.Bytes);
@@ -980,6 +981,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49936", TestPlatforms.Android)]
         public static void EscapingTest()
         {
             // Cause all characters to be escaped.
@@ -1657,7 +1659,7 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual(json, JsonSerializer.Serialize(result, options));
         }
 
-        private static IEnumerable<object[]> NumberHandling_ForPropsReadAfter_DeserializingCtorParams_TestData()
+        public static IEnumerable<object[]> NumberHandling_ForPropsReadAfter_DeserializingCtorParams_TestData()
         {
             yield return new object[]
             {

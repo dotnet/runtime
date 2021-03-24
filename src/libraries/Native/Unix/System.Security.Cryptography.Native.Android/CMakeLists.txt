@@ -5,15 +5,26 @@ add_compile_options(-Wno-unused-parameter)
 add_compile_options(-Wno-unused-function)
 
 set(NATIVECRYPTO_SOURCES
-    pal_jni.c
-    pal_misc.c
-    pal_evp.c
-    pal_evp_cipher.c
-    pal_hmac.c
     pal_bignum.c
-    pal_ssl.c
-    pal_rsa.c
+    pal_dsa.c
+    pal_ecdsa.c
+    pal_ecc_import_export.c
+    pal_eckey.c
+    pal_ecdh.c
     pal_err.c
+    pal_evp.c
+    pal_cipher.c
+    pal_hmac.c
+    pal_jni.c
+    pal_lifetime.c
+    pal_misc.c
+    pal_rsa.c
+    pal_signature.c
+    pal_ssl.c
+    pal_sslstream.c
+    pal_x509.c
+    pal_x509chain.c
+    pal_x509store.c
 )
 
 add_library(System.Security.Cryptography.Native.Android

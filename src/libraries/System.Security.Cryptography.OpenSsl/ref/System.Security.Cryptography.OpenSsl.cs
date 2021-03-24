@@ -64,6 +64,7 @@ namespace System.Security.Cryptography
     }
     public sealed partial class SafeEvpPKeyHandle : System.Runtime.InteropServices.SafeHandle
     {
+        public SafeEvpPKeyHandle() : base (default(System.IntPtr), default(bool)) { }
         public SafeEvpPKeyHandle(System.IntPtr handle, bool ownsHandle) : base (default(System.IntPtr), default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
         public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateHandle() { throw null; }

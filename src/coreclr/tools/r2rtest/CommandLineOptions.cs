@@ -165,9 +165,11 @@ namespace R2RTest
                         InputDirectory(),
                         DegreeOfParallelism(),
                         AspNetPath(),
-                        CompositeScenario(),
+                        Composite(),
                         Map(),
                         Pdb(),
+                        CompilationTimeoutMinutes(),
+                        Crossgen2Path(),
                     },
                     options =>
                     {
@@ -295,9 +297,6 @@ namespace R2RTest
             //
             Option AspNetPath() =>
                 new Option<DirectoryInfo>(new[] { "--asp-net-path", "-asp" }, "Path to SERP's ASP.NET Core folder").ExistingOnly();
-
-            Option CompositeScenario() =>
-                new Option<SerpCompositeScenario>(new [] { "--composite-scenario", "-cs" }, "Specifies which layers of a shared framework application are compiled as composite" );
         }
     }
 }

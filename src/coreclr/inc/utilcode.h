@@ -1278,7 +1278,6 @@ private:
     static BOOL m_threadAssignCpuGroups;
     static WORD m_initialGroup;
     static CPU_Group_Info *m_CPUGroupInfoArray;
-    static bool s_hadSingleProcessorAtStartup;
 
     static BOOL InitCPUGroupInfoArray();
     static BOOL InitCPUGroupInfoRange();
@@ -1309,13 +1308,6 @@ public:
     static void ClearCPUGroupAffinity(GROUP_AFFINITY *gf);
     static BOOL GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* group_size);
 #endif
-
-public:
-    static bool HadSingleProcessorAtStartup()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return s_hadSingleProcessorAtStartup;
-    }
 };
 
 DWORD_PTR GetCurrentProcessCpuMask();

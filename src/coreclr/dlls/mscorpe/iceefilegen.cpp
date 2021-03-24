@@ -7,14 +7,6 @@
 #include "iceefilegen.h"
 #include "ceefilegenwriter.h"
 
-#ifdef EnC_SUPPORTED
-#define ENC_DELTA_HACK
-#endif
-
-#ifdef ENC_DELTA_HACK
-extern BOOL g_EnCMode;
-#endif
-
 // Deprecated
 //****************************************************************************
     HRESULT ICeeFileGen::EmitMethod ()
@@ -129,17 +121,6 @@ HRESULT ICeeFileGen::CreateCeeFileEx2 (HCEEFILE *ceeFile, DWORD createFlags, LPC
     IfFailRet(CeeFileGenWriter::CreateNewInstanceEx(NULL, gen, createFlags, seedFileName));
     TESTANDRETURN(gen != NULL, E_OUTOFMEMORY);
     *ceeFile = gen;
-
-#ifdef ENC_DELTA_HACK
-    // for EnC we want the RVA to be right be relative to the front of the delta IL stream rather
-    // than take into account the .text section and the cor header as we would for a real PE file
-    // However, the RVA must be non-zero, so just stick a dword on the front to push it out.
-    if (g_EnCMode)
-    {
-        CeeSection *sec = &gen->getIlSection();
-        sec->getBlock(sizeof(DWORD), sizeof(DWORD));
-    }
-#endif
 
     return S_OK;
 }

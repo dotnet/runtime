@@ -416,8 +416,7 @@ GenTree* HWIntrinsicInfo::lookupLastOp(const GenTreeHWIntrinsic* node)
 {
     assert(node != nullptr);
 
-    NamedIntrinsic id  = node->gtHWIntrinsicId;
-    GenTree*       op1 = node->gtGetOp1();
+    GenTree* op1 = node->gtGetOp1();
 
     if (op1 == nullptr)
     {
@@ -778,11 +777,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
 {
-    CORINFO_InstructionSet isa      = HWIntrinsicInfo::lookupIsa(intrinsic);
-    HWIntrinsicCategory    category = HWIntrinsicInfo::lookupCategory(intrinsic);
-    int                    numArgs  = sig->numArgs;
-    var_types              retType  = JITtype2varType(sig->retType);
-    var_types              baseType = TYP_UNKNOWN;
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
+    int                 numArgs  = sig->numArgs;
+    var_types           retType  = JITtype2varType(sig->retType);
+    var_types           baseType = TYP_UNKNOWN;
 
     if ((retType == TYP_STRUCT) && featureSIMD)
     {
@@ -1060,6 +1058,18 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_AdvSimd_Arm64_AddSaturateScalar:
                         assert(varTypeIsSIMD(op2->TypeGet()));
                         retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op2ClsHnd));
+                        break;
+
+                    case NI_ArmBase_Arm64_MultiplyHigh:
+                        if (sig->retType == CORINFO_TYPE_ULONG)
+                        {
+                            retNode->AsHWIntrinsic()->gtSIMDBaseType = TYP_ULONG;
+                        }
+                        else
+                        {
+                            assert(sig->retType == CORINFO_TYPE_LONG);
+                            retNode->AsHWIntrinsic()->gtSIMDBaseType = TYP_LONG;
+                        }
                         break;
 
                     default:

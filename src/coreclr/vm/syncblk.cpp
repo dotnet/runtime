@@ -71,7 +71,7 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
     }
     CONTRACTL_END;
 
-    FreeUMEntryThunkOrInterceptStub();
+    FreeUMEntryThunk();
 }
 
 #ifndef TARGET_UNIX
@@ -98,7 +98,7 @@ void InteropSyncBlockInfo::FlushStandbyList()
 }
 #endif // !TARGET_UNIX
 
-void InteropSyncBlockInfo::FreeUMEntryThunkOrInterceptStub()
+void InteropSyncBlockInfo::FreeUMEntryThunk()
 {
     CONTRACTL
     {
@@ -117,22 +117,8 @@ void InteropSyncBlockInfo::FreeUMEntryThunkOrInterceptStub()
             COMDelegate::RemoveEntryFromFPtrHash((UPTR)pUMEntryThunk);
             UMEntryThunk::FreeUMEntryThunk((UMEntryThunk *)pUMEntryThunk);
         }
-        else
-        {
-#if defined(TARGET_X86)
-            Stub *pInterceptStub = GetInterceptStub();
-            if (pInterceptStub != NULL)
-            {
-                // There may be multiple chained stubs
-                pInterceptStub->DecRef();
-            }
-#else // TARGET_X86
-            // Intercept stubs are currently not used on other platforms.
-            _ASSERTE(GetInterceptStub() == NULL);
-#endif // TARGET_X86
-        }
     }
-    m_pUMEntryThunkOrInterceptStub = NULL;
+    m_pUMEntryThunk = NULL;
 }
 
 #ifdef FEATURE_COMINTEROP

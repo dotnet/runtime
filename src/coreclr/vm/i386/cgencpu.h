@@ -102,18 +102,13 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 // Parameter size
 //**********************************************************************
 
-typedef INT32 StackElemType;
-#define STACK_ELEM_SIZE sizeof(StackElemType)
-
-
+inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
+{
+    const unsigned stackSlotSize = 4;
+    return ALIGN_UP(parmSize, stackSlotSize);
+}
 
 #include "stublinkerx86.h"
-
-
-
-// !! This expression assumes STACK_ELEM_SIZE is a power of 2.
-#define StackElemSize(parmSize) (((parmSize) + STACK_ELEM_SIZE - 1) & ~((ULONG)(STACK_ELEM_SIZE - 1)))
-
 
 //**********************************************************************
 // Frames

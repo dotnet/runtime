@@ -14,7 +14,7 @@ namespace System.Xml
         //
         // Private types
         //
-        private class NamespaceResolverProxy : IXmlNamespaceResolver
+        private sealed class NamespaceResolverProxy : IXmlNamespaceResolver
         {
             private readonly XmlWellFormedWriter _wfWriter;
 
@@ -161,7 +161,7 @@ namespace System.Xml
                 ValueString,
             }
 
-            private class Item
+            private sealed class Item
             {
                 internal ItemType type;
                 internal object data;
@@ -180,7 +180,7 @@ namespace System.Xml
                 }
             }
 
-            private class BufferChunk
+            private sealed class BufferChunk
             {
                 internal char[] buffer;
                 internal int index;

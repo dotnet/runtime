@@ -16,18 +16,18 @@ namespace System.DirectoryServices.AccountManagement
         Guid = 5
     }
 
-    internal class IdentMap
+    internal static class IdentMap
     {
-        private IdentMap() { }
-
         internal static object[,] StringMap = {
-        {IdentityType.SamAccountName, IdentityTypeStringMap.SamAccount},
-        {IdentityType.Name, IdentityTypeStringMap.Name},
-         {IdentityType.UserPrincipalName, IdentityTypeStringMap.Upn},
-         {IdentityType.DistinguishedName, IdentityTypeStringMap.DistinguishedName},
-         {IdentityType.Sid, IdentityTypeStringMap.Sid},
-         {IdentityType.Guid, IdentityTypeStringMap.Guid}};
+            {IdentityType.SamAccountName, IdentityTypeStringMap.SamAccount},
+            {IdentityType.Name, IdentityTypeStringMap.Name},
+            {IdentityType.UserPrincipalName, IdentityTypeStringMap.Upn},
+            {IdentityType.DistinguishedName, IdentityTypeStringMap.DistinguishedName},
+            {IdentityType.Sid, IdentityTypeStringMap.Sid},
+            {IdentityType.Guid, IdentityTypeStringMap.Guid}
+        };
     }
+
     internal static class IdentityTypeStringMap
     {
         public const string Guid = "ms-guid";

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="InternalsVisibleTo.cs" />
+    <Compile Include="TestTypes.cs" />
+  </ItemGroup>
+
+</Project>

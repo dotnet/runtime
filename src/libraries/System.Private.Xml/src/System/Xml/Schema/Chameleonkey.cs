@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Xml.Serialization;
+
 namespace System.Xml.Schema
 {
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Xml.Serialization;
-
     // Case insensitive file name key for use in a hashtable.
 
     internal class ChameleonKey
@@ -49,7 +50,7 @@ namespace System.Xml.Schema
             return _hashCode;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (Ref.ReferenceEquals(this, obj))
             {

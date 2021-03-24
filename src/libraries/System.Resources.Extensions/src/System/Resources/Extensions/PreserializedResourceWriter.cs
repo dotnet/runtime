@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -189,7 +188,7 @@ namespace System.Resources.Extensions
             _requiresDeserializingResourceReader = true;
         }
 
-        private class ResourceDataRecord
+        private sealed class ResourceDataRecord
         {
             internal readonly SerializationFormat Format;
             internal readonly object Data;

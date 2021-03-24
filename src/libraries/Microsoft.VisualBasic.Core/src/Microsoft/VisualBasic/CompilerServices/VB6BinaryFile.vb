@@ -4,6 +4,7 @@
 Imports System
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
+Imports System.Runtime.Versioning
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
@@ -24,6 +25,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         ' the implementation of Lock in base class VB6RandomFile does not handle m_lRecordLen=-1
+        <UnsupportedOSPlatform("macos")> 
         Friend Overloads Overrides Sub Lock(ByVal lStart As Long, ByVal lEnd As Long)
             If lStart > lEnd Then
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))
@@ -47,6 +49,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         ' see Lock description
+        <UnsupportedOSPlatform("macos")> 
         Friend Overloads Overrides Sub Unlock(ByVal lStart As Long, ByVal lEnd As Long)
             If lStart > lEnd Then
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))

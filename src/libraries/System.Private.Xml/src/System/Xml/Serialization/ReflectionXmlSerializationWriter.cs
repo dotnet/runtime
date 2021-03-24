@@ -1338,7 +1338,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ReflectionXmlSerializationHelper
+    internal static class ReflectionXmlSerializationHelper
     {
         public static MemberInfo GetMember(Type declaringType, string memberName)
         {

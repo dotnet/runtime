@@ -385,7 +385,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_DI_2D: // DI_2D   X........Nrrrrrr ssssssnnnnnddddd      Rd Rn    imr, imms   (N,r,s)
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isGeneralRegister(id->idReg1()));
-            assert(isGeneralRegister(id->idReg2()));
+            assert(isGeneralRegisterOrZR(id->idReg2()));
             assert(isValidImmNRS(emitGetInsSC(id), id->idOpSize()));
             break;
 
@@ -913,6 +913,12 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SN_0A: // SN_0A   ................ ................
         case IF_SI_0A: // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
         case IF_SI_0B: // SI_0B   ................ ....bbbb........               imm4 - barrier
+            break;
+
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+            datasize = id->idOpSize();
+            assert(isGeneralRegister(id->idReg1()));
+            assert(datasize == EA_8BYTE);
             break;
 
         default:
@@ -3683,6 +3689,14 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
             fmt = IF_BR_1A;
             break;
 
+        case INS_dczva:
+            assert(isGeneralRegister(reg));
+            assert(attr == EA_8BYTE);
+            id = emitNewInstrSmall(attr);
+            id->idReg1(reg);
+            fmt = IF_SR_1A;
+            break;
+
         default:
             unreached();
     }
@@ -6091,6 +6105,8 @@ void emitter::emitIns_R_R_R(
         case INS_ldadda:
         case INS_ldaddal:
         case INS_ldaddl:
+        case INS_ldclral:
+        case INS_ldsetal:
         case INS_swpb:
         case INS_swpab:
         case INS_swpalb:
@@ -6941,7 +6957,7 @@ void emitter::emitIns_R_R_I_I(
         case INS_sbfm:
         case INS_ubfm:
             assert(isGeneralRegister(reg1));
-            assert(isGeneralRegister(reg2));
+            assert((ins == INS_bfm) ? isGeneralRegisterOrZR(reg2) : isGeneralRegister(reg2));
             assert(isValidImmShift(imm1, size));
             assert(isValidImmShift(imm2, size));
             assert(insOptsNone(opt));
@@ -11372,6 +11388,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+            assert(insOptsNone(id->idInsOpt()));
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeReg_Rt(id->idReg1()); // ttttt
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         default:
             assert(!"Unexpected format");
             break;
@@ -13291,6 +13314,10 @@ void emitter::emitDispIns(
 
         case IF_SI_0B: // SI_0B   ................ ....bbbb........               imm4 - barrier
             emitDispBarrier((insBarrier)emitGetInsSC(id));
+            break;
+
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+            emitDispReg(id->idReg1(), size, false);
             break;
 
         default:
@@ -15362,6 +15389,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SI_0A: // brk   imm16
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_SR_1A:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_1C;
             break;

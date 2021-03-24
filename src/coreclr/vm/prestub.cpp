@@ -361,18 +361,32 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     STANDARD_VM_CONTRACT;
     PCODE pCode = NULL;
 
+    bool shouldTier = false;
 #if defined(FEATURE_TIERED_COMPILATION)
-    bool shouldCountCalls = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
-#if !defined(TARGET_X86)
-    if (shouldCountCalls
+    shouldTier = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
+    // If the method is eligible for tiering but is being
+    // called from a Preemptive GC Mode thread or the method
+    // has the UnmanagedCallersOnlyAttribute then the Tiered Compilation
+    // should be disabled.
+    if (shouldTier
         && (pConfig->GetCallerGCMode() == CallerGCMode::Preemptive
             || (pConfig->GetCallerGCMode() == CallerGCMode::Unknown
                 && HasUnmanagedCallersOnlyAttribute())))
     {
-        shouldCountCalls = false;
+        NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
+        if (codeVersion.IsDefaultVersion())
+        {
+            pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
+            _ASSERTE(codeVersion.GetOptimizationTier() != NativeCodeVersion::OptimizationTier0);
+        }
+        else if (codeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
+        {
+            codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
+        }
+        pConfig->SetWasTieringDisabledBeforeJitting();
+        shouldTier = false;
     }
-#endif
-#endif
+#endif // FEATURE_TIERED_COMPILATION
 
     if (pConfig->MayUsePrecompiledCode())
     {
@@ -407,11 +421,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 
         if (pCode == NULL)
         {
-#ifdef FEATURE_TIERED_COMPILATION
-            pCode = GetPrecompiledCode(pConfig, shouldCountCalls);
-#else
-            pCode = GetPrecompiledCode(pConfig);
-#endif
+            pCode = GetPrecompiledCode(pConfig, shouldTier);
         }
 
 #ifdef FEATURE_PERFMAP
@@ -424,12 +434,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     {
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
-
-#ifdef FEATURE_TIERED_COMPILATION
-            pCode = JitCompileCode(pConfig, shouldCountCalls);
-#else
-            pCode = JitCompileCode(pConfig);
-#endif
+        pCode = JitCompileCode(pConfig);
     }
     else
     {
@@ -442,11 +447,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     return pCode;
 }
 
-#ifdef FEATURE_TIERED_COMPILATION
-PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldCountCalls)
-#else
-PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
-#endif
+PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier)
 {
     STANDARD_VM_CONTRACT;
     PCODE pCode = NULL;
@@ -475,7 +476,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
                 pConfig->SetGeneratedOrLoadedNewCode();
 #endif
 #ifdef FEATURE_TIERED_COMPILATION
-                if (shouldCountCalls)
+                if (shouldTier)
                 {
                     _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
                     pConfig->SetShouldCountCalls();
@@ -714,11 +715,8 @@ COR_ILMETHOD_DECODER* MethodDesc::GetAndVerifyILHeader(PrepareCodeConfig* pConfi
 //
 // This function creates a DeadlockAware list of methods being jitted
 // which prevents us from trying to JIT the same method more that once.
-#ifdef FEATURE_TIERED_COMPILATION
-PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig, bool shouldCountCalls)
-#else
+
 PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
-#endif
 {
     STANDARD_VM_CONTRACT;
 
@@ -811,7 +809,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
                 {
                 #ifdef FEATURE_TIERED_COMPILATION
                     // Finalize the optimization tier before SetNativeCode() is called
-                    shouldCountCalls = wasTier0Jit && pConfig->FinalizeOptimizationTierForTier0Jit() && shouldCountCalls;
+                    bool shouldCountCalls = wasTier0Jit && pConfig->FinalizeOptimizationTierForTier0Jit();
                 #endif
 
                     if (pConfig->SetNativeCode(pCode, &pCode))
@@ -831,20 +829,12 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
                 }
             }
 
-#ifdef FEATURE_TIERED_COMPILATION
-            return JitCompileCodeLockedEventWrapper(pConfig, pEntryLock, shouldCountCalls);
-#else
             return JitCompileCodeLockedEventWrapper(pConfig, pEntryLock);
-#endif
         }
     }
 }
 
-#ifdef FEATURE_TIERED_COMPILATION
-PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry, bool shouldCountCalls)
-#else
 PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry)
-#endif
 {
     STANDARD_VM_CONTRACT;
 
@@ -899,11 +889,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         TRACE_LEVEL_VERBOSE,
         CLR_JIT_KEYWORD))
     {
-#ifdef FEATURE_TIERED_COMPILATION
-        pCode = JitCompileCodeLocked(pConfig, pEntry, shouldCountCalls, &sizeOfCode, &flags);
-#else
         pCode = JitCompileCodeLocked(pConfig, pEntry, &sizeOfCode, &flags);
-#endif
     }
     else
     {
@@ -923,11 +909,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
             &methodSignature);
 #endif
 
-#ifdef FEATURE_TIERED_COMPILATION
-        pCode = JitCompileCodeLocked(pConfig, pEntry, shouldCountCalls, &sizeOfCode, &flags);
-#else
         pCode = JitCompileCodeLocked(pConfig, pEntry, &sizeOfCode, &flags);
-#endif
 
         // Interpretted methods skip this notification
 #ifdef FEATURE_INTERPRETER
@@ -1017,11 +999,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     return pCode;
 }
 
-#ifdef FEATURE_TIERED_COMPILATION
-PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry, bool shouldCountCalls, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags)
-#else
 PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags)
-#endif
 {
     STANDARD_VM_CONTRACT;
 
@@ -1034,23 +1012,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
     COR_ILMETHOD_DECODER ilDecoderTemp;
     COR_ILMETHOD_DECODER *pilHeader = GetAndVerifyILHeader(pConfig, &ilDecoderTemp);
     *pFlags = pConfig->GetJitCompilationFlags();
-
-#ifdef FEATURE_TIERED_COMPILATION
-    bool isTier0 = pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-    // If we've already opted-out of call counting, for example in the UnmangedCallersOnly case,
-    // switch to optimized code.
-    if (!shouldCountCalls)
-    {
-        pFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-        pFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
-
-        if (pConfig->GetMethodDesc()->IsEligibleForTieredCompilation())
-        {
-            pConfig->SetJitSwitchedToOptimized();
-        }
-    }
-#endif
-
     PCODE pOtherCode = NULL;
 
     EX_TRY
@@ -1118,7 +1079,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
 
 #ifdef FEATURE_TIERED_COMPILATION
     // Finalize the optimization tier before SetNativeCode() is called
-    shouldCountCalls = isTier0 && pConfig->FinalizeOptimizationTierForTier0Jit() && shouldCountCalls;
+    bool shouldCountCalls = pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0) && pConfig->FinalizeOptimizationTierForTier0Jit();
 #endif
 
     // Aside from rejit, performing a SetNativeCodeInterlocked at this point
@@ -1197,6 +1158,7 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
     m_generatedOrLoadedNewCode(false),
 #endif
 #ifdef FEATURE_TIERED_COMPILATION
+    m_wasTieringDisabledBeforeJitting(false),
     m_shouldCountCalls(false),
 #endif
     m_jitSwitchedToMinOpt(false),
@@ -1284,7 +1246,7 @@ CORJIT_FLAGS PrepareCodeConfig::GetJitCompilationFlags()
         flags = pResolver->GetJitFlags();
     }
 #ifdef FEATURE_TIERED_COMPILATION
-    flags.Add(TieredCompilationManager::GetJitFlags(m_nativeCodeVersion));
+    flags.Add(TieredCompilationManager::GetJitFlags(this));
 #endif
     return flags;
 }
@@ -1462,7 +1424,7 @@ CORJIT_FLAGS VersionedPrepareCodeConfig::GetJitCompilationFlags()
 #endif
 
 #ifdef FEATURE_TIERED_COMPILATION
-    flags.Add(TieredCompilationManager::GetJitFlags(m_nativeCodeVersion));
+    flags.Add(TieredCompilationManager::GetJitFlags(this));
 #endif
 
     return flags;
@@ -1959,10 +1921,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
     ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     MAKE_CURRENT_THREAD_AVAILABLE();
 
     // Attempt to check what GC mode we are running under.
@@ -2032,7 +1990,13 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         }
 
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
-        pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+        {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+            auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
+            pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+        }
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -3121,7 +3085,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
                 pResult->indirectFirstOffset = 1;
             }
 
-            ULONG data;
+            uint32_t data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[1] = sizeof(TypeHandle) * data;
 
@@ -3133,7 +3097,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
             pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
             pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
 
-            ULONG data;
+            uint32_t data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[2] = sizeof(TypeHandle) * data;
 

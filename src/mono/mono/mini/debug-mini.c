@@ -276,7 +276,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	for (i = 0; i < jit->num_line_numbers; i++)
 		jit->line_numbers [i] = g_array_index (info->line_numbers, MonoDebugLineNumberEntry, i);
 
-	mono_debug_add_method (cfg->method_to_register, jit, cfg->domain);
+	mono_debug_add_method (cfg->method_to_register, jit, NULL);
 
 	mono_debug_add_vg_method (method, jit);
 
@@ -451,7 +451,7 @@ mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *bu
 	int i;
 
 	/* Can't use cfg->debug_info as it is freed by close_method () */
-	jit = mono_debug_find_method (cfg->method, mono_domain_get ());
+	jit = mono_debug_find_method (cfg->method, NULL);
 	if (!jit) {
 		*buf_len = 0;
 		return;
@@ -595,7 +595,7 @@ deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, gui
 }
 
 void
-mono_debug_add_aot_method (MonoDomain *domain, MonoMethod *method, guint8 *code_start, 
+mono_debug_add_aot_method (MonoMethod *method, guint8 *code_start, 
 			   guint8 *debug_info, guint32 debug_info_len)
 {
 	MonoDebugMethodJitInfo *jit;
@@ -615,7 +615,7 @@ mono_debug_add_aot_method (MonoDomain *domain, MonoMethod *method, guint8 *code_
 
 	jit = deserialize_debug_info (method, code_start, debug_info, debug_info_len);
 
-	mono_debug_add_method (method, jit, domain);
+	mono_debug_add_method (method, jit, NULL);
 
 	mono_debug_add_vg_method (method, jit);
 
@@ -661,15 +661,14 @@ print_var_info (MonoDebugVarInfo *info, int idx, const char *name, const char *t
 void
 mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 {
-	MonoDomain *domain = mono_domain_get ();
-	MonoJitInfo *ji = mono_jit_info_table_find (domain, ip);
+	MonoJitInfo *ji = mini_jit_info_table_find (ip);
 	MonoDebugMethodJitInfo *jit;
 	int i;
 
 	if (!ji)
 		return;
 
-	jit = mono_debug_find_method (jinfo_get_method (ji), domain);
+	jit = mono_debug_find_method (jinfo_get_method (ji), NULL);
 	if (!jit)
 		return;
 

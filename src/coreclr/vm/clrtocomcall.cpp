@@ -165,7 +165,7 @@ MethodDesc* ComPlusCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
                     &sigDesc,
                     (CorNativeLinkType)0,
                     (CorNativeLinkFlags)0,
-                    (CorPinvokeMap)0,
+                    MetaSig::GetDefaultUnmanagedCallingConvention(),
                     dwStubFlags);
 }
 

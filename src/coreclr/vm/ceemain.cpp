@@ -593,13 +593,18 @@ do { \
 
 #ifndef CROSSGEN_COMPILE
 #ifdef TARGET_UNIX
-void EESocketCleanupHelper()
+void EESocketCleanupHelper(bool isExecutingOnAltStack)
 {
     CONTRACTL
     {
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
+
+    if (isExecutingOnAltStack)
+    {
+        GetThread()->SetExecutingOnAltStack();
+    }
 
     // Close the debugger transport socket first
     if (g_pDebugInterface != NULL)
@@ -704,8 +709,9 @@ void EEStartupHelper()
             unsigned facilities = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_LogFacility, LF_ALL);
             unsigned level = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
             unsigned bytesPerThread = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
-            unsigned totalBytes = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
-            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase());
+            ULONGLONG totalBytes = REGUTIL::GetConfigULONGLONG_DontUse_(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
+            LPWSTR logFilename = REGUTIL::GetConfigString_DontUse_(CLRConfig::UNSUPPORTED_StressLogFilename);
+            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase(), logFilename);
             g_pStressLog = &StressLog::theLog;
         }
 #endif
@@ -987,6 +993,8 @@ void EEStartupHelper()
 
 #endif // CROSSGEN_COMPILE
 
+        Assembly::Initialize();
+
 #if defined(HOST_OSX) && defined(HOST_ARM64)
         PAL_JITWriteEnable(true);
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
@@ -1228,6 +1236,17 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     // Used later for a callback.
     CEEInfo ceeInf;
 
+#ifdef FEATURE_PGO
+    EX_TRY
+    {
+        PgoManager::Shutdown();
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+#endif
+
     if (!fIsDllUnloading)
     {
         ETW::EnumerationLog::ProcessShutdown();
@@ -1339,10 +1358,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 #ifdef FEATURE_PERFMAP
         // Flush and close the perf map file.
         PerfMap::Destroy();
-#endif
-
-#ifdef FEATURE_PGO
-        PgoManager::Shutdown();
 #endif
 
         {

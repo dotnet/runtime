@@ -64,7 +64,7 @@ Build and run library tests against Mono JIT or interpreter
 ```
 $(REPO_ROOT)/dotnet.sh build /t:Test /p:RuntimeFlavor=mono /p:Configuration=<Release/Debug> $(REPO_ROOT)/src/libraries/<library>/tests
 ```
-Alternatively, you could execute the following command from `$(REPO_ROOT)/src/mono/netcore`
+Alternatively, you could execute the following command from `$(REPO_ROOT)/src/mono`
 ```
 make run-tests-corefx-<library>
 ```
@@ -76,7 +76,7 @@ make run-tests-corefx-System.Runtime
 Build and run library tests against Webassembly, Android or iOS. See instructions located in [Library testing document folder](../libraries/)
 
 # Running the Mono samples
-There are a few convenient samples located in `$(REPO_ROOT)/src/mono/netcore/sample`, which could help you test your program easily with different flavors of Mono or do a sanity check on the build. The samples are set up to work with a specific configuration; please refer to the relevant Makefile for specifics. If you would like to work with a different configuration, you can edit the Makefile.
+There are a few convenient samples located in `$(REPO_ROOT)/src/mono/sample`, which could help you test your program easily with different flavors of Mono or do a sanity check on the build. The samples are set up to work with a specific configuration; please refer to the relevant Makefile for specifics. If you would like to work with a different configuration, you can edit the Makefile.
 
 ## Desktop Mono
 To run the desktop Mono sample, cd to `HelloWorld` and execute:

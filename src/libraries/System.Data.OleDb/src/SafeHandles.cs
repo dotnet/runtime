@@ -15,7 +15,7 @@ namespace System.Data.OleDb
     {
         private IntPtr handle2;   // this must be protected so derived classes can use out params.
 
-        private DualCoTaskMem() : base(IntPtr.Zero, true)
+        public DualCoTaskMem() : base(IntPtr.Zero, true)
         {
             this.handle2 = IntPtr.Zero;
         }
@@ -659,7 +659,7 @@ namespace System.Data.OleDb
 
     #endregion PROPVARIANT
 
-    internal class NativeOledbWrapper
+    internal static class NativeOledbWrapper
     {
         internal static unsafe OleDbHResult IChapteredRowsetReleaseChapter(System.IntPtr ptr, System.IntPtr chapter)
         {

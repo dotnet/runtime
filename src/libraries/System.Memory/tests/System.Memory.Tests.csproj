@@ -14,6 +14,7 @@
     <Compile Include="MemoryMarshal\AsReadOnlyRef.cs" />
     <Compile Include="MemoryMarshal\CreateSpan.cs" />
     <Compile Include="MemoryMarshal\CreateReadOnlySpan.cs" />
+    <Compile Include="MemoryMarshal\CreateReadOnlySpanFromNullTerminated.cs" />
     <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs"
              Link="ParsersAndFormatters\Formatter\RealFormatterTestsBase.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\RealFormatterTests.cs" />

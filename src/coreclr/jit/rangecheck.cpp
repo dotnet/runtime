@@ -187,18 +187,21 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
 void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree* treeParent)
 {
     // Check if we are dealing with a bounds check node.
-    if (treeParent->OperGet() != GT_COMMA)
+    bool isComma        = treeParent->OperIs(GT_COMMA);
+    bool isTopLevelNode = treeParent == stmt->GetRootNode();
+    if (!(isComma || isTopLevelNode))
     {
         return;
     }
 
     // If we are not looking at array bounds check, bail.
-    GenTree* tree = treeParent->AsOp()->gtOp1;
+    GenTree* tree = isComma ? treeParent->AsOp()->gtOp1 : treeParent;
     if (!tree->OperIsBoundsCheck())
     {
         return;
     }
 
+    GenTree*          comma   = treeParent->OperIs(GT_COMMA) ? treeParent : nullptr;
     GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
     m_pCurBndsChk             = bndsChk;
     GenTree* treeIndex        = bndsChk->gtIndex;
@@ -258,7 +261,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         if ((idxVal < arrSize) && (idxVal >= 0))
         {
             JITDUMP("Removing range check\n");
-            m_pCompiler->optRemoveRangeCheck(treeParent, stmt);
+            m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
             return;
         }
     }
@@ -299,7 +302,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     if (BetweenBounds(range, bndsChk->gtArrLen, arrSize))
     {
         JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
-        m_pCompiler->optRemoveRangeCheck(treeParent, stmt);
+        m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
     }
     return;
 }
@@ -1100,18 +1103,6 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop)
     if (!GetRangeMap()->Lookup(op2, &op2Range))
     {
         return true;
-    }
-
-    // If dependent, check if we can use some assertions.
-    if (op1Range->UpperLimit().IsDependent())
-    {
-        MergeAssertion(block, op1, op1Range DEBUGARG(0));
-    }
-
-    // If dependent, check if we can use some assertions.
-    if (op2Range->UpperLimit().IsDependent())
-    {
-        MergeAssertion(block, op2, op2Range DEBUGARG(0));
     }
 
     JITDUMP("Checking bin op overflow %s %s\n", op1Range->ToString(m_pCompiler->getAllocatorDebugOnly()),

@@ -33,7 +33,7 @@ namespace System
         // This constructor is called from a class to generate a
         // delegate based upon a static method name and the Type object
         // for the class defining the method.
-        protected MulticastDelegate([DynamicallyAccessedMembers(AllMethods)] Type target, string method) : base(target, method)
+        protected MulticastDelegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method) : base(target, method)
         {
         }
 
@@ -54,7 +54,7 @@ namespace System
 
         // equals returns true IIF the delegate is not null and has the
         //    same target, method and invocation list as this object
-        public sealed override bool Equals(object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null)
                 return false;

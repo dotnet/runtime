@@ -82,10 +82,10 @@ mono_class_setup_has_finalizer (MonoClass *klass);
 void
 mono_class_setup_nested_types (MonoClass *klass);
 
-void
-mono_class_setup_runtime_info (MonoClass *klass, MonoDomain *domain, MonoVTable *vtable);
-
 MonoClass *
 mono_class_create_array_fill_type (void);
+
+void
+mono_class_set_runtime_vtable (MonoClass *klass, MonoVTable *vtable);
 
 #endif

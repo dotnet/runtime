@@ -5,6 +5,7 @@ Revisions:
 * 1.1 - [Jan Kotas](https://github.com/jkotas) - 2015
 * 3.1 - [Tomas Rylek](https://github.com/trylek) - 2019
 * 4.1 - [Tomas Rylek](https://github.com/trylek) - 2020
+* 5.3 - [Tomas Rylek](https://github.com/trylek) - 2021
 
 # Introduction
 
@@ -58,7 +59,7 @@ The limitations of the current format are:
 # Structures
 
 The structures and accompanying constants are defined in the [readytorun.h]
-(https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/readytorun.h) header file.
+(https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h) header file.
 Basically the entire R2R executable image is addressed through the READYTORUN_HEADER singleton
 pointed to by the well-known export RTR_HEADER in the export section of the native executable
 envelope.
@@ -161,6 +162,8 @@ The following section types are defined and described later in this document:
 | InliningInfo2             |   114 | Image (added in V4.1)
 | ComponentAssemblies       |   115 | Image (added in V4.1)
 | OwnerCompositeExecutable  |   116 | Image (added in V4.1)
+| PgoInstrumentationData    |   117 | Image (added in V5.2)
+| ManifestAssemblyMvids     |   118 | Image (added in V5.3)
 
 ## ReadyToRunSectionType.CompilerIdentifier
 
@@ -539,6 +542,17 @@ pair; in `Flags`, it has the `READYTORUN_FLAG_COMPONENT` bit set and its section
 the `OwnerCompositeExecutable` section that contains a UTF-8 string encoding the file name of the
 composite R2R executable this MSIL belongs to with extension (without path). Runtime uses this
 information to locate the composite R2R executable with the compiled native code when loading the MSIL.
+
+## ReadyToRunSectionType.PgoInstrumentationData (v5.2+)
+
+**TODO**: document PGO instrumentation data
+
+## ReadyToRunSectionType.ManifestAssemblyMvids (v5.3+)
+
+This section is a binary array of 16-byte MVID records, one for each assembly in the manifest metadata.
+Number of assemblies stored in the manifest metadata is equal to the number of MVID records in the array.
+MVID records are used at runtime to verify that the assemblies loaded match those referenced by the
+manifest metadata representing the versioning bubble.
 
 # Native Format
 

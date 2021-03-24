@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Text;
 using System.Diagnostics;
@@ -36,6 +35,7 @@ namespace Internal.NativeCrypto
             public const string Sha256 = "SHA256";              // BCRYPT_SHA256_ALGORITHM
             public const string Sha384 = "SHA384";              // BCRYPT_SHA384_ALGORITHM
             public const string Sha512 = "SHA512";              // BCRYPT_SHA512_ALGORITHM
+            public const string Pbkdf2 = "PBKDF2";              // BCRYPT_PBKDF2_ALGORITHM
         }
 
         internal static class KeyDerivationFunction

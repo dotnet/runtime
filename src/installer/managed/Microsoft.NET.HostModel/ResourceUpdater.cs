@@ -150,9 +150,9 @@ namespace Microsoft.NET.HostModel
         /// native resources for the update handle without updating
         /// the target file.
         /// </summary>
-        private class SafeUpdateHandle : SafeHandle
+        private sealed class SafeUpdateHandle : SafeHandle
         {
-            private SafeUpdateHandle() : base(IntPtr.Zero, true)
+            public SafeUpdateHandle() : base(IntPtr.Zero, true)
             {
             }
 

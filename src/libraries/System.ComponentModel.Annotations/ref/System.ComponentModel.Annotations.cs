@@ -6,13 +6,13 @@
 
 namespace System.ComponentModel.DataAnnotations
 {
-// TODO-NULLABLE: Enable after System.ComponentModel.TypeDescriptionProvider is annotated
+    // TODO-NULLABLE: Enable after System.ComponentModel.TypeDescriptionProvider is annotated
 #nullable disable
     public partial class AssociatedMetadataTypeTypeDescriptionProvider : System.ComponentModel.TypeDescriptionProvider
     {
         public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type) { }
-        public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type, System.Type associatedMetadataType) { }
-        public override System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor(System.Type objectType, object instance) { throw null; }
+        public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type associatedMetadataType) { }
+        public override System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type objectType, object instance) { throw null; }
     }
 #nullable enable
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false, Inherited=true)]
@@ -194,7 +194,8 @@ namespace System.ComponentModel.DataAnnotations
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false)]
     public sealed partial class MetadataTypeAttribute : System.Attribute
     {
-        public MetadataTypeAttribute(System.Type metadataClassType) { }
+        public MetadataTypeAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type metadataClassType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Type MetadataClassType { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
@@ -216,10 +217,12 @@ namespace System.ComponentModel.DataAnnotations
     {
         public RangeAttribute(double minimum, double maximum) { }
         public RangeAttribute(int minimum, int maximum) { }
-        public RangeAttribute(System.Type type, string minimum, string maximum) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
+        public RangeAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string minimum, string maximum) { }
         public bool ConvertValueInInvariantCulture { get { throw null; } set { } }
         public object Maximum { get { throw null; } }
         public object Minimum { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Type OperandType { get { throw null; } }
         public bool ParseLimitsInInvariantCulture { get { throw null; } set { } }
         public override string FormatErrorMessage(string name) { throw null; }

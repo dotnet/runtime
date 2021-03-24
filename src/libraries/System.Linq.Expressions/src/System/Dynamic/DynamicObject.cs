@@ -809,6 +809,8 @@ namespace System.Dynamic
             /// implementation for the method provided then Dynamic falls back to the base class
             /// behavior which lets the call site determine how the binder is performed.
             /// </summary>
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+                Justification = "This is looking if the method is overriden on an instantiated type. An overriden method will never be trimmed if the virtual method exists.")]
             private bool IsOverridden(MethodInfo method)
             {
                 MemberInfo[] methods = Value.GetType().GetMember(method.Name, MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance);

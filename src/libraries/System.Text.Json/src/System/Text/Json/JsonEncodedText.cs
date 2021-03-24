@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Encodings.Web;
 
 namespace System.Text.Json
@@ -148,7 +149,7 @@ namespace System.Text.Json
         /// <remarks>
         /// If <paramref name="obj"/> is null, the method returns false.
         /// </remarks>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is JsonEncodedText encodedText)
             {

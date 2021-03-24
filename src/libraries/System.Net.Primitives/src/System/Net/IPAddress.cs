@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -485,6 +484,15 @@ namespace System.Net
             }
         }
 
+        /// <summary>Gets whether the address is an IPv6 Unique Local address.</summary>
+        public bool IsIPv6UniqueLocal
+        {
+            get
+            {
+                return IsIPv6 && ((_numbers![0] & 0xFE00) == 0xFC00);
+            }
+        }
+
         // 0:0:0:0:0:FFFF:x.x.x.x
         public bool IsIPv4MappedToIPv6
         {
@@ -546,7 +554,7 @@ namespace System.Net
         }
 
         /// <summary>Compares two IP addresses.</summary>
-        public override bool Equals(object? comparand)
+        public override bool Equals([NotNullWhen(true)] object? comparand)
         {
             return comparand is IPAddress address && Equals(address);
         }
@@ -580,37 +588,26 @@ namespace System.Net
 
         public override int GetHashCode()
         {
-            if (_hashCode != 0)
+            if (_hashCode == 0)
             {
-                return _hashCode;
+                // For IPv4 addresses, we calculate the hashcode based on address bytes.
+                // For IPv6 addresses, we also factor in scope ID.
+                if (IsIPv6)
+                {
+                    ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes<ushort>(_numbers);
+                    _hashCode = HashCode.Combine(
+                        MemoryMarshal.Read<uint>(numbers),
+                        MemoryMarshal.Read<uint>(numbers.Slice(4)),
+                        MemoryMarshal.Read<uint>(numbers.Slice(8)),
+                        MemoryMarshal.Read<uint>(numbers.Slice(12)),
+                        _addressOrScopeId);
+                }
+                else
+                {
+                    _hashCode = HashCode.Combine(_addressOrScopeId);
+                }
             }
 
-            // For IPv6 addresses, we calculate the hashcode by using Marvin
-            // on a stack-allocated array containing the Address bytes and ScopeId.
-            int hashCode;
-            if (IsIPv6)
-            {
-                const int AddressAndScopeIdLength = IPAddressParserStatics.IPv6AddressBytes + sizeof(uint);
-                Span<byte> addressAndScopeIdSpan = stackalloc byte[AddressAndScopeIdLength];
-
-                MemoryMarshal.AsBytes(new ReadOnlySpan<ushort>(_numbers)).CopyTo(addressAndScopeIdSpan);
-                Span<byte> scopeIdSpan = addressAndScopeIdSpan.Slice(IPAddressParserStatics.IPv6AddressBytes);
-                bool scopeWritten = BitConverter.TryWriteBytes(scopeIdSpan, _addressOrScopeId);
-                Debug.Assert(scopeWritten);
-
-                hashCode = Marvin.ComputeHash32(
-                    addressAndScopeIdSpan,
-                    Marvin.DefaultSeed);
-            }
-            else
-            {
-                // For IPv4 addresses, we use Marvin on the integer representation of the Address.
-                hashCode = Marvin.ComputeHash32(
-                    MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref _addressOrScopeId, 1)),
-                    Marvin.DefaultSeed);
-            }
-
-            _hashCode = hashCode;
             return _hashCode;
         }
 

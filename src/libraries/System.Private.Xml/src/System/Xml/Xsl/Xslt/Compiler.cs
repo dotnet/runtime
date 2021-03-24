@@ -355,7 +355,7 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        private class CompilerErrorComparer : IComparer<CompilerError>
+        private sealed class CompilerErrorComparer : IComparer<CompilerError>
         {
             private readonly Dictionary<string, int> _moduleOrder;
 

@@ -16,7 +16,7 @@ namespace System.Diagnostics.Tracing
 #endif
 {
     [UnsupportedOSPlatform("browser")]
-    internal class CounterGroup
+    internal sealed class CounterGroup
     {
         private readonly EventSource _eventSource;
         private readonly List<DiagnosticCounter> _counters;
@@ -151,7 +151,11 @@ namespace System.Diagnostics.Tracing
                     {
                         s_pollingThreadSleepEvent = new AutoResetEvent(false);
                         s_counterGroupEnabledList = new List<CounterGroup>();
-                        s_pollingThread = new Thread(PollForValues) { IsBackground = true };
+                        s_pollingThread = new Thread(PollForValues)
+                        {
+                            IsBackground = true,
+                            Name = ".NET Counter Poller"
+                        };
 #if ES_BUILD_STANDALONE
                         s_pollingThread.Start();
 #else

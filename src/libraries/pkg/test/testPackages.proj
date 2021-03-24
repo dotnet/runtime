@@ -1,11 +1,12 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
+  <PropertyGroup>
+    <PackageNamePattern>[a-zA-z\.]*\.</PackageNamePattern>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackagesToTest Condition="'$(PackagesToTest)' != ''" Include="$(PackagesToTest)" />
-    <!-- transport package not expected to be closure complete  -->
-    <ExcludePackages Include="Microsoft.Extensions.Internal.Transport" />
-    <ExcludePackages Include="$(ExcludePackages)" />
 
     <PackageReports Condition="'@(PackagesToTest)' == ''" Include="$(PackageReportDir)*.json" Exclude="@(ExcludePackages->'$(PackageReportDir)%(Identity).json')"/>
     <PackageReports Condition="'@(PackagesToTest)' != ''" Include="@(PackagesToTest->'$(PackageReportDir)%(Identity).json')" />
@@ -13,9 +14,20 @@
     <!-- support override via commandline -->
     <RuntimesToInclude Condition="'$(RuntimesToInclude)' != ''" Include="$(RuntimesToInclude)" />
     <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
+    <SymbolsPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.symbols.nupkg" />
+    
+    <AllPackagesFilePath Include="$(LibrariesAllConfigShippingPackagesDir)*.nupkg" Exclude="@(SymbolsPackages)" Condition="Exists('$(LibrariesAllConfigShippingPackagesDir)')">
+      <PackageName>$([System.String]::new($([System.Text.RegularExpressions.Regex]::Match($([System.IO.Path]::GetFileNameWithoutExtension('%(Identity)')), $(PackageNamePattern)))).TrimEnd('.'))</PackageName>
+      <PackagePath>%(Identity)</PackagePath>
+    </AllPackagesFilePath>
+    <AllPackages Include="@(AllPackagesFilePath->'%(PackageName)')" />
+
+    <ExcludePackages Condition="'$(PackagesToTest)' != ''" Include="@(AllPackages)" Exclude="@(PackagesToTest)" />
+    <TestPackages Include="@(AllPackages)" Exclude="@(ExcludePackages)"/>
+    <TestPackagesPath Include="@(TestPackages->'%(PackagePath)')" />
 
     <!-- we don't build alpine or older OSX versions -->
-    <RuntimesToExclude Include="alpine.3.4.3-x64;osx.10.10-x64;osx.10.11-x64" />
+    <RuntimesToExclude Include="alpine.3.4.3-x64;osx.10.10-x64;osx.10.11-x64;freebsd-x64" />
 
     <!-- no targeting pack was ever shipped for net463 -->
     <TargetFrameworksToExclude Include="net463" />
@@ -70,10 +82,12 @@
     <Copy SourceFiles="@(TestSupportFiles)" DestinationFolder="%(TestSupportFiles.DestinationFolder)" />
   </Target>
 
+  <UsingTask TaskName="GetCompatiblePackageTargetFrameworks" AssemblyFile="$(DotNetPackageValidationAssembly)"/>
+
   <Target Name="GetSupportedPackages">
-    <GetSupportedPackagesFromPackageReports PackageReports="@(PackageReports)">
-      <Output TaskParameter="SupportedPackages" ItemName="SupportedPackage"/>
-    </GetSupportedPackagesFromPackageReports>
+    <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)">
+      <Output TaskParameter="TestProjects" ItemName="SupportedPackage" />
+    </GetCompatiblePackageTargetFrameworks>
 
     <ItemGroup>
       <SupportedPackage>
@@ -119,7 +133,7 @@
 
   <Target Name="GenerateProjects"
           DependsOnTargets="GetSupportedPackages;CreateTestDir"
-          Inputs="@(PackageReports);$(ProjectTemplate)"
+          Inputs="@(TestPackagesPath);$(ProjectTemplate)"
           Outputs="%(SupportedPackage.ProjectFile)">
     <PropertyGroup>
       <_projectDir>%(SupportedPackage.ProjectDir)/</_projectDir>

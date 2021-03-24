@@ -36,6 +36,13 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
+  <!-- Directory to provision and use emscripten if EMSDK_PATH env variable is not set -->
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <ProvisionEmscriptenDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm', 'emsdk'))</ProvisionEmscriptenDir>
+    <ShouldProvisionEmscripten Condition="'$(OS)' == 'Windows_NT' and '$(TargetArchitecture)' == 'wasm' and '$(EMSDK_PATH)' == '' and !Exists('$(ProvisionEmscriptenDir)')">true</ShouldProvisionEmscripten>
+    <EMSDK_PATH Condition="Exists('$(ProvisionEmscriptenDir)') and '$(EMSDK_PATH)' == ''">$(ProvisionEmscriptenDir.Replace('\', '/'))</EMSDK_PATH>
+  </PropertyGroup>
+
   <PropertyGroup>
     <PlatformConfigPathPart>$(TargetOS).$(Platform).$(Configuration)</PlatformConfigPathPart>
     <RuntimeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mono', '$(TargetOS).$(Platform).$(Configuration)'))</RuntimeBinDir>
@@ -51,5 +58,12 @@
     <AndroidAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AndroidAppBuilder'))</AndroidAppBuilderProjDirectory>
     <AndroidTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AndroidTestRunner'))</AndroidTestRunnerProjDirectory>
     <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
+  </PropertyGroup>
+
+  <!-- Feature defaults for mono.proj and System.Private.CoreLib.csproj -->
+  <PropertyGroup>
+    <!-- default metadata update support for specific platforms -->
+    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == '' and ('$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true')">true</MonoMetadataUpdate>
+    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == ''">false</MonoMetadataUpdate>
   </PropertyGroup>
 </Project>

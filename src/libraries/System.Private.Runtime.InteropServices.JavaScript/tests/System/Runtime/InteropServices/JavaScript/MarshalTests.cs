@@ -86,6 +86,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public static void MarshalNullStringToCS()
+        {
+            HelperMarshal._stringResource = null;
+            Runtime.InvokeJS("App.call_test_method(\"InvokeString\", [ null ])");
+            Assert.Null(HelperMarshal._stringResource);
+        }
+
+        [Fact]
         public static void MarshalStringToJS()
         {
             HelperMarshal._marshalledString = HelperMarshal._stringResource = null;
@@ -252,20 +260,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 App.call_test_method (""UseAsFunction"", [ do_add ]);
             ");
             Assert.Equal(50, HelperMarshal._jsAddAsFunctionResult);
-        }
-
-        [Fact]
-        public static void MarshalDelegate()
-        {
-            HelperMarshal._object1 = null;
-            Runtime.InvokeJS(@"
-                var funcDelegate = App.call_test_method (""CreateFunctionDelegate"", [  ]);
-                var res = funcDelegate (10, 20);
-                App.call_test_method (""InvokeI32"", [ res, res ]);
-            ");
-
-            Assert.Equal(30, HelperMarshal._functionResultValue);
-            Assert.Equal(60, HelperMarshal._i32Value);
         }
 
         [Fact]
@@ -747,6 +741,119 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 ")
             );
             Assert.StartsWith("Error: int64 not available", exc.Message);
+        }
+
+        [Fact]
+        public static void BareStringArgumentsAreNotInterned()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            Runtime.InvokeJS(@"
+                var jsLiteral = ""hello world"";
+                App.call_test_method (""InvokeString"", [ jsLiteral ]);
+                App.call_test_method (""InvokeString2"", [ jsLiteral ]);
+            ");
+            Assert.Equal("hello world", HelperMarshal._stringResource);
+            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
+            Assert.False(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
+
+        [Fact]
+        public static void InternedStringSignaturesAreInternedOnJavascriptSide()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            Runtime.InvokeJS(@"
+                var sym = ""interned string"";
+                App.call_test_method (""InvokeString"", [ sym ], ""S"");
+                App.call_test_method (""InvokeString2"", [ sym ], ""S"");
+            ");
+            Assert.Equal("interned string", HelperMarshal._stringResource);
+            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
+            Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
+
+        [Fact]
+        public static void OnceAJSStringIsInternedItIsAlwaysUsedIfPossible()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            Runtime.InvokeJS(@"
+                var sym = ""interned string 2"";
+                App.call_test_method (""InvokeString"", [ sym ], ""S"");
+                App.call_test_method (""InvokeString2"", [ sym ], ""s"");
+            ");
+            Assert.Equal("interned string 2", HelperMarshal._stringResource);
+            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
+            Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
+
+        [Fact]
+        public static void ManuallyInternString()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            Runtime.InvokeJS(@"
+                var sym = BINDING.mono_intern_string(""interned string 3"");
+                App.call_test_method (""InvokeString"", [ sym ], ""s"");
+                App.call_test_method (""InvokeString2"", [ sym ], ""s"");
+            ");
+            Assert.Equal("interned string 3", HelperMarshal._stringResource);
+            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
+            Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
+
+        [Fact]
+        public static void LargeStringsAreNotAutomaticallyLocatedInInternTable()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            Runtime.InvokeJS(@"
+                var s = ""long interned string"";
+                for (var i = 0; i < 1024; i++)
+                    s += String(i % 10);
+                var sym = BINDING.mono_intern_string(s);
+                App.call_test_method (""InvokeString"", [ sym ], ""S"");
+                App.call_test_method (""InvokeString2"", [ sym ], ""s"");
+            ");
+            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
+            Assert.False(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
+
+        [Fact]
+        public static void CanInternVeryManyStrings()
+        {
+            HelperMarshal._stringResource = null;
+            Runtime.InvokeJS(@"
+                for (var i = 0; i < 10240; i++)
+                    BINDING.mono_intern_string('s' + i);
+                App.call_test_method (""InvokeString"", [ 's5000' ], ""S"");
+            ");
+            Assert.Equal("s5000", HelperMarshal._stringResource);
+            Assert.Equal(HelperMarshal._stringResource, string.IsInterned(HelperMarshal._stringResource));
+        }
+
+        [Fact]
+        public static void SymbolsAreMarshaledAsStrings()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            Runtime.InvokeJS(@"
+                var jsLiteral = Symbol(""custom symbol"");
+                App.call_test_method (""InvokeString"", [ jsLiteral ]);
+                App.call_test_method (""InvokeString2"", [ jsLiteral ]);
+            ");
+            Assert.Equal("custom symbol", HelperMarshal._stringResource);
+            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
+            Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
+
+        [Fact]
+        public static void InternedStringReturnValuesWork()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:StoreArgumentAndReturnLiteral";
+            Runtime.InvokeJS(
+                $"var a = BINDING.bind_static_method('{fqn}')('test');\r\n" +
+                $"var b = BINDING.bind_static_method('{fqn}')(a);\r\n" +
+                "App.call_test_method ('InvokeString2', [ b ]);"
+            );
+            Assert.Equal("s: 1 length: 1", HelperMarshal._stringResource);
+            Assert.Equal("1", HelperMarshal._stringResource2);
         }
     }
 }

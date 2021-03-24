@@ -1,0 +1,58 @@
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+      - release/*.*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - eng/Version.Details.xml
+    - .github/*
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+
+pr: none
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+jobs:
+#
+# Evaluate paths
+#
+- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+  - template: /eng/pipelines/common/evaluate-default-paths.yml
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: debug
+    platforms:
+      - windows_x64
+    jobParameters:
+      enableRichCodeNavigation: true
+      richCodeNavigationEnvironment: "production"
+      richCodeNavigationLanguage: "csharp"
+      timeoutInMinutes: 240
+      buildArgs: -s libs.ref+libs.src -c debug -allConfigurations
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: debug
+    platforms:
+      - windows_x64
+    jobParameters:
+      enableRichCodeNavigation: true
+      nameSuffix: Mono
+      richCodeNavigationEnvironment: "production"
+      richCodeNavigationLanguage: "csharp,cpp"
+      buildArgs: -s mono -c debug

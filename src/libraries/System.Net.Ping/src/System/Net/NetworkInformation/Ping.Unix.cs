@@ -251,10 +251,11 @@ namespace System.Net.NetworkInformation
                         SocketFlags.None,
                         socketConfig.EndPoint);
 
-                    var cts = new CancellationTokenSource();
-                    Task finished = await Task.WhenAny(receiveTask, Task.Delay(timeout - (int)elapsed, cts.Token)).ConfigureAwait(false);
-                    cts.Cancel();
-                    if (finished != receiveTask)
+                    try
+                    {
+                        await receiveTask.WaitAsync(TimeSpan.FromMilliseconds(timeout - (int)elapsed)).ConfigureAwait(false);
+                    }
+                    catch (TimeoutException)
                     {
                         return CreateTimedOutPingReply();
                     }
@@ -332,34 +333,31 @@ namespace System.Net.NetworkInformation
                 p.Exited += (s, e) => processCompletion.SetResult();
                 p.Start();
 
-                var cts = new CancellationTokenSource();
-                Task timeoutTask = Task.Delay(timeout, cts.Token);
-                Task finished = await Task.WhenAny(processCompletion.Task, timeoutTask).ConfigureAwait(false);
-
-                if (finished == timeoutTask)
+                try
+                {
+                    await processCompletion.Task.WaitAsync(TimeSpan.FromMilliseconds(timeout)).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
                 {
                     p.Kill();
                     return CreateTimedOutPingReply();
                 }
-                else
-                {
-                    cts.Cancel();
-                    if (p.ExitCode == 1 || p.ExitCode == 2)
-                    {
-                        // Throw timeout for known failure return codes from ping functions.
-                        return CreateTimedOutPingReply();
-                    }
 
-                    try
-                    {
-                        string output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-                        return ParsePingUtilityOutput(address, output);
-                    }
-                    catch (Exception)
-                    {
-                        // If the standard output cannot be successfully parsed, throw a generic PingException.
-                        throw new PingException(SR.net_ping);
-                    }
+                if (p.ExitCode == 1 || p.ExitCode == 2)
+                {
+                    // Throw timeout for known failure return codes from ping functions.
+                    return CreateTimedOutPingReply();
+                }
+
+                try
+                {
+                    string output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+                    return ParsePingUtilityOutput(address, output);
+                }
+                catch (Exception)
+                {
+                    // If the standard output cannot be successfully parsed, throw a generic PingException.
+                    throw new PingException(SR.net_ping);
                 }
             }
         }
@@ -421,7 +419,7 @@ namespace System.Net.NetworkInformation
         // Since this is private should be safe to trust that the calling code
         // will behave. To get a little performance boost raw fields are exposed
         // and no validation is performed.
-        private class SocketConfig
+        private sealed class SocketConfig
         {
             public SocketConfig(EndPoint endPoint, int timeout, PingOptions? options, bool isIPv4, ProtocolType protocolType, ushort id, byte[] sendBuffer)
             {

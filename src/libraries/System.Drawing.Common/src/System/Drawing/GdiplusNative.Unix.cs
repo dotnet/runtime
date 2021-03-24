@@ -35,7 +35,12 @@ namespace System.Drawing
                 {
                     if (!NativeLibrary.TryLoad("libgdiplus.dylib", assembly, default, out lib))
                     {
-                        NativeLibrary.TryLoad("/usr/local/lib/libgdiplus.dylib", assembly, default, out lib);
+                        // homebrew install location
+                        if (!NativeLibrary.TryLoad("/usr/local/lib/libgdiplus.dylib", assembly, default, out lib))
+                        {
+                            // macports install location
+                            NativeLibrary.TryLoad("/opt/local/lib/libgdiplus.dylib", assembly, default, out lib);
+                        }
                     }
                 }
                 else

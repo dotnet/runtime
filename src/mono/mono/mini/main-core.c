@@ -1,8 +1,6 @@
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
 
-#if ENABLE_NETCORE
-
 #include "mini.h"
 #include "mini-runtime.h"
 #include <mono/metadata/assembly.h>
@@ -120,7 +118,3 @@ int STDAPICALLTYPE coreclr_create_delegate (void* hostHandle, unsigned int domai
 	g_error ("Not implemented");
 	return 0;
 }
-#else
-
-MONO_EMPTY_SOURCE_FILE (main_core);
-#endif // ENABLE_NETCORE

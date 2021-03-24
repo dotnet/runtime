@@ -800,7 +800,7 @@ namespace System.Drawing
             internal static extern int GdipVectorTransformMatrixPointsI(HandleRef matrix, Point* pts, int count);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetMatrixElements(HandleRef matrix, IntPtr m);
+            internal static extern unsafe int GdipGetMatrixElements(HandleRef matrix, float* m);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipIsMatrixInvertible(HandleRef matrix, out int boolean);

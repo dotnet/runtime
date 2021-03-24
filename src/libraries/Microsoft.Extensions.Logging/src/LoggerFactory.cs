@@ -13,8 +13,6 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public class LoggerFactory : ILoggerFactory
     {
-        private static readonly LoggerRuleSelector RuleSelector = new LoggerRuleSelector();
-
         private readonly Dictionary<string, Logger> _loggers = new Dictionary<string, Logger>(StringComparer.Ordinal);
         private readonly List<ProviderRegistration> _providerRegistrations = new List<ProviderRegistration>();
         private readonly object _sync = new object();
@@ -68,7 +66,9 @@ namespace Microsoft.Extensions.Logging
             _factoryOptions = options == null || options.Value == null ? new LoggerFactoryOptions() : options.Value;
 
             const ActivityTrackingOptions ActivityTrackingOptionsMask = ~(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId |
-                                                                          ActivityTrackingOptions.TraceFlags | ActivityTrackingOptions.TraceState);
+                                                                          ActivityTrackingOptions.TraceFlags | ActivityTrackingOptions.TraceState | ActivityTrackingOptions.Tags
+                                                                          | ActivityTrackingOptions.Baggage);
+
 
             if ((_factoryOptions.ActivityTrackingOptions & ActivityTrackingOptionsMask) != 0)
             {
@@ -212,7 +212,7 @@ namespace Microsoft.Extensions.Logging
 
             foreach (LoggerInformation loggerInformation in loggers)
             {
-                RuleSelector.Select(_filterOptions,
+                LoggerRuleSelector.Select(_filterOptions,
                     loggerInformation.ProviderType,
                     loggerInformation.Category,
                     out LogLevel? minLevel,
@@ -277,7 +277,7 @@ namespace Microsoft.Extensions.Logging
             public bool ShouldDispose;
         }
 
-        private class DisposingLoggerFactory : ILoggerFactory
+        private sealed class DisposingLoggerFactory : ILoggerFactory
         {
             private readonly ILoggerFactory _loggerFactory;
 
