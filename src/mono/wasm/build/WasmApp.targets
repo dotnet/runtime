@@ -226,22 +226,29 @@
          then prefer that, and ignore $(EMSDK_PATH) -->
 
     <!-- If $(Emscripten*ToolsPath) etc propeties are *not* set (by the workload pack),
-    then try to construct the same properties based on $(EMSDK_PATH) -->
+         then try to construct the same properties based on $(EMSDK_PATH) -->
     <PropertyGroup Condition="'$(EmscriptenSdkToolsPath)' == '' and '$(EMSDK_PATH)' != ''">
       <EmscriptenSdkToolsPath>$([MSBuild]::EnsureTrailingSlash($(EMSDK_PATH)))</EmscriptenSdkToolsPath>
       <EmSdkUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'bin'))</EmSdkUpstreamBinPath>
 
+      <_NodeToolsBasePath>$(EmscriptenSdkToolsPath)node</_NodeToolsBasePath>
+      <_PythonToolsBasePath>$(EmscriptenSdkToolsPath)python</_PythonToolsBasePath>
+
       <!-- gets the path like emsdk/python/3.7.4-2_64bit -->
-      <EmscriptenNodeToolsPath   Condition="Exists('$(EmscriptenSdkToolsPath)node')"  >$([System.IO.Directory]::GetDirectories('$(EmscriptenSdkToolsPath)node'))</EmscriptenNodeToolsPath>
-      <EmscriptenPythonToolsPath Condition="Exists('$(EmscriptenSdkToolsPath)python')">$([System.IO.Directory]::GetDirectories('$(EmscriptenSdkToolsPath)python'))</EmscriptenPythonToolsPath>
+      <_NodeToolsVersionedPath   Condition="Exists($(_NodeToolsBasePath))"  >$([System.IO.Directory]::GetDirectories($(_NodeToolsBasePath)))</_NodeToolsVersionedPath>
+      <_PythonToolsVersionedPath Condition="Exists($(_PythonToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_PythonToolsBasePath)))</_PythonToolsVersionedPath>
+
+      <!-- don't set $(Emscripten*ToolsPath) if we couldn't find the versioned directories -->
+      <EmscriptenNodeToolsPath Condition="'$(_NodeToolsVersionedPath)' != '' and '$(_NodeToolsVersionedPath)' != '.'">$(_NodeToolsVersionedPath)</EmscriptenNodeToolsPath>
+      <EmscriptenPythonToolsPath Condition="'$(_PythonToolsVersionedPath)' != '' and '$(_PythonToolsVersionedPath)' != '.'">$(_PythonToolsVersionedPath)</EmscriptenPythonToolsPath>
 
       <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
     </PropertyGroup>
 
     <PropertyGroup>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenSdkToolsPath)' == '' or !Exists('$(EmscriptenSdkToolsPath)'))">%24(EmscriptenSdkToolsPath)=$(EmscriptenSdkToolsPath) </_EMSDKMissingPaths>
-      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenNodeToolsPath)' == '' or !Exists('$(EmscriptenNodeToolsPath)'))">%24(EmscriptenNodeToolsPath)=$(EmscriptenNodeToolsPath) </_EMSDKMissingPaths>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmSdkUpstreamBinPath)' == '' or !Exists('$(EmSdkUpstreamBinPath)'))">%24(EmSdkUpstreamBinPath)=$(EmSdkUpstreamBinPath) </_EMSDKMissingPaths>
     </PropertyGroup>
 
