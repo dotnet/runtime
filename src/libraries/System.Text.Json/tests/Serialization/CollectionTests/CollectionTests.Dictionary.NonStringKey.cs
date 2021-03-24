@@ -673,7 +673,6 @@ namespace System.Text.Json.Serialization.Tests
         private class ClassWithNonStringDictKeys
         {
             public Dictionary<int, string> PrimitiveKey { get; set; }
-
             public Dictionary<ClassWithIDictionary, string> ComplexKey { get; set; }
         }
 
