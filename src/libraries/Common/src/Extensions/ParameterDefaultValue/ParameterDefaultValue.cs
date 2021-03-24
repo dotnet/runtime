@@ -15,7 +15,7 @@ using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.Internal
 {
-    internal class ParameterDefaultValue
+    internal static class ParameterDefaultValue
     {
         public static bool TryGetDefaultValue(ParameterInfo parameter, out object? defaultValue)
         {

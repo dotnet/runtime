@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Logging
             return newScope;
         }
 
-        private class Scope : IDisposable
+        private sealed class Scope : IDisposable
         {
             private readonly LoggerExternalScopeProvider _provider;
             private bool _isDisposed;

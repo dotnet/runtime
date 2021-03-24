@@ -406,7 +406,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// This class assumes that the builders will not be modified in any way after the first call to
         /// Freeze().
         /// </summary>
-        private class NamespaceDataBuilder
+        private sealed class NamespaceDataBuilder
         {
             public readonly NamespaceDefinitionHandle Handle;
             public readonly StringHandle Name;

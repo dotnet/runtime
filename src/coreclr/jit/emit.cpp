@@ -3747,6 +3747,14 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
 #endif // DEBUG_EMIT
 
+        // Add the shrinkage to the ongoing offset adjustment. This needs to happen during the
+        // processing of an instruction group, and not only at the beginning of an instruction
+        // group, or else the difference of IG sizes between debug and release builds can cause
+        // debug/non-debug asm diffs.
+        int offsShrinkage = estimatedSize - actualSize;
+        JITDUMP("Increasing size adj %d by %d => %d\n", emitOffsAdj, offsShrinkage, emitOffsAdj + offsShrinkage);
+        emitOffsAdj += offsShrinkage;
+
         /* The instruction size estimate wasn't accurate; remember this */
 
         ig->igFlags |= IGF_UPD_ISZ;
@@ -4619,21 +4627,25 @@ AGAIN:
 //
 void emitter::emitLoopAlignment()
 {
+    unsigned short paddingBytes;
+
     if ((emitComp->opts.compJitAlignLoopBoundary > 16) && (!emitComp->opts.compJitAlignLoopAdaptive))
     {
-        emitLongLoopAlign(emitComp->opts.compJitAlignLoopBoundary);
+        paddingBytes = emitComp->opts.compJitAlignLoopBoundary;
+        emitLongLoopAlign(paddingBytes);
     }
     else
     {
-        emitLoopAlign();
+        paddingBytes = MAX_ENCODED_SIZE;
+        emitLoopAlign(paddingBytes);
     }
 
     // Mark this IG as need alignment so during emitter we can check the instruction count heuristics of
     // all IGs that follows this IG and participate in a loop.
     emitCurIG->igFlags |= IGF_LOOP_ALIGN;
 
-    JITDUMP("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u.\n", emitComp->opts.compJitAlignLoopBoundary,
-            emitComp->compMethodID, emitCurIG->igNum);
+    JITDUMP("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u.\n", paddingBytes, emitComp->compMethodID,
+            emitCurIG->igNum);
 }
 
 //-----------------------------------------------------------------------------
@@ -4698,7 +4710,7 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
                 }
                 else
                 {
-                    instrDescAlign *alignInstrToAdj = alignInstr, *prevAlignInstr = nullptr;
+                    instrDescAlign* alignInstrToAdj = alignInstr;
                     for (; alignInstrToAdj != nullptr && alignInstrToAdj->idaIG == alignInstr->idaIG;
                          alignInstrToAdj = alignInstrToAdj->idaNext)
                     {
@@ -4788,7 +4800,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 //-----------------------------------------------------------------------------
 //  emitLoopAlignAdjustments: Walk all the align instructions and update them
 //    with actual padding needed.
-
+//
 //  Notes:
 //     For IGs that have align instructions in the end, calculate the actual offset
 //     of loop start and determine how much padding is needed. Based on that, update
@@ -4803,18 +4815,16 @@ void emitter::emitLoopAlignAdjustments()
     }
 
     JITDUMP("*************** In emitLoopAlignAdjustments()\n");
+    JITDUMP("compJitAlignLoopAdaptive       = %s\n", dspBool(emitComp->opts.compJitAlignLoopAdaptive));
+    JITDUMP("compJitAlignLoopBoundary       = %u\n", emitComp->opts.compJitAlignLoopBoundary);
+    JITDUMP("compJitAlignLoopMinBlockWeight = %u\n", emitComp->opts.compJitAlignLoopMinBlockWeight);
+    JITDUMP("compJitAlignLoopForJcc         = %s\n", dspBool(emitComp->opts.compJitAlignLoopForJcc));
+    JITDUMP("compJitAlignLoopMaxCodeSize    = %u\n", emitComp->opts.compJitAlignLoopMaxCodeSize);
+    JITDUMP("compJitAlignPaddingLimit       = %u\n", emitComp->opts.compJitAlignPaddingLimit);
 
-    unsigned short estimatedPaddingNeeded = emitComp->opts.compJitAlignPaddingLimit;
-    unsigned short alignmentBoundary      = emitComp->opts.compJitAlignLoopBoundary;
-
-    if (emitComp->opts.compJitAlignLoopAdaptive)
-    {
-        // For adaptive, adjust the loop size depending on the alignment boundary
-        int maxBlocksAllowedForLoop = genLog2((unsigned)alignmentBoundary) - 1;
-    }
+    unsigned estimatedPaddingNeeded = emitComp->opts.compJitAlignPaddingLimit;
 
     unsigned        alignBytesRemoved = 0;
-    unsigned        loopSize          = 0;
     unsigned        loopIGOffset      = 0;
     instrDescAlign* alignInstr        = emitAlignList;
 
@@ -4861,8 +4871,8 @@ void emitter::emitLoopAlignAdjustments()
                 unsigned paddingToAdj = actualPaddingNeeded;
 
 #ifdef DEBUG
-
-                int instrAdjusted = (alignmentBoundary + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
+                int instrAdjusted =
+                    (emitComp->opts.compJitAlignLoopBoundary + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
 #endif
                 // Adjust the padding amount in all align instructions in this IG
                 instrDescAlign *alignInstrToAdj = alignInstr, *prevAlignInstr = nullptr;
@@ -4884,9 +4894,9 @@ void emitter::emitLoopAlignAdjustments()
                 alignInstr = prevAlignInstr;
             }
 
-            JITDUMP("Adjusted alignment of G_M%03u_IG%02u from %02d to %02d.\n", emitComp->compMethodID, alignIG->igNum,
+            JITDUMP("Adjusted alignment of G_M%03u_IG%02u from %u to %u.\n", emitComp->compMethodID, alignIG->igNum,
                     estimatedPaddingNeeded, actualPaddingNeeded);
-            JITDUMP("Adjusted size of G_M%03u_IG%02u from %04d to %04d.\n", emitComp->compMethodID, alignIG->igNum,
+            JITDUMP("Adjusted size of G_M%03u_IG%02u from %u to %u.\n", emitComp->compMethodID, alignIG->igNum,
                     (alignIG->igSize + diff), alignIG->igSize);
         }
 
@@ -4980,8 +4990,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     // No padding if loop is big
     if (loopSize > maxLoopSize)
     {
-        JITDUMP(";; Skip alignment: 'Loop is big. LoopSize= %d, MaxLoopSize= %d.'\n", alignmentBoundary, loopSize,
-                maxLoopSize);
+        JITDUMP(";; Skip alignment: 'Loop is big. LoopSize= %d, MaxLoopSize= %d.'\n", loopSize, maxLoopSize);
         return 0;
     }
 
@@ -5007,7 +5016,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
             if (nPaddingBytes == 0)
             {
                 skipPadding = true;
-                JITDUMP(";; Skip alignment: 'Loop already aligned at 16B boundary.'\n");
+                JITDUMP(";; Skip alignment: 'Loop already aligned at %uB boundary.'\n", alignmentBoundary);
             }
             // Check if the alignment exceeds new maxPadding limit
             else if (nPaddingBytes > nMaxPaddingBytes)
@@ -5271,6 +5280,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
     emitCodeBlock = nullptr;
     emitConsBlock = nullptr;
+
+    emitOffsAdj = 0;
 
     /* Tell everyone whether we have fully interruptible code or not */
 
@@ -5732,16 +5743,36 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
         /* Record the actual offset of the block, noting the difference */
 
-        emitOffsAdj = ig->igOffs - emitCurCodeOffs(cp);
-        assert(emitOffsAdj >= 0);
+        int newOffsAdj = ig->igOffs - emitCurCodeOffs(cp);
 
 #if DEBUG_EMIT
-        if ((emitOffsAdj != 0) && emitComp->verbose)
+#ifdef DEBUG
+        // Under DEBUG, only output under verbose flag.
+        if (emitComp->verbose)
+#endif // DEBUG
         {
-            printf("Block predicted offs = %08X, actual = %08X -> size adj = %d\n", ig->igOffs, emitCurCodeOffs(cp),
-                   emitOffsAdj);
+            if (newOffsAdj != 0)
+            {
+                printf("Block predicted offs = %08X, actual = %08X -> size adj = %d\n", ig->igOffs, emitCurCodeOffs(cp),
+                       newOffsAdj);
+            }
+            if (emitOffsAdj != newOffsAdj)
+            {
+                printf("Block expected size adj %d not equal to actual size adj %d (probably some instruction size was "
+                       "underestimated but not included in the running `emitOffsAdj` count)\n",
+                       emitOffsAdj, newOffsAdj);
+            }
         }
+        // Make it noisy in DEBUG if these don't match. In release, the noway_assert below checks the
+        // fatal condition.
+        assert(emitOffsAdj == newOffsAdj);
 #endif // DEBUG_EMIT
+
+        // We can't have over-estimated the adjustment, or we might have underestimated a jump distance.
+        noway_assert(emitOffsAdj <= newOffsAdj);
+
+        emitOffsAdj = newOffsAdj;
+        assert(emitOffsAdj >= 0);
 
         ig->igOffs = emitCurCodeOffs(cp);
         assert(IsCodeAligned(ig->igOffs));
@@ -6555,7 +6586,6 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         {
             JITDUMP("  section %u, size %u, block relative addr\n", secNum++, dscSize);
 
-            unsigned  elemSize = 4;
             size_t    numElems = dscSize / 4;
             unsigned* uDst     = (unsigned*)dst;
             insGroup* labFirst = (insGroup*)emitCodeGetCookie(emitComp->fgFirstBB);
@@ -7010,10 +7040,11 @@ void emitter::emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize)
     assert(!emitFullGCinfo);
 
     unsigned offs = emitCurCodeOffs(codePos);
-    unsigned regs = (emitThisGCrefRegs | emitThisByrefRegs) & ~RBM_INTRET;
     callDsc* call;
 
 #ifdef JIT32_GCENCODER
+    unsigned regs = (emitThisGCrefRegs | emitThisByrefRegs) & ~RBM_INTRET;
+
     // The JIT32 GCInfo encoder allows us to (as the comment previously here said):
     // "Bail if this is a totally boring call", but the GCInfoEncoder/Decoder interface
     // requires a definition for every call site, so we skip these "early outs" when we're

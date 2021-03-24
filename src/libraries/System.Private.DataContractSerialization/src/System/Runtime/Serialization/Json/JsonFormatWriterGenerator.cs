@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization.Json
             return _helper.GenerateCollectionWriter(collectionContract);
         }
 
-        private class CriticalHelper
+        private sealed class CriticalHelper
         {
             private CodeGenerator _ilg = null!; // initialized in GenerateXXXWriter
             private ArgBuilder _xmlWriterArg = null!; // initialized in InitArgs

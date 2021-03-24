@@ -1646,7 +1646,7 @@ namespace System.Diagnostics
             return offset;
         }
 
-        private class FileMapping
+        private sealed class FileMapping
         {
             internal int _fileMappingSize;
             private SafeMemoryMappedViewHandle _fileViewAddress;
@@ -1846,7 +1846,7 @@ namespace System.Diagnostics
             public long StartupTime;
         }
 
-        private class CategoryData
+        private sealed class CategoryData
         {
             public FileMapping FileMapping;
             public bool EnableReuse;

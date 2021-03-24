@@ -644,16 +644,22 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 // This function generates key pair and creates simple certificate.
 static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
 {
-    RSA* rsa = CryptoNative_RsaCreate();
+    RSA* rsa = NULL;
     ASN1_TIME* time = ASN1_TIME_new();
-    BIGNUM* bn = BN_new();
-    BN_set_word(bn, RSA_F4);
     X509_NAME * asnName;
     unsigned char * name = (unsigned char*)"localhost";
 
     int ret = 0;
 
-    if (rsa != NULL && CryptoNative_RsaGenerateKeyEx(rsa, 2048, bn) == 1)
+    EVP_PKEY* pkey = CryptoNative_RsaGenerateKey(2048);
+
+    if (pkey != NULL)
+    {
+        rsa = EVP_PKEY_get1_RSA(pkey);
+        EVP_PKEY_free(pkey);
+    }
+
+    if (rsa != NULL)
     {
         if (CryptoNative_EvpPkeySetRsa(evp, rsa) == 1)
         {
@@ -673,11 +679,6 @@ static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
         X509_set1_notAfter(cert, time);
 
         ret = X509_sign(cert, evp, EVP_sha256());
-    }
-
-    if (bn != NULL)
-    {
-        BN_free(bn);
     }
 
     if (rsa != NULL)

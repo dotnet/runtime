@@ -140,7 +140,7 @@ namespace System.Xml
                 }
             }
 
-            private class SingleObjectEnumerator : IEnumerator
+            private sealed class SingleObjectEnumerator : IEnumerator
             {
                 private readonly object _loneValue;
                 private int _position = -1;

@@ -81,7 +81,7 @@ namespace System.Linq.Parallel
         // (possibly partitioned) data source.
         //
 
-        private class DecimalAverageAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<Pair<decimal, long>>
+        private sealed class DecimalAverageAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<Pair<decimal, long>>
         {
             private readonly QueryOperatorEnumerator<decimal, TKey> _source; // The source data.
 

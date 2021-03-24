@@ -98,7 +98,7 @@ namespace System.Linq.Parallel
         // (possibly partitioned) data source.
         //
 
-        private class IntMinMaxAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<int>
+        private sealed class IntMinMaxAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<int>
         {
             private readonly QueryOperatorEnumerator<int, TKey> _source; // The source data.
             private readonly int _sign; // The sign for comparisons (-1 means min, 1 means max).

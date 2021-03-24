@@ -795,6 +795,7 @@ namespace System.IO.Pipelines
                 }
 
                 _writingHead = null;
+                _writingHeadMemory = default;
                 _readHead = null;
                 _readTail = null;
                 _lastExaminedIndex = -1;

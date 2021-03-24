@@ -34,7 +34,7 @@ namespace System.Linq
         {
             internal readonly IEqualityComparer<TSource>? _comparer;
             private IEnumerator<TSource>? _enumerator;
-            private Set<TSource>? _set;
+            private HashSet<TSource>? _set;
 
             protected UnionIterator(IEqualityComparer<TSource>? comparer)
             {
@@ -68,7 +68,7 @@ namespace System.Linq
             {
                 Debug.Assert(_enumerator != null);
 
-                Set<TSource> set = new Set<TSource>(_comparer);
+                var set = new HashSet<TSource>(DefaultInternalSetCapacity, _comparer);
                 TSource element = _enumerator.Current;
                 set.Add(element);
                 _current = element;
@@ -80,7 +80,7 @@ namespace System.Linq
                 Debug.Assert(_enumerator != null);
                 Debug.Assert(_set != null);
 
-                Set<TSource> set = _set;
+                HashSet<TSource> set = _set;
 
                 while (_enumerator.MoveNext())
                 {

@@ -230,14 +230,19 @@ void GenTree::InitNodeSize()
     // Now set all of the appropriate entries to 'large'
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-// clang-format off
-#if defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
-    // On ARM32, ARM64 and System V for struct returning
-    // there is code that does GT_ASG-tree.CopyObj call.
-    // CopyObj is a large node and the GT_ASG is small, which triggers an exception.
-    GenTree::s_gtNodeSizes[GT_ASG]              = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_RETURN]           = TREE_NODE_SZ_LARGE;
-#endif // defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
+    // clang-format off
+    if (GlobalJitOptions::compFeatureHfa
+#if defined(UNIX_AMD64_ABI)
+        || true
+#endif // defined(UNIX_AMD64_ABI)
+        )
+    {
+        // On ARM32, ARM64 and System V for struct returning
+        // there is code that does GT_ASG-tree.CopyObj call.
+        // CopyObj is a large node and the GT_ASG is small, which triggers an exception.
+        GenTree::s_gtNodeSizes[GT_ASG]              = TREE_NODE_SZ_LARGE;
+        GenTree::s_gtNodeSizes[GT_RETURN]           = TREE_NODE_SZ_LARGE;
+    }
 
     GenTree::s_gtNodeSizes[GT_CALL]             = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_CAST]             = TREE_NODE_SZ_LARGE;
@@ -3516,8 +3521,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_CNS_DBL:
             {
-                var_types targetType = tree->TypeGet();
-                level                = 0;
+                level = 0;
 #if defined(TARGET_XARCH)
                 /* We use fldz and fld1 to load 0.0 and 1.0, but all other  */
                 /* floating point constants are loaded using an indirection */
@@ -3533,6 +3537,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 4;
                 }
 #elif defined(TARGET_ARM)
+                var_types targetType = tree->TypeGet();
                 if (targetType == TYP_FLOAT)
                 {
                     costEx = 1 + 2;
@@ -6102,6 +6107,12 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, unsi
 
         // This indirection also is invariant.
         indNode->gtFlags |= GTF_IND_INVARIANT;
+
+        if (iconFlags == GTF_ICON_STR_HDL)
+        {
+            // String literals are never null
+            indNode->gtFlags |= GTF_IND_NONNULL;
+        }
     }
     return indNode;
 }
@@ -10102,9 +10113,7 @@ void Compiler::gtDispCommonEndLine(GenTree* tree)
 
 void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z __in_opt const char* msg, bool isLIR)
 {
-    bool printPointer = true; // always true..
-    bool printFlags   = true; // always true..
-    bool printCost    = true; // always true..
+    bool printFlags = true; // always true..
 
     int msgLength = 25;
 
@@ -10246,6 +10255,12 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                     if (tree->gtFlags & GTF_IND_ASG_LHS)
                     {
                         printf("D"); // print a D for definition
+                        --msgLength;
+                        break;
+                    }
+                    if (tree->gtFlags & GTF_IND_NONNULL)
+                    {
+                        printf("@");
                         --msgLength;
                         break;
                     }
@@ -16964,8 +16979,6 @@ bool GenTree::isContained() const
     // They can only produce a result if the child is a SIMD equality comparison.
     else if (OperKind() & GTK_RELOP)
     {
-        // We have to cast away const-ness since AsOp() method is non-const.
-        const GenTree* childNode = AsOp()->gtGetOp1();
         assert(isMarkedContained == false);
     }
 
@@ -17257,8 +17270,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, Fie
             //
             // The CSE could be a pointer to a boxed struct
             //
-            GenTreeLclVarCommon* lclVar = AsLclVarCommon();
-            ValueNum             vn     = gtVNPair.GetLiberal();
+            ValueNum vn = gtVNPair.GetLiberal();
             if (vn != ValueNumStore::NoVN)
             {
                 // Is the ValueNum a MapSelect involving a SharedStatic helper?
@@ -17853,7 +17865,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         case GT_CALL:
         {
             GenTreeCall* call = tree->AsCall();
-            if (call->gtFlags & CORINFO_FLG_JIT_INTRINSIC)
+            if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
             {
                 NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
                 if ((ni == NI_System_Array_Clone) || (ni == NI_System_Object_MemberwiseClone))

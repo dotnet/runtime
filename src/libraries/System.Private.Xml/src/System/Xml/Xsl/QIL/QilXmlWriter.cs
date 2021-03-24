@@ -439,7 +439,7 @@ namespace System.Xml.Xsl.Qil
             /// <summary>
             /// Class used to hold our annotations on the graph
             /// </summary>
-            private class NameAnnotation : ListBase<object?>
+            private sealed class NameAnnotation : ListBase<object?>
             {
                 public string Name;
                 public object? PriorAnnotation;
