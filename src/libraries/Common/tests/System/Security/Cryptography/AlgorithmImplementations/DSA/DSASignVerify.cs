@@ -167,11 +167,15 @@ namespace System.Security.Cryptography.Dsa.Tests
                     {
                         key.KeySize = 576;
                     }
-                    catch (CryptographicException) when (PlatformDetection.IsAndroid)
+                    catch (CryptographicException)
                     {
-                        // DSACryptoServiceProvider on Android only supports 1024 and does an early check fo legal
+                        // DSACryptoServiceProvider on Android only supports 1024 and does an early check for legal
                         // key sizes, since it is more restrictive than the wrapped implementation. It will throw
                         // CryptographicException. SignData should still throw ObjectDisposedException.
+                        if (!PlatformDetection.IsAndroid)
+                        {
+                            throw;
+                        }
                     }
 
                     SignData(key, data, HashAlgorithmName.SHA1);
