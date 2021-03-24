@@ -3686,7 +3686,7 @@
     <value>The assembly update failed.</value>
   </data>
   <data name="NotSupported_DebuggerAttached" xml:space="preserve">
-    <value>Assembly updates not supported while debuggger is attached.</value>
+    <value>Assembly updates cannot be applied while a debugger is attached.</value>
   </data>
   <data name="NotSupported_MethodBodyReplacement" xml:space="preserve">
     <value>Method body replacement not supported in this runtime.</value>
