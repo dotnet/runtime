@@ -17,15 +17,25 @@ namespace System.Security.Cryptography
         private readonly DSA _impl;
         private bool _publicOnly;
 
-        private static KeySizes[] s_legalKeySizesWindowsCsp =
+        private static readonly KeySizes[] s_legalKeySizesWindowsCsp =
         {
             new KeySizes(512, 1024, 64)  // Use the same values as Csp Windows because the _impl has different values (512, 3072, 64)
         };
 
-        private static KeySizes[] s_legalKeySizesAndroid =
+        private static readonly KeySizes[] s_legalKeySizesAndroid =
         {
             new KeySizes(1024, 1024, 0)  // Intersection of legal sizes on Android and Windows provider
         };
+
+        // Depending on the platform, _impl's legal key sizes may be more restrictive than Windows provider.
+        //   DSAAndroid : (1024, 3072, 1024)
+        //   DSAOpenSsl : (512, 3072, 64)
+        //   DSASecurityTransforms : (512, 1024, 64)
+        //   Windows CSP : (512, 1024, 64)
+        // Use the most restrictive legal key sizes
+        private static readonly KeySizes[] s_legalKeySizes = OperatingSystem.IsAndroid()
+            ? s_legalKeySizesAndroid
+            : s_legalKeySizesWindowsCsp;
 
         public DSACryptoServiceProvider()
             : this(DefaultKeySize)
@@ -36,16 +46,6 @@ namespace System.Security.Cryptography
         {
             if (dwKeySize < 0)
                 throw new ArgumentOutOfRangeException(nameof(dwKeySize), SR.ArgumentOutOfRange_NeedNonNegNum);
-
-            // Depending on the platform, _impl's legal key sizes may be more restrictive than Windows provider.
-            //   DSAAndroid : (1024, 3072, 1024)
-            //   DSAOpenSsl : (512, 3072, 64)
-            //   DSASecurityTransforms : (512, 1024, 64)
-            //   Windows CSP : (512, 1024, 64)
-            // Use the most restrictive legal key sizes
-            LegalKeySizesValue = OperatingSystem.IsAndroid()
-                ? s_legalKeySizesAndroid
-                : s_legalKeySizesWindowsCsp;
 
             // This class wraps DSA
             _impl = DSA.Create();
@@ -161,14 +161,14 @@ namespace System.Security.Cryptography
             set
             {
                 // Perform the check here because LegalKeySizes are more restrictive here than _impl
-                if (!value.IsLegalSize(this.LegalKeySizesValue!))
+                if (!value.IsLegalSize(s_legalKeySizes))
                     throw new CryptographicException(SR.Cryptography_InvalidKeySize);
 
                 _impl.KeySize = value;
             }
         }
 
-        public override KeySizes[] LegalKeySizes => base.LegalKeySizes;
+        public override KeySizes[] LegalKeySizes => s_legalKeySizes.CloneKeySizesArray();
 
         // PersistKeyInCsp has no effect in Unix
         public bool PersistKeyInCsp { get; set; }
