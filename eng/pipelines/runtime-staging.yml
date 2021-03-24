@@ -282,7 +282,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: Release
+    buildConfig: release
     platforms:
     - Browser_wasm_win
     jobParameters:
