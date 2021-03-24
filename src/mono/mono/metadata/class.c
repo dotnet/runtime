@@ -2678,12 +2678,13 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token)
 	
 	switch (type_token & 0xff000000){
 	case MONO_TOKEN_TYPE_DEF: {
-		guint32 cols [MONO_TYPEDEF_SIZE];
-		MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
 		guint tidx = mono_metadata_token_index (type_token);
 
-		if (tidx > tt->rows)
+		if (mono_metadata_table_bounds_check (image, MONO_TABLE_TYPEDEF, tidx))
 			return g_strdup_printf ("Invalid type token 0x%08x", type_token);
+
+		guint32 cols [MONO_TYPEDEF_SIZE];
+		MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
 
 		mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
@@ -2695,12 +2696,13 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token)
 	}
 
 	case MONO_TOKEN_TYPE_REF: {
-		guint32 cols [MONO_TYPEREF_SIZE];
-		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
 		guint tidx = mono_metadata_token_index (type_token);
 
-		if (tidx > t->rows)
+		if (mono_metadata_table_bounds_check (image, MONO_TABLE_TYPEREF, tidx))
 			return g_strdup_printf ("Invalid type token 0x%08x", type_token);
+
+		guint32 cols [MONO_TYPEREF_SIZE];
+		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
 
 		mono_metadata_decode_row (t, tidx-1, cols, MONO_TYPEREF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
@@ -2738,7 +2740,7 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
 		guint32 idx = mono_metadata_token_index (type_token);
 
-		if (idx > t->rows)
+		if (mono_metadata_table_bounds_check (image, MONO_TABLE_TYPEREF, idx))
 			return g_strdup_printf ("Invalid type token 0x%08x", type_token);
 	
 		mono_metadata_decode_row (t, idx-1, cols, MONO_TYPEREF_SIZE);
@@ -2973,7 +2975,9 @@ mono_image_init_name_cache (MonoImage *image)
 	/* Temporary hash table to avoid lookups in the nspace_table */
 	name_cache2 = g_hash_table_new (NULL, NULL);
 
-	for (i = 1; i <= t->rows; ++i) {
+	/* FIXME: metadata-update */
+	int rows = table_info_get_rows (t);
+	for (i = 1; i <= rows; ++i) {
 		mono_metadata_decode_row (t, i - 1, cols, MONO_TYPEDEF_SIZE);
 		visib = cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 		/*
@@ -3002,7 +3006,8 @@ mono_image_init_name_cache (MonoImage *image)
 		guint32 cols [MONO_EXP_TYPE_SIZE];
 		int i;
 
-		for (i = 0; i < t->rows; ++i) {
+		rows = table_info_get_rows (t);
+		for (i = 0; i < rows; ++i) {
 			mono_metadata_decode_row (t, i, cols, MONO_EXP_TYPE_SIZE);
 
 			guint32 impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
@@ -3191,7 +3196,8 @@ search_modules (MonoImage *image, const char *name_space, const char *name, gboo
 	 * Note: image->modules contains the contents of the MODULEREF table, while
 	 * the real module list is in the FILE table.
 	 */
-	for (i = 0; i < file_table->rows; i++) {
+	int rows = table_info_get_rows (file_table);
+	for (i = 0; i < rows; i++) {
 		guint32 cols [MONO_FILE_SIZE];
 		mono_metadata_decode_row (file_table, i, cols, MONO_FILE_SIZE);
 		if (cols [MONO_FILE_FLAGS] == FILE_CONTAINS_NO_METADATA)
@@ -3244,7 +3250,7 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 
 	/* FIXME: get_class_from_name () can't handle types in the EXPORTEDTYPE table */
 	// The AOT cache in get_class_from_name is case-sensitive, so don't bother with it for case-insensitive lookups
-	if (get_class_from_name && image->tables [MONO_TABLE_EXPORTEDTYPE].rows == 0 && case_sensitive) {
+	if (get_class_from_name && table_info_get_rows (&image->tables [MONO_TABLE_EXPORTEDTYPE]) == 0 && case_sensitive) {
 		gboolean res = get_class_from_name (image, name_space, name, &klass);
 		if (res) {
 			if (!klass) {

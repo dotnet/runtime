@@ -1056,9 +1056,10 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->needTmp   = false;
     curArgTabEntry->needPlace = false;
     curArgTabEntry->processed = false;
-#ifdef FEATURE_HFA
-    curArgTabEntry->_hfaElemKind = CORINFO_HFA_ELEM_NONE;
-#endif
+    if (GlobalJitOptions::compFeatureHfa)
+    {
+        curArgTabEntry->SetHfaElemKind(CORINFO_HFA_ELEM_NONE);
+    }
     curArgTabEntry->isBackFilled  = false;
     curArgTabEntry->isNonStandard = false;
     curArgTabEntry->isStruct      = isStruct;
@@ -1153,9 +1154,10 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     curArgTabEntry->needTmp   = false;
     curArgTabEntry->needPlace = false;
     curArgTabEntry->processed = false;
-#ifdef FEATURE_HFA
-    curArgTabEntry->_hfaElemKind = CORINFO_HFA_ELEM_NONE;
-#endif
+    if (GlobalJitOptions::compFeatureHfa)
+    {
+        curArgTabEntry->SetHfaElemKind(CORINFO_HFA_ELEM_NONE);
+    }
     curArgTabEntry->isBackFilled  = false;
     curArgTabEntry->isNonStandard = false;
     curArgTabEntry->isStruct      = isStruct;
@@ -2986,8 +2988,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     {
         argx = args->GetNode()->gtSkipPutArgType();
 
-        fgArgTabEntry* argEntry = nullptr;
-
         // Change the node to TYP_I_IMPL so we don't report GC info
         // NOTE: We deferred this from the importer because of the inliner.
 
@@ -3008,35 +3008,35 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #if !defined(OSX_ARM64_ABI)
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
 #endif
-        unsigned             size          = 0;
-        unsigned             byteSize      = 0;
-        CORINFO_CLASS_HANDLE copyBlkClass  = nullptr;
-        bool                 isRegArg      = false;
-        bool                 isNonStandard = false;
-        regNumber            nonStdRegNum  = REG_NA;
+        unsigned  size          = 0;
+        unsigned  byteSize      = 0;
+        bool      isRegArg      = false;
+        bool      isNonStandard = false;
+        regNumber nonStdRegNum  = REG_NA;
 
-#ifdef FEATURE_HFA
-        hfaType  = GetHfaType(argx);
-        isHfaArg = varTypeIsValidHfaType(hfaType);
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            hfaType  = GetHfaType(argx);
+            isHfaArg = varTypeIsValidHfaType(hfaType);
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-        // Make sure for vararg methods isHfaArg is not true.
-        isHfaArg = callIsVararg ? false : isHfaArg;
+            // Make sure for vararg methods isHfaArg is not true.
+            isHfaArg = callIsVararg ? false : isHfaArg;
 #endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
 
-        if (isHfaArg)
-        {
-            isHfaArg = true;
-            hfaSlots = GetHfaCount(argx);
+            if (isHfaArg)
+            {
+                isHfaArg = true;
+                hfaSlots = GetHfaCount(argx);
 
-            // If we have a HFA struct it's possible we transition from a method that originally
-            // only had integer types to now start having FP types.  We have to communicate this
-            // through this flag since LSRA later on will use this flag to determine whether
-            // or not to track the FP register set.
-            //
-            compFloatingPointUsed = true;
+                // If we have a HFA struct it's possible we transition from a method that originally
+                // only had integer types to now start having FP types.  We have to communicate this
+                // through this flag since LSRA later on will use this flag to determine whether
+                // or not to track the FP register set.
+                //
+                compFloatingPointUsed = true;
+            }
         }
-#endif // FEATURE_HFA
 
         const bool isFloatHfa = (hfaType == TYP_FLOAT);
 
@@ -3211,9 +3211,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         if (isStructArg)
         {
-            // We have an argument with a struct type, but it may be be a child of a GT_COMMA
-            GenTree* argObj = argx->gtEffectiveVal(true /*commaOnly*/);
-
             assert(argx == args->GetNode());
             assert(structSize != 0);
 
@@ -3586,12 +3583,14 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #endif
         }
 
-#ifdef FEATURE_HFA
-        if (isHfaArg)
+        if (GlobalJitOptions::compFeatureHfa)
         {
-            newArgEntry->SetHfaType(hfaType, hfaSlots);
+            if (isHfaArg)
+            {
+                newArgEntry->SetHfaType(hfaType, hfaSlots);
+            }
         }
-#endif // FEATURE_HFA
+
         newArgEntry->SetMultiRegNums();
 
         noway_assert(newArgEntry != nullptr);
@@ -3674,7 +3673,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     // Set up the fgArgInfo.
     fgInitArgInfo(call);
-    unsigned numArgs = call->fgArgInfo->ArgCount();
     JITDUMP("%sMorphing args for %d.%s:\n", (reMorphing) ? "Re" : "", call->gtTreeID, GenTree::OpName(call->gtOper));
 
     // If we are remorphing, process the late arguments (which were determined by a previous caller).
@@ -3764,9 +3762,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         // Get information about this argument.
         var_types hfaType            = argEntry->GetHfaType();
         bool      isHfaArg           = (hfaType != TYP_UNDEF);
-        unsigned  hfaSlots           = argEntry->numRegs;
         bool      passUsingFloatRegs = argEntry->isPassedInFloatRegisters();
-        bool      isBackFilled       = argEntry->IsBackFilled();
         unsigned  structSize         = 0;
 
         // Struct arguments may be morphed into a node that is not a struct type.
@@ -4271,10 +4267,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 //
 void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 {
-    bool       foundStructArg = false;
-    unsigned   initialFlags   = call->gtFlags;
-    unsigned   flagsSummary   = 0;
-    fgArgInfo* allArgInfo     = call->fgArgInfo;
+    bool     foundStructArg = false;
+    unsigned flagsSummary   = 0;
 
 #ifdef TARGET_X86
     assert(!"Logic error: no MultiregStructArgs for X86");
@@ -6526,7 +6520,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 if (isStaticReadOnlyInited)
                 {
                     JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
-                    tree->gtFlags |= GTF_IND_INVARIANT;
+
+                    // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
+                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
                     tree->gtFlags &= ~GTF_ICON_INITCLASS;
                     addr->gtFlags = GTF_ICON_CONST_PTR;
                 }
@@ -10993,6 +10989,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         unsigned             modifiedLclNum    = BAD_VAR_NUM;
         LclVarDsc*           destLclVar        = nullptr;
         FieldSeqNode*        destFldSeq        = nullptr;
+        unsigned             destLclOffset     = 0;
         bool                 destDoFldAsg      = false;
         GenTree*             destAddr          = nullptr;
         GenTree*             srcAddr           = nullptr;
@@ -11030,9 +11027,11 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             {
                 assert(dest->TypeGet() != TYP_STRUCT);
                 assert(dest->gtOper == GT_LCL_FLD);
-                blockWidth = genTypeSize(dest->TypeGet());
-                destAddr   = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
-                destFldSeq = dest->AsLclFld()->GetFieldSeq();
+                GenTreeLclFld* destFld = dest->AsLclFld();
+                blockWidth             = genTypeSize(destFld->TypeGet());
+                destAddr               = gtNewOperNode(GT_ADDR, TYP_BYREF, destFld);
+                destFldSeq             = destFld->GetFieldSeq();
+                destLclOffset          = destFld->GetLclOffs();
             }
         }
         else
@@ -11069,6 +11068,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     destLclNum     = lclVarTree->GetLclNum();
                     modifiedLclNum = destLclNum;
                     destLclVar     = &lvaTable[destLclNum];
+                    destLclOffset  = lclVarTree->GetLclOffs();
                 }
             }
         }
@@ -11104,10 +11104,14 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             }
         }
 
-        FieldSeqNode* srcFldSeq   = nullptr;
-        unsigned      srcLclNum   = BAD_VAR_NUM;
-        LclVarDsc*    srcLclVar   = nullptr;
-        bool          srcDoFldAsg = false;
+        FieldSeqNode* srcFldSeq    = nullptr;
+        unsigned      srcLclNum    = BAD_VAR_NUM;
+        LclVarDsc*    srcLclVar    = nullptr;
+        unsigned      srcLclOffset = 0;
+        bool          srcDoFldAsg  = false;
+
+        bool srcUseLclFld  = false;
+        bool destUseLclFld = false;
 
         if (src->IsLocal())
         {
@@ -11132,7 +11136,8 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
         if (srcLclNum != BAD_VAR_NUM)
         {
-            srcLclVar = &lvaTable[srcLclNum];
+            srcLclOffset = srcLclVarTree->GetLclOffs();
+            srcLclVar    = &lvaTable[srcLclNum];
 
             if (srcLclVar->lvPromoted && blockWidthIsConst)
             {
@@ -11206,11 +11211,9 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         }
 #endif // TARGET_ARM
 
-        // Don't use field by field assignment if the src is a call
-        //
-        // TODO: Document why do we have this restriction?
-        //       Maybe it isn't needed, or maybe it is only needed
-        //       for calls that return multiple registers
+        // Don't use field by field assignment if the src is a call,
+        // lowering will handle it without spilling the call result into memory
+        // to access the individual fields.
         //
         if (src->OperGet() == GT_CALL)
         {
@@ -11409,8 +11412,9 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
         if (destDoFldAsg && srcDoFldAsg)
         {
-            // To do fieldwise assignments for both sides, they'd better be the same struct type!
-            // All of these conditions were checked above...
+            // To do fieldwise assignments for both sides.
+            // The structs do not have to be the same exact types but have to have same field types
+            // at the same offsets.
             assert(destLclNum != BAD_VAR_NUM && srcLclNum != BAD_VAR_NUM);
             assert(destLclVar != nullptr && srcLclVar != nullptr && destLclVar->lvFieldCnt == srcLclVar->lvFieldCnt);
 
@@ -11422,7 +11426,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         {
             fieldCnt = destLclVar->lvFieldCnt;
             src      = fgMorphBlockOperand(src, asgType, blockWidth, false /*isBlkReqd*/);
-            if (srcAddr == nullptr)
+
+            srcUseLclFld = fgMorphCanUseLclFldForCopy(destLclNum, srcLclNum);
+
+            if (!srcUseLclFld && srcAddr == nullptr)
             {
                 srcAddr = fgMorphGetStructAddr(&src, destLclVar->GetStructHnd(), true /* rValue */);
             }
@@ -11437,28 +11444,35 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 dest->SetOper(GT_IND);
                 dest->gtType = TYP_STRUCT;
             }
-            destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
+            destUseLclFld = fgMorphCanUseLclFldForCopy(srcLclNum, destLclNum);
+            if (!destUseLclFld)
+            {
+                destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
+            }
         }
 
         if (destDoFldAsg)
         {
             noway_assert(!srcDoFldAsg);
-            if (gtClone(srcAddr))
+            if (!srcUseLclFld)
             {
-                // srcAddr is simple expression. No need to spill.
-                noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
-            }
-            else
-            {
-                // srcAddr is complex expression. Clone and spill it (unless the destination is
-                // a struct local that only has one field, in which case we'd only use the
-                // address value once...)
-                if (destLclVar->lvFieldCnt > 1)
+                if (gtClone(srcAddr))
                 {
-                    // We will spill srcAddr (i.e. assign to a temp "BlockOp address local")
-                    // no need to clone a new copy as it is only used once
-                    //
-                    addrSpill = srcAddr; // addrSpill represents the 'srcAddr'
+                    // srcAddr is simple expression. No need to spill.
+                    noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+                }
+                else
+                {
+                    // srcAddr is complex expression. Clone and spill it (unless the destination is
+                    // a struct local that only has one field, in which case we'd only use the
+                    // address value once...)
+                    if (destLclVar->lvFieldCnt > 1)
+                    {
+                        // We will spill srcAddr (i.e. assign to a temp "BlockOp address local")
+                        // no need to clone a new copy as it is only used once
+                        //
+                        addrSpill = srcAddr; // addrSpill represents the 'srcAddr'
+                    }
                 }
             }
         }
@@ -11478,22 +11492,25 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 lclVarTree->gtFlags &= ~(GTF_VAR_DEF | GTF_VAR_USEASG);
             }
 
-            if (gtClone(destAddr))
+            if (!destUseLclFld)
             {
-                // destAddr is simple expression. No need to spill
-                noway_assert((destAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
-            }
-            else
-            {
-                // destAddr is complex expression. Clone and spill it (unless
-                // the source is a struct local that only has one field, in which case we'd only
-                // use the address value once...)
-                if (srcLclVar->lvFieldCnt > 1)
+                if (gtClone(destAddr))
                 {
-                    // We will spill destAddr (i.e. assign to a temp "BlockOp address local")
-                    // no need to clone a new copy as it is only used once
-                    //
-                    addrSpill = destAddr; // addrSpill represents the 'destAddr'
+                    // destAddr is simple expression. No need to spill
+                    noway_assert((destAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+                }
+                else
+                {
+                    // destAddr is complex expression. Clone and spill it (unless
+                    // the source is a struct local that only has one field, in which case we'd only
+                    // use the address value once...)
+                    if (srcLclVar->lvFieldCnt > 1)
+                    {
+                        // We will spill destAddr (i.e. assign to a temp "BlockOp address local")
+                        // no need to clone a new copy as it is only used once
+                        //
+                        addrSpill = destAddr; // addrSpill represents the 'destAddr'
+                    }
                 }
             }
         }
@@ -11591,43 +11608,48 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 }
                 else
                 {
-                    if (addrSpill)
+                    GenTree* dstAddrClone = nullptr;
+                    if (!destUseLclFld)
                     {
-                        assert(addrSpillTemp != BAD_VAR_NUM);
-                        dstFld = gtNewLclvNode(addrSpillTemp, TYP_BYREF);
-                    }
-                    else
-                    {
-                        if (i == 0)
+                        // Need address of the destination.
+                        if (addrSpill)
                         {
-                            // Use the orginal destAddr tree when i == 0
-                            dstFld = destAddr;
+                            assert(addrSpillTemp != BAD_VAR_NUM);
+                            dstAddrClone = gtNewLclvNode(addrSpillTemp, TYP_BYREF);
                         }
                         else
                         {
-                            // We can't clone multiple copies of a tree with persistent side effects
-                            noway_assert((destAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
-
-                            dstFld = gtCloneExpr(destAddr);
-                            noway_assert(dstFld != nullptr);
-
-                            JITDUMP("dstFld - Multiple Fields Clone created:\n");
-                            DISPTREE(dstFld);
-
-                            // Morph the newly created tree
-                            dstFld = fgMorphTree(dstFld);
-                        }
-
-                        // Is the address of a local?
-                        GenTreeLclVarCommon* lclVarTree = nullptr;
-                        bool                 isEntire   = false;
-                        bool*                pIsEntire  = (blockWidthIsConst ? &isEntire : nullptr);
-                        if (dstFld->DefinesLocalAddr(this, blockWidth, &lclVarTree, pIsEntire))
-                        {
-                            lclVarTree->gtFlags |= GTF_VAR_DEF;
-                            if (!isEntire)
+                            if (i == 0)
                             {
-                                lclVarTree->gtFlags |= GTF_VAR_USEASG;
+                                // Use the orginal destAddr tree when i == 0
+                                dstAddrClone = destAddr;
+                            }
+                            else
+                            {
+                                // We can't clone multiple copies of a tree with persistent side effects
+                                noway_assert((destAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+
+                                dstAddrClone = gtCloneExpr(destAddr);
+                                noway_assert(dstAddrClone != nullptr);
+
+                                JITDUMP("dstAddr - Multiple Fields Clone created:\n");
+                                DISPTREE(dstAddrClone);
+
+                                // Morph the newly created tree
+                                dstAddrClone = fgMorphTree(dstAddrClone);
+                            }
+
+                            // Is the address of a local?
+                            GenTreeLclVarCommon* lclVarTree = nullptr;
+                            bool                 isEntire   = false;
+                            bool*                pIsEntire  = (blockWidthIsConst ? &isEntire : nullptr);
+                            if (dstAddrClone->DefinesLocalAddr(this, blockWidth, &lclVarTree, pIsEntire))
+                            {
+                                lclVarTree->gtFlags |= GTF_VAR_DEF;
+                                if (!isEntire)
+                                {
+                                    lclVarTree->gtFlags |= GTF_VAR_USEASG;
+                                }
                             }
                         }
                     }
@@ -11642,19 +11664,38 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                         info.compCompHnd->getFieldInClass(classHnd, srcFieldVarDsc->lvFldOrdinal);
                     FieldSeqNode* curFieldSeq = GetFieldSeqStore()->CreateSingleton(fieldHnd);
 
-                    unsigned srcFieldOffset = lvaGetDesc(srcFieldLclNum)->lvFldOffset;
+                    unsigned  srcFieldOffset = lvaGetDesc(srcFieldLclNum)->lvFldOffset;
+                    var_types srcType        = srcFieldVarDsc->TypeGet();
 
-                    if (srcFieldOffset == 0)
+                    if (!destUseLclFld)
                     {
-                        fgAddFieldSeqForZeroOffset(dstFld, curFieldSeq);
+
+                        if (srcFieldOffset == 0)
+                        {
+                            fgAddFieldSeqForZeroOffset(dstAddrClone, curFieldSeq);
+                        }
+                        else
+                        {
+                            GenTree* fieldOffsetNode = gtNewIconNode(srcFieldVarDsc->lvFldOffset, curFieldSeq);
+                            dstAddrClone             = gtNewOperNode(GT_ADD, TYP_BYREF, dstAddrClone, fieldOffsetNode);
+                        }
+
+                        dstFld = gtNewIndir(srcType, dstAddrClone);
                     }
                     else
                     {
-                        GenTree* fieldOffsetNode = gtNewIconNode(srcFieldVarDsc->lvFldOffset, curFieldSeq);
-                        dstFld                   = gtNewOperNode(GT_ADD, TYP_BYREF, dstFld, fieldOffsetNode);
-                    }
+                        assert(dstAddrClone == nullptr);
+                        assert((destLclOffset == 0) || (destFldSeq != nullptr));
+                        // If the dst was a struct type field "B" in a struct "A" then we add
+                        // add offset of ("B" in "A") + current offset in "B".
+                        unsigned summOffset        = destLclOffset + srcFieldOffset;
+                        dstFld                     = gtNewLclFldNode(destLclNum, srcType, summOffset);
+                        FieldSeqNode* dstFldFldSeq = GetFieldSeqStore()->Append(destFldSeq, curFieldSeq);
+                        dstFld->AsLclFld()->SetFieldSeq(dstFldFldSeq);
 
-                    dstFld = gtNewIndir(srcFieldVarDsc->TypeGet(), dstFld);
+                        // TODO-1stClassStructs: remove this and implement storing to a field in a struct in a reg.
+                        lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_LocalField));
+                    }
 
                     // !!! The destination could be on stack. !!!
                     // This flag will let us choose the correct write barrier.
@@ -11662,7 +11703,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 }
             }
 
-            GenTree* srcFld;
+            GenTree* srcFld = nullptr;
             if (srcDoFldAsg)
             {
                 noway_assert(srcLclNum != BAD_VAR_NUM);
@@ -11688,31 +11729,36 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 }
                 else
                 {
-                    if (addrSpill)
+                    GenTree* srcAddrClone = nullptr;
+                    if (!srcUseLclFld)
                     {
-                        assert(addrSpillTemp != BAD_VAR_NUM);
-                        srcFld = gtNewLclvNode(addrSpillTemp, TYP_BYREF);
-                    }
-                    else
-                    {
-                        if (i == 0)
+                        // Need address of the source.
+                        if (addrSpill)
                         {
-                            // Use the orginal srcAddr tree when i == 0
-                            srcFld = srcAddr;
+                            assert(addrSpillTemp != BAD_VAR_NUM);
+                            srcAddrClone = gtNewLclvNode(addrSpillTemp, TYP_BYREF);
                         }
                         else
                         {
-                            // We can't clone multiple copies of a tree with persistent side effects
-                            noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+                            if (i == 0)
+                            {
+                                // Use the orginal srcAddr tree when i == 0
+                                srcAddrClone = srcAddr;
+                            }
+                            else
+                            {
+                                // We can't clone multiple copies of a tree with persistent side effects
+                                noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
 
-                            srcFld = gtCloneExpr(srcAddr);
-                            noway_assert(srcFld != nullptr);
+                                srcAddrClone = gtCloneExpr(srcAddr);
+                                noway_assert(srcAddrClone != nullptr);
 
-                            JITDUMP("srcFld - Multiple Fields Clone created:\n");
-                            DISPTREE(srcFld);
+                                JITDUMP("srcAddr - Multiple Fields Clone created:\n");
+                                DISPTREE(srcAddrClone);
 
-                            // Morph the newly created tree
-                            srcFld = fgMorphTree(srcFld);
+                                // Morph the newly created tree
+                                srcAddrClone = fgMorphTree(srcAddrClone);
+                            }
                         }
                     }
 
@@ -11749,20 +11795,36 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     if (!done)
                     {
                         unsigned fldOffset = lvaGetDesc(dstFieldLclNum)->lvFldOffset;
-                        if (fldOffset == 0)
+                        if (!srcUseLclFld)
                         {
-                            fgAddFieldSeqForZeroOffset(srcFld, curFieldSeq);
+                            assert(srcAddrClone != nullptr);
+                            if (fldOffset == 0)
+                            {
+                                fgAddFieldSeqForZeroOffset(srcAddrClone, curFieldSeq);
+                            }
+                            else
+                            {
+                                GenTreeIntCon* fldOffsetNode = gtNewIconNode(fldOffset, curFieldSeq);
+                                srcAddrClone = gtNewOperNode(GT_ADD, TYP_BYREF, srcAddrClone, fldOffsetNode);
+                            }
+                            srcFld = gtNewIndir(destType, srcAddrClone);
                         }
                         else
                         {
-                            GenTreeIntCon* fldOffsetNode = gtNewIconNode(fldOffset, curFieldSeq);
-                            srcFld                       = gtNewOperNode(GT_ADD, TYP_BYREF, srcFld, fldOffsetNode);
+                            assert((srcLclOffset == 0) || (srcFldSeq != 0));
+                            // If the src was a struct type field "B" in a struct "A" then we add
+                            // add offset of ("B" in "A") + current offset in "B".
+                            unsigned summOffset        = srcLclOffset + fldOffset;
+                            srcFld                     = gtNewLclFldNode(srcLclNum, destType, summOffset);
+                            FieldSeqNode* srcFldFldSeq = GetFieldSeqStore()->Append(srcFldSeq, curFieldSeq);
+                            srcFld->AsLclFld()->SetFieldSeq(srcFldFldSeq);
+                            // TODO-1stClassStructs: remove this and implement reading a field from a struct in a reg.
+                            lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DNER_LocalField));
                         }
-                        srcFld = gtNewIndir(destType, srcFld);
                     }
                 }
             }
-
+            assert(srcFld != nullptr);
             noway_assert(dstFld->TypeGet() == srcFld->TypeGet());
 
             asg = gtNewAssignNode(dstFld, srcFld);
@@ -11811,6 +11873,46 @@ _Done:
     DISPTREE(tree);
 
     return tree;
+}
+
+//------------------------------------------------------------------------
+// fgMorphCanUseLclFldForCopy: check if we can access LclVar2 using LclVar1's fields.
+//
+// Arguments:
+//    lclNum1 - a promoted lclVar that is used in fieldwise assignment;
+//    lclNum2 - the local variable on the other side of ASG, can be BAD_VAR_NUM.
+//
+// Return Value:
+//    True if the second local is valid and has the same struct handle as the first,
+//    false otherwise.
+//
+// Notes:
+//   This check is needed to avoid accesing LCL_VARs with incorrect
+//   CORINFO_FIELD_HANDLE that would confuse VN optimizations.
+//
+bool Compiler::fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2)
+{
+    assert(lclNum1 != BAD_VAR_NUM);
+    if (lclNum2 == BAD_VAR_NUM)
+    {
+        return false;
+    }
+    const LclVarDsc* varDsc1 = lvaGetDesc(lclNum1);
+    const LclVarDsc* varDsc2 = lvaGetDesc(lclNum2);
+    assert(varTypeIsStruct(varDsc1));
+    if (!varTypeIsStruct(varDsc2))
+    {
+        return false;
+    }
+    CORINFO_CLASS_HANDLE struct1 = varDsc1->GetStructHnd();
+    CORINFO_CLASS_HANDLE struct2 = varDsc2->GetStructHnd();
+    assert(struct1 != NO_CLASS_HANDLE);
+    assert(struct2 != NO_CLASS_HANDLE);
+    if (struct1 != struct2)
+    {
+        return false;
+    }
+    return true;
 }
 
 // insert conversions and normalize to make tree amenable to register
@@ -12762,7 +12864,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                                         "the return [%06u]\n",
                                         lclVar->GetLclNum(), fieldLclNum, dspTreeID(tree));
                                 lclVar->SetLclNum(fieldLclNum);
-                                var_types fieldType = fieldDsc->lvType;
                                 lclVar->ChangeType(fieldDsc->lvType);
                             }
                         }
@@ -13527,8 +13628,6 @@ DONE_MORPHING_CHILDREN:
                     {
                         goto SKIP;
                     }
-
-                    LclVarDsc* varDsc = lvaTable + lclNum;
 
                     /* Set op1 to the right side of asg, (i.e. the RELOP) */
                     op1 = asg->AsOp()->gtOp2;
@@ -16546,7 +16645,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 #ifdef DEBUG
                         if (verbose)
                         {
-                            printf("Removing loop L%02u (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
+                            printf("Removing loop " FMT_LP " (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
                                    optLoopTable[loopNum].lpFirst->bbNum, optLoopTable[loopNum].lpBottom->bbNum);
                         }
 #endif
@@ -18922,7 +19021,6 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
     FieldSeqNode* fieldSeqUpdate   = fieldSeqZero;
     GenTree*      fieldSeqNode     = addr;
     bool          fieldSeqRecorded = false;
-    bool          isMapAnnotation  = false;
 
 #ifdef DEBUG
     if (verbose)

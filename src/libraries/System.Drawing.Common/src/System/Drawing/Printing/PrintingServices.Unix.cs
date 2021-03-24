@@ -1021,7 +1021,7 @@ namespace System.Drawing.Printing
         }
     }
 
-    internal class SysPrn
+    internal static class SysPrn
     {
         internal static void GetPrintDialogInfo(string printer, ref string port, ref string type, ref string status, ref string comment)
         {

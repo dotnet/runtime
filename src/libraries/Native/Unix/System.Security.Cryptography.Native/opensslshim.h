@@ -148,6 +148,7 @@ void RSA_get0_factors(const RSA* rsa, const BIGNUM** p, const BIGNUM** q);
 void RSA_get0_key(const RSA* rsa, const BIGNUM** n, const BIGNUM** e, const BIGNUM** d);
 int32_t RSA_meth_get_flags(const RSA_METHOD* meth);
 const RSA_METHOD* RSA_PKCS1_OpenSSL(void);
+int32_t RSA_pkey_ctx_ctrl(EVP_PKEY_CTX* ctx, int32_t optype, int32_t cmd, int32_t p1, void* p2);
 int32_t RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* iqmp);
 int32_t RSA_set0_factors(RSA* rsa, BIGNUM* p, BIGNUM* q);
 int32_t RSA_set0_key(RSA* rsa, BIGNUM* n, BIGNUM* e, BIGNUM* d);
@@ -176,6 +177,13 @@ const X509_ALGOR* X509_get0_tbs_sigalg(const X509* x509);
 X509_PUBKEY* X509_get_X509_PUBKEY(const X509* x509);
 int32_t X509_get_version(const X509* x509);
 int32_t X509_up_ref(X509* x509);
+
+// Redefine EVP_PKEY_CTX_set_rsa operations to use (local_)RSA_pkey_ctx_ctrl so the path is the same
+// for 1.0-built on 1.1 as on 1.1-built on 1.1.
+#undef EVP_PKEY_CTX_set_rsa_keygen_bits
+#define EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, bits) \
+    RSA_pkey_ctx_ctrl(ctx, EVP_PKEY_OP_KEYGEN, EVP_PKEY_CTRL_RSA_KEYGEN_BITS, bits, NULL)
+
 #endif
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_0_2_RTM
@@ -362,8 +370,12 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     RENAMED_FUNCTION(EVP_MD_CTX_free, EVP_MD_CTX_destroy) \
     RENAMED_FUNCTION(EVP_MD_CTX_new, EVP_MD_CTX_create) \
     REQUIRED_FUNCTION(EVP_MD_size) \
+    REQUIRED_FUNCTION(EVP_PKEY_CTX_ctrl) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_free) \
+    REQUIRED_FUNCTION(EVP_PKEY_CTX_get0_pkey) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new) \
+    REQUIRED_FUNCTION(EVP_PKEY_CTX_new_id) \
+    REQUIRED_FUNCTION(EVP_PKEY_base_id) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_set_peer) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_init) \
     REQUIRED_FUNCTION(EVP_PKEY_derive) \
@@ -371,6 +383,8 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_EC_KEY) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_RSA) \
+    REQUIRED_FUNCTION(EVP_PKEY_keygen) \
+    REQUIRED_FUNCTION(EVP_PKEY_keygen_init) \
     REQUIRED_FUNCTION(EVP_PKEY_new) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_EC_KEY) \
@@ -453,6 +467,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     FALLBACK_FUNCTION(RSA_get0_key) \
     FALLBACK_FUNCTION(RSA_meth_get_flags) \
     REQUIRED_FUNCTION(RSA_new) \
+    FALLBACK_FUNCTION(RSA_pkey_ctx_ctrl) \
     RENAMED_FUNCTION(RSA_PKCS1_OpenSSL, RSA_PKCS1_SSLeay) \
     REQUIRED_FUNCTION(RSA_private_decrypt) \
     REQUIRED_FUNCTION(RSA_private_encrypt) \
@@ -773,8 +788,12 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_MD_CTX_free EVP_MD_CTX_free_ptr
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
 #define EVP_MD_size EVP_MD_size_ptr
+#define EVP_PKEY_CTX_ctrl EVP_PKEY_CTX_ctrl_ptr
 #define EVP_PKEY_CTX_free EVP_PKEY_CTX_free_ptr
+#define EVP_PKEY_CTX_get0_pkey EVP_PKEY_CTX_get0_pkey_ptr
 #define EVP_PKEY_CTX_new EVP_PKEY_CTX_new_ptr
+#define EVP_PKEY_CTX_new_id EVP_PKEY_CTX_new_id_ptr
+#define EVP_PKEY_base_id EVP_PKEY_base_id_ptr
 #define EVP_PKEY_derive_set_peer EVP_PKEY_derive_set_peer_ptr
 #define EVP_PKEY_derive_init EVP_PKEY_derive_init_ptr
 #define EVP_PKEY_derive EVP_PKEY_derive_ptr
@@ -782,6 +801,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
 #define EVP_PKEY_get1_EC_KEY EVP_PKEY_get1_EC_KEY_ptr
 #define EVP_PKEY_get1_RSA EVP_PKEY_get1_RSA_ptr
+#define EVP_PKEY_keygen EVP_PKEY_keygen_ptr
+#define EVP_PKEY_keygen_init EVP_PKEY_keygen_init_ptr
 #define EVP_PKEY_new EVP_PKEY_new_ptr
 #define EVP_PKEY_set1_DSA EVP_PKEY_set1_DSA_ptr
 #define EVP_PKEY_set1_EC_KEY EVP_PKEY_set1_EC_KEY_ptr
@@ -864,6 +885,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_get_method RSA_get_method_ptr
 #define RSA_meth_get_flags RSA_meth_get_flags_ptr
 #define RSA_new RSA_new_ptr
+#define RSA_pkey_ctx_ctrl RSA_pkey_ctx_ctrl_ptr
 #define RSA_PKCS1_OpenSSL RSA_PKCS1_OpenSSL_ptr
 #define RSA_private_decrypt RSA_private_decrypt_ptr
 #define RSA_private_encrypt RSA_private_encrypt_ptr
@@ -1084,6 +1106,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_set0_crt_params local_RSA_set0_crt_params
 #define RSA_set0_factors local_RSA_set0_factors
 #define RSA_set0_key local_RSA_set0_key
+#define RSA_pkey_ctx_ctrl local_RSA_pkey_ctx_ctrl
 #define SSL_CTX_set_security_level local_SSL_CTX_set_security_level
 #define SSL_is_init_finished local_SSL_is_init_finished
 #define X509_CRL_get0_nextUpdate local_X509_CRL_get0_nextUpdate

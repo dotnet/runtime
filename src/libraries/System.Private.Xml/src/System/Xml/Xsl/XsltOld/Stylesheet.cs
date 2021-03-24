@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.XsltOld
         private TemplateManager? _templates;
 
 
-        private class WhitespaceElement
+        private sealed class WhitespaceElement
         {
             private readonly int _key;
             private readonly double _priority;

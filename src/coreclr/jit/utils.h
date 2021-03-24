@@ -766,4 +766,10 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 #endif
 }
 
+//
+// Profiling helpers
+//
+
+double CachedCyclesPerSecond();
+
 #endif // _UTILS_H_

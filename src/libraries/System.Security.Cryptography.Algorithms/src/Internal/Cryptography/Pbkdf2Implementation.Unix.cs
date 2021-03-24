@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    internal partial class Pbkdf2Implementation
+    internal static partial class Pbkdf2Implementation
     {
         public static unsafe void Fill(
             ReadOnlySpan<byte> password,

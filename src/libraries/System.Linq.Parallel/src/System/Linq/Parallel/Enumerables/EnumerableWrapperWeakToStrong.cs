@@ -47,7 +47,7 @@ namespace System.Linq.Parallel
         // A wrapper over IEnumerator that provides IEnumerator<object> interface
         //
 
-        private class WrapperEnumeratorWeakToStrong : IEnumerator<object?>
+        private sealed class WrapperEnumeratorWeakToStrong : IEnumerator<object?>
         {
             private readonly IEnumerator _wrappedEnumerator; // The weakly typed enumerator we've wrapped.
 

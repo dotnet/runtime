@@ -8,7 +8,7 @@ using System.Security.Principal;
 
 namespace System.Diagnostics.Tests
 {
-    internal partial class Interop
+    internal static partial class Interop
     {
         [DllImport("libc")]
         internal static extern int getsid(int pid);

@@ -105,7 +105,7 @@ namespace System.Linq.Parallel
         // (possibly partitioned) data source.
         //
 
-        private class NullableFloatMinMaxAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<float?>
+        private sealed class NullableFloatMinMaxAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<float?>
         {
             private readonly QueryOperatorEnumerator<float?, TKey> _source; // The source data.
             private readonly int _sign; // The sign for comparisons (-1 means min, 1 means max).

@@ -50,7 +50,7 @@ namespace System.Linq.Parallel
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);
 
         /// <summary>ETW tasks that have start/stop events.</summary>
-        public class Tasks // this name is important for EventSource
+        public static class Tasks // this name is important for EventSource
         {
             /// <summary>A parallel query.</summary>
             public const EventTask Query = (EventTask)1;

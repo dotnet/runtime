@@ -97,7 +97,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private class ExportContext
+        private sealed class ExportContext
         {
             private readonly XmlNamespaceManager _namespaces;
             private int _nextPrefix;

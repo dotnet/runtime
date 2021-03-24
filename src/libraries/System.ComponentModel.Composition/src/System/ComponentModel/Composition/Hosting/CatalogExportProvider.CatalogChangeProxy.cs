@@ -10,7 +10,7 @@ namespace System.ComponentModel.Composition.Hosting
 {
     public partial class CatalogExportProvider : ExportProvider, IDisposable
     {
-        private class CatalogChangeProxy : ComposablePartCatalog
+        private sealed class CatalogChangeProxy : ComposablePartCatalog
         {
             private readonly ComposablePartCatalog _originalCatalog;
             private readonly List<ComposablePartDefinition> _addedParts;

@@ -695,7 +695,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert((_currentIndex == -1) || (_currentInfo == _attributeValue || _attributeList![_currentIndex] is BuilderInfo && _attributeList[_currentIndex] == _currentInfo));
         }
 
-        private class XmlEncoder
+        private sealed class XmlEncoder
         {
             private StringBuilder? _buffer;
             private XmlTextEncoder? _encoder;

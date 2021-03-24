@@ -23,6 +23,7 @@ namespace System.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(GetCommandLineArgs_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void GetCommandLineArgs_Invoke_ReturnsExpected(string[] args)
         {
             switch (args.Length)

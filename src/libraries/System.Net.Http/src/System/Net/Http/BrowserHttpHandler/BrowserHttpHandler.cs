@@ -324,7 +324,7 @@ namespace System.Net.Http
             }
         }
 
-        private class WasmFetchResponse : IDisposable
+        private sealed class WasmFetchResponse : IDisposable
         {
             private readonly JSObject _fetchResponse;
             private readonly JSObject _abortController;
@@ -356,28 +356,18 @@ namespace System.Net.Http
 
             public void Dispose()
             {
-                // Dispose of unmanaged resources.
-                Dispose(true);
-            }
-
-            // Protected implementation of Dispose pattern.
-            protected virtual void Dispose(bool disposing)
-            {
                 if (_isDisposed)
                     return;
 
                 _isDisposed = true;
-                if (disposing)
-                {
-                    _abortCts.Cancel();
-                    _abortCts.Dispose();
-                    _abortRegistration.Dispose();
-                }
+
+                _abortCts.Cancel();
+                _abortCts.Dispose();
+                _abortRegistration.Dispose();
 
                 _fetchResponse?.Dispose();
                 _abortController?.Dispose();
             }
-
         }
 
         private sealed class BrowserHttpContent : HttpContent

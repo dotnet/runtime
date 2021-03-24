@@ -28,7 +28,7 @@ namespace System.Diagnostics
         // This class implements code:ICustomDebuggerNotification and provides a type to be used to notify
         // the debugger that execution is about to enter a path that involves a cross-thread dependency.
         // See code:NotifyOfCrossThreadDependency for more details.
-        private class CrossThreadDependencyNotification : ICustomDebuggerNotification { }
+        private sealed class CrossThreadDependencyNotification : ICustomDebuggerNotification { }
 
         // Do not inline the slow path
         [MethodImpl(MethodImplOptions.NoInlining)]

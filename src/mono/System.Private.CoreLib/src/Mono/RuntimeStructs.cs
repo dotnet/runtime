@@ -150,7 +150,7 @@ namespace Mono
     {
     }
 
-    internal class NullByRefReturnException : Exception
+    internal sealed class NullByRefReturnException : Exception
     {
         public NullByRefReturnException()
         {

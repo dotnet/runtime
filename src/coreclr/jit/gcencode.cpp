@@ -4094,10 +4094,6 @@ void GCInfo::gcMakeRegPtrTable(
      **************************************************************************
      */
 
-    unsigned count = 0;
-
-    int lastoffset = 0;
-
     /* Count&Write untracked locals and non-enregistered args */
 
     unsigned   varNum;
@@ -4324,8 +4320,6 @@ void GCInfo::gcMakeRegPtrTable(
 
         for (regPtrDsc* genRegPtrTemp = gcRegPtrList; genRegPtrTemp != nullptr; genRegPtrTemp = genRegPtrTemp->rpdNext)
         {
-            int nextOffset = genRegPtrTemp->rpdOffs;
-
             if (genRegPtrTemp->rpdArg)
             {
                 if (genRegPtrTemp->rpdArgTypeGet() == rpdARG_KILL)

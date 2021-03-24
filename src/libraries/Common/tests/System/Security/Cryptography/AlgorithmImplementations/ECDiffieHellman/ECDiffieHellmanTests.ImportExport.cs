@@ -154,6 +154,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Android)] // Android does not validate curve parameters
         public static void TestExplicitImportValidationNegative()
         {
             if (!ECDiffieHellmanFactory.ExplicitCurvesSupported)

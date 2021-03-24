@@ -82,6 +82,7 @@ namespace System.Net.Quic.Tests
             await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Theory]
         [MemberData(nameof(WriteData))]
         public async Task WriteTests(int[][] writes, WriteType writeType)
