@@ -1133,7 +1133,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
     CorElementType corElemType      = ELEMENT_TYPE_END;
     m_pMT                           = NULL;
     m_pMD                           = pMD;
-    // For backward compatibility reasons, some marshalers imply [In, Out] behavior when marked as [Out].
+    // [Compat] For backward compatibility reasons, some marshalers imply [In, Out] behavior when marked as [Out].
     BOOL outImpliesInOut            = FALSE;
 
 #ifdef FEATURE_COMINTEROP

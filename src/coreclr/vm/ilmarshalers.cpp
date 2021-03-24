@@ -2297,6 +2297,8 @@ void ILLayoutClassPtrMarshalerBase::EmitClearNativeTemp(ILCodeStream* pslILEmit)
 
 bool ILLayoutClassPtrMarshalerBase::EmitExactTypeCheck(ILCodeStream* pslILEmit, ILCodeLabel* isNotMatchingTypeLabel)
 {
+    STANDARD_VM_CONTRACT;
+
     if (m_pargs->m_pMT->IsSealed())
     {
         // If the provided type cannot be derived from, then we don't need to emit the type check.
@@ -2497,7 +2499,7 @@ bool ILBlittablePtrMarshaler::CanMarshalViaPinning()
     return IsCLRToNative(m_dwMarshalFlags) &&
         !IsByref(m_dwMarshalFlags) &&
         !IsFieldMarshal(m_dwMarshalFlags) &&
-        m_pargs->m_pMT->IsSealed(); // We can't marshal via pinning if we might need to marshal differently at runtime.
+        m_pargs->m_pMT->IsSealed(); // We can't marshal via pinning if we might need to marshal differently at runtime. See calls to EmitExactTypeCheck where we check the runtime type of the object being marshalled.
 }
 
 void ILBlittablePtrMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
