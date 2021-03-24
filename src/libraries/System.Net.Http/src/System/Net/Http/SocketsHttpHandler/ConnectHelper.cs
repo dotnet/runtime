@@ -100,6 +100,21 @@ namespace System.Net.Http
             return sslStream;
         }
 
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
+        {
+            QuicConnection con = new QuicConnection(quicImplementationProvider, endPoint, clientAuthenticationOptions);
+            try
+            {
+                await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
+                return con;
+            }
+            catch (Exception ex)
+            {
+                con.Dispose();
+                throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
+            }
+        }
+
         internal static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)
         {
             return CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?

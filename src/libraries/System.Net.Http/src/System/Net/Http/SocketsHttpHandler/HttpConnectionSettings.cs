@@ -12,10 +12,12 @@ using System.Threading.Tasks;
 namespace System.Net.Http
 {
     /// <summary>Provides a state bag of settings for configuring HTTP connections.</summary>
-    internal sealed partial class HttpConnectionSettings
+    internal sealed class HttpConnectionSettings
     {
         private const string Http2SupportEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT";
         private const string Http2SupportAppCtxSettingName = "System.Net.Http.SocketsHttpHandler.Http2Support";
+        private const string Http3DraftSupportEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3DRAFTSUPPORT";
+        private const string Http3DraftSupportAppCtxSettingName = "System.Net.SocketsHttpHandler.Http3DraftSupport";
 
         internal DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
 
@@ -147,6 +149,35 @@ namespace System.Net.Http
             }
         }
 
+        private static bool AllowDraftHttp3
+        {
+            get
+            {
+                // Default to allowing draft HTTP/3, but enable that to be overridden
+                // by an AppContext switch, or by an environment variable being set to false/0.
+
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(Http3DraftSupportAppCtxSettingName, out bool allowHttp3))
+                {
+                    return allowHttp3;
+                }
+
+                // AppContext switch wasn't used. Check the environment variable.
+                string? envVar = Environment.GetEnvironmentVariable(Http3DraftSupportEnvironmentVariableSettingName);
+                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
+                {
+                    // Disallow HTTP/3 protocol for HTTP endpoints.
+                    return false;
+                }
+
+                // Default to allow.
+                return true;
+            }
+        }
+
         public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
+
+        private byte[]? _http3SettingsFrame;
+        internal byte[] Http3SettingsFrame => _http3SettingsFrame ??= Http3Connection.BuildSettingsFrame(this);
     }
 }
