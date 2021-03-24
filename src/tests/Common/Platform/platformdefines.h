@@ -177,7 +177,6 @@ error_t TP_itow_s(int num, LPWSTR buffer, size_t sizeInCharacters, int radix);
 error_t TP_itoa_s(int num, LPSTR buffer, size_t sizeInCharacters, int radix);
 LPWSTR TP_sstr(LPWSTR str, LPWSTR searchStr);
 LPSTR  HackyConvertToSTR(LPWSTR pwszInput);
-void TP_JoinThread(THREAD_ID tThread);
 void TP_DebugBreak();
 DWORD TP_GetFullPathName(LPWSTR fileName, DWORD nBufferLength, LPWSTR lpBuffer);
 

@@ -327,15 +327,6 @@ DWORD TP_GetFullPathName(LPWSTR fileName, DWORD nBufferLength, LPWSTR lpBuffer)
 #endif
 }
 
-void TP_JoinThread(THREAD_ID tThread)
-{
-#ifdef WINDOWS
-    WaitForSingleObject(tThread, INFINITE);
-#else
-    pthread_join(tThread, NULL);
-#endif
-}
-
 #define INTSAFE_E_ARITHMETIC_OVERFLOW       ((HRESULT)0x80070216L)  // 0x216 = 534 = ERROR_ARITHMETIC_OVERFLOW
 #define ULONG_ERROR     (0xffffffffUL)
 #define WIN32_ALLOC_ALIGN (16 - 1)
