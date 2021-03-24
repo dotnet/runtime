@@ -115,7 +115,7 @@
 
   <UsingTask TaskName="CombineLinkerXmlFiles" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CombineILLinkDescriptorsXmls"
-          Condition="'$(ILLinkDescriptorsXml)' == '' and '@(ILLinkDescriptorsXmls)' != ''"
+          Condition="'@(ILLinkDescriptorsXmls)' != ''"
           Inputs="@(ILLinkDescriptorsXmls)"
           Outputs="$(ILLinkDescriptorsXmlIntermediatePath)">
     <PropertyGroup>
