@@ -9672,26 +9672,15 @@ void Compiler::optRemoveRedundantZeroInits()
                     {
                         GenTreeOp* treeOp = tree->AsOp();
 
-                        unsigned lclNum = BAD_VAR_NUM;
+                        GenTreeLclVarCommon* lclVar;
+                        bool                 isEntire;
 
-                        if (treeOp->gtOp1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-                        {
-                            lclNum = treeOp->gtOp1->AsLclVarCommon()->GetLclNum();
-                        }
-                        else if (treeOp->gtOp1->OperIs(GT_OBJ, GT_BLK))
-                        {
-                            GenTreeLclVarCommon* lcl = treeOp->gtOp1->gtGetOp1()->IsLocalAddrExpr();
-
-                            if (lcl != nullptr)
-                            {
-                                lclNum = lcl->GetLclNum();
-                            }
-                        }
-
-                        if (lclNum == BAD_VAR_NUM)
+                        if (!tree->DefinesLocal(this, &lclVar, &isEntire))
                         {
                             break;
                         }
+
+                        const unsigned lclNum = lclVar->GetLclNum();
 
                         LclVarDsc* const lclDsc    = lvaGetDesc(lclNum);
                         unsigned*        pRefCount = refCounts.LookupPointer(lclNum);
@@ -9729,7 +9718,7 @@ void Compiler::optRemoveRedundantZeroInits()
                         // The local hasn't been referenced before this assignment.
                         bool removedExplicitZeroInit = false;
 
-                        if (treeOp->gtOp2->IsIntegralConst(0))
+                        if (treeOp->gtGetOp2()->IsIntegralConst(0))
                         {
                             bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                             bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
@@ -9760,7 +9749,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                     }
                                 }
 
-                                if (treeOp->gtOp1->OperIs(GT_LCL_VAR))
+                                if (isEntire)
                                 {
                                     BitVecOps::AddElemD(&bitVecTraits, zeroInitLocals, lclNum);
                                 }
@@ -9768,8 +9757,7 @@ void Compiler::optRemoveRedundantZeroInits()
                             }
                         }
 
-                        if (!removedExplicitZeroInit && treeOp->gtOp1->OperIs(GT_LCL_VAR) &&
-                            (!canThrow || !lclDsc->lvLiveInOutOfHndlr))
+                        if (!removedExplicitZeroInit && isEntire && (!canThrow || !lclDsc->lvLiveInOutOfHndlr))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
                             // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.
@@ -9780,6 +9768,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                 // the prolog and this explicit intialization. Therefore, it doesn't
                                 // require zero initialization in the prolog.
                                 lclDsc->lvHasExplicitInit = 1;
+                                JITDUMP("Marking L%02u as having an explicit init\n", lclNum);
                             }
                         }
                         break;
