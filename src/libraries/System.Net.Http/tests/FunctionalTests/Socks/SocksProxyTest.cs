@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Test.Common;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -11,64 +10,40 @@ namespace System.Net.Http.Functional.Tests.Socks
 {
     public abstract class SocksProxyTest : HttpClientHandlerTestBase
     {
-        public SocksProxyTest(ITestOutputHelper helper) : base(helper)
-        {
-        }
+        public SocksProxyTest(ITestOutputHelper helper) : base(helper) { }
 
         [Theory]
-        [InlineData("socks4")]
-        [InlineData("socks4a")]
-        [InlineData("socks5")]
-        public async Task TestLoopbackAsync(string schema)
+        [InlineData("socks4", true)]
+        [InlineData("socks4", false)]
+        [InlineData("socks4a", true)]
+        [InlineData("socks4a", false)]
+        [InlineData("socks5", true)]
+        [InlineData("socks5", false)]
+        public async Task TestLoopbackAsync(string schema, bool useSsl)
         {
-            await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
-            {
-                using (var proxy = LoopbackSocksServer.Create())
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async url =>
                 {
-                    using (var handler = CreateHttpClientHandler())
-                    using (var client = CreateHttpClient(handler))
+                    using LoopbackSocksServer proxy = LoopbackSocksServer.Create();
+                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    using HttpClient client = CreateHttpClient(handler);
+
+                    handler.Proxy = new WebProxy($"{schema}://localhost:{proxy.Port}");
+                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+                    var request = new HttpRequestMessage(HttpMethod.Get, url)
                     {
-                        client.DefaultRequestVersion = UseVersion;
-                        handler.Proxy = new WebProxy($"{schema}://localhost:{proxy.Port}");
+                        Version = UseVersion,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact // Needed for H2C
+                    };
 
-                        string response = await client.GetStringAsync(url);
-                        Assert.Equal("Echo", response);
-                    }
-                }
-            },
-            async server => await server.HandleRequestAsync(content: "Echo"));
-        }
+                    using HttpResponseMessage response = await client.SendAsync(request);
+                    string responseString = await response.Content.ReadAsStringAsync();
 
-        [Theory]
-        [InlineData("socks4")]
-        [InlineData("socks4a")]
-        [InlineData("socks5")]
-        public async Task TestLoopbackHttpsAsync(string schema)
-        {
-            using var cert = TestHelper.CreateServerSelfSignedCertificate();
-
-            await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
-            {
-                using (var proxy = LoopbackSocksServer.Create())
-                {
-                    using (var handler = CreateHttpClientHandler())
-                    using (var client = CreateHttpClient(handler))
-                    {
-                        client.DefaultRequestVersion = UseVersion;
-                        handler.Proxy = new WebProxy($"{schema}://localhost:{proxy.Port}");
-                        handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-
-                        string response = await client.GetStringAsync($"https://{cert.GetNameInfo(X509NameType.SimpleName, false)}:{url.Port}/");
-                        Assert.Equal("Echo", response);
-                    }
-                }
-            },
-            async server => await server.HandleRequestAsync(content: "Echo"),
-            options: new GenericLoopbackOptions
-            {
-                UseSsl = true,
-                Certificate = cert
-            });
+                    Assert.Equal("Echo", responseString);
+                },
+                async server => await server.HandleRequestAsync(content: "Echo"),
+                options: new GenericLoopbackOptions { UseSsl = useSsl });
         }
     }
 
@@ -76,9 +51,7 @@ namespace System.Net.Http.Functional.Tests.Socks
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocksProxyTest_Http1 : SocksProxyTest
     {
-        public SocksProxyTest_Http1(ITestOutputHelper helper) : base(helper)
-        {
-        }
+        public SocksProxyTest_Http1(ITestOutputHelper helper) : base(helper) { }
 
         protected override Version UseVersion => HttpVersion.Version11;
     }
@@ -87,9 +60,7 @@ namespace System.Net.Http.Functional.Tests.Socks
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocksProxyTest_Http2 : SocksProxyTest
     {
-        public SocksProxyTest_Http2(ITestOutputHelper helper) : base(helper)
-        {
-        }
+        public SocksProxyTest_Http2(ITestOutputHelper helper) : base(helper) { }
 
         protected override Version UseVersion => HttpVersion.Version20;
     }
