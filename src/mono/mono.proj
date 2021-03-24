@@ -81,6 +81,9 @@
 
   <!-- How to build runtime components? Static or dynamic. -->
   <PropertyGroup>
+    <MonoComponentsStatic Condition="'$(TargetsBrowser)' == 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
+    <MonoComponentsStatic Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
+    <MonoComponentsStatic Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
     <!-- by default, do dynamic components -->
     <MonoComponentsStatic Condition="'$(MonoComponentsStatic)' == ''">false</MonoComponentsStatic>
   </PropertyGroup>

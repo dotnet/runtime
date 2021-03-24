@@ -42,7 +42,13 @@ if (NOT STATIC_COMPONENTS)
   foreach (component IN LISTS components)
     target_compile_definitions ("${component}-objects" PRIVATE -DCOMPILING_COMPONENT_DYNAMIC)
     add_library("mono-component-${component}" SHARED $<TARGET_OBJECTS:${component}-objects>)
-    target_link_libraries("mono-component-${component}" monosgen-shared)
+    if (NOT DISABLE_SHARED_LIBS)
+      target_link_libraries("mono-component-${component}" monosgen-shared)
+      # If we disable shared libs, but build dynamic components we would need
+      # to enable allowing undefined symbols here (presumably to be resolved
+      # from the mono-sgen executable.  But that's not a configuration we
+      # should need in dotnet/runtime.
+    endif()
     install(TARGETS "mono-component-${component}" LIBRARY)
   endforeach()
 
