@@ -19,7 +19,7 @@ namespace System.IO.Strategies
 
             string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_IO_USENET5COMPATFILESTREAM");
             return envVar is null
-                ? true // legacy is currently enabled by default;
+                ? false // legacy is disabled by default;
                 : bool.IsTrueStringIgnoreCase(envVar) || envVar.Equals("1");
         }
 
