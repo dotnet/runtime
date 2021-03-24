@@ -48,37 +48,27 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2(byte[] rawData)
             : base(rawData)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2(byte[] rawData, string? password)
             : base(rawData, password)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [System.CLSCompliantAttribute(false)]
         public X509Certificate2(byte[] rawData, SecureString? password)
             : base(rawData, password)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
             : base(rawData, password, keyStorageFlags)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [System.CLSCompliantAttribute(false)]
         public X509Certificate2(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
             : base(rawData, password, keyStorageFlags)
@@ -92,8 +82,6 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The certificate data to process.
         /// </param>
         /// <exception cref="CryptographicException">An error with the certificate occurs.</exception>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2(ReadOnlySpan<byte> rawData)
             : base(rawData)
         {
@@ -113,8 +101,6 @@ namespace System.Security.Cryptography.X509Certificates
         ///   A bitwise combination of the enumeration values that control where and how to import the certificate.
         /// </param>
         /// <exception cref="CryptographicException">An error with the certificate occurs.</exception>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
             : base(rawData, password, keyStorageFlags)
         {
@@ -130,45 +116,33 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2(string fileName)
             : base(fileName)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2(string fileName, string? password)
             : base(fileName, password)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [System.CLSCompliantAttribute(false)]
         public X509Certificate2(string fileName, SecureString? password)
             : base(fileName, password)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
             : base(fileName, password, keyStorageFlags)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [System.CLSCompliantAttribute(false)]
         public X509Certificate2(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags)
             : base(fileName, password, keyStorageFlags)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
             : base(fileName, password, keyStorageFlags)
         {

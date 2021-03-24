@@ -73,8 +73,6 @@ namespace Internal.Cryptography.Pal
             return pal;
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static ICertificatePal FromBlob(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
@@ -153,8 +151,6 @@ namespace Internal.Cryptography.Pal
             throw new CryptographicException();
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);

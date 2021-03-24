@@ -30,8 +30,6 @@ namespace Internal.Cryptography.Pal
             return AppleCertificatePal.FromOtherCert(cert);
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static ICertificatePal FromBlob(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
@@ -40,8 +38,6 @@ namespace Internal.Cryptography.Pal
             return AppleCertificatePal.FromBlob(rawData, password, keyStorageFlags);
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             return AppleCertificatePal.FromFile(fileName, password, keyStorageFlags);

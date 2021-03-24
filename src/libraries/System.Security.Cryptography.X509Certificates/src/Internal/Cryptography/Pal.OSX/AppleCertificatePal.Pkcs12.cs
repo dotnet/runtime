@@ -12,8 +12,6 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class AppleCertificatePal : ICertificatePal
     {
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         private static AppleCertificatePal ImportPkcs12(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,

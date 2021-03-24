@@ -49,16 +49,12 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         // Null turns into the empty span here, which is correct for compat.
         public X509Certificate(byte[] data)
             : this(new ReadOnlySpan<byte>(data))
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         private protected X509Certificate(ReadOnlySpan<byte> data)
         {
             if (!data.IsEmpty)
@@ -71,23 +67,17 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate(byte[] rawData, string? password)
             : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [System.CLSCompliantAttribute(false)]
         public X509Certificate(byte[] rawData, SecureString? password)
             : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             if (rawData == null || rawData.Length == 0)
@@ -101,8 +91,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [System.CLSCompliantAttribute(false)]
         public X509Certificate(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
@@ -117,8 +105,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         private protected X509Certificate(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags)
         {
             if (rawData.IsEmpty)
@@ -143,30 +129,22 @@ namespace System.Security.Cryptography.X509Certificates
             Pal = pal;
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate(string fileName)
             : this(fileName, (string?)null, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate(string fileName, string? password)
             : this(fileName, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [System.CLSCompliantAttribute(false)]
         public X509Certificate(string fileName, SecureString? password)
             : this(fileName, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public X509Certificate(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             if (fileName == null)
@@ -180,8 +158,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         private protected X509Certificate(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags)
         {
             if (fileName == null)
@@ -195,8 +171,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [System.CLSCompliantAttribute(false)]
         public X509Certificate(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags) : this()
         {
@@ -227,15 +201,11 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static X509Certificate CreateFromCertFile(string filename)
         {
             return new X509Certificate(filename);
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static X509Certificate CreateFromSignedFile(string filename)
         {
             return new X509Certificate(filename);

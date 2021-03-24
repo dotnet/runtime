@@ -76,8 +76,6 @@ namespace Internal.Cryptography.Pal
             return key;
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         internal static SafeSecKeyRefHandle? GetPrivateKey(AsymmetricAlgorithm? key)
         {
             if (key == null)
