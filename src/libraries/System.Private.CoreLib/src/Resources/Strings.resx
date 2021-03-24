@@ -3685,6 +3685,9 @@
   <data name="InvalidOperation_EditFailed" xml:space="preserve">
     <value>The assembly update failed.</value>
   </data>
+  <data name="NotSupported_DebuggerAttached" xml:space="preserve">
+    <value>Assembly updates not supported while debuggger is attached.</value>
+  </data>
   <data name="NotSupported_MethodBodyReplacement" xml:space="preserve">
     <value>Method body replacement not supported in this runtime.</value>
   </data>

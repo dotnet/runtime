@@ -1435,7 +1435,7 @@ void QCALLTYPE AssemblyNative::ApplyUpdate(
     {
         if (CORDebuggerAttached())
         {
-            COMPlusThrow(kNotSupportedException);
+            COMPlusThrow(kNotSupportedException, W("NotSupported_DebuggerAttached"));
         }
         Module* pModule = assembly->GetDomainAssembly()->GetModule();
         if (!pModule->IsEditAndContinueEnabled())
