@@ -31,11 +31,8 @@ namespace System.DirectoryServices.AccountManagement
     //
     // Constructs individual property filters, given the name of the property
     //
-    internal class FilterFactory
+    internal static class FilterFactory
     {
-        // Put a private constructor because this class should only be used as static methods
-        private FilterFactory() { }
-
         private static readonly Hashtable s_subclasses = new Hashtable();
 
         static FilterFactory()

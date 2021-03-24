@@ -1732,7 +1732,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             block->bbWeight = bNext->bbWeight;
 
             block->bbFlags |= (bNext->bbFlags & BBF_PROF_WEIGHT); // Set the profile weight flag (if necessary)
-            assert(block->bbWeight != 0);
+            assert(block->bbWeight != BB_ZERO_WEIGHT);
             block->bbFlags &= ~BBF_RUN_RARELY; // Clear any RarelyRun flag
         }
     }
@@ -1914,7 +1914,8 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         // In this case, there's no need to update the preorder and postorder numbering
         // since we're changing the bbNum, this makes the basic block all set.
         //
-        JITDUMP("Renumbering BB%02u to be BB%02u to preserve dominator information\n", block->bbNum, bNext->bbNum);
+        JITDUMP("Renumbering " FMT_BB " to be " FMT_BB " to preserve dominator information\n", block->bbNum,
+                bNext->bbNum);
 
         block->bbNum = bNext->bbNum;
 
@@ -2687,8 +2688,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
     //
     if (block->NumSucc(this) == 1)
     {
-        // Use BBJ_ALWAYS for a switch with only a default clause, or with only one unique successor.
-        BasicBlock* uniqueSucc = jmpTab[0];
+// Use BBJ_ALWAYS for a switch with only a default clause, or with only one unique successor.
 
 #ifdef DEBUG
         if (verbose)
@@ -3790,7 +3790,7 @@ bool Compiler::fgReorderBlocks()
                     // if the weight of bDest is greater or equal to the weight of block
                     // also the weight of bDest can't be zero.
                     //
-                    if ((bDest->bbWeight < block->bbWeight) || (bDest->bbWeight == 0))
+                    if ((bDest->bbWeight < block->bbWeight) || (bDest->bbWeight == BB_ZERO_WEIGHT))
                     {
                         reorderBlock = false;
                     }
@@ -4023,7 +4023,7 @@ bool Compiler::fgReorderBlocks()
                         }
                     }
 
-                    if ((bTmp->bbFallsThrough() == false) || (bTmp->bbWeight == 0))
+                    if ((bTmp->bbFallsThrough() == false) || (bTmp->bbWeight == BB_ZERO_WEIGHT))
                     {
                         lastNonFallThroughBlock = bTmp;
                     }

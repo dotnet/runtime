@@ -232,7 +232,7 @@ namespace System.Net.Mime
             internal short Byte { get; set; } = -1;
         }
 
-        private class WriteAsyncResult : LazyAsyncResult
+        private sealed class WriteAsyncResult : LazyAsyncResult
         {
             private static readonly AsyncCallback s_onWrite = OnWrite;
 

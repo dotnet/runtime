@@ -764,7 +764,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     {
         if (createDotFile)
         {
-            fprintf(fgxFile, "    BB%02u [label = \"BB%02u\\n\\n", block->bbNum, block->bbNum);
+            fprintf(fgxFile, "    " FMT_BB " [label = \"" FMT_BB "\\n\\n", block->bbNum, block->bbNum);
 
             // "Raw" Profile weight
             if (block->hasProfileWeight())
@@ -1952,8 +1952,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         return;
     }
 
-    DWORD startTickCount = GetTickCount();
-
 #if defined(FEATURE_EH_FUNCLETS)
     bool reachedFirstFunclet = false;
     if (fgFuncletsCreated)
@@ -2610,6 +2608,7 @@ void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned
     {
         printf("%c", (dispFlags & GTF_IND_INVARIANT) ? '#' : '-');
         printf("%c", (dispFlags & GTF_IND_NONFAULTING) ? 'n' : '-');
+        printf("%c", (dispFlags & GTF_IND_NONNULL) ? '@' : '-');
     }
     GenTree::gtDispFlags(dispFlags, debugFlags);
 }

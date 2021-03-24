@@ -3448,6 +3448,10 @@ void EEJitManager::CleanupCodeHeaps()
     HostCodeHeap *pHeap = m_cleanupList;
     m_cleanupList = NULL;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     while (pHeap)
     {
         HostCodeHeap *pNextHeap = pHeap->m_pNextHeapToRelease;

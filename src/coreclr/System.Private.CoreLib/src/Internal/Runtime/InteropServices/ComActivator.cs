@@ -446,7 +446,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         }
 
         [ComVisible(true)]
-        private class BasicClassFactory : IClassFactory
+        private sealed class BasicClassFactory : IClassFactory
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
             private readonly Guid _classId;
@@ -578,7 +578,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         }
 
         [ComVisible(true)]
-        private class LicenseClassFactory : IClassFactory2
+        private sealed class LicenseClassFactory : IClassFactory2
         {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
             private readonly LicenseInteropProxy _licenseProxy = new LicenseInteropProxy();

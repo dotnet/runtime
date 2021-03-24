@@ -941,7 +941,7 @@ namespace System.IO.Ports
             return Interop.GetIOException(Interop.Sys.GetLastErrorInfo());
         }
 
-        private class SerialStreamIORequest : TaskCompletionSource<int>
+        private sealed class SerialStreamIORequest : TaskCompletionSource<int>
         {
             public Memory<byte> Buffer { get; private set; }
             public bool IsCompleted => Task.IsCompleted;

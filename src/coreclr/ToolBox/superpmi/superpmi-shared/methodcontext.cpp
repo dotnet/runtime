@@ -6765,6 +6765,44 @@ int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, in
     return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
 }
 
+bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile)
+{
+    hasEdgeProfile = false;
+    hasClassProfile = false;
+
+    // Obtain the Method Info structure for this method
+    CORINFO_METHOD_INFO  info;
+    unsigned             flags = 0;
+    repCompileMethod(&info, &flags);
+
+    if ((GetPgoInstrumentationResults != nullptr) &&
+        (GetPgoInstrumentationResults->GetIndex(CastHandle(info.ftn)) != -1))
+    {
+        ICorJitInfo::PgoInstrumentationSchema* schema = nullptr;
+        UINT32 schemaCount = 0;
+        BYTE* schemaData = nullptr;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, &schema, &schemaCount, &schemaData);
+
+        if (SUCCEEDED(pgoHR))
+        {
+            for (UINT32 i = 0; i < schemaCount; i++)
+            {
+                hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
+                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+
+                if (hasEdgeProfile && hasClassProfile)
+                {
+                    break;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
 MethodContext::Environment MethodContext::cloneEnvironment()
 {
     MethodContext::Environment env;

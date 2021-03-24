@@ -68,7 +68,7 @@ namespace System.Linq.Parallel
         // (possibly partitioned) data source.
         //
 
-        private class NullableFloatSumAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<double?>
+        private sealed class NullableFloatSumAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<double?>
         {
             private readonly QueryOperatorEnumerator<float?, TKey> _source; // The source data.
 

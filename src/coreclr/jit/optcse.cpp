@@ -409,7 +409,6 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     size_t   key;
     unsigned hval;
     CSEdsc*  hashDsc;
-    bool     isIntConstHash       = false;
     bool     enableSharedConstCSE = false;
     bool     isSharedConst        = false;
     int      configValue          = JitConfig.JitConstCSE();
@@ -1196,7 +1195,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("StartMerge BB%02u\n", block->bbNum);
+            printf("StartMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
 #endif // DEBUG
@@ -1208,7 +1207,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("Merge BB%02u and BB%02u\n", block->bbNum, predBlock->bbNum);
+            printf("Merge " FMT_BB " and " FMT_BB "\n", block->bbNum, predBlock->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
@@ -1284,7 +1283,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("EndMerge BB%02u\n", block->bbNum);
+            printf("EndMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
             if (((block->bbFlags & BBF_HAS_CALL) != 0) &&
                 !BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
@@ -1452,7 +1451,7 @@ void Compiler::optValnumCSE_Availablity()
 
                     if (verbose)
                     {
-                        printf("BB%02u ", block->bbNum);
+                        printf(FMT_BB " ", block->bbNum);
                         printTreeID(tree);
 
                         printf(" %s of CSE #%02u [weight=%s]%s\n", isUse ? "Use" : "Def", CSEnum, refCntWtd2str(stmw),
@@ -2366,14 +2365,12 @@ public:
         // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
         BasicBlock::weight_t cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
 
-        bool      canEnregister = true;
-        unsigned  slotCount     = 1;
-        var_types cseLclVarTyp  = genActualType(candidate->Expr()->TypeGet());
+        bool     canEnregister = true;
+        unsigned slotCount     = 1;
         if (candidate->Expr()->TypeGet() == TYP_STRUCT)
         {
             // This is a non-enregisterable struct.
             canEnregister                  = false;
-            GenTree*             value     = candidate->Expr();
             CORINFO_CLASS_HANDLE structHnd = m_pCompiler->gtGetStructHandleIfPresent(candidate->Expr());
             if (structHnd == NO_CLASS_HANDLE)
             {

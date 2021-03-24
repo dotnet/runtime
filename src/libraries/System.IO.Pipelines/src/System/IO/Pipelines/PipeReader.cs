@@ -104,6 +104,16 @@ namespace System.IO.Pipelines
             return new StreamPipeReader(stream, readerOptions ?? StreamPipeReaderOptions.s_default);
         }
 
+        /// <summary>
+        /// Creates a <see cref="PipeReader"/> wrapping the specified <see cref="ReadOnlySequence{T}"/>.
+        /// </summary>
+        /// <param name="sequence">The sequence.</param>
+        /// <returns>A <see cref="PipeReader"/> that wraps the <see cref="ReadOnlySequence{T}"/>.</returns>
+        public static PipeReader Create(ReadOnlySequence<byte> sequence)
+        {
+            return new SequencePipeReader(sequence);
+        }
+
         /// <summary>Asynchronously reads the bytes from the <see cref="System.IO.Pipelines.PipeReader" /> and writes them to the specified <see cref="System.IO.Pipelines.PipeWriter" />, using a specified buffer size and cancellation token.</summary>
         /// <param name="destination">The pipe writer to which the contents of the current stream will be copied.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>

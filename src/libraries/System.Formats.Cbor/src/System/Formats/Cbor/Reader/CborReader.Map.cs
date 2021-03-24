@@ -207,7 +207,7 @@ namespace System.Formats.Cbor
         }
 
         // Comparing buffer slices up to their binary content
-        private class KeyEncodingComparer : IEqualityComparer<(int Offset, int Length)>
+        private sealed class KeyEncodingComparer : IEqualityComparer<(int Offset, int Length)>
         {
             private readonly CborReader _reader;
 

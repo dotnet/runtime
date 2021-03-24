@@ -43,7 +43,7 @@ namespace System.Net
 {
     public sealed partial class HttpListenerRequest
     {
-        private class Context : TransportContext
+        private sealed class Context : TransportContext
         {
             public override ChannelBinding? GetChannelBinding(ChannelBindingKind kind)
             {
@@ -418,7 +418,7 @@ namespace System.Net
         private Uri? RequestUri => _requestUri;
         private bool SupportsWebSockets => true;
 
-        private class GetClientCertificateAsyncResult : LazyAsyncResult
+        private sealed class GetClientCertificateAsyncResult : LazyAsyncResult
         {
             public GetClientCertificateAsyncResult(object myObject, object? myState, AsyncCallback? myCallBack) : base(myObject, myState, myCallBack) { }
         }

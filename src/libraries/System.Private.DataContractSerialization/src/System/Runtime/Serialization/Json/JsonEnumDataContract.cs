@@ -46,7 +46,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        private class JsonEnumDataContractCriticalHelper : JsonDataContractCriticalHelper
+        private sealed class JsonEnumDataContractCriticalHelper : JsonDataContractCriticalHelper
         {
             private readonly bool _isULong;
 

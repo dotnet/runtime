@@ -5,9 +5,9 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class BCrypt
+    internal static partial class BCrypt
     {
         [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
         internal static extern NTSTATUS BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, int dwFlags);
