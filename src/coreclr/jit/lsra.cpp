@@ -2311,11 +2311,10 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
         assert((block != compiler->fgFirstBB) || (prevBlock != nullptr));
         JITDUMP("\n\nNo predecessor; ");
 
-        // The shared throw blocks do not have predecessor because no block's bbJumpDest points to
-        // them. For such blocks, we want to return the fact that predecessor is indeed null instead
-        // of returning prevBlock. Returning prevBlock will be wrong, because LSRA would think that
-        // the variable is live in registers based on the lexical flow, but that won't be true from
-        // control flow perspective.
+        // Some throw blocks do not have predecessor. For such blocks, we want to return the fact
+        // that predecessor is indeed null instead of returning the prevBlock. Returning prevBlock
+        // will be wrong, because LSRA would think that the variable is live in registers based on
+        // the lexical flow, but that won't be true according to the control flow.
         // Example:
         //
         // IG05:
@@ -2334,10 +2333,9 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
         // IG08:
         //      ...
         //      ...
-        if (block->bbJumpKind == BBJ_THROW && ((block->bbFlags & BBF_SHARED_THROW) != 0))
+        if (block->bbJumpKind == BBJ_THROW)
         {
-            assert((block->bbFlags & BBF_DONT_REMOVE) != 0);
-            JITDUMP(" - Shared throw block; ");
+            JITDUMP(" - throw block; ");
             return nullptr;
         }
 

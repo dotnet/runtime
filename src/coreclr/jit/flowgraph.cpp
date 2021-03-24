@@ -4088,7 +4088,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
 
     newBlk->bbFlags |= BBF_IMPORTED;
     newBlk->bbFlags |= BBF_DONT_REMOVE;
-    newBlk->bbFlags |= BBF_SHARED_THROW;
 
     /* Remember that we're adding a new basic block */
 
