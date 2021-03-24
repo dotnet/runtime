@@ -262,6 +262,11 @@
       <_IsEMSDKMissing Condition="'$(_EMSDKMissingErrorMessage)' != ''">true</_IsEMSDKMissing>
     </PropertyGroup>
 
+    <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+          Command="find $(EMSDK_PATH) -type d" />
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+           Text="msg: $(_EMSDKMissingErrorMessage)" />
+
     <PropertyGroup>
       <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
       <EmscriptenNodeToolsPath   Condition="'$(EmscriptenNodeToolsPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
@@ -324,6 +329,11 @@
 
   <Target Name="_SetWasmBuildNativeDefaults">
     <!-- if already set, maybe by a user projects, then a missing emsdk is an error -->
+    <Exec Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+          Command="find $(EMSDK_PATH) -type d" />
+    <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+           Text="msg: $(_EMSDKMissingErrorMessage)" />
+
     <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
 
