@@ -305,8 +305,8 @@ namespace System
         {
             char fmt = ParseFormatSpecifier(format, out int digits);
 
-            Span<byte> pDigits = stackalloc byte[DecimalNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits);
+            Span<byte> digits = stackalloc byte[DecimalNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, digits);
 
             DecimalToNumber(ref value, ref number);
 
@@ -328,8 +328,8 @@ namespace System
         {
             char fmt = ParseFormatSpecifier(format, out int digits);
 
-            Span<byte> pDigits = stackalloc byte[DecimalNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits);
+            Span<byte> digits = stackalloc byte[DecimalNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, digits);
 
             DecimalToNumber(ref value, ref number);
 
@@ -377,16 +377,16 @@ namespace System
 
         public static string FormatDouble(double value, string? format, NumberFormatInfo info)
         {
-            Span<byte> pDigits = stackalloc byte[DoubleNumberBufferLength];
+            Span<byte> digits = stackalloc byte[DoubleNumberBufferLength];
             var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            return FormatDouble(ref sb, pDigits, value, format, info) ?? sb.ToString();
+            return FormatDouble(ref sb, digits, value, format, info) ?? sb.ToString();
         }
 
         public static bool TryFormatDouble(double value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
-            Span<byte> pDigits = stackalloc byte[DoubleNumberBufferLength];
+            Span<byte> digits = stackalloc byte[DoubleNumberBufferLength];
             var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            string? s = FormatDouble(ref sb, pDigits, value, format, info);
+            string? s = FormatDouble(ref sb, digits, value, format, info);
             return s != null ?
                 TryCopyTo(s, destination, out charsWritten) :
                 sb.TryCopyTo(destination, out charsWritten);
@@ -517,7 +517,7 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static string? FormatDouble(ref ValueStringBuilder sb, Span<byte> pDigits, double value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        private static string? FormatDouble(ref ValueStringBuilder sb, Span<byte> digits, double value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             if (!double.IsFinite(value))
             {
@@ -538,7 +538,7 @@ namespace System
                 precision = DoublePrecisionCustomFormat;
             }
 
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, digits);
             number.IsNegative = double.IsNegative(value);
 
             // We need to track the original precision requested since some formats
@@ -584,16 +584,16 @@ namespace System
 
         public static string FormatSingle(float value, string? format, NumberFormatInfo info)
         {
-            Span<byte> pDigits = stackalloc byte[SingleNumberBufferLength];
+            Span<byte> digits = stackalloc byte[SingleNumberBufferLength];
             var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            return FormatSingle(ref sb, pDigits, value, format, info) ?? sb.ToString();
+            return FormatSingle(ref sb, digits, value, format, info) ?? sb.ToString();
         }
 
         public static bool TryFormatSingle(float value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
-            Span<byte> pDigits = stackalloc byte[SingleNumberBufferLength];
+            Span<byte> digits = stackalloc byte[SingleNumberBufferLength];
             var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            string? s = FormatSingle(ref sb, pDigits, value, format, info);
+            string? s = FormatSingle(ref sb, digits, value, format, info);
             return s != null ?
                 TryCopyTo(s, destination, out charsWritten) :
                 sb.TryCopyTo(destination, out charsWritten);
@@ -604,7 +604,7 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static string? FormatSingle(ref ValueStringBuilder sb, Span<byte> pDigits, float value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        private static string? FormatSingle(ref ValueStringBuilder sb, Span<byte> digits, float value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             if (!float.IsFinite(value))
             {
@@ -625,7 +625,7 @@ namespace System
                 precision = SinglePrecisionCustomFormat;
             }
 
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, digits);
             number.IsNegative = float.IsNegative(value);
 
             // We need to track the original precision requested since some formats
@@ -671,9 +671,9 @@ namespace System
 
         public static string FormatHalf(Half value, string? format, NumberFormatInfo info)
         {
-            Span<byte> pDigits = stackalloc byte[HalfNumberBufferLength];
+            Span<byte> digits = stackalloc byte[HalfNumberBufferLength];
             var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            return FormatHalf(ref sb, pDigits, value, format, info) ?? sb.ToString();
+            return FormatHalf(ref sb, digits, value, format, info) ?? sb.ToString();
         }
 
         /// <summary>Formats the specified value according to the specified format and info.</summary>
@@ -681,7 +681,7 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static string? FormatHalf(ref ValueStringBuilder sb, Span<byte> pDigits, Half value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        private static string? FormatHalf(ref ValueStringBuilder sb, Span<byte> digits, Half value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
             if (!Half.IsFinite(value))
             {
@@ -700,7 +700,7 @@ namespace System
                 precision = HalfPrecisionCustomFormat;
             }
 
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, digits);
             number.IsNegative = Half.IsNegative(value);
 
             // We need to track the original precision requested since some formats
@@ -746,9 +746,9 @@ namespace System
 
         public static bool TryFormatHalf(Half value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
         {
-            Span<byte> pDigits = stackalloc byte[HalfNumberBufferLength];
+            Span<byte> digits = stackalloc byte[HalfNumberBufferLength];
             var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            string? s = FormatHalf(ref sb, pDigits, value, format, info);
+            string? s = FormatHalf(ref sb, digits, value, format, info);
             return s != null ?
                 TryCopyTo(s, destination, out charsWritten) :
                 sb.TryCopyTo(destination, out charsWritten);
@@ -807,8 +807,8 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    Span<byte> pDigits = stackalloc byte[Int32NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
+                    Span<byte> digits = stackalloc byte[Int32NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, digits);
 
                     Int32ToNumber(value, ref number);
 
@@ -857,8 +857,8 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    Span<byte> pDigits = stackalloc byte[Int32NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
+                    Span<byte> digits = stackalloc byte[Int32NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, digits);
 
                     Int32ToNumber(value, ref number);
 
@@ -904,8 +904,8 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    Span<byte> pDigits = stackalloc byte[UInt32NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
+                    Span<byte> digits = stackalloc byte[UInt32NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, digits);
 
                     UInt32ToNumber(value, ref number);
 
@@ -950,8 +950,8 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    Span<byte> pDigits = stackalloc byte[UInt32NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
+                    Span<byte> digits = stackalloc byte[UInt32NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, digits);
 
                     UInt32ToNumber(value, ref number);
 
@@ -1001,8 +1001,8 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    Span<byte> pDigits = stackalloc byte[Int64NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
+                    Span<byte> digits = stackalloc byte[Int64NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, digits);
 
                     Int64ToNumber(value, ref number);
 
@@ -1051,8 +1051,8 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    Span<byte> pDigits = stackalloc byte[Int64NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
+                    Span<byte> digits = stackalloc byte[Int64NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, digits);
 
                     Int64ToNumber(value, ref number);
 
@@ -1098,8 +1098,8 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    Span<byte> pDigits = stackalloc byte[UInt64NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
+                    Span<byte> digits = stackalloc byte[UInt64NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, digits);
 
                     UInt64ToNumber(value, ref number);
 
@@ -1144,8 +1144,8 @@ namespace System
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
 
-                    Span<byte> pDigits = stackalloc byte[UInt64NumberBufferLength];
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
+                    Span<byte> digits = stackalloc byte[UInt64NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, digits);
 
                     UInt64ToNumber(value, ref number);
 
