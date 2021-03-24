@@ -252,7 +252,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             var component = sharedTestState.ComponentWithDependencies.Copy();
 
             // Remove a dependency
-            // This will cause the resolution to fail
             File.Delete(Path.Combine(component.Location, "ComponentDependency.dll"));
 
             sharedTestState.RunComponentResolutionTest(component)
@@ -260,6 +259,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
+                    $"{Path.Combine(component.Location, "ComponentDependency.dll")}{Path.PathSeparator}" +
                     $"{component.AppDll}{Path.PathSeparator}" +
                     $"{Path.Combine(component.Location, "Newtonsoft.Json.dll")}{Path.PathSeparator}]");
         }

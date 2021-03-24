@@ -101,7 +101,7 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
         {
             trace::verbose(_X("    %s path query did not exist %s"), query_type, candidate.c_str());
             candidate.clear();
-            return true;
+            return false;
         }
 
         trace::verbose(_X("    %s path query exists %s"), query_type, candidate.c_str());
