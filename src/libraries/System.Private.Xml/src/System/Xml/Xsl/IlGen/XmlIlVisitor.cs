@@ -3589,7 +3589,7 @@ namespace System.Xml.Xsl.IlGen
 
             _helper.Emit(OpCodes.Ldloc, locArgs);
 
-            _helper.Call(XmlILMethods.InvokeXsltLate);
+            _helper.Call(XmlILMethods.InvokeXsltLate());
 
             // Returned item sequence is on the stack
             _iterCurr.Storage = StorageDescriptor.Stack(typeof(XPathItem), true);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl
 {
@@ -43,6 +44,8 @@ namespace System.Xml.Xsl
             _parameters.Add(qname, parameter);
         }
 
+        [RequiresUnreferencedCode("The stylesheet may have calls to methods of the extension object passed in which cannot be statically analyzed " +
+            "by the trimmer. Ensure all methods that may be called are kept.")]
         public void AddExtensionObject(string namespaceUri, object extension)
         {
             CheckArgumentNull(namespaceUri, nameof(namespaceUri));

@@ -88,7 +88,7 @@ namespace System.Xml.Xsl.Xslt
         {
             CheckQName(n);
             return XsltInvokeEarlyBound(QName("function-available"),
-                XsltMethods.FunctionAvailable, T.BooleanX, new QilNode[] { n }
+                XsltMethods.FunctionAvailable(), T.BooleanX, new QilNode[] { n }
             );
         }
 
