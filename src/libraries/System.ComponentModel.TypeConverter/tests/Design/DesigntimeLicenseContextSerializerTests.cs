@@ -106,16 +106,22 @@ namespace System.ComponentModel.Design.Tests
                     Assert.NotNull(runtimeLicenseContextType);
                     object runtimeLicenseContext = Activator.CreateInstance(runtimeLicenseContextType);
                     Assert.NotNull(runtimeLicenseContext);
-
-                    Type designtimeLicenseContextSerializer = assembly.GetType("System.ComponentModel.Design.DesigntimeLicenseContextSerializer");
-                    Assert.NotNull(designtimeLicenseContextSerializer);
+                    FieldInfo _savedLicenseKeys = runtimeLicenseContextType.GetField("_savedLicenseKeys", BindingFlags.NonPublic | BindingFlags.Instance);
+                    Assert.NotNull(_savedLicenseKeys);
+                    _savedLicenseKeys.SetValue(runtimeLicenseContext, new Hashtable());
 
                     using (MemoryStream stream = new MemoryStream())
                     {
                         long position = stream.Position;
                         System.ComponentModel.Design.DesigntimeLicenseContextSerializer.Serialize(stream, key, context);
                         AppContext.SetSwitch(enableBinaryFormatter, false);
+                        Type designtimeLicenseContextSerializer = assembly.GetType("System.ComponentModel.Design.DesigntimeLicenseContextSerializer");
+                        Assert.NotNull(designtimeLicenseContextSerializer);
+                        var enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization = designtimeLicenseContextSerializer.GetField("_enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization", BindingFlags.Static | BindingFlags.NonPublic);
+                        Assert.NotNull(enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization);
+                        enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization.SetValue(designtimeLicenseContextSerializer, false);
                         Reflection.MethodInfo deserializeMethod = designtimeLicenseContextSerializer.GetMethod("Deserialize", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Static);
+                        Assert.NotNull(deserializeMethod);
                         stream.Seek(position, SeekOrigin.Begin);
                         try
                         {
@@ -123,7 +129,8 @@ namespace System.ComponentModel.Design.Tests
                         }
                         catch (System.Reflection.TargetInvocationException exception)
                         {
-                            var baseException = exception.GetBaseException();
+                            Exception baseException = exception.GetBaseException();
+                            var baseExceptionType = baseException.GetType();
                             Assert.IsType<NotSupportedException>(baseException);
                         }
                     }
