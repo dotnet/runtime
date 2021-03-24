@@ -625,6 +625,7 @@ namespace System.Collections.Generic
             // a similar optimization as in the insertion sort.
 
             Debug.Assert(_comparer is null);
+            Debug.Assert(0 <= nodeIndex && nodeIndex < _size);
 
             (TElement Element, TPriority Priority)[] nodes = _nodes;
 
@@ -656,6 +657,7 @@ namespace System.Collections.Generic
             // a similar optimization as in the insertion sort.
 
             Debug.Assert(_comparer is not null);
+            Debug.Assert(0 <= nodeIndex && nodeIndex < _size);
 
             IComparer<TPriority> comparer = _comparer;
             (TElement Element, TPriority Priority)[] nodes = _nodes;
@@ -689,6 +691,7 @@ namespace System.Collections.Generic
             // for this value to drop in. Similar optimization as in the insertion sort.
 
             Debug.Assert(_comparer is null);
+            Debug.Assert(0 <= nodeIndex && nodeIndex < _size);
 
             (TElement Element, TPriority Priority)[] nodes = _nodes;
             int size = _size;
@@ -736,6 +739,7 @@ namespace System.Collections.Generic
             // for this value to drop in. Similar optimization as in the insertion sort.
 
             Debug.Assert(_comparer is not null);
+            Debug.Assert(0 <= nodeIndex && nodeIndex < _size);
 
             IComparer<TPriority> comparer = _comparer;
             (TElement Element, TPriority Priority)[] nodes = _nodes;
