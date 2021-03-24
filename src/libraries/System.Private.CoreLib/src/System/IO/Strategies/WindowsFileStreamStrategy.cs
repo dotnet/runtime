@@ -186,7 +186,7 @@ namespace System.IO.Strategies
             long pos = origin switch
             {
                 SeekOrigin.Begin => offset,
-                SeekOrigin.End => FileStreamHelpers.GetFileLength(_fileHandle, _path) + offset,
+                SeekOrigin.End => Length + offset,
                 _ => _filePosition + offset // SeekOrigin.Current
             };
 
