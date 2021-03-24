@@ -38,6 +38,13 @@ namespace System.Net.Security
                     NetEventSource.Error(null, $"Failed to build chain for {target.Subject}");
                 }
 
+                if (chain.ChainElements.Count == 0)
+                {
+                    // Some platforms (e.g. Android) can't ignore all verification and will return zero
+                    // certificates on failure to build a chain. Treat this as not finding any intermediates.
+                    return new SslStreamCertificateContext(target, Array.Empty<X509Certificate2>());
+                }
+
                 int count = chain.ChainElements.Count - 1;
 #pragma warning disable 0162 // Disable unreachable code warning. TrimRootCertificate is const bool = false on some platforms
                 if (TrimRootCertificate)
