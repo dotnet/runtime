@@ -7184,7 +7184,7 @@ imethod_opcount_comparer (gconstpointer m1, gconstpointer m2)
 static void
 interp_print_method_counts (void)
 {
-	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 
 	jit_mm_lock (jit_mm);
 	imethods = (InterpMethod**) malloc (jit_mm->interp_code_hash.num_entries * sizeof (InterpMethod*));
