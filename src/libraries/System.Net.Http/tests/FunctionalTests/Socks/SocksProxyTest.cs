@@ -31,11 +31,12 @@ namespace System.Net.Http.Functional.Tests.Socks
                     handler.Proxy = new WebProxy($"{schema}://localhost:{proxy.Port}");
                     handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
-                    var request = new HttpRequestMessage(HttpMethod.Get, url)
+                    var request = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
+
+                    if (UseVersion == HttpVersion.Version20 && !useSsl)
                     {
-                        Version = UseVersion,
-                        VersionPolicy = HttpVersionPolicy.RequestVersionExact // Needed for H2C
-                    };
+                        request.VersionPolicy = HttpVersionPolicy.RequestVersionExact; // H2C
+                    }
 
                     using HttpResponseMessage response = await client.SendAsync(request);
                     string responseString = await response.Content.ReadAsStringAsync();
