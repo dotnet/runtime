@@ -22,7 +22,6 @@ namespace System.Runtime.Caching
          * highlights how our behavior might be slightly different from windows in these
          * cases since this was a monitor that cared about actual physical memory.
          */
-
 #if NET5_0
         private long lastGCIndex;
 
@@ -32,7 +31,7 @@ namespace System.Runtime.Caching
             GCMemoryInfo memInfo = GC.GetGCMemoryInfo();
             if (memInfo.Index <= lastGCIndex)
             {
-                GC.Collect(0); // A quick, ephemeral Gen 0 collection
+                GC.Collect(0, GCCollectionMode.Optimized); // A quick, ephemeral Gen 0 collection
                 memInfo = GC.GetGCMemoryInfo();
             }
             lastGCIndex = memInfo.Index;
