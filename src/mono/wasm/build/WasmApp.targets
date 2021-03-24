@@ -232,15 +232,10 @@
       <EmSdkUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'bin'))</EmSdkUpstreamBinPath>
 
       <_NodeToolsBasePath>$(EmscriptenSdkToolsPath)node</_NodeToolsBasePath>
-      <_PythonToolsBasePath>$(EmscriptenSdkToolsPath)python</_PythonToolsBasePath>
 
       <!-- gets the path like emsdk/python/3.7.4-2_64bit -->
-      <_NodeToolsVersionedPath   Condition="Exists($(_NodeToolsBasePath))"  >$([System.IO.Directory]::GetDirectories($(_NodeToolsBasePath)))</_NodeToolsVersionedPath>
-      <_PythonToolsVersionedPath Condition="Exists($(_PythonToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_PythonToolsBasePath)))</_PythonToolsVersionedPath>
-
-      <!-- don't set $(Emscripten*ToolsPath) if we couldn't find the versioned directories -->
+      <_NodeToolsVersionedPath Condition="Exists($(_NodeToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_NodeToolsBasePath)))</_NodeToolsVersionedPath>
       <EmscriptenNodeToolsPath Condition="'$(_NodeToolsVersionedPath)' != ''">$(_NodeToolsVersionedPath)</EmscriptenNodeToolsPath>
-      <EmscriptenPythonToolsPath Condition="'$(_PythonToolsVersionedPath)' != ''">$(_PythonToolsVersionedPath)</EmscriptenPythonToolsPath>
 
       <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
     </PropertyGroup>
@@ -248,8 +243,16 @@
     <PropertyGroup>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenSdkToolsPath)' == '' or !Exists('$(EmscriptenSdkToolsPath)'))">%24(EmscriptenSdkToolsPath)=$(EmscriptenSdkToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenNodeToolsPath)' == '' or !Exists('$(EmscriptenNodeToolsPath)'))">%24(EmscriptenNodeToolsPath)=$(EmscriptenNodeToolsPath) </_EMSDKMissingPaths>
-      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmSdkUpstreamBinPath)' == '' or !Exists('$(EmSdkUpstreamBinPath)'))">%24(EmSdkUpstreamBinPath)=$(EmSdkUpstreamBinPath) </_EMSDKMissingPaths>
+    </PropertyGroup>
+
+    <!-- Emscripten uses system python on Linux, so we don't need $(EmscriptenPythonToolsPath) -->
+    <PropertyGroup Condition="'$(_UsingEMSDK_PATH)' == 'true' and !$([MSBuild]::IsOSPlatform('linux'))">
+      <_PythonToolsBasePath>$(EmscriptenSdkToolsPath)python</_PythonToolsBasePath>
+      <_PythonToolsVersionedPath Condition="Exists($(_PythonToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_PythonToolsBasePath)))</_PythonToolsVersionedPath>
+      <EmscriptenPythonToolsPath Condition="'$(_PythonToolsVersionedPath)' != ''">$(_PythonToolsVersionedPath)</EmscriptenPythonToolsPath>
+
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -261,11 +264,6 @@
 
       <_IsEMSDKMissing Condition="'$(_EMSDKMissingErrorMessage)' != ''">true</_IsEMSDKMissing>
     </PropertyGroup>
-
-    <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
-          Command="find $(EMSDK_PATH) -type d" />
-    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
-           Text="msg: $(_EMSDKMissingErrorMessage)" />
 
     <PropertyGroup>
       <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
@@ -283,7 +281,7 @@
 
     <!-- Paths to be added to environment variable `PATH` -->
     <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != '' and '$(_UsingEMSDK_PATH)' != 'true'">
-      <_EmscriptenAddPATH Include="$(EmscriptenPythonToolsPath)bin" />
+      <_EmscriptenAddPATH Condition="'$(EmscriptenPythonToolsPath)' != ''" Include="$(EmscriptenPythonToolsPath)bin" />
       <_EmscriptenAddPATH Include="$(EmscriptenSdkToolsPath)emscripten" />
     </ItemGroup>
 
@@ -329,11 +327,6 @@
 
   <Target Name="_SetWasmBuildNativeDefaults">
     <!-- if already set, maybe by a user projects, then a missing emsdk is an error -->
-    <Exec Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
-          Command="find $(EMSDK_PATH) -type d" />
-    <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
-           Text="msg: $(_EMSDKMissingErrorMessage)" />
-
     <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
 
