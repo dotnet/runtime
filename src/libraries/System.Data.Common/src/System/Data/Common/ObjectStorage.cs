@@ -617,7 +617,7 @@ namespace System.Data.Common
             return serializer;
         }
 
-        private class TempAssemblyComparer : IEqualityComparer<KeyValuePair<Type, XmlRootAttribute>>
+        private sealed class TempAssemblyComparer : IEqualityComparer<KeyValuePair<Type, XmlRootAttribute>>
         {
             internal static readonly IEqualityComparer<KeyValuePair<Type, XmlRootAttribute>> s_default = new TempAssemblyComparer();
 

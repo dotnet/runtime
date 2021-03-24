@@ -160,7 +160,7 @@ namespace System.Xml.Schema
 
     internal class TypedObject
     {
-        private class DecimalStruct
+        private sealed class DecimalStruct
         {
             private bool _isDecimal;         // rare case it will be used...
             private readonly decimal[] _dvalue;               // to accelerate equals operation.  array <-> list

@@ -951,7 +951,7 @@ namespace System.Drawing
             void SetHdc([In] IntPtr hdc);
         }
 
-        internal class Ole
+        internal static class Ole
         {
             public const int PICTYPE_ICON = 3;
         }

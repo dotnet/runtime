@@ -471,7 +471,7 @@ namespace System.Net
                 return helper.GetString();
             }
 
-            private class UrlDecoder
+            private sealed class UrlDecoder
             {
                 private readonly int _bufferSize;
 

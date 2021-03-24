@@ -439,7 +439,7 @@ namespace System.Management
             //Now Enumerate all the methods
             GenerateMethods();
 
-            //Now declare the private class variables
+            //Now declare the private sealed class variables
             //private Wmi_SystemProps SystemProps
             GeneratePrivateMember(PrivateNamesUsed["SystemPropertiesObject"].ToString(), PublicNamesUsed["SystemPropertiesClass"].ToString(), null);
 

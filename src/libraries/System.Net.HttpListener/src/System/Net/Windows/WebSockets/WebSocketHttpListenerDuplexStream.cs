@@ -31,7 +31,7 @@ namespace System.Net.WebSockets
         private int _cleanedUp;
 
 #if DEBUG
-        private class OutstandingOperations
+        private sealed class OutstandingOperations
         {
             internal int _reads;
             internal int _writes;

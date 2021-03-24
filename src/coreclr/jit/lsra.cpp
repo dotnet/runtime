@@ -7034,7 +7034,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     }
     else
     {
-        JITDUMP("at end of BB%02u:\n", block->bbNum);
+        JITDUMP("at end of " FMT_BB ":\n", block->bbNum);
         if (block->bbJumpKind == BBJ_COND || block->bbJumpKind == BBJ_SWITCH)
         {
             noway_assert(!blockRange.IsEmpty());

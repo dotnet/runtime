@@ -591,7 +591,7 @@ namespace System.Xml.Serialization
             return structMapping;
         }
 
-        private class TypeItems
+        private sealed class TypeItems
         {
             internal XmlSchemaObjectCollection Attributes = new XmlSchemaObjectCollection();
             internal XmlSchemaAnyAttribute? AnyAttribute;

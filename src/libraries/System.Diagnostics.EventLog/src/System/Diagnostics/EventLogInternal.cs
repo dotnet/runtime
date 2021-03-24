@@ -1408,7 +1408,7 @@ namespace System.Diagnostics
             }
         }
 
-        private class LogListeningInfo
+        private sealed class LogListeningInfo
         {
             public EventLogInternal handleOwner;
             public RegisteredWaitHandle registeredWaitHandle;

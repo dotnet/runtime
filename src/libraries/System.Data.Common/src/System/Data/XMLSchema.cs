@@ -16,7 +16,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
+#pragma warning disable CA1052 // TODO: https://github.com/dotnet/roslyn-analyzers/issues/4968
     internal class XMLSchema
+#pragma warning restore CA1052
     {
         [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         internal static TypeConverter GetConverter(Type type)

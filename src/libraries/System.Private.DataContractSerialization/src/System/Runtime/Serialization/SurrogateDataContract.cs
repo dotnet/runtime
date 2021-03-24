@@ -78,7 +78,7 @@ namespace System.Runtime.Serialization
             return newObj;
         }
 
-        private class SurrogateDataContractCriticalHelper : DataContract.DataContractCriticalHelper
+        private sealed class SurrogateDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private readonly ISerializationSurrogate serializationSurrogate;
 

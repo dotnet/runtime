@@ -124,7 +124,7 @@ namespace System.Xml.Xsl.Runtime
             return (qnameRule != null && !qnameRule.PreserveSpace);
         }
 
-        private class InternalWhitespaceRule : WhitespaceRule
+        private sealed class InternalWhitespaceRule : WhitespaceRule
         {
             private int _priority;       // Relative priority of this test
             private int _hashCode;       // Cached hashcode

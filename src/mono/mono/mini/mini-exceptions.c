@@ -762,7 +762,7 @@ unwinder_unwind_frame (Unwinder *unwinder,
 		}
 
 		if (!unwinder->in_interp)
-			return unwinder_unwind_frame (unwinder, jit_tls, prev_ji, ctx, new_ctx, trace, lmf, save_locations, frame);
+			frame->type = FRAME_TYPE_INTERP_ENTRY;
 		return TRUE;
 	} else {
 		gboolean res = mono_find_jit_info_ext (jit_tls, prev_ji, ctx, new_ctx, trace, lmf,
@@ -1874,6 +1874,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			case FRAME_TYPE_TRAMPOLINE:
 			case FRAME_TYPE_INTERP_TO_MANAGED:
 			case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+			case FRAME_TYPE_INTERP_ENTRY:
 				continue;
 			case FRAME_TYPE_INTERP:
 			case FRAME_TYPE_MANAGED:
@@ -2278,6 +2279,15 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		case FRAME_TYPE_TRAMPOLINE:
 		case FRAME_TYPE_INTERP_TO_MANAGED:
 		case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+			*ctx = new_ctx;
+			continue;
+		case FRAME_TYPE_INTERP_ENTRY:
+			if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
+				/*
+				 * There might be AOTed frames above the intepreted frames which can handle the exception,
+				 * so stop first pass, the caller will rethrow the exception, starting the process again.
+				 */
+				return MONO_FIRST_PASS_UNHANDLED;
 			*ctx = new_ctx;
 			continue;
 		case FRAME_TYPE_INTERP:
@@ -2734,6 +2744,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			case FRAME_TYPE_MANAGED_TO_NATIVE:
 			case FRAME_TYPE_TRAMPOLINE:
 			case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+			case FRAME_TYPE_INTERP_ENTRY:
 				*ctx = new_ctx;
 				continue;
 			case FRAME_TYPE_INTERP_TO_MANAGED:

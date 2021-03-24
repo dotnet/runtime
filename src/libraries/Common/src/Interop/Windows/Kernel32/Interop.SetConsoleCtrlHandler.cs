@@ -5,9 +5,9 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         internal const int CTRL_C_EVENT = 0;
         internal const int CTRL_BREAK_EVENT = 1;

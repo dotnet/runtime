@@ -2854,7 +2854,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         // This helper internal class is used for compiling sort's and with-param's
-        private class VariableHelper
+        private sealed class VariableHelper
         {
             private readonly Stack<QilIterator> _vars = new Stack<QilIterator>();
             private readonly XPathQilFactory _f;

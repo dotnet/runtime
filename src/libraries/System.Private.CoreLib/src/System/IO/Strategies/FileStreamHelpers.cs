@@ -23,8 +23,8 @@ namespace System.IO.Strategies
                 : bool.IsTrueStringIgnoreCase(envVar) || envVar.Equals("1");
         }
 
-        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-            => WrapIfDerivedType(fileStream, ChooseStrategyCore(handle, access, bufferSize, isAsync));
+        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
+            => WrapIfDerivedType(fileStream, ChooseStrategyCore(handle, access, share, bufferSize, isAsync));
 
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
             => WrapIfDerivedType(fileStream, ChooseStrategyCore(path, mode, access, share, bufferSize, options));

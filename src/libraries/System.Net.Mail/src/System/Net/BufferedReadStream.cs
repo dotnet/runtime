@@ -157,7 +157,7 @@ namespace System.Net
             Buffer.BlockCopy(buffer, offset, _storedBuffer!, _storedOffset, count);
         }
 
-        private class ReadAsyncResult : LazyAsyncResult
+        private sealed class ReadAsyncResult : LazyAsyncResult
         {
             private readonly BufferedReadStream _parent;
             private int _read;
