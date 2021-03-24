@@ -1017,7 +1017,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
     EX_TRY
     {
 #ifndef CROSSGEN_COMPILE
-        Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
+        Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThreaNotOk(), pConfig);
 #endif
 
         pCode = UnsafeJitFunction(pConfig, pilHeader, *pFlags, pSizeOfCode);
@@ -2076,7 +2076,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     Stub *pStub = NULL;
     PCODE pCode = NULL;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
     MethodTable *pMT = GetMethodTable();
 

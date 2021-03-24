@@ -3187,7 +3187,7 @@ void MethodTable::DoRunClassInitThrowing()
     EnsureActive();
 
     Thread *pThread;
-    pThread = GetThread();
+    pThread = GetThreadNULLOk();
     _ASSERTE(pThread);
 
     AppDomain *pDomain = GetAppDomain();
@@ -3633,7 +3633,7 @@ void CallFinalizerOnThreadObject(Object *obj)
         // finalization.
         if ((g_fEEShutDown & ShutDown_Finalize2) == 0)
         {
-            if (GetThread() != thread)
+            if (GetThreadNULLOk() != thread)
             {
                 refThis->ClearInternal();
             }

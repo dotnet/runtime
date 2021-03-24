@@ -790,7 +790,7 @@ void QueueUserWorkItemHelp(LPTHREAD_START_ROUTINE Function, PVOID Context)
 
     Function(Context);
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     if (pThread)
     {
         _ASSERTE(!pThread->IsAbortRequested());
@@ -1232,7 +1232,7 @@ void WINAPI ThreadpoolMgr::ManagedWaitIOCompletionCallback(
     DWORD dwNumberOfBytesTransfered,
     LPOVERLAPPED lpOverlapped)
 {
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         ClrFlsSetThreadType(ThreadType_Threadpool_Worker);
@@ -1534,9 +1534,7 @@ BOOL ThreadpoolMgr::SetAppDomainRequestsActive(BOOL UnmanagedTP)
     }
     else
     {
-        Thread* pCurThread = GetThread();
-        _ASSERTE( pCurThread);
-
+        Thread* pCurThread = GetThreaNotOk();
         AppDomain* pAppDomain = pCurThread->GetDomain();
         _ASSERTE(pAppDomain);
 
@@ -1585,9 +1583,7 @@ void ThreadpoolMgr::ClearAppDomainRequestsActive(BOOL UnmanagedTP, LONG id)
     }
     else
     {
-       Thread* pCurThread = GetThread();
-       _ASSERTE( pCurThread);
-
+       Thread* pCurThread = GetThreaNotOk();
        AppDomain* pAppDomain = pCurThread->GetDomain();
        _ASSERTE(pAppDomain);
 
@@ -1935,7 +1931,7 @@ Work:
     {
         // Reset TLS etc. for next WorkRequest.
         if (pThread == NULL)
-            pThread = GetThread();
+            pThread = GetThreadNULLOk();
 
         if (pThread)
         {
@@ -2744,8 +2740,7 @@ DWORD WINAPI ThreadpoolMgr::AsyncCallbackCompletion(PVOID pArgs)
     }
     CONTRACTL_END;
 
-    Thread * pThread = GetThread();
-
+    Thread * pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         HRESULT hr = ERROR_SUCCESS;
@@ -3268,12 +3263,11 @@ Top:
 
             if (pThread == NULL)
             {
-                pThread = GetThread();
+                pThread = GetThreadNULLOk();
             }
 
             if (pThread)
             {
-
                 context = (PIOCompletionContext) pThread->GetIOCompletionContext();
 
                 if (context->lpOverlapped != NULL)
@@ -3510,7 +3504,7 @@ Top:
 
                 if (pThread == NULL)
                 {
-                    pThread = GetThread();
+                    pThread = GetThreadNULLOk();
                 }
 
                 if (pThread)
@@ -4662,8 +4656,7 @@ DWORD WINAPI ThreadpoolMgr::AsyncTimerCallbackCompletion(PVOID pArgs)
     }
     CONTRACTL_END;
 
-    Thread* pThread = GetThread();
-
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         HRESULT hr = ERROR_SUCCESS;
@@ -4715,8 +4708,7 @@ DWORD WINAPI ThreadpoolMgr::AsyncDeleteTimer(PVOID pArgs)
     }
     CONTRACTL_END;
 
-    Thread * pThread = GetThread();
-
+    Thread * pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         HRESULT hr = ERROR_SUCCESS;
@@ -4739,7 +4731,7 @@ void ThreadpoolMgr::DeleteTimer(TimerInfo* timerInfo)
 {
     CONTRACTL
     {
-        if (GetThread() == pTimerThread) { NOTHROW; } else { THROWS; }
+        if (GetThreadNULLOk() == pTimerThread) { NOTHROW; } else { THROWS; }
         GC_TRIGGERS;
         MODE_ANY;
     }
@@ -4767,7 +4759,7 @@ void ThreadpoolMgr::DeleteTimer(TimerInfo* timerInfo)
     }
 
     // We cannot block the timer thread, so some cleanup is deferred to other threads.
-    if (GetThread() == pTimerThread)
+    if (GetThreadNULLOk() == pTimerThread)
     {
         // Notify the ExternalEventSafeHandle with an user work item
         if (timerInfo->ExternalEventSafeHandle != NULL)
@@ -4842,8 +4834,8 @@ void ThreadpoolMgr::QueueTimerInfoForRelease(TimerInfo *pTimerInfo)
     //  - This function wont go into an alertable state. That could trigger another APC.
     // Else two threads can be queueing timerinfos and a race could
     // lead to leaked memory and handles
-    _ASSERTE(GetThread());
-    _ASSERTE(pTimerThread == GetThread());
+    _ASSERTE(GetThreadNULLOk());
+    _ASSERTE(pTimerThread == GetThreadNULLOk());
     TimerInfo *pHead = NULL;
 
     // Make sure this timer info has been deactivated and removed from any other lists
@@ -5045,7 +5037,7 @@ BOOL ThreadpoolMgr::DeleteTimerQueueTimer(
     {
         _ASSERTE(timerInfo->ExternalEventSafeHandle == NULL);
         _ASSERTE(timerInfo->ExternalCompletionEvent == INVALID_HANDLE);
-        _ASSERTE(GetThread() != pTimerThread);
+        _ASSERTE(GetThreadNULLOk() != pTimerThread);
 
         timerInfo->InternalCompletionEvent.Wait(INFINITE,TRUE /*alertable*/);
         timerInfo->InternalCompletionEvent.CloseEvent();

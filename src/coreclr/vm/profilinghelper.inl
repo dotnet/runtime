@@ -18,7 +18,7 @@ FORCEINLINE SetCallbackStateFlagsHolder::SetCallbackStateFlagsHolder(DWORD dwFla
 {
     // This is called before entering a profiler.  We set the specified dwFlags on
     // the Thread object, and remember the previous flags for later.
-    m_pThread = GetThread();
+    m_pThread = GetThreadNULLOk();
     if (m_pThread != NULL)
     {
         m_dwOriginalFullState = m_pThread->SetProfilerCallbackStateFlags(dwFlags);

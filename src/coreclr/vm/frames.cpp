@@ -380,7 +380,7 @@ VOID Frame::Push()
     }
     CONTRACTL_END;
 
-    Push(GetThread());
+    Push(GetThreaNotOk());
 }
 
 VOID Frame::Push(Thread *pThread)
@@ -429,7 +429,7 @@ VOID Frame::Pop()
     }
     CONTRACTL_END;
 
-    Pop(GetThread());
+    Pop(GetThreaNotOk());
 }
 
 VOID Frame::Pop(Thread *pThread)
@@ -1509,7 +1509,7 @@ struct IsObjRefProtectedScanContext : public ScanContext
     BOOL        oref_protected;
     IsObjRefProtectedScanContext (OBJECTREF * oref)
     {
-        thread_under_crawl = GetThread ();
+        thread_under_crawl = GetThreaNotOk();
         promotion = TRUE;
         oref_to_check = oref;
         oref_protected = FALSE;
@@ -1581,7 +1581,7 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
     ComMethodFrame * pComMethodFrame = (ComMethodFrame *)pCurFrame;
 
     _ASSERTE(pComMethodFrame != NULL);
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreaNotOk();
     GCX_COOP_THREAD_EXISTS(pThread);
     // Unwind the frames till the entry frame (which was ComMethodFrame)
     pCurFrame = pThread->GetFrame();
@@ -1652,7 +1652,7 @@ void HelperMethodFrame::Push()
 
     _ASSERTE(!m_MachState.isValid());
 
-    Thread * pThread = ::GetThread();
+    Thread * pThread = ::GetThreaNotOk();
     m_pThread = pThread;
 
     // Push the frame

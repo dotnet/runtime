@@ -851,7 +851,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
     // sample flags early on because we may change pExceptionRecord below
     // if we are seeing a STATUS_UNWIND_CONSOLIDATE
     DWORD   dwExceptionFlags = pExceptionRecord->ExceptionFlags;
-    Thread* pThread         = GetThread();
+    Thread* pThread         = GetThreaNotOk();
 
     // Stack Overflow is handled specially by the CLR EH mechanism. In fact
     // there are cases where we aren't in managed code, but aren't quite in
@@ -2045,7 +2045,7 @@ void ExceptionTracker::DebugLogTrackerRanges(__in_z const char *pszTag)
     }
     CONTRACTL_END;
 
-    Thread*             pThread     = GetThread();
+    Thread*             pThread     = GetThreadNULLOk();
     ExceptionTracker*   pTracker    = pThread ? pThread->GetExceptionState()->m_pCurrentTracker : NULL;
 
     int i = 0;
@@ -2429,9 +2429,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
         (fIsFunclet ? "FUNCLET of " : ""),
         pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName));
 
-    Thread *pThread = GetThread();
-    _ASSERTE (pThread);
-
+    Thread *pThread = GetThreaNotOk();
     INDEBUG( DumpClauses(pcfThisFrame->GetJitManager(), pcfThisFrame->GetMethodToken(), uMethodStartPC, uControlPC) );
 
     bool fIsILStub = pMD->IsILStub();
@@ -3293,7 +3291,7 @@ DWORD_PTR ExceptionTracker::CallHandler(
 
     EH_LOG((LL_INFO100, "    calling handler at 0x%p, sp = 0x%p\n", uHandlerStartPC, sf.SP));
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreaNotOk();
 
     // The first parameter specifies whether we want to make callbacks before (true) or after (false)
     // calling the handler.
@@ -3435,7 +3433,7 @@ void ExceptionTracker::PopTrackerIfEscaping(
     }
     CONTRACTL_END;
 
-    Thread*                 pThread  = GetThread();
+    Thread*                 pThread  = GetThreaNotOk();
     ThreadExceptionState*   pExState = pThread->GetExceptionState();
     ExceptionTracker*       pTracker = pExState->m_pCurrentTracker;
     CONSISTENCY_CHECK((NULL == pTracker) || pTracker->IsValid());
@@ -3483,7 +3481,7 @@ void ExceptionTracker::PopTrackers(
     }
     CONTRACTL_END;
 
-    Thread*             pThread     = GetThread();
+    Thread*             pThread     = GetThreadNULLOk();
     ExceptionTracker*   pTracker    = (pThread ? pThread->GetExceptionState()->m_pCurrentTracker : NULL);
 
     // NOTE:
@@ -3613,7 +3611,7 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
     }
     CONTRACT_END;
 
-    Thread*                 pThread  = GetThread();
+    Thread*                 pThread  = GetThreaNotOk();
     ThreadExceptionState*   pExState = pThread->GetExceptionState();
     ExceptionTracker*       pTracker = pExState->m_pCurrentTracker;
     CONSISTENCY_CHECK((NULL == pTracker) || (pTracker->IsValid()));
@@ -3984,7 +3982,7 @@ OBJECTREF ExceptionTracker::CreateThrowable(
     CONTRACTL_END;
 
     OBJECTREF   oThrowable  = NULL;
-    Thread*     pThread     = GetThread();
+    Thread*     pThread     = GetThreaNotOk();
 
 
     if ((!bAsynchronousThreadStop) && IsComPlusException(pExceptionRecord))
@@ -4027,7 +4025,7 @@ BOOL ExceptionTracker::NotifyDebuggerOfStub(Thread* pThread, StackFrame sf, Fram
 
     if (g_EnableSIS)
     {
-        _ASSERTE(GetThread() == pThread);
+        _ASSERTE(GetThreadNULLOk() == pThread);
 
         GCX_COOP();
 
@@ -4166,7 +4164,7 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_RE
         return ExceptionContinueSearch;
     }
 
-    Thread*               pThread  = GetThread();
+    Thread*               pThread  = GetThreaNotOk();
     ThreadExceptionState* pExState = pThread->GetExceptionState();
 
     UINT_PTR uInterceptStackFrame  = 0;
@@ -4189,7 +4187,7 @@ inline bool ExceptionTracker::IsValid()
 
     EX_TRY
     {
-        Thread* pThisThread = GetThread();
+        Thread* pThisThread = GetThreadNULLOk();
         if (m_pThread == pThisThread)
         {
             fRetVal = true;
@@ -4224,7 +4222,7 @@ BOOL ExceptionTracker::ThrowableIsValid()
 UINT_PTR ExceptionTracker::DebugComputeNestingLevel()
 {
     UINT_PTR uNestingLevel = 0;
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
 
     if (pThread)
     {
@@ -4430,7 +4428,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
                 // in the unwound part of the stack when UnwindManagedExceptionPass2 is resumed
                 // at the next managed frame.
 
-                UnwindFrameChain(GetThread(), sp);
+                UnwindFrameChain(GetThreaNotOk(), sp);
                 // We are going to reclaim the stack range that was scanned by the exception tracker
                 // until now. We need to reset the explicit frames range so that if GC fires before
                 // we recreate the tracker at the first managed frame after unwinding the native
@@ -4734,9 +4732,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     if (ex.IsFirstPass())
     {
         // Get the thread and the thread exception state - they must exist at this point
-        Thread *pCurThread = GetThread();
-        _ASSERTE(pCurThread != NULL);
-
+        Thread *pCurThread = GetThreaNotOk();
         ThreadExceptionState * pCurTES = pCurThread->GetExceptionState();
         _ASSERTE(pCurTES != NULL);
     }
@@ -5074,7 +5070,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 
 BOOL IsSafeToCallExecutionManager()
 {
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
 
     // It is safe to call the ExecutionManager::IsManagedCode only if the current thread is in
     // the cooperative mode. Otherwise ExecutionManager::IsManagedCode could deadlock if
@@ -5208,7 +5204,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
     else
     {
         // This is a breakpoint or single step stop, we report it to the debugger.
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (pThread != NULL && g_pDebugInterface != NULL)
         {
 #if (defined(TARGET_ARM) || defined(TARGET_ARM64))
@@ -5356,7 +5352,7 @@ ExceptionTracker* TrackerAllocator::GetTrackerMemory()
 
             if (pTracker)
             {
-                Thread* pThread  = GetThread();
+                Thread* pThread  = GetThreaNotOk();
                 _ASSERTE(NULL != pPage);
                 ZeroMemory(pTracker, sizeof(*pTracker));
                 pTracker->m_pThread = pThread;
@@ -5602,7 +5598,7 @@ NOT_BIT64_ARG(IN     ULONG               MemoryStackFp),
         GetSP(pDispatcherContext->ContextRecord),
         pContextRecord);
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreaNotOk();
     CONTEXT *pNewContext = NULL;
 
     if (FirstCallToHandler(pDispatcherContext, &pNewContext))
@@ -5810,7 +5806,7 @@ UMThunkUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
                                IN OUT PDISPATCHER_CONTEXT pDispatcherContext
                               )
 {
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL) {
         return ExceptionContinueSearch;
     }
@@ -5912,9 +5908,7 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
                                       )
 {
 
-    Thread* pThread = GetThread();
-    _ASSERTE(pThread);
-
+    Thread* pThread = GetThreaNotOk();
     if (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
     {
         if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))

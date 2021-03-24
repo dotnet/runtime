@@ -76,7 +76,7 @@
 //
 
 #define JIT_TO_EE_TRANSITION()          MAKE_CURRENT_THREAD_AVAILABLE_EX(m_pThread);                \
-                                        _ASSERTE(CURRENT_THREAD == GetThread());                    \
+                                        _ASSERTE(CURRENT_THREAD == GetThreadNULLOk());                    \
                                         INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;               \
                                         COOPERATIVE_TRANSITION_BEGIN();                             \
 
@@ -10622,7 +10622,7 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
 
             ZeroMemory(&_gc, sizeof(_gc));
 
-            PTR_Thread pCurThread = GetThread();
+            PTR_Thread pCurThread = GetThreaNotOk();
 
             // Setup the throwables
             _gc.oLastThrownObject = throwable;

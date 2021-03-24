@@ -544,7 +544,7 @@ void SyncBlockCache::CleanupSyncBlocks()
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    _ASSERTE(GetThread() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE(GetThreadNULLOk() == FinalizerThread::GetFinalizerThread());
 
     // Set the flag indicating sync block cleanup is in progress.
     // IMPORTANT: This must be set before the sync block cleanup bit is reset on the thread.
@@ -1692,7 +1692,7 @@ BOOL ObjHeader::LeaveObjMonitor()
 
     for (;;)
     {
-        AwareLock::LeaveHelperAction action = thisObj->GetHeader ()->LeaveObjMonitorHelper(GetThread());
+        AwareLock::LeaveHelperAction action = thisObj->GetHeader()->LeaveObjMonitorHelper(GetThreaNotOk());
 
         switch(action)
         {
@@ -1744,7 +1744,7 @@ BOOL ObjHeader::LeaveObjMonitorAtException()
 
     for (;;)
     {
-        AwareLock::LeaveHelperAction action = LeaveObjMonitorHelper(GetThread());
+        AwareLock::LeaveHelperAction action = LeaveObjMonitorHelper(GetThreaNotOk());
 
         switch(action)
         {
@@ -1923,7 +1923,7 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
             __SwitchToThread(0, ++dwSwitchCount);
     }
 
-    INCONTRACT(Thread* pThread = GetThread());
+    INCONTRACT(Thread* pThread = GetThreadNULLOk());
     INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
 }
 #else
@@ -1959,7 +1959,7 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
         __SwitchToThread(0, ++dwSwitchCount);
     }
 
-    INCONTRACT(Thread* pThread = GetThread());
+    INCONTRACT(Thread* pThread = GetThreadNULLOk());
     INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
 }
 #endif //MP_LOCKS
@@ -1969,7 +1969,7 @@ DEBUG_NOINLINE void ObjHeader::ReleaseSpinLock()
     SCAN_SCOPE_END;
     LIMITED_METHOD_CONTRACT;
 
-    INCONTRACT(Thread* pThread = GetThread());
+    INCONTRACT(Thread* pThread = GetThreadNULLOk());
     INCONTRACT(if (pThread != NULL) pThread->EndNoTriggerGC());
 
     FastInterlockAnd(&m_SyncBlockValue, ~BIT_SBLK_SPIN_LOCK);
@@ -2360,7 +2360,7 @@ void AwareLock::Enter()
     }
     CONTRACTL_END;
 
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = GetThreaNotOk();
     LockState state = m_lockState.VolatileLoadWithoutBarrier();
     if (!state.IsLocked() || m_HoldingThread != pCurThread)
     {
@@ -2414,7 +2414,7 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
     }
     CONTRACTL_END;
 
-    Thread  *pCurThread = GetThread();
+    Thread  *pCurThread = GetThreaNotOk();
 
     if (pCurThread->IsAbortRequested())
     {
@@ -2721,7 +2721,7 @@ BOOL AwareLock::Leave()
     }
     CONTRACTL_END;
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreaNotOk();
 
     AwareLock::LeaveHelperAction action = LeaveHelper(pThread);
 
@@ -2758,7 +2758,7 @@ LONG AwareLock::LeaveCompletely()
 BOOL AwareLock::OwnedByCurrentThread()
 {
     WRAPPER_NO_CONTRACT;
-    return (GetThread() == m_HoldingThread);
+    return (GetThreadNULLOk() == m_HoldingThread);
 }
 
 
@@ -2787,7 +2787,7 @@ BOOL SyncBlock::Wait(INT32 timeOut)
     }
     CONTRACTL_END;
 
-    Thread  *pCurThread = GetThread();
+    Thread  *pCurThread = GetThreaNotOk();
     BOOL     isTimedOut = FALSE;
     BOOL     isEnqueued = FALSE;
     WaitEventLink waitEventLink;
