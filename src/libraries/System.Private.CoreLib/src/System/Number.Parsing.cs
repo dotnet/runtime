@@ -520,8 +520,8 @@ namespace System
         private static ParsingStatus TryParseInt32Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out int result)
         {
             result = 0;
-            Span<byte> pDigits = stackalloc byte[Int32NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
+            Span<byte> digits = stackalloc byte[Int32NumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, digits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -915,8 +915,8 @@ namespace System
         private static ParsingStatus TryParseInt64Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out long result)
         {
             result = 0;
-            Span<byte> pDigits = stackalloc byte[Int64NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
+            Span<byte> digits = stackalloc byte[Int64NumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, digits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -951,8 +951,8 @@ namespace System
         private static ParsingStatus TryParseUInt32Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out uint result)
         {
             result = 0;
-            Span<byte> pDigits = stackalloc byte[UInt32NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
+            Span<byte> digits = stackalloc byte[UInt32NumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, digits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1287,8 +1287,8 @@ namespace System
         private static ParsingStatus TryParseUInt64Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out ulong result)
         {
             result = 0;
-            Span<byte> pDigits = stackalloc byte[UInt64NumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits);
+            Span<byte> digits = stackalloc byte[UInt64NumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, digits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1766,8 +1766,8 @@ namespace System
 
         internal static ParsingStatus TryParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
         {
-            Span<byte> pDigits = stackalloc byte[DecimalNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits);
+            Span<byte> digits = stackalloc byte[DecimalNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, digits);
 
             result = 0;
 
@@ -1788,8 +1788,8 @@ namespace System
 
         internal static bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result)
         {
-            Span<byte> pDigits = stackalloc byte[DoubleNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits);
+            Span<byte> digits = stackalloc byte[DoubleNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, digits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1850,8 +1850,8 @@ namespace System
 
         internal static bool TryParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Half result)
         {
-            Span<byte> pDigits = stackalloc byte[HalfNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits);
+            Span<byte> digits = stackalloc byte[HalfNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, digits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -1922,8 +1922,8 @@ namespace System
 
         internal static bool TryParseSingle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out float result)
         {
-            Span<byte> pDigits = stackalloc byte[SingleNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits);
+            Span<byte> digits = stackalloc byte[SingleNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, digits);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
