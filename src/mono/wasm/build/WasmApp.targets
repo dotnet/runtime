@@ -231,8 +231,9 @@
       <EmscriptenSdkToolsPath>$([MSBuild]::EnsureTrailingSlash($(EMSDK_PATH)))</EmscriptenSdkToolsPath>
       <EmSdkUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'bin'))</EmSdkUpstreamBinPath>
 
-      <EmscriptenNodeToolsPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'node', '12.18.1_64bit'))</EmscriptenNodeToolsPath>
-      <EmscriptenPythonToolsPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'python', '3.7.4-2_64bit'))</EmscriptenPythonToolsPath>
+      <!-- gets the path like emsdk/python/3.7.4-2_64bit -->
+      <EmscriptenNodeToolsPath  >$([System.IO.Directory]::GetDirectories('$(EmscriptenSdkToolsPath)node'))</EmscriptenNodeToolsPath>
+      <EmscriptenPythonToolsPath>$([System.IO.Directory]::GetDirectories('$(EmscriptenSdkToolsPath)python'))</EmscriptenPythonToolsPath>
 
       <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
     </PropertyGroup>
