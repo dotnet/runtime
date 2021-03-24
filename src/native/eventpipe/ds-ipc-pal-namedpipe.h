@@ -1,5 +1,5 @@
-#ifndef __DIAGNOSTICS_IPC_WIN32_H__
-#define __DIAGNOSTICS_IPC_WIN32_H__
+#ifndef __DIAGNOSTICS_IPC_PAL_NAMEDPIPE_H__
+#define __DIAGNOSTICS_IPC_PAL_NAMEDPIPE_H__
 
 #include "ds-rt-config.h"
 
@@ -8,7 +8,7 @@
 #include "ds-ipc-pal.h"
 
 #undef DS_IMPL_GETTER_SETTER
-#ifdef DS_IMPL_IPC_WIN32_GETTER_SETTER
+#ifdef DS_IMPL_IPC_PAL_NAMEDPIPE_GETTER_SETTER
 #define DS_IMPL_GETTER_SETTER
 #endif
 #include "ds-getter-setter.h"
@@ -21,7 +21,7 @@
 
 #define DS_IPC_WIN32_MAX_NAMED_PIPE_LEN 256
 
-#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_IPC_WIN32_GETTER_SETTER)
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_IPC_PAL_NAMEDPIPE_GETTER_SETTER)
 struct _DiagnosticsIpc {
 #else
 struct _DiagnosticsIpc_Internal {
@@ -33,7 +33,7 @@ struct _DiagnosticsIpc_Internal {
 	DiagnosticsIpcConnectionMode mode;
 };
 
-#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_IPC_WIN32_GETTER_SETTER)
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_IPC_PAL_NAMEDPIPE_GETTER_SETTER)
 struct _DiagnosticsIpc {
 	uint8_t _internal [sizeof (struct _DiagnosticsIpc_Internal)];
 };
@@ -43,7 +43,7 @@ struct _DiagnosticsIpc {
  * DiagnosticsIpcStream.
  */
 
-#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_IPC_WIN32_GETTER_SETTER)
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_IPC_PAL_NAMEDPIPE_GETTER_SETTER)
 struct _DiagnosticsIpcStream {
 #else
 struct _DiagnosticsIpcStream_Internal {
@@ -55,7 +55,7 @@ struct _DiagnosticsIpcStream_Internal {
 	DiagnosticsIpcConnectionMode mode;
 };
 
-#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_IPC_WIN32_GETTER_SETTER)
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_IPC_PAL_NAMEDPIPE_GETTER_SETTER)
 struct _DiagnosticsIpcStream {
 	uint8_t _internal [sizeof (struct _DiagnosticsIpcStream_Internal)];
 };
@@ -63,4 +63,4 @@ struct _DiagnosticsIpcStream {
 
 #endif /* HOST_WIN32 */
 #endif /* ENABLE_PERFTRACING */
-#endif /* __DIAGNOSTICS_IPC_WIN32_H__ */
+#endif /* __DIAGNOSTICS_IPC_PAL_NAMEDPIPE_H__ */

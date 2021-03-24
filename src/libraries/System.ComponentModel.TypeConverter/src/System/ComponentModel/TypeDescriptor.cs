@@ -2797,7 +2797,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Our custom type descriptor.
             /// </summary>
-            private class AttributeTypeDescriptor : CustomTypeDescriptor
+            private sealed class AttributeTypeDescriptor : CustomTypeDescriptor
             {
                 private readonly Attribute[] _attributeArray;
 

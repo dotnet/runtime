@@ -419,7 +419,7 @@ namespace System.Net.NetworkInformation
         // Since this is private should be safe to trust that the calling code
         // will behave. To get a little performance boost raw fields are exposed
         // and no validation is performed.
-        private class SocketConfig
+        private sealed class SocketConfig
         {
             public SocketConfig(EndPoint endPoint, int timeout, PingOptions? options, bool isIPv4, ProtocolType protocolType, ushort id, byte[] sendBuffer)
             {

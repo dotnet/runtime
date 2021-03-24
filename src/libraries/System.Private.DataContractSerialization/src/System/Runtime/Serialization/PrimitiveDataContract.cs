@@ -116,7 +116,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-        private class PrimitiveDataContractCriticalHelper : DataContract.DataContractCriticalHelper
+        private sealed class PrimitiveDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private MethodInfo? _xmlFormatWriterMethod;
             private MethodInfo? _xmlFormatContentWriterMethod;

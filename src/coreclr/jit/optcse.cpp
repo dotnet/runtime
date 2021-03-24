@@ -1195,7 +1195,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("StartMerge BB%02u\n", block->bbNum);
+            printf("StartMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
 #endif // DEBUG
@@ -1207,7 +1207,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("Merge BB%02u and BB%02u\n", block->bbNum, predBlock->bbNum);
+            printf("Merge " FMT_BB " and " FMT_BB "\n", block->bbNum, predBlock->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
@@ -1283,7 +1283,7 @@ public:
 #ifdef DEBUG
         if (m_comp->verbose)
         {
-            printf("EndMerge BB%02u\n", block->bbNum);
+            printf("EndMerge " FMT_BB "\n", block->bbNum);
             printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
             if (((block->bbFlags & BBF_HAS_CALL) != 0) &&
                 !BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
@@ -1451,7 +1451,7 @@ void Compiler::optValnumCSE_Availablity()
 
                     if (verbose)
                     {
-                        printf("BB%02u ", block->bbNum);
+                        printf(FMT_BB " ", block->bbNum);
                         printTreeID(tree);
 
                         printf(" %s of CSE #%02u [weight=%s]%s\n", isUse ? "Use" : "Def", CSEnum, refCntWtd2str(stmw),

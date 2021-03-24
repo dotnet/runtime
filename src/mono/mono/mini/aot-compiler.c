@@ -3226,7 +3226,7 @@ static guint32
 find_typespec_for_class (MonoAotCompile *acfg, MonoClass *klass)
 {
 	int i;
-	int len = acfg->image->tables [MONO_TABLE_TYPESPEC].rows;
+	int len = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPESPEC]);
 
 	/* FIXME: Search referenced images as well */
 	if (!acfg->typespec_classes) {
@@ -4562,7 +4562,8 @@ add_wrappers (MonoAotCompile *acfg)
 	 * so there is only one wrapper of a given type, or inlining their contents into their
 	 * callers.
 	 */
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	int rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
+	for (i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 		MonoMethod *method;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
@@ -4739,7 +4740,8 @@ add_wrappers (MonoAotCompile *acfg)
 	 */
 #if 0
 	/* remoting-invoke wrappers */
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
+	for (i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 		MonoMethodSignature *sig;
 		
@@ -4758,7 +4760,8 @@ add_wrappers (MonoAotCompile *acfg)
 #endif
 
 	/* delegate-invoke wrappers */
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPEDEF]);
+	for (i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 		MonoClass *klass;
 		
@@ -4876,7 +4879,8 @@ add_wrappers (MonoAotCompile *acfg)
 	}
 
 	/* array access wrappers */
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPESPEC].rows; ++i) {
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPESPEC]);
+	for (i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 		MonoClass *klass;
 		
@@ -4910,7 +4914,8 @@ add_wrappers (MonoAotCompile *acfg)
 	}
 
 	/* Synchronized wrappers */
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
+	for (i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 		token = MONO_TOKEN_METHOD_DEF | (i + 1);
 		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
@@ -4943,7 +4948,8 @@ add_wrappers (MonoAotCompile *acfg)
 	}
 
 	/* pinvoke wrappers */
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
+	for (i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 		MonoMethod *method;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
@@ -4965,7 +4971,8 @@ add_wrappers (MonoAotCompile *acfg)
 	}
  
 	/* native-to-managed wrappers */
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
+	for (i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 		MonoMethod *method;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
@@ -5130,7 +5137,8 @@ MONO_RESTORE_WARNING
 	}
 
 	/* StructureToPtr/PtrToStructure wrappers */
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPEDEF]);
+	for (i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 		MonoClass *klass;
 		
@@ -5603,7 +5611,8 @@ add_generic_instances (MonoAotCompile *acfg)
 	if (acfg->aot_opts.no_instances)
 		return;
 
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHODSPEC].rows; ++i) {
+	int rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHODSPEC]);
+	for (i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 		token = MONO_TOKEN_METHOD_SPEC | (i + 1);
 		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
@@ -5712,7 +5721,8 @@ add_generic_instances (MonoAotCompile *acfg)
 		add_extra_method (acfg, method);
 	}
 
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPESPEC].rows; ++i) {
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPESPEC]);
+	for (i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 		MonoClass *klass;
 
@@ -6053,7 +6063,6 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
 	MonoTableInfo *tables = image->tables;
 	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
-	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
 	guint32 im_cols [MONO_IMPLMAP_SIZE];
 	char *import;
 
@@ -6061,12 +6070,13 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
 	if (import != NULL)
 		return import;
 
-	if (!piinfo->implmap_idx || piinfo->implmap_idx > im->rows)
+	if (piinfo->implmap_idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_IMPLMAP, piinfo->implmap_idx))
 		return NULL;
 
 	mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
 
-	if (!im_cols [MONO_IMPLMAP_SCOPE] || im_cols [MONO_IMPLMAP_SCOPE] > mr->rows)
+	int module_idx = im_cols [MONO_IMPLMAP_SCOPE];
+	if (module_idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_MODULEREF, module_idx))
 		return NULL;
 
 	import = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
@@ -10923,11 +10933,12 @@ emit_class_info (MonoAotCompile *acfg)
 	int i;
 	gint32 *offsets;
 
-	offsets = g_new0 (gint32, acfg->image->tables [MONO_TABLE_TYPEDEF].rows);
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i)
+	int rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPEDEF]);
+	offsets = g_new0 (gint32, rows);
+	for (i = 0; i < rows; ++i)
 		offsets [i] = emit_klass_info (acfg, MONO_TOKEN_TYPE_DEF | (i + 1));
 
-	acfg->stats.offsets_size += emit_offset_table (acfg, "class_info_offsets", MONO_AOT_TABLE_CLASS_INFO_OFFSETS, acfg->image->tables [MONO_TABLE_TYPEDEF].rows, 10, offsets);
+	acfg->stats.offsets_size += emit_offset_table (acfg, "class_info_offsets", MONO_AOT_TABLE_CLASS_INFO_OFFSETS, rows, 10, offsets);
 	g_free (offsets);
 }
 
@@ -10950,11 +10961,12 @@ emit_class_name_table (MonoAotCompile *acfg)
 	/*
 	 * Construct a chained hash table for mapping class names to typedef tokens.
 	 */
-	table_size = g_spaced_primes_closest ((int)(acfg->image->tables [MONO_TABLE_TYPEDEF].rows * 1.5));
+	int rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPEDEF]);
+	table_size = g_spaced_primes_closest ((int)(rows * 1.5));
 	table = g_ptr_array_sized_new (table_size);
 	for (i = 0; i < table_size; ++i)
 		g_ptr_array_add (table, NULL);
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
+	for (i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get_checked (acfg->image, token, error);
@@ -12140,7 +12152,8 @@ collect_methods (MonoAotCompile *acfg)
 	MonoImage *image = acfg->image;
 
 	/* Collect methods */
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	int rows = table_info_get_rows (&image->tables [MONO_TABLE_METHOD]);
+	for (i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 		MonoMethod *method;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
@@ -12196,7 +12209,8 @@ collect_methods (MonoAotCompile *acfg)
 	}
 
 	/* gsharedvt methods */
-	for (mindex = 0; mindex < image->tables [MONO_TABLE_METHOD].rows; ++mindex) {
+	rows = table_info_get_rows (&image->tables [MONO_TABLE_METHOD]);
+	for (mindex = 0; mindex < rows; ++mindex) {
 		ERROR_DECL (error);
 		MonoMethod *method;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (mindex + 1);
@@ -13915,7 +13929,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	}
 
 	if (!(mono_aot_mode_is_interp (&acfg->aot_opts) && !mono_aot_mode_is_full (&acfg->aot_opts))) {
-		for (int method_index = 0; method_index < acfg->image->tables [MONO_TABLE_METHOD].rows; ++method_index)
+		int rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
+		for (int method_index = 0; method_index < rows; ++method_index)
 			g_ptr_array_add (acfg->method_order,GUINT_TO_POINTER (method_index));
 	}
 

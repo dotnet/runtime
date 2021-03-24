@@ -99,7 +99,7 @@ namespace System.Linq.Parallel
         // An enumerator that implements the filtering logic.
         //
 
-        private class WhereQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, TKey>
+        private sealed class WhereQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, TKey>
         {
             private readonly QueryOperatorEnumerator<TInputOutput, TKey> _source; // The data source to enumerate.
             private readonly Func<TInputOutput, bool> _predicate; // The predicate used for filtering.

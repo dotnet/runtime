@@ -149,7 +149,7 @@ namespace System.Linq.Parallel
             _childQueryResults.GivePartitionedStream(new ChildResultsRecipient(recipient, _op, _settings));
         }
 
-        private class ChildResultsRecipient : IPartitionedStreamRecipient<TInputOutput>
+        private sealed class ChildResultsRecipient : IPartitionedStreamRecipient<TInputOutput>
         {
             private readonly IPartitionedStreamRecipient<TInputOutput> _outputRecipient;
             private readonly SortQueryOperator<TInputOutput, TSortKey> _op;

@@ -4964,10 +4964,10 @@ namespace System.Xml.Xsl.IlGen
             get { return Patterns.IsSet((int)ann); }
         }
 
-        private class NodeCounter : QilVisitor
+        private sealed class NodeCounter : QilVisitor
         {
-            protected QilNode? target;
-            protected int cnt;
+            private QilNode? target;
+            private int cnt;
 
             /// <summary>
             /// Returns number of occurrences of "target" node within the subtree of "expr".
@@ -5059,7 +5059,7 @@ namespace System.Xml.Xsl.IlGen
             }
         }
 
-        private class PositionOfFinder : NodeFinder
+        private sealed class PositionOfFinder : NodeFinder
         {
             /// <summary>
             /// Return true only if parent node type is PositionOf.
@@ -5070,10 +5070,10 @@ namespace System.Xml.Xsl.IlGen
             }
         }
 
-        private class EqualityIndexVisitor : QilVisitor
+        private sealed class EqualityIndexVisitor : QilVisitor
         {
-            protected bool result;
-            protected QilNode? ctxt, key;
+            private bool result;
+            private QilNode? ctxt, key;
 
             /// <summary>
             /// Returns true if the subtree of "expr" meets the following requirements:

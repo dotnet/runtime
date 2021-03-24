@@ -140,7 +140,7 @@ namespace System.Configuration
             return false;
         }
 
-        private class EmptyCollection : IEnumerable
+        private sealed class EmptyCollection : IEnumerable
         {
             private readonly IEnumerator _emptyEnumerator;
 
@@ -154,7 +154,7 @@ namespace System.Configuration
                 return _emptyEnumerator;
             }
 
-            private class EmptyCollectionEnumerator : IEnumerator
+            private sealed class EmptyCollectionEnumerator : IEnumerator
             {
                 bool IEnumerator.MoveNext()
                 {
@@ -167,7 +167,7 @@ namespace System.Configuration
             }
         }
 
-        private class ConfigurationElementsCollection : IEnumerable
+        private sealed class ConfigurationElementsCollection : IEnumerable
         {
             private readonly ConfigurationValues _values;
 
@@ -189,7 +189,7 @@ namespace System.Configuration
             }
         }
 
-        private class InvalidValuesCollection : IEnumerable
+        private sealed class InvalidValuesCollection : IEnumerable
         {
             private readonly ConfigurationValues _values;
 
