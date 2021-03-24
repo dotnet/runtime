@@ -94,11 +94,11 @@
     <Exec Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT'" Command="cmake --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
       <Output TaskParameter="ExitCode" PropertyName="_MonoFindCmakeExitCode"/>
     </Exec>
-    <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT' and '$(_MonoFindCmakeExitCode)' != '0'" Text="cmake tool is required to build wasm on windows" />
+    <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT' and '$(_MonoFindCmakeExitCode)' != '0' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="cmake tool is required to build wasm on windows" />
     <Exec Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT'" Command="ninja --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
       <Output TaskParameter="ExitCode" PropertyName="_MonoFindNinjaExitCode"/>
     </Exec>
-    <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT' and '$(_MonoFindNinjaExitCode)' != '0'" Text="ninja tool is required to build wasm on windows" />
+    <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT' and '$(_MonoFindNinjaExitCode)' != '0' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="ninja tool is required to build wasm on windows" />
 
   </Target>
 
