@@ -240,7 +240,11 @@ namespace System.Runtime.Caching
         {
             if (State == EntryState.AddedToCache)
             {
-                _fields._cache.RemoveEntry(this.Key, this, CacheEntryRemovedReason.ChangeMonitorChanged);
+                try
+                {
+                    _fields._cache.RemoveEntry(this.Key, this, CacheEntryRemovedReason.ChangeMonitorChanged);
+                }
+                catch (ObjectDisposedException) { }
             }
         }
 
