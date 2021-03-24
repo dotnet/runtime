@@ -280,7 +280,7 @@ void VerifyValidTransitionFromManagedCode(Thread *pThread, CrawlFrame *pCF)
     _ASSERTE(ExecutionManager::IsManagedCode(GetControlPC(pCF->GetRegisterSet())));
 
     // Cannot get to the TEB of other threads. So ignore them.
-    if (pThread != GetThread())
+    if (pThread != GetThreadNULLOk())
     {
         return;
     }
@@ -444,7 +444,7 @@ EXCEPTION_DISPOSITION COMPlusAfterUnwind(
     // before we go any further.
     _ASSERTE(pEstablisherFrame == GetCurrentSEHRecord());
 
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreaNotOk();
 
     _ASSERTE(tct.pCurrentExceptionRecord == pEstablisherFrame);
 
@@ -515,7 +515,7 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(EXCEPTION_REGISTRATION_REC
         return ExceptionContinueSearch;
     }
 
-    Thread*               pThread  = GetThread();
+    Thread*               pThread  = GetThreaNotOk();
     ThreadExceptionState* pExState = pThread->GetExceptionState();
 
     EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame;
@@ -652,7 +652,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
     EXCEPTION_DISPOSITION retval;
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
 #ifdef _DEBUG
     static int breakOnSO = -1;
@@ -1272,7 +1272,7 @@ CPFH_FirstPassHandler(EXCEPTION_RECORD *pExceptionRecord,
 
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
     STRESS_LOG4(LF_EH, LL_INFO100,
                 "CPFH_FirstPassHandler: pEstablisherFrame = %x EH code = %x  EIP = %x with ESP = %x\n",
@@ -1488,7 +1488,7 @@ CPFH_UnwindHandler(EXCEPTION_RECORD *pExceptionRecord,
     #endif
 
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
     ExInfo* pExInfo = &(pThread->GetExceptionState()->m_currentExInfo);
 
@@ -1646,7 +1646,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 
     EXCEPTION_DISPOSITION retVal = ExceptionContinueSearch;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
     if ((pExceptionRecord->ExceptionFlags & (EXCEPTION_UNWINDING | EXCEPTION_EXIT_UNWIND)) == 0)
     {
         if (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
@@ -1854,7 +1854,7 @@ LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVO
     ETW::ExceptionLog::ExceptionCatchEnd();
     ETW::ExceptionLog::ExceptionThrownEnd();
 
-    void* esp = COMPlusEndCatchWorker(GetThread());
+    void* esp = COMPlusEndCatchWorker(GetThreaNotOk());
 
     // We are going to resume at a handler nesting level whose esp is dEsp. Pop off any SEH records below it. This
     // would be the COMPlusNestedExceptionHandler we had inserted.
@@ -1863,8 +1863,7 @@ LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVO
     //
     // Set up m_OSContext for the call to COMPlusCheckForAbort
     //
-    Thread* pThread = GetThread();
-    _ASSERTE(pThread != NULL);
+    Thread* pThread = GetThreaNotOk();
 
     SetIP(pThread->m_OSContext, (PCODE)*pRetAddress);
     SetSP(pThread->m_OSContext, (TADDR)esp);
@@ -2227,7 +2226,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
     #undef METHODNAME
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
     if (pFrame && pData->pTopFrame == pFrame)
         /* Don't look past limiting frame if there is one */
@@ -2652,7 +2651,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
     if (!pCf->IsFrameless())
         return SWA_CONTINUE;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreaNotOk();
 
     // If the thread is being RudeAbort, we will not run any finally
     if (pThread->IsRudeAbortInitiated())
@@ -3303,8 +3302,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusNestedExceptionHandler)
         // from withing a nested handler.  We won't have a nested exception in that case -- just
         // the unwind.
 
-        Thread* pThread = GetThread();
-        _ASSERTE(pThread);
+        Thread* pThread = GetThreaNotOk();
         ExInfo* pExInfo = &(pThread->GetExceptionState()->m_currentExInfo);
         ExInfo* pPrevNestedInfo = pExInfo->m_pPrevNestedInfo;
 
@@ -3423,8 +3421,7 @@ EXCEPTION_HANDLER_IMPL(UMThunkPrestubHandler)
 
         GCX_COOP();     // Must be cooperative to modify frame chain.
 
-        Thread *pThread = GetThread();
-        _ASSERTE(pThread);
+        Thread *pThread = GetThreaNotOk();
         Frame *pFrame = pThread->GetFrame();
         pFrame->ExceptionUnwind();
         pFrame->Pop(pThread);
@@ -3503,7 +3500,7 @@ AdjustContextForVirtualStub(
 {
     LIMITED_METHOD_CONTRACT;
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreadNULLOk();
 
     // We may not have a managed thread object. Example is an AV on the helper thread.
     // (perhaps during StubManager::IsStub)
