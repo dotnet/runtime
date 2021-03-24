@@ -641,6 +641,11 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 			need_unbox_tramp = TRUE;
 	}
 
+	if (!code && m->is_inflated && mono_method_needs_static_rgctx_invoke (m, FALSE)) {
+		/* The caller can't pass in the rgctx */
+		need_rgctx_tramp = TRUE;
+	}
+
 	addr = mini_add_method_trampoline (m, compiled_method, need_rgctx_tramp, need_unbox_tramp);
 
 	if (generic_virtual || variant_iface) {
