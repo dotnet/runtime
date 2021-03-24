@@ -9,7 +9,7 @@ namespace System.Threading
     //
     // Unix-specific implementation of Timer
     //
-    internal partial class TimerQueue : IThreadPoolWorkItem
+    internal sealed partial class TimerQueue : IThreadPoolWorkItem
     {
         private static List<TimerQueue>? s_scheduledTimers;
         private static List<TimerQueue>? s_scheduledTimersToFire;

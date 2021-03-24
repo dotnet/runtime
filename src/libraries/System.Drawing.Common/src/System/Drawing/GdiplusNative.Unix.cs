@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    internal partial class SafeNativeMethods
+    internal static partial class SafeNativeMethods
     {
         internal unsafe partial class Gdip
         {

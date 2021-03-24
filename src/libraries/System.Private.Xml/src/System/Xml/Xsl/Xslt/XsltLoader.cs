@@ -21,7 +21,7 @@ namespace System.Xml.Xsl.Xslt
     using QName = XsltInput.DelayedQName;
     using XsltAttribute = XsltInput.XsltAttribute;
 
-    internal class XsltLoader : IErrorHelper
+    internal sealed class XsltLoader : IErrorHelper
     {
         private Compiler _compiler = null!;
         private XmlResolver _xmlResolver = null!;

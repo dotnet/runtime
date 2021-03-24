@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
-    internal class Host : IHost, IAsyncDisposable
+    internal sealed class Host : IHost, IAsyncDisposable
     {
         private readonly ILogger<Host> _logger;
         private readonly IHostLifetime _hostLifetime;

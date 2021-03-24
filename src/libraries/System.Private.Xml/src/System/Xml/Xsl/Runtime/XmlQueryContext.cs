@@ -335,7 +335,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Simple implementation of XsltMessageEncounteredEventArgs.
     /// </summary>
-    internal class XmlILQueryEventArgs : XsltMessageEncounteredEventArgs
+    internal sealed class XmlILQueryEventArgs : XsltMessageEncounteredEventArgs
     {
         private readonly string _message;
 

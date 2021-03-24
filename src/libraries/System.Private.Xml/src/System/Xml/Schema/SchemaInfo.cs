@@ -22,7 +22,7 @@ namespace System.Xml.Schema
         ValidateAttributeInvalidCall,
     }
 
-    internal class SchemaInfo : IDtdInfo
+    internal sealed class SchemaInfo : IDtdInfo
     {
         private readonly Dictionary<XmlQualifiedName, SchemaElementDecl> _elementDecls = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
         private readonly Dictionary<XmlQualifiedName, SchemaElementDecl> _undeclaredElementDecls = new Dictionary<XmlQualifiedName, SchemaElementDecl>();

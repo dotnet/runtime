@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdIPv4InterfaceProperties : UnixIPv4InterfaceProperties
+    internal sealed class BsdIPv4InterfaceProperties : UnixIPv4InterfaceProperties
     {
         private readonly int _mtu;
 

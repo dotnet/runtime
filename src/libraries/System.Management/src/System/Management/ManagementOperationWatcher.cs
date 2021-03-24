@@ -364,7 +364,7 @@ namespace System.Management
         }
     }
 
-    internal class WmiEventState
+    internal sealed class WmiEventState
     {
         private readonly Delegate d;
         private readonly ManagementEventArgs args;
@@ -402,7 +402,7 @@ namespace System.Management
     /// WMI event as "done" until all target delegates have signalled that they are
     /// done.
     /// </summary>
-    internal class WmiDelegateInvoker
+    internal sealed class WmiDelegateInvoker
     {
         internal object sender;
 

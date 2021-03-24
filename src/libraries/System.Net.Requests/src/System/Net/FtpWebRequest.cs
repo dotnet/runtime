@@ -47,7 +47,7 @@ namespace System.Net
         MustChangeWorkingDirectoryToPath = 0x100
     }
 
-    internal class FtpMethodInfo
+    internal sealed class FtpMethodInfo
     {
         internal string Method;
         internal FtpOperation Operation;
@@ -1754,7 +1754,7 @@ namespace System.Net
     //
     // Class used by the WebRequest.Create factory to create FTP requests
     //
-    internal class FtpWebRequestCreator : IWebRequestCreate
+    internal sealed class FtpWebRequestCreator : IWebRequestCreate
     {
         internal FtpWebRequestCreator()
         {

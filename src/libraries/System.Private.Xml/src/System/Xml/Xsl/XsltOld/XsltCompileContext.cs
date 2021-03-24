@@ -15,7 +15,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Runtime.Versioning;
     using System.Diagnostics.CodeAnalysis;
 
-    internal class XsltCompileContext : XsltContext
+    internal sealed class XsltCompileContext : XsltContext
     {
         private InputScopeManager? _manager;
         private Processor? _processor;

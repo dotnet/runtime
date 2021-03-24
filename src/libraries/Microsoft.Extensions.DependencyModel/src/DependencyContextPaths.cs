@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace Microsoft.Extensions.DependencyModel
 {
-    internal class DependencyContextPaths
+    internal sealed class DependencyContextPaths
     {
         private const string DepsFilesProperty = "APP_CONTEXT_DEPS_FILES";
         private const string FxDepsFileProperty = "FX_DEPS_FILE";

@@ -24,7 +24,7 @@ namespace System.Net
     ///     This means basic command sending and parsing.
     /// </para>
     /// </summary>
-    internal class FtpControlStream : CommandStream
+    internal sealed class FtpControlStream : CommandStream
     {
         private Socket? _dataSocket;
         private IPEndPoint? _passiveEndPoint;
@@ -1129,7 +1129,7 @@ namespace System.Net
         ///     This will handle either connecting to a port or listening for one
         ///    </para>
         /// </summary>
-        protected Socket CreateFtpDataSocket(FtpWebRequest request, Socket templateSocket)
+        private Socket CreateFtpDataSocket(FtpWebRequest request, Socket templateSocket)
         {
             // Safe to be called under an Assert.
             Socket socket = new Socket(templateSocket.AddressFamily, templateSocket.SocketType, templateSocket.ProtocolType);
