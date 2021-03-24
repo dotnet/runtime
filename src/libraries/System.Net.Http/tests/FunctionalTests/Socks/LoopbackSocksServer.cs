@@ -148,7 +148,7 @@ namespace System.Net.Http.Functional.Tests.Socks
                     hostBuffer[hostnameBytes++] = (byte)b;
                 }
 
-                remoteHost = Encoding.UTF8.GetString(hostBuffer.AsSpan(hostnameBytes));
+                remoteHost = Encoding.UTF8.GetString(hostBuffer.AsSpan(0, hostnameBytes));
             }
 
             ns.WriteByte(4);
