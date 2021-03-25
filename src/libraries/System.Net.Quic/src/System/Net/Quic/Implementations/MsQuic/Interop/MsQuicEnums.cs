@@ -201,4 +201,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         SHUTDOWN_COMPLETE = 7,
         IDEAL_SEND_BUFFER_SIZE = 8,
     }
+
+    internal enum QUIC_ADDRESS_FAMILY : ushort
+    {
+        UNSPEC = 0,
+        INET = 2,
+        INET6 = 23,
+    }
 }

@@ -241,12 +241,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _ => throw new Exception($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.")
             };
 
-            // TODO: MsQuic will use system constants, so we should use the Socket PAL to translate these.
-            int af = _remoteEndPoint.AddressFamily switch
+            QUIC_ADDRESS_FAMILY af = _remoteEndPoint.AddressFamily switch
             {
-                AddressFamily.Unspecified => 0,
-                AddressFamily.InterNetwork => 2,
-                AddressFamily.InterNetworkV6 => 23,
+                AddressFamily.Unspecified => QUIC_ADDRESS_FAMILY.UNSPEC,
+                AddressFamily.InterNetwork => QUIC_ADDRESS_FAMILY.INET,
+                AddressFamily.InterNetworkV6 => QUIC_ADDRESS_FAMILY.INET6,
                 _ => throw new Exception(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
             };
 
@@ -256,7 +255,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 uint status = MsQuicApi.Api.ConnectionStartDelegate(
                     _state.Handle,
                     _configuration,
-                    (ushort)af,
+                    af,
                     address,
                     (ushort)port);
 

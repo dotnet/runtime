@@ -471,8 +471,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint ConnectionStartDelegate(
             SafeMsQuicConnectionHandle connection,
             SafeMsQuicConfigurationHandle configuration,
-            // QUIC_ADDRESS_FAMILY = sa_family_t = ushort
-            ushort family,
+            QUIC_ADDRESS_FAMILY family,
             [MarshalAs(UnmanagedType.LPUTF8Str)]
             string serverName,
             ushort serverPort);
