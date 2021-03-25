@@ -116,7 +116,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 "864801650304012A0410C85C553A73E9B55F98752E1133ACA645801099B22DFF" +
 "6A9D8984F8B3F63079CE9265";
                 EnvelopedCms ecms = new EnvelopedCms();
-                ecms.Decode(Convert.FromHexString(encryptedContent));
+                ecms.Decode(encryptedContent.HexToByteArray());
                 Assert.ThrowsAny<CryptographicException>(() => ecms.Decrypt(new X509Certificate2Collection(wrongRecipient)));
             }
         }
