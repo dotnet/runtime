@@ -1076,8 +1076,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// For PEM-encoded certificates in a file, use <see cref="X509Certificate2(string)" />.
         /// </para>
         /// </remarks>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static X509Certificate2 CreateFromPem(ReadOnlySpan<char> certPem)
         {
             foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem))
