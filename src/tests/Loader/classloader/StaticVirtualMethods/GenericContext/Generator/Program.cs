@@ -173,7 +173,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                     }
                     else
                     {
-                        tw.Write(",\n                  ");
+                        tw.Write(","+ Environment.NewLine + "                  ");
                     }
                     tw.Write(iface);
                 }
