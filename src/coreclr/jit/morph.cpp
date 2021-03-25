@@ -17778,15 +17778,11 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 
     // Currently, we don't instrument internal blocks, so the only way we can set weights to these blocks
     // is to analyze successors and guess.
+    const float cond2BlockWeight  = max(50.0f * nextBbWeight / currBbWeight + 50.0f, 50.0f);
+    const float helperBlockWeight = max(nextBbWeight * 100.0f / currBbWeight, 100.0f);
 
-    // cond2Block [0.5 .. 1]
-    const float cond2BlockWeight = 50.0f * nextBbWeight / currBbWeight + 50.0f;
-
-    // helperBlock [0 .. 1]
-    const float helperBlockWeight = nextBbWeight / currBbWeight * 100.0f;
-
-    cond2Block->inheritWeightPercentage(cond1Block, (UINT32)cond2BlockWeight);
-    helperBlock->inheritWeightPercentage(cond2Block, (UINT32)helperBlockWeight);
+    cond2Block->inheritWeightPercentage(block, (UINT32)cond2BlockWeight);
+    helperBlock->inheritWeightPercentage(block, (UINT32)helperBlockWeight);
 
     // Append cond1 as JTRUE to cond1Block
     GenTree*   jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condExpr);
