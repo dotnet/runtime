@@ -6,6 +6,7 @@ using System.Runtime.Serialization;
 using System.Collections;
 using System.IO;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Design
 {
@@ -49,6 +50,8 @@ namespace System.ComponentModel.Design
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "HashTable exists here")]
         private static void SerializeWithBinaryFormatter(Stream o, string cryptoKey, DesigntimeLicenseContext context)
         {
             IFormatter formatter = new BinaryFormatter();
@@ -102,7 +105,6 @@ namespace System.ComponentModel.Design
 
             public override int ReadByte()
             {
-                Debug.Assert(_readFirstByte == false);
                 byte read = (byte)_stream.ReadByte();
                 _firstByte = read;
                 _readFirstByte = true;
@@ -125,6 +127,9 @@ namespace System.ComponentModel.Design
             return true;
         }
 
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(Hashtable))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "HashTable's Serialization ctor will be preserved by the DynamicDependency.")]
         private static void DeserializeUsingBinaryFormatter(StreamWrapper wrappedStream, string cryptoKey, RuntimeLicenseContext context)
         {
             if (EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)
