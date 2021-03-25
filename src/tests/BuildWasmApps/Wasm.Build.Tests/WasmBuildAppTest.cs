@@ -62,10 +62,10 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, host: RunHost.None, parameters: new object[]
-                        { "", "error : Cannot find emscripten sdk, required for AOT'ing assemblies. $(EMSDK_PATH)=" })]
+                        { "", "error :.*emscripten.*required for AOT" })]
         [BuildAndRun(aot: true, host: RunHost.None, parameters: new object[]
-                        { "/non-existant/foo", "error : Cannot find emscripten sdk, required for AOT'ing assemblies. $(EMSDK_PATH)=/non-existant/foo" })]
-        public void AOT_ErrorWhenMissingEMSDK(BuildArgs buildArgs, string emsdkPath, string errorMessage, string id)
+                        { "/non-existant/foo", "error.*\\(EMSDK_PATH\\)=/non-existant/foo.*required for AOT" })]
+        public void AOT_ErrorWhenMissingEMSDK(BuildArgs buildArgs, string emsdkPath, string errorPattern, string id)
         {
             string projectName = $"missing_emsdk";
             buildArgs = buildArgs with {
@@ -79,7 +79,7 @@ namespace Wasm.Build.Tests
                         id: id,
                         expectSuccess: false);
 
-            Assert.Contains(errorMessage, buildOutput);
+            Assert.Matches(errorPattern, buildOutput);
         }
 
         private static string s_bug49588_ProgramCS = @"

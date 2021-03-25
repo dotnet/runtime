@@ -29,9 +29,9 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.None, parameters: new object[]
-                        { "", "error.*emscripten.*\\(EMSDK_PATH\\)=" })]
+                        { "", "error.*emscripten.*required for building native files" })]
         [BuildAndRun(host: RunHost.None, parameters: new object[]
-                        { "/non-existant/foo", "error.*emscripten sdk.*\\(EMSDK_PATH\\)=/non-existant/foo" })]
+                        { "/non-existant/foo", "error.*\\(EMSDK_PATH\\)=/non-existant/foo.*required for building native files" })]
         public void Relinking_ErrorWhenMissingEMSDK(BuildArgs buildArgs, string emsdkPath, string errorPattern, string id)
         {
             string projectName = $"simple_native_build";
