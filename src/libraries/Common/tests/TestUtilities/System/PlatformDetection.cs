@@ -85,6 +85,8 @@ namespace System
 
             }
         }
+        
+        public static bool IsLineNumbersSupported => true;
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime; // matches definitions in clr.featuredefines.props

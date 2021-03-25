@@ -1979,7 +1979,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		if (!sofile) {
 			// Maybe do these on more platforms ?
 #ifndef HOST_WASM
-			if (mono_aot_only && !mono_use_interpreter && assembly->image->tables [MONO_TABLE_METHOD].rows) {
+			if (mono_aot_only && !mono_use_interpreter && table_info_get_rows (&assembly->image->tables [MONO_TABLE_METHOD])) {
 				aot_name = g_strdup_printf ("%s%s", assembly->image->name, MONO_SOLIB_EXT);
 				g_error ("Failed to load AOT module '%s' ('%s') in aot-only mode.\n", aot_name, assembly->image->name);
 				g_free (aot_name);
@@ -3543,7 +3543,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 		}
 
 		if (!method) {
-			if (method_index >= image->tables [MONO_TABLE_METHOD].rows) {
+			if (method_index >= table_info_get_rows (&image->tables [MONO_TABLE_METHOD])) {
 				/*
 				 * This is hit for extra methods which are called directly, so they are
 				 * not in amodule->extra_methods.
@@ -5880,7 +5880,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 		} else {
 			void *ptr = mono_binary_search (GINT_TO_POINTER (method_index), amodule->info.llvm_unbox_tramp_indexes, amodule->info.llvm_unbox_tramp_num, amodule->info.llvm_unbox_tramp_elemsize, ui16_idx_comparer);
 			g_assert (ptr);
-			g_assert (*(gint16*)ptr == method_index);
+			g_assert (*(guint16*)ptr == method_index);
 			unbox_tramp_idx = (guint16*)ptr - (guint16*)amodule->info.llvm_unbox_tramp_indexes;
 		}
 		g_assert (unbox_tramp_idx < amodule->info.llvm_unbox_tramp_num);

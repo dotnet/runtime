@@ -47,7 +47,7 @@
     <MonoObjCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross'))</MonoObjCrossDir>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$([MSBuild]::NormalizePath('$(MonoObjCrossDir)', 'config.h'))</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
-    <MonoAOTBundleLLVMOptimizer Condition="'$(MonoAOTEnableLLVM)' == 'true'">true</MonoAOTBundleLLVMOptimizer>
+    <MonoAOTBundleLLVMOptimizer Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(TargetsBrowser)' != 'true'">true</MonoAOTBundleLLVMOptimizer>
     <MonoCCompiler>$(Compiler)</MonoCCompiler>
     <MonoCCompiler Condition="'$(MonoCCompiler)' == ''">clang</MonoCCompiler>
     <!-- when we use runtime/build.sh -gcc, it is passed to eng/build.sh which sets the raw value to $(Compiler); strip the leading hyphens. -->
@@ -97,17 +97,17 @@
     <Exec Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT'" Command="cmake --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
       <Output TaskParameter="ExitCode" PropertyName="_MonoFindCmakeExitCode"/>
     </Exec>
-    <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT' and '$(_MonoFindCmakeExitCode)' != '0'" Text="cmake tool is required to build wasm on windows" />
+    <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT' and '$(_MonoFindCmakeExitCode)' != '0' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="cmake tool is required to build wasm on windows" />
     <Exec Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT'" Command="ninja --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
       <Output TaskParameter="ExitCode" PropertyName="_MonoFindNinjaExitCode"/>
     </Exec>
-    <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT' and '$(_MonoFindNinjaExitCode)' != '0'" Text="ninja tool is required to build wasm on windows" />
+    <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT' and '$(_MonoFindNinjaExitCode)' != '0' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="ninja tool is required to build wasm on windows" />
 
   </Target>
 
   <!-- Sets up emscripten if you don't have the EMSDK_PATH env variable set -->
   <Target Name="ProvisionEmscripten"
-          Condition="'$(ShouldProvisionEmscripten)' == 'true'">
+          Condition="'$(ShouldProvisionEmscripten)' == 'true' and '$(SkipMonoCrossJitConfigure)' != 'true'">
     <ReadLinesFromFile File="$(MSBuildThisFileDirectory)\wasm\emscripten-version.txt">
       <Output TaskParameter="Lines" ItemName="_VersionLines" />
     </ReadLinesFromFile>

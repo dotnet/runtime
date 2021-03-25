@@ -4219,12 +4219,12 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                         flowList* newEdge = fgGetPredForBlock(jmpBlk, bSrc);
 
                         jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
-                        if (bSrc->bbWeight == 0)
+                        if (bSrc->bbWeight == BB_ZERO_WEIGHT)
                         {
-                            jmpBlk->bbWeight = 0;
+                            jmpBlk->bbWeight = BB_ZERO_WEIGHT;
                         }
 
-                        if (jmpBlk->bbWeight == 0)
+                        if (jmpBlk->bbWeight == BB_ZERO_WEIGHT)
                         {
                             jmpBlk->bbFlags |= BBF_RUN_RARELY;
                         }
