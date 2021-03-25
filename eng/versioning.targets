@@ -46,12 +46,8 @@
     <SupportedPlatform Condition="'$(Targetsillumos)' == 'true'" Include="illumos"/>
     <SupportedPlatform Condition="'$(TargetsMacCatalyst)' == 'true'" Include="MacCatalyst"/>
     <SupportedPlatform Condition="'$(TargetsSolaris)' == 'true'" Include="Solaris"/>
+	<SupportedPlatform Include="tvos"/>
     <SupportedPlatform Condition="'$(TargetsUnix)' == 'true'" Include="Unix"/>
-  </ItemGroup>
-
-  <!-- Enables warnings for tvOS targeted builds -->
-  <ItemGroup Condition="'$(TargetstvOS)' == 'true' and '$(IsTestProject)' != 'true'">
-    <SupportedPlatform Include="tvos"/>
   </ItemGroup>
   
   <ItemGroup>
