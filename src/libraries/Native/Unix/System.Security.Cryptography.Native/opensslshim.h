@@ -399,6 +399,8 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EVP_PKEY_set1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_EC_KEY) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_RSA) \
+    REQUIRED_FUNCTION(EVP_PKEY_sign) \
+    REQUIRED_FUNCTION(EVP_PKEY_sign_init) \
     REQUIRED_FUNCTION(EVP_PKEY_size) \
     FALLBACK_FUNCTION(EVP_PKEY_up_ref) \
     REQUIRED_FUNCTION(EVP_rc2_cbc) \
@@ -480,14 +482,12 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(RSA_new) \
     FALLBACK_FUNCTION(RSA_pkey_ctx_ctrl) \
     RENAMED_FUNCTION(RSA_PKCS1_OpenSSL, RSA_PKCS1_SSLeay) \
-    REQUIRED_FUNCTION(RSA_private_encrypt) \
     REQUIRED_FUNCTION(RSA_public_decrypt) \
     REQUIRED_FUNCTION(RSA_public_encrypt) \
     FALLBACK_FUNCTION(RSA_set0_crt_params) \
     FALLBACK_FUNCTION(RSA_set0_factors) \
     FALLBACK_FUNCTION(RSA_set0_key) \
     REQUIRED_FUNCTION(RSA_set_method) \
-    REQUIRED_FUNCTION(RSA_sign) \
     REQUIRED_FUNCTION(RSA_size) \
     REQUIRED_FUNCTION(RSA_up_ref) \
     REQUIRED_FUNCTION(RSA_verify) \
@@ -820,6 +820,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_set1_DSA EVP_PKEY_set1_DSA_ptr
 #define EVP_PKEY_set1_EC_KEY EVP_PKEY_set1_EC_KEY_ptr
 #define EVP_PKEY_set1_RSA EVP_PKEY_set1_RSA_ptr
+#define EVP_PKEY_sign_init EVP_PKEY_sign_init_ptr
+#define EVP_PKEY_sign EVP_PKEY_sign_ptr
 #define EVP_PKEY_size EVP_PKEY_size_ptr
 #define EVP_PKEY_up_ref EVP_PKEY_up_ref_ptr
 #define EVP_rc2_cbc EVP_rc2_cbc_ptr
@@ -901,14 +903,12 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_new RSA_new_ptr
 #define RSA_pkey_ctx_ctrl RSA_pkey_ctx_ctrl_ptr
 #define RSA_PKCS1_OpenSSL RSA_PKCS1_OpenSSL_ptr
-#define RSA_private_encrypt RSA_private_encrypt_ptr
 #define RSA_public_decrypt RSA_public_decrypt_ptr
 #define RSA_public_encrypt RSA_public_encrypt_ptr
 #define RSA_set0_crt_params RSA_set0_crt_params_ptr
 #define RSA_set0_factors RSA_set0_factors_ptr
 #define RSA_set0_key RSA_set0_key_ptr
 #define RSA_set_method RSA_set_method_ptr
-#define RSA_sign RSA_sign_ptr
 #define RSA_size RSA_size_ptr
 #define RSA_up_ref RSA_up_ref_ptr
 #define RSA_verify RSA_verify_ptr
