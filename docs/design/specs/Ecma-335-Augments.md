@@ -437,6 +437,15 @@ for these methods by means of Method Implementations (II.15.1.4). Polymorphic be
 by the constrained. call IL instruction where the constrained. prefix specifies the type to use for lookup of the static interface
 method.
 
+### II.9.7, Validity of member signatures
+
+(Edit bulleted list under **Generic type definition** at the top of page 134)
+
+* Every instance method and virtual method declaration is valid with respect to S
+* Every inherited interface declaration is valid with respect to S
+* There are no restrictions on *non-virtual* static members, instance constructors or on the type's
+own generic parameter constraints.
+
 ### II.9.9, Inheritance and Overriding
 
 (Edit first paragraph by adding the word *virtual* to the parenthesized formulation *for virtual **instance** methods*)
@@ -479,9 +488,8 @@ method body can also be used to implement a given instance or static virtual dec
 
 (Change first paragraph)
 
-The .override directive specifies that a virtual instance or static method shall be implemented (overridden),
-in this type, by a virtual instance or static method with a different name but with the same signature;
-the overridden and overriding virtual method must be of the same type (both must be either instance or static).
+The .override directive specifies that a virtual method shall be implemented (overridden), in this type,
+by a virtual instance method with a different name or a non-virtual static method, but with the same signature.
 This directive can be used to provide an implementation for a virtual method inherited from a base class, or
 a virtual method specified in an interface implemented by this type. The .override directive specifies a Method
 Implementation (MethodImpl) in the metadata (§II.15.1.4).
