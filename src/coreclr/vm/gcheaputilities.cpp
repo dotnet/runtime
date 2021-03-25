@@ -190,14 +190,6 @@ HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
         return __HRESULT_FROM_WIN32(err);
     }
 
-    // a standalone GC dispatches virtually on GCToEEInterface, so we must instantiate
-    // a class for the GC to use.
-    IGCToCLR* gcToClr = new (nothrow) standalone::GCToEEInterface();
-    if (!gcToClr)
-    {
-        return E_OUTOFMEMORY;
-    }
-
     g_gc_load_status = GC_LOAD_STATUS_DONE_LOAD;
     GC_VersionInfoFunction versionInfo = (GC_VersionInfoFunction)GetProcAddress(hMod, "GC_VersionInfo");
     if (!versionInfo)
@@ -234,6 +226,14 @@ HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
         return __HRESULT_FROM_WIN32(err);
     }
 
+    // a standalone GC dispatches virtually on GCToEEInterface, so we must instantiate
+    // a class for the GC to use.
+    IGCToCLR* gcToClr = new (nothrow) standalone::GCToEEInterface();
+    if (!gcToClr)
+    {
+        return E_OUTOFMEMORY;
+    }
+
     g_gc_load_status = GC_LOAD_STATUS_GET_INITIALIZE;
     IGCHeap* heap;
     IGCHandleManager* manager;
@@ -252,6 +252,7 @@ HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
     }
     else
     {
+        delete gcToClr;
         LOG((LF_GC, LL_FATALERROR, "GC initialization failed with HR = 0x%X\n", initResult));
     }
 
