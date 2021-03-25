@@ -114,3 +114,5 @@ The samples in `src/mono/sample/wasm` can be build and run like this:
 * browser TestMeaning sample
 
 `dotnet build /t:RunSample browser/Wasm.Browser.Sample.csproj`
+
+To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the above command lines.
