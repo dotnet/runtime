@@ -229,7 +229,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                 ClassDesc implClass = new ClassDesc();
                 implClass.BaseType = baseType;
 
-                implClass.Name = GetConstrainedTypeName(constrainedTypeDefinition);
+                implClass.Name = GetConstrainedTypeName(constrainedTypeDefinition, false);
                 implClass.ClassFlags = "public auto ansi";
                 string implTypePrefix = "class";
                 if (constrainedTypeDefinition.ToString().Contains("Valuetype"))
@@ -300,7 +300,13 @@ namespace VirtualStaticInterfaceMethodTestGen
                     {
                         implsGenerated.WriteLine($"    ldtoken {implTypePrefix} {implType}");
                         implsGenerated.WriteLine($"    call string {CommonCsPrefix}Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)");
-                        implsGenerated.WriteLine($"    ldstr \"{implMethodDesc.Name}\"");
+
+                        string methodNameToEmit = implMethodDesc.Name;
+                        if (methodNameToEmit.EndsWith("<U>"))
+                        {
+                            methodNameToEmit = methodNameToEmit.Substring(0, methodNameToEmit.Length - 3);
+                        }
+                        implsGenerated.WriteLine($"    ldstr \"{methodNameToEmit}\"");
                         if (genericMethod)
                         {
                             implsGenerated.WriteLine($"    ldstr \"<\"");
@@ -317,14 +323,17 @@ namespace VirtualStaticInterfaceMethodTestGen
             }
         }
 
-        static string GetConstrainedTypeName(ConstrainedTypeDefinition isStruct)
+        static string GetConstrainedTypeName(ConstrainedTypeDefinition isStruct, bool withImplPrefix = true)
         {
             string constrainedType = isStruct.ToString();
             if (constrainedType.StartsWith("Generic"))
             {
                 constrainedType = constrainedType + "`1";
             }
-            return ImplPrefix + constrainedType;
+            if (withImplPrefix)
+                return ImplPrefix + constrainedType;
+            else
+                return constrainedType;
         }
 
         static string CommonCsAssemblyName = "GenericContextCommonCs";
@@ -333,6 +342,57 @@ namespace VirtualStaticInterfaceMethodTestGen
         static string CommonPrefix = $"[{CommonAndImplAssemblyName}]";
         static string CommonCsPrefix = $"[{CommonCsAssemblyName}]";
         static string ImplPrefix = $"[{CommonAndImplAssemblyName}]";
+
+
+        static string AppendSuffixToConstrainedType(TestScenario scenario, string constrainedType, out bool invalidScenario)
+        {
+            invalidScenario = false;
+            switch (scenario.ConstrainedType)
+            {
+                case ConstrainedTypeScenario.NonGeneric:
+                    if (constrainedType.StartsWith(ImplPrefix + "Generic"))
+                        invalidScenario = true;
+
+                    break;
+
+                case ConstrainedTypeScenario.GenericOverTypeParameter:
+                    if (!constrainedType.StartsWith(ImplPrefix + "Generic"))
+                        invalidScenario = true;
+                    if (scenario.CallerScenario == CallerMethodScenario.NonGeneric)
+                        invalidScenario = true;
+                    if (scenario.CallerScenario == CallerMethodScenario.GenericOverConstrainedType)
+                        invalidScenario = true;
+
+                    constrainedType = constrainedType + "<!!0>";
+                    break;
+
+                case ConstrainedTypeScenario.GenericOverStruct:
+                    if (!constrainedType.StartsWith(ImplPrefix + "Generic"))
+                        invalidScenario = true;
+                    constrainedType = constrainedType + "<int32>";
+                    break;
+
+                case ConstrainedTypeScenario.GenericOverReferenceType_ClassA:
+                    if (!constrainedType.StartsWith(ImplPrefix + "Generic"))
+                        invalidScenario = true;
+                    constrainedType = constrainedType + "<object>";
+                    break;
+
+                case ConstrainedTypeScenario.GenericOverGenericStructOverTypeParameter:
+                    if (!constrainedType.StartsWith(ImplPrefix + "Generic"))
+                        invalidScenario = true;
+                    if (scenario.CallerScenario == CallerMethodScenario.NonGeneric)
+                        invalidScenario = true;
+                    if (scenario.CallerScenario == CallerMethodScenario.GenericOverConstrainedType)
+                        invalidScenario = true;
+                    constrainedType = constrainedType + $"<valuetype {CommonPrefix}GenericStruct`1<!!0>>";
+                    break;
+                default:
+                    throw new Exception("Unexpected value");
+            }
+
+            return constrainedType;
+        }
 
 
         static void Main(string[] args)
@@ -354,194 +414,162 @@ namespace VirtualStaticInterfaceMethodTestGen
             
             foreach (var scenario in TestScenario.GetScenarios())
             {
-                        string scenarioName = scenario.ToString();
+                string scenarioName = scenario.ToString();
 
-                        string constrainedType = GetConstrainedTypeName(scenario.ConstrainedTypeDefinition);
-                        string constrainedTypeWithPrefix;
+                string constrainedType = AppendSuffixToConstrainedType(scenario, GetConstrainedTypeName(scenario.ConstrainedTypeDefinition), out bool skipScenario);
+                if (skipScenario)
+                    continue;
 
-                        string interfaceType;
-                        string interfaceMethod;
-                        switch (scenario.ConstrainedType)
-                        {
-                            case ConstrainedTypeScenario.NonGeneric:
-                                if (constrainedType.StartsWith(ImplPrefix + "Generic"))
-                                    continue;
+                string interfaceTypeSansImplPrefix;
+                string interfaceMethod;
 
-                                break;
+                string constrainedTypePrefix;
+                if (constrainedType.Contains("Valuetype"))
+                    constrainedTypePrefix = $"valuetype ";
+                else
+                    constrainedTypePrefix = $"class ";
 
-                            case ConstrainedTypeScenario.GenericOverTypeParameter:
-                                if (!constrainedType.StartsWith(ImplPrefix + "Generic"))
-                                    continue;
-                                if (scenario.CallerScenario == CallerMethodScenario.NonGeneric)
-                                    continue;
-                                if (scenario.CallerScenario == CallerMethodScenario.GenericOverConstrainedType)
-                                    continue;
-
-                                constrainedType = constrainedType + "<!!0>";
-                                break;
-
-                            case ConstrainedTypeScenario.GenericOverStruct:
-                                if (!constrainedType.StartsWith(ImplPrefix + "Generic"))
-                                    continue;
-                                constrainedType = constrainedType + "<int32>";
-                                break;
-
-                            case ConstrainedTypeScenario.GenericOverReferenceType_ClassA:
-                                if (!constrainedType.StartsWith(ImplPrefix + "Generic"))
-                                    continue;
-                                constrainedType = constrainedType + "<object>";
-                                break;
-
-                            case ConstrainedTypeScenario.GenericOverGenericStructOverTypeParameter:
-                                if (!constrainedType.StartsWith(ImplPrefix + "Generic"))
-                                    continue;
-                                if (scenario.CallerScenario == CallerMethodScenario.NonGeneric)
-                                    continue;
-                                if (scenario.CallerScenario == CallerMethodScenario.GenericOverConstrainedType)
-                                    continue;
-                                constrainedType = constrainedType + $"<valuetype {CommonPrefix}GenericStruct`1<!!0>>";
-                                break;
-                            default:
-                                throw new Exception("Unexpected value");
-                        }
-                        if (constrainedType.Contains("Valuetype"))
-                            constrainedTypeWithPrefix = $"valuetype {constrainedType}";
+                switch (scenario.InterfaceType)
+                {
+                    case InterfaceType.NonGeneric:
+                        interfaceTypeSansImplPrefix = "IFaceNonGeneric";
+                        break;
+                    case InterfaceType.GenericOverString:
+                        if (scenario.CallerScenario == CallerMethodScenario.GenericOverConstrainedType)
+                            interfaceTypeSansImplPrefix = "IFaceGeneric`1<!!1>";
                         else
-                            constrainedTypeWithPrefix = $"class {constrainedType}";
+                            interfaceTypeSansImplPrefix = "IFaceGeneric`1<string>";
+                        break;
+                    case InterfaceType.GenericOverObject:
+                        if (scenario.CallerScenario == CallerMethodScenario.GenericOverConstrainedType)
+                            interfaceTypeSansImplPrefix = "IFaceGeneric`1<!!1>";
+                        else
+                            interfaceTypeSansImplPrefix = "IFaceGeneric`1<object>";
+                        break;
+                    case InterfaceType.CuriouslyRecurringGeneric:
+                        interfaceTypeSansImplPrefix = $"IFaceCuriouslyRecurringGeneric`1<{constrainedTypePrefix}{constrainedType}>";
+                        break;
+                    default:
+                        throw new Exception("Unexpected value");
+                }
 
-                        switch (scenario.InterfaceType)
-                        {
-                            case InterfaceType.NonGeneric:
-                                interfaceType = ImplPrefix + "IFaceNonGeneric";
-                                break;
-                            case InterfaceType.GenericOverString:
-                                if (scenario.CallerScenario == CallerMethodScenario.GenericOverConstrainedType)
-                                    interfaceType = ImplPrefix + "IFaceGeneric`1<!!1>";
-                                else
-                                    interfaceType = ImplPrefix + "IFaceGeneric`1<string>";
-                                break;
-                            case InterfaceType.GenericOverObject:
-                                if (scenario.CallerScenario == CallerMethodScenario.GenericOverConstrainedType)
-                                    interfaceType = ImplPrefix + "IFaceGeneric`1<!!1>";
-                                else
-                                    interfaceType = ImplPrefix + "IFaceGeneric`1<object>";
-                                break;
-                            case InterfaceType.CuriouslyRecurringGeneric:
-                                interfaceType = ImplPrefix + $"IFaceCuriouslyRecurringGeneric`1<{constrainedTypeWithPrefix}>";
-                                break;
-                            default:
-                                throw new Exception("Unexpected value");
-                        }
+                string interfaceMethodRoot;
+                string interfaceMethodInstantiation = "";
 
-                        switch (scenario.MethodType)
-                        {
-                            case MethodType.NormalMethod:
-                                interfaceMethod = "NormalMethod";
-                                break;
+                switch (scenario.MethodType)
+                {
+                    case MethodType.NormalMethod:
+                        interfaceMethodRoot = "NormalMethod";
+                        break;
 
-                            case MethodType.GenericMethodOverInt:
-                                interfaceMethod = "GenericMethod<int32>";
-                                break;
+                    case MethodType.GenericMethodOverInt:
+                        interfaceMethodRoot = "GenericMethod";
+                        interfaceMethodInstantiation  = "<int32>";
+                        break;
 
-                            case MethodType.GenericMethodOverString:
-                                interfaceMethod = "GenericMethod<string>";
-                                break;
+                    case MethodType.GenericMethodOverString:
+                        interfaceMethodRoot = "GenericMethod";
+                        interfaceMethodInstantiation = "<string>";
+                        break;
 
-                            case MethodType.GenericMethodOverTypeParameter:
-                                if (scenario.CallerScenario == CallerMethodScenario.NonGeneric)
-                                    continue;
-                                interfaceMethod = "GenericMethod<!!0>";
-                                break;
-
-                            default:
-                                throw new Exception("Unexpected");
-                        }
-
-                        TextWriter twIL;
-
-                        MethodDesc mdIndividualTestMethod = new MethodDesc();
-                        string basicTestMethodName = $"Test_{scenarioName}";
-                        mdIndividualTestMethod.Name = basicTestMethodName;
-                        mdIndividualTestMethod.HasBody = true;
-                        mdIndividualTestMethod.MethodFlags = "public static";
-                        mdIndividualTestMethod.MethodImpls = null;
-                        mdIndividualTestMethod.ReturnType = "void";
-                        mdIndividualTestMethod.Arguments = "";
-
-
-                        string expectedString = constrainedTypeWithPrefix + interfaceType + "." + interfaceMethod;
-
+                    case MethodType.GenericMethodOverTypeParameter:
+                        interfaceMethodRoot = "GenericMethod";
                         if (scenario.CallerScenario == CallerMethodScenario.NonGeneric)
-                        {
+                            continue;
+                        interfaceMethodInstantiation = "<!!0>";
+                        break;
+
+                    default:
+                        throw new Exception("Unexpected");
+                }
+
+                interfaceMethod = interfaceMethodRoot + interfaceMethodInstantiation;
+
+                TextWriter twIL;
+
+                MethodDesc mdIndividualTestMethod = new MethodDesc();
+                string basicTestMethodName = $"Test_{scenarioName}";
+                mdIndividualTestMethod.Name = basicTestMethodName;
+                mdIndividualTestMethod.HasBody = true;
+                mdIndividualTestMethod.MethodFlags = "public static";
+                mdIndividualTestMethod.MethodImpls = null;
+                mdIndividualTestMethod.ReturnType = "void";
+                mdIndividualTestMethod.Arguments = "";
+
+
+                string expectedString = constrainedTypePrefix + AppendSuffixToConstrainedType(scenario, GetConstrainedTypeName(scenario.ConstrainedTypeDefinition, withImplPrefix: false), out _) + "'" + interfaceTypeSansImplPrefix + "." + interfaceMethodRoot + "'" + interfaceMethodInstantiation;
+
+                if (scenario.CallerScenario == CallerMethodScenario.NonGeneric)
+                {
+                    EmitTestMethod();
+                    swMainMethodBody.WriteLine($"    call void TestEntrypoint::{mdIndividualTestMethod.Name}()");
+                }
+                else
+                {
+                    string methodInstantiation;
+                    switch (scenario.CallerScenario)
+                    {
+                        case CallerMethodScenario.GenericOverInt32:
+                        case CallerMethodScenario.GenericOverString:
+
+                            mdIndividualTestMethod.Name = mdIndividualTestMethod.Name + "<T>";
                             EmitTestMethod();
-                            swMainMethodBody.WriteLine($"    call void TestEntrypoint::{mdIndividualTestMethod.Name}()");
-                        }
-                        else
-                        {
-                            string methodInstantiation;
-                            switch (scenario.CallerScenario)
-                            {
-                                case CallerMethodScenario.GenericOverInt32:
-                                case CallerMethodScenario.GenericOverString:
 
-                                    mdIndividualTestMethod.Name = mdIndividualTestMethod.Name + "<T>";
-                                    EmitTestMethod();
+                            methodInstantiation = "string";
+                            if (scenario.CallerScenario == CallerMethodScenario.GenericOverInt32)
+                                methodInstantiation = "int32";
 
-                                    methodInstantiation = "string";
-                                    if (scenario.CallerScenario == CallerMethodScenario.GenericOverInt32)
-                                        methodInstantiation = "int32";
+                            swMainMethodBody.WriteLine($"    call void TestEntrypoint::{basicTestMethodName}<{methodInstantiation}>()");
+                            break;
 
-                                    swMainMethodBody.WriteLine($"    call void TestEntrypoint::{basicTestMethodName}<{methodInstantiation}>()");
-                                    break;
+                        case CallerMethodScenario.GenericOverConstrainedType:
+                            mdIndividualTestMethod.Name = $"{mdIndividualTestMethod.Name}<(class {CommonPrefix}IFaceGeneric`1<!!U>, {CommonPrefix}IFaceNonGeneric, class {CommonPrefix}IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>";
+                            EmitTestMethod();
 
-                                case CallerMethodScenario.GenericOverConstrainedType:
-                                    mdIndividualTestMethod.Name = $"{mdIndividualTestMethod.Name}<(class {CommonPrefix}IFaceGeneric`1<!!U>, {CommonPrefix}IFaceNonGeneric, class {CommonPrefix}IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>";
-                                    EmitTestMethod();
-
-                                    swMainMethodBody.WriteLine($"    call void TestEntrypoint::{basicTestMethodName}<{constrainedTypeWithPrefix},string>()");
-                                    if (scenario.InterfaceType == InterfaceType.GenericOverObject)
-                                        swMainMethodBody.WriteLine($"    call void TestEntrypoint::{basicTestMethodName}<{constrainedTypeWithPrefix},object>()");
-                                    break;
-                                default:
-                                    throw new Exception("AACLL");
-                            }
-                        }
+                            swMainMethodBody.WriteLine($"    call void TestEntrypoint::{basicTestMethodName}<{constrainedTypePrefix}{constrainedType},string>()");
+                            if (scenario.InterfaceType == InterfaceType.GenericOverObject)
+                                swMainMethodBody.WriteLine($"    call void TestEntrypoint::{basicTestMethodName}<{constrainedTypePrefix}{constrainedType},object>()");
+                            break;
+                        default:
+                            throw new Exception("AACLL");
+                    }
+                }
 
 
 
-                        // If test scenario requires generic class caller, Create Caller class and make a global method method which calls it
-                        // If test scenario requires generic method caller, create global generic method as required and non-generic test method
-                        // If test scenario requires non-generic method caller, just make global method as caller
-                        //   Call callee
-                        //
-                        // Create Callee class
-                        //   With callee method that implements scenario
-                        //   fill expected value static with string computed based on scenario + exact type of calle class/generic args of callee method
-                        // compute expected result string
+                // If test scenario requires generic class caller, Create Caller class and make a global method method which calls it
+                // If test scenario requires generic method caller, create global generic method as required and non-generic test method
+                // If test scenario requires non-generic method caller, just make global method as caller
+                //   Call callee
+                //
+                // Create Callee class
+                //   With callee method that implements scenario
+                //   fill expected value static with string computed based on scenario + exact type of calle class/generic args of callee method
+                // compute expected result string
 
-                        void EmitTestMethod()
-                        {
-                            EmitMethod(swTestClassMethods, mdIndividualTestMethod);
-                            EmitILToCallActualMethod(swTestClassMethods);
-                            swTestClassMethods.WriteLine($"    ldstr \"{scenario.ToString()}\"");
-                            swTestClassMethods.WriteLine($"    ldstr \"{expectedString}\"");
-                            swTestClassMethods.WriteLine($"    call void {CommonCsPrefix}Statics::CheckForFailure(string,string)");
-                            twIL = swTestClassMethods;
-                            EmitEndMethod(swTestClassMethods, mdIndividualTestMethod);
-                        }
-                        void EmitILToCallActualMethod(TextWriter twActualIL)
+                void EmitTestMethod()
+                {
+                    EmitMethod(swTestClassMethods, mdIndividualTestMethod);
+                    EmitILToCallActualMethod(swTestClassMethods);
+                    swTestClassMethods.WriteLine($"    ldstr \"{scenario.ToString()}\"");
+                    swTestClassMethods.WriteLine($"    ldstr \"{expectedString}\"");
+                    swTestClassMethods.WriteLine($"    call void {CommonCsPrefix}Statics::CheckForFailure(string,string)");
+                    twIL = swTestClassMethods;
+                    EmitEndMethod(swTestClassMethods, mdIndividualTestMethod);
+                }
+                void EmitILToCallActualMethod(TextWriter twActualIL)
                 {
                     // Emit the IL to call the actual method
                     switch (scenario.Operation)
                     {
                         case OperationTested.Call:
                             EmitConstrainedPrefix();
-                            twActualIL.WriteLine($"    call void class {interfaceType}::{interfaceMethod}()");
+                            twActualIL.WriteLine($"    call void class {ImplPrefix}{interfaceTypeSansImplPrefix}::{interfaceMethod}()");
                             break;
 
                         case OperationTested.Ldftn:
                             EmitConstrainedPrefix();
-                            twActualIL.WriteLine($"    ldftn void class {interfaceType}::{interfaceMethod}()");
+                            twActualIL.WriteLine($"    ldftn void class {ImplPrefix}{interfaceTypeSansImplPrefix}::{interfaceMethod}()");
                             twActualIL.WriteLine($"    volatile.");
                             twActualIL.WriteLine($"    stsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) {CommonCsPrefix}Statics::FtnHolder");
                             twActualIL.WriteLine($"    volatile.");
@@ -552,7 +580,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                         case OperationTested.CreateDelegate:
                             twActualIL.WriteLine("    ldnull");
                             EmitConstrainedPrefix();
-                            twActualIL.WriteLine($"    ldftn void class {interfaceType}::{interfaceMethod}()");
+                            twActualIL.WriteLine($"    ldftn void class {ImplPrefix}{interfaceTypeSansImplPrefix}::{interfaceMethod}()");
                             twActualIL.WriteLine($"    newobj instance void [System.Runtime]System.Action::.ctor(object,");
                             twActualIL.WriteLine($"                                                              native int)");
                             twActualIL.WriteLine($"    volatile.");
@@ -571,7 +599,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                         if (scenario.CallerScenario == CallerMethodScenario.GenericOverConstrainedType)
                             twActualIL.WriteLine($"    constrained. !!0");
                         else
-                            twActualIL.WriteLine($"    constrained. {constrainedTypeWithPrefix}");
+                            twActualIL.WriteLine($"    constrained. {constrainedTypePrefix}{constrainedType}");
                     }
                 }
             }
