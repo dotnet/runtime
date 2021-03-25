@@ -219,7 +219,7 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
         // over to a brand new STA as necessary.  We have to notice this happening, so
         // we can adjust the delegate we are going to invoke on.
 
-        _ASSERTE(GetThreadNULLOk() == pThread);        // Now that it's started
+        _ASSERTE(GetThread() == pThread);        // Now that it's started
 
         KickOffThread_Args args;
         args.share = NULL;
