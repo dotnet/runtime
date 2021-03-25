@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
@@ -24,6 +25,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         public delegate object InvokeDelegate(object[] args);
+
+        [RequiresUnreferencedCode("Types and members might be removed")]
         internal object Invoke(object[] args)
         {
             Debug.Assert(args != null);

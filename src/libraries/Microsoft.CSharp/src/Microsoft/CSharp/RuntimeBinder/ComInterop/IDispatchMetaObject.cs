@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq.Expressions;
 
@@ -11,12 +12,15 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     {
         private readonly IDispatchComObject _self;
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         internal IDispatchMetaObject(Expression expression, IDispatchComObject self)
             : base(expression, BindingRestrictions.Empty, self)
         {
             _self = self;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
         {
             Requires.NotNull(binder, nameof(binder));
@@ -32,6 +36,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return base.BindInvokeMember(binder, args);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args)
         {
             Requires.NotNull(binder, nameof(binder));
@@ -45,6 +51,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return base.BindInvoke(binder, args);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         private DynamicMetaObject BindComInvoke(DynamicMetaObject[] args, ComMethodDesc method, CallInfo callInfo, bool[] isByRef)
         {
             return new ComInvokeBinder(
@@ -117,6 +125,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             );
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         private DynamicMetaObject BindEvent(ComEventDesc eventDesc)
         {
             // BoundDispEvent CreateComEvent(object rcw, Guid sourceIid, int dispid)
@@ -134,6 +144,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             );
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes)
         {
             Requires.NotNull(binder, nameof(binder));
@@ -147,6 +159,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return base.BindGetIndex(binder, indexes);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value)
         {
             Requires.NotNull(binder, nameof(binder));
@@ -184,6 +198,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 base.BindSetMember(binder, value);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         private DynamicMetaObject TryPropertyPut(SetMemberBinder binder, DynamicMetaObject value)
         {
             bool holdsNull = value.Value == null && value.HasValue;

@@ -41,6 +41,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         [ExcludeFromCodeCoverage(Justification = "Should only be called through override")]
         public virtual object Object
         {
+            [RequiresUnreferencedCode("Types and members might be removed")]
             get
             {
                 Debug.Fail("Invalid Expr in GetObject");

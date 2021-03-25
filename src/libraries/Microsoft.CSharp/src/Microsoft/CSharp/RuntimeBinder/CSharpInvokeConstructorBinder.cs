@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Numerics.Hashing;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
@@ -13,9 +14,11 @@ namespace Microsoft.CSharp.RuntimeBinder
     {
         public BindingFlag BindingFlags => 0;
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
             => runtimeBinder.DispatchPayload(this, arguments, locals);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
             => RuntimeBinder.PopulateSymbolTableWithPayloadInformation(this, callingType, arguments);
 
@@ -39,6 +42,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private readonly Type _callingContext;
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public CSharpInvokeConstructorBinder(
             CSharpCallFlags flags,
             Type callingContext,
@@ -81,6 +85,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             return BinderHelper.CompareArgInfos(TypeArguments, otherBinder.TypeArguments, _argumentInfo, otherBinder._argumentInfo);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
             BinderHelper.ValidateBindArgument(target, nameof(target));

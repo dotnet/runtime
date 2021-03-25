@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -45,6 +46,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return result;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "All exceptions returned by Marshal.GetExceptionForHR will not be trimmed.")]
         internal Exception GetException()
         {
             Debug.Assert(pfnDeferredFillIn == IntPtr.Zero);

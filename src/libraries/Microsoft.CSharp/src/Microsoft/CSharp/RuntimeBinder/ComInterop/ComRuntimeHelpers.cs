@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -205,6 +206,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static BoundDispEvent CreateComEvent(object rcw, Guid sourceIid, int dispid)
         {
             return new BoundDispEvent(rcw, sourceIid, dispid);

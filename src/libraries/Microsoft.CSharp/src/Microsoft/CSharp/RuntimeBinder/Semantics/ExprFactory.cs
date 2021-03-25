@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -32,46 +33,61 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 obj, new CMemberLookupResults(TypeArray.Allocate((CType)method.GetType()), name));
         }
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprUserDefinedConversion CreateUserDefinedConversion(Expr arg, Expr call, MethWithInst method) =>
             new ExprUserDefinedConversion(arg, call, method);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprCast CreateCast(CType type, Expr argument) => CreateCast(0, type, argument);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprCast CreateCast(EXPRFLAG flags, CType type, Expr argument) => new ExprCast(flags, type, argument);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprLocal CreateLocal(LocalVariableSymbol local) => new ExprLocal(local);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprBoundLambda CreateAnonymousMethod(AggregateType delegateType, Scope argumentScope, Expr expression) =>
             new ExprBoundLambda(delegateType, argumentScope, expression);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprMethodInfo CreateMethodInfo(MethPropWithInst mwi) =>
             CreateMethodInfo(mwi.Meth(), mwi.GetType(), mwi.TypeArgs);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprMethodInfo CreateMethodInfo(MethodSymbol method, AggregateType methodType, TypeArray methodParameters) =>
             new ExprMethodInfo(
                 TypeManager.GetPredefAgg(method.IsConstructor() ? PredefinedType.PT_CONSTRUCTORINFO : PredefinedType.PT_METHODINFO).getThisType(),
                 method, methodType, methodParameters);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprPropertyInfo CreatePropertyInfo(PropertySymbol prop, AggregateType propertyType) =>
             new ExprPropertyInfo(TypeManager.GetPredefAgg(PredefinedType.PT_PROPERTYINFO).getThisType(), prop, propertyType);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprFieldInfo CreateFieldInfo(FieldSymbol field, AggregateType fieldType) =>
             new ExprFieldInfo(field, fieldType, TypeManager.GetPredefAgg(PredefinedType.PT_FIELDINFO).getThisType());
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprTypeOf CreateTypeOf(CType sourceType) =>
             new ExprTypeOf(TypeManager.GetPredefAgg(PredefinedType.PT_TYPE).getThisType(), sourceType);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprUserLogicalOp CreateUserLogOp(CType type, Expr trueFalseCall, ExprCall operatorCall) =>
             new ExprUserLogicalOp(type, trueFalseCall, operatorCall);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprConcat CreateConcat(Expr first, Expr second) => new ExprConcat(first, second);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprConstant CreateStringConstant(string str) =>
             CreateConstant(TypeManager.GetPredefAgg(PredefinedType.PT_STRING).getThisType(), ConstVal.Get(str));
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprMultiGet CreateMultiGet(EXPRFLAG flags, CType type, ExprMulti multi) =>
             new ExprMultiGet(type, flags, multi);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprMulti CreateMulti(EXPRFLAG flags, CType type, Expr left, Expr op) =>
             new ExprMulti(type, flags, left, op);
 
@@ -82,7 +98,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // type - Non-null
         //
         // This returns a null for reference types and an EXPRZEROINIT for all others.
-
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static Expr CreateZeroInit(CType type)
         {
             Debug.Assert(type != null);
@@ -122,9 +138,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public static ExprConstant CreateConstant(CType type, ConstVal constVal) => new ExprConstant(type, constVal);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprConstant CreateIntegerConstant(int x) =>
             CreateConstant(TypeManager.GetPredefAgg(PredefinedType.PT_INT).getThisType(), ConstVal.Get(x));
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public static ExprConstant CreateBoolConstant(bool b) =>
             CreateConstant(TypeManager.GetPredefAgg(PredefinedType.PT_BOOL).getThisType(), ConstVal.Get(b));
 

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -15,11 +16,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// </summary>
     internal sealed class ComInvokeAction : InvokeBinder
     {
+        [RequiresUnreferencedCode("Types and members might be removed")]
         internal ComInvokeAction(CallInfo callInfo)
             : base(callInfo)
         {
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion)
         {
             if (ComBinder.TryBindInvoke(this, target, args, out DynamicMetaObject res))
@@ -48,7 +52,16 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     {
         internal static readonly SplatInvokeBinder s_instance = new SplatInvokeBinder();
 
+        // The only callsite using this type is also marked as unsafe
+        [RequiresUnreferencedCode("Types and members might be removed")]
+        static SplatInvokeBinder() { }
+
+        [RequiresUnreferencedCode("Types and members might be removed")]
+        internal SplatInvokeBinder() { }
+
         // Just splat the args and dispatch through a nested site
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel)
         {
             Debug.Assert(args.Length == 2);

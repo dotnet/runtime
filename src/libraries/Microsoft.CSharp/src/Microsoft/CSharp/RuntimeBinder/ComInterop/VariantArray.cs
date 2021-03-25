@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -49,11 +50,15 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         // (guarenteed less than 28, in practice 0-2)
         private static readonly List<Type> s_generatedTypes = new List<Type>(0);
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         internal static MemberExpression GetStructField(ParameterExpression variantArray, int field)
         {
             return Expression.Field(variantArray, "Element" + field);
         }
 
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Variant))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "Types are either dynamically created or have dynamic dependency.")]
         internal static Type GetStructType(int args)
         {
             Debug.Assert(args >= 0);

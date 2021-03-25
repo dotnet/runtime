@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -47,6 +48,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override Type AssociatedSystemType
         {
+            [RequiresUnreferencedCode("Types and members might be removed")]
             get
             {
                 Type elementType = ElementType.AssociatedSystemType;
@@ -60,6 +62,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override ConstValKind ConstValKind => ConstValKind.IntPtr;
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public override AggregateType GetAts() => SymbolLoader.GetPredefindType(PredefinedType.PT_ARRAY);
     }
 }

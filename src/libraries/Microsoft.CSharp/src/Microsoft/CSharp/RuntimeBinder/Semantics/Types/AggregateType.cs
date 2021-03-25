@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -75,6 +76,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public AggregateType BaseClass
         {
+            [RequiresUnreferencedCode("Types and members might be removed")]
             get
             {
                 if (_baseType == null)
@@ -110,6 +112,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public IEnumerable<AggregateType> TypeHierarchy
         {
+            [RequiresUnreferencedCode("Types and members might be removed")]
             get
             {
                 if (IsInterfaceType)
@@ -120,16 +123,30 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         yield return iface;
                     }
 
-                    yield return PredefinedTypes.GetPredefinedAggregate(PredefinedType.PT_OBJECT).getThisType();
+                    yield return GetPredefinedAggregateGetThisTypeWithSuppressedMessage();
                 }
                 else
                 {
-                    for (AggregateType agg = this; agg != null; agg = agg.BaseClass)
+                    for (AggregateType agg = this; agg != null; agg = agg.BaseClassWithSuppressedMessage)
                     {
                         yield return agg;
                     }
                 }
             }
+        }
+
+        private AggregateType BaseClassWithSuppressedMessage
+        {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                Justification = "Workarounds mono/linker#1906. All usages are marked as unsafe.")]
+            get => BaseClass;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                Justification = "Workarounds mono/linker#1906. All usages are marked as unsafe.")]
+        private static AggregateType GetPredefinedAggregateGetThisTypeWithSuppressedMessage()
+        {
+            return PredefinedTypes.GetPredefinedAggregate(PredefinedType.PT_OBJECT).getThisType();
         }
 
         public TypeArray TypeArgsThis { get; }
@@ -140,6 +157,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool IsCollectionType
         {
+            [RequiresUnreferencedCode("Types and members might be removed")]
             get
             {
                 Type sysType = AssociatedSystemType;
@@ -165,6 +183,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeArray WinRTCollectionIfacesAll
         {
+            [RequiresUnreferencedCode("Types and members might be removed")]
             get
             {
                 if (_winrtifacesAll == null)
@@ -281,8 +300,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public override Type AssociatedSystemType => _associatedSystemType ?? (_associatedSystemType = CalculateAssociatedSystemType());
+        public override Type AssociatedSystemType
+        {
+            [RequiresUnreferencedCode("Types and members might be removed")]
+            get => _associatedSystemType ?? (_associatedSystemType = CalculateAssociatedSystemType());
+        }
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         private Type CalculateAssociatedSystemType()
         {
             Type uninstantiatedType = OwningAggregate.AssociatedSystemType;
@@ -385,6 +409,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public override AggregateType GetAts() => this;
     }
 }

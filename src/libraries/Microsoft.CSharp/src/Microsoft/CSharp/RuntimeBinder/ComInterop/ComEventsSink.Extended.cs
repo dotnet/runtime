@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.CSharp.RuntimeBinder.ComInterop;
 
@@ -15,6 +16,7 @@ namespace System.Runtime.InteropServices
             Advise(rcw);
         }
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public void AddHandler(int dispid, object func)
         {
             ComEventsMethod method = FindMethod(dispid);

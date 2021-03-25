@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
@@ -16,6 +17,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             _marshalType = marshalType;
         }
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         internal override Expression Marshal(Expression parameter)
         {
             parameter = base.Marshal(parameter);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -65,6 +66,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
              * logic is only concerned with conversions that can be made explicitly, but
              * not implicitly.
              */
+            [RequiresUnreferencedCode("Types and members might be removed")]
             public bool Bind()
             {
                 // To test for a standard conversion, call canConvert(exprSrc, typeDest, STANDARDANDCONVERTTYPE.NOUDC) and
@@ -181,6 +183,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private bool bindExplicitConversionFromNub()
             {
                 Debug.Assert(_typeSrc != null);
@@ -219,6 +222,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private bool bindExplicitConversionFromArrayToIList()
             {
                 // 13.2.2
@@ -261,6 +265,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private bool bindExplicitConversionFromIListToArray(ArrayType arrayDest)
             {
                 // 13.2.2
@@ -301,6 +306,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private bool bindExplicitConversionFromArrayToArray(ArrayType arraySrc, ArrayType arrayDest)
             {
                 // 13.2.2
@@ -333,6 +339,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private bool bindExplicitConversionToArray(ArrayType arrayDest)
             {
                 Debug.Assert(_typeSrc != null);
@@ -363,6 +370,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private bool bindExplicitConversionToPointer()
             {
                 // 27.4 Pointer conversions
@@ -398,6 +406,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             //   participating enum-type as the underlying type of that enum-type, and then performing
             //   an implicit or explicit numeric conversion between the resulting types.
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private AggCastResult bindExplicitConversionFromEnumToAggregate(AggregateType aggTypeDest)
             {
                 Debug.Assert(_typeSrc != null);
@@ -440,6 +449,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return AggCastResult.Success;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private AggCastResult bindExplicitConversionFromDecimalToEnum(AggregateType aggTypeDest)
             {
                 Debug.Assert(_typeSrc != null);
@@ -481,6 +491,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return bIsConversionOK ? AggCastResult.Success : AggCastResult.Failure;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private AggCastResult bindExplicitConversionFromEnumToDecimal(AggregateType aggTypeDest)
             {
                 Debug.Assert(_typeSrc != null);
@@ -534,6 +545,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return AggCastResult.Success;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private AggCastResult bindExplicitConversionToEnum(AggregateType aggTypeDest)
             {
                 Debug.Assert(_typeSrc != null);
@@ -579,6 +591,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return AggCastResult.Failure;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private AggCastResult bindExplicitConversionBetweenSimpleTypes(AggregateType aggTypeDest)
             {
                 // 13.2.1
@@ -647,6 +660,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return bConversionOk ? AggCastResult.Success : AggCastResult.Failure;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private AggCastResult bindExplicitConversionBetweenAggregates(AggregateType aggTypeDest)
             {
                 // 13.2.3
@@ -698,6 +712,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return AggCastResult.Failure;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private AggCastResult bindExplicitConversionFromPointerToInt(AggregateType aggTypeDest)
             {
                 // 27.4 Pointer conversions
@@ -715,6 +730,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return AggCastResult.Success;
             }
 
+            [RequiresUnreferencedCode("Types and members might be removed")]
             private AggCastResult bindExplicitConversionToAggregate(AggregateType aggTypeDest)
             {
                 Debug.Assert(_typeSrc != null);

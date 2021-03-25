@@ -25,6 +25,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             UnderlyingType = underlyingType;
         }
 
+        [RequiresUnreferencedCode("Types and members might be removed")]
         public override AggregateType GetAts() =>
             _ats ?? (_ats = TypeManager.GetAggregate(TypeManager.GetNullable(), TypeArray.Allocate(UnderlyingType)));
 
@@ -44,7 +45,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override bool IsStructType => true;
 
-        public override Type AssociatedSystemType => typeof(Nullable<>).MakeGenericType(UnderlyingType.AssociatedSystemType);
+        public override Type AssociatedSystemType
+        {
+            [RequiresUnreferencedCode("Types and members might be removed")]
+            get => typeof(Nullable<>).MakeGenericType(UnderlyingType.AssociatedSystemType);
+        }
 
         public override CType BaseOrParameterOrElementType => UnderlyingType;
 
