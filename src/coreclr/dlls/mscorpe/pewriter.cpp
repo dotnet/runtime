@@ -927,14 +927,20 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileN
         if (pPEDecoder->Has32BitNTHeaders())
         {
             if ((createFlags & ICEE_CREATE_FILE_PE32) == 0)
+            {
+                delete pPEDecoder;
                 return E_FAIL;
+            }
 
             setImageBase32(DWORD(size_t(pPEDecoder->GetPreferredBase())));
         }
         else
         {
             if ((createFlags & ICEE_CREATE_FILE_PE64) == 0)
+            {
+                delete pPEDecoder;
                 return E_FAIL;
+            }
 
             setImageBase64(UINT64((intptr_t) pPEDecoder->GetPreferredBase()));
         }
@@ -1926,7 +1932,11 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
                     is.NumberOfAuxSymbols = 1;
                     if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
                         memcpy(pch,&is,sizeof(IMAGE_SYMBOL));
-                    else return E_OUTOFMEMORY;
+                    else
+                    {
+                        delete[] TokInSymbolTable;
+                        return E_OUTOFMEMORY;
+                    }
                     TokInSymbolTable[NumberOfSymbols++] = 0;
                     memset(&is,0,sizeof(IMAGE_SYMBOL));
 #ifdef HOST_64BIT
@@ -1935,7 +1945,11 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
                     strcpy_s((char*)&is,sizeof(is),(char*)(UINT_PTR)(rcur->offset));
                     if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
                         memcpy(pch,&is,sizeof(IMAGE_SYMBOL));
-                    else return E_OUTOFMEMORY;
+                    else
+                    {
+                        delete[] TokInSymbolTable;
+                        return E_OUTOFMEMORY;
+                    }
 #ifdef HOST_64BIT
                     _ASSERTE(!"this is probably broken!!");
 #endif // HOST_64BIT
@@ -1956,7 +1970,11 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
                     is.NumberOfAuxSymbols = 0;
                     if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
                         memcpy(pch,&is,sizeof(IMAGE_SYMBOL));
-                    else return E_OUTOFMEMORY;
+                    else
+                    {
+                        delete[] TokInSymbolTable;
+                        return E_OUTOFMEMORY;
+                    }
                     ToRelocTable = FALSE;
                     tk = 0;
                     szSymbolName = NULL;
@@ -1997,11 +2015,19 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
                                 }
                                 if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
                                     memcpy(pch,&is,sizeof(IMAGE_SYMBOL));
-                                else return E_OUTOFMEMORY;
+                                else
+                                {
+                                    delete[] TokInSymbolTable;
+                                    return E_OUTOFMEMORY;
+                                }
                                 DWORD l = (DWORD)(strlen(szSymbolName)+1); // don't forget zero terminator!
                                 if((pch = reloc->getBlock(1)))
                                     memcpy(pch,szSymbolName,1);
-                                else return E_OUTOFMEMORY;
+                                else
+                                {
+                                    delete[] TokInSymbolTable;
+                                    return E_OUTOFMEMORY;
+                                }
                                 delete szSymbolName;
                                 StrTableLen += l;
                             }
@@ -2018,7 +2044,11 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
                             }
                             if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
                                 memcpy(pch,&is,sizeof(IMAGE_SYMBOL));
-                            else return E_OUTOFMEMORY;
+                            else
+                            {
+                                delete[] TokInSymbolTable;
+                                return E_OUTOFMEMORY;
+                            }
                             if(is.NumberOfAuxSymbols == 1)
                             {
                                 BYTE dummy[sizeof(IMAGE_SYMBOL)];
@@ -2026,7 +2056,11 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
                                 dummy[0] = dummy[2] = 1;
                                 if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
                                     memcpy(pch,dummy,sizeof(IMAGE_SYMBOL));
-                                else return E_OUTOFMEMORY;
+                                else
+                                {
+                                    delete[] TokInSymbolTable;
+                                    return E_OUTOFMEMORY;
+                                }
                                 TokInSymbolTable[NumberOfSymbols++] = 0;
                             }
                         }
@@ -2042,7 +2076,11 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
                             phdr->NumberOfRelocations = VAL32(VAL32(phdr->NumberOfRelocations) + 1);
                             if((pch = reloc->getBlock(sizeof(IMAGE_RELOCATION))))
                                 memcpy(pch,&is,sizeof(IMAGE_RELOCATION));
-                            else return E_OUTOFMEMORY;
+                            else
+                            {
+                                delete[] TokInSymbolTable;
+                                return E_OUTOFMEMORY;
+                            }
                         }
                     }
                     ToRelocTable = FALSE;
@@ -2057,7 +2095,11 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
         // Add string table counter:
         if((pch = reloc->getBlock(sizeof(ULONG))))
             memcpy(pch,&StrTableLen,sizeof(ULONG));
-        else return E_OUTOFMEMORY;
+        else
+        {
+            delete[] TokInSymbolTable;
+            return E_OUTOFMEMORY;
+        }
         reloc->m_header->Misc.VirtualSize = VAL32(reloc->dataLen());
         if(NumberOfSymbols)
         {
