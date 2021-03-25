@@ -60,7 +60,7 @@ TailCallTls::TailCallTls()
 {
 }
 
-Thread* STDCALL PInvokeGetThreadHelper()
+Thread* STDCALL JitGetThreadHelper()
 {
     return GetThreadNULLOk();
 }
