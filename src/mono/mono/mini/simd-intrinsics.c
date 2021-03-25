@@ -2813,10 +2813,8 @@ MonoInst*
 emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *simd_inst = emit_amd64_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
-	if (simd_inst != NULL) {
+	if (simd_inst != NULL)
 		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
-		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS_DECOMPOSE_VTYPE;
-	}
 	return simd_inst;
 }
 #else
@@ -2861,25 +2859,6 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 * into correspondig SIMD LOADX/STOREX instructions.
 */
 #if defined(TARGET_WIN32) && defined(TARGET_AMD64)
-static gboolean
-decompose_vtype_opt_uses_simd_intrinsics (MonoCompile *cfg, MonoInst *ins)
-{
-	if (cfg->uses_simd_intrinsics & MONO_CFG_USES_SIMD_INTRINSICS_DECOMPOSE_VTYPE)
-		return TRUE;
-
-	switch (ins->opcode) {
-	case OP_XMOVE:
-	case OP_XZERO:
-	case OP_LOADX_MEMBASE:
-	case OP_LOADX_ALIGNED_MEMBASE:
-	case OP_STOREX_MEMBASE:
-	case OP_STOREX_ALIGNED_MEMBASE_REG:
-		return TRUE;
-	default:
-		return FALSE;
-	}
-}
-
 static void
 decompose_vtype_opt_load_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 *sreg_int32)
 {
@@ -2899,26 +2878,38 @@ decompose_vtype_opt_load_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *in
 	}
 }
 
+static void
+decompose_vtype_opt_store_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 *dreg_int32)
+{
+	guint32 *dreg = (guint32*)dreg_int32;
+	MonoInst *dest_var = get_vreg_to_inst (cfg, *dreg);
+	if (dest_var && dest_var->opcode == OP_ARG && dest_var->klass && MONO_CLASS_IS_SIMD (cfg, dest_var->klass)) {
+		MonoInst *varload_ins, *store_ins;
+		*dreg = alloc_xreg (cfg);
+		NEW_VARLOADA (cfg, varload_ins, dest_var, dest_var->inst_vtype);
+		mono_bblock_insert_after_ins (bb, ins, varload_ins);
+		MONO_INST_NEW (cfg, store_ins, OP_STOREX_MEMBASE);
+		store_ins->klass = dest_var->klass;
+		store_ins->type = STACK_VTYPE;
+		store_ins->sreg1 = *dreg;
+		store_ins->dreg = varload_ins->dreg;
+		mono_bblock_insert_after_ins (bb, varload_ins, store_ins);
+	}
+}
+
 void
 mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 {
-	if (cfg->opt & MONO_OPT_SIMD && decompose_vtype_opt_uses_simd_intrinsics (cfg, ins)) {
-		decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg1));
-		decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg2));
-		decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg3));
-		MonoInst *dest_var = get_vreg_to_inst (cfg, ins->dreg);
-		if (dest_var && dest_var->opcode == OP_ARG && dest_var->klass && MONO_CLASS_IS_SIMD (cfg, dest_var->klass)) {
-			MonoInst *varload_ins, *store_ins;
-			ins->dreg = alloc_xreg (cfg);
-			NEW_VARLOADA (cfg, varload_ins, dest_var, dest_var->inst_vtype);
-			mono_bblock_insert_after_ins (bb, ins, varload_ins);
-			MONO_INST_NEW (cfg, store_ins, OP_STOREX_MEMBASE);
-			store_ins->klass = dest_var->klass;
-			store_ins->type = STACK_VTYPE;
-			store_ins->sreg1 = ins->dreg;
-			store_ins->dreg = varload_ins->dreg;
-			mono_bblock_insert_after_ins (bb, varload_ins, store_ins);
-		}
+	if ((cfg->opt & MONO_OPT_SIMD) && (cfg->uses_simd_intrinsics & MONO_CFG_USES_SIMD_INTRINSICS)) {
+		const char *spec = INS_INFO (ins->opcode);
+		if (spec [MONO_INST_SRC1] == 'x')
+			decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg1));
+		if (spec [MONO_INST_SRC2] == 'x')
+			decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg2));
+		if (spec [MONO_INST_SRC3] == 'x')
+			decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg3));
+		if (spec [MONO_INST_DEST] == 'x')
+			decompose_vtype_opt_store_arg (cfg, bb, ins, &(ins->dreg));
 	}
 }
 #else

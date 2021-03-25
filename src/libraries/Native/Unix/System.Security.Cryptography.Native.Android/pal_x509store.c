@@ -10,20 +10,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define INIT_LOCALS(name, ...) \
-    enum { __VA_ARGS__, count_##name }; \
-    jobject name[count_##name] = { 0 } \
-
-#define RELEASE_LOCALS(name, env) \
-do { \
-    for (int i_##name = 0; i_##name < count_##name; ++i_##name) \
-    { \
-        jobject local = name[i_##name]; \
-        if (local != NULL) \
-            (*env)->DeleteLocalRef(env, local); \
-    } \
-} while (0)
-
 typedef enum
 {
     EntryFlags_None = 0,

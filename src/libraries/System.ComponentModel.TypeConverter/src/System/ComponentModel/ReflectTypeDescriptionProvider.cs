@@ -96,7 +96,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Provides a way to create <see cref="TypeConverter"/> instances, and cache them where applicable.
         /// </summary>
-        private class IntrinsicTypeConverterData
+        private sealed class IntrinsicTypeConverterData
         {
             private readonly Func<Type, TypeConverter> _constructionFunc;
 
@@ -143,40 +143,50 @@ namespace System.ComponentModel
         /// appropriate logic to handle this in <see cref="GetIntrinsicTypeConverter(Type)"/> below.
         /// </remarks>
         private static Dictionary<object, IntrinsicTypeConverterData> IntrinsicTypeConverters
-            => LazyInitializer.EnsureInitialized(ref s_intrinsicTypeConverters, () => new Dictionary<object, IntrinsicTypeConverterData>(27)
         {
-            // Add the intrinsics
-            //
-            [typeof(bool)] = new IntrinsicTypeConverterData((type) => new BooleanConverter()),
-            [typeof(byte)] = new IntrinsicTypeConverterData((type) => new ByteConverter()),
-            [typeof(sbyte)] = new IntrinsicTypeConverterData((type) => new SByteConverter()),
-            [typeof(char)] = new IntrinsicTypeConverterData((type) => new CharConverter()),
-            [typeof(double)] = new IntrinsicTypeConverterData((type) => new DoubleConverter()),
-            [typeof(string)] = new IntrinsicTypeConverterData((type) => new StringConverter()),
-            [typeof(int)] = new IntrinsicTypeConverterData((type) => new Int32Converter()),
-            [typeof(short)] = new IntrinsicTypeConverterData((type) => new Int16Converter()),
-            [typeof(long)] = new IntrinsicTypeConverterData((type) => new Int64Converter()),
-            [typeof(float)] = new IntrinsicTypeConverterData((type) => new SingleConverter()),
-            [typeof(ushort)] = new IntrinsicTypeConverterData((type) => new UInt16Converter()),
-            [typeof(uint)] = new IntrinsicTypeConverterData((type) => new UInt32Converter()),
-            [typeof(ulong)] = new IntrinsicTypeConverterData((type) => new UInt64Converter()),
-            [typeof(object)] = new IntrinsicTypeConverterData((type) => new TypeConverter()),
-            [typeof(CultureInfo)] = new IntrinsicTypeConverterData((type) => new CultureInfoConverter()),
-            [typeof(DateTime)] = new IntrinsicTypeConverterData((type) => new DateTimeConverter()),
-            [typeof(DateTimeOffset)] = new IntrinsicTypeConverterData((type) => new DateTimeOffsetConverter()),
-            [typeof(decimal)] = new IntrinsicTypeConverterData((type) => new DecimalConverter()),
-            [typeof(TimeSpan)] = new IntrinsicTypeConverterData((type) => new TimeSpanConverter()),
-            [typeof(Guid)] = new IntrinsicTypeConverterData((type) => new GuidConverter()),
-            [typeof(Uri)] = new IntrinsicTypeConverterData((type) => new UriTypeConverter()),
-            [typeof(Version)] = new IntrinsicTypeConverterData((type) => new VersionConverter()),
-            // Special cases for things that are not bound to a specific type
-            //
-            [typeof(Array)] = new IntrinsicTypeConverterData((type) => new ArrayConverter()),
-            [typeof(ICollection)] = new IntrinsicTypeConverterData((type) => new CollectionConverter()),
-            [typeof(Enum)] = new IntrinsicTypeConverterData((type) => CreateEnumConverter(type), cacheConverterInstance: false),
-            [s_intrinsicNullableKey] = new IntrinsicTypeConverterData((type) => new NullableConverter(type), cacheConverterInstance: false),
-            [s_intrinsicReferenceKey] = new IntrinsicTypeConverterData((type) => new ReferenceConverter(type), cacheConverterInstance: false),
-        });
+            [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered.")]
+            get
+            {
+                return LazyInitializer.EnsureInitialized(ref s_intrinsicTypeConverters, () => new Dictionary<object, IntrinsicTypeConverterData>(27)
+                {
+                    // Add the intrinsics
+                    //
+                    [typeof(bool)] = new IntrinsicTypeConverterData((type) => new BooleanConverter()),
+                    [typeof(byte)] = new IntrinsicTypeConverterData((type) => new ByteConverter()),
+                    [typeof(sbyte)] = new IntrinsicTypeConverterData((type) => new SByteConverter()),
+                    [typeof(char)] = new IntrinsicTypeConverterData((type) => new CharConverter()),
+                    [typeof(double)] = new IntrinsicTypeConverterData((type) => new DoubleConverter()),
+                    [typeof(string)] = new IntrinsicTypeConverterData((type) => new StringConverter()),
+                    [typeof(int)] = new IntrinsicTypeConverterData((type) => new Int32Converter()),
+                    [typeof(short)] = new IntrinsicTypeConverterData((type) => new Int16Converter()),
+                    [typeof(long)] = new IntrinsicTypeConverterData((type) => new Int64Converter()),
+                    [typeof(float)] = new IntrinsicTypeConverterData((type) => new SingleConverter()),
+                    [typeof(ushort)] = new IntrinsicTypeConverterData((type) => new UInt16Converter()),
+                    [typeof(uint)] = new IntrinsicTypeConverterData((type) => new UInt32Converter()),
+                    [typeof(ulong)] = new IntrinsicTypeConverterData((type) => new UInt64Converter()),
+                    [typeof(object)] = new IntrinsicTypeConverterData((type) => new TypeConverter()),
+                    [typeof(CultureInfo)] = new IntrinsicTypeConverterData((type) => new CultureInfoConverter()),
+                    [typeof(DateTime)] = new IntrinsicTypeConverterData((type) => new DateTimeConverter()),
+                    [typeof(DateTimeOffset)] = new IntrinsicTypeConverterData((type) => new DateTimeOffsetConverter()),
+                    [typeof(decimal)] = new IntrinsicTypeConverterData((type) => new DecimalConverter()),
+                    [typeof(TimeSpan)] = new IntrinsicTypeConverterData((type) => new TimeSpanConverter()),
+                    [typeof(Guid)] = new IntrinsicTypeConverterData((type) => new GuidConverter()),
+                    [typeof(Uri)] = new IntrinsicTypeConverterData((type) => new UriTypeConverter()),
+                    [typeof(Version)] = new IntrinsicTypeConverterData((type) => new VersionConverter()),
+                    // Special cases for things that are not bound to a specific type
+                    //
+                    [typeof(Array)] = new IntrinsicTypeConverterData((type) => new ArrayConverter()),
+                    [typeof(ICollection)] = new IntrinsicTypeConverterData((type) => new CollectionConverter()),
+                    [typeof(Enum)] = new IntrinsicTypeConverterData((type) => CreateEnumConverter(type), cacheConverterInstance: false),
+                    [s_intrinsicNullableKey] = new IntrinsicTypeConverterData((type) => CreateNullableConverter(type), cacheConverterInstance: false),
+                    [s_intrinsicReferenceKey] = new IntrinsicTypeConverterData((type) => new ReferenceConverter(type), cacheConverterInstance: false),
+               });
+            }
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "IntrinsicTypeConverters is marked with RequiresUnreferencedCode. It is the only place that should call this.")]
+        private static NullableConverter CreateNullableConverter(Type type) => new NullableConverter(type);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "Trimmer does not trim enums")]
@@ -340,7 +350,7 @@ namespace System.ComponentModel
         /// it will be used to retrieve attributes. Otherwise, _type
         /// will be used.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
+        [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
         internal TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object instance)
         {
             ReflectedTypeData td = GetTypeData(type, true);
@@ -361,7 +371,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Return the default property.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
         internal PropertyDescriptor GetDefaultProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object instance)
         {
             ReflectedTypeData td = GetTypeData(type, true);
@@ -466,7 +476,7 @@ namespace System.ComponentModel
         /// it will be used to retrieve attributes. Otherwise, _type
         /// will be used.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
+        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered. NullableConverter's UnderlyingType cannot be statically discovered.")]
         internal TypeConverter GetExtendedConverter(object instance)
         {
             return GetConverter(instance.GetType(), instance);
@@ -839,6 +849,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the properties for this type.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         internal PropertyDescriptorCollection GetProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true);
@@ -1208,6 +1219,7 @@ namespace System.ComponentModel
         /// Static helper API around reflection to get and cache
         /// properties. This does not recurse to the base class.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         private static PropertyDescriptor[] ReflectGetProperties(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
@@ -1430,6 +1442,7 @@ namespace System.ComponentModel
         /// The strongly-typed dictionary maps object types to converter data objects which lazily
         /// creates (and caches for re-use, where applicable) converter instances.
         /// </summary>
+        [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered.")]
         private static TypeConverter GetIntrinsicTypeConverter(Type callingType)
         {
             TypeConverter converter;

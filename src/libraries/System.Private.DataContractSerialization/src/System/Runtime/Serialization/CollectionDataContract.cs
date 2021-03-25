@@ -454,7 +454,7 @@ namespace System.Runtime.Serialization
             return _helper.GetCollectionElementType();
         }
 
-        private class CollectionDataContractCriticalHelper : DataContract.DataContractCriticalHelper
+        private sealed class CollectionDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private static Type[]? s_knownInterfaces;
 

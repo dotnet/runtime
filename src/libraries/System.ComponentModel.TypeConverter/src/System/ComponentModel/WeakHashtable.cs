@@ -101,7 +101,7 @@ namespace System.ComponentModel
             _lastHashCount = hashCount;
         }
 
-        private class WeakKeyComparer : IEqualityComparer
+        private sealed class WeakKeyComparer : IEqualityComparer
         {
             bool IEqualityComparer.Equals(object x, object y)
             {

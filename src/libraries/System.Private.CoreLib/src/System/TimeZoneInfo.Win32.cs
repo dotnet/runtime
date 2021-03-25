@@ -1000,5 +1000,43 @@ namespace System
                 }
             }
         }
+
+        // Helper function to get the standard display name for the UTC static time zone instance
+        private static string GetUtcStandardDisplayName()
+        {
+            // Don't bother looking up the name for invariant or English cultures
+            CultureInfo uiCulture = CultureInfo.CurrentUICulture;
+            if (uiCulture.Name.Length == 0 || uiCulture.TwoLetterISOLanguageName == "en")
+                return InvariantUtcStandardDisplayName;
+
+            // Try to get a localized version of "Coordinated Universal Time" from the globalization data
+            string? standardDisplayName = null;
+            using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive + "\\" + UtcId, writable: false))
+            {
+                if (key != null)
+                {
+                    // read the MUI_ registry key
+                    string? standardNameMuiResource = key.GetValue(MuiStandardValue, string.Empty) as string;
+
+                    // try to load the string from the native resource DLL(s)
+                    if (!string.IsNullOrEmpty(standardNameMuiResource))
+                    {
+                        standardDisplayName = TryGetLocalizedNameByMuiNativeResource(standardNameMuiResource);
+                    }
+
+                    // fallback to using the standard registry key
+                    if (string.IsNullOrEmpty(standardDisplayName))
+                    {
+                        standardDisplayName = key.GetValue(StandardValue, string.Empty) as string;
+                    }
+                }
+            }
+
+            // Final safety check.  Don't allow null or abbreviations
+            if (standardDisplayName == null || standardDisplayName == "GMT" || standardDisplayName == "UTC")
+                standardDisplayName = InvariantUtcStandardDisplayName;
+
+            return standardDisplayName;
+        }
     }
 }

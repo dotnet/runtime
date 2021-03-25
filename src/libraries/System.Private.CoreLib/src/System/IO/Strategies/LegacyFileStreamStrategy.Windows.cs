@@ -1079,14 +1079,14 @@ namespace System.IO.Strategies
         {
             Debug.Assert((_useAsyncIO && overlapped != null) || (!_useAsyncIO && overlapped == null), "Async IO and overlapped parameters inconsistent in call to ReadFileNative.");
 
-            return FileStreamHelpers.ReadFileNative(handle, bytes, overlapped, out errorCode);
+            return FileStreamHelpers.ReadFileNative(handle, bytes, false, overlapped, out errorCode);
         }
 
         private unsafe int WriteFileNative(SafeFileHandle handle, ReadOnlySpan<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
         {
             Debug.Assert((_useAsyncIO && overlapped != null) || (!_useAsyncIO && overlapped == null), "Async IO and overlapped parameters inconsistent in call to WriteFileNative.");
 
-            return FileStreamHelpers.WriteFileNative(handle, buffer, overlapped, out errorCode);
+            return FileStreamHelpers.WriteFileNative(handle, buffer, false, overlapped, out errorCode);
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)

@@ -21,22 +21,22 @@ namespace System.IO.Strategies
         protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
         protected readonly string? _path; // The path to the opened file.
         private readonly FileAccess _access; // What file was opened for.
+        private readonly FileShare _share;
         private readonly bool _canSeek; // Whether can seek (file) or not (pipe).
         private readonly bool _isPipe; // Whether to disable async buffering code.
 
         protected long _filePosition;
-        protected bool _exposedHandle; // Whether the file stream's handle has been exposed.
         private long _appendStart; // When appending, prevent overwriting file.
+        private long _length = -1; // When the file is locked for writes (_share <= FileShare.Read) cache file length in-memory, negative means that hasn't been fetched.
 
-        internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access)
+        internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
         {
-            _exposedHandle = true;
-
             InitFromHandle(handle, access, out _canSeek, out _isPipe);
 
             // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
             // but we can't as they're readonly.
             _access = access;
+            _share = share;
 
             // As the handle was passed in, we must set the handle field at the very end to
             // avoid the finalizer closing the handle when we throw errors.
@@ -49,6 +49,7 @@ namespace System.IO.Strategies
 
             _path = fullPath;
             _access = access;
+            _share = share;
 
             _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options);
 
@@ -74,21 +75,33 @@ namespace System.IO.Strategies
 
         public sealed override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        public unsafe sealed override long Length => FileStreamHelpers.GetFileLength(_fileHandle, _path);
+        // When the file is locked for writes we can cache file length in memory
+        // and avoid subsequent native calls which are expensive.
+        public unsafe sealed override long Length => _share > FileShare.Read ?
+            FileStreamHelpers.GetFileLength(_fileHandle, _path) :
+            _length < 0 ? _length = FileStreamHelpers.GetFileLength(_fileHandle, _path) : _length;
+
+        protected void UpdateLengthOnChangePosition()
+        {
+            // Do not update the cached length if the file is not locked
+            // or if the length hasn't been fetched.
+            if (_share > FileShare.Read || _length < 0)
+            {
+                Debug.Assert(_length < 0);
+                return;
+            }
+
+            if (_filePosition > _length)
+            {
+                _length = _filePosition;
+            }
+        }
 
         /// <summary>Gets or sets the position within the current stream</summary>
         public override long Position
         {
-            get
-            {
-                VerifyOSHandlePosition();
-
-                return _filePosition;
-            }
-            set
-            {
-                Seek(value, SeekOrigin.Begin);
-            }
+            get => _filePosition;
+            set => _filePosition = value;
         }
 
         internal sealed override string Name => _path ?? SR.IO_UnknownFileName;
@@ -96,13 +109,17 @@ namespace System.IO.Strategies
         internal sealed override bool IsClosed => _fileHandle.IsClosed;
 
         internal sealed override bool IsPipe => _isPipe;
-
+        // Flushing is the responsibility of BufferedFileStreamStrategy
         internal sealed override SafeFileHandle SafeFileHandle
         {
             get
             {
-                // Flushing is the responsibility of BufferedFileStreamStrategy
-                _exposedHandle = true;
+                if (CanSeek)
+                {
+                    // Update the file offset before exposing it since it's possible that
+                    // in memory position is out-of-sync with the actual file position.
+                    FileStreamHelpers.Seek(_fileHandle, _path, _filePosition, SeekOrigin.Begin);
+                }
                 return _fileHandle;
             }
         }
@@ -165,31 +182,32 @@ namespace System.IO.Strategies
             if (_fileHandle.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
             if (!CanSeek) ThrowHelper.ThrowNotSupportedException_UnseekableStream();
 
-            // Verify that internal position is in sync with the handle
-            VerifyOSHandlePosition();
-
             long oldPos = _filePosition;
-            long pos = SeekCore(_fileHandle, offset, origin);
+            long pos = origin switch
+            {
+                SeekOrigin.Begin => offset,
+                SeekOrigin.End => FileStreamHelpers.GetFileLength(_fileHandle, _path) + offset,
+                _ => _filePosition + offset // SeekOrigin.Current
+            };
 
-            // Prevent users from overwriting data in a file that was opened in
-            // append mode.
+            if (pos >= 0)
+            {
+                _filePosition = pos;
+            }
+            else
+            {
+                // keep throwing the same exception we did when seek was causing actual offset change
+                throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_PARAMETER);
+            }
+
+            // Prevent users from overwriting data in a file that was opened in append mode.
             if (_appendStart != -1 && pos < _appendStart)
             {
-                SeekCore(_fileHandle, oldPos, SeekOrigin.Begin);
+                _filePosition = oldPos;
                 throw new IOException(SR.IO_SeekAppendOverwrite);
             }
 
             return pos;
-        }
-
-        // This doesn't do argument checking.  Necessary for SetLength, which must
-        // set the file pointer beyond the end of the file. This will update the
-        // internal position
-        protected long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
-        {
-            Debug.Assert(!fileHandle.IsClosed && _canSeek, "!fileHandle.IsClosed && _canSeek");
-
-            return _filePosition = FileStreamHelpers.Seek(fileHandle, _path, offset, origin, closeInvalidHandle);
         }
 
         internal sealed override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, _path, position, length);
@@ -209,7 +227,7 @@ namespace System.IO.Strategies
             // For Append mode...
             if (mode == FileMode.Append)
             {
-                _appendStart = SeekCore(_fileHandle, 0, SeekOrigin.End);
+                _appendStart = _filePosition = Length;
             }
             else
             {
@@ -243,9 +261,15 @@ namespace System.IO.Strategies
             OnInitFromHandle(handle);
 
             if (_canSeek)
-                SeekCore(handle, 0, SeekOrigin.Current);
+            {
+                // given strategy was created out of existing handle, so we have to perform
+                // a syscall to get the current handle offset
+                _filePosition = FileStreamHelpers.Seek(handle, _path, 0, SeekOrigin.Current);
+            }
             else
+            {
                 _filePosition = 0;
+            }
         }
 
         public sealed override void SetLength(long value)
@@ -256,45 +280,16 @@ namespace System.IO.Strategies
             SetLengthCore(value);
         }
 
-        // We absolutely need this method broken out so that WriteInternalCoreAsync can call
-        // a method without having to go through buffering code that might call FlushWrite.
         protected unsafe void SetLengthCore(long value)
         {
             Debug.Assert(value >= 0, "value >= 0");
-            VerifyOSHandlePosition();
 
             FileStreamHelpers.SetFileLength(_fileHandle, _path, value);
+            _length = value;
 
             if (_filePosition > value)
             {
-                SeekCore(_fileHandle, 0, SeekOrigin.End);
-            }
-        }
-
-        /// <summary>
-        /// Verify that the actual position of the OS's handle equals what we expect it to.
-        /// This will fail if someone else moved the UnixFileStream's handle or if
-        /// our position updating code is incorrect.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void VerifyOSHandlePosition()
-        {
-            bool verifyPosition = _exposedHandle; // in release, only verify if we've given out the handle such that someone else could be manipulating it
-#if DEBUG
-            verifyPosition = true; // in debug, always make sure our position matches what the OS says it should be
-#endif
-            if (verifyPosition && CanSeek)
-            {
-                long oldPos = _filePosition; // SeekCore will override the current _position, so save it now
-                long curPos = SeekCore(_fileHandle, 0, SeekOrigin.Current);
-                if (oldPos != curPos)
-                {
-                    // For reads, this is non-fatal but we still could have returned corrupted
-                    // data in some cases, so discard the internal buffer. For writes,
-                    // this is a problem; discard the buffer and error out.
-
-                    throw new IOException(SR.IO_FileStreamHandlePosition);
-                }
+                _filePosition = value;
             }
         }
     }

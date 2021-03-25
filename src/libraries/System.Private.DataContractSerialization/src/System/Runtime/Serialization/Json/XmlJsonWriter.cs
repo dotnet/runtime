@@ -1576,7 +1576,7 @@ namespace System.Runtime.Serialization.Json
             _dataType = oldDataType;
         }
 
-        private class JsonNodeWriter : XmlUTF8NodeWriter
+        private sealed class JsonNodeWriter : XmlUTF8NodeWriter
         {
             internal unsafe void WriteChars(char* chars, int charCount)
             {

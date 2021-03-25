@@ -119,7 +119,7 @@ namespace System.Xml
         //
         // XmlContext
         //
-        private class XmlContext
+        private sealed class XmlContext
         {
             internal XmlSpace xmlSpace;
             internal string xmlLang;
@@ -146,7 +146,7 @@ namespace System.Xml
         //
         // NoNamespaceManager
         //
-        private class NoNamespaceManager : XmlNamespaceManager
+        private sealed class NoNamespaceManager : XmlNamespaceManager
         {
             public NoNamespaceManager() : base() { }
             public override string DefaultNamespace { get { return string.Empty; } }
@@ -330,7 +330,7 @@ namespace System.Xml
         //
         // NodeData
         //
-        private class NodeData : IComparable
+        private sealed class NodeData : IComparable
         {
             // static instance with no data - is used when XmlTextReader is closed
             private static volatile NodeData? s_None;
@@ -720,7 +720,7 @@ namespace System.Xml
         // DtdDefaultAttributeInfoToNodeDataComparer
         //
         // Compares IDtdDefaultAttributeInfo to NodeData
-        private class DtdDefaultAttributeInfoToNodeDataComparer : IComparer<object>
+        private sealed class DtdDefaultAttributeInfoToNodeDataComparer : IComparer<object>
         {
             private static readonly IComparer<object> s_instance = new DtdDefaultAttributeInfoToNodeDataComparer();
 
