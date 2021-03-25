@@ -170,7 +170,7 @@ unhandled_exception_handler (MonoObject *exc, void *user_data)
     char *type_name = strdup_printf ("%s.%s", mono_class_get_namespace (type), mono_class_get_name (type));
     char *trace = mono_droid_fetch_exception_property_string (exc, "get_StackTrace", true);
     char *message = mono_droid_fetch_exception_property_string (exc, "get_Message", true);
-    
+
     LOG_ERROR("UnhandledException: %s %s %s", type_name, message, trace);
 
     free (trace);
@@ -194,7 +194,7 @@ void register_aot_modules (void);
 #endif
 
 int
-mono_droid_runtime_init (void)
+mono_droid_runtime_init (const char* executable, int managed_argc, char* managed_argv[])
 {
     // uncomment for debug output:
     //
@@ -215,7 +215,7 @@ mono_droid_runtime_init (void)
     const char* appctx_values[2];
     appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;
     appctx_values[1] = bundle_path;
-    
+
     monovm_initialize(2, appctx_keys, appctx_values);
 
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);
@@ -234,7 +234,7 @@ mono_droid_runtime_init (void)
 #if FORCE_INTERPRETER
     LOG_INFO("Interp Enabled");
     mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
-#elif FORCE_AOT    
+#elif FORCE_AOT
     register_aot_modules();
     mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
 #endif
@@ -245,10 +245,7 @@ mono_droid_runtime_init (void)
     assert (assembly);
     LOG_INFO ("Executable: %s", executable);
 
-    char *managed_argv [1];
-    managed_argv[0] = bundle_path;
-
-    int res = mono_jit_exec (mono_domain_get (), assembly, 1, managed_argv);
+    int res = mono_jit_exec (mono_domain_get (), assembly, managed_argc, managed_argv);
     LOG_INFO ("Exit code: %d.", res);
     return res;
 }
@@ -274,7 +271,7 @@ Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstrin
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jobjectArray j_args)
 {
     char file_dir[2048];
     char cache_dir[2048];
@@ -292,7 +289,27 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     setenv ("TMPDIR", cache_dir, true);
     setenv ("DOCSDIR", docs_dir, true);
 
-    return mono_droid_runtime_init ();
+    int args_len = (*env)->GetArrayLength(env, j_args);
+    int managed_argc = args_len + 1;
+    char** managed_argv = (char**)malloc(managed_argc * sizeof(char*));
+
+    managed_argv[0] = bundle_path;
+    for (int i = 0; i < args_len; ++i)
+    {
+        jstring j_arg = (*env)->GetObjectArrayElement(env, j_args, i);
+        managed_argv[i + 1] = (*env)->GetStringUTFChars(env, j_arg, NULL);
+    }
+
+    int res = mono_droid_runtime_init (executable, managed_argc, managed_argv);
+
+    for (int i = 0; i < args_len; ++i)
+    {
+        jstring j_arg = (*env)->GetObjectArrayElement(env, j_args, i);
+        (*env)->ReleaseStringUTFChars(env, j_arg, managed_argv[i + 1]);
+    }
+
+    free(managed_argv);
+    return res;
 }
 
 // called from C#

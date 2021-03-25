@@ -110,19 +110,6 @@ CryptoNative_RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RS
     return RSA_public_encrypt(flen, from, to, rsa, openSslPadding);
 }
 
-int32_t
-CryptoNative_RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
-{
-    if (HasNoPrivateKey(rsa))
-    {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
-        return -1;
-    }
-
-    int openSslPadding = GetOpenSslPadding(padding);
-    return RSA_private_decrypt(flen, from, to, rsa, openSslPadding);
-}
-
 int32_t CryptoNative_RsaSignPrimitive(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa)
 {
     if (HasNoPrivateKey(rsa))
