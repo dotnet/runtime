@@ -164,18 +164,21 @@ void Compiler::fgInit()
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
 
-    fgHasSwitch          = false;
-    fgPgoDisabled        = false;
-    fgPgoSchema          = nullptr;
-    fgPgoData            = nullptr;
-    fgPgoSchemaCount     = 0;
-    fgNumProfileRuns     = 0;
-    fgPgoBlockCounts     = 0;
-    fgPgoEdgeCounts      = 0;
-    fgPgoClassProfiles   = 0;
-    fgCountInstrumentor  = nullptr;
-    fgClassInstrumentor  = nullptr;
-    fgPredListSortVector = nullptr;
+    fgHasSwitch                  = false;
+    fgPgoDisabled                = false;
+    fgPgoSchema                  = nullptr;
+    fgPgoData                    = nullptr;
+    fgPgoSchemaCount             = 0;
+    fgNumProfileRuns             = 0;
+    fgPgoBlockCounts             = 0;
+    fgPgoEdgeCounts              = 0;
+    fgPgoClassProfiles           = 0;
+    fgPgoInlineePgo              = 0;
+    fgPgoInlineeNoPgo            = 0;
+    fgPgoInlineeNoPgoSingleBlock = 0;
+    fgCountInstrumentor          = nullptr;
+    fgClassInstrumentor          = nullptr;
+    fgPredListSortVector         = nullptr;
 }
 
 /*****************************************************************************
