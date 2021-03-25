@@ -14022,7 +14022,7 @@ void CordbWin32EventThread::AttachProcess()
         // Don't allow attach if any metadata/IL updates have been applied
         if (pProcess->GetDAC()->MetadataUpdatesApplied())
         {
-            hr = CORDBG_E_DEBUGGING_NOT_POSSIBLE;
+            hr = CORDBG_E_ASSEMBLY_UPDATES_APPLIED;
             goto LExit;
         }
 
