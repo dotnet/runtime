@@ -2564,7 +2564,6 @@ lookup_start:
 		g_assert (vtable);
 		if (!mono_runtime_class_init_full (vtable, error))
 			return NULL;
-		MONO_PROFILER_RAISE (jit_done, (method, info));
 
 		code = MINI_ADDR_TO_FTNPTR (info->code_start);
 		return mono_create_ftnptr (code);

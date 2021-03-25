@@ -531,10 +531,10 @@ void STDCALL LogUMTransition(UMEntryThunk* thunk)
         DEBUG_ONLY;
         GC_NOTRIGGER;
         ENTRY_POINT;
-        if (GetThread()) MODE_PREEMPTIVE; else MODE_ANY;
+        if (GetThreadNULLOk()) MODE_PREEMPTIVE; else MODE_ANY;
         DEBUG_ONLY;
         PRECONDITION(CheckPointer(thunk));
-        PRECONDITION((GetThread() != NULL) ? (!GetThread()->PreemptiveGCDisabled()) : TRUE);
+        PRECONDITION((GetThreadNULLOk() != NULL) ? (!GetThread()->PreemptiveGCDisabled()) : TRUE);
     }
     CONTRACTL_END;
 

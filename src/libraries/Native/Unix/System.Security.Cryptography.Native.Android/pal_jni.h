@@ -28,11 +28,6 @@ extern jclass    g_ThrowableClass;
 extern jmethodID g_ThrowableGetCause;
 extern jmethodID g_ThrowableGetMessage;
 
-// java/security/Key
-extern jclass    g_KeyClass;
-extern jmethodID g_KeyGetAlgorithm;
-extern jmethodID g_KeyGetEncoded;
-
 // java/security/SecureRandom
 extern jclass    g_randClass;
 extern jmethodID g_randCtor;
@@ -106,7 +101,6 @@ extern jmethodID g_CertFactoryGenerateCertificate;
 extern jmethodID g_CertFactoryGenerateCertificates;
 extern jmethodID g_CertFactoryGenerateCertPathFromList;
 extern jmethodID g_CertFactoryGenerateCertPathFromStream;
-extern jmethodID g_CertFactoryGenerateCRL;
 
 // java/security/cert/CertPath
 extern jclass    g_CertPathClass;
@@ -145,7 +139,6 @@ extern jclass    g_PKIXBuilderParametersClass;
 extern jmethodID g_PKIXBuilderParametersCtor;
 extern jmethodID g_PKIXBuilderParametersAddCertStore;
 extern jmethodID g_PKIXBuilderParametersAddCertPathChecker;
-extern jmethodID g_PKIXBuilderParametersSetCertPathCheckers;
 extern jmethodID g_PKIXBuilderParametersSetDate;
 extern jmethodID g_PKIXBuilderParametersSetRevocationEnabled;
 extern jmethodID g_PKIXBuilderParametersSetTrustAnchors;
@@ -164,10 +157,7 @@ extern jmethodID g_PKIXRevocationCheckerSetOptions;
 
 // java/security/cert/PKIXRevocationChecker$Option - only in API level 24+
 extern jclass    g_PKIXRevocationCheckerOptionClass;
-extern jfieldID  g_PKIXRevocationCheckerOptionNoFallback;
 extern jfieldID  g_PKIXRevocationCheckerOptionOnlyEndEntity;
-extern jfieldID  g_PKIXRevocationCheckerOptionPreferCrls;
-extern jfieldID  g_PKIXRevocationCheckerOptionSoftFail;
 
 // java/security/cert/TrustAnchor
 extern jclass    g_TrustAnchorClass;
@@ -364,7 +354,6 @@ extern jmethodID g_CollectionSize;
 // java/util/Date
 extern jclass    g_DateClass;
 extern jmethodID g_DateCtor;
-extern jmethodID g_DateGetTime;
 
 // java/util/Enumeration
 extern jclass    g_Enumeration;
@@ -384,10 +373,6 @@ extern jmethodID g_IteratorNext;
 // java/util/List
 extern jclass    g_ListClass;
 extern jmethodID g_ListGet;
-
-// java/util/Set
-extern jclass    g_SetClass;
-extern jmethodID g_SetIterator;
 
 // javax/net/ssl/SSLEngine
 extern jclass    g_SSLEngine;
@@ -432,11 +417,6 @@ extern jmethodID g_SSLEngineResultGetHandshakeStatusMethod;
 
 // javax/net/ssl/TrustManager
 extern jclass    g_TrustManager;
-
-// javax/security/auth/x500/X500Principal
-extern jclass    g_X500PrincipalClass;
-extern jmethodID g_X500PrincipalGetEncoded;
-extern jmethodID g_X500PrincipalHashCode;
 
 // javax/crypto/KeyAgreement
 extern jclass    g_KeyAgreementClass;
