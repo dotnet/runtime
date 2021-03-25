@@ -276,7 +276,8 @@ typedef struct {
 
 struct _MonoTableInfo {
 	const char *base;
-	guint       rows     : 24;
+	guint       rows_     : 24;	/* don't access directly, use table_info_get_rows */
+
 	guint       row_size : 8;
 
 	/*
@@ -801,6 +802,12 @@ assembly_is_dynamic (MonoAssembly *assembly)
 #endif
 }
 
+static inline int
+table_info_get_rows (const MonoTableInfo *table)
+{
+	return table->rows_;
+}
+
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
 guint mono_aligned_addr_hash (gconstpointer ptr);
 
@@ -893,7 +900,7 @@ static inline void
 mono_image_effective_table (const MonoTableInfo **t, int *idx)
 {
 	if (G_UNLIKELY (mono_metadata_has_updates ())) {
-		if (G_UNLIKELY (*idx >= (*t)->rows)) {
+		if (G_UNLIKELY (*idx >= table_info_get_rows ((*t)))) {
 			mono_image_effective_table_slow (t, idx);
 		}
 	}
@@ -967,7 +974,7 @@ static inline gboolean
 mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
 {
 	/* token_index is 1-based. TRUE means the token is out of bounds */
-	return token_index > image->tables [table_index].rows;
+	return token_index > image->tables [table_index].rows_;
 }
 #else
 gboolean
@@ -978,7 +985,7 @@ static inline gboolean
 mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
 {
 	/* returns true if given index is not in bounds with provided table/index pair */
-	if (G_LIKELY (token_index <= image->tables [table_index].rows))
+	if (G_LIKELY (token_index <= table_info_get_rows (&image->tables [table_index])))
 		return FALSE;
 	return mono_metadata_table_bounds_check_slow (image, table_index, token_index);
 }

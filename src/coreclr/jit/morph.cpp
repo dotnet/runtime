@@ -6520,7 +6520,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 if (isStaticReadOnlyInited)
                 {
                     JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
-                    tree->gtFlags |= GTF_IND_INVARIANT;
+
+                    // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
+                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
                     tree->gtFlags &= ~GTF_ICON_INITCLASS;
                     addr->gtFlags = GTF_ICON_CONST_PTR;
                 }
@@ -16643,7 +16645,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 #ifdef DEBUG
                         if (verbose)
                         {
-                            printf("Removing loop L%02u (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
+                            printf("Removing loop " FMT_LP " (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
                                    optLoopTable[loopNum].lpFirst->bbNum, optLoopTable[loopNum].lpBottom->bbNum);
                         }
 #endif

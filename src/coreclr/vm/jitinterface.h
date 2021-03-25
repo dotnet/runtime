@@ -505,7 +505,7 @@ public:
         m_pOverride(NULL),
         m_pMethodBeingCompiled(fd),
         m_fVerifyOnly(fVerifyOnly),
-        m_pThread(GetThread()),
+        m_pThread(GetThreadNULLOk()),
         m_hMethodForSecurity_Key(NULL),
         m_pMethodForSecurity_Value(NULL),
 #if defined(FEATURE_GDBJIT)

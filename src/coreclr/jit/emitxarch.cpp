@@ -2709,7 +2709,7 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 
     while (insAlignCount)
     {
-        emitLoopAlign();
+        emitLoopAlign(MAX_ENCODED_SIZE);
         insAlignCount--;
     }
     emitLoopAlign(lastInsAlignSize);
@@ -12532,13 +12532,12 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
         if (id->idCodeSize() != JMP_SIZE_SMALL)
         {
-            emitOffsAdj += id->idCodeSize() - JMP_SIZE_SMALL;
-
-#ifdef DEBUG
-            if (emitComp->verbose)
+#if DEBUG_EMIT || defined(DEBUG)
+            int offsShrinkage = id->idCodeSize() - JMP_SIZE_SMALL;
+            if (INDEBUG(emitComp->verbose ||)(id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM ||
+                                              INTERESTING_JUMP_NUM == 0))
             {
-                printf("; NOTE: size of jump [%08X] mis-predicted by %d bytes\n", emitComp->dspPtr(id),
-                       (id->idCodeSize() - JMP_SIZE_SMALL));
+                printf("; NOTE: size of jump [%08p] mis-predicted by %d bytes\n", dspPtr(id), offsShrinkage);
             }
 #endif
         }
@@ -12699,11 +12698,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     assert(emitIssuing);
 
-    BYTE*         dst               = *dp;
-    size_t        sz                = sizeof(instrDesc);
-    instruction   ins               = id->idIns();
-    unsigned char callInstrSize     = 0;
-    int           emitOffsAdjBefore = emitOffsAdj;
+    BYTE*         dst           = *dp;
+    size_t        sz            = sizeof(instrDesc);
+    instruction   ins           = id->idIns();
+    unsigned char callInstrSize = 0;
 
 #ifdef DEBUG
     bool dspOffs = emitComp->opts.dspGCtbls;
@@ -13882,18 +13880,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #endif
 
             dst = emitOutputNOP(dst, diff);
-
-            // since we compensated the over-estimation, revert the offsAdj that
-            // might have happened in the jump
-            if (emitOffsAdjBefore != emitOffsAdj)
-            {
-#ifdef DEBUG
-                insFormat format = id->idInsFmt();
-                assert((format == IF_LABEL) || (format == IF_RWR_LABEL) || (format == IF_SWR_LABEL));
-                assert(diff == (emitOffsAdj - emitOffsAdjBefore));
-#endif
-                emitOffsAdj -= diff;
-            }
         }
         assert((id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp))) == 0);
     }

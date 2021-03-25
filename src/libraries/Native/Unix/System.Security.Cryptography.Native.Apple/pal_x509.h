@@ -6,20 +6,9 @@
 #include "pal_digest.h"
 #include "pal_seckey.h"
 #include "pal_compiler.h"
+#include <pal_x509_types.h>
 
 #include <Security/Security.h>
-
-enum
-{
-    PAL_X509Unknown = 0,
-    PAL_Certificate = 1,
-    PAL_SerializedCert = 2,
-    PAL_Pkcs12 = 3,
-    PAL_SerializedStore = 4,
-    PAL_Pkcs7 = 5,
-    PAL_Authenticode = 6,
-};
-typedef uint32_t PAL_X509ContentType;
 
 /*
 Given a handle, determine if it represents a SecCertificateRef, SecIdentityRef, or other.

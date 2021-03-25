@@ -8,9 +8,12 @@
     <JSEngineArgs Condition="'$(JSEngine)' == 'V8'">$(JSEngineArgs) --engine-arg=--stack-trace-limit=1000</JSEngineArgs>
 
     <PublishingTestsRun>true</PublishingTestsRun>
+    <UseDefaultBlazorWASMFeatureSwitches Condition="'$(UseDefaultBlazorWASMFeatureSwitches)' == ''">true</UseDefaultBlazorWASMFeatureSwitches>
+    <UseDefaultAndroidFeatureSwitches Condition="'$(UseDefaultAndroidFeatureSwitches)' == ''">true</UseDefaultAndroidFeatureSwitches>
+    <UseDefaultiOSFeatureSwitches Condition="'$(UseDefaultiOSFeatureSwitches)' == ''">true</UseDefaultiOSFeatureSwitches>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' And '$(UseDefaultBlazorWASMFeatureSwitches)' != 'false'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' And '$(UseDefaultBlazorWASMFeatureSwitches)' == 'true'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
     <RunScriptCommand Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
     <RunScriptCommand Condition="'$(IsFunctionalTest)' == 'true'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --expected-exit-code=$(ExpectedExitCode) --  $(RunTestsJSArguments) --run $(AssemblyName).dll --testing</RunScriptCommand>
@@ -21,7 +24,7 @@
     <DebuggerSupport>false</DebuggerSupport>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Android' and '$(UseDefaultAndroidFeatureSwitches)' != 'false'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Android' and '$(UseDefaultAndroidFeatureSwitches)' == 'true'">
     <DebuggerSupport>false</DebuggerSupport>
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
@@ -30,6 +33,16 @@
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
     <StartupHookSupport>false</StartupHookSupport>
+    <UseNativeHttpHandler>true</UseNativeHttpHandler>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator') and '$(UseDefaultiOSFeatureSwitches)' == 'true'">
+    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <EventSourceSupport>false</EventSourceSupport>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <StartupHookSupport>false</StartupHookSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
     <UseNativeHttpHandler>true</UseNativeHttpHandler>
   </PropertyGroup>
 
@@ -67,13 +80,6 @@
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </AotInputAssemblies>
     </ItemGroup>
-
-    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
-          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
-          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
-    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
-          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
-          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
 
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" />
     

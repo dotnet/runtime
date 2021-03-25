@@ -719,7 +719,7 @@ private:
 // Special define to be used in EEStartup that will also check for VM initialization before
 // commencing on a path that may use the managed thread object.
 #define RethrowTerminalExceptionsWithInitCheck  \
-    if ((g_fEEStarted == TRUE) && (GetThread() != NULL))    \
+    if ((g_fEEStarted == TRUE) && (GetThreadNULLOk() != NULL))    \
     {                                                       \
         RethrowTerminalExceptions                           \
     }

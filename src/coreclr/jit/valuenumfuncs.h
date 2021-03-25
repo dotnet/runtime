@@ -144,7 +144,7 @@ ValueNumFuncDef(Box, 3, false, false, false)
 ValueNumFuncDef(BoxNullable, 3, false, false, false)
 
 ValueNumFuncDef(LazyStrCns, 2, false, true, false)  // lazy-initialized string literal (helper)
-ValueNumFuncDef(StrCns, 1, false, true, false)      // indirect for a string literal
+ValueNumFuncDef(NonNullIndirect, 1, false, true, false)  // this indirect is expected to always return a non-null value
 ValueNumFuncDef(Unbox, 2, false, true, false)
 
 ValueNumFuncDef(LT_UN, 2, false, false, false)      // unsigned or unordered comparisons

@@ -2053,7 +2053,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private class CreateCollectionInfo
+        private sealed class CreateCollectionInfo
         {
             private readonly string _name;
             private readonly TypeDesc _td;
@@ -2073,7 +2073,7 @@ namespace System.Xml.Serialization
                 get { return _td; }
             }
         }
-        private class Member
+        private sealed class Member
         {
             private readonly string _source;
             private readonly string _arrayName;

@@ -413,7 +413,11 @@ namespace System.ComponentModel
         /// <summary>
         /// This dynamically binds an EventDescriptor to a type.
         /// </summary>
-        public static EventDescriptor CreateEvent(Type componentType, string name, Type type, params Attribute[] attributes)
+        public static EventDescriptor CreateEvent(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            string name,
+            Type type,
+            params Attribute[] attributes)
         {
             return new ReflectEventDescriptor(componentType, name, type, attributes);
         }
@@ -422,7 +426,10 @@ namespace System.ComponentModel
         /// This creates a new event descriptor identical to an existing event descriptor. The new event descriptor
         /// has the specified metadata attributes merged with the existing metadata attributes.
         /// </summary>
-        public static EventDescriptor CreateEvent(Type componentType, EventDescriptor oldEventDescriptor, params Attribute[] attributes)
+        public static EventDescriptor CreateEvent(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            EventDescriptor oldEventDescriptor,
+            params Attribute[] attributes)
         {
             return new ReflectEventDescriptor(componentType, oldEventDescriptor, attributes);
         }
@@ -471,6 +478,7 @@ namespace System.ComponentModel
         /// <summary>
         /// This dynamically binds a PropertyDescriptor to a type.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public static PropertyDescriptor CreateProperty(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
             string name,
@@ -484,6 +492,7 @@ namespace System.ComponentModel
         /// This creates a new property descriptor identical to an existing property descriptor. The new property descriptor
         /// has the specified metadata attributes merged with the existing metadata attributes.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public static PropertyDescriptor CreateProperty(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
             PropertyDescriptor oldPropertyDescriptor,
@@ -799,14 +808,14 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type converter for the type of the specified component.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage + " The Type of component cannot be statically discovered.")]
         public static TypeConverter GetConverter(object component) => GetConverter(component, false);
 
         /// <summary>
         /// Gets a type converter for the type of the specified component.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage + " The Type of component cannot be statically discovered.")]
         public static TypeConverter GetConverter(object component, bool noCustomTypeDesc)
         {
             TypeConverter converter = GetDescriptor(component, noCustomTypeDesc).GetConverter();
@@ -816,12 +825,19 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type converter for the specified type.
         /// </summary>
+        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
         public static TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             return GetDescriptor(type, nameof(type)).GetConverter();
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The callers of this method ensure getting the converter is trim compatible - i.e. the type is not Nullable<T>.")]
+        internal static TypeConverter GetConverterTrimUnsafe([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
+            GetConverter(type);
+
         // This is called by System.ComponentModel.DefaultValueAttribute via reflection.
+        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
         private static object ConvertFromInvariantString([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, string stringValue)
         {
             return GetConverter(type).ConvertFromInvariantString(stringValue);
@@ -830,6 +846,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the default event for the specified type of component.
         /// </summary>
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public static EventDescriptor GetDefaultEvent(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType)
         {
@@ -845,14 +862,14 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the default event for the specified component.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage + " The Type of component cannot be statically discovered.")]
         public static EventDescriptor GetDefaultEvent(object component) => GetDefaultEvent(component, false);
 
         /// <summary>
         /// Gets the default event for a component.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage + " The Type of component cannot be statically discovered.")]
         public static EventDescriptor GetDefaultEvent(object component, bool noCustomTypeDesc)
         {
             if (component == null)
@@ -867,6 +884,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the default property for the specified type of component.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public static PropertyDescriptor GetDefaultProperty(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType)
         {
@@ -882,14 +900,14 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the default property for the specified component.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of component cannot be statically discovered.")]
         public static PropertyDescriptor GetDefaultProperty(object component) => GetDefaultProperty(component, false);
 
         /// <summary>
         /// Gets the default property for the specified component.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of component cannot be statically discovered.")]
         public static PropertyDescriptor GetDefaultProperty(object component, bool noCustomTypeDesc)
         {
             if (component == null)
@@ -1228,6 +1246,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of properties for a specified type of component.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public static PropertyDescriptorCollection GetProperties(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType)
         {
@@ -1244,7 +1263,7 @@ namespace System.ComponentModel
         /// Gets a collection of properties for a specified type of
         /// component using a specified array of attributes as a filter.
         /// </summary>
-        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public static PropertyDescriptorCollection GetProperties(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
             Attribute[] attributes)
@@ -1272,7 +1291,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of properties for a specified component.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of component cannot be statically discovered.")]
         public static PropertyDescriptorCollection GetProperties(object component)
         {
             return GetProperties(component, false);
@@ -1282,7 +1301,7 @@ namespace System.ComponentModel
         /// Gets a collection of properties for a specified component.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of component cannot be statically discovered.")]
         public static PropertyDescriptorCollection GetProperties(object component, bool noCustomTypeDesc)
         {
             return GetPropertiesImpl(component, null, noCustomTypeDesc, true);
@@ -1293,7 +1312,7 @@ namespace System.ComponentModel
         /// component using a specified array of attributes
         /// as a filter.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of component cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public static PropertyDescriptorCollection GetProperties(object component, Attribute[] attributes)
         {
             return GetProperties(component, attributes, false);
@@ -1304,7 +1323,7 @@ namespace System.ComponentModel
         /// component using a specified array of attributes
         /// as a filter.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of component cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public static PropertyDescriptorCollection GetProperties(object component, Attribute[] attributes, bool noCustomTypeDesc)
         {
             return GetPropertiesImpl(component, attributes, noCustomTypeDesc, false);
@@ -1315,7 +1334,7 @@ namespace System.ComponentModel
         /// only if noAttributes is false. This is to preserve backward compat for the case when
         /// no attribute filter was passed in (as against passing in null).
         /// </summary>
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of component cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         private static PropertyDescriptorCollection GetPropertiesImpl(object component, Attribute[] attributes, bool noCustomTypeDesc, bool noAttributes)
         {
             if (component == null)
@@ -2702,13 +2721,16 @@ namespace System.ComponentModel
 
                 string ICustomTypeDescriptor.GetComponentName() => null;
 
+                [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
                 TypeConverter ICustomTypeDescriptor.GetConverter() => _handler.GetConverter(_instance);
 
+                [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
                 EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
                 {
                     return _handler.GetDefaultEvent(_instance);
                 }
 
+                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
                 PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
                 {
                     return _handler.GetDefaultProperty(_instance);
@@ -2731,12 +2753,13 @@ namespace System.ComponentModel
                     return _handler.GetEvents(_instance, attributes);
                 }
 
+                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
                 {
                     return _handler.GetProperties(_instance, null);
                 }
 
-                [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
                 {
                     return _handler.GetProperties(_instance, attributes);
@@ -2774,7 +2797,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Our custom type descriptor.
             /// </summary>
-            private class AttributeTypeDescriptor : CustomTypeDescriptor
+            private sealed class AttributeTypeDescriptor : CustomTypeDescriptor
             {
                 private readonly Attribute[] _attributeArray;
 
@@ -2994,6 +3017,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
+            [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
             TypeConverter ICustomTypeDescriptor.GetConverter()
             {
                 TypeConverter converter = _primary.GetConverter() ?? _secondary.GetConverter();
@@ -3005,6 +3029,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
+            [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
             EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
             {
                 return _primary.GetDefaultEvent() ?? _secondary.GetDefaultEvent();
@@ -3013,6 +3038,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
+            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
             PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
             {
                 return _primary.GetDefaultProperty() ?? _secondary.GetDefaultProperty();
@@ -3060,6 +3086,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
+            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
             PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
             {
                 PropertyDescriptorCollection properties = _primary.GetProperties() ?? _secondary.GetProperties();
@@ -3071,7 +3098,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
             PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
             {
                 PropertyDescriptorCollection properties = _primary.GetProperties(attributes);
@@ -3348,7 +3375,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
+                [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
                 TypeConverter ICustomTypeDescriptor.GetConverter()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3371,7 +3398,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
+                [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
                 EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3392,7 +3419,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
+                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
                 PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3486,7 +3513,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
+                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3508,7 +3535,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3659,6 +3686,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
                 TypeConverter ICustomTypeDescriptor.GetConverter()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3686,6 +3714,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
                 EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3711,6 +3740,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
                 PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3822,6 +3852,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3849,7 +3880,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.

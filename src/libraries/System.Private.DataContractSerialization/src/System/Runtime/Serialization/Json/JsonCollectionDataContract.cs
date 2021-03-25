@@ -158,7 +158,7 @@ namespace System.Runtime.Serialization.Json
             JsonFormatWriterDelegate(jsonWriter, obj, context, TraditionalCollectionDataContract);
         }
 
-        private class JsonCollectionDataContractCriticalHelper : JsonDataContractCriticalHelper
+        private sealed class JsonCollectionDataContractCriticalHelper : JsonDataContractCriticalHelper
         {
             private JsonFormatCollectionReaderDelegate? _jsonFormatReaderDelegate;
             private JsonFormatGetOnlyCollectionReaderDelegate? _jsonFormatGetOnlyReaderDelegate;

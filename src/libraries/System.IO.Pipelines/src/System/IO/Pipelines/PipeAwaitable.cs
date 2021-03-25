@@ -186,7 +186,7 @@ namespace System.IO.Pipelines
             UseSynchronizationContext = 8
         }
 
-        private class SchedulingContext
+        private sealed class SchedulingContext
         {
             public SynchronizationContext? SynchronizationContext { get; set; }
             public ExecutionContext? ExecutionContext { get; set; }
