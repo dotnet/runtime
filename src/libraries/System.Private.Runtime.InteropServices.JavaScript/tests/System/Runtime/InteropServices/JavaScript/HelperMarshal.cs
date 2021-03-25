@@ -23,11 +23,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public static class HelperMarshal
     {
         public class CustomClassMarshaler {
-            public CustomClass JSToManaged (double d) {
+            public static CustomClassMarshaler GetInstance (Type type) {
+                return new CustomClassMarshaler();
+            }
+
+            public CustomClass FromJavaScript (double d) {
                 return new CustomClass { D = d };
             }
 
-            public double ManagedToJS (CustomClass ct) {
+            public double ToJavaScript (CustomClass ct) {
                 return ct?.D ?? -1;
             }
         }
@@ -38,11 +42,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         public class CustomStructMarshaler {
-            public CustomStruct JSToManaged (double d) {
+            public static CustomStructMarshaler GetInstance (Type type) {
+                return new CustomStructMarshaler();
+            }
+
+            public CustomStruct FromJavaScript (double d) {
                 return new CustomStruct { D = d };
             }
 
-            public double ManagedToJS (ref CustomStruct ct) {
+            public double ToJavaScript (ref CustomStruct ct) {
                 return ct.D;
             }
         }
@@ -53,10 +61,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         public class CustomDateMarshaler {
-            public string JSToManaged_PreFilter { get; } = "value.toISOString()";
-            public string ManagedToJS_PostFilter { get; } = "new Date(value)";
+            public static CustomDateMarshaler GetInstance (Type type) {
+                return new CustomDateMarshaler();
+            }
 
-            public CustomDate JSToManaged (string s) {
+            public string FromJavaScriptPreFilter { get; } = "value.toISOString()";
+            public string ToJavaScriptPostFilter { get; } = "new Date(value)";
+
+            public CustomDate FromJavaScript (string s) {
                 // Console.WriteLine($"CustomDate.JSToManaged({s})");
                 var newDate = DateTime.Parse(s).ToUniversalTime();
                 // Console.WriteLine($"newDate={newDate}");
@@ -65,7 +77,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 };
             }
 
-            public string ManagedToJS (ref CustomDate cd) {
+            public string ToJavaScript (ref CustomDate cd) {
                 var result = cd.Date.ToString("o");
                 // Console.WriteLine($"CustomDate.ManagedToJS({cd.Date}) === {result}");
                 return result;

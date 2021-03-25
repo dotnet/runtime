@@ -350,24 +350,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
-        private static unsafe IntPtr GetMethodPointer (Type type, string name, out Type? returnType) {
-            var info = type.GetMethod(
-                name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
-            );
-            if (info == null) {
-                returnType = null;
-                return IntPtr.Zero;
-            }
-
-            returnType = info.ReturnType;
-
-            var tmp = default(IntPtrAndHandle);
-            tmp.handle = info.MethodHandle;
-            return tmp.ptr;
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         private static unsafe string GetAndEscapeStringProperty (object? instance, Type type, string name) {
             var info = type.GetProperty(
                 name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
@@ -410,6 +392,24 @@ namespace System.Runtime.InteropServices.JavaScript
             return result;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
+        private static unsafe IntPtr GetMarshalMethodPointer (Type type, string name, out Type? returnType) {
+            var info = type.GetMethod(
+                name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+            );
+            if (info == null) {
+                returnType = null;
+                return IntPtr.Zero;
+            }
+
+            returnType = info.ReturnType;
+
+            var tmp = default(IntPtrAndHandle);
+            tmp.handle = info.MethodHandle;
+            return tmp.ptr;
+        }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr, out object? instance) {
@@ -443,13 +443,18 @@ namespace System.Runtime.InteropServices.JavaScript
             if (marshalerType == null)
                 return "null";
 
-            instance = Activator.CreateInstance(marshalerType);
+            var createMethod = marshalerType.GetMethod("GetInstance");
+            if (createMethod == null)
+                return "null";
+            instance = createMethod.Invoke(null, new object[] { type });
+            if (instance == null)
+                return "null";
 
-            var preFilter = GetAndEscapeStringProperty(instance, marshalerType, "JSToManaged_PreFilter");
-            var postFilter = GetAndEscapeStringProperty(instance, marshalerType, "ManagedToJS_PostFilter");
+            var preFilter = GetAndEscapeStringProperty(instance, marshalerType, "FromJavaScriptPreFilter");
+            var postFilter = GetAndEscapeStringProperty(instance, marshalerType, "ToJavaScriptPostFilter");
 
-            var inputPtr = GetMethodPointer(marshalerType, "JSToManaged", out Type? temp);
-            var outputPtr = GetMethodPointer(marshalerType, "ManagedToJS", out Type? outputReturnType);
+            var inputPtr = GetMarshalMethodPointer(marshalerType, "FromJavaScript", out Type? temp);
+            var outputPtr = GetMarshalMethodPointer(marshalerType, "ToJavaScript", out Type? outputReturnType);
 
             return ("{\n" + $"'typePtr': {typePtr}, \n" +
                 $"'preFilter': {preFilter}, 'postFilter': {postFilter}, \n" +
