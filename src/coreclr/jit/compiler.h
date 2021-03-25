@@ -459,10 +459,6 @@ public:
 
     unsigned char lvDisqualifyForEhWriteThru : 1; // tracks variable that are disqualified from register candidancy
 
-#ifdef DEBUG
-    unsigned char lvDisqualifyEHVarReason = 'H';
-#endif
-
 #if ASSERTION_PROP
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
@@ -544,6 +540,10 @@ public:
     unsigned char lvFieldCnt; //  Number of fields in the promoted VarDsc.
     unsigned char lvFldOffset;
     unsigned char lvFldOrdinal;
+
+#ifdef DEBUG
+    unsigned char lvDisqualifyEHVarReason = 'H';
+#endif
 
 #if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
