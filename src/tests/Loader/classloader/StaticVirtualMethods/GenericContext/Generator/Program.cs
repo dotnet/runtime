@@ -115,8 +115,7 @@ namespace VirtualStaticInterfaceMethodTestGen
 
         static void EmitCodeForCommonLibrary(TextWriter tw)
         {
-            tw.WriteLine(@"
-.class interface public abstract auto ansi IFaceNonGeneric
+            tw.WriteLine(@".class interface public abstract auto ansi IFaceNonGeneric
 {
     .method public newslot virtual abstract static void NormalMethod() {}
     .method public newslot virtual abstract static void GenericMethod<U>() {}
@@ -341,7 +340,7 @@ namespace VirtualStaticInterfaceMethodTestGen
 {
 }
 
-".Replace("\n", "\r\n"));
+");
         }
 
 
