@@ -66,13 +66,13 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLegacyFileStreamEnabled))]
         public async Task ThrowWhenHandlePositionIsChanged_sync()
         {
             await ThrowWhenHandlePositionIsChanged(useAsync: false);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsLegacyFileStreamEnabled))]
         public async Task ThrowWhenHandlePositionIsChanged_async()
         {
             await ThrowWhenHandlePositionIsChanged(useAsync: true);

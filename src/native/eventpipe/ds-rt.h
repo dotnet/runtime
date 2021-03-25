@@ -19,6 +19,8 @@
 #define DS_LOG_WARNING_1(msg, data1) ds_rt_redefine
 #define DS_LOG_WARNING_2(msg, data1, data2) ds_rt_redefine
 #define DS_LOG_DEBUG_0(msg) ds_rt_redefine
+#define DS_LOG_DEBUG_1(msg, data1) ds_rt_redefine
+#define DS_LOG_DEBUG_2(msg, data1, data2) ds_rt_redefine
 
 #define DS_ENTER_BLOCKING_PAL_SECTION ds_rt_redefine
 #define DS_EXIT_BLOCKING_PAL_SECTION ds_rt_redefine

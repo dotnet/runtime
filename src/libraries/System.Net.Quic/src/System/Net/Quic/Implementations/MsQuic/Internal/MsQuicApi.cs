@@ -9,8 +9,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal unsafe sealed class MsQuicApi
     {
-        private static MsQuicApi? _api;
-
         public SafeMsQuicRegistrationHandle Registration { get; }
 
         // This is workaround for a bug in ILTrimmer.
@@ -21,102 +19,88 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicListenerHandle))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicConnectionHandle))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicStreamHandle))]
-        private unsafe MsQuicApi()
+        private MsQuicApi(NativeApi* vtable)
         {
-            MsQuicNativeMethods.NativeApi* vtable;
             uint status;
 
-            try
-            {
-                status = Interop.MsQuic.MsQuicOpen(out vtable);
-                if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
-                {
-                    throw new NotSupportedException(SR.net_quic_notsupported);
-                }
-            }
-            catch (DllNotFoundException)
-            {
-                throw new NotSupportedException(SR.net_quic_notsupported);
-            }
-
             SetParamDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SetParamDelegate>(
+                Marshal.GetDelegateForFunctionPointer<SetParamDelegate>(
                     vtable->SetParam);
 
             GetParamDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.GetParamDelegate>(
+                Marshal.GetDelegateForFunctionPointer<GetParamDelegate>(
                     vtable->GetParam);
 
             SetCallbackHandlerDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SetCallbackHandlerDelegate>(
+                Marshal.GetDelegateForFunctionPointer<SetCallbackHandlerDelegate>(
                     vtable->SetCallbackHandler);
 
             RegistrationOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.RegistrationOpenDelegate>(
+                Marshal.GetDelegateForFunctionPointer<RegistrationOpenDelegate>(
                     vtable->RegistrationOpen);
             RegistrationCloseDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.RegistrationCloseDelegate>(
+                Marshal.GetDelegateForFunctionPointer<RegistrationCloseDelegate>(
                     vtable->RegistrationClose);
 
             ConfigurationOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConfigurationOpenDelegate>(
+                Marshal.GetDelegateForFunctionPointer<ConfigurationOpenDelegate>(
                     vtable->ConfigurationOpen);
             ConfigurationCloseDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConfigurationCloseDelegate>(
+                Marshal.GetDelegateForFunctionPointer<ConfigurationCloseDelegate>(
                     vtable->ConfigurationClose);
             ConfigurationLoadCredentialDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConfigurationLoadCredentialDelegate>(
+                Marshal.GetDelegateForFunctionPointer<ConfigurationLoadCredentialDelegate>(
                     vtable->ConfigurationLoadCredential);
 
             ListenerOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ListenerOpenDelegate>(
+                Marshal.GetDelegateForFunctionPointer<ListenerOpenDelegate>(
                     vtable->ListenerOpen);
             ListenerCloseDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ListenerCloseDelegate>(
+                Marshal.GetDelegateForFunctionPointer<ListenerCloseDelegate>(
                     vtable->ListenerClose);
             ListenerStartDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ListenerStartDelegate>(
+                Marshal.GetDelegateForFunctionPointer<ListenerStartDelegate>(
                     vtable->ListenerStart);
             ListenerStopDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ListenerStopDelegate>(
+                Marshal.GetDelegateForFunctionPointer<ListenerStopDelegate>(
                     vtable->ListenerStop);
 
             ConnectionOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConnectionOpenDelegate>(
+                Marshal.GetDelegateForFunctionPointer<ConnectionOpenDelegate>(
                     vtable->ConnectionOpen);
             ConnectionCloseDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConnectionCloseDelegate>(
+                Marshal.GetDelegateForFunctionPointer<ConnectionCloseDelegate>(
                     vtable->ConnectionClose);
             ConnectionSetConfigurationDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConnectionSetConfigurationDelegate>(
+                Marshal.GetDelegateForFunctionPointer<ConnectionSetConfigurationDelegate>(
                     vtable->ConnectionSetConfiguration);
             ConnectionShutdownDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConnectionShutdownDelegate>(
+                Marshal.GetDelegateForFunctionPointer<ConnectionShutdownDelegate>(
                     vtable->ConnectionShutdown);
             ConnectionStartDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConnectionStartDelegate>(
+                Marshal.GetDelegateForFunctionPointer<ConnectionStartDelegate>(
                     vtable->ConnectionStart);
 
             StreamOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamOpenDelegate>(
+                Marshal.GetDelegateForFunctionPointer<StreamOpenDelegate>(
                     vtable->StreamOpen);
             StreamCloseDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamCloseDelegate>(
+                Marshal.GetDelegateForFunctionPointer<StreamCloseDelegate>(
                     vtable->StreamClose);
             StreamStartDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamStartDelegate>(
+                Marshal.GetDelegateForFunctionPointer<StreamStartDelegate>(
                     vtable->StreamStart);
             StreamShutdownDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamShutdownDelegate>(
+                Marshal.GetDelegateForFunctionPointer<StreamShutdownDelegate>(
                     vtable->StreamShutdown);
             StreamSendDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamSendDelegate>(
+                Marshal.GetDelegateForFunctionPointer<StreamSendDelegate>(
                     vtable->StreamSend);
             StreamReceiveCompleteDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamReceiveCompleteDelegate>(
+                Marshal.GetDelegateForFunctionPointer<StreamReceiveCompleteDelegate>(
                     vtable->StreamReceiveComplete);
             StreamReceiveSetEnabledDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamReceiveSetEnabledDelegate>(
+                Marshal.GetDelegateForFunctionPointer<StreamReceiveSetEnabledDelegate>(
                     vtable->StreamReceiveSetEnabled);
 
             var cfg = new RegistrationConfig
@@ -131,40 +115,69 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             Registration = handle;
         }
 
-        internal static MsQuicApi Api => _api ??= new MsQuicApi();
+        internal static MsQuicApi Api { get; } = null!;
 
-        internal static bool IsQuicSupported => true;
+        internal static bool IsQuicSupported { get; }
 
-        internal MsQuicNativeMethods.RegistrationOpenDelegate RegistrationOpenDelegate { get; }
-        internal MsQuicNativeMethods.RegistrationCloseDelegate RegistrationCloseDelegate { get; }
+        static MsQuicApi()
+        {
+            // TODO: Consider updating all of these delegates to instead use function pointers.
+            if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, out IntPtr msQuicHandle))
+            {
+                try
+                {
+                    if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpen", out IntPtr msQuicOpenAddress))
+                    {
+                        MsQuicOpenDelegate msQuicOpen =
+                            Marshal.GetDelegateForFunctionPointer<MsQuicOpenDelegate>(msQuicOpenAddress);
+                        uint status = msQuicOpen(out NativeApi* vtable);
+                        if (MsQuicStatusHelper.SuccessfulStatusCode(status))
+                        {
+                            IsQuicSupported = true;
+                            Api = new MsQuicApi(vtable);
+                        }
+                    }
+                }
+                finally
+                {
+                    if (!IsQuicSupported)
+                    {
+                        NativeLibrary.Free(msQuicHandle);
+                    }
+                }
+            }
+        }
 
-        internal MsQuicNativeMethods.ConfigurationOpenDelegate ConfigurationOpenDelegate { get; }
-        internal MsQuicNativeMethods.ConfigurationCloseDelegate ConfigurationCloseDelegate { get; }
-        internal MsQuicNativeMethods.ConfigurationLoadCredentialDelegate ConfigurationLoadCredentialDelegate { get; }
+        internal RegistrationOpenDelegate RegistrationOpenDelegate { get; }
+        internal RegistrationCloseDelegate RegistrationCloseDelegate { get; }
 
-        internal MsQuicNativeMethods.ListenerOpenDelegate ListenerOpenDelegate { get; }
-        internal MsQuicNativeMethods.ListenerCloseDelegate ListenerCloseDelegate { get; }
-        internal MsQuicNativeMethods.ListenerStartDelegate ListenerStartDelegate { get; }
-        internal MsQuicNativeMethods.ListenerStopDelegate ListenerStopDelegate { get; }
+        internal ConfigurationOpenDelegate ConfigurationOpenDelegate { get; }
+        internal ConfigurationCloseDelegate ConfigurationCloseDelegate { get; }
+        internal ConfigurationLoadCredentialDelegate ConfigurationLoadCredentialDelegate { get; }
+
+        internal ListenerOpenDelegate ListenerOpenDelegate { get; }
+        internal ListenerCloseDelegate ListenerCloseDelegate { get; }
+        internal ListenerStartDelegate ListenerStartDelegate { get; }
+        internal ListenerStopDelegate ListenerStopDelegate { get; }
 
         // TODO: missing SendResumptionTicket
-        internal MsQuicNativeMethods.ConnectionOpenDelegate ConnectionOpenDelegate { get; }
-        internal MsQuicNativeMethods.ConnectionCloseDelegate ConnectionCloseDelegate { get; }
-        internal MsQuicNativeMethods.ConnectionShutdownDelegate ConnectionShutdownDelegate { get; }
-        internal MsQuicNativeMethods.ConnectionStartDelegate ConnectionStartDelegate { get; }
-        internal MsQuicNativeMethods.ConnectionSetConfigurationDelegate ConnectionSetConfigurationDelegate { get; }
+        internal ConnectionOpenDelegate ConnectionOpenDelegate { get; }
+        internal ConnectionCloseDelegate ConnectionCloseDelegate { get; }
+        internal ConnectionShutdownDelegate ConnectionShutdownDelegate { get; }
+        internal ConnectionStartDelegate ConnectionStartDelegate { get; }
+        internal ConnectionSetConfigurationDelegate ConnectionSetConfigurationDelegate { get; }
 
-        internal MsQuicNativeMethods.StreamOpenDelegate StreamOpenDelegate { get; }
-        internal MsQuicNativeMethods.StreamCloseDelegate StreamCloseDelegate { get; }
-        internal MsQuicNativeMethods.StreamStartDelegate StreamStartDelegate { get; }
-        internal MsQuicNativeMethods.StreamShutdownDelegate StreamShutdownDelegate { get; }
-        internal MsQuicNativeMethods.StreamSendDelegate StreamSendDelegate { get; }
-        internal MsQuicNativeMethods.StreamReceiveCompleteDelegate StreamReceiveCompleteDelegate { get; }
-        internal MsQuicNativeMethods.StreamReceiveSetEnabledDelegate StreamReceiveSetEnabledDelegate { get; }
+        internal StreamOpenDelegate StreamOpenDelegate { get; }
+        internal StreamCloseDelegate StreamCloseDelegate { get; }
+        internal StreamStartDelegate StreamStartDelegate { get; }
+        internal StreamShutdownDelegate StreamShutdownDelegate { get; }
+        internal StreamSendDelegate StreamSendDelegate { get; }
+        internal StreamReceiveCompleteDelegate StreamReceiveCompleteDelegate { get; }
+        internal StreamReceiveSetEnabledDelegate StreamReceiveSetEnabledDelegate { get; }
 
-        internal MsQuicNativeMethods.SetCallbackHandlerDelegate SetCallbackHandlerDelegate { get; }
+        internal SetCallbackHandlerDelegate SetCallbackHandlerDelegate { get; }
 
-        internal MsQuicNativeMethods.SetParamDelegate SetParamDelegate { get; }
-        internal MsQuicNativeMethods.GetParamDelegate GetParamDelegate { get; }
+        internal SetParamDelegate SetParamDelegate { get; }
+        internal GetParamDelegate GetParamDelegate { get; }
     }
 }

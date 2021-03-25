@@ -226,7 +226,7 @@ namespace System.Linq.Parallel
         protected readonly CancellationToken _cancellationToken;
         private Mutables? _mutables; // All of the mutable state.
 
-        private class Mutables
+        private sealed class Mutables
         {
             internal HashLookup<Wrapper<TGroupKey>, ListChunk<TElement>>? _hashLookup; // The lookup with key-value mappings.
             internal int _hashLookupIndex; // The current index within the lookup.
@@ -429,7 +429,7 @@ namespace System.Linq.Parallel
         protected readonly CancellationToken _cancellationToken;
         private Mutables? _mutables; // All the mutable state.
 
-        private class Mutables
+        private sealed class Mutables
         {
             internal HashLookup<Wrapper<TGroupKey>, GroupKeyData>? _hashLookup; // The lookup with key-value mappings.
             internal int _hashLookupIndex; // The current index within the lookup.

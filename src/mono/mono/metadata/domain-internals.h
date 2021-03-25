@@ -20,6 +20,7 @@
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/handle-decl.h>
+#include <mono/mini/mono-private-unstable.h>
 
 G_BEGIN_DECLS
 
@@ -448,6 +449,9 @@ mono_domain_get_assemblies (MonoDomain *domain);
 
 void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values);
+
+void
+mono_runtime_register_runtimeconfig_json_properties (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void *user_data);
 
 void
 mono_runtime_install_appctx_properties (void);

@@ -33,7 +33,7 @@ all: build-native icu-files source-files header-files
 #  If EMSDK_PATH is not set by the caller, download and setup a local emsdk install.
 #
 
-EMSCRIPTEN_VERSION=2.0.12
+EMSCRIPTEN_VERSION := $(shell cat $(TOP)/src/mono/wasm/emscripten-version.txt)
 EMSDK_LOCAL_PATH=emsdk
 EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
 

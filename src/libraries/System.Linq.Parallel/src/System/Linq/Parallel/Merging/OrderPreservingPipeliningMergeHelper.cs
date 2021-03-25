@@ -183,7 +183,7 @@ namespace System.Linq.Parallel
         ///     x.MaxKey EQUALS y.MaxKey        =>  x EQUALS y        => return 0
         ///     x.MaxKey LESS_THAN y.MaxKey     =>  x GREATER_THAN y  => return +
         /// </summary>
-        private class ProducerComparer : IComparer<Producer<TKey>>
+        private sealed class ProducerComparer : IComparer<Producer<TKey>>
         {
             private readonly IComparer<TKey> _keyComparer;
 
@@ -201,7 +201,7 @@ namespace System.Linq.Parallel
         /// <summary>
         /// Enumerator over the results of an order-preserving pipelining merge.
         /// </summary>
-        private class OrderedPipeliningMergeEnumerator : MergeEnumerator<TOutput>
+        private sealed class OrderedPipeliningMergeEnumerator : MergeEnumerator<TOutput>
 
         {
             /// <summary>

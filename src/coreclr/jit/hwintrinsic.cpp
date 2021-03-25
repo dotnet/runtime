@@ -416,8 +416,7 @@ GenTree* HWIntrinsicInfo::lookupLastOp(const GenTreeHWIntrinsic* node)
 {
     assert(node != nullptr);
 
-    NamedIntrinsic id  = node->gtHWIntrinsicId;
-    GenTree*       op1 = node->gtGetOp1();
+    GenTree* op1 = node->gtGetOp1();
 
     if (op1 == nullptr)
     {
@@ -778,11 +777,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
 {
-    CORINFO_InstructionSet isa      = HWIntrinsicInfo::lookupIsa(intrinsic);
-    HWIntrinsicCategory    category = HWIntrinsicInfo::lookupCategory(intrinsic);
-    int                    numArgs  = sig->numArgs;
-    var_types              retType  = JITtype2varType(sig->retType);
-    var_types              baseType = TYP_UNKNOWN;
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
+    int                 numArgs  = sig->numArgs;
+    var_types           retType  = JITtype2varType(sig->retType);
+    var_types           baseType = TYP_UNKNOWN;
 
     if ((retType == TYP_STRUCT) && featureSIMD)
     {

@@ -136,7 +136,7 @@ namespace System.Linq.Parallel
         // An enumerator that implements the filtering logic.
         //
 
-        private class IndexedWhereQueryOperatorEnumerator : QueryOperatorEnumerator<TInputOutput, int>
+        private sealed class IndexedWhereQueryOperatorEnumerator : QueryOperatorEnumerator<TInputOutput, int>
         {
             private readonly QueryOperatorEnumerator<TInputOutput, int> _source; // The data source to enumerate.
             private readonly Func<TInputOutput, int, bool> _predicate; // The predicate used for filtering.

@@ -29,7 +29,7 @@
     <Exec
       IgnoreExitCode="true"
       StandardOutputImportance="Low"
-      Command="$(_AsnXmlDiffCmd) @(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs') @(AsnXml -> '%(Identity).cs')">
+      Command="$(_AsnXmlDiffCmd) @(AsnXml -> '&quot;$(_AsnIntermediatePath)%(filename).cs&quot;') @(AsnXml -> '&quot;%(Identity).cs&quot;')">
       <Output TaskParameter="ExitCode" ItemName="_AsnXmlDiffCode" />
     </Exec>
 

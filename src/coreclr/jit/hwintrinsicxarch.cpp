@@ -1459,16 +1459,11 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
     GenTree*  retNode  = nullptr;
     GenTree*  op1      = nullptr;
     GenTree*  op2      = nullptr;
-    int       ival     = -1;
     int       simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
     var_types baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-    var_types retType  = TYP_UNKNOWN;
 
     // The  fencing intrinsics don't take any operands and simdSize is 0
     assert((simdSize == 16) || (simdSize == 0));
-
-    CORINFO_ARG_LIST_HANDLE argList = sig->args;
-    var_types               argType = TYP_UNKNOWN;
 
     switch (intrinsic)
     {

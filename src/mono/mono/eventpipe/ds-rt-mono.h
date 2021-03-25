@@ -6,45 +6,52 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-mono.h"
+#include <mono/utils/mono-logger-internals.h>
 
 #undef DS_LOG_ALWAYS_0
-#define DS_LOG_ALWAYS_0(msg)
+#define DS_LOG_ALWAYS_0(msg) mono_trace(G_LOG_LEVEL_MESSAGE, MONO_TRACE_DIAGNOSTICS, msg)
 
 #undef DS_LOG_ALWAYS_1
-#define DS_LOG_ALWAYS_1(msg, data1)
+#define DS_LOG_ALWAYS_1(msg, data1) mono_trace(G_LOG_LEVEL_MESSAGE, MONO_TRACE_DIAGNOSTICS, msg, data1)
 
 #undef DS_LOG_ALWAYS_2
-#define DS_LOG_ALWAYS_2(msg, data1, data2)
+#define DS_LOG_ALWAYS_2(msg, data1, data2) mono_trace(G_LOG_LEVEL_MESSAGE, MONO_TRACE_DIAGNOSTICS, msg, data1, data2)
 
 #undef DS_LOG_INFO_0
-#define DS_LOG_INFO_0(msg)
+#define DS_LOG_INFO_0(msg) mono_trace(G_LOG_LEVEL_INFO, MONO_TRACE_DIAGNOSTICS, msg)
 
 #undef DS_LOG_INFO_1
-#define DS_LOG_INFO_1(msg, data1)
+#define DS_LOG_INFO_1(msg, data1) mono_trace(G_LOG_LEVEL_INFO, MONO_TRACE_DIAGNOSTICS, msg, data1)
 
 #undef DS_LOG_INFO_2
-#define DS_LOG_INFO_2(msg, data1, data2)
+#define DS_LOG_INFO_2(msg, data1, data2) mono_trace(G_LOG_LEVEL_INFO, MONO_TRACE_DIAGNOSTICS, msg, data1, data2)
 
 #undef DS_LOG_ERROR_0
-#define DS_LOG_ERROR_0(msg)
+#define DS_LOG_ERROR_0(msg) mono_trace(G_LOG_LEVEL_CRITICAL, MONO_TRACE_DIAGNOSTICS, msg)
 
 #undef DS_LOG_ERROR_1
-#define DS_LOG_ERROR_1(msg, data1)
+#define DS_LOG_ERROR_1(msg, data1) mono_trace(G_LOG_LEVEL_CRITICAL, MONO_TRACE_DIAGNOSTICS, msg, data1)
 
 #undef DS_LOG_ERROR_2
-#define DS_LOG_ERROR_2(msg, data1, data2)
+#define DS_LOG_ERROR_2(msg, data1, data2) mono_trace(G_LOG_LEVEL_CRITICAL, MONO_TRACE_DIAGNOSTICS, msg, data1, data2)
 
 #undef DS_LOG_WARNING_0
-#define DS_LOG_WARNING_0(msg)
+#define DS_LOG_WARNING_0(msg) mono_trace(G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, msg)
 
 #undef DS_LOG_WARNING_1
-#define DS_LOG_WARNING_1(msg, data1)
+#define DS_LOG_WARNING_1(msg, data1) mono_trace(G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, msg, data1)
 
 #undef DS_LOG_WARNING_2
-#define DS_LOG_WARNING_2(msg, data1, data2)
+#define DS_LOG_WARNING_2(msg, data1, data2) mono_trace(G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, msg, data1, data2)
 
 #undef DS_LOG_DEBUG_0
-#define DS_LOG_DEBUG_0(msg)
+#define DS_LOG_DEBUG_0(msg) mono_trace(G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, msg)
+
+#undef DS_LOG_DEBUG_1
+#define DS_LOG_DEBUG_1(msg, data1) mono_trace(G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, msg, data1)
+
+#undef DS_LOG_DEBUG_2
+#define DS_LOG_DEBUG_2(msg, data1, data2) mono_trace(G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, msg, data1, data2)
 
 #undef DS_ENTER_BLOCKING_PAL_SECTION
 #define DS_ENTER_BLOCKING_PAL_SECTION \

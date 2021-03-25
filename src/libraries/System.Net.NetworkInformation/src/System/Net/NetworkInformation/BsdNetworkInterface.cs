@@ -158,6 +158,6 @@ namespace System.Net.NetworkInformation
 
         public override bool SupportsMulticast { get { return _supportsMulticast; } }
 
-        public override bool IsReceiveOnly { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
+        public override bool IsReceiveOnly { get { return false; } }
     }
 }

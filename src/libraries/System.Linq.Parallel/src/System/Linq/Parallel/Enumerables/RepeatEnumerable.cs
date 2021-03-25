@@ -77,7 +77,7 @@ namespace System.Linq.Parallel
         // The actual enumerator that produces a set of repeated elements.
         //
 
-        private class RepeatEnumerator : QueryOperatorEnumerator<TResult, int>
+        private sealed class RepeatEnumerator : QueryOperatorEnumerator<TResult, int>
         {
             private readonly TResult _element; // The element to repeat.
             private readonly int _count; // The number of times to repeat it.

@@ -3068,7 +3068,7 @@ ISpGrammarResourceLoader
         private RecognizerBaseThunk _recoThunk;
         #endregion
 
-        private class RecognizerBaseThunk : ISpGrammarResourceLoader
+        private sealed class RecognizerBaseThunk : ISpGrammarResourceLoader
         {
             internal RecognizerBaseThunk(RecognizerBase recognizer)
             {

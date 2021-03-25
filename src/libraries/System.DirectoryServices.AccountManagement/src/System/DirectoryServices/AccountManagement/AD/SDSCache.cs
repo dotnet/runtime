@@ -205,13 +205,13 @@ namespace System.DirectoryServices.AccountManagement
         private readonly object _tableLock = new object();
         private readonly bool _isSAM;
 
-        private class CredHolder
+        private sealed class CredHolder
         {
             public Hashtable explicitCreds = new Hashtable();
             public Hashtable defaultCreds = new Hashtable();
         }
 
-        private class Placeholder
+        private sealed class Placeholder
         {
             // initially non-signaled
             public ManualResetEvent contextReadyEvent = new ManualResetEvent(false);

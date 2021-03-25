@@ -17,6 +17,12 @@
  * DiagnosticsIpc.
  */
 
+bool
+ds_ipc_pal_init (void);
+
+bool
+ds_ipc_pal_shutdown (void);
+
 int32_t
 ds_ipc_get_handle_int32_t (DiagnosticsIpc *ipc);
 
@@ -65,7 +71,9 @@ ds_ipc_accept (
 DiagnosticsIpcStream *
 ds_ipc_connect (
 	DiagnosticsIpc *ipc,
-	ds_ipc_error_callback_func callback);
+	uint32_t timeout_ms,
+	ds_ipc_error_callback_func callback,
+	bool *timed_out);
 
 // Closes an open IPC.
 // Only attempts minimal cleanup if is_shutdown==true, i.e.,

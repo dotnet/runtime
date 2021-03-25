@@ -121,7 +121,7 @@ namespace System.Linq.Parallel
         // partition is walked, invoking the per-element action for each item.
         //
 
-        private class ForAllEnumerator<TKey> : QueryOperatorEnumerator<TInput, int>
+        private sealed class ForAllEnumerator<TKey> : QueryOperatorEnumerator<TInput, int>
         {
             private readonly QueryOperatorEnumerator<TInput, TKey> _source; // The data source.
             private readonly Action<TInput> _elementAction; // Forall operator being executed.
