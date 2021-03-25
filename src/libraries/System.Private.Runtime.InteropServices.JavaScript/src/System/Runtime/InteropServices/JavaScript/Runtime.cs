@@ -425,7 +425,7 @@ namespace System.Runtime.InteropServices.JavaScript
             Type? marshalerType = null;
 
             foreach (var cad in type.GetCustomAttributesData()) {
-                if (cad.AttributeType.FullName != "System.Runtime.InteropServices.JavaScript.CustomMarshalerAttribute")
+                if (cad.AttributeType.FullName != "System.Runtime.InteropServices.JavaScript.CustomJavaScriptMarshalerAttribute")
                     continue;
 
                 var args = cad.ConstructorArguments;
@@ -445,10 +445,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var createMethod = marshalerType.GetMethod("GetInstance");
             if (createMethod == null)
-                return "null";
+                return "{ \"error\": \"CustomJavaScriptMarshaler has no GetInstance method\" }";
             instance = createMethod.Invoke(null, new object[] { type });
             if (instance == null)
-                return "null";
+                return "{ \"error\": \"CustomJavaScriptMarshaler.GetInstance returned null\" }";
 
             var preFilter = GetAndEscapeStringProperty(instance, marshalerType, "FromJavaScriptPreFilter");
             var postFilter = GetAndEscapeStringProperty(instance, marshalerType, "ToJavaScriptPostFilter");

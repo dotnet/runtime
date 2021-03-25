@@ -8,10 +8,10 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript {
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
-    public class CustomMarshalerAttribute : Attribute {
+    public class CustomJavaScriptMarshalerAttribute : Attribute {
         private Type MarshalerType;
         
-        public CustomMarshalerAttribute (Type marshalerType)
+        public CustomJavaScriptMarshalerAttribute (Type marshalerType)
             : base () {
             MarshalerType = marshalerType;
         }
@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
-        [CustomMarshaler(typeof(CustomClassMarshaler))]
+        [CustomJavaScriptMarshaler(typeof(CustomClassMarshaler))]
         public class CustomClass {
             public double D;
         }
@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
-        [CustomMarshaler(typeof(CustomStructMarshaler))]
+        [CustomJavaScriptMarshaler(typeof(CustomStructMarshaler))]
         public struct CustomStruct {
             public double D;
         }
@@ -84,7 +84,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
-        [CustomMarshaler(typeof(CustomDateMarshaler))]
+        [CustomJavaScriptMarshaler(typeof(CustomDateMarshaler))]
         public struct CustomDate {
             public DateTime Date;
         }

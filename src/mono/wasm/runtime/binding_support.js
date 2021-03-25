@@ -1127,19 +1127,20 @@ var BindingSupportLib = {
 			if (!this._struct_unboxer_cache.has (classPtr)) {
 				var info = this._get_custom_marshaler_info_for_class (classPtr);
 				// HACK
-				if (!info) {
-					// console.log("_get_custom_marshaler_info returned null for classPtr", classPtr);
+				if (!info)
 					info = {};
-				}
+				if (info.error)
+					console.error(`Error while configuring automatic converter for type ${this.mono_wasm_get_type_name(typePtr)}: ${info.error}`);
 
 				var postFilter = info.postFilter;
 
 				// console.log ("postFilter", postFilter);
 
 				var convMethod = info.outputPtr;
-				if (!convMethod)
+				if (!convMethod) {
+					console.error(`Automatic converter for type ${this.mono_wasm_get_type_name(typePtr)} has no suitable ToJavaScript method`);
 					this._struct_unboxer_cache.set (classPtr, null);
-				else {
+				} else {
 					var signature = "m";
 					var boundConverter = this.bind_method (
 						convMethod, info.instancePtr, signature, "ManagedToJS_class" + classPtr
@@ -1164,7 +1165,7 @@ var BindingSupportLib = {
 			var unboxer = this._get_struct_unboxer_for_class(classPtr);
 			if (!unboxer) {
 				var className = this.mono_wasm_get_type_name(this.mono_wasm_class_get_type(classPtr));
-				throw new Error ("No managed-to-js converter found for struct type " + className);
+				throw new Error ("No CustomJavaScriptMarshaler found for struct type " + className);
 			}
 
 			// FIXME: Pass a ReadOnlySpan or ReadOnlyMemory instead of a bare pointer
@@ -1212,10 +1213,10 @@ var BindingSupportLib = {
 					
 				var info = this._get_custom_marshaler_info_for_type (typePtr);
 				// HACK
-				if (!info) {
-					// console.log("_get_custom_marshaler_info returned null for typePtr", typePtr);
+				if (!info)
 					info = {};
-				}
+				if (info.error)
+					console.error(`Error while configuring automatic converter for type ${this.mono_wasm_get_type_name(typePtr)}: ${info.error}`);
 
 				var preFilter = info.preFilter;
 
@@ -1223,7 +1224,7 @@ var BindingSupportLib = {
 
 				var convMethod = info.inputPtr;
 				if (!convMethod) {
-					// console.log (`No automatic converter found for typePtr ${typePtr} and methodPtr ${methodPtr}`);
+					console.error(`Automatic converter for type ${this.mono_wasm_get_type_name(typePtr)} has no suitable FromJavaScript method`);
 					this._automatic_converter_table.set (typePtr, null);
 					return null;
 				}
@@ -1236,7 +1237,7 @@ var BindingSupportLib = {
 				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
 				// console.log("jstm signature", signature);
 				var boundConverter = this.bind_method (
-					convMethod,info.instancePtr, signature, "JSToManaged_type" + typePtr
+					convMethod,info.instancePtr, signature, "FromJavaScript_type" + typePtr
 				);
 
 				var result = this._compile_pre_filter (classPtr, boundConverter, preFilter);
