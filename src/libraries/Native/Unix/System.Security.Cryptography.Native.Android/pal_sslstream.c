@@ -3,7 +3,7 @@
 
 #include "pal_sslstream.h"
 
-void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus);
+static void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus);
 
 static int getHandshakeStatus(JNIEnv* env, SSLStream* sslStream, jobject engineResult)
 {
@@ -246,7 +246,7 @@ static void doUnwrap(JNIEnv* env, SSLStream* sslStream)
     }
 }
 
-void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus)
+static void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus)
 {
     /*
         switch (handshakeStatus) {
@@ -276,6 +276,84 @@ void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus
         case HANDSHAKE_STATUS__NEED_TASK:
             assert(0 && "unexpected NEED_TASK handshake status");
     }
+}
+
+static void FreeSSLStream(JNIEnv *env, SSLStream *sslStream)
+{
+    assert(sslStream != NULL);
+    ReleaseGRef(env, sslStream->sslContext);
+    ReleaseGRef(env, sslStream->sslEngine);
+    ReleaseGRef(env, sslStream->sslSession);
+    ReleaseGRef(env, sslStream->appOutBuffer);
+    ReleaseGRef(env, sslStream->netOutBuffer);
+    ReleaseGRef(env, sslStream->netInBuffer);
+    ReleaseGRef(env, sslStream->appInBuffer);
+    free(sslStream);
+}
+
+SSLStream* AndroidCryptoNative_SSLStreamCreate(
+    bool isServer,
+    STREAM_READER streamReader,
+    STREAM_WRITER streamWriter,
+    int appOutBufferSize,
+    int appInBufferSize)
+{
+    JNIEnv* env = GetJNIEnv();
+
+    SSLStream* sslStream = malloc(sizeof(SSLStream));
+
+    // SSLContext sslContext = SSLContext.getDefault();
+    jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_sslCtxGetDefaultMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    sslStream->sslContext = ToGRef(env, sslContext);
+
+    // SSLEngine sslEngine = sslContext.createSSLEngine();
+    // sslEngine.setUseClientMode(!isServer);
+    jobject sslEngine = (*env)->CallObjectMethod(env, sslStream->sslContext, g_SSLContextCreateSSLEngineMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    sslStream->sslEngine  = ToGRef(env, sslEngine);
+    (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetUseClientModeMethod, !isServer);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // SSLSession sslSession = sslEngine.getSession();
+    sslStream->sslSession = ToGRef(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSessionMethod));
+
+    // final int applicationBufferSize = sslSession.getApplicationBufferSize();
+    // final int packetBufferSize = sslSession.getPacketBufferSize();
+    int applicationBufferSize = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetApplicationBufferSizeMethod);
+    int packetBufferSize = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSizeMethod);
+
+    // ByteBuffer appOutBuffer = ByteBuffer.allocate(appOutBufferSize);
+    // ByteBuffer netOutBuffer = ByteBuffer.allocate(packetBufferSize);
+    // ByteBuffer netInBuffer =  ByteBuffer.allocate(packetBufferSize);
+    // ByteBuffer appInBuffer =  ByteBuffer.allocate(Math.max(applicationBufferSize, appInBufferSize));
+    sslStream->appOutBuffer = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_ByteBuffer, g_ByteBufferAllocateMethod, appOutBufferSize));
+    sslStream->netOutBuffer = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_ByteBuffer, g_ByteBufferAllocateMethod, packetBufferSize));
+    sslStream->appInBuffer =  ToGRef(env, (*env)->CallStaticObjectMethod(env, g_ByteBuffer, g_ByteBufferAllocateMethod,
+            applicationBufferSize > appInBufferSize ? applicationBufferSize : appInBufferSize));
+    sslStream->netInBuffer =  ToGRef(env, (*env)->CallStaticObjectMethod(env, g_ByteBuffer, g_ByteBufferAllocateMethod, packetBufferSize));
+
+    sslStream->streamReader = streamReader;
+    sslStream->streamWriter = streamWriter;
+
+    return sslStream;
+
+cleanup:
+    FreeSSLStream(env, sslStream);
+    return NULL;
+}
+
+int32_t AndroidCryptoNative_SSLStreamHandshake(SSLStream* sslStream)
+{
+    assert(sslStream != NULL);
+    JNIEnv* env = GetJNIEnv();
+
+    (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineBeginHandshakeMethod);
+    if (CheckJNIExceptions(env))
+        return FAIL;
+
+    checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, NULL));
+    return SUCCESS;
 }
 
 SSLStream* AndroidCryptoNative_SSLStreamCreateAndStartHandshake(
@@ -402,13 +480,5 @@ void AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, i
 void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream)
 {
     JNIEnv* env = GetJNIEnv();
-    ReleaseGRef(env, sslStream->sslContext);
-    ReleaseGRef(env, sslStream->sslEngine);
-    ReleaseGRef(env, sslStream->sslSession);
-    ReleaseGRef(env, sslStream->appOutBuffer);
-    ReleaseGRef(env, sslStream->netOutBuffer);
-    ReleaseGRef(env, sslStream->netInBuffer);
-    ReleaseGRef(env, sslStream->appInBuffer);
-    free(sslStream);
-    AssertOnJNIExceptions(env);
+    FreeSSLStream(env, sslStream);
 }

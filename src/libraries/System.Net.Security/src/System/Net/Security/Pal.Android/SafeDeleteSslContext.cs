@@ -14,7 +14,10 @@ namespace System.Net
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
         private const int InitialBufferSize = 2048;
+
         private readonly SafeSslHandle _sslContext;
+        private readonly Interop.AndroidCrypto.SSLReadCallback _readCallback;
+        private readonly Interop.AndroidCrypto.SSLWriteCallback _writeCallback;
 
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
@@ -26,8 +29,75 @@ namespace System.Net
         {
             Debug.Assert((credential != null) && !credential.IsInvalid, "Invalid credential used in SafeDeleteSslContext");
 
-            _sslContext = new SafeSslHandle();
-            throw new NotImplementedException(nameof(SafeDeleteSslContext));
+            try
+            {
+                unsafe
+                {
+                    _readCallback = ReadFromConnection;
+                    _writeCallback = WriteToConnection;
+                }
+
+                _sslContext = CreateSslContext(_readCallback, _writeCallback, credential, authOptions);
+            }
+            catch (Exception ex)
+            {
+                Debug.Write("Exception Caught. - " + ex);
+                Dispose();
+                throw;
+            }
+        }
+
+        private static SafeSslHandle CreateSslContext(
+            Interop.AndroidCrypto.SSLReadCallback readCallback,
+            Interop.AndroidCrypto.SSLWriteCallback writeCallback,
+            SafeFreeSslCredentials credential,
+            SslAuthenticationOptions authOptions)
+        {
+            bool isServer = authOptions.IsServer;
+            SafeSslHandle handle = Interop.AndroidCrypto.SSLStreamCreate(
+                isServer,
+                readCallback,
+                writeCallback,
+                InitialBufferSize,
+                InitialBufferSize);
+
+            // Interop.AndroidCrypto.SSLStreamSetParameters
+            if (authOptions.ApplicationProtocols != null)
+            {
+                // SSLParameters.setApplicationProtocols
+                // SSLEngine.setSSLParameters
+            }
+
+            if (credential.Protocols != SslProtocols.None)
+            {
+                // new SSLParameters(cipherSuites, protocols)
+                // SSLEngine.setEnabledProtocols
+            }
+
+            if (authOptions.CipherSuitesPolicy != null)
+            {
+                // new SSLParameters(cipherSuites, protocols)
+                // SSLEngine.setEnabledCipherSuites
+            }
+
+            if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
+            {
+                // SSLParameters.setServerNames
+                // SSLEngine.setSSLParameters
+            }
+
+            if (isServer && authOptions.RemoteCertRequired)
+            {
+                // SSLParameters.setNeedClientAuth
+                // SSLEngine.setSSLParameters
+            }
+
+            if (credential.CertificateContext != null && credential.CertificateContext.IntermediateCertificates.Length > 0)
+            {
+                throw new NotImplementedException();
+            }
+
+            return handle;
         }
 
         public override bool IsInvalid => _sslContext?.IsInvalid ?? true;

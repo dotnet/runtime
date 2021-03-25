@@ -72,7 +72,31 @@ namespace System.Net.Security
             resultSize = 0;
             Debug.Assert(input.Length > 0, $"{nameof(input.Length)} > 0 since {nameof(CanEncryptEmptyMessage)} is false");
 
-            throw new NotImplementedException(nameof(EncryptMessage));
+            try
+            {
+                SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
+                SafeSslHandle sslHandle = sslContext.SslContext;
+
+                bool success = Interop.AndroidCrypto.SSLStreamWrite(sslHandle, input.Span);
+                if (!success)
+                    return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+
+                if (sslContext.BytesReadyForConnection <= output?.Length)
+                {
+                    resultSize = sslContext.ReadPendingWrites(output, 0, output.Length);
+                }
+                else
+                {
+                    output = sslContext.ReadPendingWrites()!;
+                    resultSize = output.Length;
+                }
+
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            }
+            catch (Exception e)
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, e);
+            }
         }
 
         public static SecurityStatusPal DecryptMessage(
@@ -81,7 +105,30 @@ namespace System.Net.Security
             ref int offset,
             ref int count)
         {
-            throw new NotImplementedException(nameof(DecryptMessage));
+            try
+            {
+                SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
+                SafeSslHandle sslHandle = sslContext.SslContext;
+
+                sslContext.Write(buffer.AsSpan(offset, count));
+
+                unsafe
+                {
+                    fixed (byte* offsetInput = &buffer[offset])
+                    {
+                        bool success = Interop.AndroidCrypto.SSLStreamRead(sslHandle, offsetInput, count, out int read);
+                        if (!success)
+                            return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+
+                        count = read;
+                        return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, e);
+            }
         }
 
         public static ChannelBinding? QueryContextChannelBinding(

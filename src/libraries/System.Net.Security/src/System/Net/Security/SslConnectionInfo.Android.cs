@@ -12,6 +12,12 @@ namespace System.Net.Security
         public SslConnectionInfo(SafeSslHandle sslContext)
         {
             throw new NotImplementedException(nameof(SslConnectionInfo));
+
+            // SslProtocols protocol;
+            // TlsCipherSuite cipherSuite;
+            // Interop.AndroidCrypto.SSLGetProtocolVersion
+            // Interop.AndroidCrypto.SSLGetCipherSuite
+            // MapCipherSuite(cipherSuite)
         }
     }
 }
