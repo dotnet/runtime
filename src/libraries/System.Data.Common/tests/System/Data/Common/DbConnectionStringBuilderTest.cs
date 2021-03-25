@@ -1902,7 +1902,7 @@ namespace System.Data.Tests.Common
             DbConnectionStringBuilder sb;
 
             sb = new DbConnectionStringBuilder();
-            sb.ConnectionString = "PassWord=PLACEHOLDER;uSER iD=someuser;DaTa SoUrCe=testdb";
+            sb.ConnectionString = "PassWord=PLACEHOLDER;user iD=someuser;DaTa SoUrCe=testdb";
             sb["Integrated Security"] = "False";
             Assert.Equal(
                 "password=PLACEHOLDER;user id=someuser;data source=testdb;Integrated Security=False",
