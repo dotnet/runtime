@@ -8,13 +8,16 @@ using Xunit;
 
 namespace System.Net.Http.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class HttpClientTest
     {
         [Fact]
         public async Task GetAsync_Succeeds()
         {
-            using var client = new HttpClient();
-            using var response = await client.GetAsync(Configuration.Http.RemoteServer);
+            using HttpClient client = new HttpClient();
+            NotImplementedException exception = await Assert.ThrowsAsync<NotImplementedException>(() => client.GetAsync(Configuration.Http.RemoteEmptyContentServer));
+            Assert.Equal(HttpClientHandler.Message, exception.Message);
         }
     }
 }
