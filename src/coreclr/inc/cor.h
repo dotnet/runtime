@@ -1633,13 +1633,6 @@ DECLARE_INTERFACE_(ICeeGen, IUnknown)
         ULONG align=1,
         void **ppBytes=0) PURE;
 
-    STDMETHOD (TruncateSection) (
-        HCEESECTION section,
-        ULONG len) PURE;
-
-    STDMETHOD (GenerateCeeMemoryImage) (
-        void **ppImage) PURE;
-
     STDMETHOD (ComputePointer) (
         HCEESECTION section,
         ULONG RVA,                          // [IN] RVA for method to return

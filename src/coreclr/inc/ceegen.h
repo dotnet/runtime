@@ -176,14 +176,12 @@ class CeeSection {
 
 class CCeeGen : public ICeeGen, ICeeGenInternal {
     LONG m_cRefs;
-    BOOL m_encMode;
   protected:
     short m_textIdx;            // m_sections[] index for the .text section
     short m_metaIdx;            // m_sections[] index for metadata (.text, or .cormeta for obj files)
     short m_corHdrIdx;          // m_sections[] index for the COM+ header (.text0)
     short m_stringIdx;          // m_sections[] index for strings (.text, or .rdata for EnC)
     short m_ilIdx;              // m_sections[] index for IL (.text)
-    bool m_objSwitch;
 
     CeeGenTokenMapper *m_pTokenMap;
     BOOLEAN m_fTokenMapSupported;   // temporary to support both models
@@ -201,8 +199,6 @@ class CCeeGen : public ICeeGen, ICeeGenInternal {
     HRESULT allocateCorHeader();
 
     HRESULT addSection(CeeSection *section, short *sectionIdx);
-
-    HRESULT setEnCMode();
 
 // Init process: Call static CreateNewInstance() , not operator new
   protected:
@@ -274,13 +270,7 @@ class CCeeGen : public ICeeGen, ICeeGenInternal {
         ULONG align=1,
         void **ppBytes=0);
 
-    STDMETHODIMP TruncateSection (
-        HCEESECTION section,
-        ULONG len);
-
-    STDMETHODIMP GenerateCeeMemoryImage (void **ppImage);
-
-    STDMETHODIMP ComputePointer (
+   STDMETHODIMP ComputePointer (
         HCEESECTION section,
         ULONG RVA,                          // [IN] RVA for method to return
         UCHAR **lpBuffer);                  // [OUT] Returned buffer
@@ -325,15 +315,6 @@ class CCeeGen : public ICeeGen, ICeeGenInternal {
     //Section data will be appended onto any information already in the section.
     //This is done to support the DynamicIL -> PersistedIL transform.
     virtual HRESULT cloneInstance(CCeeGen *destination);
-
-#ifdef EMIT_FIXUPS
-public:
-    virtual HRESULT addFixup(CeeSection& sectionSource, unsigned offset, CeeSectionRelocType reloc, CeeSection * sectionTarget = NULL, CeeSectionRelocExtra *extra = 0) {
-        LIMITED_METHOD_CONTRACT;
-
-        return(E_NOTIMPL);
-    }
-#endif
 };
 
 // ***** CeeSection inline methods
