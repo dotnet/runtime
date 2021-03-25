@@ -8,6 +8,7 @@ static class Statics
 {
     public static string String;
     public static int Failures;
+    public static int Successes;
     public static volatile IntPtr FtnHolder;
     public static volatile Action ActionHolder;
 
@@ -18,11 +19,25 @@ static class Statics
             Console.WriteLine($"Scenario {scenario} failed");
             Failures++;
         }
+        else
+        {
+            Successes++;
+        }
     }
     public static string MakeName(RuntimeTypeHandle t)
     {
         return MakeName(Type.GetTypeFromHandle(t));
     }
+    public static int ReportResults()
+    {
+        Console.WriteLine($"{Successes} successes reported");
+        Console.WriteLine($"{Failures} failures reported");
+        if (Failures > 0)
+            return 1;
+        else
+            return 100;
+    }
+
     public static string MakeName(Type t)
     {
         StringBuilder sb = new StringBuilder();

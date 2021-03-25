@@ -632,14 +632,7 @@ namespace VirtualStaticInterfaceMethodTestGen
             EmitMethod(twOutputTest, mainMethod);
             twOutputTest.WriteLine("    .entrypoint");
             twOutputTest.Write(swMainMethodBody.ToString());
-            twOutputTest.WriteLine($"    ldsfld int32 {CommonCsPrefix}Statics::Failures");
-            twOutputTest.WriteLine("    box int32");
-            twOutputTest.WriteLine("    call void [System.Console]System.Console::Write(object)");
-            twOutputTest.WriteLine("    ldstr \" failures detected\"");
-            twOutputTest.WriteLine("    call void [System.Console]System.Console::WriteLine(object)");
-            twOutputTest.WriteLine("    ldc.i4 100");
-            twOutputTest.WriteLine($"    ldsfld int32 {CommonCsPrefix}Statics::Failures");
-            twOutputTest.WriteLine("    sub");
+            twOutputTest.WriteLine($"    call int32 { CommonCsPrefix}Statics::ReportResults()");
             twOutputTest.WriteLine("    ret");
 
             EmitEndMethod(twOutputTest, mainMethod);
