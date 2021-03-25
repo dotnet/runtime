@@ -4323,8 +4323,7 @@ static VOID UpdateContextForPropagationCallback(
     PAL_SEHException& ex,
     CONTEXT* startContext)
 {
-    // Set the supplied callback.
-    SetIP(startContext, (PCODE)ex.ManagedToNativeExceptionCallback);
+    _ASSERTE(ex.ManagedToNativeExceptionCallback != NULL);
 
 #ifdef TARGET_AMD64
 
@@ -4338,10 +4337,9 @@ static VOID UpdateContextForPropagationCallback(
 
 #elif defined(TARGET_ARM64)
 
-    // Don't restore the stack pointer to exact same context. Leave the
-    // X29 and X30 on the stack to let the unwinder work if the callback throws
-    // an exception as opposed to failing fast.
-    startContext->Sp -= (sizeof(void*) + sizeof(void*));
+    // Reset the linked return register to the current function to let the 
+    // unwinder work if the callback throws an exception as opposed to failing fast.
+    startContext->Lr = GetIP(startContext);
 
     // Pass the context for the callback as the first argument.
     startContext->X0 = (DWORD64)ex.ManagedToNativeExceptionCallbackContext;
@@ -4351,6 +4349,9 @@ static VOID UpdateContextForPropagationCallback(
 #error "Update context for platform"
 
 #endif
+
+    // The last thing to do is set the supplied callback function.
+    SetIP(startContext, (PCODE)ex.ManagedToNativeExceptionCallback);
 }
 
 //---------------------------------------------------------------------------------------
