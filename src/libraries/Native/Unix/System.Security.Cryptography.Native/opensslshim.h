@@ -185,11 +185,15 @@ int32_t X509_up_ref(X509* x509);
 #define EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, bits) \
     RSA_pkey_ctx_ctrl(ctx, EVP_PKEY_OP_KEYGEN, EVP_PKEY_CTRL_RSA_KEYGEN_BITS, bits, NULL)
 
+// EVP_PKEY_CTX_set_rsa_oaep_md doesn't call RSA_pkey_ctx_ctrl in 1.1, so don't redefine it here.
+
 #undef EVP_PKEY_CTX_set_rsa_padding
 #define EVP_PKEY_CTX_set_rsa_padding(ctx, pad) \
     RSA_pkey_ctx_ctrl(ctx, -1, EVP_PKEY_CTRL_RSA_PADDING, pad, NULL)
 
-// EVP_PKEY_CTX_set_rsa_oaep_md doesn't call RSA_pkey_ctx_ctrl in 1.1, so don't redefine it here.
+#undef EVP_PKEY_CTX_set_rsa_pss_saltlen
+#define EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, len) \
+    RSA_pkey_ctx_ctrl(ctx, (EVP_PKEY_OP_SIGN|EVP_PKEY_OP_VERIFY), EVP_PKEY_CTRL_RSA_PSS_SALTLEN, len, NULL)
 
 #endif
 
@@ -213,6 +217,11 @@ void SSL_CTX_set_alpn_select_cb(SSL_CTX* ctx,
                                           void* arg),
                                 void* arg);
 void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsigned int* len);
+#endif
+
+// The value -1 has the correct meaning on 1.0.x, but the constant wasn't named.
+#ifndef RSA_PSS_SALTLEN_DIGEST
+#define RSA_PSS_SALTLEN_DIGEST -1
 #endif
 
 #define API_EXISTS(fn) (fn != NULL)
