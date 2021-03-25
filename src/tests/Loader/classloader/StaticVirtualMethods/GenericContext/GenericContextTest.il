@@ -19606,14 +19606,7 @@
     call void TestEntrypoint::Test_Call_GenericOverTypeParameterGenericValuetype_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<string>()
     call void TestEntrypoint::Test_Ldftn_GenericOverTypeParameterGenericValuetype_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<string>()
     call void TestEntrypoint::Test_CreateDelegate_GenericOverTypeParameterGenericValuetype_GenericOverString_CuriouslyRecurringGeneric_GenericMethodOverTypeParameter<string>()
-    ldsfld int32 [GenericContextCommonCs]Statics::Failures
-    box int32
-    call void [System.Console]System.Console::Write(object)
-    ldstr " failures detected"
-    call void [System.Console]System.Console::WriteLine(object)
-    ldc.i4 100
-    ldsfld int32 [GenericContextCommonCs]Statics::Failures
-    sub
+    call int32 [GenericContextCommonCs]Statics::ReportResults()
     ret
   } // end of method Main
 } // end of class TestEntrypoint
