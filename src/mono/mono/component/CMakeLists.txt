@@ -1,14 +1,14 @@
 
 
-# a list of every component, add a new component here
-set(components
-  hot_reload
-  #component_two, etc...
-  )
+# a list of every component.
+set(components "")
 
 # the sources for each individiable component define a new
 # component_name-sources_base list for each component, and a
 # component_name-stub-sources_base list for the component stub.
+list(APPEND components
+    hot_reload
+)
 set(hot_reload-sources_base
   hot_reload.c
   hot_reload.h
@@ -16,6 +16,37 @@ set(hot_reload-sources_base
 set(hot_reload-stub-sources_base
   hot_reload-stub.c
   )
+
+if(ENABLE_PERFTRACING)
+
+    list(APPEND components
+        event_pipe
+    )
+
+    set (SHARED_EVENTPIPE_INCLUDE_PATH "../../../native/")
+    set (SHARED_EVENTPIPE_SOURCE_PATH "../../../native/eventpipe/")
+    set (MONO_EVENTPIPE_SHIM_SOURCE_PATH "../eventpipe/")
+
+    include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/CMakeLists.txt)
+
+    include_directories(
+      ${SHARED_EVENTPIPE_INCLUDE_PATH}
+      ${MONO_EVENTPIPE_SHIM_SOURCE_PATH}
+    )
+
+    set(event_pipe-sources_base
+      ${eventpipe_sources}
+      event_pipe.c
+      event_pipe.h
+      diagnostics_server.c
+      diagnostics_server.h
+      )
+    set(event_pipe-stub-sources_base
+      event_pipe-stub.c
+      diagnostics_server-stub.c
+      )
+
+endif(ENABLE_PERFTRACING)
 
 # from here down, all the components are treated in the same way
 

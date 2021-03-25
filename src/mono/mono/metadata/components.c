@@ -6,6 +6,8 @@
 #include <glib.h>
 #include "mono/component/component.h"
 #include "mono/component/hot_reload.h"
+#include "mono/component/event_pipe.h"
+#include "mono/component/diagnostics_server.h"
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/components.h"
 #include "mono/utils/mono-dl.h"
@@ -14,13 +16,34 @@
 
 typedef MonoComponent * (*MonoComponentInitFn) (void);
 
-#ifndef STATIC_COMPONENTS
-/* List of MonoDl* for each loaded component */
-static GSList *loaded_components;
+typedef struct _MonoComponentEntry {
+	const char *name;
+	MonoComponentInitFn init;
+	MonoComponent **component;
+	MonoDl *lib;
+} MonoComponentEntry;
+
+#ifdef STATIC_COMPONENTS
+#define COMPONENT_INIT_FUNC(name) (MonoComponentInitFn) mono_component_ ## name ## _init
+#else
+#define COMPONENT_INIT_FUNC(name) (MonoComponentInitFn) mono_component_ ## name ## _stub_init
 #endif
 
-/* One static per component */
-static MonoComponentHotReload *hot_reload;
+MonoComponentHotReload *hot_reload = NULL;
+MonoComponentEventPipe *event_pipe = NULL;
+MonoComponentEventPipe *diagnostics_server = NULL;
+
+// DiagnosticsServer component currently hosted by EventPipe module.
+#define HOT_RELOAD_MODULE_NAME "hot_reload"
+#define EVENT_PIPE_MODULE_NAME "event_pipe"
+#define DIAGNOSTICS_SERVER_MODULE_NAME EVENT_PIPE_MODULE_NAME
+
+/* One per component */
+MonoComponentEntry components[] = {
+	{ HOT_RELOAD_MODULE_NAME, COMPONENT_INIT_FUNC (hot_reload), (MonoComponent**)&hot_reload, NULL },
+	{ EVENT_PIPE_MODULE_NAME, COMPONENT_INIT_FUNC (event_pipe), (MonoComponent**)&event_pipe, NULL },
+	{ DIAGNOSTICS_SERVER_MODULE_NAME, COMPONENT_INIT_FUNC (diagnostics_server), (MonoComponent**)&diagnostics_server, NULL }
+};
 
 #ifndef STATIC_COMPONENTS
 static MonoComponent*
@@ -44,36 +67,31 @@ mono_components_init (void)
 	 * to pass us the address of each component that isn't disabled.
 	 *
 	 */
-	hot_reload = mono_component_hot_reload_init ();
+	for (int i = 0; i < G_N_ELEMENTS (components); ++i)
+		*components [i].component = components [i].init ();
 #else
-	/* call get_component for each component and init it or its stubs and add it to loaded_components  */
+	/* call get_component for each component and init it or its stubs and add it to loaded_components */
 	MonoDl *lib = NULL;
 	
-	/* Repeat for each component */
-	hot_reload = (MonoComponentHotReload*)get_component ("hot_reload", &lib);
-	if (hot_reload) {
-		loaded_components = g_slist_prepend (loaded_components, lib);
-	} else {
-		hot_reload = mono_component_hot_reload_stub_init ();
+	for (int i = 0; i < G_N_ELEMENTS (components); ++i) {
+		*components [i].component = get_component (components [i].name, &lib);
+		components [i].lib = lib;
+		if (!*components [i].component)
+			*components [i].component = components [i].init ();
 	}
-		
 #endif
 }
-
 
 void
 mono_components_cleanup (void)
 {
 	/* call each components cleanup fn */
-	if (hot_reload) {
-		hot_reload->component.cleanup (&hot_reload->component);
-		hot_reload = NULL;
+	for (int i = 0; i < G_N_ELEMENTS (components); ++i) {
+		if (*components [i].component)
+			(*components [i].component)->cleanup (*components [i].component);
+		if (components [i].lib)
+			mono_dl_close (components [i].lib);
 	}
-#ifndef STATIC_COMPONENTS
-	for (GSList *p = loaded_components; p != NULL; p = p->next) {
-		mono_dl_close ((MonoDl*)p->data);
-	}
-#endif
 }
 
 static char*
