@@ -33,7 +33,7 @@ namespace System.Collections.Immutable
         {
             get
             {
-                return _set.ToArray(_set.Count); ;
+                return _set.ToArray(_set.Count);
             }
         }
     }

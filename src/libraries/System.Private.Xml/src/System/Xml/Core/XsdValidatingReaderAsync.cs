@@ -269,7 +269,7 @@ namespace System.Xml
             if (task.IsSuccess())
             {
                 _validationState = ValidatingReaderState.Read;
-                return AsyncHelper.DoneTaskTrue; ;
+                return AsyncHelper.DoneTaskTrue;
             }
             else
             {

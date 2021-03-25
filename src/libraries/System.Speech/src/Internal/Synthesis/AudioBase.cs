@@ -201,7 +201,7 @@ namespace System.Speech.Internal.Synthesis
 
             if (riff._id != RIFF_MARKER && riff._type != WAVE_MARKER)
             {
-                return null; ;
+                return null;
             }
 
             BLOCKHDR block = new();
@@ -210,7 +210,7 @@ namespace System.Speech.Internal.Synthesis
 
             if (block._id != FMT_MARKER)
             {
-                return null; ;
+                return null;
             }
 
             // If the format is of type WAVEFORMAT then fake a cbByte with a length of zero

@@ -182,7 +182,7 @@ namespace System.Xml.Schema
             SchemaAttDef? attdef = null;
             if (ed != null)
             {
-                attdef = ed.GetAttDef(qname); ;
+                attdef = ed.GetAttDef(qname);
                 if (attdef == null)
                 {
                     if (!ed.ContentValidator!.IsOpen || qname.Namespace.Length == 0)

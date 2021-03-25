@@ -655,7 +655,7 @@ namespace System.Net
                         lock (_syncObject)
                         {
                             if (_requestStage >= RequestStage.ReadReady)
-                                asyncResult = null; ;
+                                asyncResult = null;
                         }
                     }
 

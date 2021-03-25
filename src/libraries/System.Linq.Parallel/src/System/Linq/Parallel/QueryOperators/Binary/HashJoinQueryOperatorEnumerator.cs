@@ -120,7 +120,7 @@ namespace System.Linq.Parallel
                 while (_leftSource.MoveNext(ref leftPair, ref leftKey))
                 {
                     if ((mutables._outputLoopCount++ & CancellationState.POLL_INTERVAL) == 0)
-                        _cancellationToken.ThrowIfCancellationRequested();;
+                        _cancellationToken.ThrowIfCancellationRequested();
 
                     // Find the match in the hash table.
                     HashLookupValueList<TRightInput, TRightKey> matchValue = default(HashLookupValueList<TRightInput, TRightKey>);

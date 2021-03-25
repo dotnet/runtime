@@ -137,7 +137,7 @@ namespace System.Linq.Parallel
                         while (source.MoveNext(ref elem, ref keyUnused))
                         {
                             if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                                _cancellationToken.ThrowIfCancellationRequested();;
+                                _cancellationToken.ThrowIfCancellationRequested();
 
                             if (elem < currentElement)
                             {
@@ -151,7 +151,7 @@ namespace System.Linq.Parallel
                         while (source.MoveNext(ref elem, ref keyUnused))
                         {
                             if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                                _cancellationToken.ThrowIfCancellationRequested();;
+                                _cancellationToken.ThrowIfCancellationRequested();
 
                             if (elem > currentElement)
                             {

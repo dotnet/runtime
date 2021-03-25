@@ -316,7 +316,7 @@ namespace System.Management
 
             //public bool AutoCommit {
             //    get {
-            //            return AutoCommitProp;;
+            //            return AutoCommitProp;
             //        }
             //    set {
             //            AutoCommitProp; = value;

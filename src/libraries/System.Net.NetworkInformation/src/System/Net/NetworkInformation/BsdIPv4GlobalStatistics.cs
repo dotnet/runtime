@@ -91,7 +91,7 @@ namespace System.Net.NetworkInformation
 
         public override long PacketReassemblyFailures { get { return _cantFrags; } }
 
-        public override long PacketReassemblyTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); ; } }
+        public override long PacketReassemblyTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long PacketsFragmented { get { return _datagramsFragmented; } }
 
