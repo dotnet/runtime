@@ -108,6 +108,8 @@ jobs:
     platforms:
     - Android_x86
     - Android_x64
+    - iOSSimulator_x64
+    - tvOSSimulator_x64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
