@@ -9394,7 +9394,7 @@ public:
     const char* compGetTieringName(bool wantShortName = false) const;
     const char* compGetStressMessage() const;
 
-    codeOptimize compCodeOpt()
+    codeOptimize compCodeOpt() const
     {
 #if 0
         // Switching between size & speed has measurable throughput impact

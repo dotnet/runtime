@@ -4140,7 +4140,7 @@ public:
         _ASSERTE(IsStructAligned((uint8_t *)this, GetMethodTable()->GetBaseAlignment()));
 #endif // FEATURE_STRUCTALIGN
 
-#ifdef FEATURE_64BIT_ALIGNMENT
+#if defined(FEATURE_64BIT_ALIGNMENT) && !defined(FEATURE_REDHAWK)
         if (pMT->RequiresAlign8())
         {
             _ASSERTE((((size_t)this) & 0x7) == (pMT->IsValueType() ? 4U : 0U));
