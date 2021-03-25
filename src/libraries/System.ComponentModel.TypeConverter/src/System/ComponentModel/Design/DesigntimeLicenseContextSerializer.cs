@@ -16,9 +16,7 @@ namespace System.ComponentModel.Design
     {
         internal const byte BinaryWriterMagic = 255;
 
-        private const string s_enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization = "System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization";
-
-        private static bool EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization { get; } = AppContext.TryGetSwitch(s_enableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization, out bool isEnabled) ? isEnabled : false;
+        private static bool EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization { get; } = AppContext.TryGetSwitch("System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization", out bool isEnabled) ? isEnabled : false;
 
         // Not creatable.
         private DesigntimeLicenseContextSerializer()
@@ -63,12 +61,12 @@ namespace System.ComponentModel.Design
         {
             private Stream _stream;
             private bool _readFirstByte;
-            internal byte firstByte;
+            internal byte _firstByte;
             public StreamWrapper(Stream stream)
             {
                 _stream = stream;
                 _readFirstByte = false;
-                firstByte = 0;
+                _firstByte = 0;
             }
 
             public override bool CanRead => _stream.CanRead;
@@ -90,7 +88,7 @@ namespace System.ComponentModel.Design
                 {
                     Debug.Assert(_readFirstByte == true);
                     // Add the first byte read by ReadByte into buffer here
-                    buffer[offset] = firstByte;
+                    buffer[offset] = _firstByte;
                     return _stream.Read(buffer, offset + 1, count - 1) + 1;
                 }
                 return _stream.Read(buffer, offset, count);
@@ -106,7 +104,7 @@ namespace System.ComponentModel.Design
             {
                 Debug.Assert(_readFirstByte == false);
                 byte read = (byte)_stream.ReadByte();
-                firstByte = read;
+                _firstByte = read;
                 _readFirstByte = true;
                 return read;
             }
@@ -162,7 +160,7 @@ namespace System.ComponentModel.Design
             {
                 using (BinaryReader reader = new BinaryReader(wrappedStream, encoding: Text.Encoding.UTF8, leaveOpen: true))
                 {
-                    byte binaryWriterIdentifer = wrappedStream.firstByte;
+                    byte binaryWriterIdentifer = wrappedStream._firstByte;
                     Debug.Assert(binaryWriterIdentifer == BinaryWriterMagic, $"Expected the first byte to be {BinaryWriterMagic}");
                     string streamCryptoKey = reader.ReadString();
                     int numEntries = reader.ReadInt32();
