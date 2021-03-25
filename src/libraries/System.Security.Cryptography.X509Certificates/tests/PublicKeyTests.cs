@@ -12,6 +12,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class PublicKeyTests
     {
+        public static bool SupportsBrainpool { get; } = IsCurveSupported(ECCurve.NamedCurves.brainpoolP160r1.Oid);
+
+        private static bool IsCurveSupported(Oid oid)
+        {
+            try
+            {
+                using ECDsa ecdsa = ECDsa.Create(ECCurve.CreateFromOid(oid));
+            }
+            catch (Exception ex) when (ex is CryptographicException || ex is PlatformNotSupportedException)
+            {
+                return false;
+            }
+            return true;
+        }
+
         private static PublicKey GetTestRsaKey()
         {
             using (var cert = new X509Certificate2(TestData.MsCertificate))
@@ -472,7 +487,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Theory, MemberData(nameof(BrainpoolCurves))]
+        [ConditionalTheory(nameof(SupportsBrainpool)), MemberData(nameof(BrainpoolCurves))]
         public static void TestECDsaPublicKey_BrainpoolP160r1_ValidatesSignature(byte[] curveData, byte[] existingSignature)
         {
             byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
