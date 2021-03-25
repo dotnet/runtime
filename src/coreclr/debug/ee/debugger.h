@@ -2512,7 +2512,6 @@ public:
 
     BOOL ShouldAutoAttach();
     BOOL FallbackJITAttachPrompt();
-    HRESULT SetFiberMode(bool isFiberMode);
 
     HRESULT AddAppDomainToIPC (AppDomain *pAppDomain);
     HRESULT RemoveAppDomainFromIPC (AppDomain *pAppDomain);
