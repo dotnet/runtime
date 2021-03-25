@@ -43,6 +43,12 @@ if (NOT STATIC_COMPONENTS)
     target_compile_definitions ("${component}-objects" PRIVATE -DCOMPILING_COMPONENT_DYNAMIC)
     add_library("mono-component-${component}" SHARED $<TARGET_OBJECTS:${component}-objects>)
     if (NOT DISABLE_SHARED_LIBS)
+      # each shared library component gets its own copy for eglib
+      #
+      # FIXME: this is bad for things like the g_log_set_default_handler/g_logv
+      # which use global state - we should move those functions into
+      # monosgen-shared and get them via dynamic linking.
+      target_link_libraries("mono-component-${component}" eglib_objects)
       target_link_libraries("mono-component-${component}" monosgen-shared)
       # If we disable shared libs, but build dynamic components we would need
       # to enable allowing undefined symbols here (presumably to be resolved
