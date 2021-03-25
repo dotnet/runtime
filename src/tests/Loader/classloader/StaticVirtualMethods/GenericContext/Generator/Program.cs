@@ -498,6 +498,8 @@ namespace VirtualStaticInterfaceMethodTestGen
 
 
                 string expectedString = constrainedTypePrefix + AppendSuffixToConstrainedType(scenario, GetConstrainedTypeName(scenario.ConstrainedTypeDefinition, withImplPrefix: false), out _) + "'" + interfaceTypeSansImplPrefix + "." + interfaceMethodRoot + "'" + interfaceMethodInstantiation;
+                expectedString = expectedString.Replace(ImplPrefix, "");
+                expectedString = expectedString.Replace("<class GenericClass`1<!!0>>", "<class GenericClass`1<!0>>");
 
                 if (scenario.CallerScenario == CallerMethodScenario.NonGeneric)
                 {
@@ -513,17 +515,23 @@ namespace VirtualStaticInterfaceMethodTestGen
                         case CallerMethodScenario.GenericOverString:
 
                             mdIndividualTestMethod.Name = mdIndividualTestMethod.Name + "<T>";
-                            EmitTestMethod();
-
                             methodInstantiation = "string";
                             if (scenario.CallerScenario == CallerMethodScenario.GenericOverInt32)
                                 methodInstantiation = "int32";
+
+                            expectedString = expectedString.Replace("!!0", $"{methodInstantiation}");
+                            expectedString = expectedString.Replace(ImplPrefix, "");
+                            EmitTestMethod();
 
                             swMainMethodBody.WriteLine($"    call void TestEntrypoint::{basicTestMethodName}<{methodInstantiation}>()");
                             break;
 
                         case CallerMethodScenario.GenericOverConstrainedType:
                             mdIndividualTestMethod.Name = $"{mdIndividualTestMethod.Name}<(class {CommonPrefix}IFaceGeneric`1<!!U>, {CommonPrefix}IFaceNonGeneric, class {CommonPrefix}IFaceCuriouslyRecurringGeneric`1<!!T>) T,U>";
+
+                            expectedString = expectedString.Replace("!!0", $"{constrainedTypePrefix}{constrainedType}");
+                            expectedString = expectedString.Replace(ImplPrefix, "");
+
                             EmitTestMethod();
 
                             swMainMethodBody.WriteLine($"    call void TestEntrypoint::{basicTestMethodName}<{constrainedTypePrefix}{constrainedType},string>()");
