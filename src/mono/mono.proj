@@ -44,7 +44,7 @@
     <MonoAOTEnableLLVM Condition="'$(TargetsAndroid)' == 'true'">true</MonoAOTEnableLLVM>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$([MSBuild]::NormalizePath('$(MonoObjDir)', 'cross', 'config.h'))</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
-    <MonoAOTBundleLLVMOptimizer Condition="'$(MonoAOTEnableLLVM)' == 'true'">true</MonoAOTBundleLLVMOptimizer>
+    <MonoAOTBundleLLVMOptimizer Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(TargetsBrowser)' != 'true'">true</MonoAOTBundleLLVMOptimizer>
     <MonoCCompiler>$(Compiler)</MonoCCompiler>
     <MonoCCompiler Condition="'$(MonoCCompiler)' == ''">clang</MonoCCompiler>
     <!-- when we use runtime/build.sh -gcc, it is passed to eng/build.sh which sets the raw value to $(Compiler); strip the leading hyphens. -->
