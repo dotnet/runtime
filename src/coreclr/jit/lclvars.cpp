@@ -4092,7 +4092,8 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                     if (needsExplicitZeroInit)
                     {
                         varDsc->lvDisqualifyEHVarReason = 'Z';
-                        JITDUMP("EH Var V%02u needs explicit zero init. Disqualified as a register candidate.\n", lclNum);
+                        JITDUMP("EH Var V%02u needs explicit zero init. Disqualified as a register candidate.\n",
+                                lclNum);
                     }
                     else
                     {
@@ -7369,14 +7370,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
         if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
         {
-            if (varDsc->lvDisqualifyEHVarReason != ' ')
-            {
-                printf("%c", varDsc->lvDisqualifyEHVarReason);
-            }
-            else
-            {
-                 printf("H");
-            }
+            printf("%c", varDsc->lvDisqualifyEHVarReason);
         }
         if (varDsc->lvLclFieldExpr)
         {

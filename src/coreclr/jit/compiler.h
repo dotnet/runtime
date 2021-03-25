@@ -460,7 +460,7 @@ public:
     unsigned char lvDisqualifyForEhWriteThru : 1; // tracks variable that are disqualified from register candidancy
 
 #ifdef DEBUG
-    unsigned char lvDisqualifyEHVarReason = ' ';
+    unsigned char lvDisqualifyEHVarReason = 'H';
 #endif
 
 #if ASSERTION_PROP
