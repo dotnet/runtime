@@ -1627,7 +1627,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
     BEGIN_ENTRYPOINT_THROWS;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     MethodDesc *pMeth;
     {
         // This thread looks like it wandered in -- but actually we rely on it to keep the process alive.

@@ -1262,7 +1262,7 @@ NOINLINE BOOL SimpleComCallWrapper::ShouldUseManagedIProvideClassInfo()
         SyncBlock* pSyncBlock = GetSyncBlock();
         _ASSERTE(pSyncBlock);
 
-        RCWHolder pRCW(GetThreaNotOk());
+        RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, pSyncBlock);
 
         bUseManagedIProvideClassInfo = !pRCW->SupportsIProvideClassInfo();
@@ -2013,7 +2013,7 @@ void ComCallWrapper::Cleanup()
             m_pSimpleWrapper->ResetSyncBlock();
 
             // Check for an associated RCW
-            RCWHolder pRCW(GetThreaNotOk());
+            RCWHolder pRCW(GetThread());
             pRCW.InitNoCheck(pSyncBlock);
             NewRCWHolder pNewRCW = pRCW.GetRawRCWUnsafe();
 
@@ -2549,7 +2549,7 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
 
         SafeComHolder<IUnknown> pUnk;
 
-        RCWHolder pRCW(GetThreaNotOk());
+        RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, pBlock);
 
         pUnk = (pIntfMT != NULL) ? pRCW->GetComIPFromRCW(pIntfMT)
@@ -2967,7 +2967,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
 
             SafeComHolder<IDispatch> pDisp;
 
-            RCWHolder pRCW(GetThreaNotOk());
+            RCWHolder pRCW(GetThread());
             RCWPROTECT_BEGIN(pRCW, pBlock);
 
             pDisp = pRCW->GetIDispatch();

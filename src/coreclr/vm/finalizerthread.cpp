@@ -62,7 +62,7 @@ void CallFinalizer(Object* obj)
     STRESS_LOG2(LF_GC, LL_INFO1000, "Finalizing object %p MT %pT\n", obj, pMT);
     LOG((LF_GC, LL_INFO1000, "Finalizing " LOG_OBJECT_CLASS(obj)));
 
-    _ASSERTE(GetThreaNotOk()->PreemptiveGCDisabled());
+    _ASSERTE(GetThread()->PreemptiveGCDisabled());
 
     if (!((obj->GetHeader()->GetBits()) & BIT_SBLK_FINALIZER_RUN))
     {
@@ -94,7 +94,7 @@ void FinalizerThread::FinalizeAllObjects()
 
     Object* fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     // Finalize everyone
     while (fobj && !fQuitFinalizer)

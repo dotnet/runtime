@@ -45,7 +45,7 @@ inline gc_alloc_context* GetThreadAllocContext()
 
     assert(GCHeapUtilities::UseThreadAllocationContexts());
 
-    return & GetThreaNotOk()->m_alloc_context;
+    return & GetThread()->m_alloc_context;
 }
 
 // When not using per-thread allocation contexts, we (the EE) need to take care that

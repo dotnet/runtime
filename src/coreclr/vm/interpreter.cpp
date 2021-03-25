@@ -3232,7 +3232,7 @@ ExitEvalLoop:;
 
         if (handleException)
         {
-            GetThreaNotOk()->SafeSetThrowables(orThrowable
+            GetThread()->SafeSetThrowables(orThrowable
                 DEBUG_ARG(ThreadExceptionState::STEC_CurrentTrackerEqualNullOkForInterpreter));
             goto EvalLoop;
         }
@@ -8671,7 +8671,7 @@ void Interpreter::Rethrow()
         MODE_COOPERATIVE;
     } CONTRACTL_END
 
-    OBJECTREF throwable = GetThreaNotOk()->LastThrownObject();
+    OBJECTREF throwable = GetThread()->LastThrownObject();
     COMPlusThrow(throwable);
 }
 
@@ -9083,7 +9083,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             // the last error.  We solve this by saving the last error in a special interpreter-specific field of
             // "Thread" in that case, and essentially implement SetLastError here, taking that field as the
             // source for the last error.
-            Thread* thrd = GetThreaNotOk();
+            Thread* thrd = GetThread();
             thrd->m_dwLastError = thrd->m_dwLastErrorInterp;
             didIntrinsic = true;
         }
@@ -9736,7 +9736,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 
     // CYCLE PROFILE: AFTER ARG PROCESSING.
     {
-        Thread* thr = GetThreaNotOk();
+        Thread* thr = GetThread();
 
         Object** thisArgHnd = NULL;
         ARG_SLOT nullThisArg = NULL;

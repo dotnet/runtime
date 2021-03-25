@@ -387,7 +387,7 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         // create a wrapper for this COM object
         pNewRCW = RCW::CreateRCW(pUnk, dwSyncBlockIndex, RCW::CF_None, pMTClass);
 
-        RCWHolder pRCW(GetThreaNotOk());
+        RCWHolder pRCW(GetThread());
         pRCW.InitNoCheck(pNewRCW);
 
         // we used containment
@@ -750,7 +750,7 @@ BOOL RCWCache::FindOrInsertWrapper_NoLock(IUnknown* pIdentity, RCWHolder* pRCW, 
         }
         else
         {
-            RCWHolder pTempRCW(GetThreaNotOk());
+            RCWHolder pTempRCW(GetThread());
 
             // Assume that we already have a sync block for this object.
             pTempRCW.InitNoCheck(pRawRCW);
@@ -947,7 +947,7 @@ VOID RCWCleanupList::AddWrapper(RCW* pRCW)
     CONTRACTL_END;
 
     // For the global cleanup list, this is called only from the finalizer thread
-    _ASSERTE(this != g_pRCWCleanupList || GetThreaNotOk() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE(this != g_pRCWCleanupList || GetThread() == FinalizerThread::GetFinalizerThread());
 
     {
         CrstHolder ch(&m_lock);
@@ -1008,7 +1008,7 @@ VOID RCWCleanupList::CleanupAllWrappers()
         MODE_ANY;
 
         // For the global cleanup list, this is called only from the finalizer thread
-        PRECONDITION( (this != g_pRCWCleanupList) || (GetThreaNotOk() == FinalizerThread::GetFinalizerThread()));
+        PRECONDITION( (this != g_pRCWCleanupList) || (GetThread() == FinalizerThread::GetFinalizerThread()));
     }
     CONTRACTL_END;
 
@@ -1119,7 +1119,7 @@ VOID RCWCleanupList::CleanupWrappersInCurrentCtxThread(BOOL fWait, BOOL fManualC
         return;
 
     // Find out our STA (if any)
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     LPVOID pCurrCtxCookie = GetCurrentCtxCookie();
 
     Thread::ApartmentState aptState = pThread->GetApartment();
@@ -1432,7 +1432,7 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
     // track the thread that created this wrapper
     // if this thread is an STA thread, then when the STA dies
     // we need to cleanup this wrapper
-    m_pCreatorThread  = GetThreaNotOk();
+    m_pCreatorThread  = GetThread();
 
     m_pRCWCache = RCWCache::GetRCWCache();
 
@@ -1569,7 +1569,7 @@ void RCW::RemoveMemoryPressure()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION((GetThreaNotOk()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) == 0);
+        PRECONDITION((GetThread()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) == 0);
     }
     CONTRACTL_END;
 
@@ -1781,7 +1781,7 @@ void RCW::Cleanup()
     // if the wrapper is still in the cache.  Also, if we can't switch to coop mode,
     // we're guaranteed to have already decoupled the RCW from its object.
 #ifdef _DEBUG
-    if (!(GetThreaNotOk()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative))
+    if (!(GetThread()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative))
     {
         GCX_COOP();
 
@@ -1800,7 +1800,7 @@ void RCW::Cleanup()
 
         // Remove the memory pressure caused by this RCW (if present)
         // If we're in a shutdown situation, we can ignore the memory pressure.
-        if ((GetThreaNotOk()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) == 0 && !g_fForbidEnterEE)
+        if ((GetThread()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) == 0 && !g_fForbidEnterEE)
             RemoveMemoryPressure();
     }
 
@@ -2076,7 +2076,7 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
     if (hr == CO_E_OBJNOTCONNECTED || hr == RPC_E_INVALID_OBJECT || hr == RPC_E_INVALID_OBJREF || hr == CO_E_OBJNOTREG)
     {
         // set apartment state
-        GetThreaNotOk()->SetApartment(Thread::AS_InMTA);
+        GetThread()->SetApartment(Thread::AS_InMTA);
 
         // Release the stream of the IUnkEntry to force UnmarshalIUnknownForCurrContext
         // to remarshal to the stream.
@@ -2478,7 +2478,7 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
     }
     else
     {
-        RCWHolder pRCW(GetThreaNotOk());
+        RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, oref);
 
         // This should not be called for interfaces that are in the normal portion of the
@@ -2617,7 +2617,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
 
     if (thCastTo.IsInterface())
     {
-        RCWHolder pRCW(GetThreaNotOk());
+        RCWHolder pRCW(GetThread());
         pRCW.Init(*pObj);
 
         // Retrieve the IID of the interface.
@@ -2770,7 +2770,7 @@ IUnknown *ComObject::GetComIPFromRCW(OBJECTREF *pObj, MethodTable* pIntfTable)
 
     SafeComHolder<IUnknown> pIUnk;
 
-    RCWHolder pRCW(GetThreaNotOk());
+    RCWHolder pRCW(GetThread());
     RCWPROTECT_BEGIN(pRCW, *pObj);
 
     pIUnk = pRCW->GetComIPFromRCW(pIntfTable);

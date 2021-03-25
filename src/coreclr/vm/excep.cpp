@@ -533,7 +533,7 @@ void ResetTypeInitializationExceptionState(BOOL isAlreadyCreating)
 {
     LIMITED_METHOD_CONTRACT;
     if (!isAlreadyCreating)
-        GetThreaNotOk()->ResetIsCreatingTypeInitException();
+        GetThread()->ResetIsCreatingTypeInitException();
 }
 
 void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
@@ -2161,7 +2161,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
         //
         // In such a case, we should clear the flag as the throwable representing the
         // preallocated exception will not have the restored (or any) stack trace.
-        PTR_ThreadExceptionState pCurTES = GetThreaNotOk()->GetExceptionState();
+        PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
         pCurTES->ResetRaisingForeignException();
 
         return;
@@ -2178,7 +2178,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
     // Check if the flag indicating foreign exception raise has been setup or not,
     // and then reset it so that subsequent processing of managed frames proceeds
     // normally.
-    PTR_ThreadExceptionState pCurTES = GetThreaNotOk()->GetExceptionState();
+    PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
     BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
     pCurTES->ResetRaisingForeignException();
 
@@ -2631,7 +2631,7 @@ LONG RaiseExceptionFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
     if (1 == pParam->isRethrown)
     {
         // need to reset the EH info back to the original thrown exception
-        FixupOnRethrow(GetThreaNotOk(), ep);
+        FixupOnRethrow(GetThread(), ep);
 #ifdef FEATURE_EH_FUNCLETS
         // only do this once
         pParam->isRethrown++;
@@ -2707,7 +2707,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     param.isRethrown = rethrow ? 1 : 0; // normalize because we use it as a count in RaiseExceptionFilter
     param.throwable = throwable;
     param.fForStackOverflow = fForStackOverflow;
-    param.pThread = GetThreaNotOk();
+    param.pThread = GetThread();
 
     _ASSERTE(param.pThread);
     param.pExState = param.pThread->GetExceptionState();
@@ -2725,7 +2725,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     // If not, we may see unhandled exception.
     if (param.throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
     {
-        _ASSERTE(GetThreaNotOk()->IsAbortRequested()
+        _ASSERTE(GetThread()->IsAbortRequested()
 #ifdef TARGET_X86
                  ||
                  GetFirstCOMPlusSEHRecord(this) == EXCEPTION_CHAIN_END
@@ -3183,7 +3183,7 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame)
     LOG((LF_EH, LL_INFO1000, "COMPlusCooprativeTransitionHandler unwinding\n"));
 
     {
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     // Restore us to cooperative gc mode.
         GCX_COOP();
@@ -4507,7 +4507,7 @@ BOOL UpdateCurrentThrowable(PEXCEPTION_RECORD pExceptionRecord)
 
     BOOL useLastThrownObject = FALSE;
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     // GetThrowable needs cooperative.
     GCX_COOP();
@@ -4880,7 +4880,7 @@ lDone: ;
 #ifdef _DEBUG
         char buffer[200];
         sprintf_s(buffer, 200, "\nInternal error: Uncaught exception was thrown from IP = %p in UnhandledExceptionFilter_Worker on thread 0x%08x\n",
-                param.ExceptionEIP, ((GetThreadNULLOk() == NULL) ? NULL : GetThreaNotOk()->GetThreadId()));
+                param.ExceptionEIP, ((GetThreadNULLOk() == NULL) ? NULL : GetThread()->GetThreadId()));
         PrintToStdErrA(buffer);
         _ASSERTE(!"Unexpected exception in UnhandledExceptionFilter_Worker");
 #endif
@@ -5117,7 +5117,7 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
     if (GetThreadNULLOk())
     {
         LOG((LF_EH, LL_INFO100, "COMUnhandledExceptionFilter: setting TSNC_ProcessedUnhandledException\n"));
-        GetThreaNotOk()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+        GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
     }
 
     return retVal;
@@ -5594,7 +5594,7 @@ static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
 
     _ASSERTE(!g_fNoExceptions);
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
 #ifdef _DEBUG
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException) &&
@@ -6101,7 +6101,7 @@ LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress)
     // Initialize the return address
     LPVOID pRetAddress = 0;
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     if ((!pThread->IsAbortRequested()) ||         // if no abort has been requested
         (!pThread->IsRudeAbort() &&
@@ -6809,7 +6809,7 @@ AdjustContextForJITHelpers(
         // want any explicit frames active below the resumption SP.
         //
         // Question: Why do we unwind before determining whether we will handle the exception or not?
-        UnwindFrameChain(GetThreaNotOk(), (Frame*)GetSP(pContext));
+        UnwindFrameChain(GetThread(), (Frame*)GetSP(pContext));
         fShouldHandleManagedFault = ShouldHandleManagedFault(pExceptionRecord,pContext,
                                NULL, // establisher frame (x86 only)
                                NULL  // pThread           (x86 only)
@@ -6909,7 +6909,7 @@ EXTERN_C VOID FixContextForFaultingExceptionFrame (
 
     g_SavedExceptionInfo.Leave();
 
-    GetThreaNotOk()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
+    GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
 }
 
 EXTERN_C VOID __fastcall
@@ -6922,7 +6922,7 @@ LinkFrameAndThrow(FaultingExceptionFrame* pFrame)
 
     pFrame->InitAndLink(&g_SavedExceptionInfo.m_ExceptionContext);
 
-    GetThreaNotOk()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
+    GetThread()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
 
     ULONG       argcount = g_SavedExceptionInfo.m_ExceptionRecord.NumberParameters;
     ULONG       flags    = g_SavedExceptionInfo.m_ExceptionRecord.ExceptionFlags;
@@ -7422,7 +7422,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
 #ifdef TARGET_X86
-    CPFH_AdjustContextForThreadSuspensionRace(pContext, GetThreaNotOk());
+    CPFH_AdjustContextForThreadSuspensionRace(pContext, GetThread());
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK && !TARGET_UNIX
 
@@ -8083,7 +8083,7 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     GCX_COOP();
 
@@ -8313,13 +8313,13 @@ LONG AppDomainTransitionExceptionFilter(
     if (SetupWatsonBucketsForEscapingPreallocatedExceptions())
     {
         // Set the flag that these were captured at AD Transition
-        DEBUG_STMT(GetThreaNotOk()->GetExceptionState()->GetUEWatsonBucketTracker()->SetCapturedAtADTransition());
+        DEBUG_STMT(GetThread()->GetExceptionState()->GetUEWatsonBucketTracker()->SetCapturedAtADTransition());
     }
 
     // Attempt to capture buckets for non-preallocated exceptions just before the AppDomain transition boundary
     {
         GCX_COOP();
-        OBJECTREF oThrowable = GetThreaNotOk()->GetThrowable();
+        OBJECTREF oThrowable = GetThread()->GetThrowable();
         if ((oThrowable != NULL) && (CLRException::IsPreallocatedExceptionObject(oThrowable) == FALSE))
         {
             SetupWatsonBucketsForNonPreallocatedExceptions();
@@ -8361,13 +8361,13 @@ LONG ReflectionInvocationExceptionFilter(
     if (SetupWatsonBucketsForEscapingPreallocatedExceptions())
     {
         // Set the flag that these were captured during Reflection Invocation
-        DEBUG_STMT(GetThreaNotOk()->GetExceptionState()->GetUEWatsonBucketTracker()->SetCapturedAtReflectionInvocation());
+        DEBUG_STMT(GetThread()->GetExceptionState()->GetUEWatsonBucketTracker()->SetCapturedAtReflectionInvocation());
     }
 
     // Attempt to capture buckets for non-preallocated exceptions just before the ReflectionInvocation boundary
     {
         GCX_COOP();
-        OBJECTREF oThrowable = GetThreaNotOk()->GetThrowable();
+        OBJECTREF oThrowable = GetThread()->GetThrowable();
         if ((oThrowable != NULL) && (CLRException::IsPreallocatedExceptionObject(oThrowable) == FALSE))
         {
             SetupWatsonBucketsForNonPreallocatedExceptions();
@@ -8662,7 +8662,7 @@ void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
 
     LIMITED_METHOD_CONTRACT;
 
-    Thread *pCurThread = GetThreaNotOk();
+    Thread *pCurThread = GetThread();
     if (pCurThread->GetExceptionState()->IsExceptionInProgress())
     {
         if (!fIsUnwinding)
@@ -8735,7 +8735,7 @@ BOOL SetupWatsonBucketsForNonPreallocatedExceptions(OBJECTREF oThrowable /* = NU
     // By default, assume we didnt get the buckets
     BOOL fSetupWatsonBuckets = FALSE;
 
-    Thread * pThread = GetThreaNotOk();
+    Thread * pThread = GetThread();
 
     struct
     {
@@ -8853,7 +8853,7 @@ BOOL SetupWatsonBucketsForEscapingPreallocatedExceptions()
     BOOL fSetupWatsonBuckets = FALSE;
     PTR_EHWatsonBucketTracker pUEWatsonBucketTracker;
 
-    Thread * pThread = GetThreaNotOk();
+    Thread * pThread = GetThread();
 
     // If the exception going unhandled is preallocated, then capture the Watson buckets in the UE Watson
     // bucket tracker provided its not already populated.
@@ -8978,7 +8978,7 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
     }
     CONTRACTL_END;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     PTR_EHWatsonBucketTracker pCurWatsonBucketTracker = NULL;
     ThreadExceptionState *pExState = pThread->GetExceptionState();
@@ -9211,9 +9211,9 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
 
     // Get the reference to the current exception tracker
 #if defined(FEATURE_EH_FUNCLETS)
-    PTR_ExceptionTracker pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThreaNotOk()->GetExceptionState()->GetCurrentExceptionTracker();
+    PTR_ExceptionTracker pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
 #elif TARGET_X86
-    PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThreaNotOk()->GetExceptionState()->GetCurrentExceptionTracker();
+    PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
 #else // !(HOST_64BIT || TARGET_X86)
 #error Unsupported platform
 #endif // HOST_64BIT
@@ -9284,7 +9284,7 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
     // tracks the bucketing details for all types of TAE.
     if (IsThrowableThreadAbortException(gc.oPreAllocThrowable))
     {
-        pWBTracker = GetThreaNotOk()->GetExceptionState()->GetUEWatsonBucketTracker();
+        pWBTracker = GetThread()->GetExceptionState()->GetUEWatsonBucketTracker();
         LOG((LF_EH, LL_INFO100, "GetWatsonBucketTrackerForPreallocatedException - Setting UE Watson Bucket Tracker to be returned for preallocated ThreadAbortException.\n"));
         goto doValidation;
     }
@@ -9306,7 +9306,7 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
         if (fStartSearchFromPreviousTracker)
         {
             // Get the exception tracker previous to the current one
-            pPreviousEHTracker = GetThreaNotOk()->GetExceptionState()->GetCurrentExceptionTracker()->GetPreviousExceptionTracker();
+            pPreviousEHTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker()->GetPreviousExceptionTracker();
 
             // If there is no previous tracker to start from, then simply abort the search attempt.
             // If we couldnt find the exception tracker, then buckets are not available
@@ -9443,7 +9443,7 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
     GCPROTECT_BEGIN(gc);
     gc.refException = refException;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     // If we dont already have the bucketing details for the exception
     // being thrown, then get them.
@@ -9686,13 +9686,13 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
         MODE_ANY;
         NOTHROW;
         PRECONDITION(GetThreadNULLOk() != NULL);
-        PRECONDITION(!(GetThreaNotOk()->GetExceptionState()->GetFlags()->GotWatsonBucketDetails()));
+        PRECONDITION(!(GetThread()->GetExceptionState()->GetFlags()->GotWatsonBucketDetails()));
         PRECONDITION(adjustedIp != NULL);
         PRECONDITION(IsWatsonEnabled());
     }
     CONTRACTL_END;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     // If we dont already have the bucketing details for the exception
     // being thrown, then get them.
@@ -10140,7 +10140,7 @@ void CopyWatsonBucketsBetweenThrowables(U1ARRAYREF oManagedWatsonBuckets, OBJECT
     GCPROTECT_BEGIN(_gc);
 
     _gc.oSourceWatsonBuckets = oManagedWatsonBuckets;
-    _gc.oTo = (oThrowableTo == NULL)?GetThreaNotOk()->GetThrowable():oThrowableTo;
+    _gc.oTo = (oThrowableTo == NULL)?GetThread()->GetThrowable():oThrowableTo;
     _ASSERTE(_gc.oTo != NULL);
 
     // The target throwable to which Watson buckets are going to be copied
@@ -10213,7 +10213,7 @@ BOOL CopyWatsonBucketsToThrowable(PTR_VOID pUnmanagedBuckets, OBJECTREF oTargetT
         THROWS;
         PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(pUnmanagedBuckets != NULL);
-        PRECONDITION(!CLRException::IsPreallocatedExceptionObject((oTargetThrowable == NULL)?GetThreaNotOk()->GetThrowable():oTargetThrowable));
+        PRECONDITION(!CLRException::IsPreallocatedExceptionObject((oTargetThrowable == NULL)?GetThread()->GetThrowable():oTargetThrowable));
         PRECONDITION(IsWatsonEnabled());
     }
     CONTRACTL_END;
@@ -10227,7 +10227,7 @@ BOOL CopyWatsonBucketsToThrowable(PTR_VOID pUnmanagedBuckets, OBJECTREF oTargetT
 
     ZeroMemory(&_gc, sizeof(_gc));
     GCPROTECT_BEGIN(_gc);
-    _gc.oThrowable = (oTargetThrowable == NULL)?GetThreaNotOk()->GetThrowable():oTargetThrowable;
+    _gc.oThrowable = (oTargetThrowable == NULL)?GetThread()->GetThrowable():oTargetThrowable;
 
     // Throwable to which buckets should be copied to, must exist.
     _ASSERTE(_gc.oThrowable != NULL);
@@ -10317,7 +10317,7 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
     ZeroMemory(&gc, sizeof(gc));
     GCPROTECT_BEGIN(gc);
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     // Get the current exception state of the thread
     ThreadExceptionState* pCurExState = pThread->GetExceptionState();
@@ -10873,9 +10873,9 @@ PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEH
     // Get the reference to the exception tracker to start with. If one has been provided to us,
     // then use it. Otherwise, start from the current one.
 #ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTracker pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThreaNotOk()->GetExceptionState()->GetCurrentExceptionTracker();
+    PTR_ExceptionTracker pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
 #elif TARGET_X86
-    PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThreaNotOk()->GetExceptionState()->GetCurrentExceptionTracker();
+    PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
 #else
 #error Unsupported platform
 #endif
@@ -11222,7 +11222,7 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     // that was thrown or a rethrown exception. We dont want to do this
     // processing for subsequent frames on the stack since FirstChance notification
     // will be delivered only when the exception is first thrown/rethrown.
-    ThreadExceptionState *pCurTES = GetThreaNotOk()->GetExceptionState();
+    ThreadExceptionState *pCurTES = GetThread()->GetExceptionState();
     _ASSERTE(pCurTES->GetCurrentExceptionTracker());
     _ASSERTE(!(pCurTES->GetCurrentExceptionTracker()->DeliveredFirstChanceNotification()));
     {

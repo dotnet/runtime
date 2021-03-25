@@ -106,7 +106,7 @@ void Frame::Log() {
              frameType,
              DBG_ADDR(GetReturnAddressPtr()) ));
 
-    _ASSERTE(GetThreaNotOk()->PreemptiveGCDisabled());
+    _ASSERTE(GetThread()->PreemptiveGCDisabled());
 }
 
 //-----------------------------------------------------------------------
@@ -380,7 +380,7 @@ VOID Frame::Push()
     }
     CONTRACTL_END;
 
-    Push(GetThreaNotOk());
+    Push(GetThread());
 }
 
 VOID Frame::Push(Thread *pThread)
@@ -429,7 +429,7 @@ VOID Frame::Pop()
     }
     CONTRACTL_END;
 
-    Pop(GetThreaNotOk());
+    Pop(GetThread());
 }
 
 VOID Frame::Pop(Thread *pThread)
@@ -1099,9 +1099,9 @@ BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef)
     CONTRACT_VIOLATION(ThrowsViolation);
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE ();
     IsProtectedByGCFrameStruct d = {ppObjectRef, 0};
-    GetThreaNotOk()->StackWalkFrames(IsProtectedByGCFrameStackWalkFramesCallback, &d);
+    GetThread()->StackWalkFrames(IsProtectedByGCFrameStackWalkFramesCallback, &d);
 
-    GCFrame* pGCFrame = GetThreaNotOk()->GetGCFrame();
+    GCFrame* pGCFrame = GetThread()->GetGCFrame();
     while (pGCFrame != NULL)
     {
         if (pGCFrame->Protects(ppObjectRef)) {
@@ -1509,7 +1509,7 @@ struct IsObjRefProtectedScanContext : public ScanContext
     BOOL        oref_protected;
     IsObjRefProtectedScanContext (OBJECTREF * oref)
     {
-        thread_under_crawl = GetThreaNotOk();
+        thread_under_crawl = GetThread();
         promotion = TRUE;
         oref_to_check = oref;
         oref_protected = FALSE;
@@ -1581,7 +1581,7 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
     ComMethodFrame * pComMethodFrame = (ComMethodFrame *)pCurFrame;
 
     _ASSERTE(pComMethodFrame != NULL);
-    Thread * pThread = GetThreaNotOk();
+    Thread * pThread = GetThread();
     GCX_COOP_THREAD_EXISTS(pThread);
     // Unwind the frames till the entry frame (which was ComMethodFrame)
     pCurFrame = pThread->GetFrame();
@@ -1652,7 +1652,7 @@ void HelperMethodFrame::Push()
 
     _ASSERTE(!m_MachState.isValid());
 
-    Thread * pThread = ::GetThreaNotOk();
+    Thread * pThread = ::GetThread();
     m_pThread = pThread;
 
     // Push the frame

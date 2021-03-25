@@ -1534,7 +1534,7 @@ BOOL ThreadpoolMgr::SetAppDomainRequestsActive(BOOL UnmanagedTP)
     }
     else
     {
-        Thread* pCurThread = GetThreaNotOk();
+        Thread* pCurThread = GetThread();
         AppDomain* pAppDomain = pCurThread->GetDomain();
         _ASSERTE(pAppDomain);
 
@@ -1583,7 +1583,7 @@ void ThreadpoolMgr::ClearAppDomainRequestsActive(BOOL UnmanagedTP, LONG id)
     }
     else
     {
-       Thread* pCurThread = GetThreaNotOk();
+       Thread* pCurThread = GetThread();
        AppDomain* pAppDomain = pCurThread->GetDomain();
        _ASSERTE(pAppDomain);
 

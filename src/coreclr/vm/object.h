@@ -2189,7 +2189,7 @@ private:
     void SetObjectThread()
     {
         WRAPPER_NO_CONTRACT;
-        GetHeader()->m_thread = GetThreaNotOk();
+        GetHeader()->m_thread = GetThread();
     }
 
     StackTraceElement const * GetData() const

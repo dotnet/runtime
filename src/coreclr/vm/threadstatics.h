@@ -535,7 +535,7 @@ class ThreadStatics
     FORCEINLINE static ThreadLocalBlock* GetCurrentTLB()
     {
         // Get the current thread
-        Thread * pThread = GetThreaNotOk();
+        Thread * pThread = GetThread();
         return &pThread->m_ThreadLocalBlock;
     }
 

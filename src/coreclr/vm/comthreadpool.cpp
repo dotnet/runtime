@@ -365,7 +365,7 @@ FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
     // then check if it covered everything that was needed, and we ask ThreadpoolMgr whether
     // we need a thread adjustment, before setting up the frame.
     //
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     INT32 priority = pThread->ResetManagedThreadObjectInCoopMode(ThreadNative::PRIORITY_NORMAL);
 
@@ -947,7 +947,7 @@ HANDLE QCALLTYPE AppDomainTimerNative::CreateAppDomainTimer(INT32 dueTime, INT32
     _ASSERTE(dueTime >= 0);
     _ASSERTE(timerId >= 0);
 
-    AppDomain* pAppDomain = GetThreaNotOk()->GetDomain();
+    AppDomain* pAppDomain = GetThread()->GetDomain();
 
     ThreadpoolMgr::TimerInfoContext* timerContext = new ThreadpoolMgr::TimerInfoContext();
     timerContext->TimerId = timerId;

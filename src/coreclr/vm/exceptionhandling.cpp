@@ -451,7 +451,7 @@ void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDI
     CONTEXT* pAbortContext = NULL;
     if (fAborting)
     {
-        pAbortContext = GetThreaNotOk()->GetAbortContext();
+        pAbortContext = GetThread()->GetAbortContext();
     }
 
 #ifndef TARGET_UNIX
@@ -851,7 +851,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
     // sample flags early on because we may change pExceptionRecord below
     // if we are seeing a STATUS_UNWIND_CONSOLIDATE
     DWORD   dwExceptionFlags = pExceptionRecord->ExceptionFlags;
-    Thread* pThread         = GetThreaNotOk();
+    Thread* pThread         = GetThread();
 
     // Stack Overflow is handled specially by the CLR EH mechanism. In fact
     // there are cases where we aren't in managed code, but aren't quite in
@@ -2429,7 +2429,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
         (fIsFunclet ? "FUNCLET of " : ""),
         pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName));
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     INDEBUG( DumpClauses(pcfThisFrame->GetJitManager(), pcfThisFrame->GetMethodToken(), uMethodStartPC, uControlPC) );
 
     bool fIsILStub = pMD->IsILStub();
@@ -3291,7 +3291,7 @@ DWORD_PTR ExceptionTracker::CallHandler(
 
     EH_LOG((LL_INFO100, "    calling handler at 0x%p, sp = 0x%p\n", uHandlerStartPC, sf.SP));
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     // The first parameter specifies whether we want to make callbacks before (true) or after (false)
     // calling the handler.
@@ -3433,7 +3433,7 @@ void ExceptionTracker::PopTrackerIfEscaping(
     }
     CONTRACTL_END;
 
-    Thread*                 pThread  = GetThreaNotOk();
+    Thread*                 pThread  = GetThread();
     ThreadExceptionState*   pExState = pThread->GetExceptionState();
     ExceptionTracker*       pTracker = pExState->m_pCurrentTracker;
     CONSISTENCY_CHECK((NULL == pTracker) || pTracker->IsValid());
@@ -3611,7 +3611,7 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
     }
     CONTRACT_END;
 
-    Thread*                 pThread  = GetThreaNotOk();
+    Thread*                 pThread  = GetThread();
     ThreadExceptionState*   pExState = pThread->GetExceptionState();
     ExceptionTracker*       pTracker = pExState->m_pCurrentTracker;
     CONSISTENCY_CHECK((NULL == pTracker) || (pTracker->IsValid()));
@@ -3982,7 +3982,7 @@ OBJECTREF ExceptionTracker::CreateThrowable(
     CONTRACTL_END;
 
     OBJECTREF   oThrowable  = NULL;
-    Thread*     pThread     = GetThreaNotOk();
+    Thread*     pThread     = GetThread();
 
 
     if ((!bAsynchronousThreadStop) && IsComPlusException(pExceptionRecord))
@@ -4164,7 +4164,7 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_RE
         return ExceptionContinueSearch;
     }
 
-    Thread*               pThread  = GetThreaNotOk();
+    Thread*               pThread  = GetThread();
     ThreadExceptionState* pExState = pThread->GetExceptionState();
 
     UINT_PTR uInterceptStackFrame  = 0;
@@ -4388,7 +4388,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
             {
                 // We have reached the frame that will handle the exception.
                 ex.GetExceptionRecord()->ExceptionFlags |= EXCEPTION_TARGET_UNWIND;
-                ExceptionTracker* pTracker = GetThreaNotOk()->GetExceptionState()->GetCurrentExceptionTracker();
+                ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
                 pTracker->TakeExceptionPointersOwnership(&ex);
             }
 
@@ -4428,14 +4428,14 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
                 // in the unwound part of the stack when UnwindManagedExceptionPass2 is resumed
                 // at the next managed frame.
 
-                UnwindFrameChain(GetThreaNotOk(), sp);
+                UnwindFrameChain(GetThread(), sp);
                 // We are going to reclaim the stack range that was scanned by the exception tracker
                 // until now. We need to reset the explicit frames range so that if GC fires before
                 // we recreate the tracker at the first managed frame after unwinding the native
                 // frames, it doesn't attempt to scan the reclaimed stack range.
                 // We also need to reset the scanned stack range since the scanned frames will be
                 // obsolete after the unwind of the native frames completes.
-                ExceptionTracker* pTracker = GetThreaNotOk()->GetExceptionState()->GetCurrentExceptionTracker();
+                ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
                 pTracker->CleanupBeforeNativeFramesUnwind();
             }
 
@@ -4477,7 +4477,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
     PVOID handlerData;
 
 #ifdef FEATURE_HIJACK
-    GetThreaNotOk()->UnhijackThread();
+    GetThread()->UnhijackThread();
 #endif
 
     controlPc = GetIP(frameContext);
@@ -4573,7 +4573,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
         {
             // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
-            if (!GetThreaNotOk()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+            if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
             {
                 LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                 _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
@@ -4589,7 +4589,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         if (gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
         {
             // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
-            if (!GetThreaNotOk()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+            if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
             {
                 LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                 _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
@@ -4632,7 +4632,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
 
             if (controlPc == 0)
             {
-                if (!GetThreaNotOk()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+                if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
                 {
                     LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                     _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
@@ -4732,7 +4732,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     if (ex.IsFirstPass())
     {
         // Get the thread and the thread exception state - they must exist at this point
-        Thread *pCurThread = GetThreaNotOk();
+        Thread *pCurThread = GetThread();
         ThreadExceptionState * pCurTES = pCurThread->GetExceptionState();
         _ASSERTE(pCurTES != NULL);
     }
@@ -5134,7 +5134,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
     if (ex->GetExceptionRecord()->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
     {
-        GetThreaNotOk()->SetExecutingOnAltStack();
+        GetThread()->SetExecutingOnAltStack();
         Thread::VirtualUnwindToFirstManagedCallFrame(ex->GetContextRecord());
         EEPolicy::HandleFatalStackOverflow(&ex->ExceptionPointers, FALSE);
         UNREACHABLE();
@@ -5352,7 +5352,7 @@ ExceptionTracker* TrackerAllocator::GetTrackerMemory()
 
             if (pTracker)
             {
-                Thread* pThread  = GetThreaNotOk();
+                Thread* pThread  = GetThread();
                 _ASSERTE(NULL != pPage);
                 ZeroMemory(pTracker, sizeof(*pTracker));
                 pTracker->m_pThread = pThread;
@@ -5598,7 +5598,7 @@ NOT_BIT64_ARG(IN     ULONG               MemoryStackFp),
         GetSP(pDispatcherContext->ContextRecord),
         pContextRecord);
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
     CONTEXT *pNewContext = NULL;
 
     if (FirstCallToHandler(pDispatcherContext, &pNewContext))
@@ -5656,7 +5656,7 @@ FixContextHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
         // We've pushed a Frame, but it is not initialized yet, so we
         // must not be in preemptive mode
         //
-        CONSISTENCY_CHECK(GetThreaNotOk()->PreemptiveGCDisabled());
+        CONSISTENCY_CHECK(GetThread()->PreemptiveGCDisabled());
 
         FixContextForFaultingExceptionFrame(pExceptionRecord, pNewContext);
     }
@@ -5908,7 +5908,7 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
                                       )
 {
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
     if (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
     {
         if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
@@ -5957,7 +5957,7 @@ ReverseComUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
 {
     if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
     {
-        ComMethodFrame::DoSecondPassHandlerCleanup(GetThreaNotOk()->GetFrame());
+        ComMethodFrame::DoSecondPassHandlerCleanup(GetThread()->GetFrame());
     }
     return ExceptionContinueSearch;
 }

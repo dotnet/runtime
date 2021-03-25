@@ -1157,7 +1157,7 @@ public:
         // Note that the GC thread doesn't have to take the lock
         // since all other threads access in cooperative mode
 
-        _ASSERTE_IMPL(LOCKHELD() && GetThreaNotOk()->PreemptiveGCDisabled()
+        _ASSERTE_IMPL(LOCKHELD() && GetThread()->PreemptiveGCDisabled()
                  || Debug_IsLockedViaThreadSuspension());
 
         LPVOID pIdentity;

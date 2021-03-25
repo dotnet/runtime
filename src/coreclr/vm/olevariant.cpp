@@ -1207,7 +1207,7 @@ void SafeVariantClear(VARIANT* pVar)
             // Catching and just swallowing an exception means we need to tell
             // the SO code that it should go back to normal operation, as it
             // currently thinks that the exception is still on the fly.
-            GetThreaNotOk()->GetCurrentStackGuard()->RestoreCurrentGuard();
+            GetThread()->GetCurrentStackGuard()->RestoreCurrentGuard();
 #endif
 
             SCAN_EHMARKER_END_CATCH();

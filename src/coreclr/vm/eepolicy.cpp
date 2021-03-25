@@ -402,7 +402,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 
         if (pThread && errorSource == NULL)
         {
-            LogCallstackForLogWorker(GetThreaNotOk());
+            LogCallstackForLogWorker(GetThread());
 
             if (argExceptionString != NULL) {
                 PrintToStdErrW(argExceptionString);

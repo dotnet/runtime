@@ -312,7 +312,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
         argExceptionString = msg.GetUnicode();
     }
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
 #ifndef TARGET_UNIX
     // If we have the exception object, then try to setup

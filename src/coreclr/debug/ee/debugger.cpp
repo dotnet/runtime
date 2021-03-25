@@ -5957,7 +5957,7 @@ void Debugger::SuspendForGarbageCollectionCompleted()
     }
     this->m_isBlockedOnGarbageCollectionEvent = TRUE;
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     if (CORDBUnrecoverableError(this))
         return;
@@ -5995,7 +5995,7 @@ void Debugger::ResumeForGarbageCollectionStarted()
         return;
     }
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     if (CORDBUnrecoverableError(this))
         return;
@@ -8121,7 +8121,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
 
     // Stubs don't have an IL offset.
     const SIZE_T offset = (SIZE_T)ICorDebugInfo::NO_MAPPING;
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     DWORD dwFlags = IsInterceptableException(pThread) ? DEBUG_EXCEPTION_CAN_BE_INTERCEPTED : 0;
     m_forceNonInterceptable = false;
 

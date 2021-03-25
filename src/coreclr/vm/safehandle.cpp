@@ -201,7 +201,7 @@ void SafeHandle::RunReleaseMethod(SafeHandle* psh)
     // Save last error from P/Invoke in case the implementation of ReleaseHandle
     // trashes it (important because this ReleaseHandle could occur implicitly
     // as part of unmarshaling another P/Invoke).
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     DWORD dwSavedError = pThread->m_dwLastError;
 
     CLR_BOOL fReleaseHandle = FALSE;

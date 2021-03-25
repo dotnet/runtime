@@ -801,10 +801,10 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
             __pException.SuppressRelease();                                             \
             if ((!__state.DidCatchCxx()) && (GetThreadNULLOk() != NULL))                      \
             {                                                                           \
-                if (GetThreaNotOk()->PreemptiveGCDisabled())                                \
+                if (GetThread()->PreemptiveGCDisabled())                                \
                 {                                                                       \
                     LOG((LF_EH, LL_INFO10, "EX_RETHROW: going preemptive\n"));          \
-                    GetThreaNotOk()->EnablePreemptiveGC();                                  \
+                    GetThread()->EnablePreemptiveGC();                                  \
                 }                                                                       \
             }                                                                           \
             PAL_CPP_RETHROW;                                                            \
@@ -909,7 +909,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
         HRESULT *__phr = (phresult);                                \
         *__phr = S_OK;                                              \
         _ASSERTE(GetThreadNULLOk() == NULL ||                             \
-                    !GetThreaNotOk()->PreemptiveGCDisabled());          \
+                    !GetThread()->PreemptiveGCDisabled());          \
         MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk());        \
         if (CURRENT_THREAD == NULL)                                 \
         {                                                           \

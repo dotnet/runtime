@@ -2812,7 +2812,7 @@ ep_rt_thread_activity_id_handle_t
 ep_rt_thread_get_activity_id_handle (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return GetThreaNotOk ();
+	return GetThread ();
 }
 
 static

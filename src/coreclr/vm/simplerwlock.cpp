@@ -238,9 +238,9 @@ void SimpleRWLock::PreEnter()
     CONTRACTL_END;
 
     if (m_gcMode == PREEMPTIVE)
-        _ASSERTE(!GetThreadNULLOk() || !GetThreaNotOk()->PreemptiveGCDisabled());
+        _ASSERTE(!GetThreadNULLOk() || !GetThread()->PreemptiveGCDisabled());
     else if (m_gcMode == COOPERATIVE)
-        _ASSERTE(!GetThreadNULLOk() || GetThreaNotOk()->PreemptiveGCDisabled());
+        _ASSERTE(!GetThreadNULLOk() || GetThread()->PreemptiveGCDisabled());
 }
 
 //=====================================================================

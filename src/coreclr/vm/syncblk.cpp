@@ -1692,7 +1692,7 @@ BOOL ObjHeader::LeaveObjMonitor()
 
     for (;;)
     {
-        AwareLock::LeaveHelperAction action = thisObj->GetHeader()->LeaveObjMonitorHelper(GetThreaNotOk());
+        AwareLock::LeaveHelperAction action = thisObj->GetHeader()->LeaveObjMonitorHelper(GetThread());
 
         switch(action)
         {
@@ -1744,7 +1744,7 @@ BOOL ObjHeader::LeaveObjMonitorAtException()
 
     for (;;)
     {
-        AwareLock::LeaveHelperAction action = LeaveObjMonitorHelper(GetThreaNotOk());
+        AwareLock::LeaveHelperAction action = LeaveObjMonitorHelper(GetThread());
 
         switch(action)
         {
@@ -2360,7 +2360,7 @@ void AwareLock::Enter()
     }
     CONTRACTL_END;
 
-    Thread *pCurThread = GetThreaNotOk();
+    Thread *pCurThread = GetThread();
     LockState state = m_lockState.VolatileLoadWithoutBarrier();
     if (!state.IsLocked() || m_HoldingThread != pCurThread)
     {
@@ -2414,7 +2414,7 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
     }
     CONTRACTL_END;
 
-    Thread  *pCurThread = GetThreaNotOk();
+    Thread  *pCurThread = GetThread();
 
     if (pCurThread->IsAbortRequested())
     {
@@ -2721,7 +2721,7 @@ BOOL AwareLock::Leave()
     }
     CONTRACTL_END;
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     AwareLock::LeaveHelperAction action = LeaveHelper(pThread);
 
@@ -2787,7 +2787,7 @@ BOOL SyncBlock::Wait(INT32 timeOut)
     }
     CONTRACTL_END;
 
-    Thread  *pCurThread = GetThreaNotOk();
+    Thread  *pCurThread = GetThread();
     BOOL     isTimedOut = FALSE;
     BOOL     isEnqueued = FALSE;
     WaitEventLink waitEventLink;

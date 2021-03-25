@@ -58,11 +58,6 @@ Thread * GetThread()
     return (Thread*)&theThread;
 }
 
-Thread* GetThreaNotOk()
-{
-    return (Thread*)&theThread;
-}
-
 Thread * GetThreadNULLOk()
 {
     return GetThread();

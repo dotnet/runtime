@@ -558,7 +558,7 @@ inline bool CORDebuggerAttached()
     ((dwDebuggerBits) & DACF_ENC_ENABLED)
 
 #define CORDebuggerTraceCall() \
-    (CORDebuggerAttached() && GetThreaNotOk()->IsTraceCall())
+    (CORDebuggerAttached() && GetThread()->IsTraceCall())
 
 
 

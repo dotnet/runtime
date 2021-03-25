@@ -132,7 +132,7 @@ FCIMPL0(VOID, ExceptionNative::PrepareForForeignExceptionRaise)
 {
     FCALL_CONTRACT;
 
-    PTR_ThreadExceptionState pCurTES = GetThreaNotOk()->GetExceptionState();
+    PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
 
 	// Set a flag against the TES to indicate this is a foreign exception raise.
 	pCurTES->SetRaisingForeignException();
@@ -521,7 +521,7 @@ FCIMPL0(EXCEPTION_POINTERS*, ExceptionNative::GetExceptionPointers)
 
     EXCEPTION_POINTERS* retVal = NULL;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     if (pThread->IsExceptionInProgress())
     {
         retVal = pThread->GetExceptionState()->GetExceptionPointers();
@@ -537,7 +537,7 @@ FCIMPL0(INT32, ExceptionNative::GetExceptionCode)
 
     INT32 retVal = 0;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     if (pThread->IsExceptionInProgress())
     {
         retVal = pThread->GetExceptionState()->GetExceptionCode();
@@ -1052,7 +1052,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
     FCALL_CONTRACT;
 
     INT64 currentAllocated = 0;
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     gc_alloc_context* ac = pThread->GetAllocContext();
     currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 

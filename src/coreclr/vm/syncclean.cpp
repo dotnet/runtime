@@ -30,7 +30,7 @@ void SyncClean::AddHashMap (Bucket *bucket)
         return;
     }
 
-    _ASSERTE (GetThreadNULLOk() == NULL || GetThreaNotOk()->PreemptiveGCDisabled());
+    _ASSERTE (GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled());
 
     Bucket * pTempBucket = NULL;
     do
@@ -50,7 +50,7 @@ void SyncClean::AddEEHashTable (EEHashEntry** entry)
         return;
     }
 
-    _ASSERTE (GetThreadNULLOk() == NULL || GetThreaNotOk()->PreemptiveGCDisabled());
+    _ASSERTE (GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled());
 
     EEHashEntry ** pTempHashEntry = NULL;
     do

@@ -315,7 +315,7 @@ FCIMPL1(FC_BOOL_RET, ObjectNative::IsLockHeld, Object* pThisUNSAFE)
     //
     retVal = pThisUNSAFE->GetThreadOwningMonitorLock(&owningThreadId, &acquisitionCount);
     if (retVal)
-        retVal = GetThreaNotOk()->GetThreadId() == owningThreadId;
+        retVal = GetThread()->GetThreadId() == owningThreadId;
 
     FC_RETURN_BOOL(retVal);
 }

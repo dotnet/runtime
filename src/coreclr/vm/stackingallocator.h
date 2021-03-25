@@ -224,7 +224,7 @@ private :
 };
 
 #define ACQUIRE_STACKING_ALLOCATOR(stackingAllocatorName)  \
-  Thread *pThread__ACQUIRE_STACKING_ALLOCATOR = GetThreaNotOk(); \
+  Thread *pThread__ACQUIRE_STACKING_ALLOCATOR = GetThread(); \
   StackingAllocator *stackingAllocatorName = pThread__ACQUIRE_STACKING_ALLOCATOR->m_stackLocalAllocator; \
   bool allocatorOwner__ACQUIRE_STACKING_ALLOCATOR = false; \
   NewHolder<StackingAllocator> heapAllocatedStackingBuffer__ACQUIRE_STACKING_ALLOCATOR; \

@@ -672,7 +672,7 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
         else
         {
             // Exception is preallocated.
-            PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = GetThreaNotOk()->GetExceptionState()->GetUEWatsonBucketTracker();
+            PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = GetThread()->GetExceptionState()->GetUEWatsonBucketTracker();
             if ((IsThrowableThreadAbortException(targetException) && pUEWatsonBucketTracker->CapturedForThreadAbort())||
                 (pUEWatsonBucketTracker->CapturedAtReflectionInvocation()))
             {
@@ -713,7 +713,7 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
         // since it already contains the watson buckets inside the object.
         if (CLRException::IsPreallocatedExceptionObject(targetException))
         {
-            PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = GetThreaNotOk()->GetExceptionState()->GetUEWatsonBucketTracker();
+            PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = GetThread()->GetExceptionState()->GetUEWatsonBucketTracker();
             BOOL fCopyWatsonBuckets = TRUE;
             PTR_VOID pBuckets = pUEWatsonBucketTracker->RetrieveWatsonBuckets();
             if (pBuckets != NULL)
@@ -1228,7 +1228,7 @@ FCIMPL1(ReflectMethodObject*, RuntimeMethodHandle::GetCurrentMethod, StackCrawlM
     SkipStruct skip;
     skip.pStackMark = stackMark;
     skip.pMeth = 0;
-    StackWalkFunctions(GetThreaNotOk(), SkipMethods, &skip);
+    StackWalkFunctions(GetThread(), SkipMethods, &skip);
 
     // If C<Foo>.m<Bar> was called, the stack walker returns C<object>.m<object>. We cannot
     // get know that the instantiation used Foo or Bar at that point. So the next best thing
@@ -1721,7 +1721,7 @@ FCIMPL0(void, ReflectionInvocation::EnsureSufficientExecutionStack)
 {
     FCALL_CONTRACT;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     // We use the address of a local variable as our "current stack pointer", which is
     // plenty close enough for the purposes of this method.
@@ -1742,7 +1742,7 @@ FCIMPL0(FC_BOOL_RET, ReflectionInvocation::TryEnsureSufficientExecutionStack)
 {
 	FCALL_CONTRACT;
 
-	Thread *pThread = GetThreaNotOk();
+	Thread *pThread = GetThread();
 
 	// Same logic as EnsureSufficientExecutionStack
 	UINT_PTR current = reinterpret_cast<UINT_PTR>(&pThread);

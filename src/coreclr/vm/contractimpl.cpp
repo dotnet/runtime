@@ -137,7 +137,7 @@ UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
         m_idMap.InsertValue((UPTR)id, (UPTR)pMT >> 1);
         m_mtMap.InsertValue((UPTR)pMT, (UPTR)id);
         m_entryCount++;
-        CONSISTENCY_CHECK(GetThreaNotOk()->GetDomain()->IsCompilationDomain() ||
+        CONSISTENCY_CHECK(GetThread()->GetDomain()->IsCompilationDomain() ||
                           (LookupType(id) == pMT));
     }
 #else // DACCESS_COMPILE

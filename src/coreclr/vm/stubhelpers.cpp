@@ -483,7 +483,7 @@ FCIMPL0(void, StubHelpers::SetLastError)
 
     FCALL_CONTRACT;
 
-    GetThreaNotOk()->m_dwLastError = lastError;
+    GetThread()->m_dwLastError = lastError;
 }
 FCIMPLEND
 

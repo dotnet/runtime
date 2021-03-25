@@ -2911,7 +2911,7 @@ DWORD STDMETHODCALLTYPE FalseGetLastError()
 {
     WRAPPER_NO_CONTRACT;
 
-    return GetThreaNotOk()->m_dwLastError;
+    return GetThread()->m_dwLastError;
 }
 
 void PInvokeStaticSigInfo::BestGuessNDirectDefaults(MethodDesc* pMD)
@@ -6524,7 +6524,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         // Otherwise we're in an inlined pinvoke late bound MD
         //
-        INDEBUG(Thread *pThread = GetThreaNotOk());
+        INDEBUG(Thread *pThread = GetThread());
         {
             _ASSERTE(pMD->ShouldSuppressGCTransition()
                 || pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());

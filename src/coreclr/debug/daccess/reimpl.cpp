@@ -75,11 +75,6 @@ Thread* GetThread()
     return NULL;
 }
 
-Thread* GetThreaNotOk()
-{
-    return GetThread();
-}
-
 Thread* GetThreadNULLOk()
 {
     return GetThread();

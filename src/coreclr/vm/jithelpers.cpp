@@ -2267,7 +2267,7 @@ HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
         // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
         // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
         // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThreaNotOk();
+        Thread *thread = GetThread();
 
         TypeHandle typeHandle(typeHnd_);
         _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
@@ -2317,7 +2317,7 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
-        GetThreaNotOk()->DisableStressHeap();
+        GetThread()->DisableStressHeap();
     }
 #endif // _DEBUG
 
@@ -2359,7 +2359,7 @@ HCIMPL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
         // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
         // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
         // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThreaNotOk();
+        Thread *thread = GetThread();
 
         SIZE_T totalSize = StringObject::GetSize(stringLength);
 
@@ -2521,7 +2521,7 @@ HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, IN
         // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
         // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
         // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThreaNotOk();
+        Thread *thread = GetThread();
 
         MethodTable *pArrayMT = (MethodTable *)arrayMT;
 
@@ -2584,7 +2584,7 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, I
         // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
         // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
         // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThreaNotOk();
+        Thread *thread = GetThread();
 
         SIZE_T totalSize = componentCount * sizeof(void *);
         _ASSERTE(totalSize / sizeof(void *) == componentCount);
@@ -2651,7 +2651,7 @@ HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
-        GetThreaNotOk()->DisableStressHeap();
+        GetThread()->DisableStressHeap();
     }
 #endif // _DEBUG
 
@@ -2804,7 +2804,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
-        GetThreaNotOk()->DisableStressHeap();
+        GetThread()->DisableStressHeap();
     }
 #endif // _DEBUG
 
@@ -3772,7 +3772,7 @@ HCIMPL3(void, JIT_MonTryEnter_Portable, Object* obj, INT32 timeOut, BYTE* pbLock
         goto FramedLockHelper;
     }
 
-    pCurThread = GetThreaNotOk();
+    pCurThread = GetThread();
 
     if (pCurThread->CatchAtSafePointOpportunistic())
     {
@@ -3869,7 +3869,7 @@ FCIMPL1(void, JIT_MonExit_Portable, Object* obj)
     }
 
     // Handle the simple case without erecting helper frame
-    action = obj->LeaveObjMonitorHelper(GetThreaNotOk());
+    action = obj->LeaveObjMonitorHelper(GetThread());
     if (action == AwareLock::LeaveHelperAction_None)
     {
         return;
@@ -3899,7 +3899,7 @@ HCIMPL_MONHELPER(JIT_MonExitWorker_Portable, Object* obj)
     }
 
     // Handle the simple case without erecting helper frame
-    action = obj->LeaveObjMonitorHelper(GetThreaNotOk());
+    action = obj->LeaveObjMonitorHelper(GetThread());
     if (action == AwareLock::LeaveHelperAction_None)
     {
         MONHELPER_STATE(*pbLockTaken = 0;)
@@ -3945,7 +3945,7 @@ HCIMPL_MONHELPER(JIT_MonEnterStatic_Portable, AwareLock *lock)
 
     MONHELPER_STATE(_ASSERTE(pbLockTaken != NULL && *pbLockTaken == 0));
 
-    Thread *pCurThread = GetThreaNotOk();
+    Thread *pCurThread = GetThread();
     if (pCurThread->CatchAtSafePointOpportunistic())
     {
         goto FramedLockHelper;
@@ -4019,7 +4019,7 @@ HCIMPL_MONHELPER(JIT_MonExitStatic_Portable, AwareLock *lock)
     MONHELPER_STATE(if (*pbLockTaken == 0) return;)
 
     // Handle the simple case without erecting helper frame
-    AwareLock::LeaveHelperAction action = lock->LeaveHelper(GetThreaNotOk());
+    AwareLock::LeaveHelperAction action = lock->LeaveHelper(GetThread());
     if (action == AwareLock::LeaveHelperAction_None)
     {
         MONHELPER_STATE(*pbLockTaken = 0;)
@@ -4114,7 +4114,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
         // If the flag indicating ForeignExceptionRaise has been set,
         // then do not clear the "_stackTrace" field of the exception object.
-        if (GetThreaNotOk()->GetExceptionState()->IsRaisingForeignException())
+        if (GetThread()->GetExceptionState()->IsRaisingForeignException())
         {
             ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
         }
@@ -4140,7 +4140,7 @@ HCIMPL0(void, IL_Rethrow)
 
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
 
-    OBJECTREF throwable = GetThreaNotOk()->GetThrowable();
+    OBJECTREF throwable = GetThread()->GetThrowable();
     if (throwable != NULL)
     {
         RaiseTheExceptionInternalOnly(throwable, TRUE);
@@ -4439,7 +4439,7 @@ void DoJITFailFast ()
     {
         // Fire an ETW FailFast event
         FireEtwFailFast(W("Unsafe buffer security check failure: Buffer overrun detected"),
-                       (const PVOID)GetThreaNotOk()->GetFrame()->GetIP(),
+                       (const PVOID)GetThread()->GetFrame()->GetIP(),
                        STATUS_STACK_BUFFER_OVERRUN,
                        COR_E_EXECUTIONENGINE,
                        GetClrInstanceId());
@@ -4710,7 +4710,7 @@ HCIMPL0(VOID, JIT_PollGC)
         return;
 
     // Does someone want this thread stopped?
-    if (!GetThreaNotOk()->CatchAtSafePointOpportunistic())
+    if (!GetThread()->CatchAtSafePointOpportunistic())
         return;
 
     // Tailcall to the slow helper
@@ -4731,7 +4731,7 @@ HCIMPL0(void, JIT_PInvokeEndRarePath)
 
     FCALL_CONTRACT;
 
-    Thread *thread = GetThreaNotOk();
+    Thread *thread = GetThread();
 
     // We need to disable the implicit FORBID GC region that exists inside an FCALL
     // in order to call RareDisablePreemptiveGC().
@@ -4792,7 +4792,7 @@ HCIMPL0(void, JIT_RareDisableHelper)
 
     FCALL_CONTRACT;
 
-    Thread *thread = GetThreaNotOk();
+    Thread *thread = GetThread();
 
     // We need to disable the implicit FORBID GC region that exists inside an FCALL
     // in order to call RareDisablePreemptiveGC().
@@ -4857,7 +4857,7 @@ FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 
     FC_GC_POLL_NOT_NEEDED();
 
-    Thread * pThread = GetThreaNotOk();
+    Thread * pThread = GetThread();
     return pThread->GetThreadId();
 }
 FCIMPLEND
@@ -5159,7 +5159,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     // If we get here, we have code to transition to...
     _ASSERTE(osrMethodCode != NULL);
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
 #ifdef FEATURE_HIJACK
     // We can't crawl the stack of a thread that currently has a hijack pending
@@ -5336,7 +5336,7 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     // The JIT messed up and is initializing a frame that is already live on the stack?!?!?!?!
     _ASSERTE(pFrame != pThread->GetFrame());

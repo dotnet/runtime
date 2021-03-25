@@ -3348,13 +3348,13 @@ void Thread::DoAppropriateWaitWorkerAlertableHelper(WaitMode mode)
 void MarkOSAlertableWait()
 {
     LIMITED_METHOD_CONTRACT;
-    GetThreaNotOk()->SetThreadStateNC (Thread::TSNC_OSAlertableWait);
+    GetThread()->SetThreadStateNC (Thread::TSNC_OSAlertableWait);
 }
 
 void UnMarkOSAlertableWait()
 {
     LIMITED_METHOD_CONTRACT;
-    GetThreaNotOk()->ResetThreadStateNC (Thread::TSNC_OSAlertableWait);
+    GetThread()->ResetThreadStateNC (Thread::TSNC_OSAlertableWait);
 }
 
 //--------------------------------------------------------------------
@@ -3979,7 +3979,7 @@ DWORD EnterMonitorForRestore(SyncBlock *pSB)
     {
         // Assume it is a normal exception unless proven.
         state = WAIT_INTERRUPT_OTHEREXCEPTION;
-        Thread *pThread = GetThreaNotOk();
+        Thread *pThread = GetThread();
         if (pThread->IsAbortInitiated())
         {
             state = WAIT_INTERRUPT_THREADABORT;
@@ -4011,7 +4011,7 @@ void PendingSync::Restore(BOOL bRemoveFromSB)
 
     _ASSERTE(m_EnterCount);
 
-    Thread      *pCurThread = GetThreaNotOk();
+    Thread      *pCurThread = GetThread();
 
     _ASSERTE (pCurThread == m_OwnerThread);
 
@@ -4146,7 +4146,7 @@ void Thread::UserSleep(INT32 time)
     }
     CONTRACTL_END;
 
-    INCONTRACT(_ASSERTE(!GetThreaNotOk()->GCNoTrigger()));
+    INCONTRACT(_ASSERTE(!GetThread()->GCNoTrigger()));
 
     DWORD   res;
 
@@ -5730,7 +5730,7 @@ void ThreadStore::WaitForOtherThreads()
 
     CHECK_ONE_STORE();
 
-    Thread      *pCurThread = GetThreaNotOk();
+    Thread      *pCurThread = GetThread();
 
     // Regardless of whether the main thread is a background thread or not, force
     // it to be one.  This simplifies our rules for counting non-background threads.
@@ -5935,7 +5935,7 @@ void CleanStackForFastGCStress ()
     }
     size_t* buffer = (size_t*) _alloca (nBytes);
     memset(buffer, 0, nBytes);
-    GetThreaNotOk()->m_pCleanedStackBase = &nBytes;
+    GetThread()->m_pCleanedStackBase = &nBytes;
 }
 
 void Thread::ObjectRefFlush(Thread* thread)
@@ -6246,7 +6246,7 @@ BOOL Thread::UniqueStack(void* stackStart)
         // on the stack up to the first jitted function.
 
     size_t stackTraceHash;
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
 
     void* stopPoint = pThread->m_CacheStackBase;
@@ -7106,7 +7106,7 @@ void CommonTripThread()
     }
     CONTRACTL_END;
 
-    Thread  *thread = GetThreaNotOk();
+    Thread  *thread = GetThread();
     thread->HandleThreadAbort ();
 
     if (thread->CatchAtSafePoint())
@@ -7339,7 +7339,7 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
             }
         };
 
-        Cleanup cleanup(GetThreaNotOk());
+        Cleanup cleanup(GetThread());
 
         ManagedThreadBase_DispatchInner(pCallState);
     }
@@ -7418,7 +7418,7 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
     }
 
     // Get the reference to the current thread..
-    Thread *pCurThread = GetThreaNotOk();
+    Thread *pCurThread = GetThread();
 
     //
     // In the default domain, when an exception goes unhandled on a managed thread whose threadbase is in the VM (e.g. explicitly spawned threads,
@@ -7460,7 +7460,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     // HasStarted() must have already been performed by our caller
     _ASSERTE(GetThreadNULLOk() != NULL);
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 #ifdef FEATURE_EH_FUNCLETS
     Frame  *pFrame = pThread->m_pFrame;
 #endif // FEATURE_EH_FUNCLETS
@@ -8223,7 +8223,7 @@ void DeadlockAwareLock::EndEnterLock()
     }
     CONTRACTL_END;
 
-    Thread * pThread = GetThreaNotOk();
+    Thread * pThread = GetThread();
 
     CONSISTENCY_CHECK(m_pHoldingThread.Load() == NULL || m_pHoldingThread.Load() == pThread);
     CONSISTENCY_CHECK(pThread->m_pBlockingLock.Load() == this);
@@ -8246,7 +8246,7 @@ void DeadlockAwareLock::LeaveLock()
     CONTRACTL_END;
 
     CONSISTENCY_CHECK(m_pHoldingThread == GetThreadNULLOk());
-    CONSISTENCY_CHECK(GetThreaNotOk()->m_pBlockingLock.Load() == NULL);
+    CONSISTENCY_CHECK(GetThread()->m_pBlockingLock.Load() == NULL);
 
     m_pHoldingThread = NULL;
 }

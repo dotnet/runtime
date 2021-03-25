@@ -546,7 +546,7 @@ StackWalkAction LogCallstackForEventReporterCallback(
 //
 void LogCallstackForEventReporterWorker(EventReporter& reporter)
 {
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
     SmallStackSString WordAt;
 
     if (!WordAt.LoadResource(CCompRC::Optional, IDS_ER_WORDAT))

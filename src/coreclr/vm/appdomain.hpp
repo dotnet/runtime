@@ -864,10 +864,10 @@ public:
     void Activate()
     {
         WRAPPER_NO_CONTRACT;
-        m_previousLimit= GetThreaNotOk()->GetLoadLevelLimiter();
+        m_previousLimit= GetThread()->GetLoadLevelLimiter();
         if(m_previousLimit)
             m_currentLevel=m_previousLimit->GetLoadLevel();
-        GetThreaNotOk()->SetLoadLevelLimiter(this);
+        GetThread()->SetLoadLevelLimiter(this);
         m_bActive=TRUE;
     }
 
@@ -876,7 +876,7 @@ public:
         WRAPPER_NO_CONTRACT;
         if (m_bActive)
         {
-            GetThreaNotOk()->SetLoadLevelLimiter(m_previousLimit);
+            GetThread()->SetLoadLevelLimiter(m_previousLimit);
             m_bActive=FALSE;
         }
     }

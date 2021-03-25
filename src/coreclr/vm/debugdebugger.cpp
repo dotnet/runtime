@@ -65,7 +65,7 @@ UINT_PTR FindMostRecentUserCodeOnStack(void)
     }
     CONTRACTL_END;
 
-    Thread * pThread = GetThreaNotOk();
+    Thread * pThread = GetThread();
     UINT_PTR address = NULL;
 
     CONTEXT ctx;
@@ -133,7 +133,7 @@ FCIMPL0(void, DebugDebugger::Break)
     if (CORDebuggerAttached() INDEBUG(|| fDbgInjectFEE))
     {
         // A managed debugger is already attached -- let it handle the event.
-        g_pDebugInterface->SendUserBreakpoint(GetThreaNotOk());
+        g_pDebugInterface->SendUserBreakpoint(GetThread());
     }
     else if (IsDebuggerPresent())
     {
@@ -786,7 +786,7 @@ FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
     {
         HELPER_METHOD_FRAME_BEGIN_PROTECT(pData);
 
-        Thread * pThread = GetThreaNotOk();
+        Thread * pThread = GetThread();
         AppDomain * pAppDomain = pThread->GetDomain();
 
         StrongHandleHolder objHandle = pAppDomain->CreateStrongHandle(pData);
@@ -845,10 +845,10 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
     pData->pElements = new DebugStackTraceElement[pData->cElementsAllocated];
 
     if (pData->TargetThread == NULL ||
-        pData->TargetThread->GetInternal() == GetThreaNotOk())
+        pData->TargetThread->GetInternal() == GetThread())
     {
         // Null target thread specifies current thread.
-        GetThreaNotOk()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY, pStartFrame);
+        GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY, pStartFrame);
     }
     else
     {

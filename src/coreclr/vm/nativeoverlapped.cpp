@@ -30,7 +30,7 @@ FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, 
     FCALL_CONTRACT;
 
 #ifndef TARGET_UNIX
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     size_t key=0;
 
     //Poll and wait if GC is in progress, to avoid blocking GC for too long.

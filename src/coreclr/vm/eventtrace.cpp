@@ -3394,7 +3394,7 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
 
     BOOL fSucceeded = FALSE;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     // Compare the thread local epoch value against the global epoch.
     // If the epoch has changed, dump the thread local state and start over.
@@ -4702,7 +4702,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         NOTHROW;
         GC_TRIGGERS;
         PRECONDITION(GetThreadNULLOk() != NULL);
-        PRECONDITION(GetThreaNotOk()->GetThrowable() != NULL);
+        PRECONDITION(GetThread()->GetThrowable() != NULL);
     } CONTRACTL_END;
 
     if(!(bIsReThrownException || bIsNewException))
@@ -4721,7 +4721,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         UINT16 exceptionFlags=0;
         PVOID exceptionEIP=0;
 
-        Thread *pThread = GetThreaNotOk();
+        Thread *pThread = GetThread();
 
         struct
         {

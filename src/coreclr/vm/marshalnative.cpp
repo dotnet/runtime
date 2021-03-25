@@ -411,7 +411,7 @@ FCIMPL0(int, MarshalNative::GetLastWin32Error)
 {
     FCALL_CONTRACT;
 
-    return (UINT32)(GetThreaNotOk()->m_dwLastError);
+    return (UINT32)(GetThread()->m_dwLastError);
 }
 FCIMPLEND
 
@@ -423,7 +423,7 @@ FCIMPL1(void, MarshalNative::SetLastWin32Error, int error)
 {
     FCALL_CONTRACT;
 
-    GetThreaNotOk()->m_dwLastError = (DWORD)error;
+    GetThread()->m_dwLastError = (DWORD)error;
 }
 FCIMPLEND
 
@@ -1035,7 +1035,7 @@ FCIMPL2(Object*, MarshalNative::InternalCreateWrapperOfType, Object* objUNSAFE, 
         // Validate that the source object is a valid COM object.
         _ASSERTE(pObjMT->IsComObjectType());
 
-        RCWHolder pRCW(GetThreaNotOk());
+        RCWHolder pRCW(GetThread());
 
         RCWPROTECT_BEGIN(pRCW, gc.obj);
 
@@ -1054,7 +1054,7 @@ FCIMPL2(Object*, MarshalNative::InternalCreateWrapperOfType, Object* objUNSAFE, 
 
         // Create the duplicate wrapper object.
         {
-            RCWHolder pNewRCW(GetThreaNotOk());
+            RCWHolder pNewRCW(GetThread());
             pRCW->CreateDuplicateWrapper(pNewWrapMT, &pNewRCW);
 
             gc.refRetVal = pNewRCW->GetExposedObject();

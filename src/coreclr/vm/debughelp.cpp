@@ -920,7 +920,7 @@ void PrintStackTrace()
 
     WszOutputDebugString(W("***************************************************\n"));
     PrintCallbackData cbd = {0};
-    GetThreaNotOk()->StackWalkFrames(PrintStackTraceCallback, &cbd, ALLOW_ASYNC_STACK_WALK, 0);
+    GetThread()->StackWalkFrames(PrintStackTraceCallback, &cbd, ALLOW_ASYNC_STACK_WALK, 0);
 }
 
 void PrintStackTraceToStdout()
@@ -933,7 +933,7 @@ void PrintStackTraceToStdout()
     CONTRACTL_END;
 
     PrintCallbackData cbd = {1};
-    GetThreaNotOk()->StackWalkFrames(PrintStackTraceCallback, &cbd, ALLOW_ASYNC_STACK_WALK, 0);
+    GetThread()->StackWalkFrames(PrintStackTraceCallback, &cbd, ALLOW_ASYNC_STACK_WALK, 0);
 }
 
 #ifdef _DEBUG
@@ -947,7 +947,7 @@ void PrintStackTraceToLog()
     CONTRACTL_END;
 
     PrintCallbackData cbd = {0, 1};
-    GetThreaNotOk()->StackWalkFrames(PrintStackTraceCallback, &cbd, ALLOW_ASYNC_STACK_WALK, 0);
+    GetThread()->StackWalkFrames(PrintStackTraceCallback, &cbd, ALLOW_ASYNC_STACK_WALK, 0);
 }
 #endif
 
@@ -1083,7 +1083,7 @@ void LogStackTrace()
     WRAPPER_NO_CONTRACT;
 
     PrintCallbackData cbd = {0, 1};
-    GetThreaNotOk()->StackWalkFrames(PrintStackTraceCallback, &cbd,ALLOW_ASYNC_STACK_WALK, 0);
+    GetThread()->StackWalkFrames(PrintStackTraceCallback, &cbd,ALLOW_ASYNC_STACK_WALK, 0);
 }
 #endif
 

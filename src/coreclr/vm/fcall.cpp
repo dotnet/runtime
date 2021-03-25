@@ -121,7 +121,7 @@ NOINLINE Object* FC_GCPoll(void* __me, Object* objToProtect)
     FC_CAN_TRIGGER_GC();
     INCONTRACT(FCallCheck __fCallCheck(__FILE__, __LINE__));
 
-    Thread  *thread = GetThreaNotOk();
+    Thread  *thread = GetThread();
     if (thread->CatchAtSafePointOpportunistic())    // Does someone want this thread stopped?
     {
         HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objToProtect);
@@ -170,7 +170,7 @@ DEBUG_NOINLINE ForbidGC::ForbidGC(const char *szFile, int lineNum)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    m_pThread = GetThreaNotOk();
+    m_pThread = GetThread();
     m_pThread->BeginForbidGC(szFile, lineNum);
 }
 
@@ -256,7 +256,7 @@ FCallTransitionState::FCallTransitionState ()
 {
     WRAPPER_NO_CONTRACT;
 
-    m_pThread = GetThreaNotOk();
+    m_pThread = GetThread();
     m_pPreviousHelperMethodFrameCallerList = m_pThread->m_pHelperMethodFrameCallerList;
     m_pThread->m_pHelperMethodFrameCallerList = NULL;
 }
@@ -274,7 +274,7 @@ PermitHelperMethodFrameState::PermitHelperMethodFrameState ()
 {
     WRAPPER_NO_CONTRACT;
 
-    m_pThread = GetThreaNotOk();
+    m_pThread = GetThread();
     CONSISTENCY_CHECK_MSG((HelperMethodFrameCallerList*)-1 != m_pThread->m_pHelperMethodFrameCallerList,
                           "fcall entry point is missing a FCALL_TRANSITION_BEGIN or a FCIMPL\n");
 
@@ -314,7 +314,7 @@ VOID PermitHelperMethodFrameState::CheckHelperMethodFramePermitted ()
     // fcall was not managed.
     //
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     HelperMethodFrameCallerList *pList = pThread->m_pHelperMethodFrameCallerList;
     PCODE CurrentIP;
     TADDR CurrentSP;
@@ -370,7 +370,7 @@ CompletedFCallTransitionState::CompletedFCallTransitionState ()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     m_pLastHelperMethodFrameCallerList = pThread->m_pHelperMethodFrameCallerList;
     pThread->m_pHelperMethodFrameCallerList = (HelperMethodFrameCallerList*)-1;
 }
@@ -380,7 +380,7 @@ CompletedFCallTransitionState::~CompletedFCallTransitionState ()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     pThread->m_pHelperMethodFrameCallerList = m_pLastHelperMethodFrameCallerList;
 }
 

@@ -2631,11 +2631,11 @@ public:
 private:
     inline static void SetPreparingAbortForHolder()
     {
-        GetThreaNotOk()->SetPreparingAbort();
+        GetThread()->SetPreparingAbort();
     }
     inline static void ResetPreparingAbortForHolder()
     {
-        GetThreaNotOk()->ResetPreparingAbort();
+        GetThread()->ResetPreparingAbort();
     }
     typedef StateHolder<Thread::SetPreparingAbortForHolder, Thread::ResetPreparingAbortForHolder> PreparingAbortHolder;
 
@@ -3015,13 +3015,13 @@ public:
     static void        IncPreventAsync()
     {
         WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThreaNotOk();
+        Thread *pThread = GetThread();
         FastInterlockIncrement((LONG*)&pThread->m_PreventAsync);
     }
     static void        DecPreventAsync()
     {
         WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThreaNotOk();
+        Thread *pThread = GetThread();
         FastInterlockDecrement((LONG*)&pThread->m_PreventAsync);
     }
 
@@ -4170,7 +4170,7 @@ public:
         Thread * const m_pThread;
     public:
         AVInRuntimeImplOkayHolder() :
-            m_pThread(GetThreaNotOk())
+            m_pThread(GetThread())
         {
             LIMITED_METHOD_CONTRACT;
             AVInRuntimeImplOkayAcquire(m_pThread);
@@ -5136,7 +5136,7 @@ struct PendingSync
     {
         WRAPPER_NO_CONTRACT;
 #ifdef _DEBUG
-        m_OwnerThread = GetThreaNotOk();
+        m_OwnerThread = GetThread();
 #endif
     }
     void Restore(BOOL bRemoveFromSB);
@@ -5405,7 +5405,7 @@ public:
             STATIC_CONTRACT_MODE_COOPERATIVE;
         }
         // The thread must be non-null to enter MODE_COOP
-        this->EnterInternalCoop(GetThreaNotOk(), conditional GCHOLDER_CONTRACT_ARGS_NoDtor);
+        this->EnterInternalCoop(GetThread(), conditional GCHOLDER_CONTRACT_ARGS_NoDtor);
     }
 
     DEBUG_NOINLINE
@@ -5463,7 +5463,7 @@ public:
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         // The thread must be non-null to enter MODE_COOP
-        this->EnterInternalCoop(GetThreaNotOk(), true GCHOLDER_CONTRACT_ARGS_HasDtor);
+        this->EnterInternalCoop(GetThread(), true GCHOLDER_CONTRACT_ARGS_HasDtor);
     }
 
     DEBUG_NOINLINE
@@ -5476,7 +5476,7 @@ public:
         }
 
         // The thread must be non-null to enter MODE_COOP
-        this->EnterInternalCoop(GetThreaNotOk(), conditional GCHOLDER_CONTRACT_ARGS_HasDtor);
+        this->EnterInternalCoop(GetThread(), conditional GCHOLDER_CONTRACT_ARGS_HasDtor);
     }
 
     DEBUG_NOINLINE
@@ -5711,7 +5711,7 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
             m_pClrDebugState->ViolationMaskReset( GCViolation );
 
-            GetThreaNotOk()->BeginForbidGC(szFile, lineNum);
+            GetThread()->BeginForbidGC(szFile, lineNum);
 
             m_ContractStackRecord.m_szFunction = szFunction;
             m_ContractStackRecord.m_szFile     = (char*)szFile;
@@ -5735,7 +5735,7 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
         m_pClrDebugState->ViolationMaskReset( GCViolation );
 
-        GetThreaNotOk()->BeginForbidGC(szFile, lineNum);
+        GetThread()->BeginForbidGC(szFile, lineNum);
 
         m_ContractStackRecord.m_szFunction = szFunction;
         m_ContractStackRecord.m_szFile     = (char*)szFile;
@@ -5751,7 +5751,7 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
         if (m_fConditional)
         {
-            GetThreaNotOk()->EndForbidGC();
+            GetThread()->EndForbidGC();
             *m_pClrDebugState = m_oldClrDebugState;
         }
     }
@@ -5954,7 +5954,7 @@ public:
 
 #define TRIGGERSGC_NOSTOMP()  do {                                           \
                             ANNOTATION_GC_TRIGGERS;                         \
-                            Thread* curThread = GetThreaNotOk();                \
+                            Thread* curThread = GetThread();                \
                             if(curThread->GCNoTrigger())                    \
                             {                                               \
                                 CONTRACT_ASSERT("TRIGGERSGC found in a GC_NOTRIGGER region.", Contract::GC_NoTrigger, Contract::GC_Mask, __FUNCTION__, __FILE__, __LINE__); \
@@ -5964,7 +5964,7 @@ public:
 
 #define TRIGGERSGC()    do {                                                \
                             TRIGGERSGC_NOSTOMP();                           \
-                            Thread::TriggersGC(GetThreaNotOk());                \
+                            Thread::TriggersGC(GetThread());                \
                         } while(0)
 
 #else // ENABLE_CONTRACTS_IMPL
@@ -6172,7 +6172,7 @@ class DeadlockAwareLock
 
     static void ReleaseBlockingLock()
     {
-        Thread *pThread = GetThreaNotOk();
+        Thread *pThread = GetThread();
         pThread->m_pBlockingLock = NULL;
     }
 public:
@@ -6185,7 +6185,7 @@ inline void SetTypeHandleOnThreadForAlloc(TypeHandle th)
     // event is not enabled we still need to set it because it may not be enabled here but by the
     // time we are checking in GC, the event is enabled - we don't want GC to read a random value
     // from before in this case.
-    GetThreaNotOk()->SetTHAllocContextObj(th);
+    GetThread()->SetTHAllocContextObj(th);
 }
 
 #endif // CROSSGEN_COMPILE
@@ -6219,7 +6219,7 @@ public:
 
         if (m_fNeed)
         {
-            Thread *pThread = GetThreaNotOk();
+            Thread *pThread = GetThread();
             FastInterlockAnd((ULONG *) &pThread->m_State, ~m_state);
         }
     }
@@ -6248,7 +6248,7 @@ class ThreadStateNCStackHolder
 
         if (fNeed)
         {
-            Thread *pThread = GetThreaNotOk();
+            Thread *pThread = GetThread();
             if (fNeed < 0)
             {
                 // if the state is set, reset it
@@ -6283,7 +6283,7 @@ class ThreadStateNCStackHolder
 
         if (m_fNeed)
         {
-            Thread *pThread = GetThreaNotOk();
+            Thread *pThread = GetThread();
             if (m_fNeed < 0)
             {
                 pThread->SetThreadStateNC(m_state); // set it

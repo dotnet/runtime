@@ -80,7 +80,7 @@ OBJECTREF CLRException::GetThrowable()
         return NULL;
     }
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     if (pThread->IsRudeAbortInitiated()) {
         return GetBestThreadAbortException();
@@ -623,7 +623,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
     CONTRACTL_END;
 
     // Can't have a throwable without a Thread.
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     if (NULL == pException)
     {
@@ -798,7 +798,7 @@ OBJECTREF CLRException::GetThrowableFromExceptionRecord(EXCEPTION_RECORD *pExcep
 
     if (IsComPlusException(pExceptionRecord))
     {
-        return GetThreaNotOk()->LastThrownObject();
+        return GetThread()->LastThrownObject();
     }
 
     return NULL;
@@ -2128,7 +2128,7 @@ OBJECTREF CLRLastThrownObjectException::CreateThrowable()
 
     DEBUG_STMT(Validate());
 
-    return GetThreaNotOk()->LastThrownObject();
+    return GetThread()->LastThrownObject();
 } // OBJECTREF CLRLastThrownObjectException::CreateThrowable()
 
 #if defined(_DEBUG)
@@ -2148,7 +2148,7 @@ CLRLastThrownObjectException* CLRLastThrownObjectException::Validate()
 
     GCPROTECT_BEGIN(throwable);
 
-    Thread * pThread = GetThreaNotOk();
+    Thread * pThread = GetThread();
     throwable = pThread->LastThrownObject();
 
     DWORD dwCurrentExceptionCode = GetCurrentExceptionCode();

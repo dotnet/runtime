@@ -158,7 +158,7 @@ void GCToCLREventSink::FireGCAllocationTick_V3(uint64_t allocationAmount, uint32
     InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
     EX_TRY
     {
-        TypeHandle th = GetThreaNotOk()->GetTHAllocContextObj();
+        TypeHandle th = GetThread()->GetTHAllocContextObj();
 
         if (th != 0)
         {

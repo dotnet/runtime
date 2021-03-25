@@ -663,7 +663,7 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     // To better decide if we are inside a nested catch, we check if offs-1 is in more than one catch clause.
     DWORD countInCatch = 0;
     BOOL fAtJitEndCatch = FALSE;
-    if (pData->pAbortee == GetThreaNotOk() &&
+    if (pData->pAbortee == GetThread() &&
         pData->pAbortee->ThrewControlForThread() == Thread::InducedThreadRedirectAtEndOfCatch &&
         GetControlPC(pCf->GetRegisterSet()) == (PCODE)GetIP(pData->pAbortee->GetAbortContext()))
     {
@@ -875,7 +875,7 @@ BOOL Thread::IsExecutingWithinCer()
     if (!g_fEEStarted)
         return FALSE;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     StackCrawlContext sContext = { pThread,
                                    StackCrawlContext::SCC_CheckWithinCer,
         FALSE,
@@ -1839,7 +1839,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
     CONTRACTL {
         NOTHROW;
     // any thread entering with `PreemptiveGCDisabled` should be prepared to switch mode, thus GC_TRIGGERS
-        if ((GetThreadNULLOk() != NULL) && GetThreaNotOk()->PreemptiveGCDisabled()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if ((GetThreadNULLOk() != NULL) && GetThread()->PreemptiveGCDisabled()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -2346,7 +2346,7 @@ void Thread::PerformPreemptiveGC()
         // BUG(github #10318) - when not using allocation contexts, the alloc lock
         // must be acquired here. Until fixed, this assert prevents random heap corruption.
         _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-        GCHeapUtilities::GetGCHeap()->StressHeap(GetThreaNotOk()->GetAllocContext());
+        GCHeapUtilities::GetGCHeap()->StressHeap(GetThread()->GetAllocContext());
         m_bGCStressing = FALSE;
     }
     m_GCOnTransitionsOK = TRUE;
@@ -2514,7 +2514,7 @@ void RedirectedThreadFrame::ExceptionUnwind()
 
     STRESS_LOG1(LF_SYNC, LL_INFO1000, "In RedirectedThreadFrame::ExceptionUnwind pFrame = %p\n", this);
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     // Allow future use to avoid repeatedly new'ing
     pThread->UnmarkRedirectContextInUse(m_Regs);
@@ -2554,7 +2554,7 @@ int RedirectedHandledJITCaseExceptionFilter(
     }
 
     // Get the thread handle
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     STRESS_LOG2(LF_SYNC, LL_INFO100, "In RedirectedHandledJITCaseExceptionFilter fDone = %d pFrame = %p\n", fDone, pFrame);
 
@@ -2648,7 +2648,7 @@ extern "C" PCONTEXT __stdcall GetCurrentSavedRedirectContext()
     PCONTEXT pContext;
 
     BEGIN_PRESERVE_LAST_ERROR;
-    pContext = GetThreaNotOk()->GetSavedRedirectContext();
+    pContext = GetThread()->GetSavedRedirectContext();
     END_PRESERVE_LAST_ERROR;
 
     return pContext;
@@ -2664,7 +2664,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     // was able to save the error.
     DWORD dwLastError = GetLastError(); // BEGIN_PRESERVE_LAST_ERROR
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     // Get the saved context
     CONTEXT *pCtx = pThread->GetSavedRedirectContext();
@@ -3834,7 +3834,7 @@ int RedirectedThrowControlExceptionFilter(
     }
 
     // Get the thread handle
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     STRESS_LOG0(LF_SYNC, LL_INFO100, "In RedirectedThrowControlExceptionFilter\n");
 
@@ -3890,7 +3890,7 @@ ThrowControlForThread(
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     _ASSERTE(pThread->m_OSContext);
 
     _ASSERTE(pThread->PreemptiveGCDisabled());
@@ -4979,7 +4979,7 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #ifdef HIJACK_NONINTERRUPTIBLE_THREADS
     BEGIN_PRESERVE_LAST_ERROR;
 
-    Thread         *thread = GetThreaNotOk();
+    Thread         *thread = GetThread();
 
     thread->ResetThreadState(Thread::TS_Hijacked);
 
@@ -5889,7 +5889,7 @@ BOOL CheckActivationSafePoint(SIZE_T ip, BOOL checkingCurrentThread)
 //
 void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 {
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     if (pThread->PreemptiveGCDisabled() != TRUE)
         return;

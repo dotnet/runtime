@@ -172,7 +172,7 @@ Frame *GetCurrFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame)
         pFrame = ((FrameHandlerExRecord *)pEstablisherFrame)->GetCurrFrame();
 
     // Assert that the exception frame is on the thread or that the exception frame is the top frame.
-    _ASSERTE(GetThreadNULLOk() == NULL || GetThreaNotOk()->GetFrame() == (Frame*)-1 || GetThreaNotOk()->GetFrame() <= pFrame);
+    _ASSERTE(GetThreadNULLOk() == NULL || GetThread()->GetFrame() == (Frame*)-1 || GetThread()->GetFrame() <= pFrame);
 
     return pFrame;
 }
@@ -444,7 +444,7 @@ EXCEPTION_DISPOSITION COMPlusAfterUnwind(
     // before we go any further.
     _ASSERTE(pEstablisherFrame == GetCurrentSEHRecord());
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     _ASSERTE(tct.pCurrentExceptionRecord == pEstablisherFrame);
 
@@ -515,7 +515,7 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(EXCEPTION_REGISTRATION_REC
         return ExceptionContinueSearch;
     }
 
-    Thread*               pThread  = GetThreaNotOk();
+    Thread*               pThread  = GetThread();
     ThreadExceptionState* pExState = pThread->GetExceptionState();
 
     EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame;
@@ -652,7 +652,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
     EXCEPTION_DISPOSITION retval;
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
 #ifdef _DEBUG
     static int breakOnSO = -1;
@@ -1272,7 +1272,7 @@ CPFH_FirstPassHandler(EXCEPTION_RECORD *pExceptionRecord,
 
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     STRESS_LOG4(LF_EH, LL_INFO100,
                 "CPFH_FirstPassHandler: pEstablisherFrame = %x EH code = %x  EIP = %x with ESP = %x\n",
@@ -1488,7 +1488,7 @@ CPFH_UnwindHandler(EXCEPTION_RECORD *pExceptionRecord,
     #endif
 
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     ExInfo* pExInfo = &(pThread->GetExceptionState()->m_currentExInfo);
 
@@ -1646,7 +1646,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 
     EXCEPTION_DISPOSITION retVal = ExceptionContinueSearch;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
     if ((pExceptionRecord->ExceptionFlags & (EXCEPTION_UNWINDING | EXCEPTION_EXIT_UNWIND)) == 0)
     {
         if (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
@@ -1854,7 +1854,7 @@ LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVO
     ETW::ExceptionLog::ExceptionCatchEnd();
     ETW::ExceptionLog::ExceptionThrownEnd();
 
-    void* esp = COMPlusEndCatchWorker(GetThreaNotOk());
+    void* esp = COMPlusEndCatchWorker(GetThread());
 
     // We are going to resume at a handler nesting level whose esp is dEsp. Pop off any SEH records below it. This
     // would be the COMPlusNestedExceptionHandler we had inserted.
@@ -1863,7 +1863,7 @@ LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVO
     //
     // Set up m_OSContext for the call to COMPlusCheckForAbort
     //
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
 
     SetIP(pThread->m_OSContext, (PCODE)*pRetAddress);
     SetSP(pThread->m_OSContext, (TADDR)esp);
@@ -1951,7 +1951,7 @@ PEXCEPTION_REGISTRATION_RECORD GetPrevSEHRecord(EXCEPTION_REGISTRATION_RECORD *n
 VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH)
 {
     WRAPPER_NO_CONTRACT;
-    *GetThreaNotOk()->GetExceptionListPtr() = pSEH;
+    *GetThread()->GetExceptionListPtr() = pSEH;
 }
 
 // Note that this logic is copied below, in PopSEHRecords
@@ -2226,7 +2226,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
     #undef METHODNAME
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     if (pFrame && pData->pTopFrame == pFrame)
         /* Don't look past limiting frame if there is one */
@@ -2651,7 +2651,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
     if (!pCf->IsFrameless())
         return SWA_CONTINUE;
 
-    Thread *pThread = GetThreaNotOk();
+    Thread *pThread = GetThread();
 
     // If the thread is being RudeAbort, we will not run any finally
     if (pThread->IsRudeAbortInitiated())
@@ -3302,7 +3302,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusNestedExceptionHandler)
         // from withing a nested handler.  We won't have a nested exception in that case -- just
         // the unwind.
 
-        Thread* pThread = GetThreaNotOk();
+        Thread* pThread = GetThread();
         ExInfo* pExInfo = &(pThread->GetExceptionState()->m_currentExInfo);
         ExInfo* pPrevNestedInfo = pExInfo->m_pPrevNestedInfo;
 
@@ -3421,7 +3421,7 @@ EXCEPTION_HANDLER_IMPL(UMThunkPrestubHandler)
 
         GCX_COOP();     // Must be cooperative to modify frame chain.
 
-        Thread *pThread = GetThreaNotOk();
+        Thread *pThread = GetThread();
         Frame *pFrame = pThread->GetFrame();
         pFrame->ExceptionUnwind();
         pFrame->Pop(pThread);

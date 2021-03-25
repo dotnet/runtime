@@ -486,7 +486,7 @@ void CoreLibBinder::TriggerGCUnderStress()
     if (g_pConfig->GetGCStressLevel() != 0)
     {
         DEBUG_ONLY_REGION();
-        Thread * pThread = GetThreaNotOk();
+        Thread * pThread = GetThread();
         BOOL bInCoopMode = pThread->PreemptiveGCDisabled ();
         GCX_COOP ();
         if (bInCoopMode)

@@ -1258,7 +1258,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
     BOOL bPropValIsByref = FALSE;
     EnumMemberTypes MemberType;
 
-    Thread* pThread = GetThreaNotOk();
+    Thread* pThread = GetThread();
     AppDomain* pAppDomain = pThread->GetDomain();
 
     SafeArrayHolder pSA(NULL);
@@ -1893,7 +1893,7 @@ void DispatchInfo::InvokeMemberDebuggerWrapper(
         {}
     } param(NumByrefArgs, iSrcArg);
 
-    param.pFrame = GetThreaNotOk()->GetFrame(); // Inherited from NotifyOfCHFFilterWrapperParam
+    param.pFrame = GetThread()->GetFrame(); // Inherited from NotifyOfCHFFilterWrapperParam
     param.pThis = this;
     param.pDispMemberInfo = pDispMemberInfo;
     param.pObjs = pObjs;

@@ -173,7 +173,7 @@ void ExInfo::UnwindExInfo(VOID* limit)
 #ifdef DEBUGGING_SUPPORTED
     // The debugger thread will be using this, even though it has no
     // Thread object associated with it.
-    _ASSERTE((GetThreadNULLOk() != NULL && GetThreaNotOk()->PreemptiveGCDisabled()) ||
+    _ASSERTE((GetThreadNULLOk() != NULL && GetThread()->PreemptiveGCDisabled()) ||
              ((g_pDebugInterface != NULL) && (g_pDebugInterface->GetRCThreadId() == GetCurrentThreadId())));
 #endif // DEBUGGING_SUPPORTED
 

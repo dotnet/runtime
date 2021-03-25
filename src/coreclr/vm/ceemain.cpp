@@ -603,7 +603,7 @@ void EESocketCleanupHelper(bool isExecutingOnAltStack)
 
     if (isExecutingOnAltStack)
     {
-        GetThreaNotOk()->SetExecutingOnAltStack();
+        GetThread()->SetExecutingOnAltStack();
     }
 
     // Close the debugger transport socket first
@@ -933,7 +933,7 @@ void EEStartupHelper()
         // Notify debugger once the first thread is created to finish initialization.
         if (g_pDebugInterface != NULL)
         {
-            g_pDebugInterface->StartupPhase2(GetThreaNotOk());
+            g_pDebugInterface->StartupPhase2(GetThread());
         }
 #endif
 

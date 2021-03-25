@@ -1171,7 +1171,7 @@ HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk)
         // Catching and just swallowing an exception means we need to tell
         // the SO code that it should go back to normal operation, as it
         // currently thinks that the exception is still on the fly.
-        GetThreaNotOk()->GetCurrentStackGuard()->RestoreCurrentGuard();
+        GetThread()->GetCurrentStackGuard()->RestoreCurrentGuard();
 #endif
     }
     PAL_ENDTRY;
@@ -1227,7 +1227,7 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
         // Catching and just swallowing an exception means we need to tell
         // the SO code that it should go back to normal operation, as it
         // currently thinks that the exception is still on the fly.
-        GetThreaNotOk()->GetCurrentStackGuard()->RestoreCurrentGuard();
+        GetThread()->GetCurrentStackGuard()->RestoreCurrentGuard();
 #endif
     }
     PAL_ENDTRY;
@@ -1485,7 +1485,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
         // COM+ objects are now apartment agile), we only care that a CoInitializeEx
         // has been performed on this thread by us.
         if (fCoInitCurrentThread)
-            GetThreaNotOk()->SetApartment(Thread::AS_InMTA);
+            GetThread()->SetApartment(Thread::AS_InMTA);
 
         // set the finalizer event
         FinalizerThread::EnableFinalization();
@@ -3318,7 +3318,7 @@ void IUInvokeDispMethod(
         // A class was passed in so we will make the invocation on the default
         // IDispatch for the COM component.
 
-        RCWHolder pRCW(GetThreaNotOk());
+        RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, *pTarget);
 
         // Retrieve the IDispath pointer from the wrapper.

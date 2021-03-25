@@ -51,7 +51,7 @@ IBCLoggingDisabler::IBCLoggingDisabler()
 
     if (g_IBCLogger.InstrEnabled())
     {
-        m_pInfo = GetThreaNotOk()->GetIBCInfo();
+        m_pInfo = GetThread()->GetIBCInfo();
         if (m_pInfo != NULL)
         {
             m_fDisabled = m_pInfo->DisableLogging();
@@ -68,7 +68,7 @@ IBCLoggingDisabler::IBCLoggingDisabler(bool ignore)
     {
         if (g_IBCLogger.InstrEnabled())
         {
-            m_pInfo = GetThreaNotOk()->GetIBCInfo();
+            m_pInfo = GetThread()->GetIBCInfo();
             if (m_pInfo != NULL)
             {
                 m_fDisabled = m_pInfo->DisableLogging();
@@ -111,7 +111,7 @@ IBCLoggerAwareAllocMemTracker::~IBCLoggerAwareAllocMemTracker()
 
     if (!m_fReleased)
     {
-        GetThreaNotOk()->FlushIBCInfo();
+        GetThread()->FlushIBCInfo();
     }
 }
 
@@ -191,7 +191,7 @@ void IBCLogger::DelayedCallbackPtr(pfnIBCAccessCallback callback, const void * p
 {
     WRAPPER_NO_CONTRACT;
 
-    ThreadLocalIBCInfo* pInfo = GetThreaNotOk()->GetIBCInfo();
+    ThreadLocalIBCInfo* pInfo = GetThread()->GetIBCInfo();
 
     // record that we could not currently resolve this callback
     pInfo->SetCallbackFailed();
