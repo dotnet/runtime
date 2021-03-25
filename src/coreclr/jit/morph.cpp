@@ -17681,6 +17681,9 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 
     assert(qmark->gtFlags & GTF_QMARK_CAST_INSTOF);
 
+    float currBbWeight = block->bbWeight;
+    float nextBbWeight = (block->bbNext != nullptr) ? block->bbNext->bbWeight : currBbWeight;
+
     // Get cond, true, false exprs for the qmark.
     GenTree* condExpr  = qmark->gtGetOp1();
     GenTree* trueExpr  = qmark->gtGetOp2()->AsColon()->ThenNode();
@@ -17765,6 +17768,25 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 
     cond1Block->bbJumpDest = remainderBlock;
     cond2Block->bbJumpDest = remainderBlock;
+
+    // Set the weights; some are guesses.
+    asgBlock->inheritWeight(block);
+    cond1Block->inheritWeight(block);
+
+    // We shouldn't expand casts inside cold blocks in the first place.
+    assert(currBbWeight > 0);
+
+    // Currently, we don't instrument internal blocks, so the only way we can set weights to these blocks
+    // is to analyze successors and guess.
+
+    // cond2Block [0.5 .. 1]
+    const float cond2BlockWeight = 50.0f * nextBbWeight / currBbWeight + 50.0f;
+
+    // helperBlock [0 .. 1]
+    const float helperBlockWeight = nextBbWeight / currBbWeight * 100.0f;
+
+    cond2Block->inheritWeightPercentage(cond1Block, (UINT32)cond2BlockWeight);
+    helperBlock->inheritWeightPercentage(cond2Block, (UINT32)helperBlockWeight);
 
     // Append cond1 as JTRUE to cond1Block
     GenTree*   jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condExpr);
