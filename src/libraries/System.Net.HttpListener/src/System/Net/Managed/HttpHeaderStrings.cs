@@ -3,7 +3,7 @@
 
 namespace System.Net
 {
-    internal class HttpHeaderStrings
+    internal static class HttpHeaderStrings
     {
         internal const string Charset = "charset=";
         internal const string NetCoreServerName = "Microsoft-NetCore/2.0";

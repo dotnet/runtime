@@ -34,7 +34,7 @@ namespace System.DirectoryServices.Protocols
         SendTimeOut = 0x70
     }
 
-    internal class LdapErrorMappings
+    internal static class LdapErrorMappings
     {
         private static readonly Dictionary<LdapError, string> s_resultCodeMapping = new Dictionary<LdapError, string>(capacity: 20)
         {
@@ -161,7 +161,7 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
-    internal class ErrorChecking
+    internal static class ErrorChecking
     {
         public static void CheckAndSetLdapError(int error)
         {

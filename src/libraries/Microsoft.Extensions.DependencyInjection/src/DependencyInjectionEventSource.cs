@@ -107,7 +107,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        private class NodeCountingVisitor : ExpressionVisitor
+        private sealed class NodeCountingVisitor : ExpressionVisitor
         {
             public int NodeCount { get; private set; }
 

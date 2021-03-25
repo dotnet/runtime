@@ -89,16 +89,16 @@
       <CoreCLRCrossTargetFiles PackOnly="true" />
       <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">
         <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
-        </CoreCLRCrossTargetFiles>
+      </CoreCLRCrossTargetFiles>
       <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'crossgen'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
-        </CoreCLRCrossTargetFiles>
+      </CoreCLRCrossTargetFiles>
       <CoreCLRCrossTargetFiles Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore')) and '$(TargetsWindows)' == 'true'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
-        </CoreCLRCrossTargetFiles>
+      </CoreCLRCrossTargetFiles>
       <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
-        </CoreCLRCrossTargetFiles>
+      </CoreCLRCrossTargetFiles>
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles);@(CoreCLRCrossTargetFiles);" />
     </ItemGroup>
   </Target>
@@ -116,7 +116,6 @@
     <!-- DiaSymReader for the host architecture, which is used for [cross-]compilation -->
     <_diaSymArch>$(_hostArch)</_diaSymArch>
     <_diaSymReaderPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymArch).dll</_diaSymReaderPath>
-    <_diaSymReaderPathIfExists Condition="Exists('$(_diaSymReaderPath)')">$(_diaSymReaderPath)</_diaSymReaderPathIfExists>
 
     <!-- DiaSymReader for the target architecture, which is placed into the package -->
     <_diaSymTargetArch>$(TargetArchitecture)</_diaSymTargetArch>
@@ -124,8 +123,11 @@
     <_diaSymReaderTargetArchPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymTargetArch).dll</_diaSymReaderTargetArchPath>
   </PropertyGroup>
 
-  <ItemGroup Condition="Exists('$(_diaSymReaderTargetArchPath)')">
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
     <NativeRuntimeAsset Include="$(_diaSymReaderTargetArchPath)" />
+    <NativeRuntimeAsset Include="$(_diaSymReaderPath)" Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">
+      <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
+    </NativeRuntimeAsset>
   </ItemGroup>
 
   <!-- VS uses this file to show the target framework in the drop down. -->

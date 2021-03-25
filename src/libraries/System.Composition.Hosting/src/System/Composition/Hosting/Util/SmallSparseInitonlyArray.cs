@@ -8,7 +8,7 @@ namespace System.Composition.Hosting.Util
     // only one writer at a time allowed.
     internal class SmallSparseInitonlyArray
     {
-        private class Element { public int Index; public object Value; }
+        private sealed class Element { public int Index; public object Value; }
 
         private const int ElementsCapacity = 128;
         private const int ElementIndexMask = 127;

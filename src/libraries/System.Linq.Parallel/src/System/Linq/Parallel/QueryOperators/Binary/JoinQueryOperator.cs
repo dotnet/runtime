@@ -262,7 +262,7 @@ namespace System.Linq.Parallel
         ///
         /// Since Join operations do not require a default, this just passes the call on to the base lookup.
         /// </summary>
-        private class JoinHashLookup : HashJoinHashLookup<THashKey, TElement, TOrderKey>
+        private sealed class JoinHashLookup : HashJoinHashLookup<THashKey, TElement, TOrderKey>
         {
             private readonly HashLookup<THashKey, HashLookupValueList<TElement, TOrderKey>> _base;
 

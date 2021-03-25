@@ -55,14 +55,6 @@
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
     </PropertyGroup>
 
-    <!-- TODO: delete once we switch to Android Crypto -->
-    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
-          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
-          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
-    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
-          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
-          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
-
     <Message Importance="High" Text="Path: $(PublishDir)" />
     <Message Importance="High" Text="SourceDir: $(OutputPath)" />
 

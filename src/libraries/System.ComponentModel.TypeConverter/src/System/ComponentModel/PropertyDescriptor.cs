@@ -12,6 +12,8 @@ namespace System.ComponentModel
     /// </summary>
     public abstract class PropertyDescriptor : MemberDescriptor
     {
+        internal const string PropertyDescriptorPropertyTypeMessage = "PropertyDescriptor's PropertyType cannot be statically discovered.";
+
         private TypeConverter _converter;
         private Hashtable _valueChangedHandlers;
         private object[] _editors;
@@ -57,7 +59,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual TypeConverter Converter
         {
-            [RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered.")]
+            [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage)]
             get
             {
                 // Always grab the attribute collection first here, because if the metadata version
@@ -214,19 +216,19 @@ namespace System.ComponentModel
             base.FillAttributes(attributeList);
         }
 
-        [RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered.")]
+        [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage)]
         public PropertyDescriptorCollection GetChildProperties() => GetChildProperties(null, null);
 
-        [RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public PropertyDescriptorCollection GetChildProperties(Attribute[] filter) => GetChildProperties(null, filter);
 
-        [RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
+        [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
         public PropertyDescriptorCollection GetChildProperties(object instance) => GetChildProperties(instance, null);
 
         /// <summary>
         /// Retrieves the properties
         /// </summary>
-        [RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered. The Type of instance cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual PropertyDescriptorCollection GetChildProperties(object instance, Attribute[] filter)
         {
             if (instance == null)
@@ -242,7 +244,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets an editor of the specified type.
         /// </summary>
-        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " The PropertyDescriptor's PropertyType cannot be statically discovered.")]
+        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " " + PropertyDescriptorPropertyTypeMessage)]
         public virtual object GetEditor(Type editorBaseType)
         {
             object editor = null;

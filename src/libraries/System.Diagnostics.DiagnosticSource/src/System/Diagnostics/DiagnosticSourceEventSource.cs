@@ -164,7 +164,7 @@ namespace System.Diagnostics
     {
         public static DiagnosticSourceEventSource Logger = new DiagnosticSourceEventSource();
 
-        public class Keywords
+        public static class Keywords
         {
             /// <summary>
             /// Indicates diagnostics messages from DiagnosticSourceEventSource should be included.

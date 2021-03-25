@@ -113,6 +113,30 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 
 #endif // which host OS
 
+const BYTE genTypeSizes[] = {
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) sz,
+#include "typelist.h"
+#undef DEF_TP
+};
+
+const BYTE genTypeAlignments[] = {
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) al,
+#include "typelist.h"
+#undef DEF_TP
+};
+
+const BYTE genTypeStSzs[] = {
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) st,
+#include "typelist.h"
+#undef DEF_TP
+};
+
+const BYTE genActualTypes[] = {
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) jitType,
+#include "typelist.h"
+#undef DEF_TP
+};
+
 #endif // FEATURE_JIT_METHOD_PERF
 /*****************************************************************************/
 inline unsigned getCurTime()
@@ -2612,7 +2636,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopAdaptive       = true;
     opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
     opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
+    opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
 #endif
+
     if (opts.compJitAlignLoopAdaptive)
     {
         opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1) - 1;
@@ -4868,7 +4894,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
 
         // Clone loops with optimization opportunities, and
-        // choose the one based on dynamic condition evaluation.
+        // choose one based on dynamic condition evaluation.
         //
         DoPhase(this, PHASE_CLONE_LOOPS, &Compiler::optCloneLoops);
 
@@ -5610,18 +5636,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 #endif // DEBUG
 
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
-
-#if defined(DEBUG) || defined(LATE_DISASM)
-    const char* classNamePtr;
-
-    info.compMethodName = eeGetMethodName(info.compMethodHnd, &classNamePtr);
-    unsigned len        = (unsigned)roundUp(strlen(classNamePtr) + 1);
-    info.compClassName  = getAllocator(CMK_DebugOnly).allocate<char>(len);
-    strcpy_s((char*)info.compClassName, len, classNamePtr);
-
-    info.compFullName  = eeGetMethodFullName(info.compMethodHnd);
-    info.compPerfScore = 0.0;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
 
 #ifdef DEBUG
     if (!compIsForInlining())
@@ -9078,6 +9092,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_IND_INVARIANT)
                 {
                     chars += printf("[IND_INVARIANT]");
+                }
+                if (tree->gtFlags & GTF_IND_NONNULL)
+                {
+                    chars += printf("[IND_NONNULL]");
                 }
                 break;
 

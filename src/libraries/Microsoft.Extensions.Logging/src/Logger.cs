@@ -158,7 +158,7 @@ namespace Microsoft.Extensions.Logging
                 message: "An error occurred while writing to logger(s).", innerExceptions: exceptions);
         }
 
-        private class Scope : IDisposable
+        private sealed class Scope : IDisposable
         {
             private bool _isDisposed;
 

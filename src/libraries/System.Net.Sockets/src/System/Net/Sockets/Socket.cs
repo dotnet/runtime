@@ -60,7 +60,7 @@ namespace System.Net.Sockets
         // These caches are one degree off of Socket since they're not used in the sync case/when disabled in config.
         private CacheSet? _caches;
 
-        private class CacheSet
+        private sealed class CacheSet
         {
             internal CallbackClosure? AcceptClosureCache;
             internal CallbackClosure? SendClosureCache;
