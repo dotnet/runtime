@@ -14,6 +14,10 @@ jmethodID g_ByteArrayInputStreamReset;
 jclass    g_Enum;
 jmethodID g_EnumOrdinal;
 
+// java/lang/String
+jclass    g_String;
+jmethodID g_StringGetBytes;
+
 // java/lang/Throwable
 jclass    g_ThrowableClass;
 jmethodID g_ThrowableGetCause;
@@ -367,6 +371,7 @@ jmethodID g_ListGet;
 
 // javax/net/ssl/SSLEngine
 jclass    g_SSLEngine;
+jmethodID g_SSLEngineGetApplicationProtocol;
 jmethodID g_SSLEngineSetUseClientModeMethod;
 jmethodID g_SSLEngineGetSessionMethod;
 jmethodID g_SSLEngineBeginHandshakeMethod;
@@ -601,6 +606,9 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_Enum =                    GetClassGRef(env, "java/lang/Enum");
     g_EnumOrdinal =             GetMethod(env, false, g_Enum, "ordinal", "()I");
+
+    g_String =          GetClassGRef(env, "java/lang/String");
+    g_StringGetBytes =  GetMethod(env, false, g_String, "getBytes", "()[B");
 
     g_ThrowableClass =      GetClassGRef(env, "java/lang/Throwable");
     g_ThrowableGetCause =   GetMethod(env, false, g_ThrowableClass, "getCause", "()Ljava/lang/Throwable;");
@@ -894,6 +902,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_ListGet =     GetMethod(env, false, g_ListClass, "get", "(I)Ljava/lang/Object;");
 
     g_SSLEngine =                         GetClassGRef(env, "javax/net/ssl/SSLEngine");
+    g_SSLEngineGetApplicationProtocol =   GetMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
     g_SSLEngineSetUseClientModeMethod =   GetMethod(env, false, g_SSLEngine, "setUseClientMode", "(Z)V");
     g_SSLEngineGetSessionMethod =         GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
     g_SSLEngineBeginHandshakeMethod =     GetMethod(env, false, g_SSLEngine, "beginHandshake", "()V");

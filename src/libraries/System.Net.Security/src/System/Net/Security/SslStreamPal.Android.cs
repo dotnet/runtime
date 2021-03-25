@@ -58,7 +58,7 @@ namespace System.Net.Security
             if (context == null)
                 return null;
 
-            throw new NotImplementedException(nameof(GetNegotiatedApplicationProtocol));
+            return Interop.AndroidCrypto.SSLStreamGetApplicationProtocol(((SafeDeleteSslContext)context).SslContext);
         }
 
         public static SecurityStatusPal EncryptMessage(

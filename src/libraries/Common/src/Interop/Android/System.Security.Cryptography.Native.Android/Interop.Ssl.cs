@@ -10,6 +10,9 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
+        private const int INSUFFICIENT_BUFFER = -1;
+        private const int SUCCESS = 1;
+
         internal unsafe delegate int SSLReadCallback(byte* data, int offset, int length);
         internal unsafe delegate void SSLWriteCallback(byte* data, int offset, int length);
 
@@ -31,6 +34,23 @@ internal static partial class Interop
             int tlsVersion,
             int appOutBufferSize,
             int appInBufferSize);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamGetApplicationProtocol")]
+        private static extern int SSLStreamGetApplicationProtocol(SafeSslHandle ssl, [Out] byte[]? buf, ref int len);
+        internal static byte[]? SSLStreamGetApplicationProtocol(SafeSslHandle ssl)
+        {
+            int len = 0;
+            int ret = SSLStreamGetApplicationProtocol(ssl, null, ref len);
+            if (ret != INSUFFICIENT_BUFFER)
+                return null;
+
+            byte[] bytes = new byte[len];
+            ret = SSLStreamGetApplicationProtocol(ssl, bytes, ref len);
+            if (ret != SUCCESS)
+                return null;
+
+            return bytes;
+        }
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamRead")]
         private static unsafe extern int SSLStreamRead(

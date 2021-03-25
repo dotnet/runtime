@@ -3,6 +3,8 @@
 
 #include "pal_sslstream.h"
 
+#define INSUFFICIENT_BUFFER -1
+
 static void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus);
 
 static int getHandshakeStatus(JNIEnv* env, SSLStream* sslStream, jobject engineResult)
@@ -481,4 +483,42 @@ void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream)
 {
     JNIEnv* env = GetJNIEnv();
     FreeSSLStream(env, sslStream);
+}
+
+static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len)
+{
+    jsize bytesLen = (*env)->GetArrayLength(env, source);
+
+    bool insufficientBuffer = *len < bytesLen;
+    *len = bytesLen;
+    if (insufficientBuffer)
+        return INSUFFICIENT_BUFFER;
+
+    (*env)->GetByteArrayRegion(env, source, 0, bytesLen, (jbyte*)dest);
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+}
+
+int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int* outLen)
+{
+    assert(sslStream != NULL);
+    JNIEnv* env = GetJNIEnv();
+
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, protocol, bytes);
+
+    // String protocol = sslEngine.getApplicationProtocol();
+    loc[protocol] = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetApplicationProtocol);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (loc[protocol] == NULL)
+        goto cleanup;
+
+    // byte[] bytes = protocol.getBytes();
+    loc[bytes] = (*env)->CallObjectMethod(env, loc[protocol], g_StringGetBytes);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    ret = PopulateByteArray(env, loc[bytes], out, outLen);
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }

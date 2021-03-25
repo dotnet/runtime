@@ -45,3 +45,5 @@ PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateAndStartHandshake(STREAM
 PALEXPORT int  AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int offset, int length);
 PALEXPORT void AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int offset, int length);
 PALEXPORT void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream);
+
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int* outLen);

@@ -23,6 +23,10 @@ extern jmethodID g_ByteArrayInputStreamReset;
 extern jclass    g_Enum;
 extern jmethodID g_EnumOrdinal;
 
+// java/lang/String
+extern jclass    g_String;
+extern jmethodID g_StringGetBytes;
+
 // java/lang/Throwable
 extern jclass    g_ThrowableClass;
 extern jmethodID g_ThrowableGetCause;
@@ -376,6 +380,7 @@ extern jmethodID g_ListGet;
 
 // javax/net/ssl/SSLEngine
 extern jclass    g_SSLEngine;
+extern jmethodID g_SSLEngineGetApplicationProtocol;
 extern jmethodID g_SSLEngineSetUseClientModeMethod;
 extern jmethodID g_SSLEngineGetSessionMethod;
 extern jmethodID g_SSLEngineBeginHandshakeMethod;
