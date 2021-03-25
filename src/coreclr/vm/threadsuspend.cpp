@@ -27,10 +27,6 @@ bool ThreadSuspend::s_fSuspended = false;
 CLREvent* ThreadSuspend::g_pGCSuspendEvent = NULL;
 
 ThreadSuspend::SUSPEND_REASON ThreadSuspend::m_suspendReason;
-Thread* ThreadSuspend::m_pThreadAttemptingSuspendForGC;
-
-CLREventBase * ThreadSuspend::s_hAbortEvt = NULL;
-CLREventBase * ThreadSuspend::s_hAbortEvtCache = NULL;
 
 // If you add any thread redirection function, make sure the debugger can 1) recognize the redirection
 // function, and 2) retrieve the original CONTEXT.  See code:Debugger.InitializeHijackFunctionAddress and
@@ -1856,10 +1852,8 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
 
         gcOnTransitions = GC_ON_TRANSITIONS(FALSE);                // dont do GC for GCStress 3
 
-        // There are two ways to get blocked here:
-        //      1) we may be blocked on s_pThreadStore
-        //      2) threads with reasons other than GC, GC_PREP, and DEBUGGER_SWEEP may also be blocked on s_hAbortEvt
-        // In either case we should be in preemptive mode when blocked or we could cause suspension in progress
+        // We may be blocked while acquiring s_pThreadStore
+        // We should be in preemptive mode when blocked or we could cause suspension in progress
         // to loop forever because it needs to see all threads in preemptive mode.
         BOOL toggleGC = (pCurThread != NULL && pCurThread->PreemptiveGCDisabled());
         if (toggleGC)
@@ -1872,27 +1866,6 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
         // remember that.
         if (pCurThread)
             IncCantStopCount();
-
-        // This is used to avoid GC starvation if non-GC threads are competing for
-        // the thread store lock when there is a real GC-thread waiting to get in.
-        // This is initialized lazily when the first non-GC thread backs out because of
-        // a waiting GC thread.
-        if (s_hAbortEvt != NULL &&
-            !(reason == ThreadSuspend::SUSPEND_FOR_GC ||
-              reason == ThreadSuspend::SUSPEND_FOR_GC_PREP ||
-              reason == ThreadSuspend::SUSPEND_FOR_DEBUGGER_SWEEP) &&
-            m_pThreadAttemptingSuspendForGC != NULL &&
-            m_pThreadAttemptingSuspendForGC != pCurThread)
-        {
-            CLREventBase * hAbortEvt = s_hAbortEvt;
-
-            if (hAbortEvt != NULL)
-            {
-                LOG((LF_SYNC, INFO3, "Performing suspend abort wait.\n"));
-                hAbortEvt->Wait(INFINITE, FALSE);
-                LOG((LF_SYNC, INFO3, "Release from suspend abort wait.\n"));
-            }
-        }
 
         // This is shutdown aware. If we're in shutdown, and not helper/finalizer/shutdown
         // then this will not take the lock and just block forever.
@@ -3223,7 +3196,7 @@ COR_PRF_SUSPEND_REASON GCSuspendReasonToProfSuspendReason(ThreadSuspend::SUSPEND
 // which leaves cooperative mode and waits for the GC to complete.
 //
 // See code:Thread#SuspendingTheRuntime for more
-HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
+void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 {
     CONTRACTL {
         NOTHROW;
@@ -3271,26 +3244,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
         END_PIN_PROFILER();
     }
 #endif // PROFILING_SUPPORTED
-
-    // If m_pThreadAttemptingSuspendForGC is set, it means:
-    // 1) someone is trying to suspend for GC and
-    // 2) it is not us.
-    // In such case, before doing much work, we back off with ERROR_TIMEOUT and will try again later
-    // This should be rare, but if too many non-GC suspensions are trying to happen, GC could starve.
-    if (m_pThreadAttemptingSuspendForGC != NULL)
-    {
-#ifdef PROFILING_SUPPORTED
-        // Must let the profiler know that this thread is aborting its attempt at suspending
-        {
-            BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-            g_profControlBlock.pProfInterface->RuntimeSuspendAborted();
-            END_PIN_PROFILER();
-        }
-#endif // PROFILING_SUPPORTED
-
-        STRESS_LOG0(LF_SYNC, LL_ALWAYS, "Thread::SuspendRuntime() - Yielding to GC.\n");
-        return (ERROR_TIMEOUT);
-    }
 
     //
     // If this thread is running at low priority, boost its priority.  We remember the old
@@ -3670,7 +3623,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 #endif // HAVE_GCCOVER
 
     STRESS_LOG0(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() - Success\n");
-    return S_OK;
 }
 
 #ifdef HAVE_GCCOVER
@@ -5617,7 +5569,7 @@ void ThreadSuspend::SuspendEE(SUSPEND_REASON reason)
     ETW::GCLog::ETW_GC_INFO Info;
     Info.SuspendEE.Reason = reason;
     Info.SuspendEE.GcCount = (((reason == SUSPEND_FOR_GC) || (reason == SUSPEND_FOR_GC_PREP)) ?
-                              (ULONG)GCHeapUtilities::GetGCHeap()->GetGcCount() : (ULONG)-1);
+        (ULONG)GCHeapUtilities::GetGCHeap()->GetGcCount() : (ULONG)-1);
 
     FireEtwGCSuspendEEBegin_V1(Info.SuspendEE.Reason, Info.SuspendEE.GcCount, GetClrInstanceId());
 
@@ -5629,19 +5581,7 @@ void ThreadSuspend::SuspendEE(SUSPEND_REASON reason)
 
     DWORD dwSwitchCount = 0;
 
-    // Note: we need to make sure to re-set m_pThreadAttemptingSuspendForGC when we retry
-    // due to the debugger case below!
 retry_for_debugger:
-
-    //
-    // Set variable to indicate that this thread is preforming a true GC
-    // This gives this thread priority over other threads that are trying to acquire the ThreadStore Lock
-    // for other reasons.
-    //
-    if (reason == ThreadSuspend::SUSPEND_FOR_GC || reason == ThreadSuspend::SUSPEND_FOR_GC_PREP)
-    {
-        m_pThreadAttemptingSuspendForGC = pCurThread;
-    }
 
 #ifdef TIME_SUSPEND
     DWORD startAcquire = g_SuspendStatistics.GetTime();
@@ -5654,188 +5594,103 @@ retry_for_debugger:
 
 #ifdef TIME_SUSPEND
     g_SuspendStatistics.acquireTSL.Accumulate(SuspendStatistics::GetElapsed(startAcquire,
-                                                                            g_SuspendStatistics.GetTime()));
+        g_SuspendStatistics.GetTime()));
 #endif
 
     //
-    // If we've blocked other threads that are waiting for the ThreadStore lock, unblock them now
-    // (since we already got it).  This allows them to get the TSL after we release it.
+    // Now we're going to acquire an exclusive lock on managed code execution (including
+    // "manually managed" code in GCX_COOP regions).
     //
-    if ( s_hAbortEvtCache != NULL &&
-        (reason == ThreadSuspend::SUSPEND_FOR_GC || reason == ThreadSuspend::SUSPEND_FOR_GC_PREP))
-    {
-        LOG((LF_SYNC, INFO3, "GC thread is backing out the suspend abort event.\n"));
-        s_hAbortEvt = NULL;
-
-        LOG((LF_SYNC, INFO3, "GC thread is signalling the suspend abort event.\n"));
-        s_hAbortEvtCache->Set();
-    }
+    // First, we reset the event that we're about to tell other threads to wait for.
+    //
+    GCHeapUtilities::GetGCHeap()->ResetWaitForGCEvent();
 
     //
-    // Also null-out m_pThreadAttemptingSuspendForGC since it should only matter if s_hAbortEvt is
-    // in play.
+    // Remember that we're the one suspending the EE
     //
-    if (reason == ThreadSuspend::SUSPEND_FOR_GC || reason == ThreadSuspend::SUSPEND_FOR_GC_PREP)
-    {
-        m_pThreadAttemptingSuspendForGC = NULL;
-    }
+    g_pSuspensionThread = pCurThread;
 
-    {
-        //
-        // Now we're going to acquire an exclusive lock on managed code execution (including
-        // "manually managed" code in GCX_COOP regions).
-        //
-        // First, we reset the event that we're about to tell other threads to wait for.
-        //
-        GCHeapUtilities::GetGCHeap()->ResetWaitForGCEvent();
+    //
+    // Tell all threads, globally, to wait for WaitForGCEvent.
+    //
+    ThreadStore::TrapReturningThreads(TRUE);
 
-        //
-        // Remember that we're the one doing the GC.  Actually, maybe we're not doing a GC -
-        // what this really indicates is that we are trying to acquire the "managed execution lock."
-        //
-        {
-            g_pSuspensionThread = pCurThread;
+    //
+    // Remember why we're doing this.
+    //
+    m_suspendReason = reason;
 
-            //
-            // Tell all threads, globally, to wait for WaitForGCEvent.
-            //
-            ThreadStore::TrapReturningThreads(TRUE);
+    //
+    // There's a GC in progress.  (again, not necessarily - we suspend the EE for other reasons.
+    // I wonder how much confusion this has caused....)
+    // It seems like much of the above is redundant. We should investigate reducing the number
+    // of mechanisms we use to indicate that a suspension is in progress.
+    GCHeapUtilities::GetGCHeap()->SetGCInProgress(true);
 
-            //
-            // Remember why we're doing this.
-            //
-            m_suspendReason = reason;
+    // set tls flags for compat with SOS
+    ClrFlsSetThreadType(ThreadType_DynamicSuspendEE);
 
-            //
-            // There's a GC in progress.  (again, not necessarily - we suspend the EE for other reasons.
-            // I wonder how much confusion this has caused....)
-            // It seems like much of the above is redundant.  We should investigate reducing the number
-            // of mechanisms we use to indicate that a suspension is in progress.
-            GCHeapUtilities::GetGCHeap()->SetGCInProgress(true);
+    _ASSERTE(ThreadStore::HoldingThreadStore() || g_fProcessDetach);
 
-            // set tls flags for compat with SOS
-            ClrFlsSetThreadType (ThreadType_DynamicSuspendEE);
-        }
+    //
+    // Now that we've instructed all threads to please stop,
+    // go interrupt the ones that are running managed code and force them to stop.
+    // This does not return until all threads have acknowledged that they
+    // will not run managed code.
+    //
+    SuspendRuntime(reason);
 
-        HRESULT hr;
-        {
-            _ASSERTE(ThreadStore::HoldingThreadStore() || g_fProcessDetach);
-
-            //
-            // Now that we've instructed all threads to please stop,
-            // go interrupt the ones that are running managed code and force them to stop.
-            // This does not return successfully until all threads have acknowledged that they
-            // will not run managed code.
-            //
-            hr = SuspendRuntime(reason);
-            ASSERT( hr == S_OK || hr == ERROR_TIMEOUT);
-
-#ifdef TIME_SUSPEND
-            if (hr == ERROR_TIMEOUT)
-                g_SuspendStatistics.cntCollideRetry++;
-#endif
-        }
-
-        if (hr == ERROR_TIMEOUT)
-            STRESS_LOG0(LF_SYNC, LL_INFO1000, "SysSuspension colission");
-
-        // If this is not the GC thread and another thread has triggered
-        // a GC, then we yield by resuming all the threads and trying again.
-        if ((hr == ERROR_TIMEOUT)
 #ifdef DEBUGGING_SUPPORTED
-            // If the debugging services are attached, then its possible
-            // that there is a thread which appears to be stopped at a gc
-            // safe point, but which really is not. If that is the case,
-            // back off and try again.
-            || (CORDebuggerAttached() && g_pDebugInterface->ThreadsAtUnsafePlaces())
-#endif // DEBUGGING_SUPPORTED
-            )
+    // If the debugging services are attached, then its possible
+    // that there is a thread which appears to be stopped at a gc
+    // safe point, but which really is not. If that is the case,
+    // back off and try again.
+    if ((CORDebuggerAttached() && g_pDebugInterface->ThreadsAtUnsafePlaces()))
+    {
+        // In this case, the debugger has stopped at least one
+        // thread at an unsafe place.  The debugger will usually
+        // have already requested that we stop.  If not, it will
+        // usually either do so shortly, or resume the thread that is
+        // at the unsafe place. Either way, we have to wait for the
+        // debugger to decide what it wants to do.
+        //
+        // In some rare cases, the end-user debugger may have frozen
+        // a thread at a gc-unsafe place, and so we'll loop forever
+        // here and never resolve the deadlock.  Unfortunately we can't
+        // easily abort a GC
+        // and so for now we just wait for the debugger to timeout and
+        // hopefully thaw that thread.  Maybe instead we should try to
+        // detect this situation sooner (when thread abort is possible)
+        // and notify the debugger with NotifyOfCrossThreadDependency, giving
+        // it the chance to thaw other threads or abort us before getting
+        // wedged in the GC.
+        //
+        // Note: we've still got the ThreadStore lock held.
+        //
+        LOG((LF_GCROOTS | LF_GC | LF_CORDB,
+            LL_INFO10,
+            "***** Giving up on current GC suspension due to debugger *****\n"));
+
+        // Mark that we're done with the gc, so that the debugger can proceed.
+        RestartEE(FALSE, FALSE);
+
+        LOG((LF_GCROOTS | LF_GC | LF_CORDB, LL_INFO10, "The EE is free now...\n"));
+
+        // If someone's trying to suspent *this* thread, this is a good opportunity.
+        if (pCurThread && pCurThread->CatchAtSafePointOpportunistic())
         {
-            // In this case, the debugger has stopped at least one
-            // thread at an unsafe place.  The debugger will usually
-            // have already requested that we stop.  If not, it will
-            // usually either do so shortly, or resume the thread that is
-            // at the unsafe place. Either way, we have to wait for the
-            // debugger to decide what it wants to do.
-            //
-            // In some rare cases, the end-user debugger may have frozen
-            // a thread at a gc-unsafe place, and so we'll loop forever
-            // here and never resolve the deadlock.  Unfortunately we can't
-            // easily abort a GC
-            // and so for now we just wait for the debugger to timeout and
-            // hopefully thaw that thread.  Maybe instead we should try to
-            // detect this situation sooner (when thread abort is possible)
-            // and notify the debugger with NotifyOfCrossThreadDependency, giving
-            // it the chance to thaw other threads or abort us before getting
-            // wedged in the GC.
-            //
-            // Note: we've still got the ThreadStore lock held.
-            //
-            // <REVISIT>The below manipulation of two static variables (s_hAbortEvtCache and s_hAbortEvt)
-            // is protected by the ThreadStore lock, which we are still holding.  But we access these
-            // in ThreadSuspend::LockThreadStore, prior to obtaining the lock. </REVISIT>
-            //
-            LOG((LF_GCROOTS | LF_GC | LF_CORDB,
-                 LL_INFO10,
-                 "***** Giving up on current GC suspension due "
-                 "to debugger or yielding to a GC suspension *****\n"));
-
-            if (s_hAbortEvtCache == NULL)
-            {
-                LOG((LF_SYNC, INFO3, "Creating suspend abort event.\n"));
-
-                CLREvent * pEvent = NULL;
-
-                EX_TRY
-                {
-                    pEvent = new CLREvent();
-                    pEvent->CreateManualEvent(FALSE);
-                    s_hAbortEvtCache = pEvent;
-                }
-                EX_CATCH
-                {
-                    // Couldn't init the abort event. Its a shame, but not fatal. We'll simply not use it
-                    // on this iteration and try again next time.
-                    if (pEvent) {
-                        _ASSERTE(!pEvent->IsValid());
-                        pEvent->CloseEvent();
-                        delete pEvent;
-                    }
-                }
-                EX_END_CATCH(SwallowAllExceptions)
-            }
-
-            if (s_hAbortEvtCache != NULL)
-            {
-                LOG((LF_SYNC, INFO3, "Using suspend abort event.\n"));
-                s_hAbortEvt = s_hAbortEvtCache;
-                s_hAbortEvt->Reset();
-            }
-
-            // Mark that we're done with the gc, so that the debugger can proceed.
-            RestartEE(FALSE, FALSE);
-
-            LOG((LF_GCROOTS | LF_GC | LF_CORDB,
-                 LL_INFO10, "The EE is free now...\n"));
-
-            // If someone's trying to suspent *this* thread, this is a good opportunity.
-            // <REVIST>This call to CatchAtSafePoint is redundant - PulseGCMode already checks this.</REVISIT>
-            if (pCurThread && pCurThread->CatchAtSafePoint())
-            {
-                //  <REVISIT> This assert is fired on BGC thread 'cause we
-                // got timeout.</REVISIT>
-                //_ASSERTE((pCurThread->PreemptiveGCDisabled()) || IsGCSpecialThread());
-                pCurThread->PulseGCMode();  // Go suspend myself.
-            }
-            else
-            {
-                // otherwise, just yield so the debugger can finish what it's doing.
-                __SwitchToThread (0, ++dwSwitchCount);
-            }
-
-            goto retry_for_debugger;
+            pCurThread->PulseGCMode();  // Go suspend myself.
         }
+        else
+        {
+            // otherwise, just yield so the debugger can finish what it's doing.
+            __SwitchToThread(0, ++dwSwitchCount);
+        }
+
+        goto retry_for_debugger;
     }
+#endif // DEBUGGING_SUPPORTED
+
     GC_ON_TRANSITIONS(gcOnTransitions);
 
     FireEtwGCSuspendEEEnd_V1(GetClrInstanceId());
@@ -6213,9 +6068,8 @@ void SuspendStatistics::DisplayAndUpdate()
            cntWaitTimeouts - g_LastSuspendStatistics.cntWaitTimeouts, cntWaitTimeouts,
            cntHijackTrap - g_LastSuspendStatistics.cntHijackTrap, cntHijackTrap);
 
-    fprintf(logFile, "Redirected EIP Failures %d (%d), Collided GC/Debugger %d (%d)\n",
-           cntFailedRedirections - g_LastSuspendStatistics.cntFailedRedirections, cntFailedRedirections,
-           cntCollideRetry - g_LastSuspendStatistics.cntCollideRetry, cntCollideRetry);
+    fprintf(logFile, "Redirected EIP Failures %d (%d)\n",
+           cntFailedRedirections - g_LastSuspendStatistics.cntFailedRedirections, cntFailedRedirections);
 
     fprintf(logFile, "Suspend: All %d (%d). NonGC: %d (%d). InBGC: %d (%d). NonGCInBGC: %d (%d)\n\n",
             cntSuspends - g_LastSuspendStatistics.cntSuspends, cntSuspends,
