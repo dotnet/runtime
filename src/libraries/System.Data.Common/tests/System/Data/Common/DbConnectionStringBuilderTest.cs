@@ -1905,7 +1905,7 @@ namespace System.Data.Tests.Common
             sb.ConnectionString = "PassWord=PLACEHOLDER;uSER iD=someuser;DaTa SoUrCe=testdb";
             sb["Integrated Security"] = "False";
             Assert.Equal(
-                "password=PLACEHOLDER;uSER id=someuser;data source=testdb;Integrated Security=False",
+                "password=PLACEHOLDER;user id=someuser;data source=testdb;Integrated Security=False",
                 sb.ConnectionString);
 
             sb = new DbConnectionStringBuilder(false);
