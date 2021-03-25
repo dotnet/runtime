@@ -67,6 +67,8 @@ class EEContract : public BaseContract
 
 #endif  // ENABLE_CONTRACTS_IMPL
 
+#define EE_THREAD_NOT_REQUIRED
+
 // Replace the CONTRACT macro with the EE version
 #undef CONTRACT
 #define CONTRACT(_returntype)  CUSTOM_CONTRACT(EEContract, _returntype)

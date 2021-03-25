@@ -2167,6 +2167,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -2494,6 +2495,7 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooks(FunctionEnter * pFuncE
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -2550,6 +2552,7 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooks2(FunctionEnter2 * pFun
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -2607,6 +2610,7 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooks3(FunctionEnter3 * pFun
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -2666,6 +2670,7 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooks3WithInfo(FunctionEnter
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;

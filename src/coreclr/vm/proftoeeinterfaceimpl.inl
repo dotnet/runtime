@@ -48,6 +48,7 @@ inline BOOL AreCallbackStateFlagsSet(DWORD dwFlags)
         GC_NOTRIGGER;
         MODE_ANY;
         CANNOT_TAKE_LOCK;
+        EE_THREAD_NOT_REQUIRED;
     }
     CONTRACTL_END;
 

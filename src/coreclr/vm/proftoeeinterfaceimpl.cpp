@@ -44,6 +44,8 @@
 //       GC_NOTRIGGER
 //       MODE_ANY
 //       CANNOT_TAKE_LOCK
+//       (EE_THREAD_(NOT)_REQUIRED are unenforced and are thus optional.  If you wish
+//       to specify these, EE_THREAD_NOT_REQUIRED is preferred.)
 //   Note that the preferred contracts in this file are DIFFERENT than the preferred
 //   contracts for eetoprofinterfaceimpl.cpp.
 //
@@ -1433,6 +1435,9 @@ HRESULT ProfToEEInterfaceImpl::SetEventMask(DWORD dwEventMask)
         // Yay!
         MODE_ANY;
 
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
         CANNOT_TAKE_LOCK;
 
     }
@@ -1461,6 +1466,9 @@ HRESULT ProfToEEInterfaceImpl::SetEventMask2(DWORD dwEventsLow, DWORD dwEventsHi
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         CANNOT_TAKE_LOCK;
 
@@ -1491,6 +1499,9 @@ HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *ph
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -1534,6 +1545,9 @@ HRESULT ProfToEEInterfaceImpl::GetObjectSize(ObjectID objectId, ULONG *pcSize)
 
         // Yay!  Fail at runtime if in preemptive mode via AllowObjectInspection()
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -1597,6 +1611,9 @@ HRESULT ProfToEEInterfaceImpl::GetObjectSize2(ObjectID objectId, SIZE_T *pcSize)
         MODE_ANY;
 
         // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+        // Yay!
         CANNOT_TAKE_LOCK;
 
     }
@@ -1654,6 +1671,9 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -1731,6 +1751,9 @@ HRESULT ProfToEEInterfaceImpl::GetThreadInfo(ThreadID threadId, DWORD *pdwWin32T
         MODE_ANY;
 
         // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+        // Yay!
         CANNOT_TAKE_LOCK;
 
     }
@@ -1767,6 +1790,9 @@ HRESULT ProfToEEInterfaceImpl::GetCurrentThreadID(ThreadID *pThreadId)
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -1818,6 +1844,7 @@ HRESULT GetFunctionInfoInternal(LPCBYTE ip, EECodeInfo * pCodeInfo)
         NOTHROW;
 
         GC_NOTRIGGER;
+        EE_THREAD_NOT_REQUIRED;
         CAN_TAKE_LOCK;
         CANNOT_RETAKE_LOCK;
 
@@ -1867,6 +1894,7 @@ HRESULT GetFunctionFromIPInternal(LPCBYTE ip, EECodeInfo * pCodeInfo, BOOL failO
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -1904,6 +1932,9 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP(LPCBYTE ip, FunctionID * pFunct
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Querying the code manager requires a reader lock.  However, see
         // code:#DisableLockOnAsyncCalls
@@ -1970,6 +2001,9 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP2(LPCBYTE ip, FunctionID * pFunc
         // Yay!
         MODE_ANY;
 
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
         // Grabbing the rejitid requires entering the rejit manager's hash table & lock,
         CAN_TAKE_LOCK;
 
@@ -2030,6 +2064,9 @@ HRESULT ProfToEEInterfaceImpl::GetTokenAndMetaDataFromFunction(
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // PEFile::GetRWImporter and GetReadablePublicMetaDataInterface take locks
         CAN_TAKE_LOCK;
@@ -2284,6 +2321,9 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo(FunctionID functionId, LPCBYTE * pSta
         // Yay!
         MODE_ANY;
 
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
         // (See locking contract comment in GetCodeInfoHelper.)
         DISABLED(CAN_TAKE_LOCK);
 
@@ -2367,6 +2407,9 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo2(FunctionID functionId,
         // Yay!
         MODE_ANY;
 
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
         // (See locking contract comment in GetCodeInfoHelper.)
         DISABLED(CAN_TAKE_LOCK);
 
@@ -2433,6 +2476,9 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // We need to access the rejitmanager, which means taking locks
         CAN_TAKE_LOCK;
@@ -2506,6 +2552,9 @@ HRESULT ProfToEEInterfaceImpl::GetEventMask(DWORD * pdwEvents)
         MODE_ANY;
 
         // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+        // Yay!
         CANNOT_TAKE_LOCK;
 
     }
@@ -2538,6 +2587,9 @@ HRESULT ProfToEEInterfaceImpl::GetEventMask2(DWORD *pdwEventsLow, DWORD *pdwEven
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -2599,6 +2651,9 @@ HRESULT ProfToEEInterfaceImpl::EnumModuleFrozenObjects(ModuleID moduleID,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -2786,6 +2841,9 @@ HRESULT ProfToEEInterfaceImpl::GetBoxClassLayout(ClassID classId,
         MODE_ANY;
 
         // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+        // Yay!
         CANNOT_TAKE_LOCK;
 
     }
@@ -2842,6 +2900,9 @@ HRESULT ProfToEEInterfaceImpl::GetThreadAppDomain(ThreadID threadId,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -3039,6 +3100,9 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // FieldDesc::GetStaticAddress & FieldDesc::GetBase take locks
         CAN_TAKE_LOCK;
@@ -3530,6 +3594,9 @@ HRESULT ProfToEEInterfaceImpl::GetStaticFieldInfo(ClassID classId,
         MODE_ANY;
 
         // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+        // Yay!
         CANNOT_TAKE_LOCK;
 
     }
@@ -3631,6 +3698,9 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo2(ClassID classId,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -3799,6 +3869,10 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo(ModuleID     moduleId,
         // Yay!
         MODE_ANY;
 
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+
         PRECONDITION(CheckPointer((Module *)moduleId, NULL_OK));
         PRECONDITION(CheckPointer(ppBaseLoadAddress,  NULL_OK));
         PRECONDITION(CheckPointer(pcchName, NULL_OK));
@@ -3935,6 +4009,10 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
 
         PRECONDITION(CheckPointer((Module *)moduleId, NULL_OK));
         PRECONDITION(CheckPointer(ppBaseLoadAddress,  NULL_OK));
@@ -4083,6 +4161,11 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
 
         // Yay!
         MODE_ANY;
+
+        // Currently, this function is technically EE_THREAD_REQUIRED because
+        // some functions in synch.cpp assert that there is a Thread object,
+        // but we might be able to lift that restriction and make this be
+        // EE_THREAD_NOT_REQUIRED.
 
         // PEFile::GetRWImporter & PEFile::GetEmitter &
         // GetReadablePublicMetaDataInterface take locks
@@ -4300,6 +4383,9 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBodyAllocator(ModuleID         modul
         // Yay!
         MODE_ANY;
 
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
         // (see GC_TRIGGERS comment)
         CAN_TAKE_LOCK;
 
@@ -4421,6 +4507,9 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
         // Yay!
         MODE_ANY;
 
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
         // Debugger::SetILInstrumentedCodeMap takes a lock when it calls Debugger::GetOrCreateMethodInfo
         CAN_TAKE_LOCK;
 
@@ -4489,6 +4578,9 @@ HRESULT ProfToEEInterfaceImpl::ForceGC()
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Initiating a GC causes a runtime suspension which requires the
         // mother of all locks: the thread store lock.
@@ -4579,6 +4671,9 @@ HRESULT ProfToEEInterfaceImpl::GetThreadContext(ThreadID threadId,
         MODE_ANY;
 
         // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+        // Yay!
         CANNOT_TAKE_LOCK;
 
     }
@@ -4627,6 +4722,9 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo(ClassID classId,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -4723,6 +4821,9 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo(FunctionID functionId,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -5215,6 +5316,9 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromToken(ModuleID moduleId,
         MODE_ANY;
 
         // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+        // Yay!
         CANNOT_TAKE_LOCK;
 
     }
@@ -5527,6 +5631,9 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
         // Yay!
         MODE_ANY;
 
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
         // PEAssembly::GetSimpleName() enters a lock via use of the metadata interface
         CAN_TAKE_LOCK;
 
@@ -5627,6 +5734,9 @@ HRESULT ProfToEEInterfaceImpl::SetEnterLeaveFunctionHooks(FunctionEnter * pFuncE
         // Yay!
         MODE_ANY;
 
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
         CANNOT_TAKE_LOCK;
 
     }
@@ -5659,6 +5769,9 @@ HRESULT ProfToEEInterfaceImpl::SetEnterLeaveFunctionHooks2(FunctionEnter2 * pFun
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         CANNOT_TAKE_LOCK;
 
@@ -5693,6 +5806,9 @@ HRESULT ProfToEEInterfaceImpl::SetEnterLeaveFunctionHooks3(FunctionEnter3 * pFun
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         CANNOT_TAKE_LOCK;
 
@@ -5731,6 +5847,9 @@ HRESULT ProfToEEInterfaceImpl::SetEnterLeaveFunctionHooks3WithInfo(FunctionEnter
         // Yay!
         MODE_ANY;
 
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
         CANNOT_TAKE_LOCK;
 
     }
@@ -5766,6 +5885,9 @@ HRESULT ProfToEEInterfaceImpl::SetFunctionIDMapper(FunctionIDMapper *pFunc)
         MODE_ANY;
 
         // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+        // Yay!
         CANNOT_TAKE_LOCK;
 
     }
@@ -5793,6 +5915,9 @@ HRESULT ProfToEEInterfaceImpl::SetFunctionIDMapper2(FunctionIDMapper2 *pFunc, vo
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -5850,6 +5975,9 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation eventually
         // reads metadata which causes us to take a reader lock.  However, see
@@ -6068,6 +6196,7 @@ HRESULT ProfToEEInterfaceImpl::IsFunctionDynamic(FunctionID functionId, BOOL *is
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
 
         // Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation eventually
         // reads metadata which causes us to take a reader lock.  However, see
@@ -6150,6 +6279,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP3(LPCBYTE ip, FunctionID * pFunc
         // which can switch us to preemptive mode and trigger GCs
         GC_TRIGGERS;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
 
         // Grabbing the rejitid requires entering the rejit manager's hash table & lock,
         CAN_TAKE_LOCK;
@@ -6222,6 +6352,7 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
 
         // Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation eventually
         // reads metadata which causes us to take a reader lock.  However, see
@@ -6358,6 +6489,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CAN_TAKE_LOCK;
 
 
@@ -6527,6 +6659,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo4(UINT_PTR pNativeCodeStartAddress,
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CAN_TAKE_LOCK;
 
 
@@ -6637,6 +6770,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateObjectReferences(ObjectID objectId, Obje
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -6686,6 +6820,7 @@ HRESULT ProfToEEInterfaceImpl::IsFrozenObject(ObjectID objectId, BOOL *pbFrozen)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -6721,6 +6856,7 @@ HRESULT ProfToEEInterfaceImpl::GetLOHObjectSizeThreshold(DWORD *pThreshold)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -6749,6 +6885,7 @@ HRESULT ProfToEEInterfaceImpl::SuspendRuntime()
         GC_TRIGGERS;
         MODE_ANY;
         CAN_TAKE_LOCK;
+        EE_THREAD_NOT_REQUIRED;
     }
     CONTRACTL_END;
 
@@ -6816,6 +6953,7 @@ HRESULT ProfToEEInterfaceImpl::GetEnvironmentVariable(
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CANNOT_TAKE_LOCK;
 
         PRECONDITION(CheckPointer(szName, NULL_NOT_OK));
@@ -6869,6 +7007,7 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
         CANNOT_TAKE_LOCK;
 
         PRECONDITION(CheckPointer(szName, NULL_NOT_OK));
@@ -6900,6 +7039,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
     }
     CONTRACTL_END;
 
@@ -6957,6 +7097,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeAddProviderToSession(
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
     }
     CONTRACTL_END;
 
@@ -7002,6 +7143,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStopSession(
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
     }
     CONTRACTL_END;
 
@@ -7033,6 +7175,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
     }
     CONTRACTL_END;
 
@@ -7079,6 +7222,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeGetProviderInfo(
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
     }
     CONTRACTL_END;
 
@@ -7131,6 +7275,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
     }
     CONTRACTL_END;
 
@@ -7197,6 +7342,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
     }
     CONTRACTL_END;
 
@@ -7287,6 +7433,9 @@ HRESULT ProfToEEInterfaceImpl::GetStringLayout(ULONG *pBufferLengthOffset,
         MODE_ANY;
 
         // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+        // Yay!
         CANNOT_TAKE_LOCK;
 
 
@@ -7329,6 +7478,9 @@ HRESULT ProfToEEInterfaceImpl::GetStringLayout2(ULONG *pStringLengthOffset,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -7375,6 +7527,9 @@ HRESULT ProfToEEInterfaceImpl::GetStringLayoutHelper(ULONG *pBufferLengthOffset,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -7441,6 +7596,9 @@ HRESULT ProfToEEInterfaceImpl::GetClassLayout(ClassID classID,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Yay!
         CANNOT_TAKE_LOCK;
@@ -7784,6 +7942,7 @@ HRESULT ProfToEEInterfaceImpl::ProfilerEbpWalker(
         GC_NOTRIGGER;
         NOTHROW;
         MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
 
         // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
         // host (SQL).  Corners will be cut to ensure this is the case
@@ -8115,6 +8274,9 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // #DisableLockOnAsyncCalls
         // This call is allowed asynchronously, however it does take locks.  Therefore,
@@ -8676,6 +8838,9 @@ HRESULT ProfToEEInterfaceImpl::GetGenerationBounds(ULONG cObjectRanges,
         MODE_ANY;
 
         // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+        // Yay!
         CANNOT_TAKE_LOCK;
 
 
@@ -8802,6 +8967,9 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
         MODE_ANY;
 
         // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+        // Yay!
         CANNOT_TAKE_LOCK;
 
 
@@ -8818,7 +8986,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
                                        objectId));
 
     
-    _ASSERTE((GetThreadNULLOk() == NULL) || (GetThread()->PreemptiveGCDisabled()));
+    _ASSERTE((GetThreadNULLOk() == NULL) || (GetThreadNULLOk()->PreemptiveGCDisabled()));
     
 
     // Announce we are using the generation table now
@@ -9241,6 +9409,9 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
         MODE_ANY;
 
         // Yay!
+        EE_THREAD_NOT_REQUIRED;
+
+        // Yay!
         CANNOT_TAKE_LOCK;
 
     }
@@ -9313,6 +9484,9 @@ HRESULT ProfToEEInterfaceImpl::RequestProfilerDetach(DWORD dwExpectedCompletionM
 
         // Yay!
         MODE_ANY;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
 
         // Crst is used in ProfilingAPIDetach::RequestProfilerDetach
         CAN_TAKE_LOCK;
