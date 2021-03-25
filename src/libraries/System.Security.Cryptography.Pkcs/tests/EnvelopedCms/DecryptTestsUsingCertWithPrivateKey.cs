@@ -72,6 +72,35 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         {
             using (X509Certificate2 wrongRecipient = Certificates.RSAKeyTransfer5_ExplicitSkiOfRSAKeyTransfer4.TryGetCertificateWithPrivateKey())
             {
+                // This is an enveloped CMS that is encrypted with one RSA key recipient
+                // but does not fail when decrypting the content encryption key (CEK).
+                // Though it did not fail, the CEK is wrong and cannot decrypt the data
+                // for the recipient. It might decrypt the CEK to a key that is an invalid
+                // for the symmetric algorithm, like a 120-bit key for AES. For that case,
+                // the symmetric decryption would throw an ArgumentException, not a
+                // CryptographicException. This tests that circumstance where we need to
+                // wrap the ArgumentException with a CryptographicException.
+                //
+                // This content can be re-created with trial-and-error with the managed PAL.
+                //
+                // Two certificates with the same SKI are required.
+                // using X509Certificate2 cert1 = ...
+                // using X509Certificate2 cert2 = ...
+                // while (true) {
+                //   EnvelopedCms ecms = new EnvelopedCms(..);
+                //   CmsRecipient recipient = new CmsRecipient(SubjectIdentifierType.SubjectKeyIdentifier, cert1);
+                //   ecms.Encrypt(recipient);
+                //   byte[] encoded = ecms.Encode();
+                //   ecms = new EnvelopedCms();
+                //   ecms.Decode(encoded);
+                //   try {
+                //     ecms.Decrypt(new X509Certificate2Collection(cert2));
+                //   }
+                //   catch (CryptographicException e) when e.Message == SR.Cryptography_Cms_InvalidSymmetricKey;
+                //     // If we get here, we've produced an EnvelopedCms with the needed criteria.
+                //     break;
+                //   }
+                // }
                 string encryptedContent =
 "3082018806092A864886F70D010703A082017930820175020102318201303082" +
 "012C0201028014B46B61938FF9864BD8494B3937DA19C9F06FA8D3300D06092A" +
