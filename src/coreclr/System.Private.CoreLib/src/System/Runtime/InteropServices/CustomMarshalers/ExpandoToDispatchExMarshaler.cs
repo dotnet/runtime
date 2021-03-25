@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
         {
         }
 
-        public void CleanUpManagedData(object ManagedObj)
+        public void CleanUpManagedData(object? ManagedObj)
         {
         }
 
@@ -27,12 +27,12 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             return -1;
         }
 
-        public IntPtr MarshalManagedToNative(object ManagedObj)
+        public IntPtr MarshalManagedToNative(object? ManagedObj)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_IExpando);
         }
 
-        public object MarshalNativeToManaged(IntPtr pNativeData)
+        public object? MarshalNativeToManaged(IntPtr pNativeData)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_IExpando);
         }

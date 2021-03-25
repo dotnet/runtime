@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
                 }
 
                 enumVariantPtr = Marshal.GetIUnknownForObject(enumVariant);
-                return (System.Collections.IEnumerator)EnumeratorToEnumVariantMarshaler.GetInstance(null).MarshalNativeToManaged(enumVariantPtr);
+                return (System.Collections.IEnumerator)EnumeratorToEnumVariantMarshaler.GetInstance(null).MarshalNativeToManaged(enumVariantPtr)!;
             }
             finally
             {
