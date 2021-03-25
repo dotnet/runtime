@@ -258,6 +258,7 @@ namespace System.Security.Cryptography.Pkcs
                     X509Chain chain = new X509Chain();
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                     chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
+                    chain.ChainPolicy.VerificationTime = Certificate!.NotBefore;
 
                     if (!chain.Build(Certificate!))
                     {
@@ -265,7 +266,23 @@ namespace System.Security.Cryptography.Pkcs
                         {
                             if (status.Status == X509ChainStatusFlags.PartialChain)
                             {
+#if NET6_0_OR_GREATER
+                                if (OperatingSystem.IsAndroid())
+                                {
+                                    // On Android, we will fail with PartialChain to build a cert chain
+                                    // even if the failure is an untrusted root cert since the underlying platform
+                                    // does not provide a way to distinguish the failure.
+                                    // In that case, just use the provided cert.
+                                    Debug.Assert(chain.ChainElements.Count == 0);
+                                    certs.Add(Certificate!);
+                                }
+                                else
+                                {
+                                    throw new CryptographicException(SR.Cryptography_Cms_IncompleteCertChain);
+                                }
+#else
                                 throw new CryptographicException(SR.Cryptography_Cms_IncompleteCertChain);
+#endif
                             }
                         }
                     }
