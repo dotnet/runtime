@@ -4,10 +4,12 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
+using System.Xml.Xsl.Xslt;
 
 namespace MS.Internal.Xml.XPath
 {
@@ -141,6 +143,7 @@ namespace MS.Internal.Xml.XPath
             {
                 throw XPathException.Create(SR.Xp_UndefinedXsltContext);
             }
+            [RequiresUnreferencedCode(Scripts.ExtensionFunctionCannotBeStaticallyAnalyzed)]
             public override IXsltContextFunction ResolveFunction(string prefix, string name, XPathResultType[] ArgTypes)
             {
                 throw XPathException.Create(SR.Xp_UndefinedXsltContext);

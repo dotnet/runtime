@@ -14,6 +14,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Security;
     using System.Runtime.Versioning;
     using System.Diagnostics.CodeAnalysis;
+    using System.Xml.Xsl.Xslt;
 
     internal sealed class XsltCompileContext : XsltContext
     {
@@ -183,6 +184,7 @@ namespace System.Xml.Xsl.XsltOld
         }
 
         private const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
+        [RequiresUnreferencedCode(Scripts.ExtensionFunctionCannotBeStaticallyAnalyzed)]
         private IXsltContextFunction? GetExtentionMethod(string ns, string name, XPathResultType[]? argTypes, out object? extension)
         {
             FuncExtension? result = null;
@@ -211,6 +213,7 @@ namespace System.Xml.Xsl.XsltOld
             return null;
         }
 
+        [RequiresUnreferencedCode(Scripts.ExtensionFunctionCannotBeStaticallyAnalyzed)]
         public override IXsltContextFunction ResolveFunction(string prefix, string name, XPathResultType[] argTypes)
         {
             IXsltContextFunction? func = null;
@@ -435,6 +438,7 @@ namespace System.Xml.Xsl.XsltOld
         }
 
         // see: http://www.w3.org/TR/xslt#function-function-available
+        [RequiresUnreferencedCode(Scripts.ExtensionFunctionCannotBeStaticallyAnalyzed)]
         private bool FunctionAvailable(string qname)
         {
             string name, prefix;
@@ -567,6 +571,10 @@ namespace System.Xml.Xsl.XsltOld
 
         // ---------------- Xslt Function Implementations -------------------
         //
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This code path will only ever be touched when using either scripts or external functions in the " +
+            "stylesheet. Using Scripts will throw NotSupported in .NET Core, and using external functions will require a previous call to " +
+            "XsltArgumentList.AddExtensionObject which is already annotated as RequiresUnreferencedCode.")]
         private static Hashtable CreateFunctionTable()
         {
             Hashtable ft = new Hashtable(10);
@@ -801,7 +809,12 @@ namespace System.Xml.Xsl.XsltOld
         // see: http://www.w3.org/TR/xslt#function-function-available
         private sealed class FuncFunctionAvailable : XsltFunctionImpl
         {
+            [RequiresUnreferencedCode(Scripts.ExtensionFunctionCannotBeStaticallyAnalyzed)]
             public FuncFunctionAvailable() : base(1, 1, XPathResultType.Boolean, new XPathResultType[] { XPathResultType.String }) { }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Suppressing warning here in order to not have to anotate the other 12 subclasses of XsltFunctionImpl " +
+                "which are safe, and we are instead adding an annotation to this subclass constructor")]
             public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
             {
                 return ((XsltCompileContext)xsltContext).FunctionAvailable(ToString(args[0]));

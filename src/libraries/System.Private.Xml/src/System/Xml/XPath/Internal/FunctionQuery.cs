@@ -4,9 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
+using System.Xml.Xsl.Xslt;
 
 namespace MS.Internal.Xml.XPath
 {
@@ -33,6 +35,10 @@ namespace MS.Internal.Xml.XPath
             _args = tmp;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This code path will only ever be touched when using either scripts or external functions in the " +
+            "stylesheet. Using Scripts will throw NotSupported in .NET Core, and using external functions will require a previous call to " +
+            "XsltArgumentList.AddExtensionObject which is already annotated as RequiresUnreferencedCode.")]
         public override void SetXsltContext(XsltContext context)
         {
             if (context == null)

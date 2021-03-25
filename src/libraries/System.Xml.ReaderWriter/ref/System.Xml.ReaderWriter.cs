@@ -2817,6 +2817,7 @@ namespace System.Xml.Xsl
     {
         public XsltArgumentList() { }
         public event System.Xml.Xsl.XsltMessageEncounteredEventHandler XsltMessageEncountered { add { } remove { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The stylesheet may have calls to methods of the extension object passed in which cannot be statically analyzed by the trimmer. Ensure all methods that may be called are kept.")]
         public void AddExtensionObject(string namespaceUri, object extension) { }
         public void AddParam(string name, string namespaceUri, object parameter) { }
         public void Clear() { }
@@ -2841,6 +2842,7 @@ namespace System.Xml.Xsl
         public abstract bool Whitespace { get; }
         public abstract int CompareDocument(string baseUri, string nextbaseUri);
         public abstract bool PreserveWhitespace(System.Xml.XPath.XPathNavigator node);
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The extension function referenced will be called from the stylesheet which cannot be statically analyzed.")]
         public abstract System.Xml.Xsl.IXsltContextFunction ResolveFunction(string prefix, string name, System.Xml.XPath.XPathResultType[] ArgTypes);
         public abstract System.Xml.Xsl.IXsltContextVariable ResolveVariable(string prefix, string name);
     }

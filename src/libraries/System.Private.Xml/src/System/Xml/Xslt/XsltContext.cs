@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.XPath;
+using System.Xml.Xsl.Xslt;
 
 namespace System.Xml.Xsl
 {
@@ -31,6 +33,7 @@ namespace System.Xml.Xsl
         // is used by XsltCompileContext
         internal XsltContext(bool dummy) : base() { }
         public abstract IXsltContextVariable ResolveVariable(string prefix, string name);
+        [RequiresUnreferencedCode(Scripts.ExtensionFunctionCannotBeStaticallyAnalyzed)]
         public abstract IXsltContextFunction ResolveFunction(string prefix, string name, XPathResultType[] ArgTypes);
         public abstract bool Whitespace { get; }
         public abstract bool PreserveWhitespace(XPathNavigator node);
