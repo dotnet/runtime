@@ -102,6 +102,7 @@ namespace VirtualStaticInterfaceMethodTestGen
             tw.WriteLine(".assembly extern System.Console {}");
             tw.WriteLine(".assembly extern mscorlib {}");
             tw.WriteLine(".assembly extern System.Runtime {}");
+            tw.WriteLine(".assembly extern GenericContextCommonCs {}");
         }
 
         static void EmitAssemblyExternRecord(TextWriter tw, string assemblyName)
@@ -115,232 +116,28 @@ namespace VirtualStaticInterfaceMethodTestGen
 
         static void EmitCodeForCommonLibrary(TextWriter tw)
         {
-            tw.WriteLine(@".class interface public abstract auto ansi IFaceNonGeneric
-{
-    .method public newslot virtual abstract static void NormalMethod() {}
-    .method public newslot virtual abstract static void GenericMethod<U>() {}
-}
-
-.class interface public abstract auto ansi IFaceGeneric`1<T>
-{
-    .method public newslot virtual abstract static void NormalMethod() {}
-    .method public newslot virtual abstract static void GenericMethod<U>() {}
-}
-
-.class interface public abstract auto ansi IFaceCuriouslyRecurringGeneric`1<(class IFaceCuriouslyRecurringGeneric`1<!0>) T>
-{
-    .method public newslot virtual abstract static void NormalMethod() {}
-    .method public newslot virtual abstract static void GenericMethod<U>() {}
-}
-
-.class public auto ansi Statics
-{
-  .field static public string String
-  .field static public int32 Failures
-  .field public static native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) FtnHolder
-  .field public static class [System.Runtime]System.Action modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) ActionHolder
-
-  .method public hidebysig static void  CheckForFailure(string scenario,
-                                                        string expectedResult) cil managed
-  {
-    // Code size       53 (0x35)
-    .maxstack  3
-    .locals init (bool V_0)
-    IL_0000:  nop
-    IL_0001:  ldsfld     string Statics::String
-    IL_0006:  ldarg.1
-    IL_0007:  call       bool [System.Runtime]System.String::op_Inequality(string,
-                                                                           string)
-    IL_000c:  stloc.0
-    IL_000d:  ldloc.0
-    IL_000e:  brfalse.s  IL_0034
-    IL_0010:  nop
-    IL_0011:  ldstr      ""Scenario ""
-    IL_0016:  ldarg.0
-    IL_0017:  ldstr      "" failed""
-    IL_001c:  call       string[System.Runtime]System.String::Concat(string,
-                                                                     string,
-                                                                     string)
-    IL_0021:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_0026:  nop
-    IL_0027:  ldsfld int32 Statics::Failures
-    IL_002c:  ldc.i4.1
-    IL_002d:  add
-    IL_002e:  stsfld int32 Statics::Failures
-    IL_0033:  nop
-    IL_0034:  ret
-  } // end of method Statics::CheckForFailure
-
-
-  .method private hidebysig static string  MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle) cil managed
-  {
-    ldarg.0
-    call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    call string Statics::MakeTypeName(class [System.Runtime]System.Type)
-    ret
-  }
-
-  .method private hidebysig static string  MakeTypeName(class [System.Runtime]System.Type t) cil managed
-  {
-  // Code size       283 (0x11b)
-  .maxstack  2
-  .locals init (class [System.Runtime]System.Text.StringBuilder V_0,
-           bool V_1,
-           string V_2,
-           bool V_3,
-           bool V_4,
-           bool V_5,
-           bool V_6,
-           bool V_7,
-           class [System.Runtime]System.Type[] V_8,
-           int32 V_9,
-           class [System.Runtime]System.Type V_10,
-           bool V_11)
-  IL_0000:  nop
-  IL_0001:  newobj     instance void [System.Runtime]System.Text.StringBuilder::.ctor()
-  IL_0006:  stloc.0
-  IL_0007:  ldarg.0
-  IL_0008:  ldtoken    [System.Runtime]System.Int32
-  IL_000d:  call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-  IL_0012:  call       bool [System.Runtime]System.Type::op_Equality(class [System.Runtime]System.Type,
-                                                                     class [System.Runtime]System.Type)
-  IL_0017:  stloc.1
-  IL_0018:  ldloc.1
-  IL_0019:  brfalse.s  IL_0026
-  IL_001b:  ldstr      ""int32""
-  IL_0020: stloc.2
-  IL_0021: br         IL_0119
-  IL_0026: ldarg.0
-  IL_0027: ldtoken[System.Runtime]System.String
-  IL_002c: call       class [System.Runtime]
-        System.Type[System.Runtime] System.Type::GetTypeFromHandle(valuetype[System.Runtime] System.RuntimeTypeHandle)
-  IL_0031:  call bool[System.Runtime] System.Type::op_Equality(class [System.Runtime] System.Type,
-                                                                     class [System.Runtime] System.Type)
-  IL_0036:  stloc.3
-  IL_0037:  ldloc.3
-  IL_0038:  brfalse.s IL_0045
-  IL_003a:  ldstr      ""string""
-  IL_003f:  stloc.2
-  IL_0040:  br IL_0119
-  IL_0045:  ldarg.0
-  IL_0046:  ldtoken[System.Runtime] System.Object
-  IL_004b:  call       class [System.Runtime]
-        System.Type[System.Runtime] System.Type::GetTypeFromHandle(valuetype[System.Runtime] System.RuntimeTypeHandle)
-  IL_0050:  call bool[System.Runtime] System.Type::op_Equality(class [System.Runtime] System.Type,
-                                                                     class [System.Runtime] System.Type)
-  IL_0055:  stloc.s V_4
-  IL_0057:  ldloc.s V_4
-  IL_0059:  brfalse.s IL_0066
-  IL_005b:  ldstr      ""object""
-  IL_0060:  stloc.2
-  IL_0061:  br IL_0119
-  IL_0066:  ldarg.0
-  IL_0067:  callvirt instance bool[System.Runtime] System.Type::get_IsValueType()
-  IL_006c:  stloc.s V_5
-  IL_006e:  ldloc.s V_5
-  IL_0070:  brfalse.s IL_0080
-  IL_0072:  ldloc.0
-  IL_0073:  ldstr      ""valuetype ""
-  IL_0078:  callvirt instance class [System.Runtime]
-        System.Text.StringBuilder[System.Runtime] System.Text.StringBuilder::Append(string)
-  IL_007d:  pop
-  IL_007e:  br.s IL_008c
-  IL_0080:  ldloc.0
-  IL_0081:  ldstr      ""class ""
-  IL_0086:  callvirt instance class [System.Runtime]
-        System.Text.StringBuilder[System.Runtime] System.Text.StringBuilder::Append(string)
-  IL_008b:  pop
-  IL_008c:  ldloc.0
-  IL_008d:  ldarg.0
-  IL_008e:  callvirt instance string[System.Runtime] System.Reflection.MemberInfo::get_Name()
-  IL_0093:  callvirt instance class [System.Runtime]
-        System.Text.StringBuilder[System.Runtime] System.Text.StringBuilder::Append(string)
-  IL_0098:  pop
-  IL_0099:  ldarg.0
-  IL_009a:  callvirt instance class [System.Runtime]
-        System.Type[][System.Runtime] System.Type::GetGenericArguments()
-  IL_009f:  ldlen
-  IL_00a0:  ldc.i4.0
-  IL_00a1:  cgt.un
-  IL_00a3:  stloc.s V_6
-  IL_00a5:  ldloc.s V_6
-  IL_00a7:  brfalse.s IL_0110
-  IL_00a9:  nop
-  IL_00aa:  ldloc.0
-  IL_00ab:  ldc.i4.s   60
-  IL_00ad:  callvirt instance class [System.Runtime]
-        System.Text.StringBuilder[System.Runtime] System.Text.StringBuilder::Append(char)
-  IL_00b2:  pop
-  IL_00b3:  ldc.i4.1
-  IL_00b4:  stloc.s V_7
-  IL_00b6:  nop
-  IL_00b7:  ldarg.0
-  IL_00b8:  callvirt instance class [System.Runtime]
-        System.Type[][System.Runtime] System.Type::GetGenericArguments()
-  IL_00bd:  stloc.s V_8
-  IL_00bf:  ldc.i4.0
-  IL_00c0:  stloc.s V_9
-  IL_00c2:  br.s IL_00fe
-  IL_00c4:  ldloc.s V_8
-  IL_00c6:  ldloc.s V_9
-  IL_00c8:  ldelem.ref
-  IL_00c9:  stloc.s V_10
-  IL_00cb:  nop
-  IL_00cc:  ldloc.s V_7
-  IL_00ce:  ldc.i4.0
-  IL_00cf:  ceq
-  IL_00d1:  stloc.s V_11
-  IL_00d3:  ldloc.s V_11
-  IL_00d5:  brfalse.s IL_00e4
-  IL_00d7:  nop
-  IL_00d8:  ldloc.0
-  IL_00d9:  ldc.i4.s   44
-  IL_00db:  callvirt instance class [System.Runtime]
-        System.Text.StringBuilder[System.Runtime] System.Text.StringBuilder::Append(char)
-  IL_00e0:  pop
-  IL_00e1:  nop
-  IL_00e2:  br.s IL_00e9
-  IL_00e4:  nop
-  IL_00e5:  ldc.i4.0
-  IL_00e6:  stloc.s V_7
-  IL_00e8:  nop
-  IL_00e9:  ldloc.0
-  IL_00ea:  ldloc.s V_10
-  IL_00ec:  call string Statics::MakeName(class [System.Runtime] System.Type)
-  IL_00f1:  callvirt instance class [System.Runtime]
-        System.Text.StringBuilder[System.Runtime] System.Text.StringBuilder::Append(string)
-  IL_00f6:  pop
-  IL_00f7:  nop
-  IL_00f8:  ldloc.s V_9
-  IL_00fa:  ldc.i4.1
-  IL_00fb:  add
-  IL_00fc:  stloc.s V_9
-  IL_00fe:  ldloc.s V_9
-  IL_0100:  ldloc.s V_8
-  IL_0102:  ldlen
-  IL_0103:  conv.i4
-  IL_0104:  blt.s IL_00c4
-  IL_0106:  ldloc.0
-  IL_0107:  ldc.i4.s   62
-  IL_0109:  callvirt instance class [System.Runtime]
-        System.Text.StringBuilder[System.Runtime] System.Text.StringBuilder::Append(char)
-  IL_010e:  pop
-  IL_010f:  nop
-  IL_0110:  ldloc.0
-  IL_0111:  callvirt instance string[System.Runtime] System.Object::ToString()
-  IL_0116:  stloc.2
-  IL_0117:  br.s IL_0119
-  IL_0119:  ldloc.2
-  IL_011a:  ret
-    } // end of method Statics::MakeTypeName
-}
-
-.class public auto ansi GenericStruct`1<T>
-    extends [System.Runtime]System.Valuetype
-{
-}
-
-");
+            tw.WriteLine(@".class interface public abstract auto ansi IFaceNonGeneric");
+            tw.WriteLine(@"{");
+            tw.WriteLine(@"    .method public newslot virtual abstract static void NormalMethod() {}");
+            tw.WriteLine(@"    .method public newslot virtual abstract static void GenericMethod<U>() {}");
+            tw.WriteLine(@"}");
+            tw.WriteLine(@"");
+            tw.WriteLine(@".class interface public abstract auto ansi IFaceGeneric`1<T>");
+            tw.WriteLine(@"{");
+            tw.WriteLine(@"    .method public newslot virtual abstract static void NormalMethod() {}");
+            tw.WriteLine(@"    .method public newslot virtual abstract static void GenericMethod<U>() {}");
+            tw.WriteLine(@"}");
+            tw.WriteLine(@"");
+            tw.WriteLine(@".class interface public abstract auto ansi IFaceCuriouslyRecurringGeneric`1<(class IFaceCuriouslyRecurringGeneric`1<!0>) T> ");
+            tw.WriteLine(@"{");
+            tw.WriteLine(@"    .method public newslot virtual abstract static void NormalMethod() {}");
+            tw.WriteLine(@"    .method public newslot virtual abstract static void GenericMethod<U>() {}");
+            tw.WriteLine(@"}");
+            tw.WriteLine(@"");
+            tw.WriteLine(@".class public auto ansi GenericStruct`1<T>");
+            tw.WriteLine(@"       extends[System.Runtime] System.Valuetype");
+            tw.WriteLine(@"{");
+            tw.WriteLine(@"}");
         }
 
 
@@ -502,18 +299,18 @@ namespace VirtualStaticInterfaceMethodTestGen
                     void GenerateMethodBody(bool genericMethod)
                     {
                         implsGenerated.WriteLine($"    ldtoken {implTypePrefix} {implType}");
-                        implsGenerated.WriteLine($"    call string {CommonPrefix}Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)");
+                        implsGenerated.WriteLine($"    call string {CommonCsPrefix}Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)");
                         implsGenerated.WriteLine($"    ldstr \"{implMethodDesc.Name}\"");
                         if (genericMethod)
                         {
                             implsGenerated.WriteLine($"    ldstr \"<\"");
                             implsGenerated.WriteLine($"    ldtoken !!0");
-                            implsGenerated.WriteLine($"    call string {CommonPrefix}Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)");
+                            implsGenerated.WriteLine($"    call string {CommonCsPrefix}Statics::MakeTypeName(valuetype[System.Runtime]System.RuntimeTypeHandle)");
                             implsGenerated.WriteLine($"    ldstr \">\"");
                             implsGenerated.WriteLine($"    call string[System.Runtime] System.String::Concat(string, string, string,string)");
                         }
                         implsGenerated.WriteLine($"    call string[System.Runtime] System.String::Concat(string, string)");
-                        implsGenerated.WriteLine($"    stsfld string {CommonPrefix}Statics::String");
+                        implsGenerated.WriteLine($"    stsfld string {CommonCsPrefix}Statics::String");
                         implsGenerated.WriteLine($"    ret");
                     }
                 }
@@ -530,9 +327,11 @@ namespace VirtualStaticInterfaceMethodTestGen
             return ImplPrefix + constrainedType;
         }
 
+        static string CommonCsAssemblyName = "GenericContextCommonCs";
         static string CommonAndImplAssemblyName = "GenericContextCommonAndImplementations";
         static string TestAssemblyName = "GenericContextTest";
         static string CommonPrefix = $"[{CommonAndImplAssemblyName}]";
+        static string CommonCsPrefix = $"[{CommonCsAssemblyName}]";
         static string ImplPrefix = $"[{CommonAndImplAssemblyName}]";
 
 
@@ -726,7 +525,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                             EmitILToCallActualMethod(swTestClassMethods);
                             swTestClassMethods.WriteLine($"    ldstr \"{scenario.ToString()}\"");
                             swTestClassMethods.WriteLine($"    ldstr \"{expectedString}\"");
-                            swTestClassMethods.WriteLine($"    call void {CommonPrefix}Statics::CheckForFailure(string,string)");
+                            swTestClassMethods.WriteLine($"    call void {CommonCsPrefix}Statics::CheckForFailure(string,string)");
                             twIL = swTestClassMethods;
                             EmitEndMethod(swTestClassMethods, mdIndividualTestMethod);
                         }
@@ -744,9 +543,9 @@ namespace VirtualStaticInterfaceMethodTestGen
                             EmitConstrainedPrefix();
                             twActualIL.WriteLine($"    ldftn void class {interfaceType}::{interfaceMethod}()");
                             twActualIL.WriteLine($"    volatile.");
-                            twActualIL.WriteLine($"    stsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) {CommonPrefix}Statics::FtnHolder");
+                            twActualIL.WriteLine($"    stsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) {CommonCsPrefix}Statics::FtnHolder");
                             twActualIL.WriteLine($"    volatile.");
-                            twActualIL.WriteLine($"    ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) {CommonPrefix}Statics::FtnHolder");
+                            twActualIL.WriteLine($"    ldsfld     native int modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) {CommonCsPrefix}Statics::FtnHolder");
                             twActualIL.WriteLine($"    calli      void()");
                             break;
 
@@ -757,9 +556,9 @@ namespace VirtualStaticInterfaceMethodTestGen
                             twActualIL.WriteLine($"    newobj instance void [System.Runtime]System.Action::.ctor(object,");
                             twActualIL.WriteLine($"                                                              native int)");
                             twActualIL.WriteLine($"    volatile.");
-                            twActualIL.WriteLine($"    stsfld     class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) {CommonPrefix}Statics::ActionHolder");
+                            twActualIL.WriteLine($"    stsfld     class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) {CommonCsPrefix}Statics::ActionHolder");
                             twActualIL.WriteLine($"    volatile.");
-                            twActualIL.WriteLine($"    ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) {CommonPrefix}Statics::ActionHolder");
+                            twActualIL.WriteLine($"    ldsfld class [System.Runtime] System.Action modreq([System.Runtime] System.Runtime.CompilerServices.IsVolatile) {CommonCsPrefix}Statics::ActionHolder");
                             twActualIL.WriteLine($"    callvirt instance void[System.Runtime] System.Action::Invoke()");
                             break;
 
@@ -797,13 +596,13 @@ namespace VirtualStaticInterfaceMethodTestGen
             EmitMethod(twOutputTest, mainMethod);
             twOutputTest.WriteLine("    .entrypoint");
             twOutputTest.Write(swMainMethodBody.ToString());
-            twOutputTest.WriteLine($"    ldsfld int32 {CommonPrefix}Statics::Failures");
+            twOutputTest.WriteLine($"    ldsfld int32 {CommonCsPrefix}Statics::Failures");
             twOutputTest.WriteLine("    box int32");
             twOutputTest.WriteLine("    call void [System.Console]System.Console::Write(object)");
             twOutputTest.WriteLine("    ldstr \" failures detected\"");
             twOutputTest.WriteLine("    call void [System.Console]System.Console::WriteLine(object)");
             twOutputTest.WriteLine("    ldc.i4 100");
-            twOutputTest.WriteLine($"    ldsfld int32 {CommonPrefix}Statics::Failures");
+            twOutputTest.WriteLine($"    ldsfld int32 {CommonCsPrefix}Statics::Failures");
             twOutputTest.WriteLine("    sub");
             twOutputTest.WriteLine("    ret");
 
