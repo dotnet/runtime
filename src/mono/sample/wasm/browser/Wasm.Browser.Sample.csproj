@@ -7,4 +7,16 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <_SampleProject>Wasm.Browser.Sample.csproj</_SampleProject>
+  </PropertyGroup>
+
+  <Target Name="CheckServe">
+    <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />
+  </Target>
+
+  <Target Name="RunSample" DependsOnTargets="BuildSampleInTree;CheckServe">
+    <Exec Command="$(_Dotnet) serve -o -d:bin/Release/AppBundle -p:8000" IgnoreExitCode="true" YieldDuringToolExecution="true" />
+  </Target>
 </Project>

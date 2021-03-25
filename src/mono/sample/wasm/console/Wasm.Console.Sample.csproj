@@ -4,4 +4,12 @@
     <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <_SampleProject>Wasm.Console.Sample.csproj</_SampleProject>
+  </PropertyGroup>
+
+  <Target Name="RunSample" DependsOnTargets="BuildSampleInTree">
+    <Exec Command="cd bin/$(Configuration)/AppBundle &amp;&amp; v8 --expose_wasm runtime.js -- $(DOTNET_MONO_LOG_LEVEL) --run Wasm.Console.Sample.dll" IgnoreExitCode="true" />
+  </Target>
 </Project>
