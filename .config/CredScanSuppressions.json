@@ -2,7 +2,7 @@
     "tool": "Credential Scanner",
     "suppressions": [
         {
-            "_justification": "Suppresion approved. Private key for testing purpose.",
+            "_justification": "Suppression approved. Private key for testing purpose.",
             "file": [
                 "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/DSA/DSAKeyPemTests.cs",
                 "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/EC/ECKeyPemTests.cs",
