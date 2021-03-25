@@ -90,7 +90,7 @@ namespace System.ComponentModel.Design
                 {
                     Debug.Assert(_readFirstByte == true);
                     // Add the first byte read by ReadByte into buffer here
-                    buffer[0] = firstByte;
+                    buffer[offset] = firstByte;
                     return _stream.Read(buffer, offset + 1, count - 1) + 1;
                 }
                 return _stream.Read(buffer, offset, count);
@@ -104,6 +104,7 @@ namespace System.ComponentModel.Design
 
             public override int ReadByte()
             {
+                Debug.Assert(_readFirstByte == false);
                 byte read = (byte)_stream.ReadByte();
                 firstByte = read;
                 _readFirstByte = true;

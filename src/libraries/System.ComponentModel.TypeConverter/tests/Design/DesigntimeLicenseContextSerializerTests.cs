@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
@@ -54,7 +53,6 @@ namespace System.ComponentModel.Design.Tests
                 }
                 RemoteExecutor.Invoke((key) =>
                 {
-                    Debugger.Launch();
                     {
                         var context = new DesigntimeLicenseContext();
                         context.SetSavedLicenseKey(typeof(int), key);
