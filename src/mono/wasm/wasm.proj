@@ -130,15 +130,16 @@
       <SystemCryptoNativeDir>$(RepoRoot)src\libraries\Native\AnyOS\System.Security.Cryptography.Native.Browser</SystemCryptoNativeDir>
     </PropertyGroup>
     <ItemGroup>
+      <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
+                                  $(ICULibDir)/libicui18n.a" />
       <MonoLibFiles Include="$(MonoArtifactsPath)libmono-ee-interp.a;
                              $(MonoArtifactsPath)libmonosgen-2.0.a;
                              $(MonoArtifactsPath)libmono-ilgen.a;
                              $(MonoArtifactsPath)libmono-icall-table.a;
                              $(NativeBinDir)libSystem.Native.a;
                              $(NativeBinDir)libSystem.IO.Compression.Native.a;
-                             $(NativeBinDir)libSystem.Security.Cryptography.Native.Browser.a;
-                             $(ICULibDir)/libicuuc.a;
-                             $(ICULibDir)/libicui18n.a" />
+                             $(NativeBinDir)libSystem.Security.Cryptography.Native.Browser.a" />
+      <MonoLibFiles Include="@(ICULibNativeFiles)" />
       <PInvokeTableFile Include="$(WasmObjDir)\pinvoke-table.h" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
@@ -205,7 +206,7 @@
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(ICULibFiles)"
+    <Copy SourceFiles="@(ICULibFiles);@(ICULibNativeFiles)"
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
