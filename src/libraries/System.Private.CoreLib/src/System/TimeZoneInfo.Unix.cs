@@ -22,8 +22,21 @@ namespace System
         private const string ZoneTabFileName = "zone.tab";
         private const string TimeZoneEnvironmentVariable = "TZ";
         private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
+
+#if !TARGET_BROWSER
         private const string FallbackCultureName = "en-US";
         private const string GmtId = "GMT";
+
+        // Some time zones may give better display names using their location names rather than their generic name.
+        // We can update this list as need arises.
+        private static readonly string[] s_ZonesThatUseLocationName = new[] {
+            "Europe/Minsk",       // Prefer "Belarus Time" over "Moscow Standard Time (Minsk)"
+            "Europe/Moscow",      // Prefer "Moscow Time" over "Moscow Standard Time"
+            "Europe/Simferopol",  // Prefer "Simferopol Time" over "Moscow Standard Time (Simferopol)"
+            "Pacific/Apia",       // Prefer "Samoa Time" over "Apia Time"
+            "Pacific/Pitcairn"    // Prefer "Pitcairn Islands Time" over "Pitcairn Time"
+        };
+#endif
 
         // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
         // Hard-coded because we need to treat all aliases of UTC the same even when ICU is not available,
@@ -37,16 +50,6 @@ namespace System
             "UTC",
             "Universal",
             "Zulu"
-        };
-
-        // Some time zones may give better display names using their location names rather than their generic name.
-        // We can update this list as need arises.
-        private static readonly string[] s_ZonesThatUseLocationName = new[] {
-            "Europe/Minsk",       // Prefer "Belarus Time" over "Moscow Standard Time (Minsk)"
-            "Europe/Moscow",      // Prefer "Moscow Time" over "Moscow Standard Time"
-            "Europe/Simferopol",  // Prefer "Simferopol Time" over "Moscow Standard Time (Simferopol)"
-            "Pacific/Apia",       // Prefer "Samoa Time" over "Apia Time"
-            "Pacific/Pitcairn"    // Prefer "Pitcairn Islands Time" over "Pitcairn Time"
         };
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
@@ -119,6 +122,11 @@ namespace System
             _daylightDisplayName = daylightAbbrevName ?? standardAbbrevName;
             _displayName = _standardDisplayName;
 
+#if TARGET_BROWSER
+            // For the browser, ICU time zone data is filtered out.  The standard and daylight names will use the abbreviations set above,
+            // and the display name is composed of just the offset and IANA time zone ID (except UTC which is handled elsewhere).
+            _displayName = $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}";
+#else
             // Determine the culture to use
             CultureInfo uiCulture = CultureInfo.CurrentUICulture;
             if (uiCulture.Name.Length == 0)
@@ -128,6 +136,7 @@ namespace System
             GetDisplayName(_id, Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture.Name, ref _standardDisplayName);
             GetDisplayName(_id, Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture.Name, ref _daylightDisplayName);
             GetFullValueForDisplayNameField(_id, _baseUtcOffset, uiCulture, ref _displayName);
+#endif
 
             // TZif supports seconds-level granularity with offsets but TimeZoneInfo only supports minutes since it aligns
             // with DateTimeOffset, SQL Server, and the W3C XML Specification
@@ -145,7 +154,8 @@ namespace System
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
         }
 
-        // Helper function that builds the value backing the DisplayName field from gloablization data.
+#if !TARGET_BROWSER
+        // Helper function that builds the value backing the DisplayName field from globalization data.
         private static void GetFullValueForDisplayNameField(string timeZoneId, TimeSpan baseUtcOffset, CultureInfo uiCulture, ref string? displayName)
         {
             // There are a few diffent ways we might show the display name depending on the data.
@@ -159,7 +169,6 @@ namespace System
             // Try to get the generic name for this time zone.
             string? genericName = null;
             GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.Generic, uiCulture.Name, ref genericName);
-
             if (genericName == null)
             {
                 // When we can't get a generic name, use the offset and the ID.
@@ -271,6 +280,7 @@ namespace System
             int i = timeZoneId.LastIndexOf('/');
             return timeZoneId.Substring(i + 1).Replace('_', ' ');
         }
+#endif
 
         // The TransitionTime fields are not used when AdjustmentRule.NoDaylightTransitions == true.
         // However, there are some cases in the past where DST = true, and the daylight savings offset
@@ -382,6 +392,7 @@ namespace System
 
         private static unsafe string? GetAlternativeId(string id)
         {
+#if !TARGET_BROWSER
             if (!GlobalizationMode.Invariant)
             {
                 if (id.Equals("utc", StringComparison.OrdinalIgnoreCase))
@@ -406,7 +417,7 @@ namespace System
                     return new string(buffer, 0, length);
                 }
             }
-
+#endif
             return null;
         }
 
@@ -1965,6 +1976,9 @@ namespace System
         // Helper function to get the standard display name for the UTC static time zone instance
         private static string GetUtcStandardDisplayName()
         {
+#if TARGET_BROWSER
+            return InvariantUtcStandardDisplayName;
+#else
             // Don't bother looking up the name for invariant or English cultures
             CultureInfo uiCulture = CultureInfo.CurrentUICulture;
             if (GlobalizationMode.Invariant || uiCulture.Name.Length == 0 || uiCulture.TwoLetterISOLanguageName == "en")
@@ -1979,6 +1993,7 @@ namespace System
                 standardDisplayName = InvariantUtcStandardDisplayName;
 
             return standardDisplayName;
+#endif
         }
     }
 }
