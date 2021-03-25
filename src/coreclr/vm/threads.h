@@ -1895,7 +1895,7 @@ public:
     {
 #ifndef DACCESS_COMPILE
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(this == GetThreadNULLOk());
+        _ASSERTE(this == GetThread());
         _ASSERTE(!m_fPreemptiveGCDisabled);
         // holding a spin lock in preemp mode and transit to coop mode will cause other threads
         // spinning waiting for GC
@@ -1958,7 +1958,7 @@ public:
         LIMITED_METHOD_CONTRACT;
 
 #ifndef DACCESS_COMPILE
-        _ASSERTE(this == GetThreadNULLOk());
+        _ASSERTE(this == GetThread());
         _ASSERTE(m_fPreemptiveGCDisabled);
         // holding a spin lock in coop mode and transit to preemp mode will cause deadlock on GC
         _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
@@ -2001,7 +2001,7 @@ public:
     BOOL PreemptiveGCDisabled()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(this == GetThreadNULLOk());
+        _ASSERTE(this == GetThread());
         //
         // m_fPreemptiveGCDisabled is always modified by the thread itself, and so the thread itself
         // can read it without memory barrier.
@@ -3762,7 +3762,7 @@ public:
     DWORD GetProfilerCallbackFullState()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(GetThreadNULLOk() == this);
+        _ASSERTE(GetThread() == this);
         return m_profilerCallbackState;
     }
 
@@ -3772,7 +3772,7 @@ public:
     void SetProfilerCallbackFullState(DWORD dwFullState)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(GetThreadNULLOk() == this);
+        _ASSERTE(GetThread() == this);
         m_profilerCallbackState = dwFullState;
     }
 
@@ -3781,7 +3781,7 @@ public:
     DWORD SetProfilerCallbackStateFlags(DWORD dwFlags)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(GetThreadNULLOk() == this);
+        _ASSERTE(GetThread() == this);
 
         DWORD dwRet = m_profilerCallbackState;
         m_profilerCallbackState |= dwFlags;
@@ -5332,7 +5332,7 @@ protected:
     {
         // This is the perf version. So we deliberately restrict the calls
         // to already setup threads to avoid the null checks and GetThread call
-        _ASSERTE(pThread && (pThread == GetThreadNULLOk()));
+        _ASSERTE(pThread == GetThread());
 #ifdef ENABLE_CONTRACTS_IMPL
         m_fThreadMustExist = true;
 #endif // ENABLE_CONTRACTS_IMPL
@@ -5354,7 +5354,7 @@ protected:
     {
         // This is the perf version. So we deliberately restrict the calls
         // to already setup threads to avoid the null checks and GetThread call
-        _ASSERTE(!THREAD_EXISTS || (pThread && (pThread == GetThreadNULLOk())));
+        _ASSERTE(!THREAD_EXISTS || (pThread == GetThread()));
 #ifdef ENABLE_CONTRACTS_IMPL
         m_fThreadMustExist = !!THREAD_EXISTS;
 #endif // ENABLE_CONTRACTS_IMPL

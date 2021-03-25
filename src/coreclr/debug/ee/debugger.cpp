@@ -8048,7 +8048,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
 {
     CONTRACTL
     {
-        if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThreadNULLOk()))
+        if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
         {
             NOTHROW;
             GC_NOTRIGGER;
@@ -8080,7 +8080,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     // useful information for the debugger and, in fact, it may be a completely
     // internally handled runtime exception, so we should do nothing.
     //
-    if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThreadNULLOk()))
+    if ((GetThreadNULLOk() == NULL) || g_pEEInterface->IsThreadExceptionNull(GetThread()))
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }

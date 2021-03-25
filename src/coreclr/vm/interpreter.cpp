@@ -10981,7 +10981,7 @@ InterpreterMethodInfo* Interpreter::RecordInterpreterMethodInfoForMethodHandle(C
     {
         // If there's already an entry, make sure it was created by another thread -- the same thread shouldn't create two
         // of these.
-        _ASSERTE_MSG(mi.m_thread != GetThreadNULLOk(), "Two InterpMethInfo's for same meth by same thread.");
+        _ASSERTE_MSG(mi.m_thread != GetThread(), "Two InterpMethInfo's for same meth by same thread.");
         // If we were creating an interpreter stub at the same time as another thread, and we lost the race to
         // insert it, use the already-existing one, and delete this one.
         delete methInfo;
@@ -10990,7 +10990,7 @@ InterpreterMethodInfo* Interpreter::RecordInterpreterMethodInfoForMethodHandle(C
 
     mi.m_info = methInfo;
 #ifdef _DEBUG
-    mi.m_thread = GetThreadNULLOk();
+    mi.m_thread = GetThread();
 #endif
 
     _ASSERTE_MSG(map->LookupPtr(md) == NULL, "Multiple InterpMethInfos for method desc.");

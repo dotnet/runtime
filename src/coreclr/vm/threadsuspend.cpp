@@ -984,7 +984,7 @@ BOOL Thread::ReadyForAsyncException()
     if (ThrewControlForThread() == Thread::InducedThreadRedirect ||
         ThrewControlForThread() == Thread::InducedThreadRedirectAtEndOfCatch)
     {
-        _ASSERTE(GetThreadNULLOk() == this);
+        _ASSERTE(GetThread() == this);
         _ASSERTE(ExecutionManager::IsManagedCode(GetIP(m_OSContext)));
         FillRegDisplay(&rd, m_OSContext);
 
@@ -1827,7 +1827,7 @@ void Thread::ResetAbort()
     }
     CONTRACTL_END;
 
-    _ASSERTE(this == GetThreadNULLOk());
+    _ASSERTE(this == GetThread());
     _ASSERTE(!IsDead());
 
     UnmarkThreadForAbort();
@@ -1936,11 +1936,11 @@ void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSP
         Thread *pCurThread = GetThreadNULLOk();
 
         LOG((LF_SYNC, INFO3, "Unlocking thread store\n"));
-        _ASSERTE(GetThreadNULLOk() == NULL || ThreadStore::s_pThreadStore->m_HoldingThread == GetThreadNULLOk());
+        _ASSERTE(pCurThread == NULL || ThreadStore::s_pThreadStore->m_HoldingThread == pCurThread);
 
 #ifdef _DEBUG
         // If Thread object has been destroyed, we need to reset the ownership info in Crst.
-        _ASSERTE(!bThreadDestroyed || GetThreadNULLOk() == NULL);
+        _ASSERTE(!bThreadDestroyed || pCurThread == NULL);
         if (bThreadDestroyed) {
             ThreadStore::s_pThreadStore->m_Crst.m_holderthreadid.SetToCurrentThread();
         }
@@ -2440,7 +2440,7 @@ void Thread::PulseGCMode()
     }
     CONTRACTL_END;
 
-    _ASSERTE(this == GetThreadNULLOk());
+    _ASSERTE(this == GetThread());
 
     if (PreemptiveGCDisabled() && CatchAtSafePoint())
     {
@@ -3012,7 +3012,7 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThreadNULLOk() == this);
+    _ASSERTE(GetThread() == this);
     _ASSERTE(PreemptiveGCDisabledOther());
     _ASSERTE(IsAddrOfRedirectFunc(pTgt));
     _ASSERTE(pCurrentThreadCtx);
@@ -4962,7 +4962,7 @@ HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args)
     }
     CONTRACTL_END;
 
-    _ASSERTE(m_Thread == GetThreadNULLOk());
+    _ASSERTE(m_Thread == GetThread());
 
     m_Next = m_Thread->GetFrame();
     m_Thread->SetFrame(this);

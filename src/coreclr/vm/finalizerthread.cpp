@@ -355,7 +355,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();
 
     _ASSERTE(s_FinalizerThreadOK);
-    _ASSERTE(GetThreadNULLOk() == GetFinalizerThread());
+    _ASSERTE(GetThread() == GetFinalizerThread());
 
     // finalizer should always park in default domain
 

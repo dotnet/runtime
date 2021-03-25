@@ -719,7 +719,7 @@ FCIMPL2(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, I
         // running, and if it's running we have to be in the thread's
         // context.
         if ((!ThreadNotStarted(thread) && !ThreadIsRunning(thread)) ||
-            (!ThreadNotStarted(thread) && (GetThreadNULLOk() != thread)))
+            (!ThreadNotStarted(thread) && (GetThread() != thread)))
             ok = FALSE;
         else
         {

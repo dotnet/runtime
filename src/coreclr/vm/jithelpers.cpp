@@ -5500,7 +5500,7 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
 void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
-    _ASSERTE(frame->currentThread == GetThreadNULLOk());
+    _ASSERTE(frame->currentThread == GetThread());
 
     // Manually inline the fast path in Thread::EnablePreemptiveGC().
     // This is a trade off with GC suspend performance. We are opting
@@ -5522,7 +5522,7 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeF
 void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
-    _ASSERTE(frame->currentThread == GetThreadNULLOk());
+    _ASSERTE(frame->currentThread == GetThread());
 
     // Manually inline the fast path in Thread::EnablePreemptiveGC().
     // This is a trade off with GC suspend performance. We are opting

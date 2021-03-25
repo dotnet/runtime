@@ -180,8 +180,7 @@ inline Thread::CurrentPrepareCodeConfigHolder::CurrentPrepareCodeConfigHolder(Th
 #endif
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(thread != nullptr);
-    _ASSERTE(thread == GetThreadNULLOk());
+    _ASSERTE(thread == GetThread());
     _ASSERTE(config != nullptr);
 
     PrepareCodeConfig *previousConfig = thread->m_currentPrepareCodeConfig;
@@ -205,7 +204,7 @@ inline Thread::CurrentPrepareCodeConfigHolder::~CurrentPrepareCodeConfigHolder()
 inline void Thread::EnterForbidSuspendForDebuggerRegion()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(this == GetThreadNULLOk());
+    _ASSERTE(this == GetThread());
 
     _ASSERTE(!m_isInForbidSuspendForDebuggerRegion);
     m_isInForbidSuspendForDebuggerRegion = true;
@@ -214,7 +213,7 @@ inline void Thread::EnterForbidSuspendForDebuggerRegion()
 inline void Thread::ExitForbidSuspendForDebuggerRegion()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(this == GetThreadNULLOk());
+    _ASSERTE(this == GetThread());
 
     _ASSERTE(m_isInForbidSuspendForDebuggerRegion);
     m_isInForbidSuspendForDebuggerRegion = false;

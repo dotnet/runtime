@@ -3383,8 +3383,7 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
     }
 
 #ifndef TARGET_UNIX // Watson is supported on Windows only
-    Thread *pThread = GetThreadNULLOk();
-    _ASSERTE(pThread);
+    Thread *pThread = GetThread();
 
     if (pThread && (currentIP != 0))
     {
@@ -3499,7 +3498,7 @@ BOOL IsAsyncThreadException(OBJECTREF *pThrowable) {
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_FORBID_FAULT;
 
-    if (  (GetThreadNULLOk() && GetThreadNULLOk()->IsRudeAbort() && GetThreadNULLOk()->IsRudeAbortInitiated())
+    if (  (GetThreadNULLOk() && GetThread()->IsRudeAbort() && GetThread()->IsRudeAbortInitiated())
         ||IsExceptionOfType(kThreadAbortException, pThrowable)
         ||IsExceptionOfType(kThreadInterruptedException, pThrowable)) {
         return TRUE;
@@ -5104,7 +5103,7 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
     // various runtimes again.
     //
     // Thus, check if this UEF has already been invoked in context of this thread and runtime and if so, dont invoke it again.
-    if (GetThreadNULLOk() && (GetThreadNULLOk()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException)))
+    if (GetThreadNULLOk() && (GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException)))
     {
         LOG((LF_EH, LL_INFO10, "Exiting COMUnhandledExceptionFilter since we have already done UE processing for this thread!\n"));
         return retVal;

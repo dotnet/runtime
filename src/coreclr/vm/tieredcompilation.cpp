@@ -408,7 +408,7 @@ DWORD WINAPI TieredCompilationManager::BackgroundWorkerBootstrapper0(LPVOID args
         return 0;
     }
 
-    _ASSERTE(GetThreadNULLOk() == thread);
+    _ASSERTE(GetThread() == thread);
     ManagedThreadBase::KickOff(BackgroundWorkerBootstrapper1, nullptr);
 
     GCX_PREEMP_NO_DTOR();
@@ -551,7 +551,7 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThreadNULLOk() == s_backgroundWorkerThread);
+    _ASSERTE(GetThread() == s_backgroundWorkerThread);
 
     SArray<MethodDesc *> *methodsPendingCounting = nullptr;
     UINT32 countOfNewMethodsCalledDuringDelay = 0;
@@ -677,7 +677,7 @@ bool TieredCompilationManager::DoBackgroundWork(
     UINT64 maxWorkDurationTicks)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(GetThreadNULLOk() == s_backgroundWorkerThread);
+    _ASSERTE(GetThread() == s_backgroundWorkerThread);
     _ASSERTE(m_isPendingCallCountingCompletion || m_countOfMethodsToOptimize != 0);
     _ASSERTE(workDurationTicksRef != nullptr);
     _ASSERTE(minWorkDurationTicks <= maxWorkDurationTicks);

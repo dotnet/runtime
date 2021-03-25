@@ -139,7 +139,7 @@ FCIMPL1(LPOVERLAPPED, AllocateNativeOverlapped, OverlappedDataObject* overlapped
     overlapped->m_pNativeOverlapped = lpOverlapped;
 
     HELPER_METHOD_FRAME_END();
-    LOG((LF_INTEROP, LL_INFO10000, "In AllocNativeOperlapped thread 0x%x\n", GetThreadNULLOk()));
+    LOG((LF_INTEROP, LL_INFO10000, "In AllocNativeOperlapped thread 0x%x\n", GetThread()));
 
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolIODequeue))
         FireEtwThreadPoolIOPack(lpOverlapped, overlappedUNSAFE, GetClrInstanceId());

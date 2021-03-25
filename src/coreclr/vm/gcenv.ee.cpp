@@ -90,7 +90,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
                 GetThreadNULLOk() == NULL ||
                 // this is for background GC threads which always call this when EE is suspended.
                 IsGCSpecialThread() ||
-                (GetThreadNULLOk() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
+                (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
 
     Frame* pTopFrame = pThread->GetFrame();
     Object ** topStack = (Object **)pTopFrame;
@@ -1689,4 +1689,3 @@ void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const Stre
 {
     StressLog::LogMsg(level, facility, msg);
 }
-

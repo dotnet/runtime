@@ -4834,8 +4834,7 @@ void ThreadpoolMgr::QueueTimerInfoForRelease(TimerInfo *pTimerInfo)
     //  - This function wont go into an alertable state. That could trigger another APC.
     // Else two threads can be queueing timerinfos and a race could
     // lead to leaked memory and handles
-    _ASSERTE(GetThreadNULLOk());
-    _ASSERTE(pTimerThread == GetThreadNULLOk());
+    _ASSERTE(pTimerThread == GetThread());
     TimerInfo *pHead = NULL;
 
     // Make sure this timer info has been deactivated and removed from any other lists

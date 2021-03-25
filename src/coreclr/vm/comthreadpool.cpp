@@ -527,8 +527,7 @@ FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
     HANDLE hWaitHandle = gc.waitObject->GetWaitHandle();
     _ASSERTE(hWaitHandle);
 
-    Thread* pCurThread = GetThreadNULLOk();
-    _ASSERTE( pCurThread);
+    Thread* pCurThread = GetThread();
 
     DelegateInfoHolder delegateInfo = DelegateInfo::MakeDelegateInfo(
                                                                 &gc.state,

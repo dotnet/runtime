@@ -1399,8 +1399,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     _ASSERTE(codeInfo.GetNativeCodeVersion() == nativeCodeVersion);
     DWORD offset = codeInfo.GetRelOffset();
 
-    Thread *pThread = GetThreadNULLOk();
-    _ASSERTE(pThread);
+    Thread *pThread = GetThread();
 
     // There is a race condition with the computation of `atCall`. Multiple threads could enter
     // this function (DoGcStress) at the same time. If one reads `*instrPtr` and sets `atCall`
@@ -1799,4 +1798,3 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 }
 
 #endif // HAVE_GCCOVER
-

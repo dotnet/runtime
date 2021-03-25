@@ -211,7 +211,7 @@ void  Thread::SetFrame(Frame *pFrame)
         DEBUG_ONLY;
         MODE_COOPERATIVE;
         // It only makes sense for a Thread to call SetFrame on itself.
-        PRECONDITION(this == GetThreadNULLOk());
+        PRECONDITION(this == GetThread());
         PRECONDITION(CheckPointer(pFrame));
     }
     CONTRACTL_END;
@@ -898,7 +898,7 @@ void DestroyThread(Thread *th)
     }
     CONTRACTL_END;
 
-    _ASSERTE (th == GetThreadNULLOk());
+    _ASSERTE (th == GetThread());
 
     GCX_PREEMP_NO_DTOR();
 
@@ -987,7 +987,7 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 
     _ASSERTE ((m_State & Thread::TS_Detached) == 0);
 
-    _ASSERTE (this == GetThreadNULLOk());
+    _ASSERTE (this == GetThread());
 
     FastInterlockIncrement(&Thread::m_DetachCount);
 
@@ -2671,7 +2671,7 @@ void Thread::BaseCoUninitialize()
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 
-    _ASSERTE(GetThreadNULLOk() == this);
+    _ASSERTE(GetThread() == this);
 
     ::CoUninitialize();
 }// BaseCoUninitialize
@@ -2684,7 +2684,7 @@ void Thread::BaseWinRTUninitialize()
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 
     _ASSERTE(WinRTSupported());
-    _ASSERTE(GetThreadNULLOk() == this);
+    _ASSERTE(GetThread() == this);
     _ASSERTE(IsWinRTInitialized());
 
     RoUninitialize();
@@ -3869,7 +3869,7 @@ BOOL Thread::Block(INT32 timeOut, PendingSync *syncState)
 {
     WRAPPER_NO_CONTRACT;
 
-    _ASSERTE(this == GetThreadNULLOk());
+    _ASSERTE(this == GetThread());
 
     // Before calling Block, the SyncBlock queued us onto it's list of waiting threads.
     // However, before calling Block the SyncBlock temporarily left the synchronized
@@ -4354,7 +4354,7 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
 
     if (throwable != NULL)
     {
-        _ASSERTE(this == GetThreadNULLOk());
+        _ASSERTE(this == GetThread());
 
         // Non-compliant exceptions are always wrapped.
         // The use of the ExceptionNative:: helper here (rather than the global ::IsException helper)
@@ -4871,7 +4871,7 @@ Thread::ApartmentState Thread::GetFinalApartment()
     }
     CONTRACTL_END;
 
-    _ASSERTE(this == GetThreadNULLOk());
+    _ASSERTE(this == GetThread());
 
     ApartmentState as = AS_Unknown;
     if (g_fEEShutDown)
@@ -6286,7 +6286,7 @@ BOOL Thread::UniqueStack(void* stackStart)
         CrstHolder ch(g_pUniqueStackCrst);
 #ifdef _DEBUG
         if (GetThreadNULLOk())
-            GetThreadNULLOk()->m_bUniqueStacking = TRUE;
+            GetThread()->m_bUniqueStacking = TRUE;
 #endif
         if (g_pUniqueStackMap->LookupValue (stackTraceHash, stackTrace) != (LPVOID)INVALIDENTRY)
         {
@@ -6300,7 +6300,7 @@ BOOL Thread::UniqueStack(void* stackStart)
         }
 #ifdef _DEBUG
         if (GetThreadNULLOk())
-            GetThreadNULLOk()->m_bUniqueStacking = FALSE;
+            GetThread()->m_bUniqueStacking = FALSE;
 #endif
     }
 
@@ -7133,7 +7133,7 @@ void Thread::SetFilterContext(CONTEXT *pContext)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE; // Absolutely must be in coop to coordinate w/ Runtime suspension.
-        PRECONDITION(GetThreadNULLOk() == this); // must be on current thread.
+        PRECONDITION(GetThread() == this); // must be on current thread.
     } CONTRACTL_END;
 
     m_debuggerFilterContext = pContext;
@@ -7203,7 +7203,7 @@ void Thread::DoExtraWorkForFinalizer()
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThreadNULLOk() == this);
+    _ASSERTE(GetThread() == this);
     _ASSERTE(this == FinalizerThread::GetFinalizerThread());
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -8003,7 +8003,7 @@ void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeed
     }
     CONTRACTL_END;
 
-    _ASSERTE (this == GetThreadNULLOk());
+    _ASSERTE (this == GetThread());
 
     INT32 nPriority = ThreadNative::PRIORITY_NORMAL;
 
@@ -8095,10 +8095,7 @@ CHECK DeadlockAwareLock::CheckDeadlock(Thread *pThread)
 
 BOOL DeadlockAwareLock::CanEnterLock()
 {
-    Thread * pThread = GetThreadNULLOk();
-
-    CONSISTENCY_CHECK_MSG(pThread != NULL,
-                          "Cannot do deadlock detection on non-EE thread");
+    Thread * pThread = GetThread();
     CONSISTENCY_CHECK_MSG(pThread->m_pBlockingLock.Load() == NULL,
                           "Cannot block on two locks at once");
 
@@ -8145,10 +8142,7 @@ BOOL DeadlockAwareLock::TryBeginEnterLock()
     }
     CONTRACTL_END;
 
-    Thread * pThread = GetThreadNULLOk();
-
-    CONSISTENCY_CHECK_MSG(pThread != NULL,
-                          "Cannot do deadlock detection on non-EE thread");
+    Thread * pThread = GetThread();
     CONSISTENCY_CHECK_MSG(pThread->m_pBlockingLock.Load() == NULL,
                           "Cannot block on two locks at once");
 
@@ -8197,10 +8191,7 @@ void DeadlockAwareLock::BeginEnterLock()
     }
     CONTRACTL_END;
 
-    Thread * pThread = GetThreadNULLOk();
-
-    CONSISTENCY_CHECK_MSG(pThread != NULL,
-                          "Cannot do deadlock detection on non-EE thread");
+    Thread * pThread = GetThread();
     CONSISTENCY_CHECK_MSG(pThread->m_pBlockingLock.Load() == NULL,
                           "Cannot block on two locks at once");
 
@@ -8245,7 +8236,7 @@ void DeadlockAwareLock::LeaveLock()
     }
     CONTRACTL_END;
 
-    CONSISTENCY_CHECK(m_pHoldingThread == GetThreadNULLOk());
+    CONSISTENCY_CHECK(m_pHoldingThread == GetThread());
     CONSISTENCY_CHECK(GetThread()->m_pBlockingLock.Load() == NULL);
 
     m_pHoldingThread = NULL;

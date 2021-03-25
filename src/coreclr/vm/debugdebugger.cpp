@@ -168,7 +168,7 @@ BOOL QCALLTYPE DebugDebugger::Launch()
 
     if (g_pDebugInterface != NULL)
     {
-        HRESULT hr = g_pDebugInterface->LaunchDebuggerForUser(GetThreadNULLOk(), NULL, TRUE, TRUE);
+        HRESULT hr = g_pDebugInterface->LaunchDebuggerForUser(GetThread(), NULL, TRUE, TRUE);
         return SUCCEEDED(hr);
     }
 #endif // DEBUGGING_SUPPORTED

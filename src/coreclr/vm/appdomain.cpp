@@ -4297,7 +4297,7 @@ void AppDomain::RaiseExitProcessEvent()
     STATIC_CONTRACT_GC_TRIGGERS;
 
     // Only finalizer thread during shutdown can call this function.
-    _ASSERTE ((g_fEEShutDown&ShutDown_Finalize1) && GetThreadNULLOk() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE ((g_fEEShutDown&ShutDown_Finalize1) && GetThread() == FinalizerThread::GetFinalizerThread());
 
     _ASSERTE (GetThread()->PreemptiveGCDisabled());
 
@@ -4534,8 +4534,7 @@ void AppDomain::ExceptionUnwind(Frame *pFrame)
     CONTRACTL_END;
 
     LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind for %8.8x\n", pFrame));
-    Thread *pThread = GetThreadNULLOk();
-    _ASSERTE(pThread);
+    Thread *pThread = GetThread();
 
     LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind: not first transition or abort\n"));
 }

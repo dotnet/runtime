@@ -3186,9 +3186,7 @@ void MethodTable::DoRunClassInitThrowing()
     // policy, keep this unless it proves intractable to remove all premature classinits in the system.
     EnsureActive();
 
-    Thread *pThread;
-    pThread = GetThreadNULLOk();
-    _ASSERTE(pThread);
+    Thread* pThread = GetThread();
 
     AppDomain *pDomain = GetAppDomain();
 

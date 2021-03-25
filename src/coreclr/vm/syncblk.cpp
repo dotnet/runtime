@@ -544,7 +544,7 @@ void SyncBlockCache::CleanupSyncBlocks()
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    _ASSERTE(GetThreadNULLOk() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE(GetThread() == FinalizerThread::GetFinalizerThread());
 
     // Set the flag indicating sync block cleanup is in progress.
     // IMPORTANT: This must be set before the sync block cleanup bit is reset on the thread.
@@ -2758,7 +2758,7 @@ LONG AwareLock::LeaveCompletely()
 BOOL AwareLock::OwnedByCurrentThread()
 {
     WRAPPER_NO_CONTRACT;
-    return (GetThreadNULLOk() == m_HoldingThread);
+    return (GetThread() == m_HoldingThread);
 }
 
 
@@ -2952,5 +2952,4 @@ void ObjHeader::IllegalAlignPad()
     _ASSERTE(m_alignpad == 0);
 }
 #endif // HOST_64BIT && _DEBUG
-
 
