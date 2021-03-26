@@ -40,7 +40,7 @@ using System.Threading;
 namespace System.Drawing
 {
 
-    internal class AnimateEventArgs : EventArgs
+    internal sealed class AnimateEventArgs : EventArgs
     {
 
         private int frameCount;
@@ -165,7 +165,7 @@ namespace System.Drawing
         }
     }
 
-    internal class WorkerThread
+    internal sealed class WorkerThread
     {
 
         private EventHandler frameChangeHandler;

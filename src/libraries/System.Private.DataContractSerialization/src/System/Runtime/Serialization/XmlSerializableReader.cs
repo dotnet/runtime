@@ -10,7 +10,7 @@ using System.Diagnostics;
 
 namespace System.Runtime.Serialization
 {
-    internal class XmlSerializableReader : XmlReader, IXmlLineInfo
+    internal sealed class XmlSerializableReader : XmlReader, IXmlLineInfo
     {
         private XmlReaderDelegator _xmlReader = null!; // initialized in BeginRead
         private int _startDepth;

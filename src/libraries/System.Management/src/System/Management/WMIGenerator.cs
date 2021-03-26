@@ -43,7 +43,7 @@ namespace System.Management
     /// <summary>
     ///    Used to generate a strongly-typed code class for a given WMI class.
     /// </summary>
-    internal class ManagementClassGenerator
+    internal sealed class ManagementClassGenerator
     {
         private readonly string VSVERSION = "8.0.0.0";
         private string OriginalServer = string.Empty;

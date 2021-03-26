@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
-    internal class MsQuicApi : IDisposable
+    internal sealed class MsQuicApi : IDisposable
     {
         private bool _disposed;
 

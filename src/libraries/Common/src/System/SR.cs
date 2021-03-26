@@ -6,7 +6,7 @@ using System.Resources;
 
 namespace System
 {
-    internal partial class SR
+    internal static partial class SR
     {
 #if (!NETSTANDARD1_0 && !NETSTANDARD1_1 && !NET45) // AppContext is not supported on < NetStandard1.3 or < .NET Framework 4.5
         private static readonly bool s_usingResourceKeys = AppContext.TryGetSwitch("System.Resources.UseSystemResourceKeys", out bool usingResourceKeys) ? usingResourceKeys : false;

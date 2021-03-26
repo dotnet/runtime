@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace System.Xml
 {
-    internal class UTF16Decoder : System.Text.Decoder
+    internal sealed class UTF16Decoder : System.Text.Decoder
     {
         private readonly bool _bigEndian;
         private int _lastByte;
@@ -161,7 +161,7 @@ namespace System.Xml
         }
     }
 
-    internal class SafeAsciiDecoder : Decoder
+    internal sealed class SafeAsciiDecoder : Decoder
     {
         public SafeAsciiDecoder()
         {
@@ -544,7 +544,7 @@ namespace System.Xml
         }
     }
 
-    internal class Ucs4Decoder4321 : Ucs4Decoder
+    internal sealed class Ucs4Decoder4321 : Ucs4Decoder
     {
         internal override int GetFullChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
@@ -585,7 +585,7 @@ namespace System.Xml
         }
     }
 
-    internal class Ucs4Decoder1234 : Ucs4Decoder
+    internal sealed class Ucs4Decoder1234 : Ucs4Decoder
     {
         internal override int GetFullChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
@@ -627,7 +627,7 @@ namespace System.Xml
     }
 
 
-    internal class Ucs4Decoder2143 : Ucs4Decoder
+    internal sealed class Ucs4Decoder2143 : Ucs4Decoder
     {
         internal override int GetFullChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
@@ -669,7 +669,7 @@ namespace System.Xml
     }
 
 
-    internal class Ucs4Decoder3412 : Ucs4Decoder
+    internal sealed class Ucs4Decoder3412 : Ucs4Decoder
     {
         internal override int GetFullChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {

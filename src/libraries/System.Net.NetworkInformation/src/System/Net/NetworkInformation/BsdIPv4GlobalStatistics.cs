@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdIPv4GlobalStatistics : IPGlobalStatistics
+    internal sealed class BsdIPv4GlobalStatistics : IPGlobalStatistics
     {
         private readonly long _outboundPackets;
         private readonly long _outputPacketsNoRoute;
