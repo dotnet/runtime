@@ -29,8 +29,6 @@ namespace System.Collections.Tests
             var random = new Random();
             return (random.Next(),random.Next());
         }
-
-        protected int CreateInt(int seed) => new Random(seed).Next();
     }
 
     public class PriorityQueue_Generic_Tests_string_string_CustomComparer : PriorityQueue_Generic_Tests_string_string
