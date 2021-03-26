@@ -138,7 +138,10 @@
   <data name="net_WebSockets_Invalid_Binary_Type" xml:space="preserve">
     <value>WebSocket binary type '{0}' not supported.</value>
   </data>
-  <data name="net_WebSockets_WindowBitsNegotiationFailure" xml:space="preserve">
-    <value>The WebSocket failed to negotiate max {0} window bits. The client requested {1} but the server responded with {2}.</value>
+  <data name="net_WebSockets_ServerWindowBitsNegotiationFailure" xml:space="preserve">
+    <value>The WebSocket failed to negotiate max server window bits. The client requested {1} but the server responded with {2}.</value>
+  </data>
+  <data name="net_WebSockets_ClientWindowBitsNegotiationFailure" xml:space="preserve">
+    <value>The WebSocket failed to negotiate max client window bits. The client requested {1} but the server responded with {2}.</value>
   </data>
 </root>

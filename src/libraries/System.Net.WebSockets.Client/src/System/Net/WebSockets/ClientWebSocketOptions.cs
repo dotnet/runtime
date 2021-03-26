@@ -148,6 +148,12 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>
+        /// Gets or sets the options for the per-message-deflate extension.
+        /// When present, the options are sent to the server during the handshake phase. If the server
+        /// supports per-message-deflate and the options are accepted, the <see cref="WebSocket"/> instance
+        /// will be created with compression enabled by default for all messages.
+        /// </summary>
         [UnsupportedOSPlatform("browser")]
         public WebSocketDeflateOptions? DeflateOptions { get; set; }
 

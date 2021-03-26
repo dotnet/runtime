@@ -302,14 +302,14 @@ namespace System.Net.WebSockets
 
             if (options.ClientMaxWindowBits > original.ClientMaxWindowBits)
             {
-                throw new WebSocketException(string.Format(SR.net_WebSockets_WindowBitsNegotiationFailure,
-                    "client", original.ClientMaxWindowBits, options.ClientMaxWindowBits));
+                throw new WebSocketException(string.Format(SR.net_WebSockets_ClientWindowBitsNegotiationFailure,
+                    original.ClientMaxWindowBits, options.ClientMaxWindowBits));
             }
 
             if (options.ServerMaxWindowBits > original.ServerMaxWindowBits)
             {
-                throw new WebSocketException(string.Format(SR.net_WebSockets_WindowBitsNegotiationFailure,
-                    "server", original.ServerMaxWindowBits, options.ServerMaxWindowBits));
+                throw new WebSocketException(string.Format(SR.net_WebSockets_ServerWindowBitsNegotiationFailure,
+                    original.ServerMaxWindowBits, options.ServerMaxWindowBits));
             }
 
             return options;
@@ -331,41 +331,60 @@ namespace System.Net.WebSockets
             }
             if (options.DeflateOptions is not null)
             {
-                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketExtensions, string.Join("; ", GetDeflateOptions(options.DeflateOptions)));
+                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketExtensions, GetDeflateOptions(options.DeflateOptions));
 
-                static IEnumerable<string> GetDeflateOptions(WebSocketDeflateOptions options)
+                static string GetWindowBitsString(int value) => value switch
                 {
-                    yield return ClientWebSocketDeflateConstants.Extension;
+                    9 => "9",
+                    10 => "10",
+                    11 => "11",
+                    12 => "12",
+                    13 => "13",
+                    14 => "14",
+                    15 => "15",
+                    _ => value.ToString(CultureInfo.InvariantCulture)
+                };
+                static string GetDeflateOptions(WebSocketDeflateOptions options)
+                {
+                    var builder = new StringBuilder(ClientWebSocketDeflateConstants.MaxExtensionLength);
+                    builder.Append(ClientWebSocketDeflateConstants.Extension).Append("; ");
 
                     if (options.ClientMaxWindowBits != 15)
                     {
-                        yield return $"{ClientWebSocketDeflateConstants.ClientMaxWindowBits}={options.ClientMaxWindowBits}";
+                        builder.Append(ClientWebSocketDeflateConstants.ClientMaxWindowBits).Append('=')
+                               .Append(GetWindowBitsString(options.ClientMaxWindowBits));
                     }
                     else
                     {
                         // Advertise that we support this option
-                        yield return ClientWebSocketDeflateConstants.ClientMaxWindowBits;
+                        builder.Append(ClientWebSocketDeflateConstants.ClientMaxWindowBits);
                     }
 
                     if (!options.ClientContextTakeover)
                     {
-                        yield return ClientWebSocketDeflateConstants.ClientNoContextTakeover;
+                        builder.Append("; ").Append(ClientWebSocketDeflateConstants.ClientNoContextTakeover);
                     }
+
+                    builder.Append("; ");
 
                     if (options.ServerMaxWindowBits != 15)
                     {
-                        yield return $"{ClientWebSocketDeflateConstants.ServerMaxWindowBits}={options.ServerMaxWindowBits}";
+                        builder.Append(ClientWebSocketDeflateConstants.ServerMaxWindowBits).Append('=')
+                               .Append(GetWindowBitsString(options.ServerMaxWindowBits));
                     }
                     else
                     {
                         // Advertise that we support this option
-                        yield return ClientWebSocketDeflateConstants.ServerMaxWindowBits;
+                        builder.Append(ClientWebSocketDeflateConstants.ServerMaxWindowBits);
                     }
 
                     if (!options.ServerContextTakeover)
                     {
-                        yield return ClientWebSocketDeflateConstants.ServerNoContextTakeover;
+                        builder.Append("; ").Append(ClientWebSocketDeflateConstants.ServerNoContextTakeover);
                     }
+
+                    Debug.Assert(builder.Length <= ClientWebSocketDeflateConstants.MaxExtensionLength);
+                    return builder.ToString();
                 }
             }
         }

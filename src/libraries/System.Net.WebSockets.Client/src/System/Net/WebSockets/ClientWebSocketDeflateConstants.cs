@@ -5,6 +5,13 @@ namespace System.Net.WebSockets
 {
     internal static class ClientWebSocketDeflateConstants
     {
+        /// <summary>
+        /// The maximum length that this extension can have, assuming that we're not abusing white space.
+        /// <para />
+        /// "permessage-deflate; client_max_window_bits=15; client_no_context_takeover; server_max_window_bits=15; server_no_context_takeover"
+        /// </summary>
+        public const int MaxExtensionLength = 128;
+
         public const string Extension = "permessage-deflate";
 
         public const string ClientMaxWindowBits = "client_max_window_bits";
