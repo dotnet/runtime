@@ -58,27 +58,33 @@
 // (U_ICU_VERSION_MAJOR_NUM < 52)
 // The following APIs are not supported in the ICU versions less than 52. We need to define them manually.
 // We have to do runtime check before using the pointers to these APIs. That is why these are listed in the FOR_ALL_OPTIONAL_ICU_FUNCTIONS list.
-U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len,UChar* winid, int32_t winidCapacity, UErrorCode* status);
 U_CAPI int32_t U_EXPORT2 ucal_getTimeZoneIDForWindowsID(const UChar* winid, int32_t len, const char* region, UChar* id, int32_t idCapacity, UErrorCode* status);
+U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len, UChar* winid, int32_t winidCapacity, UErrorCode* status);
 #endif
 
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(u_charsToUChars, libicuuc, true) \
     PER_FUNCTION_BLOCK(u_getVersion, libicuuc, true) \
+    PER_FUNCTION_BLOCK(u_strcmp, libicuuc, true) \
+    PER_FUNCTION_BLOCK(u_strcpy, libicuuc, true) \
     PER_FUNCTION_BLOCK(u_strlen, libicuuc, true) \
     PER_FUNCTION_BLOCK(u_strncpy, libicuuc, true) \
     PER_FUNCTION_BLOCK(u_tolower, libicuuc, true) \
     PER_FUNCTION_BLOCK(u_toupper, libicuuc, true) \
+    PER_FUNCTION_BLOCK(u_uastrcpy, libicuuc, true) \
     PER_FUNCTION_BLOCK(ucal_add, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_close, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_get, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_getAttribute, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_getKeywordValuesForLocale, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_getLimit, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_getNow, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_getTimeZoneDisplayName, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_open, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_openTimeZoneIDEnumeration, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_set, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_setMillis, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_close, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_closeElements, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_getOffset, libicui18n, true) \
@@ -96,6 +102,7 @@ U_CAPI int32_t U_EXPORT2 ucal_getTimeZoneIDForWindowsID(const UChar* winid, int3
     PER_FUNCTION_BLOCK(ucol_strcoll, libicui18n, true) \
     PER_FUNCTION_BLOCK(udat_close, libicui18n, true) \
     PER_FUNCTION_BLOCK(udat_countSymbols, libicui18n, true) \
+    PER_FUNCTION_BLOCK(udat_format, libicui18n, true) \
     PER_FUNCTION_BLOCK(udat_getSymbols, libicui18n, true) \
     PER_FUNCTION_BLOCK(udat_open, libicui18n, true) \
     PER_FUNCTION_BLOCK(udat_setCalendar, libicui18n, true) \
@@ -202,21 +209,27 @@ FOR_ALL_ICU_FUNCTIONS
 // to the functions of the selected version of ICU in the initialization.
 #define u_charsToUChars(...) u_charsToUChars_ptr(__VA_ARGS__)
 #define u_getVersion(...) u_getVersion_ptr(__VA_ARGS__)
+#define u_strcmp(...) u_strcmp_ptr(__VA_ARGS__)
+#define u_strcpy(...) u_strcpy_ptr(__VA_ARGS__)
 #define u_strlen(...) u_strlen_ptr(__VA_ARGS__)
 #define u_strncpy(...) u_strncpy_ptr(__VA_ARGS__)
 #define u_tolower(...) u_tolower_ptr(__VA_ARGS__)
 #define u_toupper(...) u_toupper_ptr(__VA_ARGS__)
+#define u_uastrcpy(...) u_uastrcpy_ptr(__VA_ARGS__)
 #define ucal_add(...) ucal_add_ptr(__VA_ARGS__)
 #define ucal_close(...) ucal_close_ptr(__VA_ARGS__)
 #define ucal_get(...) ucal_get_ptr(__VA_ARGS__)
 #define ucal_getAttribute(...) ucal_getAttribute_ptr(__VA_ARGS__)
 #define ucal_getKeywordValuesForLocale(...) ucal_getKeywordValuesForLocale_ptr(__VA_ARGS__)
 #define ucal_getLimit(...) ucal_getLimit_ptr(__VA_ARGS__)
+#define ucal_getNow(...) ucal_getNow_ptr(__VA_ARGS__)
 #define ucal_getTimeZoneDisplayName(...) ucal_getTimeZoneDisplayName_ptr(__VA_ARGS__)
 #define ucal_getTimeZoneIDForWindowsID(...) ucal_getTimeZoneIDForWindowsID_ptr(__VA_ARGS__)
 #define ucal_getWindowsTimeZoneID(...) ucal_getWindowsTimeZoneID_ptr(__VA_ARGS__)
 #define ucal_open(...) ucal_open_ptr(__VA_ARGS__)
+#define ucal_openTimeZoneIDEnumeration(...) ucal_openTimeZoneIDEnumeration_ptr(__VA_ARGS__)
 #define ucal_set(...) ucal_set_ptr(__VA_ARGS__)
+#define ucal_setMillis(...) ucal_setMillis_ptr(__VA_ARGS__)
 #define ucol_close(...) ucol_close_ptr(__VA_ARGS__)
 #define ucol_closeElements(...) ucol_closeElements_ptr(__VA_ARGS__)
 #define ucol_getOffset(...) ucol_getOffset_ptr(__VA_ARGS__)
@@ -241,6 +254,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucurr_getName(...) ucurr_getName_ptr(__VA_ARGS__)
 #define udat_close(...) udat_close_ptr(__VA_ARGS__)
 #define udat_countSymbols(...) udat_countSymbols_ptr(__VA_ARGS__)
+#define udat_format(...) udat_format_ptr(__VA_ARGS__)
 #define udat_getSymbols(...) udat_getSymbols_ptr(__VA_ARGS__)
 #define udat_open(...) udat_open_ptr(__VA_ARGS__)
 #define udat_setCalendar(...) udat_setCalendar_ptr(__VA_ARGS__)

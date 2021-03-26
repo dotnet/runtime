@@ -12,7 +12,7 @@ namespace System.Xml
     // so that next time Push() is called it simply returns the last
     // object that was already on the stack.
 
-    internal class ByteStack
+    internal sealed class ByteStack
     {
         private byte[] _stack;
         private readonly int _growthRate;

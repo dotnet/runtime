@@ -105,7 +105,7 @@
         str     r9, [r4, #InlinedCallFrame__m_pSPAfterProlog]
 
         // r0 = GetThread()
-        bl      C_FUNC(GetThread)
+        bl      C_FUNC(GetThreadHelper)
         str     r0, [r4, #InlinedCallFrame__m_pThread]
 
         // pFrame->m_Next = pThread->m_pFrame;

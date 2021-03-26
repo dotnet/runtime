@@ -212,7 +212,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void Queue_Generic_TrimExcess_Repeatedly(int count)
         {
-            Queue<T> queue = GenericQueueFactory(count); ;
+            Queue<T> queue = GenericQueueFactory(count);
             List<T> expected = queue.ToList();
             queue.TrimExcess();
             queue.TrimExcess();
@@ -226,7 +226,7 @@ namespace System.Collections.Tests
         {
             if (count > 0)
             {
-                Queue<T> queue = GenericQueueFactory(count); ;
+                Queue<T> queue = GenericQueueFactory(count);
                 List<T> expected = queue.ToList();
                 queue.TrimExcess();
                 T removed = queue.Dequeue();
@@ -243,7 +243,7 @@ namespace System.Collections.Tests
         {
             if (count > 0)
             {
-                Queue<T> queue = GenericQueueFactory(count); ;
+                Queue<T> queue = GenericQueueFactory(count);
                 queue.TrimExcess();
                 queue.Clear();
                 queue.TrimExcess();
@@ -261,7 +261,7 @@ namespace System.Collections.Tests
         {
             if (count > 0)
             {
-                Queue<T> queue = GenericQueueFactory(count); ;
+                Queue<T> queue = GenericQueueFactory(count);
                 queue.TrimExcess();
                 queue.Clear();
                 queue.TrimExcess();

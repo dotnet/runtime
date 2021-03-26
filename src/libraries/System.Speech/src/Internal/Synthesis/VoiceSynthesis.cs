@@ -755,7 +755,7 @@ namespace System.Speech.Internal.Synthesis
                                     if (paramSpeak._prompt.Exception == null)
                                     {
                                         // No lexicon yet
-                                        List<LexiconEntry> lexicons = new(); ;
+                                        List<LexiconEntry> lexicons = new();
 
                                         //--- Create a single speak info structure for all the text
                                         TTSVoice voice = _currentVoice != null ? _currentVoice : GetVoice(false);

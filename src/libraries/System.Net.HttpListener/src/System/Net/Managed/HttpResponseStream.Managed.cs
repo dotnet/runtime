@@ -39,7 +39,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal partial class HttpResponseStream : Stream
+    internal sealed partial class HttpResponseStream : Stream
     {
         private HttpListenerResponse _response;
         private bool _ignore_errors;

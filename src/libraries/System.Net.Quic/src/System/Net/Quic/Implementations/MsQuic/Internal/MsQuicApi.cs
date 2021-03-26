@@ -12,29 +12,14 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
-    internal class MsQuicApi : IDisposable
+    internal sealed class MsQuicApi : IDisposable
     {
         private bool _disposed;
 
         private readonly IntPtr _registrationContext;
 
-        private unsafe MsQuicApi()
+        private unsafe MsQuicApi(MsQuicNativeMethods.NativeApi* registration)
         {
-            MsQuicNativeMethods.NativeApi* registration;
-
-            try
-            {
-                uint status = Interop.MsQuic.MsQuicOpen(out registration);
-                if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
-                {
-                    throw new NotSupportedException(SR.net_quic_notsupported);
-                }
-            }
-            catch (DllNotFoundException)
-            {
-                throw new NotSupportedException(SR.net_quic_notsupported);
-            }
-
             MsQuicNativeMethods.NativeApi nativeRegistration = *registration;
 
             RegistrationOpenDelegate =
@@ -138,7 +123,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static bool IsQuicSupported { get; }
 
-        static MsQuicApi()
+        static unsafe MsQuicApi()
         {
             // MsQuicOpen will succeed even if the platform will not support it. It will then fail with unspecified
             // platform-specific errors in subsequent callbacks. For now, check for the minimum build we've tested it on.
@@ -150,14 +135,30 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             // TODO: try to initialize TLS 1.3 in SslStream.
 
-            try
+            // TODO: Consider updating all of these delegates to instead use function pointers.
+
+            if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, out IntPtr msQuicHandle))
             {
-                Api = new MsQuicApi();
-                IsQuicSupported = true;
-            }
-            catch (NotSupportedException)
-            {
-                IsQuicSupported = false;
+                try
+                {
+                    if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpen", out IntPtr msQuicOpenAddress))
+                    {
+                        MsQuicNativeMethods.MsQuicOpenDelegate msQuicOpen = Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.MsQuicOpenDelegate>(msQuicOpenAddress);
+                        uint status = msQuicOpen(out MsQuicNativeMethods.NativeApi* registration);
+                        if (MsQuicStatusHelper.SuccessfulStatusCode(status))
+                        {
+                            IsQuicSupported = true;
+                            Api = new MsQuicApi(registration);
+                        }
+                    }
+                }
+                finally
+                {
+                    if (!IsQuicSupported)
+                    {
+                        NativeLibrary.Free(msQuicHandle);
+                    }
+                }
             }
         }
 

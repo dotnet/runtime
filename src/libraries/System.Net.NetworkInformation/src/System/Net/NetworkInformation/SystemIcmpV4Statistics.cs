@@ -4,7 +4,7 @@
 namespace System.Net.NetworkInformation
 {
     // ICMP statistics for IPv4.
-    internal class SystemIcmpV4Statistics : IcmpV4Statistics
+    internal sealed class SystemIcmpV4Statistics : IcmpV4Statistics
     {
         private readonly Interop.IpHlpApi.MibIcmpInfo _stats;
 

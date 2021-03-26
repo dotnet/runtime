@@ -20,7 +20,7 @@ namespace System.Xml
         void SetOutput(Stream stream, IXmlDictionary? dictionary, XmlBinaryWriterSession? session, bool ownsStream);
     }
 
-    internal class XmlBinaryNodeWriter : XmlStreamNodeWriter
+    internal sealed class XmlBinaryNodeWriter : XmlStreamNodeWriter
     {
         private IXmlDictionary? _dictionary;
         private XmlBinaryWriterSession? _session;
@@ -1068,7 +1068,7 @@ namespace System.Xml
         }
     }
 
-    internal class XmlBinaryWriter : XmlBaseWriter, IXmlBinaryWriterInitializer
+    internal sealed class XmlBinaryWriter : XmlBaseWriter, IXmlBinaryWriterInitializer
     {
         private XmlBinaryNodeWriter _writer = null!; // initialized in SetOutput
         private char[]? _chars;

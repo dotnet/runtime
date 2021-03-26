@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XPath
 {
     using XPathNodeType = System.Xml.XPath.XPathNodeType;
 
-    internal class XPathParser<Node>
+    internal sealed class XPathParser<Node>
     {
         private XPathScanner? _scanner;
         private IXPathBuilder<Node>? _builder;

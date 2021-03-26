@@ -227,7 +227,7 @@ namespace System.Xml.Xsl.IlGen
     /// <summary>
     /// A data class to hold information for a "Current" StorageLocation.
     /// </summary>
-    internal class CurrentContext
+    internal sealed class CurrentContext
     {
         public CurrentContext(LocalBuilder local, MethodInfo currentMethod)
         {
@@ -243,7 +243,7 @@ namespace System.Xml.Xsl.IlGen
     /// Iterators are joined together, are nested within each other, and reference each other.  This internal class
     /// contains detailed information about iteration next labels, caching, iterator item location, etc.
     /// </summary>
-    internal class IteratorDescriptor
+    internal sealed class IteratorDescriptor
     {
         private GenerateHelper _helper;
 

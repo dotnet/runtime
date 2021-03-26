@@ -12,7 +12,7 @@ using System.Reflection;
 
 namespace System.Composition.Debugging
 {
-    internal class ContainerConfigurationDebuggerProxy
+    internal sealed class ContainerConfigurationDebuggerProxy
     {
         private readonly ContainerConfiguration _configuration;
         private DiscoveredPart[] _discoveredParts;

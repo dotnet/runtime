@@ -457,7 +457,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.AddSymbol(this);
             builder.EmitBytes(result);
 
-            return builder.ToObjectData(); ;
+            return builder.ToObjectData();
         }
     }
 }
