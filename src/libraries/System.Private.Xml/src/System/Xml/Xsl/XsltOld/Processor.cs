@@ -1073,7 +1073,7 @@ namespace System.Xml.Xsl.XsltOld
 
         // ---------------------- Debugger stack -----------------------
 
-        internal class DebuggerFrame
+        internal sealed class DebuggerFrame
         {
             internal ActionFrame? actionFrame;
             internal XmlQualifiedName? currentMode;

@@ -9,11 +9,6 @@ namespace System.Drawing.Imaging
     /// </summary>
     public sealed class PropertyItem
     {
-        private int _id;
-        private int _len;
-        private short _type;
-        private byte[]? _value;
-
         internal PropertyItem()
         {
         }
@@ -21,34 +16,21 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Represents the ID of the property.
         /// </summary>
-        public int Id
-        {
-            get { return _id; }
-            set { _id = value; }
-        }
+        public int Id { get; set; }
+
         /// <summary>
         /// Represents the length of the property.
         /// </summary>
-        public int Len
-        {
-            get { return _len; }
-            set { _len = value; }
-        }
+        public int Len { get; set; }
+
         /// <summary>
         /// Represents the type of the property.
         /// </summary>
-        public short Type
-        {
-            get { return _type; }
-            set { _type = value; }
-        }
+        public short Type { get; set; }
+
         /// <summary>
         /// Contains the property value.
         /// </summary>
-        public byte[]? Value
-        {
-            get { return _value; }
-            set { _value = value; }
-        }
+        public byte[]? Value { get; set; }
     }
 }

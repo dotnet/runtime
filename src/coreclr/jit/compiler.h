@@ -539,6 +539,10 @@ public:
     unsigned char lvFldOffset;
     unsigned char lvFldOrdinal;
 
+#ifdef DEBUG
+    unsigned char lvDisqualifyEHVarReason = 'H';
+#endif
+
 #if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
     {
@@ -9394,7 +9398,7 @@ public:
     const char* compGetTieringName(bool wantShortName = false) const;
     const char* compGetStressMessage() const;
 
-    codeOptimize compCodeOpt()
+    codeOptimize compCodeOpt() const
     {
 #if 0
         // Switching between size & speed has measurable throughput impact

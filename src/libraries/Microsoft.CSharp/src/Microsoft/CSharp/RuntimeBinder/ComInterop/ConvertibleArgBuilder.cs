@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    internal class ConvertibleArgBuilder : ArgBuilder
+    internal sealed class ConvertibleArgBuilder : ArgBuilder
     {
         internal override Expression Marshal(Expression parameter)
         {

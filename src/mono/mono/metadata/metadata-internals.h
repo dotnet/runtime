@@ -966,9 +966,6 @@ mono_metadata_clean_for_image (MonoImage *image);
 void
 mono_metadata_clean_generic_classes_for_image (MonoImage *image);
 
-MONO_API void
-mono_metadata_cleanup (void);
-
 #ifndef ENABLE_METADATA_UPDATE
 static inline gboolean
 mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)

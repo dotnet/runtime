@@ -17,7 +17,7 @@ namespace System.Xml.Xsl.Runtime
     /// Table of bound extension functions.  Once an extension function is bound and entered into the table, future bindings
     /// will be very fast.  This table is not thread-safe.
     /// </summary>
-    internal class XmlExtensionFunctionTable
+    internal sealed class XmlExtensionFunctionTable
     {
         private readonly Dictionary<XmlExtensionFunction, XmlExtensionFunction> _table;
         private XmlExtensionFunction _funcCached;
@@ -53,7 +53,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// This internal class contains methods that allow binding to extension functions and invoking them.
     /// </summary>
-    internal class XmlExtensionFunction
+    internal sealed class XmlExtensionFunction
     {
         private string _namespaceUri;                // Extension object identifier
         private string _name;                        // Name of this method

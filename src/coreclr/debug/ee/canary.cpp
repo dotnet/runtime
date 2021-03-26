@@ -309,7 +309,7 @@ void HelperCanary::ThreadProc()
 //-----------------------------------------------------------------------------
 void HelperCanary::TakeLocks()
 {
-    _ASSERTE(::GetThread() == NULL); // Canary Thread should always be outside the runtime.
+    _ASSERTE(::GetThreadNULLOk() == NULL); // Canary Thread should always be outside the runtime.
     _ASSERTE(m_CanaryThreadId == GetCurrentThreadId());
 
     // Call new, which will take whatever standard heap locks there are.

@@ -1750,7 +1750,7 @@ namespace System.Xml.Serialization
             return enumMapping;
         }
 
-        internal class ElementComparer : IComparer
+        internal sealed class ElementComparer : IComparer
         {
             public int Compare(object? o1, object? o2)
             {

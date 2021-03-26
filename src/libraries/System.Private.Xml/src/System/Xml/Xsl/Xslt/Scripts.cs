@@ -11,7 +11,7 @@ using System.Xml.Xsl.Runtime;
 
 namespace System.Xml.Xsl.Xslt
 {
-    internal class Scripts
+    internal sealed class Scripts
     {
         private readonly Compiler _compiler;
         private readonly TrimSafeDictionary _nsToType = new TrimSafeDictionary();
@@ -44,7 +44,7 @@ namespace System.Xml.Xsl.Xslt
             return null;
         }
 
-        internal class TrimSafeDictionary
+        internal sealed class TrimSafeDictionary
         {
             private readonly Dictionary<string, Type?> _backingDictionary = new Dictionary<string, Type?>();
 

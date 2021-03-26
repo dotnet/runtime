@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    internal class ReflectionMemberExportDefinition : ExportDefinition, ICompositionElement
+    internal sealed class ReflectionMemberExportDefinition : ExportDefinition, ICompositionElement
     {
         private readonly LazyMemberInfo _member;
         private readonly ExportDefinition _exportDefinition;

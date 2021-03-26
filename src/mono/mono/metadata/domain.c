@@ -675,32 +675,6 @@ mono_init_version (const char *domain_name, const char *version)
 	return mono_init_internal (domain_name, NULL, version);
 }
 
-/**
- * mono_cleanup:
- *
- * Cleans up all metadata modules. 
- */
-void
-mono_cleanup (void)
-{
-	mono_close_exe_image ();
-
-	mono_thread_info_cleanup ();
-
-	mono_defaults.corlib = NULL;
-
-	mono_loader_cleanup ();
-	mono_classes_cleanup ();
-	mono_assemblies_cleanup ();
-	mono_debug_cleanup ();
-	mono_images_cleanup ();
-	mono_metadata_cleanup ();
-
-	mono_coop_mutex_destroy (&appdomains_mutex);
-
-	mono_w32file_cleanup ();
-}
-
 void
 mono_close_exe_image (void)
 {

@@ -62,7 +62,7 @@ namespace System.Xml.Serialization
         Unsupported = 0x100000,
     }
 
-    internal class TypeDesc
+    internal sealed class TypeDesc
     {
         private readonly string _name;
         private readonly string _fullName;
@@ -456,7 +456,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class TypeScope
+    internal sealed class TypeScope
     {
         private readonly Hashtable _typeDescs = new Hashtable();
         private readonly Hashtable _arrayTypeDescs = new Hashtable();

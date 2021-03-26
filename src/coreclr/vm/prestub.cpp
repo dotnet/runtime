@@ -1921,7 +1921,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
     ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
 
-    MAKE_CURRENT_THREAD_AVAILABLE();
+    MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk());
 
     // Attempt to check what GC mode we are running under.
     if (CURRENT_THREAD == NULL

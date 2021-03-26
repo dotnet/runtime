@@ -339,7 +339,6 @@
     <Compile Include="System\Drawing\GdiPlusStreamHelper.Unix.cs" />
     <Compile Include="System\Drawing\LibX11Functions.cs" />
     <Compile Include="System\Drawing\MarshallingHelpers.cs" />
-    <Compile Include="System\Drawing\NativeStructs.Unix.cs" />
     <Compile Include="System\Drawing\ImageAnimator.Unix.cs" />
     <Compile Include="System\Drawing\Image.Unix.cs" />
     <Compile Include="System\Drawing\Pen.Unix.cs" />

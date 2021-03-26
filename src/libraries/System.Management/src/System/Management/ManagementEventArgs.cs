@@ -4,12 +4,12 @@
 namespace System.Management
 {
 
-    internal class IdentifierChangedEventArgs : EventArgs
+    internal sealed class IdentifierChangedEventArgs : EventArgs
     {
         internal IdentifierChangedEventArgs() { }
     }
 
-    internal class InternalObjectPutEventArgs : EventArgs
+    internal sealed class InternalObjectPutEventArgs : EventArgs
     {
         private readonly ManagementPath path;
 
