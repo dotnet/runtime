@@ -19,7 +19,7 @@ namespace System.Xml
     // Encoder class to output to any encoding.  The TextUtf8RawTextWriter class combined the encoding
     // operation with serialization in order to achieve better performance.
     // </summary>
-    internal class TextEncodedRawTextWriter : XmlEncodedRawTextWriter
+    internal sealed class TextEncodedRawTextWriter : XmlEncodedRawTextWriter
     {
         // Construct an instance of this class that outputs text to the TextWriter interface.
         public TextEncodedRawTextWriter(TextWriter writer, XmlWriterSettings settings) : base(writer, settings)

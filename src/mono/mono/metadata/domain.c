@@ -42,8 +42,6 @@
 #include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/runtime.h>
-#include <mono/metadata/w32mutex.h>
-#include <mono/metadata/w32semaphore.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/threads.h>
@@ -366,11 +364,8 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
-	mono_w32handle_namespace_init ();
 #endif
 
-	mono_w32mutex_init ();
-	mono_w32semaphore_init ();
 	mono_w32event_init ();
 	mono_w32file_init ();
 
@@ -678,32 +673,6 @@ MonoDomain *
 mono_init_version (const char *domain_name, const char *version)
 {
 	return mono_init_internal (domain_name, NULL, version);
-}
-
-/**
- * mono_cleanup:
- *
- * Cleans up all metadata modules. 
- */
-void
-mono_cleanup (void)
-{
-	mono_close_exe_image ();
-
-	mono_thread_info_cleanup ();
-
-	mono_defaults.corlib = NULL;
-
-	mono_loader_cleanup ();
-	mono_classes_cleanup ();
-	mono_assemblies_cleanup ();
-	mono_debug_cleanup ();
-	mono_images_cleanup ();
-	mono_metadata_cleanup ();
-
-	mono_coop_mutex_destroy (&appdomains_mutex);
-
-	mono_w32file_cleanup ();
 }
 
 void

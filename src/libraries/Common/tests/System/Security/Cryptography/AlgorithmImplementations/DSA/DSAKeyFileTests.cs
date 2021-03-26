@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Dsa.Tests
 
         private static void UseAfterDispose(bool importKey)
         {
-            DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(512);
+            DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(1024);
 
             byte[] pkcs8Private;
             byte[] pkcs8EncryptedPrivate;

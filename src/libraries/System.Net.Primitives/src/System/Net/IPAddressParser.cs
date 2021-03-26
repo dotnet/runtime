@@ -13,7 +13,7 @@ using System.Buffers.Binary;
 
 namespace System.Net
 {
-    internal class IPAddressParser
+    internal static class IPAddressParser
     {
         private const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
 
@@ -76,14 +76,15 @@ namespace System.Net
         private static unsafe int IPv4AddressToStringHelper(uint address, char* addressString)
         {
             int offset = 0;
+            address = (uint)IPAddress.NetworkToHostOrder(unchecked((int)address));
 
-            FormatIPv4AddressNumber((int)(address & 0xFF), addressString, ref offset);
-            addressString[offset++] = '.';
-            FormatIPv4AddressNumber((int)((address >> 8) & 0xFF), addressString, ref offset);
+            FormatIPv4AddressNumber((int)((address >> 24) & 0xFF), addressString, ref offset);
             addressString[offset++] = '.';
             FormatIPv4AddressNumber((int)((address >> 16) & 0xFF), addressString, ref offset);
             addressString[offset++] = '.';
-            FormatIPv4AddressNumber((int)((address >> 24) & 0xFF), addressString, ref offset);
+            FormatIPv4AddressNumber((int)((address >> 8) & 0xFF), addressString, ref offset);
+            addressString[offset++] = '.';
+            FormatIPv4AddressNumber((int)(address & 0xFF), addressString, ref offset);
 
             return offset;
         }
@@ -179,9 +180,9 @@ namespace System.Net
 
             if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
             {
-                // IPv4AddressHelper.ParseNonCanonical returns the bytes in the inverse order.
-                // Reverse them and return success.
-                address = BinaryPrimitives.ReverseEndianness((uint)tmpAddr);
+                // IPv4AddressHelper.ParseNonCanonical returns the bytes in host order.
+                // Convert to network order and return success.
+                address = (uint)IPAddress.HostToNetworkOrder(unchecked((int)tmpAddr));
                 return true;
             }
             else
@@ -291,9 +292,10 @@ namespace System.Net
         }
 
         /// <summary>Extracts the IPv4 address from the end of the IPv6 address byte array.</summary>
-        private static uint ExtractIPv4Address(ushort[] address) => (uint)(Reverse(address[7]) << 16) | Reverse(address[6]);
-
-        /// <summary>Reverses the two bytes in the ushort.</summary>
-        private static ushort Reverse(ushort number) => (ushort)(((number >> 8) & 0xFF) | ((number << 8) & 0xFF00));
+        private static uint ExtractIPv4Address(ushort[] address)
+        {
+            uint ipv4address = (uint)address[6] << 16 | (uint)address[7];
+            return (uint)IPAddress.HostToNetworkOrder(unchecked((int)ipv4address));
+        }
     }
 }

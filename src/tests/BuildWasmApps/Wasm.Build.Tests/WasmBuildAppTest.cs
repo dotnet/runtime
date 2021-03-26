@@ -176,7 +176,8 @@ namespace Wasm.Build.Tests
 
             string projectName = $"invariant_{invariantGlobalization?.ToString() ?? "unset"}";
             BuildProject(projectName, config, aot: aot, extraProperties: extraProperties,
-                        hasIcudt: invariantGlobalization == null || invariantGlobalization.Value == false);
+                        hasIcudt: invariantGlobalization == null || invariantGlobalization.Value == false,
+                        dotnetWasmFromRuntimePack: !(aot || config == "Release"));
 
             RunAndTestWasmApp(projectName, config, isAOT: aot, expectedExitCode: 42,
                                 test: output => Assert.Contains("Hello, World!", output));
@@ -265,7 +266,7 @@ namespace Wasm.Build.Tests
         void TestMain(string projectName, string programText, string config, bool aot)
         {
             File.WriteAllText(Path.Combine(_tempDir, "Program.cs"), programText);
-            BuildProject(projectName, config, aot: aot);
+            BuildProject(projectName, config, aot: aot, dotnetWasmFromRuntimePack: !(aot || config == "Release"));
             RunAndTestWasmApp(projectName, config, isAOT: aot, expectedExitCode: 42,
                                 test: output => Assert.Contains("Hello, World!", output));
         }
@@ -281,7 +282,7 @@ namespace Wasm.Build.Tests
             string programText = programFormatString.Replace("##CODE##", code);
 
             File.WriteAllText(Path.Combine(_tempDir, "Program.cs"), programText);
-            BuildProject(projectName, config, aot: aot);
+            BuildProject(projectName, config, aot: aot, dotnetWasmFromRuntimePack: !(aot || config == "Release"));
             RunAndTestWasmApp(projectName, config, isAOT: aot, expectedExitCode: 42 + args.Length, args: string.Join(' ', args),
                 test: output =>
                 {

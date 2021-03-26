@@ -10,7 +10,7 @@ namespace System.Net.Mail
 {
     //Streams created are read only and return 0 once a full server reply has been read
     //To get the next server reply, call GetNextReplyReader
-    internal class SmtpReplyReaderFactory
+    internal sealed class SmtpReplyReaderFactory
     {
         private enum ReadState
         {
@@ -367,7 +367,7 @@ namespace System.Net.Mail
             }
         }
 
-        private class ReadLinesAsyncResult : LazyAsyncResult
+        private sealed class ReadLinesAsyncResult : LazyAsyncResult
         {
             private StringBuilder? _builder;
             private ArrayList? _lines;

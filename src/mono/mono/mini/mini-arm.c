@@ -7169,6 +7169,12 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	return ctx->regs [reg];
 }
 
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	return &ctx->regs [reg];
+}
+
 void
 mono_arch_context_set_int_reg (MonoContext *ctx, int reg, host_mgreg_t val)
 {

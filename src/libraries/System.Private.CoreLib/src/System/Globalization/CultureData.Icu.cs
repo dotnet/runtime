@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Globalization
 {
-    internal partial class CultureData
+    internal sealed partial class CultureData
     {
         // ICU constants
         private const int ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY = 100; // max size of keyword or value
@@ -63,11 +63,8 @@ namespace System.Globalization
             {
                 _iLanguage = CultureInfo.LOCALE_CUSTOM_UNSPECIFIED;
             }
-
             _bNeutral = TwoLetterISOCountryName.Length == 0;
-
             _sSpecificCulture = _bNeutral ? IcuLocaleData.GetSpecificCultureName(_sRealName) : _sRealName;
-
             // Remove the sort from sName unless custom culture
             if (index > 0 && !_bNeutral && !IsCustomCultureId(_iLanguage))
             {
@@ -110,7 +107,6 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-
             Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo] Expected _sWindowsName to be populated already");
             return IcuGetLocaleInfo(_sWindowsName, type);
         }
@@ -138,7 +134,6 @@ namespace System.Globalization
                 Debug.Fail("[CultureData.IcuGetLocaleInfo(LocaleStringData)] Failed");
                 return string.Empty;
             }
-
             return new string(buffer);
         }
 
@@ -224,6 +219,12 @@ namespace System.Globalization
         {
             // use the fallback which is to return NativeName
             return null;
+        }
+
+        internal static bool IcuIsEnsurePredefinedLocaleName(string name)
+        {
+            Debug.Assert(!GlobalizationMode.UseNls);
+            return Interop.Globalization.IsPredefinedLocale(name);
         }
 
         private static string ConvertIcuTimeFormatString(ReadOnlySpan<char> icuFormatString)

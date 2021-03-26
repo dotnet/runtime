@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Pipelines
 {
-    internal class StreamPipeWriter : PipeWriter
+    internal sealed class StreamPipeWriter : PipeWriter
     {
         internal const int InitialSegmentPoolSize = 4; // 16K
         internal const int MaxSegmentPoolSize = 256; // 1MB
@@ -328,6 +328,7 @@ namespace System.IO.Pipelines
                     // Mark bytes as written *after* flushing
                     _head = null;
                     _tail = null;
+                    _tailMemory = default;
                     _bytesBuffered = 0;
 
                     return new FlushResult(isCanceled: false, isCompleted: false);
@@ -395,6 +396,7 @@ namespace System.IO.Pipelines
             // Mark bytes as written *after* flushing
             _head = null;
             _tail = null;
+            _tailMemory = default;
             _bytesBuffered = 0;
         }
     }

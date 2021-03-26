@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal
@@ -17,7 +19,7 @@ namespace Internal.Cryptography.Pal
         {
         }
 
-        private partial class AndroidX509Pal : ManagedX509ExtensionProcessor, IX509Pal
+        private sealed partial class AndroidX509Pal : ManagedX509ExtensionProcessor, IX509Pal
         {
             public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
             {
@@ -41,7 +43,15 @@ namespace Internal.Cryptography.Pal
                 switch (oid.Value)
                 {
                     case Oids.Dsa:
-                        throw new NotImplementedException($"{nameof(DecodePublicKey)} (DSA)");
+                        if (certificatePal != null)
+                        {
+                            var handle = new SafeDsaHandle(GetPublicKey(certificatePal, Interop.AndroidCrypto.PAL_KeyAlgorithm.DSA));
+                            return new DSAImplementation.DSAAndroid(handle);
+                        }
+                        else
+                        {
+                            return DecodeDsaPublicKey(encodedKeyValue, encodedParameters);
+                        }
                     case Oids.Rsa:
                         if (certificatePal != null)
                         {
@@ -128,6 +138,37 @@ namespace Internal.Cryptography.Pal
                 {
                     rsa.Dispose();
                     throw;
+                }
+            }
+
+            private static DSA DecodeDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
+            {
+                SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
+                {
+                    Algorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Dsa, Parameters = encodedParameters },
+                    SubjectPublicKey = encodedKeyValue,
+                };
+
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                spki.Encode(writer);
+
+                byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
+
+                int written = writer.Encode(rented);
+
+                DSA dsa = DSA.Create();
+                IDisposable? toDispose = dsa;
+
+                try
+                {
+                   dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
+                   toDispose = null;
+                   return dsa;
+                }
+                finally
+                {
+                    toDispose?.Dispose();
+                    CryptoPool.Return(rented, written);
                 }
             }
         }

@@ -7,7 +7,7 @@ using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    internal class ReflectionParameter : ReflectionItem
+    internal sealed class ReflectionParameter : ReflectionItem
     {
         private readonly ParameterInfo _parameter;
 

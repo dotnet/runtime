@@ -269,17 +269,6 @@ mono_marshal_init (void)
 }
 
 void
-mono_marshal_cleanup (void)
-{
-	mono_cominterop_cleanup ();
-
-	mono_native_tls_free (load_type_info_tls_id);
-	mono_native_tls_free (last_error_tls_id);
-	mono_coop_mutex_destroy (&marshal_mutex);
-	marshal_mutex_initialized = FALSE;
-}
-
-void
 mono_marshal_lock_internal (void)
 {
 	mono_marshal_lock ();

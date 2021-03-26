@@ -342,12 +342,12 @@ class recursive_gc_sync;
 
 #ifdef MULTIPLE_HEAPS
 // This feature hasn't been enabled for regions yet.
-#ifndef USE_REGIONS
+//#ifndef USE_REGIONS
 // card marking stealing only makes sense in server GC
 // but it works and is easier to debug for workstation GC
 // so turn it on for server GC, turn on for workstation GC if necessary
 #define FEATURE_CARD_MARKING_STEALING
-#endif //!USE_REGIONS
+//#endif //!USE_REGIONS
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_CARD_MARKING_STEALING
@@ -5329,6 +5329,11 @@ private:
     size_t region_alignment;
     size_t large_region_alignment;
 
+    GCSpinLock region_allocator_lock;
+
+    void enter_spin_lock();
+    void leave_spin_lock();
+
     uint32_t* region_map_start;
     uint32_t* region_map_end;
 
@@ -5663,6 +5668,14 @@ public:
         while (move_next(seg, low, high))
             ;
     }
+
+#ifdef USE_REGIONS
+    void switch_to_segment(heap_segment* seg)
+    {
+        assert(segment == nullptr);
+        segment = seg;
+    }
+#endif
 
     uint8_t* get_chunk_high()
     {

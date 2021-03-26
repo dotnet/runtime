@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    internal partial class AesImplementation
+    internal sealed partial class AesImplementation
     {
         private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,

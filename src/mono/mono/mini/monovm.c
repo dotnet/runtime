@@ -226,6 +226,14 @@ monovm_initialize (int propertyCount, const char **propertyKeys, const char **pr
 	return 0;
 }
 
+// Initialize monovm with properties set by runtimeconfig.json. Primarily used by mobile targets.
+int
+monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *arg, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void *user_data)
+{
+	mono_runtime_register_runtimeconfig_json_properties (arg, cleanup_fn, user_data);
+	return 0;
+}
+
 int
 monovm_execute_assembly (int argc, const char **argv, const char *managedAssemblyPath, unsigned int *exitCode)
 {

@@ -8,14 +8,10 @@ using System.Threading.Tasks;
 
 namespace System.IO.Pipelines
 {
-    internal class StreamPipeReader : PipeReader
+    internal sealed class StreamPipeReader : PipeReader
     {
         internal const int InitialSegmentPoolSize = 4; // 16K
         internal const int MaxSegmentPoolSize = 256; // 1MB
-
-        private readonly int _bufferSize;
-        private readonly int _minimumReadThreshold;
-        private readonly MemoryPool<byte>? _pool;
 
         private CancellationTokenSource? _internalTokenSource;
         private bool _isReaderCompleted;
@@ -31,7 +27,8 @@ namespace System.IO.Pipelines
 
         // Mutable struct! Don't make this readonly
         private BufferSegmentStack _bufferSegmentPool;
-        private readonly bool _leaveOpen;
+
+        private StreamPipeReaderOptions _options;
 
         /// <summary>
         /// Creates a new StreamPipeReader.
@@ -47,12 +44,16 @@ namespace System.IO.Pipelines
                 throw new ArgumentNullException(nameof(options));
             }
 
+            _options = options;
             _bufferSegmentPool = new BufferSegmentStack(InitialSegmentPoolSize);
-            _minimumReadThreshold = Math.Min(options.MinimumReadSize, options.BufferSize);
-            _pool = options.Pool == MemoryPool<byte>.Shared ? null : options.Pool;
-            _bufferSize = _pool == null ? options.BufferSize : Math.Min(options.BufferSize, _pool.MaxBufferSize);
-            _leaveOpen = options.LeaveOpen;
         }
+
+        // All derived from the options
+        private bool LeaveOpen => _options.LeaveOpen;
+        private bool UseZeroByteReads => _options.UseZeroByteReads;
+        private int BufferSize => _options.BufferSize;
+        private int MinimumReadThreshold => _options.MinimumReadSize;
+        private MemoryPool<byte> Pool => _options.Pool;
 
         /// <summary>
         /// Gets the inner stream that is being read from.
@@ -180,7 +181,7 @@ namespace System.IO.Pipelines
                 returnSegment.ResetMemory();
             }
 
-            if (!_leaveOpen)
+            if (!LeaveOpen)
             {
                 InnerStream.Dispose();
             }
@@ -215,6 +216,13 @@ namespace System.IO.Pipelines
                 var isCanceled = false;
                 try
                 {
+                    // This optimization only makes sense if we don't have anything buffered
+                    if (UseZeroByteReads && _bufferedBytes == 0)
+                    {
+                        // Wait for data by doing 0 byte read before
+                        await InnerStream.ReadAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+                    }
+
                     AllocateReadTail();
 
                     Memory<byte> buffer = _readTail!.AvailableMemory.Slice(_readTail.End);
@@ -296,7 +304,7 @@ namespace System.IO.Pipelines
 
         private ReadOnlySequence<byte> GetCurrentReadOnlySequence()
         {
-            Debug.Assert(_readHead != null &&_readTail != null);
+            Debug.Assert(_readHead != null && _readTail != null);
             return new ReadOnlySequence<byte>(_readHead, _readIndex, _readTail, _readTail.End);
         }
 
@@ -311,7 +319,7 @@ namespace System.IO.Pipelines
             else
             {
                 Debug.Assert(_readTail != null);
-                if (_readTail.WritableBytes < _minimumReadThreshold)
+                if (_readTail.WritableBytes < MinimumReadThreshold)
                 {
                     BufferSegment nextSegment = AllocateSegment();
                     _readTail.SetNext(nextSegment);
@@ -324,13 +332,13 @@ namespace System.IO.Pipelines
         {
             BufferSegment nextSegment = CreateSegmentUnsynchronized();
 
-            if (_pool is null)
+            if (_options.IsDefaultSharedMemoryPool)
             {
-                nextSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(_bufferSize));
+                nextSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(BufferSize));
             }
             else
             {
-                nextSegment.SetOwnedMemory(_pool.Rent(_bufferSize));
+                nextSegment.SetOwnedMemory(Pool.Rent(BufferSize));
             }
 
             return nextSegment;

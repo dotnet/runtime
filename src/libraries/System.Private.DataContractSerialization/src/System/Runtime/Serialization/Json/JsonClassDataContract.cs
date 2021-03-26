@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonClassDataContract : JsonDataContract
+    internal sealed class JsonClassDataContract : JsonDataContract
     {
         private readonly JsonClassDataContractCriticalHelper _helper;
 
@@ -108,7 +108,7 @@ namespace System.Runtime.Serialization.Json
             JsonFormatWriterDelegate(jsonWriter, obj, context, TraditionalClassDataContract, MemberNames);
         }
 
-        private class JsonClassDataContractCriticalHelper : JsonDataContractCriticalHelper
+        private sealed class JsonClassDataContractCriticalHelper : JsonDataContractCriticalHelper
         {
             private JsonFormatClassReaderDelegate? _jsonFormatReaderDelegate;
             private JsonFormatClassWriterDelegate? _jsonFormatWriterDelegate;

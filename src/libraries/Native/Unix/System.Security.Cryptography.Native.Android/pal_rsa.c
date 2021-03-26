@@ -162,7 +162,7 @@ PALEXPORT RSA* AndroidCryptoNative_DecodeRsaSubjectPublicKeyInfo(uint8_t* buf, i
         return FAIL;
     }
 
-    RSA* rsa = AndroidCryptoNative_NewRsaFromPublicKey(env, publicKey);
+    RSA* rsa = AndroidCryptoNative_NewRsaFromKeys(env, publicKey, NULL /*privateKey*/);
     (*env)->DeleteLocalRef(env, publicKey);
 
     return rsa;
@@ -220,6 +220,15 @@ PALEXPORT int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uin
     jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
     (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
     jbyteArray decryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
+    if (CheckJNIExceptions(env))
+    {
+        (*env)->DeleteLocalRef(env, cipher);
+        (*env)->DeleteLocalRef(env, fromBytes);
+        (*env)->DeleteLocalRef(env, decryptedBytes);
+        (*env)->DeleteLocalRef(env, algName);
+        return FAIL;
+    }
+
     jsize decryptedBytesLen = (*env)->GetArrayLength(env, decryptedBytes);
     (*env)->GetByteArrayRegion(env, decryptedBytes, 0, decryptedBytesLen, (jbyte*) to);
 
@@ -376,15 +385,16 @@ PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-RSA* AndroidCryptoNative_NewRsaFromPublicKey(JNIEnv* env, jobject /*RSAPublicKey*/ key)
+RSA* AndroidCryptoNative_NewRsaFromKeys(JNIEnv* env, jobject /*RSAPublicKey*/ publicKey, jobject /*RSAPrivateKey*/ privateKey)
 {
-    if (!(*env)->IsInstanceOf(env, key, g_RSAPublicKeyClass))
+    if (!(*env)->IsInstanceOf(env, publicKey, g_RSAPublicKeyClass))
         return NULL;
 
-    jobject modulus = (*env)->CallObjectMethod(env, key, g_RSAKeyGetModulus);
+    jobject modulus = (*env)->CallObjectMethod(env, publicKey, g_RSAKeyGetModulus);
 
     RSA* ret = AndroidCryptoNative_RsaCreate();
-    ret->publicKey = AddGRef(env, key);
+    ret->publicKey = AddGRef(env, publicKey);
+    ret->privateKey = AddGRef(env, privateKey);
     ret->keyWidthInBits = AndroidCryptoNative_GetBigNumBytes(modulus) * 8;
 
     (*env)->DeleteLocalRef(env, modulus);

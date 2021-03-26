@@ -101,7 +101,7 @@ namespace System.DirectoryServices
         /// Supports a simple ForEach-style iteration over a collection and defines
         /// enumerators, size, and synchronization methods.
         /// </devdoc>
-        private class ChildEnumerator : IEnumerator
+        private sealed class ChildEnumerator : IEnumerator
         {
             private readonly DirectoryEntry _container;
             private SafeNativeMethods.EnumVariant? _enumVariant;

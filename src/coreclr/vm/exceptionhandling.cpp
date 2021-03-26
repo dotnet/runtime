@@ -2045,7 +2045,7 @@ void ExceptionTracker::DebugLogTrackerRanges(__in_z const char *pszTag)
     }
     CONTRACTL_END;
 
-    Thread*             pThread     = GetThread();
+    Thread*             pThread     = GetThreadNULLOk();
     ExceptionTracker*   pTracker    = pThread ? pThread->GetExceptionState()->m_pCurrentTracker : NULL;
 
     int i = 0;
@@ -2430,8 +2430,6 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
         pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName));
 
     Thread *pThread = GetThread();
-    _ASSERTE (pThread);
-
     INDEBUG( DumpClauses(pcfThisFrame->GetJitManager(), pcfThisFrame->GetMethodToken(), uMethodStartPC, uControlPC) );
 
     bool fIsILStub = pMD->IsILStub();
@@ -3403,7 +3401,7 @@ void ExceptionTracker::PopTrackers(
 
     // Only call into PopTrackers if we have a managed thread and we have an exception progress.
     // Otherwise, the call below (to PopTrackers) is a noop. If this ever changes, then this short-circuit needs to be fixed.
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = GetThreadNULLOk();
     if ((pCurThread != NULL) && (pCurThread->GetExceptionState()->IsExceptionInProgress()))
     {
         // Refer to the comment around ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException
@@ -3483,7 +3481,7 @@ void ExceptionTracker::PopTrackers(
     }
     CONTRACTL_END;
 
-    Thread*             pThread     = GetThread();
+    Thread*             pThread     = GetThreadNULLOk();
     ExceptionTracker*   pTracker    = (pThread ? pThread->GetExceptionState()->m_pCurrentTracker : NULL);
 
     // NOTE:
@@ -4027,7 +4025,7 @@ BOOL ExceptionTracker::NotifyDebuggerOfStub(Thread* pThread, StackFrame sf, Fram
 
     if (g_EnableSIS)
     {
-        _ASSERTE(GetThread() == pThread);
+        _ASSERTE(GetThreadNULLOk() == pThread);
 
         GCX_COOP();
 
@@ -4189,7 +4187,7 @@ inline bool ExceptionTracker::IsValid()
 
     EX_TRY
     {
-        Thread* pThisThread = GetThread();
+        Thread* pThisThread = GetThreadNULLOk();
         if (m_pThread == pThisThread)
         {
             fRetVal = true;
@@ -4224,7 +4222,7 @@ BOOL ExceptionTracker::ThrowableIsValid()
 UINT_PTR ExceptionTracker::DebugComputeNestingLevel()
 {
     UINT_PTR uNestingLevel = 0;
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
 
     if (pThread)
     {
@@ -4735,8 +4733,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     {
         // Get the thread and the thread exception state - they must exist at this point
         Thread *pCurThread = GetThread();
-        _ASSERTE(pCurThread != NULL);
-
         ThreadExceptionState * pCurTES = pCurThread->GetExceptionState();
         _ASSERTE(pCurTES != NULL);
     }
@@ -5074,7 +5070,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 
 BOOL IsSafeToCallExecutionManager()
 {
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
 
     // It is safe to call the ExecutionManager::IsManagedCode only if the current thread is in
     // the cooperative mode. Otherwise ExecutionManager::IsManagedCode could deadlock if
@@ -5208,7 +5204,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
     else
     {
         // This is a breakpoint or single step stop, we report it to the debugger.
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (pThread != NULL && g_pDebugInterface != NULL)
         {
 #if (defined(TARGET_ARM) || defined(TARGET_ARM64))
@@ -5810,7 +5806,7 @@ UMThunkUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
                                IN OUT PDISPATCHER_CONTEXT pDispatcherContext
                               )
 {
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL) {
         return ExceptionContinueSearch;
     }
@@ -5882,7 +5878,7 @@ NOT_BIT64_ARG(IN     ULONG               MemoryStackFp),
     //
     // We check for thread object since this function is the personality routine of the UMThunk
     // and we can landup here even when thread creation (within the thunk) fails.
-    if (GetThread() != NULL)
+    if (GetThreadNULLOk() != NULL)
     {
         SetReversePInvokeEscapingUnhandledExceptionStatus(IS_UNWINDING(pExceptionRecord->ExceptionFlags),
             MemoryStackFp
@@ -5913,8 +5909,6 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
 {
 
     Thread* pThread = GetThread();
-    _ASSERTE(pThread);
-
     if (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
     {
         if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))

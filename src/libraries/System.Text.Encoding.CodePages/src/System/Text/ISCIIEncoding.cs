@@ -24,7 +24,7 @@ namespace System.Text
     //      Forms D & KD have things like 0934, which decomposes to 0933 + 093C, so not normal.
     //      Form IDNA has the above problems plus case mapping, so false (like most encodings)
     //
-    internal class ISCIIEncoding : EncodingNLS, ISerializable
+    internal sealed class ISCIIEncoding : EncodingNLS, ISerializable
     {
         // Constants
         private const int CodeDevanagari = 2;    // 0x42 57002
@@ -691,7 +691,7 @@ namespace System.Text
             return _defaultCodePage + EncoderFallback.GetHashCode() + DecoderFallback.GetHashCode();
         }
 
-        internal class ISCIIEncoder : EncoderNLS
+        internal sealed class ISCIIEncoder : EncoderNLS
         {
             // Need to remember the default code page (for HasState)
             internal int defaultCodePage;
@@ -729,7 +729,7 @@ namespace System.Text
             }
         }
 
-        internal class ISCIIDecoder : DecoderNLS
+        internal sealed class ISCIIDecoder : DecoderNLS
         {
             // Need a place to store any our current code page and last ATR flag
             internal int currentCodePage;

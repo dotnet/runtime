@@ -951,9 +951,9 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
     } CONTRACTL_END;
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    BEGIN_GETTHREAD_ALLOWED;
+    
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
 
     if (!pThread)
         return ScanNoReaderLock;
@@ -966,7 +966,7 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
     if (pThread->PreemptiveGCDisabled() || (pThread == ThreadSuspend::GetSuspensionThread()))
         return ScanNoReaderLock;
 
-    END_GETTHREAD_ALLOWED;
+    
 
     return ScanReaderLock;
 #else
@@ -3447,6 +3447,10 @@ void EEJitManager::CleanupCodeHeaps()
 
     HostCodeHeap *pHeap = m_cleanupList;
     m_cleanupList = NULL;
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     while (pHeap)
     {

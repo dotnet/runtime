@@ -17,7 +17,7 @@ namespace System.Runtime.Serialization.Json
     internal delegate void JsonFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, ClassDataContract dataContract, XmlDictionaryString[]? memberNames);
     internal delegate void JsonFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract dataContract);
 
-    internal class JsonFormatWriterGenerator
+    internal sealed class JsonFormatWriterGenerator
     {
         private readonly CriticalHelper _helper;
 
@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization.Json
             return _helper.GenerateCollectionWriter(collectionContract);
         }
 
-        private class CriticalHelper
+        private sealed class CriticalHelper
         {
             private CodeGenerator _ilg = null!; // initialized in GenerateXXXWriter
             private ArgBuilder _xmlWriterArg = null!; // initialized in InitArgs

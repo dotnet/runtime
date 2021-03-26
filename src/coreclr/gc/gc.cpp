@@ -3493,6 +3493,7 @@ void region_allocator::make_busy_block (uint32_t* index_start, uint32_t num_unit
 #ifdef _DEBUG
     dprintf (REGIONS_LOG, ("MBB[B: %Id] %d->%d", (size_t)num_units, (int)(index_start - region_map_start), (int)(index_start - region_map_start + num_units)));
 #endif //_DEBUG
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
     *index_start = num_units;
 }
 
@@ -3501,6 +3502,7 @@ void region_allocator::make_free_block (uint32_t* index_start, uint32_t num_unit
 #ifdef _DEBUG
     dprintf (REGIONS_LOG, ("MFB[F: %Id] %d->%d", (size_t)num_units, (int)(index_start - region_map_start), (int)(index_start - region_map_start + num_units)));
 #endif //_DEBUG
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
     *index_start = region_alloc_free_bit | num_units;
 }
 
@@ -3519,6 +3521,7 @@ void region_allocator::adjust_map (uint32_t* current_free_index_start,
 
 void region_allocator::print_map (const char* msg)
 {
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
 #ifdef _DEBUG
     const char* heap_type = "UH";
     dprintf (REGIONS_LOG, ("[%s]-----printing----%s", heap_type, msg));
@@ -3550,6 +3553,8 @@ uint8_t* region_allocator::allocate_end (uint32_t num_units)
 {
     uint8_t* alloc = NULL;
 
+    ASSERT_HOLDING_SPIN_LOCK (&region_allocator_lock);
+
     if (global_region_used < global_region_end)
     {
         size_t end_remaining = global_region_end - global_region_used;
@@ -3566,8 +3571,35 @@ uint8_t* region_allocator::allocate_end (uint32_t num_units)
     return alloc;
 }
 
+void region_allocator::enter_spin_lock()
+{
+    while (true)
+    {
+        if (Interlocked::CompareExchange(&region_allocator_lock.lock, 0, -1) < 0)
+            break;
+
+        while (region_allocator_lock.lock >= 0)
+        {
+            YieldProcessor();           // indicate to the processor that we are spinning
+        }
+    }
+#ifdef _DEBUG
+    region_allocator_lock.holding_thread = GCToEEInterface::GetThread();
+#endif //_DEBUG
+}
+
+void region_allocator::leave_spin_lock()
+{
+    region_allocator_lock.lock = -1;
+#ifdef _DEBUG
+    region_allocator_lock.holding_thread = (Thread*)-1;
+#endif //_DEBUG
+}
+
 uint8_t* region_allocator::allocate (uint32_t num_units)
 {
+    enter_spin_lock();
+
     uint32_t* current_index = region_map_start;
     uint32_t* end_index = region_map_end;
 
@@ -3607,6 +3639,9 @@ uint8_t* region_allocator::allocate (uint32_t num_units)
 
                 total_free_units -= num_units;
                 print_map ("alloc: found in free");
+
+                leave_spin_lock();
+
                 return region_address_of (current_free_index_start);
             }
         }
@@ -3647,6 +3682,8 @@ uint8_t* region_allocator::allocate (uint32_t num_units)
         dprintf (REGIONS_LOG, ("couldn't find memory at the end! only %Id bytes left", (global_region_end - global_region_used)));
     }
 
+    leave_spin_lock();
+
     return alloc;
 }
 
@@ -3685,6 +3722,8 @@ bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end)
 
 void region_allocator::delete_region (uint8_t* start)
 {
+    enter_spin_lock();
+
     assert (is_region_aligned (start));
 
     print_map ("before delete");
@@ -3710,6 +3749,8 @@ void region_allocator::delete_region (uint8_t* start)
 
     total_free_units += current_val;
     print_map ("after delete");
+
+    leave_spin_lock();
 }
 #endif //USE_REGIONS
 
@@ -4140,7 +4181,7 @@ public:
         _ASSERTE(IsStructAligned((uint8_t *)this, GetMethodTable()->GetBaseAlignment()));
 #endif // FEATURE_STRUCTALIGN
 
-#ifdef FEATURE_64BIT_ALIGNMENT
+#if defined(FEATURE_64BIT_ALIGNMENT) && !defined(FEATURE_REDHAWK)
         if (pMT->RequiresAlign8())
         {
             _ASSERTE((((size_t)this) & 0x7) == (pMT->IsValueType() ? 4U : 0U));
@@ -7620,11 +7661,11 @@ BOOL gc_heap::card_bundles_enabled ()
 }
 #endif // CARD_BUNDLE
 
-#if defined (TARGET_AMD64)
+#if defined (HOST_64BIT)
 #define brick_size ((size_t)4096)
 #else
 #define brick_size ((size_t)2048)
-#endif //TARGET_AMD64
+#endif //HOST_64BIT
 
 inline
 size_t gc_heap::brick_of (uint8_t* add)
@@ -22994,18 +23035,19 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
             if ((num_gen0_regions % pinning_seg_interval) == 0)
             {
                 int align_const = get_alignment_constant (TRUE);
-                // Pinning the first object in the region.
-                uint8_t* obj_to_pin = heap_segment_mem (gen0_region);
-                pin_by_gc (obj_to_pin);
-
-                obj_to_pin += Align (size (obj_to_pin), align_const);
-                // Pinning the middle object in the region.
+                // Pinning the first and the middle object in the region.
+                uint8_t* boundary = heap_segment_mem (gen0_region);
+                uint8_t* obj_to_pin = boundary;
+                int num_pinned_objs = 0;
                 while (obj_to_pin < heap_segment_allocated (gen0_region))
                 {
-                    if (obj_to_pin > region_mid)
+                    if (obj_to_pin >= boundary && !((CObjectHeader*)obj_to_pin)->IsFree())
                     {
                         pin_by_gc (obj_to_pin);
-                        break;
+                        num_pinned_objs++;
+                        if (num_pinned_objs >= 2)
+                            break;
+                        boundary += (gen0_region_size / 2) + 1;
                     }
                     obj_to_pin += Align (size (obj_to_pin), align_const);
                 }
@@ -33532,6 +33574,9 @@ bool card_marking_enumerator::move_next(heap_segment* seg, uint8_t*& low, uint8_
                 low = (chunk_index_within_seg == 0) ? start : (aligned_start + (size_t)chunk_index_within_seg * CARD_MARKING_STEALING_GRANULARITY);
                 high = (chunk_index_within_seg + 1 == chunk_count_within_seg) ? end : (aligned_start + (size_t)(chunk_index_within_seg + 1) * CARD_MARKING_STEALING_GRANULARITY);
                 chunk_high = high;
+
+                dprintf (3, ("cme:mn ci: %u, low: %Ix, high: %Ix", chunk_index, low, high));
+
                 return true;
             }
             else
@@ -33548,16 +33593,24 @@ bool card_marking_enumerator::move_next(heap_segment* seg, uint8_t*& low, uint8_
 
                 // keep the chunk index for later
                 old_chunk_index = chunk_index;
+
+                dprintf (3, ("cme:mn oci: %u, seg mismatch seg: %Ix, segment: %Ix", old_chunk_index, heap_segment_mem (segment), heap_segment_mem (seg)));
+
                 return false;
             }
         }
 
         segment = heap_segment_next_in_range(segment);
+        segment_start_chunk_index += chunk_count_within_seg;
         if (segment == nullptr)
         {
+            // keep the chunk index for later
+            old_chunk_index = chunk_index;
+
+            dprintf (3, ("cme:mn oci: %u no more segments", old_chunk_index));
+
             return false;
         }
-        segment_start_chunk_index += chunk_count_within_seg;
     }
 }
 
@@ -33739,7 +33792,10 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
                 {
                     // Switch to regions for this generation.
                     seg = generation_start_segment (generation_of (curr_gen_number));
-                    dprintf (REGIONS_LOG, ("h%d switching to gen%d start seg %Ix", 
+#ifdef FEATURE_CARD_MARKING_STEALING
+                    card_mark_enumerator.switch_to_segment(seg);
+#endif // FEATURE_CARD_MARKING_STEALING
+                    dprintf (REGIONS_LOG, ("h%d switching to gen%d start seg %Ix",
                         heap_number, curr_gen_number, (size_t)seg));
                 }
             }

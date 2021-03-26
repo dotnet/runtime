@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// On Windows platforms EventSource will deliver messages using Event Tracing for Windows (ETW) events.
     /// On Linux EventSource will use LTTng (http://lttng.org) to deliver messages.
     /// </remarks>
-    internal class EventSourceLogger : ILogger
+    internal sealed class EventSourceLogger : ILogger
     {
         private static int _activityIds;
         private readonly LoggingEventSource _eventSource;
@@ -149,7 +149,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// ActivityScope is just a IDisposable that knows how to send the ActivityStop event when it is
         /// desposed.  It is part of the BeginScope() support.
         /// </summary>
-        private class ActivityScope : IDisposable
+        private sealed class ActivityScope : IDisposable
         {
             private readonly string _categoryName;
             private readonly int _activityID;

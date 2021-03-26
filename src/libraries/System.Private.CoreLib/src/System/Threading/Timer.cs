@@ -37,7 +37,7 @@ namespace System.Threading
     // in order to minimize contention when lots of threads are concurrently creating and destroying timers often.
     [DebuggerDisplay("Count = {CountForDebugger}")]
     [DebuggerTypeProxy(typeof(TimerQueueDebuggerTypeProxy))]
-    internal partial class TimerQueue
+    internal sealed partial class TimerQueue
     {
         #region Shared TimerQueue instances
         /// <summary>Mapping from a tick count to a time to use when debugging to translate tick count values.</summary>

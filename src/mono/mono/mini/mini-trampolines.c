@@ -1231,14 +1231,6 @@ mono_trampolines_init (void)
 	mono_counters_register ("RGCTX num lazy fetch trampolines", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_num_lazy_fetch_trampolines);
 }
 
-void
-mono_trampolines_cleanup (void)
-{
-	g_hash_table_destroy (rgctx_lazy_fetch_trampoline_hash);
-	g_hash_table_destroy (rgctx_lazy_fetch_trampoline_hash_addr);
-	mono_os_mutex_destroy (&trampolines_mutex);
-}
-
 guint8 *
 mono_get_trampoline_code (MonoTrampolineType tramp_type)
 {

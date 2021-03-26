@@ -1325,7 +1325,7 @@ namespace System.Xml
             return ReadArray(XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
-        private class XmlWrappedReader : XmlDictionaryReader, IXmlLineInfo
+        private sealed class XmlWrappedReader : XmlDictionaryReader, IXmlLineInfo
         {
             private readonly XmlReader _reader;
             private XmlNamespaceManager? _nsMgr;

@@ -728,27 +728,6 @@ mono_unwind_init (void)
 	mono_counters_register ("Unwind info size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &unwind_info_size);
 }
 
-void
-mono_unwind_cleanup (void)
-{
-	mono_os_mutex_destroy (&unwind_mutex);
-
-	if (!cached_info)
-		return;
-
-	for (int i = 0; i < cached_info_next; ++i) {
-		MonoUnwindInfo *cached = cached_info [i];
-
-		g_free (cached);
-	}
-	g_free (cached_info);
-
-	for (GSList *cursor = cached_info_list; cursor != NULL; cursor = cursor->next)
-		g_free (cursor->data);
-
-	g_slist_free (cached_info_list);
-}
-
 /*
  * mono_cache_unwind_info
  *

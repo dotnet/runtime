@@ -663,7 +663,7 @@ namespace System.Xml
     //
     // XmlCharCheckingReaderWithNS
     //
-    internal class XmlCharCheckingReaderWithNS : XmlCharCheckingReader, IXmlNamespaceResolver
+    internal sealed class XmlCharCheckingReaderWithNS : XmlCharCheckingReader, IXmlNamespaceResolver
     {
         internal IXmlNamespaceResolver readerAsNSResolver;
 

@@ -659,7 +659,7 @@ namespace System.Data.OleDb
 
     #endregion PROPVARIANT
 
-    internal class NativeOledbWrapper
+    internal static class NativeOledbWrapper
     {
         internal static unsafe OleDbHResult IChapteredRowsetReleaseChapter(System.IntPtr ptr, System.IntPtr chapter)
         {

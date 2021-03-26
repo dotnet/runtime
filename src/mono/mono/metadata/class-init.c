@@ -433,7 +433,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 	error_init (error);
 
-	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || tidx > tt->rows) {
+	/* FIXME: metadata-update - this function needs extensive work */
+	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || tidx > table_info_get_rows (tt)) {
 		mono_error_set_bad_image (error, image, "Invalid typedef token %x", type_token);
 		return NULL;
 	}
@@ -620,19 +621,19 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	first_method_idx = cols [MONO_TYPEDEF_METHOD_LIST] - 1;
 	mono_class_set_first_method_idx (klass, first_method_idx);
 
-	if (tt->rows > tidx){		
+	if (table_info_get_rows (tt) > tidx){		
 		mono_metadata_decode_row (tt, tidx, cols_next, MONO_TYPEDEF_SIZE);
 		field_last  = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
 		method_last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
 	} else {
-		field_last  = image->tables [MONO_TABLE_FIELD].rows;
-		method_last = image->tables [MONO_TABLE_METHOD].rows;
+		field_last  = table_info_get_rows (&image->tables [MONO_TABLE_FIELD]);
+		method_last = table_info_get_rows (&image->tables [MONO_TABLE_METHOD]);
 	}
 
 	if (cols [MONO_TYPEDEF_FIELD_LIST] && 
-	    cols [MONO_TYPEDEF_FIELD_LIST] <= image->tables [MONO_TABLE_FIELD].rows)
+	    cols [MONO_TYPEDEF_FIELD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_FIELD]))
 		mono_class_set_field_count (klass, field_last - first_field_idx);
-	if (cols [MONO_TYPEDEF_METHOD_LIST] <= image->tables [MONO_TABLE_METHOD].rows)
+	if (cols [MONO_TYPEDEF_METHOD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_METHOD]))
 		mono_class_set_method_count (klass, method_last - first_method_idx);
 
 	/* reserve space to store vector pointer in arrays */
@@ -4018,21 +4019,4 @@ mono_classes_init (void)
 							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_classes_size);
 	mono_counters_register ("MonoClass size",
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &classes_size);
-}
-
-/**
- * mono_classes_cleanup:
- *
- * Free the resources used by this module.
- */
-void
-mono_classes_cleanup (void)
-{
-	mono_native_tls_free (setup_fields_tls_id);
-	mono_native_tls_free (init_pending_tls_id);
-
-	if (global_interface_bitset)
-		mono_bitset_free (global_interface_bitset);
-	global_interface_bitset = NULL;
-	mono_os_mutex_destroy (&classes_mutex);
 }

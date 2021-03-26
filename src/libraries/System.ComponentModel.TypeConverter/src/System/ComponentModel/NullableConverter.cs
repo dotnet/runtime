@@ -18,6 +18,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Nullable converter is initialized with the underlying simple type.
         /// </summary>
+        [RequiresUnreferencedCode("The UnderlyingType cannot be statically discovered.")]
         public NullableConverter(Type type)
         {
             NullableType = type;
@@ -94,7 +95,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to the destination type.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, Type destinationType)
+        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
             if (destinationType == null)
             {
@@ -107,7 +108,7 @@ namespace System.ComponentModel
             }
             else if (destinationType == typeof(InstanceDescriptor))
             {
-                ConstructorInfo ci = NullableType.GetConstructor(new Type[] { UnderlyingType });
+                ConstructorInfo ci = GetNullableConstructor();
                 Debug.Assert(ci != null, "Couldn't find constructor");
                 return new InstanceDescriptor(ci, new object[] { value }, true);
             }
@@ -125,6 +126,14 @@ namespace System.ComponentModel
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
+        }
+
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(Nullable<>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "The Nullable<T> ctor will be preserved by the DynamicDependency.")]
+        private ConstructorInfo GetNullableConstructor()
+        {
+            return NullableType.GetConstructor(new Type[] { UnderlyingType })!;
         }
 
         /// <summary>

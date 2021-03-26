@@ -241,7 +241,6 @@ typedef struct MonoAotFileInfo
 #define MONO_AOT_FILE_INFO_NUM_SYMBOLS (((G_STRUCT_OFFSET (MonoAotFileInfo, MONO_AOT_FILE_INFO_LAST_SYMBOL) - G_STRUCT_OFFSET (MonoAotFileInfo, MONO_AOT_FILE_INFO_FIRST_SYMBOL)) / sizeof (gpointer)) + 1)
 
 void      mono_aot_init                     (void);
-void      mono_aot_cleanup                  (void);
 gpointer  mono_aot_get_method               (MonoMethod *method, MonoError *error);
 gpointer  mono_aot_get_method_from_token    (MonoImage *image, guint32 token, MonoError *error);
 gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr);

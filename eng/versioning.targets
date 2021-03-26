@@ -35,10 +35,22 @@
   <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true' and !$(TargetFrameworks.Contains('$(TargetFramework)-Browser'))">
       <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
   </PropertyGroup>
-  
-  <!-- Enables browser warnings for cross platform or Brwoser targeted builds -->
+
+  <!-- Enables warnings for Android, iOS, and macCatalyst for all builds -->
+  <ItemGroup>
+    <SupportedPlatform Include="Android" />
+    <SupportedPlatform Include="iOS" />
+    <SupportedPlatform Include="macCatalyst" />
+  </ItemGroup>
+
+  <!-- Enables browser warnings for cross platform or Browser targeted builds -->
   <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Include="browser"/>
+  </ItemGroup>
+
+  <!-- Enables warnings for tvOS targeted builds -->
+  <ItemGroup Condition="'$(TargetstvOS)' == 'true' and '$(IsTestProject)' != 'true'">
+    <SupportedPlatform Include="tvos"/>
   </ItemGroup>
 
   <ItemGroup>

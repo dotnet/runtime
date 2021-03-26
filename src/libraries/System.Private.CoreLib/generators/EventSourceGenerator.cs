@@ -97,7 +97,7 @@ namespace Generators
             }
         }
 
-        private class EventSourceClass
+        private sealed class EventSourceClass
         {
             public string Namespace = string.Empty;
             public string ClassName = string.Empty;
