@@ -2396,30 +2396,35 @@ namespace System.Tests
                 fs.WriteByte(0x0A);
             }
 
-            ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
-            psi.Environment.Add("TZ", zoneFilePath);
-
-            RemoteExecutor.Invoke((day, month, succeed) =>
+            try
             {
-                bool expectedToSucceed = bool.Parse(succeed);
-                int d = int.Parse(day);
-                int m = int.Parse(month);
+                ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
+                psi.Environment.Add("TZ", zoneFilePath);
 
-                TimeZoneInfo.AdjustmentRule [] rules = TimeZoneInfo.Local.GetAdjustmentRules();
-
-                if (expectedToSucceed)
+                RemoteExecutor.Invoke((day, month, succeed) =>
                 {
-                    Assert.Equal(1, rules.Length);
-                    Assert.Equal(d, rules[0].DaylightTransitionStart.Day);
-                    Assert.Equal(m, rules[0].DaylightTransitionStart.Month);
-                }
-                else
-                {
-                    Assert.Equal(0, rules.Length);
-                }
-            }, dayNumber.ToString(), monthNumber.ToString(), shouldSucceed.ToString(), new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
+                    bool expectedToSucceed = bool.Parse(succeed);
+                    int d = int.Parse(day);
+                    int m = int.Parse(month);
 
-            File.Delete(zoneFilePath);
+                    TimeZoneInfo.AdjustmentRule [] rules = TimeZoneInfo.Local.GetAdjustmentRules();
+
+                    if (expectedToSucceed)
+                    {
+                        Assert.Equal(1, rules.Length);
+                        Assert.Equal(d, rules[0].DaylightTransitionStart.Day);
+                        Assert.Equal(m, rules[0].DaylightTransitionStart.Month);
+                    }
+                    else
+                    {
+                        Assert.Equal(0, rules.Length);
+                    }
+                }, dayNumber.ToString(), monthNumber.ToString(), shouldSucceed.ToString(), new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
+            }
+            finally
+            {
+                try { File.Delete(zoneFilePath); } catch { } // don't fail the test if we couldn't delete the file.
+            }
         }
 
         [Fact]
