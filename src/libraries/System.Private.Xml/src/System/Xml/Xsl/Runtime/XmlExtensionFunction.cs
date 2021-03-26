@@ -27,7 +27,12 @@ namespace System.Xml.Xsl.Runtime
             _table = new Dictionary<XmlExtensionFunction, XmlExtensionFunction>();
         }
 
-        public XmlExtensionFunction Bind(string name, string namespaceUri, int numArgs, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type objectType, BindingFlags flags)
+        public XmlExtensionFunction Bind(
+            string name,
+            string namespaceUri,
+            int numArgs,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type objectType,
+            BindingFlags flags)
         {
             XmlExtensionFunction func;
 
