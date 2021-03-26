@@ -1208,28 +1208,23 @@ lExit: ;
             EECodeInfo codeInfo(pDispatcherContext->ControlPc);
             if (codeInfo.IsValid())
             {
+                bool invalidRevPInvoke;
 #ifdef USE_GC_INFO_DECODER
                 GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
-                if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
-                {
-                    // Exception is being propagated from a method marked UnmanagedCallersOnlyAttribute into its native caller.
-                    // The explicit frame chain needs to be unwound at this boundary.
-                    bool fIsSO = pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW;
-                    CleanUpForSecondPass(pThread, fIsSO, (void*)MemoryStackFp, (void*)MemoryStackFp);
-                }
+                invalidRevPInvoke = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
 #else // USE_GC_INFO_DECODER
                 hdrInfo gcHdrInfo;
-
                 DecodeGCHdrInfo(gcInfoToken, 0, &gcHdrInfo);
+                invalidRevPInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
+#endif // USE_GC_INFO_DECODER
 
-                if (gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
+                if (invalidRevPInvoke)
                 {
                     // Exception is being propagated from a method marked UnmanagedCallersOnlyAttribute into its native caller.
                     // The explicit frame chain needs to be unwound at this boundary.
                     bool fIsSO = pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW;
                     CleanUpForSecondPass(pThread, fIsSO, (void*)MemoryStackFp, (void*)MemoryStackFp);
                 }
-#endif // USE_GC_INFO_DECODER
             }
         }
 
@@ -4625,21 +4620,27 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
             controlPc = Thread::VirtualUnwindLeafCallFrame(frameContext);
         }
 
-        Interop::ManagedToNativeExceptionCallback callback = NULL;
-        void* callbackCxt = NULL;
-
+        bool invalidRevPInvoke;
 #ifdef USE_GC_INFO_DECODER
         GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+        invalidRevPInvoke = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
+#else // USE_GC_INFO_DECODER
+        hdrInfo gcHdrInfo;
+        DecodeGCHdrInfo(gcInfoToken, 0, &gcHdrInfo);
+        invalidRevPInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
+#endif // USE_GC_INFO_DECODER
 
-        if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
+        if (invalidRevPInvoke)
         {
             ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-            callback = Interop::GetPropagatingExceptionCallback(
+
+            void* callbackCxt = NULL;
+            Interop::ManagedToNativeExceptionCallback callback = Interop::GetPropagatingExceptionCallback(
                 &codeInfo,
                 pTracker->GetThrowableAsHandle(),
                 &callbackCxt);
 
-            // If a callback exists, use that instead of immediately crashing.
+            // If a callback doesn't exist we immediately crash.
             if (callback == NULL)
             {
                 // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
@@ -4649,35 +4650,24 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
                     _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
                 }
                 CrashDumpAndTerminateProcess(1);
-                UNREACHABLE();
             }
-        }
-#else // USE_GC_INFO_DECODER
-        hdrInfo gcHdrInfo;
-
-        DecodeGCHdrInfo(gcInfoToken, 0, &gcHdrInfo);
-
-        if (gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
-        {
-            // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
-            if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+            else
             {
-                LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
-                _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
+                ex.SetPropagateExceptionCallback(callback, callbackCxt);
+                _ASSERTE(ex.HasPropagateExceptionCallback());
+
+                BOOL success = PAL_VirtualUnwind(frameContext, NULL);
+                if (!success)
+                {
+                    _ASSERTE(!"UnwindManagedExceptionPass1: PAL_VirtualUnwind failed for propagate exception scenario");
+                    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+                }
+
+                UINT_PTR sp = GetSP(frameContext);
+                ex.TargetFrameSp = sp;
+                UnwindManagedExceptionPass2(ex, &unwindStartContext);
             }
-            CrashDumpAndTerminateProcess(1);
-            UNREACHABLE();
-        }
-#endif // USE_GC_INFO_DECODER
 
-        if (callback != NULL)
-        {
-            ex.SetPropagateExceptionCallback(callback, callbackCxt);
-            _ASSERTE(ex.HasPropagateExceptionCallback());
-
-            UINT_PTR sp = GetSP(frameContext);
-            ex.TargetFrameSp = sp;
-            UnwindManagedExceptionPass2(ex, &unwindStartContext);
             UNREACHABLE();
         }
 
