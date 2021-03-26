@@ -54,6 +54,8 @@
     <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
   </ItemGroup>
 
+  <!-- Adds UnsupportedOSPlatform attribute to the assembly when the project has non empty <UnsupportedOSPlatforms/> property and
+       it is not a test project and not targeting .Net framework and PlatformAttributes available and having cross-platform target -->
   <Target Name="AddUnsupportedOSPlatformAttribute" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild"
     Condition="'@(_unsupportedOSPlatforms)' != '' and '$(IsTestProject)' != 'true' and '$(IncludePlatformAttributes)' != 'false' and '$(TargetsAnyOS)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <ItemGroup>
