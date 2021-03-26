@@ -370,7 +370,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(nameof(SupportsBrainpool)), MemberData(nameof(BrainpoolCurves))]
+        [Theory, MemberData(nameof(BrainpoolCurves))]
         public static void TestKey_ECDsabrainpool_PublicKey(byte[] curveData, byte[] notUsed)
         {
             _ = notUsed;

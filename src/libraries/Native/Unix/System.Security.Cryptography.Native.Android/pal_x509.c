@@ -250,7 +250,7 @@ void* AndroidCryptoNative_X509PublicKey(jobject /*X509Certificate*/ cert, PAL_Ke
 
     void* keyHandle;
     jobject key = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
-    if (!key)
+    if (CheckJNIExceptions(env) || !key)
     {
         return NULL;
     }
