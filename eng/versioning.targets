@@ -55,13 +55,11 @@
   </ItemGroup>
 
   <Target Name="AddUnsupportedOSPlatformAttribute" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild"
-    Condition="'@(_unsupportedOSPlatforms)' != '' and '$(IsTestProject)' != 'true' and '$(IncludePlatformAttributes)' != 'false' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    Condition="'@(_unsupportedOSPlatforms)' != '' and '$(IsTestProject)' != 'true' and '$(IncludePlatformAttributes)' != 'false' and '$(TargetsAnyOS)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <ItemGroup>
       <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform">
         <_Parameter1>%(_unsupportedOSPlatforms.Identity)</_Parameter1>
       </AssemblyAttribute>
-      <SupportedPlatform Include="browser" Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard' or 
-        ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0')))"/>
     </ItemGroup>
   </Target>
 
