@@ -4332,16 +4332,27 @@ static VOID UpdateContextForPropagationCallback(
 
 #elif defined(TARGET_ARM64)
 
-    // Reset the linked return register to the current function to let the 
+    // Reset the linked return register to the current function to let the
     // unwinder work if the callback throws an exception as opposed to failing fast.
     startContext->Lr = GetIP(startContext);
 
     // Pass the context for the callback as the first argument.
     startContext->X0 = (DWORD64)ex.ManagedToNativeExceptionCallbackContext;
 
+#elif defined(TARGET_ARM)
+
+    // Reset the linked return register to the current function to let the
+    // unwinder work if the callback throws an exception as opposed to failing fast.
+    startContext->Lr = GetIP(startContext);
+
+    // Pass the context for the callback as the first argument.
+    startContext->R0 = (DWORD)ex.ManagedToNativeExceptionCallbackContext;
+
 #else
 
-#error "Update context for platform"
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+        COR_E_FAILFAST,
+        W("Managed exception propagation not supported for platform."));
 
 #endif
 
