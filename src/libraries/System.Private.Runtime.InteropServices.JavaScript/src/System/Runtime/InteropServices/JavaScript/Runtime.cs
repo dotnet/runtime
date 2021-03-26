@@ -412,6 +412,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr, out object? instance) {
             instance = null;
             if (typePtr == IntPtr.Zero)

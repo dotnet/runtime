@@ -1125,6 +1125,7 @@ var BindingSupportLib = {
 				this._struct_unboxer_cache = new Map ();
 
 			if (!this._struct_unboxer_cache.has (classPtr)) {
+				var typePtr = this.mono_wasm_class_get_type(classPtr);
 				var info = this._get_custom_marshaler_info_for_class (classPtr);
 				// HACK
 				if (!info)
@@ -1138,12 +1139,13 @@ var BindingSupportLib = {
 
 				var convMethod = info.outputPtr;
 				if (!convMethod) {
-					console.error(`Automatic converter for type ${this.mono_wasm_get_type_name(typePtr)} has no suitable ToJavaScript method`);
+					if (info.typePtr)
+						console.error(`Automatic converter for type ${this.mono_wasm_get_type_name(typePtr)} has no suitable ToJavaScript method`);
 					this._struct_unboxer_cache.set (classPtr, null);
 				} else {
 					var signature = "m";
 					var boundConverter = this.bind_method (
-						convMethod, info.instancePtr, signature, "ManagedToJS_class" + classPtr
+						convMethod, info.instancePtr, signature, "ToJavaScript_class" + classPtr
 					);
 
 					this._struct_unboxer_cache.set (classPtr, this._compile_post_filter (classPtr, boundConverter, postFilter));
@@ -1224,7 +1226,8 @@ var BindingSupportLib = {
 
 				var convMethod = info.inputPtr;
 				if (!convMethod) {
-					console.error(`Automatic converter for type ${this.mono_wasm_get_type_name(typePtr)} has no suitable FromJavaScript method`);
+					if (info.typePtr)
+						console.error(`Automatic converter for type ${this.mono_wasm_get_type_name(typePtr)} has no suitable FromJavaScript method`);
 					this._automatic_converter_table.set (typePtr, null);
 					return null;
 				}
