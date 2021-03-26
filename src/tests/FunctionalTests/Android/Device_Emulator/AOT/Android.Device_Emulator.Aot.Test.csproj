@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <MonoForceInterpreter>false</MonoForceInterpreter>
-    <RunAOTCompilation>true</RunAOTCompilation>
+    <RunAOTCompilation>false</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <MainLibraryFileName>Android.Device_Emulator.Aot.Test.dll</MainLibraryFileName>
