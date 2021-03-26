@@ -7965,16 +7965,6 @@ void Compiler::optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, Basic
         return;
     }
 
-    //  b3 also needs to be BBJ_RETURN
-
-    if (b3->bbJumpKind != BBJ_RETURN)
-    {
-#ifdef DEBUG
-        optOptimizeBoolsGcStress(b2);
-#endif
-        return;
-    }
-
     // Does b1 jump to b3?
     // One example: Given the following sequence of blocks :
     //        B1: brtrue(!t1, B3)
@@ -8089,92 +8079,21 @@ void Compiler::optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, Basic
         return;
     }
 
-    genTreeOps foldOp;
-    genTreeOps cmpOp;
+    genTreeOps foldOp = GT_NONE;
+    genTreeOps cmpOp  = GT_NONE;
     var_types  foldType = c1->TypeGet();
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
     }
 
-    ssize_t it1val = t1->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-    ssize_t it2val = t2->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+    // Get the fold operator and the comparison operator
+
     ssize_t it3val = t3->AsOp()->gtOp1->AsIntCon()->gtIconVal;
-
-    if (t1->gtOper == GT_EQ && t2->gtOper == GT_EQ)
+    optReturnGetFoldAndCompOper(t1, t2, it3val, bool1, bool2, &foldOp, &cmpOp);
+    if (foldOp == GT_NONE)
     {
-        if (it1val == 0 && it2val == 0 && it3val == 1)
-        {
-            // t1:c1==0 t2:c2==0 t3:c3==1 ==> true if (c1&c2)==0 (e.g., x==0 || y==0)
-            foldOp = GT_AND;
-            cmpOp  = GT_EQ;
-        }
-        else
-        {
-            // Require NOT operation for operand(s). Do Not fold.
-            return;
-        }
-    }
-    else if (t1->gtOper == GT_EQ && t2->gtOper == GT_NE)
-    {
-        if (it1val == 0 && it2val == 0 && it3val == 0)
-        {
-            // t1:c1!=1 t2:c2==1 got reversed from optIsBoolComp() to:
-            // t1:c1==0 t2:c2!=0 t3:c3==0 ==> true if (c1&c2)!=0 (e.g., x==1 && y==1)
-            foldOp = GT_AND;
-            cmpOp  = GT_NE;
-        }
-        else
-        {
-            // Require NOT operation for operand(s). Do Not fold.
-            return;
-        }
-    }
-    else if (t1->gtOper == GT_NE && t2->gtOper == GT_EQ)
-    {
-        if (it1val == 0 && it2val == 0 && it3val == 0)
-        {
-            // t1:c1!=0 t2:c2==0 t3:c3==0 ==> true if (c1|c2)==0 (e.g., x==0 && y==0)
-            foldOp = GT_OR;
-            cmpOp  = GT_EQ;
-        }
-        else
-        {
-            // Require NOT operation for operand(s). Do Not fold.
-            return;
-        }
-    }
-    else if (t1->gtOper == GT_NE && t2->gtOper == GT_NE)
-    {
-        if (it1val == 0 && it2val == 0 && it3val == 1)
-        {
-            // t1:c1==1 t2:c2==1 got reversed from optIsBoolComp() to:
-            // t1:c1!=0 t2:c2!=0 t3:c3==1 ==> true if (c1|c2)!=0 (e.g., x==1 || y==1)
-            foldOp = GT_OR;
-            cmpOp  = GT_NE;
-        }
-        else
-        {
-            // Require NOT operation for operand(s). Do Not fold.
-            return;
-        }
-    }
-    else
-    {
-        // Require NOT operation for operand(s). Do Not fold.
         return;
-    }
-
-    // Anding or NE requires both values to be 0 or 1 because, for example,
-    //      when x=1, y=2, (x==0 || y==0) is not the same as (x & y) == 0, and
-    //      when x=0, y=2, (x==1 || y==1) is not the same as (x | y) !=0.
-
-    if (foldOp == GT_AND || cmpOp == GT_NE)
-    {
-        if (!bool1 || !bool2)
-        {
-            return;
-        }
     }
 
     // Now update the trees
@@ -8189,6 +8108,7 @@ void Compiler::optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, Basic
     t1->SetOper(cmpOp);
     t1->AsOp()->gtOp1         = cmpOp1;
     t1->AsOp()->gtOp2->gtType = foldType; // Could have been varTypeIsGC()
+    t1->AsOp()->gtOp2->AsIntCon()->gtIconVal = 0;
     s1->GetRootNode()->gtOper = GT_RETURN;
     s1->GetRootNode()->gtType = s2->GetRootNode()->gtType;
 
@@ -8259,6 +8179,92 @@ void Compiler::optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, Basic
         printf("\n");
     }
 #endif
+}
+
+//
+// optReturnGetFoldAndCompOper: Based on tree1 and tree2 conditions, determine fold type and comparison type.
+//                              - The fold operator (foldOp) of below tree is GT_OR, and
+//                                comparison operator (cmpOp) is GT_EQ.
+//
+//                          *  RETURN   int
+//                          \--*  EQ        int
+//                             +--*  OR         int
+//                             |  +--*  LCL_VAR     int     V00 arg0
+//                             |  \--*  LCL_VAR     int     V01 arg1
+//                             \--*  CNS_INT    int     0
+// Arguments:
+//      tree1:  The first tree
+//      tree2:  The second tree
+//      it3val: The value of the third tree
+//      bool1:  If tree1 is boolean comparison
+//      bool2:  If tree2 is boolean comparison
+//      foldOp: On success, return the fold operator of GT_AND or GT_OR.
+//      cmpOp:  On success, return the comparison operator of GT_EQ or GT_NE
+//
+void Compiler::optReturnGetFoldAndCompOper(GenTree*    tree1,
+                                           GenTree*    tree2,
+                                           ssize_t     it3val,
+                                           bool        bool1,
+                                           bool        bool2,
+                                           genTreeOps* foldOp,
+                                           genTreeOps* cmpOp)
+{
+    genTreeOps foldOper;
+    genTreeOps cmpOper;
+    genTreeOps t1Oper = tree1->gtOper;
+    genTreeOps t2Oper = tree2->gtOper;
+
+    ssize_t it1val = tree1->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+    ssize_t it2val = tree2->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+
+    if ((t1Oper == GT_NE && t2Oper == GT_EQ) && (it1val == 0 && it2val == 0 && it3val == 0))
+    {
+        // Case: x == 0 && y == 0
+        //      t1:c1!=0 t2:c2==0 t3:c3==0
+        //      ==> true if (c1|c2)==0
+        foldOper = GT_OR;
+        cmpOper  = GT_EQ;
+    }
+    else if ((t1Oper == GT_EQ && t2Oper == GT_NE) && (it1val == 0 && it2val == 0 && it3val == 0))
+    {
+        // Case: x == 1 && y ==1
+        //      t1:c1!=1 t2:c2==1 t3:c3==0 is reversed from optIsBoolComp() to: t1:c1==0 t2:c2!=0 t3:c3==0
+        //      ==> true if (c1&c2)!=0
+        foldOper = GT_AND;
+        cmpOper  = GT_NE;
+    }
+    else if ((t1Oper == GT_EQ && t2Oper == GT_EQ) && (it1val == 0 && it2val == 0 && it3val == 1))
+    {
+        // Case: x == 0 || y == 0
+        //      t1:c1==0 t2:c2==0 t3:c3==1
+        //      ==> true if (c1&c2)==0
+        foldOper = GT_AND;
+        cmpOper  = GT_EQ;
+    }
+    else if((t1Oper == GT_NE && t2Oper == GT_NE) && (it1val == 0 && it2val == 0 && it3val == 1))
+    {
+        // Case: x == 1 || y == 1
+        //      t1:c1==1 t2:c2==1 is reversed from optIsBoolComp() to: t1:c1!=0 t2:c2!=0 t3:c3==1
+        //      ==> true if (c1|c2)!=0
+        foldOper = GT_OR;
+        cmpOper  = GT_NE;
+    }
+    else
+    {
+        // Require NOT operation for operand(s). Do Not fold.
+        return;
+    }
+
+    if ((foldOper == GT_AND || cmpOper == GT_NE) && (!bool1 || !bool2))
+    {
+        // x == 1 && y == 1: Skip cases where x or y is greather than 1, e.g., x=3, y=1
+        // x == 0 || y == 0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
+        // x == 1 || y == 1: Skip cases where either x or y is greater than 1, e.g., x=2, y=0
+        return;
+    }
+
+    *foldOp = foldOper;
+    *cmpOp  = cmpOper;
 }
 
 //
