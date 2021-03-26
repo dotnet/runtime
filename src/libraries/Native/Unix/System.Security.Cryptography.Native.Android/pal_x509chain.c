@@ -203,8 +203,6 @@ int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
         certs[i] = NULL;
     }
 
-    ret = SUCCESS;
-
 cleanup:
     (*env)->DeleteLocalRef(env, certPathList);
     return ret;
