@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -13,9 +14,6 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        private const int INSUFFICIENT_BUFFER = -1;
-        private const int SUCCESS = 1;
-
         internal unsafe delegate int SSLReadCallback(byte* data, int offset, int length);
         internal unsafe delegate void SSLWriteCallback(byte* data, int offset, int length);
 
@@ -125,6 +123,34 @@ internal static partial class Interop
             string protocol = Marshal.PtrToStringUni(protocolPtr)!;
             Marshal.FreeHGlobal(protocolPtr);
             return protocol;
+        }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamGetPeerCertificate")]
+        private static extern int SSLStreamGetPeerCertificate(SafeSslHandle ssl, out SafeX509Handle cert);
+        internal static SafeX509Handle SSLStreamGetPeerCertificate(SafeSslHandle ssl)
+        {
+            SafeX509Handle cert;
+            int ret = Interop.AndroidCrypto.SSLStreamGetPeerCertificate(ssl, out cert);
+            if (ret != SUCCESS)
+                throw new SslException();
+
+            return cert;
+        }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamGetPeerCertificates")]
+        private static extern int SSLStreamGetPeerCertificates(
+            SafeSslHandle ssl,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] out IntPtr[] certs,
+            out int count);
+        internal static IntPtr[] SSLStreamGetPeerCertificates(SafeSslHandle ssl)
+        {
+            IntPtr[] ptrs;
+            int count;
+            int ret = Interop.AndroidCrypto.SSLStreamGetPeerCertificates(ssl, out ptrs, out count);
+            if (ret != SUCCESS)
+                throw new SslException();
+
+            return ptrs;
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamGetCipherSuite")]

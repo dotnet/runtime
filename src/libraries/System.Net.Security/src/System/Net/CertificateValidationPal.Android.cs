@@ -63,7 +63,39 @@ namespace System.Net
             if (sslContext == null)
                 return null;
 
-            throw new NotImplementedException(nameof(GetRemoteCertificate));
+            X509Certificate2? cert = null;
+            if (remoteCertificateStore == null)
+            {
+                // Constructing a new X509Certificate2 adds a global reference to the pointer, so we dispose this handle
+                using (SafeX509Handle handle = Interop.AndroidCrypto.SSLStreamGetPeerCertificate(sslContext))
+                {
+                    if (!handle.IsInvalid)
+                    {
+                        cert = new X509Certificate2(handle.DangerousGetHandle());
+                    }
+                }
+            }
+            else
+            {
+                IntPtr[] ptrs = Interop.AndroidCrypto.SSLStreamGetPeerCertificates(sslContext);
+                if (ptrs.Length > 0)
+                {
+                    // This is intentionally a different object from the cert added to the remote certificate store
+                    // to match the behaviour on other platforms.
+                    cert = new X509Certificate2(ptrs[0]);
+                    foreach (IntPtr ptr in ptrs)
+                    {
+                        // Constructing a new X509Certificate2 adds a global reference to the pointer, so we dispose this handle
+                        using (var handle = new SafeX509Handle(ptr))
+                        {
+                            remoteCertificateStore.Add(new X509Certificate2(handle.DangerousGetHandle()));
+                        }
+                    }
+
+                }
+            }
+
+            return cert;
         }
 
         //

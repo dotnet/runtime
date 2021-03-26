@@ -42,3 +42,6 @@ PALEXPORT void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream);
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int* outLen);
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetCipherSuite(SSLStream *sslStream, uint16_t** out);
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetProtocol(SSLStream *sslStream, uint16_t** out);
+
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLStream *sslStream, jobject* out);
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream *sslStream, jobject** out, int* outLen);

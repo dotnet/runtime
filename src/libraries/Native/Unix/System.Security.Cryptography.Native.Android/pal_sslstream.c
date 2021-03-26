@@ -662,6 +662,69 @@ cleanup:
     return ret;
 }
 
+int32_t AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLStream *sslStream, jobject* out)
+{
+    assert(sslStream != NULL);
+    assert(out != NULL);
+
+    JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+    *out = NULL;
+
+    // Certificate[] certs = sslSession.getPeerCertificates();
+    jobjectArray certs = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetPeerCertificates);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    jsize len = (*env)->GetArrayLength(env, certs);
+    if (len > 0)
+    {
+        // First element is the peer's own certificate
+        jobject cert =(*env)->GetObjectArrayElement(env, certs, 0);
+        *out = ToGRef(env, cert);
+    }
+
+    ret = SUCCESS;
+
+cleanup:
+    (*env)->DeleteLocalRef(env, certs);
+    return ret;
+}
+
+int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream *sslStream, jobject** out, int* outLen)
+{
+    assert(sslStream != NULL);
+    assert(out != NULL);
+
+    JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+    *out = NULL;
+    *outLen = 0;
+
+    // Certificate[] certs = sslSession.getPeerCertificates();
+    // for (int i = 0; i < certs.length; i++) {
+    //     out[i] = certs[i];
+    // }
+    jobjectArray certs = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetPeerCertificates);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    jsize len = (*env)->GetArrayLength(env, certs);
+    *outLen = len;
+    if (len > 0)
+    {
+        *out = malloc(sizeof(jobject) * (size_t)len);
+        for (int i = 0; i < len; i++)
+        {
+            jobject cert =(*env)->GetObjectArrayElement(env, certs, i);
+            (*out)[i] = ToGRef(env, cert);
+        }
+    }
+
+    ret = SUCCESS;
+
+cleanup:
+    (*env)->DeleteLocalRef(env, certs);
+    return ret;
+}
+
+
 static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len)
 {
     jsize bytesLen = (*env)->GetArrayLength(env, source);
