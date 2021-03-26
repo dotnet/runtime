@@ -6,23 +6,21 @@
     <TestName>System.Buffers.Tests</TestName>
     <TestRootDir>$(HELIX_WORKITEM_ROOT)</TestRootDir>
     <BundleDir>$(TestRootDir)</BundleDir>
-    <WasmSrcPath>$(HELIX_CORRELATION_PAYLOAD)/wasm-source/</WasmSrcPath>
+    <WasmSrcPath>$(HELIX_CORRELATION_PAYLOAD)/build/microsoft.netcore.app.runtime.browser-wasm/</WasmSrcPath>
     <WasmNativeLibPath>$(TestRootDir)/publish/</WasmNativeLibPath>
     <IntermediateOutputPath>$(HELIX_WORKITEM_ROOT)\obj</IntermediateOutputPath>
-    <MonoAOTCompilerTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\monoaotcompiler\net6.0\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
-    <WasmAppBuilderTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\wasmappbuilder\publish\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
-    <MonoAotCrossCompilerPath>$(HELIX_CORRELATION_PAYLOAD)/cross/cross/browser-wasm/mono-aot-cross</MonoAotCrossCompilerPath>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$(HELIX_WORKITEM_ROOT)</MicrosoftNetCoreAppRuntimePackRidDir>
-    <EMSDK_PATH>$(HELIX_CORRELATION_PAYLOAD)/emsdk/emsdk</EMSDK_PATH>
-
+    <WasmAppBuilderTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)/build/WasmAppBuilder/WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+    <MonoAOTCompilerTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)/build/MonoAOTCompiler/MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(HELIX_CORRELATION_PAYLOAD)/build/microsoft.netcore.app.runtime.browser-wasm/runtimes/browser-wasm/</MicrosoftNetCoreAppRuntimePackRidDir>
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
     <SkipEmccVersionCheck>true</SkipEmccVersionCheck>
+    <MonoAotCrossCompilerPath>$(MicrosoftNETCoreAppRuntimePackRidDir)native/cross/browser-wasm/mono-aot-cross</MonoAotCrossCompilerPath>
   </PropertyGroup>
 
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
-  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\wasm-build\build\WasmApp.props" />
-  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\wasm-build\build\WasmApp.targets" />
+  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\build\wasm\WasmApp.props" />
+  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\build\wasm\WasmApp.targets" />
   <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>

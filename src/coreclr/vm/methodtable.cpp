@@ -3821,7 +3821,7 @@ void MethodTable::GetSavedExtent(TADDR *pStart, TADDR *pEnd)
 
     TADDR start;
 
-    if (ContainsPointersOrCollectible())
+    if (ContainsPointers())
         start = dac_cast<TADDR>(this) - CGCDesc::GetCGCDescFromMT(this)->GetSize();
     else
         start = dac_cast<TADDR>(this);

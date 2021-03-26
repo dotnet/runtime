@@ -313,6 +313,16 @@ namespace System.Diagnostics.Tracing
             };
         }
 
+        public static TraceLoggingDataType FormatScalar(EventFieldFormat format, TraceLoggingDataType nativeFormat) =>
+            nativeFormat switch
+            {
+                TraceLoggingDataType.Boolean8 or TraceLoggingDataType.Int8 or TraceLoggingDataType.UInt8 => Format8(format, nativeFormat),
+                TraceLoggingDataType.Char16 or TraceLoggingDataType.Int16 or TraceLoggingDataType.UInt16 => Format16(format, nativeFormat),
+                TraceLoggingDataType.Int32 or TraceLoggingDataType.UInt32 or TraceLoggingDataType.Float => Format32(format, nativeFormat),
+                TraceLoggingDataType.Int64 or TraceLoggingDataType.UInt64 or TraceLoggingDataType.Double => Format64(format, nativeFormat),
+                _ => MakeDataType(nativeFormat, format),
+            };
+
         #endregion
 
         #region Reflection helpers
@@ -480,7 +490,7 @@ namespace System.Diagnostics.Tracing
 
                 if (dataType == typeof(string))
                 {
-                    result = new StringTypeInfo();
+                    result = StringTypeInfo.Instance();
                 }
                 else if (dataType == typeof(bool))
                 {
@@ -532,11 +542,11 @@ namespace System.Diagnostics.Tracing
                 }
                 else if (dataType == typeof(DateTime))
                 {
-                    result = new DateTimeTypeInfo();
+                    result = DateTimeTypeInfo.Instance();
                 }
                 else if (dataType == typeof(decimal))
                 {
-                    result = new DecimalTypeInfo();
+                    result = DecimalTypeInfo.Instance();
                 }
                 else if (dataType == typeof(IntPtr))
                 {
@@ -552,15 +562,15 @@ namespace System.Diagnostics.Tracing
                 }
                 else if (dataType == typeof(TimeSpan))
                 {
-                    result = new TimeSpanTypeInfo();
+                    result = TimeSpanTypeInfo.Instance();
                 }
                 else if (dataType == typeof(DateTimeOffset))
                 {
-                    result = new DateTimeOffsetTypeInfo();
+                    result = DateTimeOffsetTypeInfo.Instance();
                 }
                 else if (dataType == typeof(EmptyStruct))
                 {
-                    result = new NullTypeInfo();
+                    result = NullTypeInfo.Instance();
                 }
                 else if (IsGenericMatch(dataType, typeof(Nullable<>)))
                 {

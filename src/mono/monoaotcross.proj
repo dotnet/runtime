@@ -14,8 +14,8 @@
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+')) and '$(OS)' != 'Windows_NT'">$(MonoAotTargets);Android-x64;Android-arm64;Android-x86;Android-arm</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+')) and '$(OS)' == 'Windows_NT'">$(MonoAotTargets);Android-x64</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+browser+'))">$(MonoAotTargets);Browser-wasm</MonoAotTargets>
-    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))">$(MonoAotTargets);tvOS-x64;tvOS-arm64</MonoAotTargets>
-    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);iOS-x64;iOS-arm64;iOS-x86;iOS-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))">$(MonoAotTargets);tvOSSimulator-x64;tvOSSimulator-arm64;tvOS-arm64</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);iOSSimulator-x64;iOSSimulator-arm64;iOSSimulator-x86;iOS-arm64;iOS-arm</MonoAotTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,8 +31,8 @@
 
   <Target Name="BuildMonoCrossTarget">
     <PropertyGroup>
-      <MonoAotTargetOS>$(MonoAotTargetRid.Split('-')[0])</MonoAotTargetOS>
-      <MonoAotTargetArchitecture>$(MonoAotTargetRid.Split('-')[1])</MonoAotTargetArchitecture>
+      <MonoAotTargetOS>$(MonoAotTargetRid.Substring(0,$(MonoAotTargetRid.LastIndexOf('-'))))</MonoAotTargetOS>
+      <MonoAotTargetArchitecture>$(MonoAotTargetRid.Substring($([MSBuild]::Add(1, $(MonoAotTargetRid.LastIndexOf('-'))))))</MonoAotTargetArchitecture>
     </PropertyGroup>
 
     <MSBuild Targets="Build"

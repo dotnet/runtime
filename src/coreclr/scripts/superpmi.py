@@ -294,13 +294,14 @@ asm_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the ba
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
 asm_diff_parser.add_argument("-temp_dir", help="Specify a temporary directory used for a previous ASM diffs run (for which --skip_cleanup was used) to view the results. The replay command is skipped.")
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
+asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baselne JIT. Format is key=value, where key is the option name without leading COMPlus_...")
+asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
 
 upload_parser.add_argument("-mch_files", metavar="MCH_FILE", required=True, nargs='+', help=upload_mch_files_help)
 upload_parser.add_argument("-az_storage_key", help="Key for the clrjit Azure Storage location. Default: use the value of the CLRJIT_AZ_KEY environment variable.")
-upload_parser.add_argument("-jit_location", help="Location for the base clrjit. If not passed this will be assumed to be from the Core_Root.")
 upload_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 upload_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 
@@ -1598,11 +1599,11 @@ class SuperPMIReplay:
 
                 logging.info("Running SuperPMI replay of %s", mch_file)
 
-                flags = common_flags
+                flags = common_flags.copy()
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
                 flags += [
-                    "-f", fail_mcl_file,  # Failing mc List
+                    "-f", fail_mcl_file  # Failing mc List
                 ]
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
@@ -1722,6 +1723,22 @@ class SuperPMIReplayAsmDiffs:
         altjit_asm_diffs_flags = target_flags
         altjit_replay_flags = target_flags
 
+        if self.coreclr_args.jitoption:
+            logging.warning("Ignoring -jitoption; use -base_jit_option or -diff_jit_option instead");
+
+        base_option_flags = []
+        if self.coreclr_args.base_jit_option:
+            for o in self.coreclr_args.base_jit_option:
+                base_option_flags += "-jitoption", o
+        base_option_flags_for_diff_artifact = base_option_flags
+
+        diff_option_flags = []
+        diff_option_flags_for_diff_artifact = []
+        if self.coreclr_args.diff_jit_option:
+            for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+                diff_option_flags_for_diff_artifact += "-jitoption", o
+
         if self.coreclr_args.altjit:
             altjit_asm_diffs_flags += [
                 "-jitoption", "force", "AltJit=*",
@@ -1771,6 +1788,8 @@ class SuperPMIReplayAsmDiffs:
                         "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
                     ]
                     flags += altjit_asm_diffs_flags
+                    flags += base_option_flags
+                    flags += diff_option_flags
 
                     if not self.coreclr_args.sequential:
                         flags += [ "-p" ]
@@ -1859,7 +1878,7 @@ class SuperPMIReplayAsmDiffs:
                         # as the LoadLibrary path will be relative to the current directory.
                         with ChangeDir(self.coreclr_args.core_root):
 
-                            async def create_one_artifact(jit_path: str, location: str) -> str:
+                            async def create_one_artifact(jit_path: str, location: str, flags: list[str]) -> str:
                                 command = [self.superpmi_path] + flags + [jit_path, mch_file]
                                 item_path = os.path.join(location, "{}{}".format(item, extension))
                                 with open(item_path, 'w') as file_handle:
@@ -1872,8 +1891,8 @@ class SuperPMIReplayAsmDiffs:
                                 return generated_txt
 
                             # Generate diff and base JIT dumps
-                            base_txt = await create_one_artifact(self.base_jit_path, base_location)
-                            diff_txt = await create_one_artifact(self.diff_jit_path, diff_location)
+                            base_txt = await create_one_artifact(self.base_jit_path, base_location, flags + base_option_flags_for_diff_artifact)
+                            diff_txt = await create_one_artifact(self.diff_jit_path, diff_location, flags + diff_option_flags_for_diff_artifact)
 
                             if base_txt != diff_txt:
                                 jit_differences_queue.put_nowait(item)
@@ -2608,8 +2627,6 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
 def upload_mch(coreclr_args):
     """ Upload a set of MCH files. Each MCH file is first ZIP compressed to save data space and upload/download time.
 
-        TODO: Upload baseline altjits or cross-compile JITs?
-
     Args:
         coreclr_args (CoreclrArguments): parsed args
     """
@@ -2673,24 +2690,6 @@ def upload_mch(coreclr_args):
             logging.info("Uploading: %s (%s) -> %s", file, zip_path, az_blob_storage_superpmi_container_uri + "/" + blob_name)
             upload_blob(zip_path, blob_name)
 
-        # Upload a JIT matching the MCH files just collected.
-        # Consider: rename uploaded JIT to include build_type
-
-        jit_location = coreclr_args.jit_location
-        if jit_location is None:
-            jit_name = determine_jit_name(coreclr_args)
-            jit_location = os.path.join(coreclr_args.core_root, jit_name)
-
-        assert os.path.isfile(jit_location)
-
-        jit_name = os.path.basename(jit_location)
-        jit_blob_name = "{}/{}".format(blob_folder_name, jit_name)
-        logging.info("Uploading: %s -> %s", jit_location, az_blob_storage_superpmi_container_uri + "/" + jit_blob_name)
-        upload_blob(jit_location, jit_blob_name)
-
-        jit_stat_result = os.stat(jit_location)
-        total_bytes_uploaded += jit_stat_result.st_size
-
     logging.info("Uploaded {:n} bytes".format(total_bytes_uploaded))
 
 
@@ -2706,7 +2705,7 @@ def list_collections_command(coreclr_args):
     # Determine if a URL in Azure Storage should be allowed. The URL looks like:
     #   https://clrjit.blob.core.windows.net/superpmi/jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
     # By default, filter to just the current jit-ee-guid, OS, and architecture.
-    # Only include MCH files, not clrjit.dll or MCT (TOC) files.
+    # Only include MCH files, not MCT (TOC) files.
     def filter_superpmi_collections(path: str):
         path = path.lower()
         return (path.endswith(".mch") or path.endswith(".mch.zip")) and (coreclr_args.all or path.startswith(blob_filter_string))
@@ -2748,7 +2747,7 @@ def list_collections_local_command(coreclr_args):
     # Determine if a file should be allowed. The filenames look like:
     #   c:\gh\runtime\artifacts\spmi\mch\a5eec3a4-4176-43a7-8c2b-a05b551d4f49.windows.x64\corelib.windows.x64.Checked.mch
     #   c:\gh\runtime\artifacts\spmi\mch\a5eec3a4-4176-43a7-8c2b-a05b551d4f49.windows.x64\corelib.windows.x64.Checked.mch.mct
-    # Only include MCH files, not clrjit.dll or MCT (TOC) files.
+    # Only include MCH files, not MCT (TOC) files.
     def filter_superpmi_collections(path: str):
         return path.lower().endswith(".mch")
 
@@ -3431,6 +3430,16 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set diff_jit_dump.")
 
+        coreclr_args.verify(args,
+                            "base_jit_option",
+                            lambda unused: True,
+                            "Unable to set base_jit_option.")
+
+        coreclr_args.verify(args,
+                            "diff_jit_option",
+                            lambda unused: True,
+                            "Unable to set diff_jit_option.")
+
         process_base_jit_path_arg(coreclr_args)
 
         jit_in_product_location = False
@@ -3492,11 +3501,6 @@ def setup_args(args):
                             lambda item: item is not None,
                             "Specify az_storage_key or set environment variable CLRJIT_AZ_KEY to the key to use.",
                             modify_arg=lambda arg: os.environ["CLRJIT_AZ_KEY"] if arg is None and "CLRJIT_AZ_KEY" in os.environ else arg)
-
-        coreclr_args.verify(args,
-                            "jit_location",
-                            lambda unused: True,
-                            "Unable to set jit_location.")
 
         coreclr_args.verify(args,
                             "mch_files",
