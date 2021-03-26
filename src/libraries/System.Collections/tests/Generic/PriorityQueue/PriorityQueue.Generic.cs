@@ -26,7 +26,7 @@ namespace System.Collections.Tests
     {
         protected override (int, int) CreateT(int seed)
         {
-            var random = new Random();
+            var random = new Random(seed);
             return (random.Next(),random.Next());
         }
     }
