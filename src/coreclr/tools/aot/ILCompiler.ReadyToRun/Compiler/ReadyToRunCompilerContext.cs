@@ -32,6 +32,11 @@ namespace ILCompiler
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
+            Reconstruct(details, bubbleIncludesCorelib);
+        }
+
+        public void Reconstruct(TargetDetails details, bool bubbleIncludesCorelib)
+        {
             // Only the Arm64 JIT respects the OS rules for vector type abi currently
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, (details.Architecture == TargetArchitecture.ARM64) ? true : bubbleIncludesCorelib);
 

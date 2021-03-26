@@ -186,6 +186,11 @@ namespace Internal.TypeSystem.Ecma
             _moduleResolver = customModuleResolver != null ? customModuleResolver : context;
         }
 
+        public void CleanResolvedTokens()
+        {
+            _resolvedTokens = new EcmaObjectLookupHashtable(this);
+        }
+
         public static EcmaModule Create(TypeSystemContext context, PEReader peReader, IAssemblyDesc containingAssembly, IModuleResolver customModuleResolver = null)
         {
             MetadataReader metadataReader = CreateMetadataReader(context, peReader);
