@@ -411,7 +411,7 @@ namespace System.Xml.Xsl.Xslt
 
             switch (var.Flags & XslFlags.TypeFilter)
             {
-                case XslFlags.String: return T.StringX; ;
+                case XslFlags.String: return T.StringX;
                 case XslFlags.Number: return T.DoubleX;
                 case XslFlags.Boolean: return T.BooleanX;
                 case XslFlags.Node: return T.NodeNotRtf;

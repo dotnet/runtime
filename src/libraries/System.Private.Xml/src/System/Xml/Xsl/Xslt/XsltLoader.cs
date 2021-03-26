@@ -2069,7 +2069,7 @@ namespace System.Xml.Xsl.Xslt
         {
             ContextInfo ctxInfo = _input.GetAttributes(_elementAttributes);
 
-            string name = ParseNCNameAttribute(0); ;
+            string name = ParseNCNameAttribute(0);
             string? ns = ParseStringAttribute(1, "namespace");
             CheckError(ns == XmlReservedNs.NsXmlNs, /*[XT_024]*/SR.Xslt_ReservedNS, ns);
 

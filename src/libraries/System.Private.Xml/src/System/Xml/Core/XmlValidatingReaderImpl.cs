@@ -833,7 +833,7 @@ namespace System.Xml
             }
             remove
             {
-                _eventHandling.RemoveHandler(value); ;
+                _eventHandling.RemoveHandler(value);
             }
         }
 

@@ -64,7 +64,7 @@ namespace System.Linq.Parallel
         //
         // Inner loop code should poll once per n loop, typically via:
         // if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-        //     _cancellationToken.ThrowIfCancellationRequested();;
+        //     _cancellationToken.ThrowIfCancellationRequested();
         // (Note, this only behaves as expected if FREQ is of the form (2^n)-1
 
         // Test if external cancellation was requested and occurred, and if so throw a standardize OCE with standardized message

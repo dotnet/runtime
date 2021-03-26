@@ -328,7 +328,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref sourceElement, ref sourceKeyUnused))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    _cancellationToken.ThrowIfCancellationRequested();;
+                    _cancellationToken.ThrowIfCancellationRequested();
 
                 // Generate a key and place it into the hashtable.
                 Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
@@ -390,7 +390,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref sourceElement, ref sourceKeyUnused))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    _cancellationToken.ThrowIfCancellationRequested();;
+                    _cancellationToken.ThrowIfCancellationRequested();
 
                 // Generate a key and place it into the hashtable.
                 Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
@@ -557,7 +557,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref sourceElement, ref sourceOrderKey))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    _cancellationToken.ThrowIfCancellationRequested();;
+                    _cancellationToken.ThrowIfCancellationRequested();
 
                 // Generate a key and place it into the hashtable.
                 Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
@@ -632,7 +632,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref sourceElement, ref sourceOrderKey))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    _cancellationToken.ThrowIfCancellationRequested();;
+                    _cancellationToken.ThrowIfCancellationRequested();
 
                 // Generate a key and place it into the hashtable.
                 Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
