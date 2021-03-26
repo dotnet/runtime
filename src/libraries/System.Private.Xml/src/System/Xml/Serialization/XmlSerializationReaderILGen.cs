@@ -16,7 +16,7 @@ namespace System.Xml.Serialization
     using System.Xml.Schema;
     using System.Xml.Extensions;
 
-    internal class XmlSerializationReaderILGen : XmlSerializationILGen
+    internal sealed class XmlSerializationReaderILGen : XmlSerializationILGen
     {
         private readonly Dictionary<string, string> _idNames = new Dictionary<string, string>();
         // Mapping name->id_XXXNN field

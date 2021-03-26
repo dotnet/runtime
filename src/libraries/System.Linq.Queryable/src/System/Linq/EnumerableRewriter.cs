@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace System.Linq
 {
-    internal class EnumerableRewriter : ExpressionVisitor
+    internal sealed class EnumerableRewriter : ExpressionVisitor
     {
         // We must ensure that if a LabelTarget is rewritten that it is always rewritten to the same new target
         // or otherwise expressions using it won't match correctly.

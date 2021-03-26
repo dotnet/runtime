@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    internal class ConversionArgBuilder : ArgBuilder
+    internal sealed class ConversionArgBuilder : ArgBuilder
     {
         private readonly SimpleArgBuilder _innerBuilder;
         private readonly Type _parameterType;

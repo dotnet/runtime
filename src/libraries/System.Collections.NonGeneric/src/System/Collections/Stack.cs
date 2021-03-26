@@ -384,7 +384,7 @@ namespace System.Collections
             }
         }
 
-        internal class StackDebugView
+        internal sealed class StackDebugView
         {
             private readonly Stack _stack;
 

@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdTcpStatistics : TcpStatistics
+    internal sealed class BsdTcpStatistics : TcpStatistics
     {
         private readonly long _connectionsAccepted;
         private readonly long _connectionsInitiated;

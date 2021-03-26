@@ -252,7 +252,7 @@ namespace System.Net.Mime
             }
         }
 
-        internal class MimePartAsyncResult : LazyAsyncResult
+        internal sealed class MimePartAsyncResult : LazyAsyncResult
         {
             internal MimePartAsyncResult(MimeBasePart part, object? state, AsyncCallback? callback) : base(part, state, callback)
             {

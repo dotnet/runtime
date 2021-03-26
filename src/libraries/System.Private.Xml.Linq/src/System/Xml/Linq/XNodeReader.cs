@@ -5,7 +5,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace System.Xml.Linq
 {
-    internal class XNodeReader : XmlReader, IXmlLineInfo
+    internal sealed class XNodeReader : XmlReader, IXmlLineInfo
     {
         private static readonly char[] s_WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };
 

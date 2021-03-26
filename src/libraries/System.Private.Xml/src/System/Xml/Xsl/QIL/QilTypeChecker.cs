@@ -18,7 +18,7 @@ namespace System.Xml.Xsl.Qil
     ///   1. Infer XmlQueryType of Qil nodes (constant, from arguments, etc)
     ///   2. Validate the arguments of Qil nodes if DEBUG is defined
     /// </summary>
-    internal class QilTypeChecker
+    internal sealed class QilTypeChecker
     {
         public QilTypeChecker()
         {

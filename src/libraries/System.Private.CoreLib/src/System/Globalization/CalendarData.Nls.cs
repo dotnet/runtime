@@ -8,7 +8,7 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
-    internal partial class CalendarData
+    internal sealed partial class CalendarData
     {
         // Get native two digit year max
         internal static int NlsGetTwoDigitYearMax(CalendarId calendarId)

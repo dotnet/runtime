@@ -2859,6 +2859,26 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 * into correspondig SIMD LOADX/STOREX instructions.
 */
 #if defined(TARGET_WIN32) && defined(TARGET_AMD64)
+static gboolean
+decompose_vtype_opt_uses_simd_intrinsics (MonoCompile *cfg, MonoInst *ins)
+{
+	if (cfg->uses_simd_intrinsics & MONO_CFG_USES_SIMD_INTRINSICS)
+		return TRUE;
+
+	switch (ins->opcode) {
+	case OP_XMOVE:
+	case OP_XZERO:
+	case OP_XPHI:
+	case OP_LOADX_MEMBASE:
+	case OP_LOADX_ALIGNED_MEMBASE:
+	case OP_STOREX_MEMBASE:
+	case OP_STOREX_ALIGNED_MEMBASE_REG:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
 static void
 decompose_vtype_opt_load_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 *sreg_int32)
 {
@@ -2900,7 +2920,7 @@ decompose_vtype_opt_store_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *i
 void
 mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 {
-	if ((cfg->opt & MONO_OPT_SIMD) && (cfg->uses_simd_intrinsics & MONO_CFG_USES_SIMD_INTRINSICS)) {
+	if ((cfg->opt & MONO_OPT_SIMD) && decompose_vtype_opt_uses_simd_intrinsics(cfg, ins)) {
 		const char *spec = INS_INFO (ins->opcode);
 		if (spec [MONO_INST_SRC1] == 'x')
 			decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg1));

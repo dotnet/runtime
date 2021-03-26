@@ -8,7 +8,7 @@ using System.Text;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonXmlDataContract : JsonDataContract
+    internal sealed class JsonXmlDataContract : JsonDataContract
     {
         public JsonXmlDataContract(XmlDataContract traditionalXmlDataContract)
             : base(traditionalXmlDataContract)

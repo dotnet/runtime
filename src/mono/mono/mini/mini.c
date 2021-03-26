@@ -4190,15 +4190,6 @@ mini_jit_init (void)
 #endif
 }
 
-void
-mini_jit_cleanup (void)
-{
-#ifndef DISABLE_JIT
-	g_free (emul_opcode_map);
-	g_free (emul_opcode_opcodes);
-#endif
-}
-
 #ifndef ENABLE_LLVM
 void
 mono_llvm_emit_aot_file_info (MonoAotFileInfo *info, gboolean has_jitted_code)

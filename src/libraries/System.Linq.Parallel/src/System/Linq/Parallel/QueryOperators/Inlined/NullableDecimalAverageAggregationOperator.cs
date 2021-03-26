@@ -114,7 +114,7 @@ namespace System.Linq.Parallel
                 while (source.MoveNext(ref current, ref currentKey))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                        _cancellationToken.ThrowIfCancellationRequested();;
+                        _cancellationToken.ThrowIfCancellationRequested();
 
                     if (current.HasValue)
                     {

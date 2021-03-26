@@ -5,7 +5,7 @@ using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Primitives
 {
-    internal class ComposablePartExceptionDebuggerProxy
+    internal sealed class ComposablePartExceptionDebuggerProxy
     {
         private readonly ComposablePartException _exception;
 
