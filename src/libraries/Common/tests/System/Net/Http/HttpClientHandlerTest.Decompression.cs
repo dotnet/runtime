@@ -101,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestHeaderAsync();
-                    await connection.Writer.WriteAsync($"HTTP/1.1 200 OK\r\nContent-Encoding: {encodingName}\r\n\r\n");
+                    await connection.WriteStringAsync($"HTTP/1.1 200 OK\r\nContent-Encoding: {encodingName}\r\n\r\n");
                     using (Stream compressedStream = compress(connection.Stream))
                     {
                         await compressedStream.WriteAsync(expectedContent);
@@ -163,7 +163,7 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestHeaderAsync();
-                    await connection.Writer.WriteAsync($"HTTP/1.1 200 OK\r\nContent-Encoding: {encodingName}\r\n\r\n");
+                    await connection.WriteStringAsync($"HTTP/1.1 200 OK\r\nContent-Encoding: {encodingName}\r\n\r\n");
                     await connection.Stream.WriteAsync(compressedContent);
                 });
             });
@@ -298,6 +298,60 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Assert.InRange(Regex.Matches(requestLinesString, manualAcceptEncodingHeaderValues).Count, 1, 1);
                     }
+
+                    using (HttpResponseMessage response = await clientTask)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    }
+                }
+            });
+        }
+
+        [Theory]
+#if NETCOREAPP
+        [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli, "gzip; q=1.0, deflate; q=1.0, br; q=1.0", "")]
+#endif
+        [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip; q=1.0, deflate; q=1.0", "")]
+        [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip; q=1.0", "deflate")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
+        public async Task GetAsync_SetAutomaticDecompression_AcceptEncodingHeaderSentWithQualityWeightingsNoDuplicates(
+            DecompressionMethods methods,
+            string manualAcceptEncodingHeaderValues,
+            string expectedHandlerAddedAcceptEncodingHeaderValues)
+        {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                HttpClientHandler handler = CreateHttpClientHandler();
+                handler.AutomaticDecompression = methods;
+
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    client.DefaultRequestHeaders.Add("Accept-Encoding", manualAcceptEncodingHeaderValues);
+
+                    Task<HttpResponseMessage> clientTask = client.SendAsync(TestAsync, CreateRequest(HttpMethod.Get, url, UseVersion));
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
+                    await TaskTimeoutExtensions.WhenAllOrAnyFailed(new Task[] { clientTask, serverTask });
+
+                    List<string> requestLines = await serverTask;
+                    string requestLinesString = string.Join("\r\n", requestLines);
+                    _output.WriteLine(requestLinesString);
+
+                    bool acceptEncodingValid = false;
+                    foreach (string requestLine in requestLines)
+                    {
+                        if (requestLine.StartsWith("Accept-Encoding", StringComparison.OrdinalIgnoreCase))
+                        {
+                            acceptEncodingValid = requestLine.Equals($"Accept-Encoding: {manualAcceptEncodingHeaderValues}{(string.IsNullOrEmpty(expectedHandlerAddedAcceptEncodingHeaderValues) ? string.Empty : ", " + expectedHandlerAddedAcceptEncodingHeaderValues)}", StringComparison.OrdinalIgnoreCase);
+                            break;
+                        }
+                    }
+                    
+                    Assert.True(acceptEncodingValid, "Accept-Encoding missing or invalid");
 
                     using (HttpResponseMessage response = await clientTask)
                     {

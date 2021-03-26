@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
 namespace System
@@ -43,7 +44,7 @@ namespace System
                 (DaylightTransitionStart != default && DaylightTransitionStart.TimeOfDay != DateTime.MinValue) ||
                 (DaylightTransitionEnd != default && DaylightTransitionEnd.TimeOfDay != DateTime.MinValue.AddMilliseconds(1));
 
-            public bool Equals(AdjustmentRule? other) =>
+            public bool Equals([NotNullWhen(true)] AdjustmentRule? other) =>
                 other != null &&
                 _dateStart == other._dateStart &&
                 _dateEnd == other._dateEnd &&
@@ -73,6 +74,24 @@ namespace System
                 _daylightTransitionEnd = daylightTransitionEnd;
                 _baseUtcOffsetDelta = baseUtcOffsetDelta;
                 _noDaylightTransitions = noDaylightTransitions;
+            }
+
+            internal static AdjustmentRule CreateAdjustmentRule(
+                DateTime dateStart,
+                DateTime dateEnd,
+                TimeSpan daylightDelta,
+                TransitionTime daylightTransitionStart,
+                TransitionTime daylightTransitionEnd,
+                TimeSpan baseUtcOffsetDelta)
+            {
+                return new AdjustmentRule(
+                    dateStart,
+                    dateEnd,
+                    daylightDelta,
+                    daylightTransitionStart,
+                    daylightTransitionEnd,
+                    baseUtcOffsetDelta,
+                    noDaylightTransitions: false);
             }
 
             public static AdjustmentRule CreateAdjustmentRule(

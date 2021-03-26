@@ -16,7 +16,7 @@
 // PLEASE READ!
 //
 // There are strict rules for how to implement ICorProfilerInfo* methods.  Please read
-// https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/profilability.md
+// https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/botr/profilability.md
 // to understand the rules and why they exist.
 //
 // As a reminder, here is a short summary of your responsibilities.  Every PUBLIC
@@ -3000,7 +3000,7 @@ HRESULT ProfToEEInterfaceImpl::GetRVAStaticAddress(ClassID classId,
         return E_INVALIDARG;
     }
 
-    if (GetThread() == NULL)
+    if (GetThreadNULLOk() == NULL)
     {
         return CORPROF_E_NOT_MANAGED_THREAD;
     }
@@ -3275,12 +3275,12 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress(ClassID classId,
     //
     // Verify the value of threadId, which must be the current thread ID or NULL, which means using curernt thread ID.
     //
-    if ((threadId != NULL) && (threadId != ((ThreadID)GetThread())))
+    if ((threadId != NULL) && (threadId != ((ThreadID)GetThreadNULLOk())))
     {
         return E_INVALIDARG;
     }
 
-    threadId = reinterpret_cast<ThreadID>(GetThread());
+    threadId = reinterpret_cast<ThreadID>(GetThreadNULLOk());
     AppDomainID appDomainId = reinterpret_cast<AppDomainID>(GetAppDomain());
 
     //
@@ -3352,12 +3352,12 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
 
     if (threadId == NULL)
     {
-        if (GetThread() == NULL)
+        if (GetThreadNULLOk() == NULL)
         {
             return CORPROF_E_NOT_MANAGED_THREAD;
         }
 
-        threadId = reinterpret_cast<ThreadID>(GetThread());
+        threadId = reinterpret_cast<ThreadID>(GetThreadNULLOk());
     }
 
     //
@@ -8914,7 +8914,7 @@ HRESULT ProfToEEInterfaceImpl::GetNotifiedExceptionClauseInfo(COR_PRF_EX_CLAUSE_
     EHClauseInfo*         pCurrentEHClauseInfo = NULL;
 
     // notification requires that we are on a managed thread with an exception in flight
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
 
     // If pThread is null, then the thread has never run managed code
     if (pThread == NULL)
@@ -8985,9 +8985,9 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
                                        "**PROF: GetObjectGeneration 0x%p.\n",
                                        objectId));
 
-    BEGIN_GETTHREAD_ALLOWED;
-    _ASSERTE((GetThread() == NULL) || (GetThread()->PreemptiveGCDisabled()));
-    END_GETTHREAD_ALLOWED;
+    
+    _ASSERTE((GetThreadNULLOk() == NULL) || (GetThreadNULLOk()->PreemptiveGCDisabled()));
+    
 
     // Announce we are using the generation table now
     CounterHolder genTableLock(&s_generationTableLock);
@@ -9076,12 +9076,12 @@ HRESULT ProfToEEInterfaceImpl::SetupThreadForReJIT()
     HRESULT hr = S_OK;
     EX_TRY
     {
-        if (GetThread() == NULL)
+        if (GetThreadNULLOk() == NULL)
         {
             SetupThread();
         }
 
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         pThread->SetProfilerCallbackStateFlags(COR_PRF_CALLBACKSTATE_REJIT_WAS_CALLED);
     }
     EX_CATCH_HRESULT(hr);
@@ -10102,7 +10102,7 @@ HRESULT ProfToEEInterfaceImpl::InitializeCurrentThread()
             LL_INFO10,
             "**PROF: InitializeCurrentThread.\n"));
 
-    SetupTLSForThread(GetThread());
+    SetupTLSForThread();
 
     return S_OK;
 }

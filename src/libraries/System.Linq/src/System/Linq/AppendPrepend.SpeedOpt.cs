@@ -17,7 +17,7 @@ namespace System.Linq
             public abstract int GetCount(bool onlyIfCheap);
         }
 
-        private partial class AppendPrepend1Iterator<TSource>
+        private sealed partial class AppendPrepend1Iterator<TSource>
         {
             private TSource[] LazyToArray()
             {
@@ -100,7 +100,7 @@ namespace System.Linq
             }
         }
 
-        private partial class AppendPrependN<TSource>
+        private sealed partial class AppendPrependN<TSource>
         {
             private TSource[] LazyToArray()
             {

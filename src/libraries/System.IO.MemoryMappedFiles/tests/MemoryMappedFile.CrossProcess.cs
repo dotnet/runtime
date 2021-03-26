@@ -9,6 +9,7 @@ namespace System.IO.MemoryMappedFiles.Tests
     public class CrossProcessTests : FileCleanupTestBase
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void DataShared()
         {
             // Create a new file and load it into an MMF

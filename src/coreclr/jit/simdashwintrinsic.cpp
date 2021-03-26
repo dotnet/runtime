@@ -369,9 +369,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     GenTree* op2 = nullptr;
     GenTree* op3 = nullptr;
 
-    SimdAsHWIntrinsicClassId classId          = SimdAsHWIntrinsicInfo::lookupClassId(intrinsic);
-    unsigned                 numArgs          = sig->numArgs;
-    bool                     isInstanceMethod = false;
+    unsigned numArgs          = sig->numArgs;
+    bool     isInstanceMethod = false;
 
     if (sig->hasThis())
     {
@@ -387,6 +386,15 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
     // We should have already exited early if SSE2 isn't supported
     assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
+
+    // Vector<T>, when 32-bytes, requires at least AVX2
+    assert(!isVectorT256 || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+#elif defined(TARGET_ARM64)
+    // We should have already exited early if AdvSimd isn't supported
+    assert(compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
     switch (intrinsic)
     {
@@ -405,6 +413,23 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         }
 #endif // TARGET_X86
 
+#if defined(TARGET_XARCH)
+        case NI_VectorT256_As:
+#endif // TARGET_XARCH
+        case NI_VectorT128_As:
+        {
+            unsigned  retSimdSize;
+            var_types retBaseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &retSimdSize);
+
+            if (!varTypeIsArithmetic(retBaseType) || (retSimdSize == 0))
+            {
+                // We get here if the return type is an unsupported type
+                return nullptr;
+            }
+            break;
+        }
+
+#if defined(TARGET_XARCH)
         case NI_VectorT128_Dot:
         {
             if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
@@ -417,22 +442,14 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             }
             break;
         }
+#endif // TARGET_XARCH
 
         default:
         {
-            // Most intrinsics have some path that works even if only SSE2 is available
+            // Most intrinsics have some path that works even if only SSE2/AdvSimd is available
             break;
         }
     }
-
-    // Vector<T>, when 32-bytes, requires at least AVX2
-    assert(!isVectorT256 || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-#elif defined(TARGET_ARM64)
-    // We should have already exited early if AdvSimd isn't supported
-    assert(compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
 
     GenTree* copyBlkDst = nullptr;
     GenTree* copyBlkSrc = nullptr;
@@ -563,10 +580,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             assert(newobjThis == nullptr);
 
-            bool isOpExplicit = (intrinsic == NI_VectorT128_op_Explicit);
+            bool isOpExplicit = (intrinsic == NI_VectorT128_op_Explicit) || (intrinsic == NI_VectorT128_As);
 
 #if defined(TARGET_XARCH)
-            isOpExplicit |= (intrinsic == NI_VectorT256_op_Explicit);
+            isOpExplicit |= (intrinsic == NI_VectorT256_op_Explicit) || (intrinsic == NI_VectorT256_As);
 #endif
 
             if (isOpExplicit)
@@ -862,56 +879,154 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_VectorT128_op_Multiply:
                 {
-                    assert(baseType == TYP_INT);
-
                     NamedIntrinsic hwIntrinsic = NI_Illegal;
+                    GenTree**      broadcastOp = nullptr;
 
-                    if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                    if (varTypeIsArithmetic(op1->TypeGet()))
                     {
-                        hwIntrinsic = NI_SSE41_MultiplyLow;
+                        broadcastOp = &op1;
                     }
-                    else
+                    else if (varTypeIsArithmetic(op2->TypeGet()))
                     {
-                        // op1Dup = op1
-                        GenTree* op1Dup;
-                        op1 = impCloneExpr(op1, &op1Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                                           nullptr DEBUGARG("Clone op1 for Vector<T>.Multiply"));
-
-                        // op2Dup = op2
-                        GenTree* op2Dup;
-                        op2 = impCloneExpr(op2, &op2Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                                           nullptr DEBUGARG("Clone op2 for Vector<T>.Multiply"));
-
-                        // op1 = Sse2.ShiftRightLogical128BitLane(op1, 4)
-                        op1 = gtNewSimdAsHWIntrinsicNode(retType, op1, gtNewIconNode(4, TYP_INT),
-                                                         NI_SSE2_ShiftRightLogical128BitLane, baseType, simdSize);
-
-                        // op2 = Sse2.ShiftRightLogical128BitLane(op1, 4)
-                        op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, gtNewIconNode(4, TYP_INT),
-                                                         NI_SSE2_ShiftRightLogical128BitLane, baseType, simdSize);
-
-                        // op2 = Sse2.Multiply(op2.AsUInt64(), op1.AsUInt64()).AsInt32()
-                        op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, op1, NI_SSE2_Multiply, TYP_ULONG, simdSize);
-
-                        // op2 = Sse2.Shuffle(op2, (0, 0, 2, 0))
-                        op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, gtNewIconNode(SHUFFLE_XXZX, TYP_INT),
-                                                         NI_SSE2_Shuffle, baseType, simdSize);
-
-                        // op1 = Sse2.Multiply(op1Dup.AsUInt64(), op2Dup.AsUInt64()).AsInt32()
-                        op1 =
-                            gtNewSimdAsHWIntrinsicNode(retType, op1Dup, op2Dup, NI_SSE2_Multiply, TYP_ULONG, simdSize);
-
-                        // op1 = Sse2.Shuffle(op1, (0, 0, 2, 0))
-                        op1 = gtNewSimdAsHWIntrinsicNode(retType, op1, gtNewIconNode(SHUFFLE_XXZX, TYP_INT),
-                                                         NI_SSE2_Shuffle, baseType, simdSize);
-
-                        // result = Sse2.UnpackLow(op1, op2)
-                        hwIntrinsic = NI_SSE2_UnpackLow;
+                        broadcastOp = &op2;
                     }
+
+                    if (broadcastOp != nullptr)
+                    {
+                        *broadcastOp = gtNewSimdCreateBroadcastNode(simdType, *broadcastOp, baseType, simdSize,
+                                                                    /* isSimdAsHWIntrinsic */ true);
+                    }
+
+                    switch (baseType)
+                    {
+                        case TYP_SHORT:
+                        case TYP_USHORT:
+                        {
+                            hwIntrinsic = NI_SSE2_MultiplyLow;
+                            break;
+                        }
+
+                        case TYP_INT:
+                        case TYP_UINT:
+                        {
+                            if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                            {
+                                hwIntrinsic = NI_SSE41_MultiplyLow;
+                            }
+                            else
+                            {
+                                // op1Dup = op1
+                                GenTree* op1Dup;
+                                op1 = impCloneExpr(op1, &op1Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                                   nullptr DEBUGARG("Clone op1 for Vector<T>.Multiply"));
+
+                                // op2Dup = op2
+                                GenTree* op2Dup;
+                                op2 = impCloneExpr(op2, &op2Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                                   nullptr DEBUGARG("Clone op2 for Vector<T>.Multiply"));
+
+                                // op1 = Sse2.ShiftRightLogical128BitLane(op1, 4)
+                                op1 =
+                                    gtNewSimdAsHWIntrinsicNode(retType, op1, gtNewIconNode(4, TYP_INT),
+                                                               NI_SSE2_ShiftRightLogical128BitLane, baseType, simdSize);
+
+                                // op2 = Sse2.ShiftRightLogical128BitLane(op1, 4)
+                                op2 =
+                                    gtNewSimdAsHWIntrinsicNode(retType, op2, gtNewIconNode(4, TYP_INT),
+                                                               NI_SSE2_ShiftRightLogical128BitLane, baseType, simdSize);
+
+                                // op2 = Sse2.Multiply(op2.AsUInt64(), op1.AsUInt64()).AsInt32()
+                                op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, op1, NI_SSE2_Multiply, TYP_ULONG,
+                                                                 simdSize);
+
+                                // op2 = Sse2.Shuffle(op2, (0, 0, 2, 0))
+                                op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, gtNewIconNode(SHUFFLE_XXZX, TYP_INT),
+                                                                 NI_SSE2_Shuffle, baseType, simdSize);
+
+                                // op1 = Sse2.Multiply(op1Dup.AsUInt64(), op2Dup.AsUInt64()).AsInt32()
+                                op1 = gtNewSimdAsHWIntrinsicNode(retType, op1Dup, op2Dup, NI_SSE2_Multiply, TYP_ULONG,
+                                                                 simdSize);
+
+                                // op1 = Sse2.Shuffle(op1, (0, 0, 2, 0))
+                                op1 = gtNewSimdAsHWIntrinsicNode(retType, op1, gtNewIconNode(SHUFFLE_XXZX, TYP_INT),
+                                                                 NI_SSE2_Shuffle, baseType, simdSize);
+
+                                // result = Sse2.UnpackLow(op1, op2)
+                                hwIntrinsic = NI_SSE2_UnpackLow;
+                            }
+                            break;
+                        }
+
+                        case TYP_FLOAT:
+                        {
+                            hwIntrinsic = NI_SSE_Multiply;
+                            break;
+                        }
+
+                        case TYP_DOUBLE:
+                        {
+                            hwIntrinsic = NI_SSE2_Multiply;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
                     assert(hwIntrinsic != NI_Illegal);
-
                     return gtNewSimdAsHWIntrinsicNode(retType, op1, op2, hwIntrinsic, baseType, simdSize);
                 }
+
+                case NI_VectorT256_op_Multiply:
+                {
+                    NamedIntrinsic hwIntrinsic = NI_Illegal;
+                    GenTree**      broadcastOp = nullptr;
+
+                    if (varTypeIsArithmetic(op1->TypeGet()))
+                    {
+                        broadcastOp = &op1;
+                    }
+                    else if (varTypeIsArithmetic(op2->TypeGet()))
+                    {
+                        broadcastOp = &op2;
+                    }
+
+                    if (broadcastOp != nullptr)
+                    {
+                        *broadcastOp = gtNewSimdCreateBroadcastNode(simdType, *broadcastOp, baseType, simdSize,
+                                                                    /* isSimdAsHWIntrinsic */ true);
+                    }
+
+                    switch (baseType)
+                    {
+                        case TYP_SHORT:
+                        case TYP_USHORT:
+                        case TYP_INT:
+                        case TYP_UINT:
+                        {
+                            hwIntrinsic = NI_AVX2_MultiplyLow;
+                            break;
+                        }
+
+                        case TYP_FLOAT:
+                        case TYP_DOUBLE:
+                        {
+                            hwIntrinsic = NI_AVX_Multiply;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
+                    assert(hwIntrinsic != NI_Illegal);
+                    return gtNewSimdAsHWIntrinsicNode(retType, op1, op2, hwIntrinsic, baseType, simdSize);
+                }
+
 #elif defined(TARGET_ARM64)
                 case NI_Vector2_CreateBroadcast:
                 case NI_Vector3_CreateBroadcast:
@@ -951,6 +1066,83 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                     // result = ConditionalSelect(op1, op1Dup, op2Dup)
                     return impSimdAsHWIntrinsicCndSel(clsHnd, retType, baseType, simdSize, op1, op1Dup, op2Dup);
+                }
+
+                case NI_VectorT128_op_Multiply:
+                {
+                    NamedIntrinsic hwIntrinsic     = NI_Illegal;
+                    NamedIntrinsic scalarIntrinsic = NI_Illegal;
+                    GenTree**      scalarOp        = nullptr;
+
+                    if (varTypeIsArithmetic(op1->TypeGet()))
+                    {
+                        // MultiplyByScalar requires the scalar op to be op2
+                        std::swap(op1, op2);
+
+                        scalarOp = &op2;
+                    }
+                    else if (varTypeIsArithmetic(op2->TypeGet()))
+                    {
+                        scalarOp = &op2;
+                    }
+
+                    switch (baseType)
+                    {
+                        case TYP_BYTE:
+                        case TYP_UBYTE:
+                        {
+                            if (scalarOp != nullptr)
+                            {
+                                *scalarOp = gtNewSimdCreateBroadcastNode(simdType, *scalarOp, baseType, simdSize,
+                                                                         /* isSimdAsHWIntrinsic */ true);
+                            }
+
+                            hwIntrinsic = NI_AdvSimd_Multiply;
+                            break;
+                        }
+
+                        case TYP_SHORT:
+                        case TYP_USHORT:
+                        case TYP_INT:
+                        case TYP_UINT:
+                        case TYP_FLOAT:
+                        {
+                            if (scalarOp != nullptr)
+                            {
+                                hwIntrinsic = NI_AdvSimd_MultiplyByScalar;
+                                *scalarOp   = gtNewSimdAsHWIntrinsicNode(TYP_SIMD8, *scalarOp,
+                                                                       NI_Vector64_CreateScalarUnsafe, baseType, 8);
+                            }
+                            else
+                            {
+                                hwIntrinsic = NI_AdvSimd_Multiply;
+                            }
+                            break;
+                        }
+
+                        case TYP_DOUBLE:
+                        {
+                            if (scalarOp != nullptr)
+                            {
+                                hwIntrinsic = NI_AdvSimd_Arm64_MultiplyByScalar;
+                                *scalarOp =
+                                    gtNewSimdAsHWIntrinsicNode(TYP_SIMD8, *scalarOp, NI_Vector64_Create, baseType, 8);
+                            }
+                            else
+                            {
+                                hwIntrinsic = NI_AdvSimd_Arm64_Multiply;
+                            }
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
+                    assert(hwIntrinsic != NI_Illegal);
+                    return gtNewSimdAsHWIntrinsicNode(retType, op1, op2, hwIntrinsic, baseType, simdSize);
                 }
 #else
 #error Unsupported platform

@@ -5,7 +5,7 @@ schedules:
   displayName: Mon through Sun at 10:00 PM (UTC-8:00)
   branches:
     include:
-    - master
+    - main
   always: true
 
 jobs:

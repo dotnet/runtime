@@ -33,13 +33,14 @@
 //
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Imaging;
 using System.Threading;
 
 namespace System.Drawing
 {
 
-    internal class AnimateEventArgs : EventArgs
+    internal sealed class AnimateEventArgs : EventArgs
     {
 
         private int frameCount;
@@ -87,7 +88,7 @@ namespace System.Drawing
             if (ht.ContainsKey(image))
                 return;
 
-            PropertyItem item = image.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
+            PropertyItem item = image.GetPropertyItem(0x5100)!; // FrameDelay in libgdiplus
             byte[] value = item.Value!;
             int[] delay = new int[(value.Length >> 2)];
             for (int i = 0, n = 0; i < value.Length; i += 4, n++)
@@ -106,7 +107,7 @@ namespace System.Drawing
             thread.Start();
         }
 
-        public static bool CanAnimate(Image? image)
+        public static bool CanAnimate([NotNullWhen(true)] Image? image)
         {
             if (image == null)
                 return false;
@@ -164,7 +165,7 @@ namespace System.Drawing
         }
     }
 
-    internal class WorkerThread
+    internal sealed class WorkerThread
     {
 
         private EventHandler frameChangeHandler;

@@ -5,7 +5,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     // TODO this will eventually be abstracted to support both Client and Server
     // certificates
-    internal class MsQuicSecurityConfig : IDisposable
+    internal sealed class MsQuicSecurityConfig : IDisposable
     {
         private bool _disposed;
         private MsQuicApi _registration;

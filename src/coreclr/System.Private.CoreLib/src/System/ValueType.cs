@@ -22,7 +22,7 @@ namespace System
     {
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Trimmed fields don't make a difference for equality")]
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (null == obj)
             {

@@ -5,7 +5,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization
 {
-    internal class Attributes
+    internal sealed class Attributes
     {
         private static readonly XmlDictionaryString[] s_serializationLocalNames = new XmlDictionaryString[]
         {

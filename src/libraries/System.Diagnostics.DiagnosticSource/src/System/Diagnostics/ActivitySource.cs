@@ -77,11 +77,56 @@ namespace System.Diagnostics
         /// <param name="name">The operation name of the Activity</param>
         /// <param name="kind">The <see cref="ActivityKind"/></param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any event listener.</returns>
-        public Activity? StartActivity([CallerMemberName] string name = "", ActivityKind kind = ActivityKind.Internal)
-            => StartActivity(name, kind, default, null, null, null, default);
+        /// <remarks>
+        /// If the Activity object is created, it will not start automatically. Callers need to call <see cref="Activity.Start()"/> to start it.
+        /// </remarks>
+        public Activity? CreateActivity(string name, ActivityKind kind)
+            => CreateActivity(name, kind, default, null, null, null, default, startIt: false);
 
         /// <summary>
-        /// Creates a new <see cref="Activity"/> object if there is any listener to the Activity events, returns null otherwise.
+        /// Creates a new <see cref="Activity"/> object if there is any listener to the Activity, returns null otherwise.
+        /// If the Activity object is created, it will not automatically start. Callers will need to call <see cref="Activity.Start()"/> to start it.
+        /// </summary>
+        /// <param name="name">The operation name of the Activity.</param>
+        /// <param name="kind">The <see cref="ActivityKind"/></param>
+        /// <param name="parentContext">The parent <see cref="ActivityContext"/> object to initialize the created Activity object with.</param>
+        /// <param name="tags">The optional tags list to initialize the created Activity object with.</param>
+        /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
+        /// <param name="idFormat">The default Id format to use.</param>
+        /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
+        /// <remarks>
+        /// If the Activity object is created, it will not start automatically. Callers need to call <see cref="Activity.Start()"/> to start it.
+        /// </remarks>
+        public Activity? CreateActivity(string name, ActivityKind kind, ActivityContext parentContext, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
+            => CreateActivity(name, kind, parentContext, null, tags, links, default, startIt: false, idFormat);
+
+        /// <summary>
+        /// Creates a new <see cref="Activity"/> object if there is any listener to the Activity, returns null otherwise.
+        /// </summary>
+        /// <param name="name">The operation name of the Activity.</param>
+        /// <param name="kind">The <see cref="ActivityKind"/></param>
+        /// <param name="parentId">The parent Id to initialize the created Activity object with.</param>
+        /// <param name="tags">The optional tags list to initialize the created Activity object with.</param>
+        /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
+        /// <param name="idFormat">The default Id format to use.</param>
+        /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
+        /// <remarks>
+        /// If the Activity object is created, it will not start automatically. Callers need to call <see cref="Activity.Start()"/> to start it.
+        /// </remarks>
+        public Activity? CreateActivity(string name, ActivityKind kind, string parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
+            => CreateActivity(name, kind, default, parentId, tags, links, default, startIt: false, idFormat);
+
+        /// <summary>
+        /// Creates and starts a new <see cref="Activity"/> object if there is any listener to the Activity, returns null otherwise.
+        /// </summary>
+        /// <param name="name">The operation name of the Activity</param>
+        /// <param name="kind">The <see cref="ActivityKind"/></param>
+        /// <returns>The created <see cref="Activity"/> object or null if there is no any event listener.</returns>
+        public Activity? StartActivity([CallerMemberName] string name = "", ActivityKind kind = ActivityKind.Internal)
+            => CreateActivity(name, kind, default, null, null, null, default);
+
+        /// <summary>
+        /// Creates and starts a new <see cref="Activity"/> object if there is any listener to the Activity events, returns null otherwise.
         /// </summary>
         /// <param name="name">The operation name of the Activity.</param>
         /// <param name="kind">The <see cref="ActivityKind"/></param>
@@ -91,10 +136,10 @@ namespace System.Diagnostics
         /// <param name="startTime">The optional start timestamp to set on the created Activity object.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
         public Activity? StartActivity(string name, ActivityKind kind, ActivityContext parentContext, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
-            => StartActivity(name, kind, parentContext, null, tags, links, startTime);
+            => CreateActivity(name, kind, parentContext, null, tags, links, startTime);
 
         /// <summary>
-        /// Creates a new <see cref="Activity"/> object if there is any listener to the Activity events, returns null otherwise.
+        /// Creates and starts a new <see cref="Activity"/> object if there is any listener to the Activity events, returns null otherwise.
         /// </summary>
         /// <param name="name">The operation name of the Activity.</param>
         /// <param name="kind">The <see cref="ActivityKind"/></param>
@@ -104,10 +149,10 @@ namespace System.Diagnostics
         /// <param name="startTime">The optional start timestamp to set on the created Activity object.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
         public Activity? StartActivity(string name, ActivityKind kind, string parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
-            => StartActivity(name, kind, default, parentId, tags, links, startTime);
+            => CreateActivity(name, kind, default, parentId, tags, links, startTime);
 
         /// <summary>
-        /// Creates a new <see cref="Activity"/> object if there is any listener to the Activity events, returns null otherwise.
+        /// Creates and starts a new <see cref="Activity"/> object if there is any listener to the Activity events, returns null otherwise.
         /// </summary>
         /// <param name="kind">The <see cref="ActivityKind"/></param>
         /// <param name="parentContext">The parent <see cref="ActivityContext"/> object to initialize the created Activity object with.</param>
@@ -117,9 +162,10 @@ namespace System.Diagnostics
         /// <param name="name">The operation name of the Activity.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
         public Activity? StartActivity(ActivityKind kind, ActivityContext parentContext = default, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default, [CallerMemberName] string name = "")
-            => StartActivity(name, kind, parentContext, null, tags, links, startTime);
+            => CreateActivity(name, kind, parentContext, null, tags, links, startTime);
 
-        private Activity? StartActivity(string name, ActivityKind kind, ActivityContext context, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime)
+        private Activity? CreateActivity(string name, ActivityKind kind, ActivityContext context, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags,
+                                            IEnumerable<ActivityLink>? links, DateTimeOffset startTime, bool startIt = true, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
         {
             // _listeners can get assigned to null in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
@@ -135,8 +181,15 @@ namespace System.Diagnostics
 
             if (parentId != null)
             {
-                var aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links);
-                var acoContext = new ActivityCreationOptions<ActivityContext>(this, name, aco.GetContext(), kind, tags, links);
+                ActivityCreationOptions<string> aco = default;
+                ActivityCreationOptions<ActivityContext> acoContext = default;
+
+                aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links, idFormat);
+                if (aco.IdFormat == ActivityIdFormat.W3C)
+                {
+                    // acoContext is used only in the Sample calls which called only when we have W3C Id format.
+                    acoContext = new ActivityCreationOptions<ActivityContext>(this, name, aco.GetContext(), kind, tags, links, ActivityIdFormat.W3C);
+                }
 
                 listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<string> data, ref ActivitySamplingResult result, ref ActivityCreationOptions<ActivityContext> dataWithContext) => {
                     SampleActivity<string>? sampleUsingParentId = listener.SampleUsingParentId;
@@ -148,14 +201,14 @@ namespace System.Diagnostics
                             result = sr;
                         }
                     }
-                    else
+                    else if (data.IdFormat == ActivityIdFormat.W3C)
                     {
                         // In case we have a parent Id and the listener not providing the SampleUsingParentId, we'll try to find out if the following conditions are true:
                         //   - The listener is providing the Sample callback
                         //   - Can convert the parent Id to a Context. ActivityCreationOptions.TraceId != default means parent id converted to a valid context.
                         // Then we can call the listener Sample callback with the constructed context.
                         SampleActivity<ActivityContext>? sample = listener.Sample;
-                        if (sample != null && data.GetContext() != default) // data.GetContext() != default means parent Id parsed correctly to a context
+                        if (sample != null)
                         {
                             ActivitySamplingResult sr = sample(ref dataWithContext);
                             if (sr > result)
@@ -166,10 +219,18 @@ namespace System.Diagnostics
                     }
                 }, ref aco, ref samplingResult, ref acoContext);
 
-                if (context == default && aco.GetContext() != default)
+                if (context == default)
                 {
-                    context = aco.GetContext();
-                    parentId = null;
+                    if (aco.GetContext() != default)
+                    {
+                        context = aco.GetContext();
+                        parentId = null;
+                    }
+                    else if (acoContext.GetContext() != default)
+                    {
+                        context = acoContext.GetContext();
+                        parentId = null;
+                    }
                 }
 
                 samplerTags = aco.GetSamplingTags();
@@ -188,11 +249,13 @@ namespace System.Diagnostics
                         }
                     }
                 }
+
+                idFormat = aco.IdFormat;
             }
             else
             {
                 bool useCurrentActivityContext = context == default && Activity.Current != null;
-                var aco = new ActivityCreationOptions<ActivityContext>(this, name, useCurrentActivityContext ? Activity.Current!.Context : context, kind, tags, links);
+                var aco = new ActivityCreationOptions<ActivityContext>(this, name, useCurrentActivityContext ? Activity.Current!.Context : context, kind, tags, links, idFormat);
                 listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<ActivityContext> data, ref ActivitySamplingResult result, ref ActivityCreationOptions<ActivityContext> unused) => {
                     SampleActivity<ActivityContext>? sample = listener.Sample;
                     if (sample != null)
@@ -214,12 +277,12 @@ namespace System.Diagnostics
                 }
 
                 samplerTags = aco.GetSamplingTags();
+                idFormat = aco.IdFormat;
             }
 
             if (samplingResult != ActivitySamplingResult.None)
             {
-                activity = Activity.CreateAndStart(this, name, kind, parentId, context, tags, links, startTime, samplerTags, samplingResult);
-                listeners.EnumWithAction((listener, obj) => listener.ActivityStarted?.Invoke((Activity) obj), activity);
+                activity = Activity.Create(this, name, kind, parentId, context, tags, links, startTime, samplerTags, samplingResult, startIt, idFormat);
             }
 
             return activity;
@@ -304,7 +367,7 @@ namespace System.Diagnostics
     // and allow enumerating the collection items and execute some action on the enumerated item and can detect any change in the collection
     // during the enumeration which force restarting the enumeration again.
     // Caution: We can have the action executed on the same item more than once which is ok in our scenarios.
-    internal class SynchronizedList<T>
+    internal sealed class SynchronizedList<T>
     {
         private readonly List<T> _list;
         private uint _version;

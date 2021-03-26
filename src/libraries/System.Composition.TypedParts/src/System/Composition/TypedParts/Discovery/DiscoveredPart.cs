@@ -17,7 +17,7 @@ namespace System.Composition.TypedParts.Discovery
 {
     [DebuggerDisplay("{PartType.Name}")]
     [DebuggerTypeProxy(typeof(DiscoveredPartDebuggerProxy))]
-    internal class DiscoveredPart
+    internal sealed class DiscoveredPart
     {
         private readonly TypeInfo _partType;
         private readonly AttributedModelProvider _attributeContext;

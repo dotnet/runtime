@@ -498,6 +498,8 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     T_CONTEXT                         ctx;
     T_KNONVOLATILE_CONTEXT_POINTERS   nonVolRegPtrs;
 
+    ctx.ContextFlags = 0; // Read by PAL_VirtualUnwind.
+
     ctx.Pc = baseState->captureIp;
     ctx.Sp = baseState->captureSp;
 
@@ -1396,7 +1398,7 @@ void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
 {
 #ifdef TARGET_UNIX
 
-    ThumbEmitMovConstant(ThumbReg(0), (TADDR)GetThread);
+    ThumbEmitMovConstant(ThumbReg(0), (TADDR)GetThreadHelper);
 
     ThumbEmitCallRegister(ThumbReg(0));
 

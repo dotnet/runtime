@@ -45,10 +45,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
-    Interval* prefSrcInterval = nullptr;
     int       srcCount;
     int       dstCount      = 0;
-    regMaskTP dstCandidates = RBM_NONE;
     regMaskTP killMask      = RBM_NONE;
     bool      isLocalDefUse = false;
 
@@ -449,6 +447,8 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
+        case GT_XORR:
+        case GT_XAND:
         case GT_XADD:
         case GT_XCHG:
         {
@@ -1086,7 +1086,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // there is an explicit thisPtr but it is redundant
 
     bool callHasFloatRegArgs = false;
-    bool isVarArgs           = call->IsVarargs();
 
     // First, determine internal registers.
     // We will need one for any float arguments to a varArgs call.
@@ -1721,11 +1720,10 @@ int LinearScan::BuildLclHeap(GenTree* tree)
 //
 int LinearScan::BuildModDiv(GenTree* tree)
 {
-    GenTree*     op1           = tree->gtGetOp1();
-    GenTree*     op2           = tree->gtGetOp2();
-    regMaskTP    dstCandidates = RBM_NONE;
-    RefPosition* internalDef   = nullptr;
-    int          srcCount      = 0;
+    GenTree*  op1           = tree->gtGetOp1();
+    GenTree*  op2           = tree->gtGetOp2();
+    regMaskTP dstCandidates = RBM_NONE;
+    int       srcCount      = 0;
 
     if (varTypeIsFloating(tree->TypeGet()))
     {
@@ -1822,17 +1820,10 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             internalFloatDef = buildInternalFloatRegisterDefForNode(tree, internalFloatRegCandidates());
             break;
 
-#ifdef TARGET_X86
-        case NI_System_Math_Cos:
-        case NI_System_Math_Sin:
-            NYI_X86("Math intrinsics Cos and Sin");
-            break;
-#endif // TARGET_X86
-
-        case NI_System_Math_Sqrt:
-        case NI_System_Math_Round:
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
             break;
 
         default:
@@ -2166,11 +2157,10 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 //
 int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 {
-    NamedIntrinsic         intrinsicId = intrinsicTree->gtHWIntrinsicId;
-    var_types              baseType    = intrinsicTree->gtSIMDBaseType;
-    CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
-    HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-    int                    numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
+    NamedIntrinsic      intrinsicId = intrinsicTree->gtHWIntrinsicId;
+    var_types           baseType    = intrinsicTree->gtSIMDBaseType;
+    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+    int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
 
     // Set the AVX Flags if this instruction may use VEX encoding for SIMD operations.
     // Note that this may be true even if the ISA is not AVX (e.g. for platform-agnostic intrinsics

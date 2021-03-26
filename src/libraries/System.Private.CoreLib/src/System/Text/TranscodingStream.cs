@@ -79,7 +79,7 @@ namespace System.Text
         public override long Position
         {
             get => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
-            set => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+            set => ThrowHelper.ThrowNotSupportedException_UnseekableStream();
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
@@ -185,7 +185,7 @@ namespace System.Text
             {
                 if (!CanRead)
                 {
-                    throw Error.GetReadNotSupported();
+                    ThrowHelper.ThrowNotSupportedException_UnreadableStream();
                 }
 
                 _innerDecoder = _innerEncoding.GetDecoder();
@@ -217,7 +217,7 @@ namespace System.Text
             {
                 if (!CanWrite)
                 {
-                    throw Error.GetWriteNotSupported();
+                    ThrowHelper.ThrowNotSupportedException_UnwritableStream();
                 }
 
                 _innerEncoder = _innerEncoding.GetEncoder();
@@ -428,7 +428,7 @@ namespace System.Text
             => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
 
         public override void SetLength(long value)
-            => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+            => ThrowHelper.ThrowNotSupportedException_UnseekableStream();
 
         [StackTraceHidden]
         private void ThrowIfDisposed()
@@ -443,9 +443,7 @@ namespace System.Text
         [StackTraceHidden]
         private void ThrowObjectDisposedException()
         {
-            throw new ObjectDisposedException(
-                objectName: GetType().Name,
-                message: SR.ObjectDisposed_StreamClosed);
+            ThrowHelper.ThrowObjectDisposedException_StreamClosed(GetType().Name);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -484,11 +482,11 @@ namespace System.Text
                         out int charsWritten,
                         out decoderFinished);
 
-                    buffer = buffer[bytesConsumed..];
+                    buffer = buffer.Slice(bytesConsumed);
 
                     // convert chars -> bytes [inner]
 
-                    Span<char> decodedChars = scratchChars.AsSpan(..charsWritten);
+                    Span<char> decodedChars = scratchChars.AsSpan(0, charsWritten);
 
                     do
                     {
@@ -500,7 +498,7 @@ namespace System.Text
                             out int bytesWritten,
                             out encoderFinished);
 
-                        decodedChars = decodedChars[charsConsumed..];
+                        decodedChars = decodedChars.Slice(charsConsumed);
 
                         // It's more likely that the inner stream provides an optimized implementation of
                         // Write(byte[], ...) over Write(ROS<byte>), so we'll prefer the byte[]-based overloads.
@@ -560,7 +558,7 @@ namespace System.Text
                             out int charsWritten,
                             out decoderFinished);
 
-                        remainingOuterEncodedBytes = remainingOuterEncodedBytes[bytesConsumed..];
+                        remainingOuterEncodedBytes = remainingOuterEncodedBytes.Slice(bytesConsumed);
 
                         // convert chars -> bytes [inner]
 
@@ -576,7 +574,7 @@ namespace System.Text
                                 out int bytesWritten,
                                 out encoderFinished);
 
-                            decodedChars = decodedChars[charsConsumed..];
+                            decodedChars = decodedChars.Slice(charsConsumed);
                             await _innerStream.WriteAsync(new ReadOnlyMemory<byte>(scratchBytes, 0, bytesWritten), cancellationToken).ConfigureAwait(false);
                         } while (!encoderFinished);
                     } while (!decoderFinished);

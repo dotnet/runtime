@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     /// <summary>
@@ -37,6 +39,6 @@ namespace System.ComponentModel
         /// When implemented by a class, gets or sets the name of the component
         /// associated with the <see cref='System.ComponentModel.ISite'/>.
         /// </summary>
-        string? Name { get; set; }
+        string? Name { get; [RequiresUnreferencedCode("The Type of components in the container cannot be statically discovered to validate the name.")] set; }
     }
 }

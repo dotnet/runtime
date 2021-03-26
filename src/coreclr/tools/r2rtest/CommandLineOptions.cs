@@ -165,9 +165,11 @@ namespace R2RTest
                         InputDirectory(),
                         DegreeOfParallelism(),
                         AspNetPath(),
-                        CompositeScenario(),
+                        Composite(),
                         Map(),
                         Pdb(),
+                        CompilationTimeoutMinutes(),
+                        Crossgen2Path(),
                     },
                     options =>
                     {
@@ -267,7 +269,7 @@ namespace R2RTest
                 new Option<int>(new[] { "--execution-timeout-minutes", "-et" }, "Execution timeout (minutes)");
 
             Option R2RDumpPath() =>
-                new Option<FileInfo>(new[] { "--r2r-dump-path", "-r2r" }, "Path to R2RDump.exe/dll").ExistingOnly();;
+                new Option<FileInfo>(new[] { "--r2r-dump-path", "-r2r" }, "Path to R2RDump.exe/dll").ExistingOnly();
 
             Option MeasurePerf() =>
                 new Option<bool>(new[] { "--measure-perf" }, "Print out compilation time");
@@ -288,16 +290,13 @@ namespace R2RTest
             // compile-nuget specific options
             //
             Option PackageList() =>
-                new Option<FileInfo>(new[] { "--package-list", "-pl" }, "Text file containing a package name on each line").ExistingOnly();;
+                new Option<FileInfo>(new[] { "--package-list", "-pl" }, "Text file containing a package name on each line").ExistingOnly();
 
             //
             // compile-serp specific options
             //
             Option AspNetPath() =>
                 new Option<DirectoryInfo>(new[] { "--asp-net-path", "-asp" }, "Path to SERP's ASP.NET Core folder").ExistingOnly();
-
-            Option CompositeScenario() =>
-                new Option<SerpCompositeScenario>(new [] { "--composite-scenario", "-cs" }, "Specifies which layers of a shared framework application are compiled as composite" );
         }
     }
 }

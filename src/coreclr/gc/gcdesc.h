@@ -161,7 +161,7 @@ public:
         // If it doesn't contain pointers, there isn't a GCDesc
         PTR_MethodTable mt(pMT);
 
-        _ASSERTE(mt->ContainsPointersOrCollectible());
+        _ASSERTE(mt->ContainsPointers());
 
         return PTR_CGCDesc(mt);
     }
@@ -186,35 +186,49 @@ public:
         return PTR_CGCDescSeries(PTR_size_t(PTR_CGCDesc(this))-1)-1;
     }
 
-    // Returns number of immediate pointers this object has.
+    // Returns number of immediate pointers this object has. It should match the number of
+    // pointers enumerated by go_through_object_cl macro. The implementation shape has intentional
+    // similarity with the go_through_object family of macros.
     // size is only used if you have an array of value types.
 #ifndef DACCESS_COMPILE
     static size_t GetNumPointers (MethodTable* pMT, size_t ObjectSize, size_t NumComponents)
     {
         size_t NumOfPointers = 0;
-        CGCDesc* map = GetCGCDescFromMT(pMT);
-        CGCDescSeries* cur = map->GetHighestSeries();
-        ptrdiff_t cnt = (ptrdiff_t) map->GetNumSeries();
 
-        if (cnt > 0)
+        if (pMT->ContainsPointers())
         {
-            CGCDescSeries* last = map->GetLowestSeries();
-            while (cur >= last)
+            CGCDesc* map = GetCGCDescFromMT(pMT);
+            CGCDescSeries* cur = map->GetHighestSeries();
+            ptrdiff_t cnt = (ptrdiff_t)map->GetNumSeries();
+
+            if (cnt >= 0)
             {
-                NumOfPointers += (cur->GetSeriesSize() + ObjectSize) / sizeof(JSlot);
-                cur--;
+                CGCDescSeries* last = map->GetLowestSeries();
+                do
+                {
+                    NumOfPointers += (cur->GetSeriesSize() + ObjectSize) / sizeof(JSlot);
+                    cur--;
+                }
+                while (cur >= last);
+            }
+            else
+            {
+                /* Handle the repeating case - array of valuetypes */
+                for (ptrdiff_t __i = 0; __i > cnt; __i--)
+                {
+                    NumOfPointers += cur->val_serie[__i].nptrs;
+                }
+
+                NumOfPointers *= NumComponents;
             }
         }
-        else
-        {
-            /* Handle the repeating case - array of valuetypes */
-            for (ptrdiff_t __i = 0; __i > cnt; __i--)
-            {
-                NumOfPointers += cur->val_serie[__i].nptrs;
-            }
 
-            NumOfPointers *= NumComponents;
+#ifndef FEATURE_REDHAWK
+        if (pMT->Collectible())
+        {
+            NumOfPointers += 1;
         }
+#endif
 
         return NumOfPointers;
     }

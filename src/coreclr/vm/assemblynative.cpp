@@ -25,6 +25,8 @@
 #include "interoputil.h"
 #include "frames.h"
 #include "typeparse.h"
+#include "encee.h"
+#include "threadsuspend.h"
 
 #include "appdomainnative.hpp"
 #include "../binder/inc/bindertracing.h"
@@ -1404,6 +1406,52 @@ void QCALLTYPE AssemblyNative::TraceSatelliteSubdirectoryPathProbed(LPCWSTR file
     BEGIN_QCALL;
 
     BinderTracing::PathProbed(filePath, BinderTracing::PathSource::SatelliteSubdirectory, hr);
+
+    END_QCALL;
+}
+
+// static
+void QCALLTYPE AssemblyNative::ApplyUpdate(
+    QCall::AssemblyHandle assembly,
+    UINT8* metadataDelta,
+    INT32 metadataDeltaLength,
+    UINT8* ilDelta,
+    INT32 ilDeltaLength,
+    UINT8* pdbDelta,
+    INT32 pdbDeltaLength)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(assembly != nullptr);
+    _ASSERTE(metadataDelta != nullptr);
+    _ASSERTE(metadataDeltaLength > 0);
+    _ASSERTE(ilDelta != nullptr);
+    _ASSERTE(ilDeltaLength > 0);
+
+#ifdef EnC_SUPPORTED
+    GCX_COOP();
+    {
+        if (CORDebuggerAttached())
+        {
+            COMPlusThrow(kNotSupportedException, W("NotSupported_DebuggerAttached"));
+        }
+        Module* pModule = assembly->GetDomainAssembly()->GetModule();
+        if (!pModule->IsEditAndContinueEnabled())
+        {
+            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_AssemblyNotEditable"));
+        }
+        HRESULT hr = ((EditAndContinueModule*)pModule)->ApplyEditAndContinue(metadataDeltaLength, metadataDelta, ilDeltaLength, ilDelta);
+        if (FAILED(hr))
+        {
+            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_EditFailed"));
+        }
+        g_metadataUpdatesApplied = true;
+    }
+#else
+    COMPlusThrow(kNotImplementedException);
+#endif
 
     END_QCALL;
 }

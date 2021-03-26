@@ -11,12 +11,6 @@ namespace HostApiInvokerApp
     public static class Utils
     {
 #if WINDOWS
-       public const CharSet OSCharSet = CharSet.Unicode;
-#else
-       public const CharSet OSCharSet = CharSet.Ansi; // actually UTF8 on Unix
-#endif
-
-#if WINDOWS
         internal static class kernel32
         {
             [DllImport(nameof(kernel32), CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]

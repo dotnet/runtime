@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!--
-    Microsoft ResX Schema
-
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -258,9 +258,6 @@
   </data>
   <data name="Arg_DataMisalignedException" xml:space="preserve">
     <value>A datatype misalignment was detected in a load or store instruction.</value>
-  </data>
-  <data name="Arg_DateTimeRange" xml:space="preserve">
-    <value>Combination of arguments to the DateTime constructor is out of the legal range.</value>
   </data>
   <data name="Arg_DecBitCtor" xml:space="preserve">
     <value>Decimal constructor requires an array or span of four valid decimal bytes.</value>
@@ -1822,9 +1819,6 @@
   <data name="ArgumentOutOfRange_StartIndexLargerThanLength" xml:space="preserve">
     <value>startIndex cannot be larger than length of string.</value>
   </data>
-  <data name="ArgumentOutOfRange_StartIndexLessThanLength" xml:space="preserve">
-    <value>startIndex must be less than length of string.</value>
-  </data>
   <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
     <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
   </data>
@@ -2572,9 +2566,6 @@
   <data name="InvalidOperation_UnknownEnumType" xml:space="preserve">
     <value>Unknown enum type.</value>
   </data>
-  <data name="InvalidOperation_WriteOnce" xml:space="preserve">
-    <value>This property has already been set and cannot be modified.</value>
-  </data>
   <data name="InvalidOperation_WrongAsyncResultOrEndCalledMultiple" xml:space="preserve">
     <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or the End method was called multiple times with the same IAsyncResult.</value>
   </data>
@@ -3004,6 +2995,9 @@
   <data name="Overflow_Int64" xml:space="preserve">
     <value>Value was either too large or too small for an Int64.</value>
   </data>
+  <data name="Overflow_MutexReacquireCount" xml:space="preserve">
+    <value>The current thread attempted to reacquire a mutex that has reached its maximum acquire count.</value>
+  </data>
   <data name="Overflow_NegateTwosCompNum" xml:space="preserve">
     <value>Negating the minimum value of a twos complement number is invalid.</value>
   </data>
@@ -3268,8 +3262,8 @@
   <data name="Task_ContinueWith_NotOnAnything" xml:space="preserve">
     <value>The specified TaskContinuationOptions excluded all continuation kinds.</value>
   </data>
-  <data name="Task_Delay_InvalidDelay" xml:space="preserve">
-    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0 or a positive integer less than or equal to the maximum allowed timer duration.</value>
+  <data name="Task_InvalidTimerTimeSpan" xml:space="preserve">
+    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0, or a positive integer less than or equal to the maximum allowed timer duration.</value>
   </data>
   <data name="Task_Delay_InvalidMillisecondsDelay" xml:space="preserve">
     <value>The value needs to be either -1 (signifying an infinite timeout), 0 or a positive integer.</value>
@@ -3583,6 +3577,9 @@
   <data name="InvalidOperation_InvalidComUnRegFunctionSig" xml:space="preserve">
     <value>COM unregister function must have a System.Type parameter and a void return type.</value>
   </data>
+  <data name="InvalidOperation_InvalidHandle" xml:space="preserve">
+    <value>The handle is invalid.</value>
+  </data>
   <data name="InvalidOperation_MultipleComRegFunctions" xml:space="preserve">
     <value>Type '{0}' has more than one COM registration function.</value>
   </data>
@@ -3675,5 +3672,20 @@
   </data>
   <data name="Argv_IncludeDoubleQuote" xml:space="preserve">
     <value>The argv[0] argument cannot include a double quote.</value>
+  </data>
+  <data name="ResourceManager_ReflectionNotAllowed" xml:space="preserve">
+    <value>Use of ResourceManager for custom types is disabled. Set the MSBuild Property CustomResourceTypesSupport to true in order to enable it.</value>
+  </data>
+  <data name="InvalidOperation_AssemblyNotEditable" xml:space="preserve">
+    <value>The assembly can not be edited or changed.</value>
+  </data>
+  <data name="InvalidOperation_EditFailed" xml:space="preserve">
+    <value>The assembly update failed.</value>
+  </data>
+  <data name="NotSupported_DebuggerAttached" xml:space="preserve">
+    <value>Assembly updates cannot be applied while a debugger is attached.</value>
+  </data>
+  <data name="NotSupported_MethodBodyReplacement" xml:space="preserve">
+    <value>Method body replacement not supported in this runtime.</value>
   </data>
 </root>

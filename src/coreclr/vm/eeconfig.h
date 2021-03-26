@@ -82,6 +82,7 @@ public:
     bool          TieredCompilation(void)           const { LIMITED_METHOD_CONTRACT;  return fTieredCompilation; }
     bool          TieredCompilation_QuickJit() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_QuickJit; }
     bool          TieredCompilation_QuickJitForLoops() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_QuickJitForLoops; }
+    DWORD         TieredCompilation_BackgroundWorkerTimeoutMs() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_BackgroundWorkerTimeoutMs; }
     bool          TieredCompilation_CallCounting()  const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_CallCounting; }
     UINT16        TieredCompilation_CallCountThreshold() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountThreshold; }
     DWORD         TieredCompilation_CallCountingDelayMs() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountingDelayMs; }
@@ -462,6 +463,7 @@ public:
 
     bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
     bool    ForceEnc()                      const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
+    bool    DebugAssembliesModifiable()     const { LIMITED_METHOD_CONTRACT; return fDebugAssembliesModifiable; }
 
     // Optimizations to improve working set
 
@@ -690,6 +692,7 @@ private: //----------------------------------------------------------------
 
     bool fStressLog;
     bool fForceEnc;
+    bool fDebugAssembliesModifiable;
     bool fProbeForStackOverflow;
 
     // Stackwalk optimization flag
@@ -733,6 +736,7 @@ private: //----------------------------------------------------------------
     bool fTieredCompilation_CallCounting;
     bool fTieredCompilation_UseCallCountingStubs;
     UINT16 tieredCompilation_CallCountThreshold;
+    DWORD tieredCompilation_BackgroundWorkerTimeoutMs;
     DWORD tieredCompilation_CallCountingDelayMs;
     DWORD tieredCompilation_DeleteCallCountingStubsAfter;
 #endif

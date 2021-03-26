@@ -67,6 +67,7 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = value.GetEnumerator();
                 if (!enumerator.MoveNext())
                 {
+                    enumerator.Dispose();
                     return true;
                 }
             }
@@ -75,8 +76,10 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (IEnumerator<KeyValuePair<TKey, TValue>>)state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
-            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo.ElementClassInfo!);
+            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            _keyConverter ??= GetConverter<TKey>(classInfo.KeyClassInfo!);
+            _valueConverter ??= GetConverter<TValue>(classInfo.ElementClassInfo!);
+
             do
             {
                 if (ShouldFlush(writer, ref state))
@@ -89,11 +92,11 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     state.Current.PropertyState = StackFramePropertyState.Name;
                     TKey key = enumerator.Current.Key;
-                    keyConverter.WriteWithQuotes(writer, key, options, ref state);
+                    _keyConverter.WriteWithQuotes(writer, key, options, ref state);
                 }
 
                 TValue element = enumerator.Current.Value;
-                if (!valueConverter.TryWrite(writer, element, options, ref state))
+                if (!_valueConverter.TryWrite(writer, element, options, ref state))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
@@ -102,6 +105,7 @@ namespace System.Text.Json.Serialization.Converters
                 state.Current.EndDictionaryElement();
             } while (enumerator.MoveNext());
 
+            enumerator.Dispose();
             return true;
         }
 

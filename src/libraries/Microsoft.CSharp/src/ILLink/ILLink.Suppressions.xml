@@ -139,5 +139,29 @@
       <property name="Scope">member</property>
       <property name="Target">M:Microsoft.CSharp.RuntimeBinder.SymbolTable.AddNamesInInheritanceHierarchy(System.String,System.Collections.Generic.List{System.Type})</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Microsoft.CSharp.RuntimeBinder.ComInterop.CurrencyArgBuilder.Marshal(System.Linq.Expressions.Expression)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Microsoft.CSharp.RuntimeBinder.ComInterop.ErrorArgBuilder.Marshal(System.Linq.Expressions.Expression)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Microsoft.CSharp.RuntimeBinder.ComInterop.VariantArray.GetStructField(System.Linq.Expressions.ParameterExpression,System.Int32)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Microsoft.CSharp.RuntimeBinder.ExpressionTreeCallRewriter.GenerateConvert(Microsoft.CSharp.RuntimeBinder.Semantics.ExprCall)</property>
+    </attribute>
   </assembly>
 </linker>

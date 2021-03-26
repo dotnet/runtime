@@ -5,7 +5,7 @@ using System.Collections.Specialized;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    internal class ADSearcher
+    internal sealed class ADSearcher
     {
         private readonly DirectorySearcher _searcher;
         private static readonly TimeSpan s_defaultTimeSpan = new TimeSpan(0, 120, 0);
@@ -26,7 +26,7 @@ namespace System.DirectoryServices.ActiveDirectory
             _searcher.PageSize = 512;
         }
 
-        public ADSearcher(DirectoryEntry searchRoot, string filter, string[] propertiesToLoad, SearchScope scope, bool pagedSearch, bool cacheResults)
+        public ADSearcher(DirectoryEntry searchRoot, string? filter, string[] propertiesToLoad, SearchScope scope, bool pagedSearch, bool cacheResults)
         {
             _searcher = new DirectorySearcher(searchRoot, filter, propertiesToLoad, scope);
             // set proper time out
@@ -40,13 +40,13 @@ namespace System.DirectoryServices.ActiveDirectory
             _searcher.CacheResults = cacheResults;
         }
 
-        public SearchResult FindOne() => _searcher.FindOne();
+        public SearchResult? FindOne() => _searcher.FindOne();
 
         public SearchResultCollection FindAll() => _searcher.FindAll();
 
         public StringCollection PropertiesToLoad => _searcher.PropertiesToLoad;
 
-        public string Filter
+        public string? Filter
         {
             get => _searcher.Filter;
             set => _searcher.Filter = value;

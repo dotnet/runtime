@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Runtime.InteropServices;
 
@@ -11,7 +10,7 @@ namespace System.Net.Http
 {
     // This class is only used on OS versions where WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY
     // is not supported (i.e. before Win8.1/Win2K12R2) in the WinHttpOpen() function.
-    internal class WinInetProxyHelper
+    internal sealed class WinInetProxyHelper
     {
         private const int RecentAutoDetectionInterval = 120_000; // 2 minutes in milliseconds.
         private readonly string? _autoConfigUrl, _proxy, _proxyBypass;
@@ -118,13 +117,25 @@ namespace System.Net.Http
             //    fAutoLogonIfChallenged member set to TRUE.
             //
             // We match behavior of WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY and ignore errors.
+
+            string destination = uri.AbsoluteUri;
+            // Underlying code does not understand WebSockets so we need to convert it to http or https.
+            if (uri.Scheme == UriScheme.Wss)
+            {
+                destination = UriScheme.Https + destination.Substring(UriScheme.Wss.Length);
+            }
+            else if (uri.Scheme == UriScheme.Ws)
+            {
+                destination = UriScheme.Http + destination.Substring(UriScheme.Ws.Length);
+            }
+
             var repeat = false;
             do
             {
                 _autoDetectionFailed = false;
                 if (Interop.WinHttp.WinHttpGetProxyForUrl(
                     sessionHandle!,
-                    uri.AbsoluteUri,
+                    destination,
                     ref autoProxyOptions,
                     out proxyInfo))
                 {

@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // Logging.cpp - Common logging and console output infrastructure
@@ -175,6 +173,12 @@ void Logger::LogVprintf(
         __debugbreak();
     }
 
+    // Early out if we're not logging at this level.
+    if ((level & GetLogLevel()) == 0)
+    {
+        return;
+    }
+
     // Capture this first to make the timestamp more accurately reflect the actual time of logging
     time_t timestamp = time(nullptr);
 
@@ -223,64 +227,61 @@ void Logger::LogVprintf(
 
     EnterCriticalSection(&s_critSec);
 
-    if (level & GetLogLevel())
+    // Sends error messages to stderr instead out stdout
+    FILE* dest = (level <= LOGLEVEL_WARNING) ? stderr : stdout;
+
+    if (level < LOGLEVEL_INFO)
+        fprintf(dest, "%s: ", logLevelStr);
+
+    fprintf(dest, "%s\n", fullMsg);
+
+    if (s_logFile != INVALID_HANDLE_VALUE)
     {
-        // Sends error messages to stderr instead out stdout
-        FILE* dest = (level <= LOGLEVEL_WARNING) ? stderr : stdout;
-
-        if (level < LOGLEVEL_INFO)
-            fprintf(dest, "%s: ", logLevelStr);
-
-        fprintf(dest, "%s\n", fullMsg);
-
-        if (s_logFile != INVALID_HANDLE_VALUE)
-        {
 #ifndef TARGET_UNIX // TODO: no localtime_s() or strftime() in PAL
-            tm      timeInfo;
-            errno_t err = localtime_s(&timeInfo, &timestamp);
-            if (err != 0)
-            {
-                fprintf(stderr, "WARNING: [Logger::LogVprintf] localtime failed with error %d.\n", err);
-                goto CleanUp;
-            }
+        tm      timeInfo;
+        errno_t err = localtime_s(&timeInfo, &timestamp);
+        if (err != 0)
+        {
+            fprintf(stderr, "WARNING: [Logger::LogVprintf] localtime failed with error %d.\n", err);
+            goto CleanUp;
+        }
 
-            size_t timeStrBuffSize = 20 * sizeof(char);
-            char*  timeStr         = (char*)malloc(timeStrBuffSize); // Use malloc so we can realloc if necessary
+        size_t timeStrBuffSize = 20 * sizeof(char);
+        char*  timeStr         = (char*)malloc(timeStrBuffSize); // Use malloc so we can realloc if necessary
 
-            // This particular format string should always generate strings of the same size, but
-            // for the sake of robustness, we shouldn't rely on that assumption.
-            while (strftime(timeStr, timeStrBuffSize, "%Y-%m-%d %H:%M:%S", &timeInfo) == 0)
-            {
-                timeStrBuffSize *= 2;
-                timeStr = (char*)realloc(timeStr, timeStrBuffSize);
-            }
+        // This particular format string should always generate strings of the same size, but
+        // for the sake of robustness, we shouldn't rely on that assumption.
+        while (strftime(timeStr, timeStrBuffSize, "%Y-%m-%d %H:%M:%S", &timeInfo) == 0)
+        {
+            timeStrBuffSize *= 2;
+            timeStr = (char*)realloc(timeStr, timeStrBuffSize);
+        }
 #else  // TARGET_UNIX
-            const char* timeStr = "";
+        const char* timeStr = "";
 #endif // TARGET_UNIX
 
-            const char logEntryFmtStr[] = "%s - %s [%s:%d] - %s - %s\r\n";
-            size_t logEntryBuffSize = sizeof(logEntryFmtStr) + strlen(timeStr) + strlen(function) + strlen(file) + 10 +
-                                      strlen(logLevelStr) + strlen(fullMsg);
+        const char logEntryFmtStr[] = "%s - %s [%s:%d] - %s - %s\r\n";
+        size_t logEntryBuffSize = sizeof(logEntryFmtStr) + strlen(timeStr) + strlen(function) + strlen(file) + 10 +
+                                  strlen(logLevelStr) + strlen(fullMsg);
 
-            char* logEntry = new char[logEntryBuffSize];
-            sprintf_s(logEntry, logEntryBuffSize, logEntryFmtStr, timeStr, function, file, line, logLevelStr, fullMsg);
+        char* logEntry = new char[logEntryBuffSize];
+        sprintf_s(logEntry, logEntryBuffSize, logEntryFmtStr, timeStr, function, file, line, logLevelStr, fullMsg);
 
-            DWORD bytesWritten;
+        DWORD bytesWritten;
 
-            if (!WriteFile(s_logFile, logEntry, (DWORD)logEntryBuffSize - 1, &bytesWritten, nullptr))
-                fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to write to log file. GetLastError()=%u\n",
-                        GetLastError());
+        if (!WriteFile(s_logFile, logEntry, (DWORD)logEntryBuffSize - 1, &bytesWritten, nullptr))
+            fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to write to log file. GetLastError()=%u\n",
+                    GetLastError());
 
-            if (!FlushFileBuffers(s_logFile))
-                fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to flush log file. GetLastError()=%u\n",
-                        GetLastError());
+        if (!FlushFileBuffers(s_logFile))
+            fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to flush log file. GetLastError()=%u\n",
+                    GetLastError());
 
-            delete[] logEntry;
+        delete[] logEntry;
 
 #ifndef TARGET_UNIX
-            free((void*)timeStr);
+        free((void*)timeStr);
 #endif // !TARGET_UNIX
-        }
     }
 
 #ifndef TARGET_UNIX

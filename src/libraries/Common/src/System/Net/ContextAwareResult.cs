@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Threading;
 
@@ -19,7 +18,7 @@ namespace System.Net
     //
     // For now the state is not included as part of the closure.  It is too common a pattern (for example with socket receive)
     // to have several pending IOs differentiated by their state object.  We don't want that pattern to break the cache.
-    internal class CallbackClosure
+    internal sealed class CallbackClosure
     {
         private readonly AsyncCallback? _savedCallback;
         private readonly ExecutionContext? _savedContext;

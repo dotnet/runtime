@@ -249,10 +249,6 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk)
     if (pThread->IsAbortRequested())
         pThread->HandleThreadAbort();
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     UMEntryThunk::DoRunTimeInit(pUMEntryThunk);
 
     return (PCODE)pUMEntryThunk->GetCode();
@@ -288,6 +284,11 @@ void STDCALL UMEntryThunk::DoRunTimeInit(UMEntryThunk* pUMEntryThunk)
 
     {
         GCX_PREEMP();
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         pUMEntryThunk->RunTimeInit();
     }
 
@@ -530,10 +531,10 @@ void STDCALL LogUMTransition(UMEntryThunk* thunk)
         DEBUG_ONLY;
         GC_NOTRIGGER;
         ENTRY_POINT;
-        if (GetThread()) MODE_PREEMPTIVE; else MODE_ANY;
+        if (GetThreadNULLOk()) MODE_PREEMPTIVE; else MODE_ANY;
         DEBUG_ONLY;
         PRECONDITION(CheckPointer(thunk));
-        PRECONDITION((GetThread() != NULL) ? (!GetThread()->PreemptiveGCDisabled()) : TRUE);
+        PRECONDITION((GetThreadNULLOk() != NULL) ? (!GetThread()->PreemptiveGCDisabled()) : TRUE);
     }
     CONTRACTL_END;
 

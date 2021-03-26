@@ -31,7 +31,7 @@ OBJECTREF AllocateArrayEx(TypeHandle  arrayType, INT32 *pArgs, DWORD dwNumArgs, 
 OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements);
 
 // Allocate SD array of object types given an element type
-OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle ElementType, BOOL bAllocateInLargeHeap = FALSE);
+OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle ElementType, BOOL bAllocateInPinnedHeap = FALSE);
 
 // Allocate a string
 STRINGREF AllocateString( DWORD cchStringLength );

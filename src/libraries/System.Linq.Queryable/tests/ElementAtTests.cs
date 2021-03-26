@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -14,6 +13,7 @@ namespace System.Linq.Tests
             int?[] source = { 9, 8 };
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(^3));
         }
 
         [Fact]
@@ -22,6 +22,8 @@ namespace System.Linq.Tests
             int[] source = { 1, 2, 3, 4 };
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(source.Length));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(new Index(source.Length)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(^0));
         }
 
         [Fact]
@@ -30,6 +32,8 @@ namespace System.Linq.Tests
             int[] source = { };
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(new Index(0)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.AsQueryable().ElementAt(^0));
         }
 
         [Fact]
@@ -38,6 +42,8 @@ namespace System.Linq.Tests
             int[] source = { -4 };
 
             Assert.Equal(-4, source.AsQueryable().ElementAt(0));
+            Assert.Equal(-4, source.AsQueryable().ElementAt(new Index(0)));
+            Assert.Equal(-4, source.AsQueryable().ElementAt(^1));
         }
 
         [Fact]
@@ -46,19 +52,29 @@ namespace System.Linq.Tests
             int[] source = { 9, 8, 0, -5, 10 };
 
             Assert.Equal(10, source.AsQueryable().ElementAt(source.Length - 1));
+            Assert.Equal(10, source.AsQueryable().ElementAt(source.Length - 1));
+            Assert.Equal(10, source.AsQueryable().ElementAt(^1));
         }
 
         [Fact]
         public void NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).ElementAt(2));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).ElementAt(new Index(2)));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).ElementAt(^2));
         }
 
         [Fact]
         public void ElementAt()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().ElementAt(1);
-            Assert.Equal(2, val);
+            var val1 = new[] { 0, 2, 1 }.AsQueryable().ElementAt(1);
+            Assert.Equal(2, val1);
+
+            var val2 = new[] { 0, 2, 1 }.AsQueryable().ElementAt(new Index(1));
+            Assert.Equal(2, val2);
+
+            var val3 = new[] { 0, 2, 1 }.AsQueryable().ElementAt(^2);
+            Assert.Equal(2, val3);
         }
     }
 }

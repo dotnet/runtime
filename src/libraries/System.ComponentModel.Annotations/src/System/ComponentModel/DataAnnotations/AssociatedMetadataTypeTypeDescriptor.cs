@@ -6,19 +6,23 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
 namespace System.ComponentModel.DataAnnotations
 {
-    internal class AssociatedMetadataTypeTypeDescriptor : CustomTypeDescriptor
+    internal sealed class AssociatedMetadataTypeTypeDescriptor : CustomTypeDescriptor
     {
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type AssociatedMetadataType { get; set; }
 
         private bool IsSelfAssociated { get; set; }
 
-        public AssociatedMetadataTypeTypeDescriptor(ICustomTypeDescriptor parent, Type type, Type associatedMetadataType)
+        public AssociatedMetadataTypeTypeDescriptor(
+            ICustomTypeDescriptor parent,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type associatedMetadataType)
             : base(parent)
         {
             AssociatedMetadataType = associatedMetadataType ?? TypeDescriptorCache.GetAssociatedMetadataType(type);
@@ -29,11 +33,13 @@ namespace System.ComponentModel.DataAnnotations
             }
         }
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override PropertyDescriptorCollection GetProperties(Attribute[] attributes)
         {
             return GetPropertiesWithMetadata(base.GetProperties(attributes));
         }
 
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public override PropertyDescriptorCollection GetProperties()
         {
             return GetPropertiesWithMetadata(base.GetProperties());
@@ -98,7 +104,9 @@ namespace System.ComponentModel.DataAnnotations
             // Stores whether or not a type and associated metadata type has been checked for validity
             private static readonly ConcurrentDictionary<(Type, Type), bool> s_validatedMetadataTypeCache = new ConcurrentDictionary<(Type, Type), bool>();
 
-            public static void ValidateMetadataType(Type type, Type associatedType)
+            public static void ValidateMetadataType(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties)] Type associatedType)
             {
                 (Type, Type) typeTuple = (type, associatedType);
                 if (!s_validatedMetadataTypeCache.ContainsKey(typeTuple))
@@ -108,6 +116,7 @@ namespace System.ComponentModel.DataAnnotations
                 }
             }
 
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             public static Type GetAssociatedMetadataType(Type type)
             {
                 Type associatedMetadataType = null;
@@ -126,7 +135,9 @@ namespace System.ComponentModel.DataAnnotations
                 return associatedMetadataType;
             }
 
-            private static void CheckAssociatedMetadataType(Type mainType, Type associatedMetadataType)
+            private static void CheckAssociatedMetadataType(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type mainType,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties)] Type associatedMetadataType)
             {
                 // Only properties from main type
                 HashSet<string> mainTypeMemberNames = new HashSet<string>(mainType.GetProperties().Select(p => p.Name));
@@ -148,7 +159,9 @@ namespace System.ComponentModel.DataAnnotations
                 }
             }
 
-            public static Attribute[] GetAssociatedMetadata(Type type, string memberName)
+            public static Attribute[] GetAssociatedMetadata(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+                string memberName)
             {
                 (Type, string) memberTuple = (type, memberName);
                 Attribute[] attributes;

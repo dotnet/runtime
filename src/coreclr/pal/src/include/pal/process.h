@@ -163,7 +163,7 @@ Function:
 
 (no return value)
 --*/
-VOID PROCNotifyProcessShutdown();
+VOID PROCNotifyProcessShutdown(bool isExecutingOnAltStack = false);
 
 /*++
 Function:

@@ -35,9 +35,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type keyType)
+        public static void ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type keyType, JsonConverter converter)
         {
-            throw new NotSupportedException(SR.Format(SR.DictionaryKeyTypeNotSupported, keyType));
+            throw new NotSupportedException(SR.Format(SR.DictionaryKeyTypeNotSupported, keyType, converter.GetType()));
         }
 
         [DoesNotReturn]
@@ -292,7 +292,11 @@ namespace System.Text.Json
             string message = ex.Message;
 
             // Insert the "Path" portion before "LineNumber" and "BytePositionInLine".
+#if BUILDING_INBOX_LIBRARY
+            int iPos = message.AsSpan().LastIndexOf(" LineNumber: ");
+#else
             int iPos = message.LastIndexOf(" LineNumber: ", StringComparison.InvariantCulture);
+#endif
             if (iPos >= 0)
             {
                 message = $"{message.Substring(0, iPos)} Path: {path} |{message.Substring(iPos)}";

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
@@ -29,7 +30,7 @@ namespace System.Text.Json
 
         public JsonPropertyInfo? DataExtensionProperty { get; private set; }
 
-        // If enumerable, the JsonClassInfo for the element type.
+        // If enumerable or dictionary, the JsonClassInfo for the element type.
         private JsonClassInfo? _elementClassInfo;
 
         /// <summary>
@@ -56,6 +57,33 @@ namespace System.Text.Json
         }
 
         public Type? ElementType { get; set; }
+
+        // If dictionary, the JsonClassInfo for the key type.
+        private JsonClassInfo? _keyClassInfo;
+
+        /// <summary>
+        /// Return the JsonClassInfo for the key type, or null if the type is not a dictionary.
+        /// </summary>
+        /// <remarks>
+        /// This should not be called during warm-up (initial creation of JsonClassInfos) to avoid recursive behavior
+        /// which could result in a StackOverflowException.
+        /// </remarks>
+        public JsonClassInfo? KeyClassInfo
+        {
+            get
+            {
+                if (_keyClassInfo == null && KeyType != null)
+                {
+                    Debug.Assert(ClassType == ClassType.Dictionary);
+
+                    _keyClassInfo = Options.GetOrAddClass(KeyType);
+                }
+
+                return _keyClassInfo;
+            }
+        }
+
+        public Type? KeyType { get; set; }
 
         public JsonSerializerOptions Options { get; private set; }
 
@@ -221,8 +249,14 @@ namespace System.Text.Json
                     }
                     break;
                 case ClassType.Enumerable:
+                    {
+                        ElementType = converter.ElementType;
+                        CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
+                    }
+                    break;
                 case ClassType.Dictionary:
                     {
+                        KeyType = converter.KeyType;
                         ElementType = converter.ElementType;
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
                     }
@@ -305,7 +339,7 @@ namespace System.Text.Json
                 return StringComparer.OrdinalIgnoreCase.GetHashCode(Name);
             }
 
-            public override bool Equals(object? obj)
+            public override bool Equals([NotNullWhen(true)] object? obj)
             {
                 Debug.Assert(obj is ParameterLookupKey);
 

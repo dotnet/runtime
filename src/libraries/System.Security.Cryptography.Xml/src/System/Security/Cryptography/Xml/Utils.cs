@@ -10,7 +10,7 @@ using System.Xml;
 
 namespace System.Security.Cryptography.Xml
 {
-    internal class Utils
+    internal static class Utils
     {
         // The maximum number of characters in an XML document (0 means no limit).
         internal const int MaxCharactersInDocument = 0;
@@ -22,8 +22,6 @@ namespace System.Security.Cryptography.Xml
         // This should be within limits of real world scenarios.
         // Keeping this number low will preserve some stack space
         internal const int XmlDsigSearchDepth = 20;
-
-        private Utils() { }
 
         private static bool HasNamespace(XmlElement element, string prefix, string value)
         {
@@ -425,7 +423,7 @@ namespace System.Security.Cryptography.Xml
             StringBuilder sb = new StringBuilder();
             sb.Append(data);
             Utils.SBReplaceCharWithString(sb, (char)13, "&#xD;");
-            return sb.ToString(); ;
+            return sb.ToString();
         }
 
         internal static string EscapeTextData(string data)
@@ -436,7 +434,7 @@ namespace System.Security.Cryptography.Xml
             sb.Replace("<", "&lt;");
             sb.Replace(">", "&gt;");
             SBReplaceCharWithString(sb, (char)13, "&#xD;");
-            return sb.ToString(); ;
+            return sb.ToString();
         }
 
         internal static string EscapeCData(string data)

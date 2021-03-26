@@ -1640,6 +1640,61 @@ namespace Internal.NativeFormat
 #else
     internal
 #endif
+    class PgoInstrumentedDataVertex : Vertex
+    {
+        private uint _version;
+
+        private BlobVertex _instrumentationData;
+
+        public PgoInstrumentedDataVertex(uint version, BlobVertex instrumentationData)
+        {
+            _version = version;
+            _instrumentationData = instrumentationData;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            int existingOffset = _instrumentationData._offset;
+            if (existingOffset != -1)
+            {
+                writer.WriteUnsigned((_version << 2) | 3);
+                writer.WriteUnsigned((uint)(writer.GetCurrentOffset() - existingOffset));
+            }
+            else
+            {
+                writer.WriteUnsigned((_version << 2) | 1);
+                _instrumentationData.Save(writer);
+            }
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class PgoInstrumentedDataWithSignatureBlobVertex : PgoInstrumentedDataVertex
+    {
+        private BlobVertex _signatureBlob;
+
+        public PgoInstrumentedDataWithSignatureBlobVertex(BlobVertex signaureBlob, uint version, BlobVertex instrumentationData)
+            : base(version, instrumentationData)
+        {
+            _signatureBlob = signaureBlob;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            _signatureBlob.Save(writer);
+            base.Save(writer);
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     class DebugInfoVertex : Vertex
     {
         private BlobVertex _debugInfo;

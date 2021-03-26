@@ -243,37 +243,31 @@ namespace System.Drawing
             int destWidth = blockRegionSize.Width;
             int destHeight = blockRegionSize.Height;
 
-            using (DeviceContext dc = DeviceContext.FromHwnd(IntPtr.Zero))
+            IntPtr screenDC = Interop.User32.GetDC(IntPtr.Zero);
+            try
             {
-                // The DC of the screen.
-                IntPtr screenDC = dc.Hdc;
-
-                // The DC of the current graphics object.
                 IntPtr targetDC = GetHdc();
+                int result = Interop.Gdi32.BitBlt(
+                    targetDC,
+                    destinationX,
+                    destinationY,
+                    destWidth,
+                    destHeight,
+                    screenDC,
+                    sourceX,
+                    sourceY,
+                    (Interop.Gdi32.RasterOp)copyPixelOperation);
 
-                try
+                //a zero result indicates a win32 exception has been thrown
+                if (result == 0)
                 {
-                    int result = Interop.Gdi32.BitBlt(
-                        targetDC,
-                        destinationX,
-                        destinationY,
-                        destWidth,
-                        destHeight,
-                        screenDC,
-                        sourceX,
-                        sourceY,
-                        (Interop.Gdi32.RasterOp)copyPixelOperation);
-
-                    //a zero result indicates a win32 exception has been thrown
-                    if (result == 0)
-                    {
-                        throw new Win32Exception();
-                    }
+                    throw new Win32Exception();
                 }
-                finally
-                {
-                    ReleaseHdc();
-                }
+            }
+            finally
+            {
+                Interop.User32.ReleaseDC(IntPtr.Zero, screenDC);
+                ReleaseHdc();
             }
         }
 
@@ -697,9 +691,7 @@ namespace System.Drawing
 
             if (!cumulTransform.IsIdentity)
             {
-                float[] elements = cumulTransform.Elements;
-                currentOffset.X = elements[4];
-                currentOffset.Y = elements[5];
+                currentOffset = cumulTransform.Offset;
             }
 
             GraphicsContext? context = _previousContext;
@@ -925,6 +917,40 @@ namespace System.Drawing
                 Interop.Gdi32.DeleteObject(s_halftonePalette);
                 s_halftonePalette = IntPtr.Zero;
             }
+        }
+
+        /// <summary>
+        /// GDI+ will return a 'generic error' with specific win32 last error codes when
+        /// a terminal server session has been closed, minimized, etc... We don't want
+        /// to throw when this happens, so we'll guard against this by looking at the
+        /// 'last win32 error code' and checking to see if it is either 1) access denied
+        /// or 2) proc not found and then ignore it.
+        ///
+        /// The problem is that when you lock the machine, the secure desktop is enabled and
+        /// rendering fails which is expected (since the app doesn't have permission to draw
+        /// on the secure desktop). Not sure if there's anything you can do, short of catching
+        /// the desktop switch message and absorbing all the exceptions that get thrown while
+        /// it's the secure desktop.
+        /// </summary>
+        private void CheckErrorStatus(int status)
+        {
+            if (status == Gdip.Ok)
+                return;
+
+            // Generic error from GDI+ can be GenericError or Win32Error.
+            if (status == Gdip.GenericError || status == Gdip.Win32Error)
+            {
+                int error = Marshal.GetLastWin32Error();
+                if (error == SafeNativeMethods.ERROR_ACCESS_DENIED || error == SafeNativeMethods.ERROR_PROC_NOT_FOUND ||
+                        // Here, we'll check to see if we are in a terminal services session...
+                        (((Interop.User32.GetSystemMetrics(NativeMethods.SM_REMOTESESSION) & 0x00000001) != 0) && (error == 0)))
+                {
+                    return;
+                }
+            }
+
+            // Legitimate error, throw our status exception.
+            throw Gdip.StatusException(status);
         }
     }
 }

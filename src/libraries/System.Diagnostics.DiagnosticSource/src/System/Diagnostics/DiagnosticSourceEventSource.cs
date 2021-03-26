@@ -160,11 +160,11 @@ namespace System.Diagnostics
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
     /// </summary>
     [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
-    internal class DiagnosticSourceEventSource : EventSource
+    internal sealed class DiagnosticSourceEventSource : EventSource
     {
         public static DiagnosticSourceEventSource Logger = new DiagnosticSourceEventSource();
 
-        public class Keywords
+        public static class Keywords
         {
             /// <summary>
             /// Indicates diagnostics messages from DiagnosticSourceEventSource should be included.
@@ -223,6 +223,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Events from DiagnosticSource can be forwarded to EventSource using this event.
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(2, Keywords = Keywords.Events)]
         private void Event(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>>? Arguments)
         {
@@ -243,6 +247,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(4, Keywords = Keywords.Events)]
         private void Activity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -252,6 +260,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(5, Keywords = Keywords.Events)]
         private void Activity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -261,6 +273,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(6, Keywords = Keywords.Events)]
         private void Activity2Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -270,6 +286,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(7, Keywords = Keywords.Events)]
         private void Activity2Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -279,6 +299,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(8, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void RecursiveActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -288,6 +312,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(9, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void RecursiveActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -311,6 +339,10 @@ namespace System.Diagnostics
         /// <param name="SourceName">The ActivitySource name</param>
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
 #if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         [Event(11, Keywords = Keywords.Events)]
 #else
@@ -325,6 +357,10 @@ namespace System.Diagnostics
         /// <param name="SourceName">The ActivitySource name</param>
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
 #if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         [Event(12, Keywords = Keywords.Events)]
 #else
@@ -470,7 +506,7 @@ namespace System.Diagnostics
         /// This method also contains that static 'Create/Destroy FilterAndTransformList, which
         /// simply parse a series of transformation specifications.
         /// </summary>
-        internal class FilterAndTransform
+        internal sealed class FilterAndTransform
         {
             /// <summary>
             /// Parses filterAndPayloadSpecs which is a list of lines each of which has the from
@@ -1149,7 +1185,7 @@ namespace System.Diagnostics
 
         // This olds one the implicit transform for one type of object.
         // We remember this type-transform pair in the _firstImplicitTransformsEntry cache.
-        internal class ImplicitTransformEntry
+        internal sealed class ImplicitTransformEntry
         {
             public Type? Type;
             public TransformSpec? Transforms;
@@ -1160,7 +1196,7 @@ namespace System.Diagnostics
         /// the DiagnosticSource payload. An example string is OUTSTR=EVENT_VALUE.PROP1.PROP2.PROP3
         /// It has a Next field so they can be chained together in a linked list.
         /// </summary>
-        internal class TransformSpec
+        internal sealed class TransformSpec
         {
             /// <summary>
             /// parse the strings 'spec' from startIdx to endIdx (points just beyond the last considered char)
@@ -1225,7 +1261,7 @@ namespace System.Diagnostics
             /// and efficiently. Thus it represents a '.PROP' in a TransformSpec
             /// (and a transformSpec has a list of these).
             /// </summary>
-            internal class PropertySpec
+            internal sealed class PropertySpec
             {
                 private const string CurrentActivityPropertyName = "*Activity";
                 private const string EnumeratePropertyName = "*Enumerate";
@@ -1260,10 +1296,12 @@ namespace System.Diagnostics
                     Type? objType = obj?.GetType();
                     if (fetch == null || fetch.Type != objType)
                     {
-                        _fetchForExpectedType = fetch = PropertyFetch.FetcherForProperty(
-                            objType, _propertyName);
+                        _fetchForExpectedType = fetch = PropertyFetch.FetcherForProperty(objType, _propertyName);
                     }
-                    return fetch!.Fetch(obj);
+                    object? ret = null;
+                    // Avoid the exception which can be thrown during accessing the object properties.
+                    try { ret = fetch!.Fetch(obj); } catch (Exception e) { Logger.Message($"Property {objType}.{_propertyName} threw the exception {e}"); }
+                    return ret;
                 }
 
                 /// <summary>
@@ -1454,7 +1492,7 @@ namespace System.Diagnostics
         /// operation on the IObserver happens.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        internal class CallbackObserver<T> : IObserver<T>
+        internal sealed class CallbackObserver<T> : IObserver<T>
         {
             public CallbackObserver(Action<T> callback) { _callback = callback; }
 
@@ -1470,7 +1508,7 @@ namespace System.Diagnostics
         // A linked list of IObservable subscriptions (which are IDisposable).
         // We use this to keep track of the DiagnosticSource subscriptions.
         // We use this linked list for thread atomicity
-        internal class Subscriptions
+        internal sealed class Subscriptions
         {
             public Subscriptions(IDisposable subscription, Subscriptions? next)
             {

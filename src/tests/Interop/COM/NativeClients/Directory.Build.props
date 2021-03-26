@@ -1,0 +1,10 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <UseManagedCOMServer>true</UseManagedCOMServer>
+    <IgnoreCoreCLRTestLibraryDependency>true</IgnoreCoreCLRTestLibraryDependency>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <DefineConstants>BLOCK_WINDOWS_NANO</DefineConstants>
+  </PropertyGroup>
+</Project>

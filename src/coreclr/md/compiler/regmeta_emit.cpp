@@ -306,7 +306,7 @@ HRESULT RegMeta::UnmarkAll()
     int             i;
     int             iCount;
     TypeDefRec      *pRec;
-    ULONG           ulEncloser;
+    RID             ulEncloser;
     NestedClassRec  *pNestedClass;
     CustomAttributeRec  *pCARec;
     mdToken         tkParent;

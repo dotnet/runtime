@@ -194,6 +194,24 @@ enum membarrier_cmd
     MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED_SYNC_CORE  = (1 << 6)
 };
 
+bool CanFlushUsingMembarrier()
+{
+    // Starting with Linux kernel 4.14, process memory barriers can be generated
+    // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
+
+    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
+
+    if (mask >= 0 &&
+        mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED &&
+        // Register intent to use the private expedited command.
+        membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0) == 0)
+    {
+        return true;
+    }
+
+    return false;
+}
+
 //
 // Tracks if the OS supports FlushProcessWriteBuffers using membarrier
 //
@@ -284,10 +302,14 @@ void NUMASupportInitialize()
         return;
     }
 
-    g_numaHandle = dlopen("libnuma.so", RTLD_LAZY);
+    g_numaHandle = dlopen("libnuma.so.1", RTLD_LAZY);
     if (g_numaHandle == 0)
     {
-        g_numaHandle = dlopen("libnuma.so.1", RTLD_LAZY);
+        g_numaHandle = dlopen("libnuma.so.1.0.0", RTLD_LAZY);
+        if (g_numaHandle == 0)
+        {
+            g_numaHandle = dlopen("libnuma.so", RTLD_LAZY);
+        }
     }
     if (g_numaHandle != 0)
     {
@@ -350,13 +372,7 @@ bool GCToOSInterface::Initialize()
 
     assert(s_flushUsingMemBarrier == 0);
 
-    // Starting with Linux kernel 4.14, process memory barriers can be generated
-    // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
-    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
-    if (mask >= 0 &&
-        mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED &&
-        // Register intent to use the private expedited command.
-        membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0) == 0)
+    if (CanFlushUsingMembarrier())
     {
         s_flushUsingMemBarrier = TRUE;
     }
@@ -887,10 +903,10 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     if (cacheSize == 0)
     {
         //
-        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available 
-        // for the platform. Currently musl and arm64 should be only cases to use  
+        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available
+        // for the platform. Currently musl and arm64 should be only cases to use
         // this method to determine cache size.
-        // 
+        //
         size_t size;
 
         if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))

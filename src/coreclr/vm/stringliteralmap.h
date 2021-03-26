@@ -113,8 +113,8 @@ private:
 
     Crst                        m_HashTableCrstGlobal;
 
-    // The large heap handle table.
-    LargeHeapHandleTable        m_LargeHeapHandleTable;
+    // The pinned heap handle table.
+    PinnedHeapHandleTable        m_PinnedHeapHandleTable;
 
 };
 
@@ -217,7 +217,7 @@ public:
         CONTRACTL
         {
             NOTHROW;
-            if(GetThread()){GC_NOTRIGGER;}else{DISABLED(GC_TRIGGERS);};
+            if(GetThreadNULLOk()){GC_NOTRIGGER;}else{DISABLED(GC_TRIGGERS);};
             PRECONDITION(CheckPointer(this));
         }
         CONTRACTL_END;
@@ -232,7 +232,7 @@ public:
         CONTRACTL
         {
             NOTHROW;
-            if(GetThread()){GC_NOTRIGGER;}else{DISABLED(GC_TRIGGERS);};
+            if(GetThreadNULLOk()){GC_NOTRIGGER;}else{DISABLED(GC_TRIGGERS);};
             PRECONDITION(CheckPointer(this));
         }
         CONTRACTL_END;
@@ -244,7 +244,7 @@ public:
         CONTRACTL
         {
             NOTHROW;
-            if(GetThread()){GC_NOTRIGGER;}else{DISABLED(GC_TRIGGERS);};
+            if(GetThreadNULLOk()){GC_NOTRIGGER;}else{DISABLED(GC_TRIGGERS);};
             MODE_COOPERATIVE;
             PRECONDITION(CheckPointer(this));
             PRECONDITION(CheckPointer(pStringData));

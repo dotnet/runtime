@@ -7,9 +7,9 @@ using System.Globalization;
 
 namespace System.DirectoryServices.Design
 {
-    internal class DirectoryEntryConverter : TypeConverter
+    internal sealed class DirectoryEntryConverter : TypeConverter
     {
-        private static StandardValuesCollection s_values;
+        private static StandardValuesCollection? s_values;
         private static readonly Hashtable s_componentsCreated = new Hashtable(StringComparer.OrdinalIgnoreCase);
 
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
@@ -22,7 +22,7 @@ namespace System.DirectoryServices.Design
             return base.CanConvertFrom(context, sourceType);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object? value)
         {
             if (value != null && value is string)
             {
@@ -33,7 +33,7 @@ namespace System.DirectoryServices.Design
 
                 if (text.CompareTo(SR.DSNotSet) != 0)
                 {
-                    DirectoryEntry newEntry = GetFromCache(text);
+                    DirectoryEntry? newEntry = GetFromCache(text);
                     if (newEntry == null)
                     {
                         newEntry = new DirectoryEntry(text);
@@ -49,7 +49,7 @@ namespace System.DirectoryServices.Design
             return null;
         }
 
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object? value, Type? destinationType)
         {
             if (destinationType != null && destinationType == typeof(string))
             {
@@ -66,16 +66,16 @@ namespace System.DirectoryServices.Design
         {
             if (s_values == null)
             {
-                s_values = new StandardValuesCollection(new object[] { null });
+                s_values = new StandardValuesCollection(new object?[] { null });
             }
             return s_values;
         }
 
-        internal static DirectoryEntry GetFromCache(string path)
+        internal static DirectoryEntry? GetFromCache(string path)
         {
             if (s_componentsCreated.ContainsKey(path))
             {
-                DirectoryEntry existingComponent = (DirectoryEntry)s_componentsCreated[path];
+                DirectoryEntry existingComponent = (DirectoryEntry)s_componentsCreated[path]!;
                 if (existingComponent.Site == null)
                     s_componentsCreated.Remove(path);
                 else

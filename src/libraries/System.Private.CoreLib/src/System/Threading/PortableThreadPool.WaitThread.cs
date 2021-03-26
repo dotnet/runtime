@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
@@ -21,7 +22,7 @@ namespace System.Threading
         }
     }
 
-    internal partial class PortableThreadPool
+    internal sealed partial class PortableThreadPool
     {
         /// <summary>
         /// A linked list of <see cref="WaitThread"/>s.
@@ -36,9 +37,9 @@ namespace System.Threading
         /// <param name="handle">A description of the requested registration.</param>
         internal void RegisterWaitHandle(RegisteredWaitHandle handle)
         {
-            if (PortableThreadPoolEventSource.Log.IsEnabled())
+            if (NativeRuntimeEventSource.Log.IsEnabled())
             {
-                PortableThreadPoolEventSource.Log.ThreadPoolIOEnqueue(handle);
+                NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(handle);
             }
 
             _waitThreadLock.Acquire();
@@ -75,9 +76,9 @@ namespace System.Threading
 
         internal static void CompleteWait(RegisteredWaitHandle handle, bool timedOut)
         {
-            if (PortableThreadPoolEventSource.Log.IsEnabled())
+            if (NativeRuntimeEventSource.Log.IsEnabled())
             {
-                PortableThreadPoolEventSource.Log.ThreadPoolIODequeue(handle);
+                NativeRuntimeEventSource.Log.ThreadPoolIODequeue(handle);
             }
 
             handle.PerformCallback(timedOut);
@@ -135,7 +136,7 @@ namespace System.Threading
             }
         }
 
-        private class WaitThreadNode
+        private sealed class WaitThreadNode
         {
             public WaitThread Thread { get; }
             public WaitThreadNode? Next { get; set; }
@@ -146,7 +147,7 @@ namespace System.Threading
         /// <summary>
         /// A thread pool wait thread.
         /// </summary>
-        internal class WaitThread
+        internal sealed class WaitThread
         {
             /// <summary>
             /// The wait handles registered on this wait thread.
@@ -186,10 +187,12 @@ namespace System.Threading
 
                 // Thread pool threads must start in the default execution context without transferring the context, so
                 // using UnsafeStart() instead of Start()
-                Thread waitThread = new Thread(WaitThreadStart, SmallStackSizeBytes);
-                waitThread.IsThreadPoolThread = true;
-                waitThread.IsBackground = true;
-                waitThread.Name = ".NET ThreadPool Wait";
+                Thread waitThread = new Thread(WaitThreadStart, SmallStackSizeBytes)
+                {
+                    IsThreadPoolThread = true,
+                    IsBackground = true,
+                    Name = ".NET ThreadPool Wait"
+                };
                 waitThread.UnsafeStart();
             }
 

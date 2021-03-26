@@ -3,7 +3,6 @@
 
 using System;
 using System.Text;
-using System.Globalization;
 using System.Threading;
 using System.Collections;
 using System.Diagnostics;
@@ -14,7 +13,7 @@ namespace Microsoft.Extensions.Logging
     /// <summary>
     /// Default implementation of <see cref="IExternalScopeProvider"/>
     /// </summary>
-    internal class LoggerFactoryScopeProvider : IExternalScopeProvider
+    internal sealed class LoggerFactoryScopeProvider : IExternalScopeProvider
     {
         private readonly AsyncLocal<Scope> _currentScope = new AsyncLocal<Scope>();
         private readonly ActivityTrackingOptions _activityTrackingOption;
@@ -48,10 +47,45 @@ namespace Microsoft.Extensions.Logging
                     }
 
                     callback(activityLogScope, state);
+
+                    // Tags and baggage are opt-in and thus we assume that most of the time it will not be used.
+                    if ((_activityTrackingOption & ActivityTrackingOptions.Tags) != 0
+                        && activity.TagObjects.GetEnumerator().MoveNext())
+                    {
+                        // As TagObjects is a IEnumerable<KeyValuePair<string, object?>> this can be used directly as a scope.
+                        // We do this to safe the allocation of a wrapper object.
+                         callback(activity.TagObjects, state);
+                    }
+
+                    if ((_activityTrackingOption & ActivityTrackingOptions.Baggage) != 0)
+                    {
+                        // Only access activity.Baggage as every call leads to an allocation
+                        IEnumerable<KeyValuePair<string, string?>> baggage = activity.Baggage;
+                        if (baggage.GetEnumerator().MoveNext())
+                        {
+                            // For the baggage a wrapper object is necessary because we need to be able to overwrite ToString().
+                            // In contrast to the TagsObject, Baggage doesn't have one underlining type where we can do this overwrite.
+                            ActivityBaggageLogScopeWrapper scope = GetOrCreateActivityBaggageLogScopeWrapper(activity, baggage);
+                            callback(scope, state);
+                        }
+                    }
                 }
             }
 
             Report(_currentScope.Value);
+        }
+
+        private static ActivityBaggageLogScopeWrapper GetOrCreateActivityBaggageLogScopeWrapper(Activity activity, IEnumerable<KeyValuePair<string, string?>> items)
+        {
+            const string additionalItemsBaggagePropertyKey = "__ActivityBaggageItemsLogScope__";
+            var activityBaggageLogScopeWrapper = activity.GetCustomProperty(additionalItemsBaggagePropertyKey) as ActivityBaggageLogScopeWrapper;
+            if (activityBaggageLogScopeWrapper == null)
+            {
+                activityBaggageLogScopeWrapper = new ActivityBaggageLogScopeWrapper(items);
+                activity.SetCustomProperty(additionalItemsBaggagePropertyKey, activityBaggageLogScopeWrapper);
+            }
+
+            return activityBaggageLogScopeWrapper;
         }
 
         public IDisposable Push(object state)
@@ -63,7 +97,7 @@ namespace Microsoft.Extensions.Logging
             return newScope;
         }
 
-        private class Scope : IDisposable
+        private sealed class Scope : IDisposable
         {
             private readonly LoggerFactoryScopeProvider _provider;
             private bool _isDisposed;
@@ -94,7 +128,7 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private class ActivityLogScope : IReadOnlyList<KeyValuePair<string, object>>
+        private sealed class ActivityLogScope : IReadOnlyList<KeyValuePair<string, object>>
         {
             private string _cachedToString;
             private const int MaxItems = 5;
@@ -185,7 +219,59 @@ namespace Microsoft.Extensions.Logging
                 return GetEnumerator();
             }
         }
+
+        private sealed class ActivityBaggageLogScopeWrapper : IEnumerable<KeyValuePair<string, string?>>
+        {
+            private readonly IEnumerable<KeyValuePair<string, string?>> _items;
+
+            private StringBuilder? _stringBuilder;
+
+            public ActivityBaggageLogScopeWrapper (IEnumerable<KeyValuePair<string, string?>> items)
+            {
+                _items = items;
+            }
+
+            public IEnumerator<KeyValuePair<string, string?>> GetEnumerator()
+            {
+                return _items.GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return _items.GetEnumerator();
+            }
+
+            public override string ToString()
+            {
+                lock (this)
+                {
+                    IEnumerator<KeyValuePair<string, string?>> enumerator = _items.GetEnumerator();
+                    if (!enumerator.MoveNext())
+                    {
+                        return string.Empty;
+                    }
+
+                    _stringBuilder ??= new StringBuilder();
+                    _stringBuilder.Append(enumerator.Current.Key);
+                    _stringBuilder.Append(':');
+                    _stringBuilder.Append(enumerator.Current.Value);
+
+                    while (enumerator.MoveNext())
+                    {
+                        _stringBuilder.Append(", ");
+                        _stringBuilder.Append(enumerator.Current.Key);
+                        _stringBuilder.Append(':');
+                        _stringBuilder.Append(enumerator.Current.Value);
+                    }
+
+                    string result = _stringBuilder.ToString();
+                    _stringBuilder.Clear();
+                    return result;
+                }
+            }
+        }
     }
+
     internal static class ActivityExtensions
     {
         public static string GetSpanId(this Activity activity)

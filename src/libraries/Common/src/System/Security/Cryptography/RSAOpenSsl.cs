@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
@@ -23,9 +22,6 @@ namespace System.Security.Cryptography
     public sealed partial class RSAOpenSsl : RSA
     {
         private const int BitsPerByte = 8;
-
-        // 65537 (0x10001) in big-endian form
-        private static ReadOnlySpan<byte> DefaultExponent => new byte[] { 0x01, 0x00, 0x01 };
 
         private Lazy<SafeRsaHandle> _key;
 
@@ -87,10 +83,9 @@ namespace System.Security.Cryptography
             if (padding == null)
                 throw new ArgumentNullException(nameof(padding));
 
-            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
-            SafeRsaHandle key = GetKey();
-
-            int rsaSize = Interop.Crypto.RsaSize(key);
+            ValidatePadding(padding);
+            SafeEvpPKeyHandle key = GetPKey();
+            int rsaSize = Interop.Crypto.EvpPKeySize(key);
             byte[]? buf = null;
             Span<byte> destination = default;
 
@@ -99,18 +94,15 @@ namespace System.Security.Cryptography
                 buf = CryptoPool.Rent(rsaSize);
                 destination = new Span<byte>(buf, 0, rsaSize);
 
-                if (!TryDecrypt(key, data, destination, rsaPadding, oaepProcessor, out int bytesWritten))
-                {
-                    Debug.Fail($"{nameof(TryDecrypt)} should not return false for RSA_size buffer");
-                    throw new CryptographicException();
-                }
-
+                int bytesWritten = Decrypt(key, data, destination, padding);
                 return destination.Slice(0, bytesWritten).ToArray();
             }
             finally
             {
                 CryptographicOperations.ZeroMemory(destination);
                 CryptoPool.Return(buf!, clearSize: 0);
+                // Until EVP_PKEY is what gets stored, free the temporary key handle.
+                key.Dispose();
             }
         }
 
@@ -121,82 +113,73 @@ namespace System.Security.Cryptography
             out int bytesWritten)
         {
             if (padding == null)
-            {
                 throw new ArgumentNullException(nameof(padding));
-            }
 
-            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
-            SafeRsaHandle key = GetKey();
+            ValidatePadding(padding);
+            SafeEvpPKeyHandle key = GetPKey();
+            int keySizeBytes = Interop.Crypto.EvpPKeySize(key);
 
-            int keySizeBytes = Interop.Crypto.RsaSize(key);
-
-            // OpenSSL does not take a length value for the destination, so it can write out of bounds.
-            // To prevent the OOB write, decrypt into a temporary buffer.
+            // OpenSSL requires that the decryption buffer be at least as large as EVP_PKEY_size.
+            // So if the destination is too small, use a temporary buffer so we can match
+            // Windows behavior of succeeding so long as the buffer can hold the final output.
             if (destination.Length < keySizeBytes)
             {
-                Span<byte> tmp = stackalloc byte[0];
+                // RSA up through 4096 bits use a stackalloc
+                Span<byte> tmp = stackalloc byte[512];
                 byte[]? rent = null;
 
-                // RSA up through 4096 stackalloc
-                if (keySizeBytes <= 512)
+                if (keySizeBytes > tmp.Length)
                 {
-                    tmp = stackalloc byte[keySizeBytes];
-                }
-                else
-                {
-                    rent = ArrayPool<byte>.Shared.Rent(keySizeBytes);
+                    rent = CryptoPool.Rent(keySizeBytes);
                     tmp = rent;
                 }
 
-                bool ret = TryDecrypt(key, data, tmp, rsaPadding, oaepProcessor, out bytesWritten);
+                int written = Decrypt(key, data, tmp, padding);
+                // Until EVP_PKEY is what gets stored, free the temporary key handle.
+                key.Dispose();
+                bool ret;
 
-                if (ret)
+                if (destination.Length < written)
                 {
-                    tmp = tmp.Slice(0, bytesWritten);
-
-                    if (bytesWritten > destination.Length)
-                    {
-                        ret = false;
-                        bytesWritten = 0;
-                    }
-                    else
-                    {
-                        tmp.CopyTo(destination);
-                    }
-
-                    CryptographicOperations.ZeroMemory(tmp);
+                    bytesWritten = 0;
+                    ret = false;
                 }
+                else
+                {
+                    tmp.Slice(0, written).CopyTo(destination);
+                    bytesWritten = written;
+                    ret = true;
+                }
+
+                // Whether a stackalloc or a rented array, clear our copy of
+                // the decrypted content.
+                CryptographicOperations.ZeroMemory(tmp.Slice(0, written));
 
                 if (rent != null)
                 {
-                    // Already cleared
-                    ArrayPool<byte>.Shared.Return(rent);
+                    // Already cleared.
+                    CryptoPool.Return(rent, clearSize: 0);
                 }
 
                 return ret;
             }
 
-            return TryDecrypt(key, data, destination, rsaPadding, oaepProcessor, out bytesWritten);
+            bytesWritten = Decrypt(key, data, destination, padding);
+            // Until EVP_PKEY is what gets stored, free the temporary key handle.
+            key.Dispose();
+            return true;
         }
 
-        private static bool TryDecrypt(
-            SafeRsaHandle key,
+        private static int Decrypt(
+            SafeEvpPKeyHandle key,
             ReadOnlySpan<byte> data,
             Span<byte> destination,
-            Interop.Crypto.RsaPadding rsaPadding,
-            RsaPaddingProcessor? rsaPaddingProcessor,
-            out int bytesWritten)
+            RSAEncryptionPadding padding)
         {
-            // If rsaPadding is PKCS1 or OAEP-SHA1 then no depadding method should be present.
-            // If rsaPadding is NoPadding then a depadding method should be present.
-            Debug.Assert(
-                (rsaPadding == Interop.Crypto.RsaPadding.NoPadding) ==
-                (rsaPaddingProcessor != null));
-
             // Caller should have already checked this.
             Debug.Assert(!key.IsInvalid);
 
-            int rsaSize = Interop.Crypto.RsaSize(key);
+            int rsaSize = Interop.Crypto.EvpPKeySize(key);
 
             if (data.Length != rsaSize)
             {
@@ -205,50 +188,24 @@ namespace System.Security.Cryptography
 
             if (destination.Length < rsaSize)
             {
-                bytesWritten = 0;
-                return false;
+                Debug.Fail("Caller is responsible for temporary decryption buffer creation");
+                throw new CryptographicException();
             }
 
-            Span<byte> decryptBuf = destination;
-            byte[]? paddingBuf = null;
+            IntPtr hashAlgorithm = IntPtr.Zero;
 
-            if (rsaPaddingProcessor != null)
+            if (padding.Mode == RSAEncryptionPaddingMode.Oaep)
             {
-                paddingBuf = CryptoPool.Rent(rsaSize);
-                decryptBuf = paddingBuf;
+                Debug.Assert(padding.OaepHashAlgorithm.Name != null);
+                hashAlgorithm = Interop.Crypto.HashAlgorithmToEvp(padding.OaepHashAlgorithm.Name);
             }
 
-            try
-            {
-                int returnValue = Interop.Crypto.RsaPrivateDecrypt(data.Length, data, decryptBuf, key, rsaPadding);
-                CheckReturn(returnValue);
-
-                if (rsaPaddingProcessor != null)
-                {
-                    return rsaPaddingProcessor.DepadOaep(paddingBuf, destination, out bytesWritten);
-                }
-                else
-                {
-                    // If the padding mode is RSA_NO_PADDING then the size of the decrypted block
-                    // will be RSA_size. If any padding was used, then some amount (determined by the padding algorithm)
-                    // will have been reduced, and only returnValue bytes were part of the decrypted
-                    // body.  Either way, we can just use returnValue, but some additional bytes may have been overwritten
-                    // in the destination span.
-                    bytesWritten = returnValue;
-                }
-
-                return true;
-            }
-            finally
-            {
-                if (paddingBuf != null)
-                {
-                    // DecryptBuf is paddingBuf if paddingBuf is not null, erase it before returning it.
-                    // If paddingBuf IS null then decryptBuf was destination, and shouldn't be cleared.
-                    CryptographicOperations.ZeroMemory(decryptBuf);
-                    CryptoPool.Return(paddingBuf, clearSize: 0);
-                }
-            }
+            return Interop.Crypto.RsaDecrypt(
+                key,
+                data,
+                padding.Mode,
+                hashAlgorithm,
+                destination);
         }
 
         public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
@@ -559,6 +516,30 @@ namespace System.Security.Cryptography
             }
         }
 
+        private SafeEvpPKeyHandle GetPKey()
+        {
+            SafeRsaHandle currentKey = GetKey();
+            SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
+
+            try
+            {
+                // Wrapping our key in an EVP_PKEY will up_ref our key.
+                // When the EVP_PKEY is Disposed it will down_ref the key.
+                // So everything should be copacetic.
+                if (!Interop.Crypto.EvpPkeySetRsa(pkeyHandle, currentKey))
+                {
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                }
+            }
+            catch
+            {
+                pkeyHandle.Dispose();
+                throw;
+            }
+
+            return pkeyHandle;
+        }
+
         private SafeRsaHandle GetKey()
         {
             ThrowIfDisposed();
@@ -591,36 +572,18 @@ namespace System.Security.Cryptography
 
         private SafeRsaHandle GenerateKey()
         {
-            SafeRsaHandle key = Interop.Crypto.RsaCreate();
-            bool generated = false;
-
-            Interop.Crypto.CheckValidOpenSslHandle(key);
-
-            try
+            using (SafeEvpPKeyHandle pkey = Interop.Crypto.RsaGenerateKey(KeySize))
             {
-                using (SafeBignumHandle exponent = Interop.Crypto.CreateBignum(DefaultExponent))
-                {
-                    // The documentation for RSA_generate_key_ex does not say that it returns only
-                    // 0 or 1, so the call marshals it back as a full Int32 and checks for a value
-                    // of 1 explicitly.
-                    int response = Interop.Crypto.RsaGenerateKeyEx(
-                        key,
-                        KeySize,
-                        exponent);
+                SafeRsaHandle rsa = Interop.Crypto.EvpPkeyGetRsa(pkey);
 
-                    CheckBoolReturn(response);
-                    generated = true;
-                }
-            }
-            finally
-            {
-                if (!generated)
+                if (rsa.IsInvalid)
                 {
-                    key.Dispose();
+                    rsa.Dispose();
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
-            }
 
-            return key;
+                return rsa;
+            }
         }
 
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
@@ -868,6 +831,55 @@ namespace System.Security.Cryptography
             }
 
             return nid;
+        }
+
+        private static void ValidatePadding(RSAEncryptionPadding padding)
+        {
+            if (padding == null)
+            {
+                throw new ArgumentNullException(nameof(padding));
+            }
+
+            // There are currently two defined padding modes:
+            // * Oaep has an option (the hash algorithm)
+            // * Pkcs1 has no options
+            //
+            // Anything other than those to modes is an error,
+            // and Pkcs1 having options set is an error, so compare it to
+            // the padding struct instead of the padding mode enum.
+            if (padding.Mode != RSAEncryptionPaddingMode.Oaep &&
+                padding != RSAEncryptionPadding.Pkcs1)
+            {
+                throw PaddingModeNotSupported();
+            }
+        }
+
+        private static void ValidatePadding(RSASignaturePadding padding)
+        {
+            if (padding == null)
+            {
+                throw new ArgumentNullException(nameof(padding));
+            }
+
+            // RSASignaturePadding currently only has the mode property, so
+            // there's no need for a runtime check that PKCS#1 doesn't use
+            // nonsensical options like with RSAEncryptionPadding.
+            //
+            // This would change if we supported PSS with an MGF other than MGF-1,
+            // or with a custom salt size, or with a different MGF digest algorithm
+            // than the data digest algorithm.
+            if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
+            {
+                Debug.Assert(padding == RSASignaturePadding.Pkcs1);
+            }
+            else if (padding.Mode == RSASignaturePaddingMode.Pss)
+            {
+                Debug.Assert(padding == RSASignaturePadding.Pss);
+            }
+            else
+            {
+                throw PaddingModeNotSupported();
+            }
         }
 
         private static Exception PaddingModeNotSupported() =>

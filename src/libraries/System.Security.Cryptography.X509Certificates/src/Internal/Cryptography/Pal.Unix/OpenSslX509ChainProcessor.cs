@@ -326,6 +326,13 @@ namespace Internal.Cryptography.Pal
             Interop.Crypto.X509StoreCtxCommitToChain(_storeCtx);
         }
 
+        internal static void FlushStores()
+        {
+            s_userRootStore.DoRefresh();
+            s_userPersonalStore.DoRefresh();
+            s_userIntermediateStore.DoRefresh();
+        }
+
         internal void ProcessRevocation(
             X509RevocationMode revocationMode,
             X509RevocationFlag revocationFlag)

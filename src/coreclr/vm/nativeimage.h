@@ -84,6 +84,7 @@ private:
     PTR_Assembly *m_pNativeMetadataAssemblyRefMap;
     
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblies;
+    IMAGE_DATA_DIRECTORY *m_pComponentAssemblyMvids;
     uint32_t m_componentAssemblyCount;
     uint32_t m_manifestAssemblyCount;
     SHash<AssemblyNameIndexHashTraits> m_assemblySimpleNameToIndexMap;
@@ -121,7 +122,9 @@ public:
     Assembly *LoadManifestAssembly(uint32_t rowid, DomainAssembly *pParentAssembly);
     
     PTR_READYTORUN_CORE_HEADER GetComponentAssemblyHeader(LPCUTF8 assemblySimpleName);
-    
+
+    void CheckAssemblyMvid(Assembly *assembly) const;
+
 private:
     IMDInternalImport *LoadManifestMetadata();
 };

@@ -101,12 +101,7 @@ namespace System.Net.Test.Common
             return stream;
         }
 
-        public override async Task<byte[]> ReadRequestBodyAsync()
-        {
-            return await _currentStream.ReadRequestBodyAsync().ConfigureAwait(false);
-        }
-
-        public override async Task<HttpRequestData> ReadRequestDataAsync(bool readBody = true)
+        public async Task<Http3LoopbackStream> AcceptRequestStreamAsync()
         {
             Http3LoopbackStream stream;
 
@@ -116,62 +111,63 @@ namespace System.Net.Test.Common
             }
             while (!stream.CanWrite); // skip control stream.
 
+            return stream;
+        }
+
+        public async Task<(Http3LoopbackStream clientControlStream, Http3LoopbackStream requestStream)> AcceptControlAndRequestStreamAsync()
+        {
+            Http3LoopbackStream streamA = null, streamB = null;
+
+            try
+            {
+                streamA = await AcceptStreamAsync();
+                streamB = await AcceptStreamAsync();
+
+                return (streamA.CanWrite, streamB.CanWrite) switch
+                {
+                    (false, true) => (streamA, streamB),
+                    (true, false) => (streamB, streamA),
+                    _ => throw new Exception("Expected one unidirectional and one bidirectional stream; received something else.")
+                };
+            }
+            catch
+            {
+                streamA?.Dispose();
+                streamB?.Dispose();
+                throw;
+            }
+        }
+
+        public override async Task<byte[]> ReadRequestBodyAsync()
+        {
+            return await _currentStream.ReadRequestBodyAsync().ConfigureAwait(false);
+        }
+
+        public override async Task<HttpRequestData> ReadRequestDataAsync(bool readBody = true)
+        {
+            Http3LoopbackStream stream = await AcceptRequestStreamAsync().ConfigureAwait(false);
             return await stream.ReadRequestDataAsync(readBody).ConfigureAwait(false);
         }
 
-        public override async Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
+        public override Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
         {
-            IEnumerable<HttpHeaderData> newHeaders = headers ?? Enumerable.Empty<HttpHeaderData>();
-
-            if (content != null && !newHeaders.Any(x => x.Name == "Content-Length"))
-            {
-                newHeaders = newHeaders.Append(new HttpHeaderData("Content-Length", content.Length.ToString(CultureInfo.InvariantCulture)));
-            }
-
-            await SendResponseHeadersAsync(statusCode, newHeaders, requestId).ConfigureAwait(false);
-            await SendResponseBodyAsync(Encoding.UTF8.GetBytes(content ?? ""), isFinal, requestId).ConfigureAwait(false);
+            return GetOpenRequest(requestId).SendResponseAsync(statusCode, headers, content, isFinal);
         }
 
-        public override async Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0)
+        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0)
         {
-            Http3LoopbackStream stream = GetOpenRequest(requestId);
-
-            if (content?.Length != 0)
-            {
-                await stream.SendDataFrameAsync(content).ConfigureAwait(false);
-            }
-
-            if (isFinal)
-            {
-                await stream.ShutdownSendAsync().ConfigureAwait(false);
-                stream.Dispose();
-            }
+            return GetOpenRequest(requestId).SendResponseBodyAsync(content, isFinal);
         }
 
         public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
         {
-            return SendResponseHeadersAsync(statusCode, headers, requestId);
-        }
-
-        private async Task SendResponseHeadersAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null, int requestId = 0)
-        {
-            headers ??= Enumerable.Empty<HttpHeaderData>();
-
-            // Some tests use Content-Length with a null value to indicate Content-Length should not be set.
-            headers = headers.Where(x => x.Name != "Content-Length" || x.Value != null);
-
-            if (statusCode != null)
-            {
-                headers = headers.Prepend(new HttpHeaderData(":status", ((int)statusCode).ToString(CultureInfo.InvariantCulture)));
-            }
-
-            await GetOpenRequest(requestId).SendHeadersFrameAsync(headers).ConfigureAwait(false);
+            return GetOpenRequest(requestId).SendResponseHeadersAsync(statusCode, headers);
         }
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            HttpRequestData request = await ReadRequestDataAsync().ConfigureAwait(false);
-            await SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
+            Http3LoopbackStream stream = await AcceptRequestStreamAsync().ConfigureAwait(false);
+            HttpRequestData request = await stream.HandleRequestAsync(statusCode, headers, content);
 
             // closing the connection here causes bytes written to streams to go missing.
             //await CloseAsync(H3_NO_ERROR).ConfigureAwait(false);

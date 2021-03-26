@@ -1241,7 +1241,7 @@ HRESULT RCWCleanupList::ReleaseRCWListInCorrectCtx(LPVOID pData)
     // into cooperative GC mode. This "fix" will prevent us from doing so.
     if (g_fEEShutDown & ShutDown_Finalize2)
     {
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (pThread && !FinalizerThread::IsCurrentThreadFinalizer())
             pThread->SetThreadStateNC(Thread::TSNC_UnsafeSkipEnterCooperative);
     }
@@ -1254,7 +1254,7 @@ HRESULT RCWCleanupList::ReleaseRCWListInCorrectCtx(LPVOID pData)
     //  the MTA context), we will infinitely loop.  So, we short circuit this with ctxTried.
 
     Thread *pHeadThread = pHead->GetSTAThread();
-    BOOL fCorrectThread = (pHeadThread == NULL) ? TRUE : (pHeadThread == GetThread());
+    BOOL fCorrectThread = (pHeadThread == NULL) ? TRUE : (pHeadThread == GetThreadNULLOk());
     BOOL fCorrectCookie = (pCurrCtxCookie == NULL) ? TRUE : (pHead->GetWrapperCtxCookie() == pCurrCtxCookie);
 
     if ( pHead->IsFreeThreaded() || // Avoid context transition if the list is for free threaded RCW
@@ -1281,7 +1281,7 @@ HRESULT RCWCleanupList::ReleaseRCWListInCorrectCtx(LPVOID pData)
     // Reset the bit indicating we cannot transition into cooperative GC mode.
     if (g_fEEShutDown & ShutDown_Finalize2)
     {
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (pThread && !FinalizerThread::IsCurrentThreadFinalizer())
             pThread->ResetThreadStateNC(Thread::TSNC_UnsafeSkipEnterCooperative);
     }
@@ -1383,22 +1383,8 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
     }
 
     AppDomain * pAppDomain = GetAppDomain();
-    if(flags & CF_QueryForIdentity)
-    {
-        IUnknown *pUnkTemp = NULL;
-        HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_IUnknown, &pUnkTemp);
-        LogInteropQI(pUnk, IID_IUnknown, hr, "QI for IID_IUnknown in RCW::CreateRCW");
-        if(SUCCEEDED(hr))
-        {
-            pUnk = pUnkTemp;
-
-        }
-    }
-    else
-    {
-        ULONG cbRef = SafeAddRefPreemp(pUnk);
-        LogInteropAddRef(pUnk, cbRef, "RCWCache::CreateRCW: Addref pUnk because creating new RCW");
-    }
+    ULONG cbRef = SafeAddRefPreemp(pUnk);
+    LogInteropAddRef(pUnk, cbRef, "RCWCache::CreateRCW: Addref pUnk because creating new RCW");
 
     // Make sure we release AddRef-ed pUnk in case of exceptions
     SafeComHolderPreemp<IUnknown> pUnkHolder = pUnk;
@@ -1447,7 +1433,6 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
     // if this thread is an STA thread, then when the STA dies
     // we need to cleanup this wrapper
     m_pCreatorThread  = GetThread();
-    _ASSERTE(m_pCreatorThread != NULL);
 
     m_pRCWCache = RCWCache::GetRCWCache();
 

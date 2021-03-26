@@ -442,18 +442,18 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await connection.ReadRequestHeaderAsync();
 
-                    await connection.Writer.WriteAsync($"HTTP/1.1 200 OK{lineEnding}Transfer-Encoding: chunked{lineEnding}{lineEnding}");
+                    await connection.WriteStringAsync($"HTTP/1.1 200 OK{lineEnding}Transfer-Encoding: chunked{lineEnding}{lineEnding}");
                     for (int bytesSent = 0; bytesSent < expectedData.Length;)
                     {
                         int bytesRemaining = expectedData.Length - bytesSent;
                         int bytesToSend = rand.Next(1, Math.Min(bytesRemaining, maxChunkSize + 1));
-                        await connection.Writer.WriteAsync(bytesToSend.ToString("X") + lineEnding);
+                        await connection.WriteStringAsync(bytesToSend.ToString("X") + lineEnding);
                         await connection.Stream.WriteAsync(new Memory<byte>(expectedData, bytesSent, bytesToSend));
-                        await connection.Writer.WriteAsync(lineEnding);
+                        await connection.WriteStringAsync(lineEnding);
                         bytesSent += bytesToSend;
                     }
-                    await connection.Writer.WriteAsync($"0{lineEnding}");
-                    await connection.Writer.WriteAsync(lineEnding);
+                    await connection.WriteStringAsync($"0{lineEnding}");
+                    await connection.WriteStringAsync(lineEnding);
                 });
             });
         }

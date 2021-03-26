@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.DirectoryServices.Protocols
 {
-    internal class LdapPartialResultsProcessor
+    internal sealed class LdapPartialResultsProcessor
     {
         private readonly ArrayList _resultList = new ArrayList();
         private readonly ManualResetEvent _workThreadWaitHandle;
@@ -19,6 +19,7 @@ namespace System.DirectoryServices.Protocols
         internal LdapPartialResultsProcessor(ManualResetEvent eventHandle)
         {
             _workThreadWaitHandle = eventHandle;
+            _ = new PartialResultsRetriever(eventHandle, this);
         }
 
         public void Add(LdapPartialAsyncResult asyncResult)
@@ -332,7 +333,7 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
-    internal class PartialResultsRetriever
+    internal sealed class PartialResultsRetriever
     {
         private readonly ManualResetEvent _workThreadWaitHandle;
         private readonly LdapPartialResultsProcessor _processor;
@@ -345,7 +346,8 @@ namespace System.DirectoryServices.Protocols
             // Start the thread.
             var thread = new Thread(new ThreadStart(ThreadRoutine))
             {
-                IsBackground = true
+                IsBackground = true,
+                Name = ".NET LDAP Results Retriever"
             };
             thread.Start();
         }

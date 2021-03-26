@@ -32,11 +32,22 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 
-constexpr GUID JITEEVersionIdentifier = { /* 000b3acb-92d2-4003-8760-e545241dd9a8 */
-    0x000b3acb,
-    0x92d2,
-    0x4003,
-    {0x87, 0x60, 0xe5, 0x45, 0x24, 0x1d, 0xd9, 0xa8}
+#ifndef GUID_DEFINED
+typedef struct _GUID {
+    uint32_t   Data1;    // NOTE: diff from Win32, for LP64
+    uint16_t   Data2;
+    uint16_t   Data3;
+    uint8_t    Data4[ 8 ];
+} GUID;
+typedef const GUID *LPCGUID;
+#define GUID_DEFINED
+#endif // !GUID_DEFINED
+
+constexpr GUID JITEEVersionIdentifier = { /* a1f5e9a1-ee44-42f9-9319-e2a2dbf8c5c9 */
+    0xa1f5e9a1,
+    0xee44,
+    0x42f9,
+    {0x93, 0x19, 0xe2, 0xa2, 0xdb, 0xf8, 0xc5, 0xc9}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections;
 
 namespace System.Net
 {
-    internal class CaseInsensitiveAscii : IEqualityComparer, IComparer
+    internal sealed class CaseInsensitiveAscii : IEqualityComparer, IComparer
     {
         // ASCII char ToLower table
         internal static readonly CaseInsensitiveAscii StaticInstance = new CaseInsensitiveAscii();

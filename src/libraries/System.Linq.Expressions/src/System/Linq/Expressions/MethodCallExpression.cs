@@ -1137,6 +1137,7 @@ namespace System.Linq.Expressions
         /// <exception cref="ArgumentNullException">
         /// <paramref name="instance"/> or <paramref name="methodName"/> is null.</exception>
         /// <exception cref="InvalidOperationException">No method whose name is <paramref name="methodName"/>, whose type parameters match <paramref name="typeArguments"/>, and whose parameter types match <paramref name="arguments"/> is found in <paramref name="instance"/>.Type or its base types.-or-More than one method whose name is <paramref name="methodName"/>, whose type parameters match <paramref name="typeArguments"/>, and whose parameter types match <paramref name="arguments"/> is found in <paramref name="instance"/>.Type or its base types.</exception>
+        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static MethodCallExpression Call(Expression instance, string methodName, Type[]? typeArguments, params Expression[]? arguments)
         {
             ContractUtils.RequiresNotNull(instance, nameof(instance));
@@ -1162,7 +1163,12 @@ namespace System.Linq.Expressions
         /// <exception cref="ArgumentNullException">
         /// <paramref name="type"/> or <paramref name="methodName"/> is null.</exception>
         /// <exception cref="InvalidOperationException">No method whose name is <paramref name="methodName"/>, whose type parameters match <paramref name="typeArguments"/>, and whose parameter types match <paramref name="arguments"/> is found in <paramref name="type"/> or its base types.-or-More than one method whose name is <paramref name="methodName"/>, whose type parameters match <paramref name="typeArguments"/>, and whose parameter types match <paramref name="arguments"/> is found in <paramref name="type"/> or its base types.</exception>
-        public static MethodCallExpression Call(Type type, string methodName, Type[]? typeArguments, params Expression[]? arguments)
+        [RequiresUnreferencedCode(GenericMethodRequiresUnreferencedCode)]
+        public static MethodCallExpression Call(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type type,
+            string methodName,
+            Type[]? typeArguments,
+            params Expression[]? arguments)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             ContractUtils.RequiresNotNull(methodName, nameof(methodName));
@@ -1287,7 +1293,13 @@ namespace System.Linq.Expressions
             return ExpressionUtils.TryQuote(parameterType, ref argument);
         }
 
-        private static MethodInfo? FindMethod(Type type, string methodName, Type[]? typeArgs, Expression[] args, BindingFlags flags)
+        [RequiresUnreferencedCode(GenericMethodRequiresUnreferencedCode)]
+        private static MethodInfo? FindMethod(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type type,
+            string methodName,
+            Type[]? typeArgs,
+            Expression[] args,
+            BindingFlags flags)
         {
             int count = 0;
             MethodInfo? method = null;
@@ -1356,6 +1368,7 @@ namespace System.Linq.Expressions
             return true;
         }
 
+        [RequiresUnreferencedCode(GenericMethodRequiresUnreferencedCode)]
         private static MethodInfo? ApplyTypeArgs(MethodInfo m, Type[]? typeArgs)
         {
             if (typeArgs == null || typeArgs.Length == 0)
@@ -1420,7 +1433,7 @@ namespace System.Linq.Expressions
                 }
             }
 
-            MethodInfo mi = array.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance)!;
+            MethodInfo mi = TypeUtils.GetArrayGetMethod(array.Type);
             return Call(array, mi, indexList);
         }
 

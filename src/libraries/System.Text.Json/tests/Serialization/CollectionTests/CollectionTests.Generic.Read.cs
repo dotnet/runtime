@@ -1264,14 +1264,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(type.ToString(), ex.ToString());
         }
 
-        private static IEnumerable<object[]> CustomInterfaces_Enumerables()
+        public static IEnumerable<object[]> CustomInterfaces_Enumerables()
         {
             yield return new object[] { typeof(IDerivedICollectionOfT<string>) };
             yield return new object[] { typeof(IDerivedIList) };
             yield return new object[] { typeof(IDerivedISetOfT<string>) };
         }
 
-        private static IEnumerable<object[]> CustomInterfaces_Dictionaries()
+        public static IEnumerable<object[]> CustomInterfaces_Dictionaries()
         {
             yield return new object[] { typeof(IDerivedIDictionaryOfTKeyTValue<string, string>) };
         }

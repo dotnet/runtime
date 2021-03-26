@@ -7,7 +7,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal partial class CMemberLookupResults
+    internal sealed partial class CMemberLookupResults
     {
         public class CMethodIterator
         {

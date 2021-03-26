@@ -10,7 +10,7 @@ namespace System.DirectoryServices.ActiveDirectory
     /// Internal class that is used as a key in the hashtable
     /// of directory entries
     /// </summary>
-    internal class DistinguishedName
+    internal sealed class DistinguishedName
     {
         public DistinguishedName(string dn)
         {
@@ -41,15 +41,15 @@ namespace System.DirectoryServices.ActiveDirectory
             return result;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if ((obj == null) || (!(obj is DistinguishedName)))
+            if (obj is DistinguishedName other)
             {
-                return false;
+                return Equals(other);
             }
             else
             {
-                return Equals((DistinguishedName)obj);
+                return false;
             }
         }
 
@@ -58,7 +58,7 @@ namespace System.DirectoryServices.ActiveDirectory
             int hashCode = 0;
             for (int i = 0; i < Components.GetLength(0); i++)
             {
-                hashCode = hashCode + Components[i].Name.ToUpperInvariant().GetHashCode() + Components[i].Value.ToUpperInvariant().GetHashCode();
+                hashCode = hashCode + Components[i].Name!.ToUpperInvariant().GetHashCode() + Components[i].Value!.ToUpperInvariant().GetHashCode();
             }
             return hashCode;
         }
@@ -81,10 +81,10 @@ namespace System.DirectoryServices.ActiveDirectory
     /// and creates a new directory entry (for a given dn) only if
     /// it doesn't already exist
     /// </summary>
-    internal class DirectoryEntryManager
+    internal sealed class DirectoryEntryManager
     {
         private readonly Hashtable _directoryEntries = new Hashtable();
-        private string _bindingPrefix;
+        private string? _bindingPrefix;
         private readonly DirectoryContext _context;
         private readonly NativeComInterfaces.IAdsPathname _pathCracker;
 
@@ -121,7 +121,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // add it to the cache
                 _directoryEntries.Add(dn, de);
             }
-            return (DirectoryEntry)_directoryEntries[dn];
+            return (DirectoryEntry)_directoryEntries[dn]!;
         }
 
         internal void RemoveIfExists(string distinguishedName)
@@ -142,7 +142,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (_directoryEntries.ContainsKey(dn))
             {
-                DirectoryEntry tmp = (DirectoryEntry)_directoryEntries[dn];
+                DirectoryEntry? tmp = (DirectoryEntry?)_directoryEntries[dn];
                 if (tmp != null)
                 {
                     _directoryEntries.Remove(dn);
@@ -166,7 +166,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal string ExpandWellKnownDN(WellKnownDN dn)
         {
-            string distinguishedName = null;
+            string? distinguishedName = null;
 
             switch (dn)
             {
@@ -179,25 +179,25 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         DirectoryEntry rootDSE = GetCachedDirectoryEntry("RootDSE");
 
-                        distinguishedName = (string)PropertyManager.GetPropertyValue(_context, rootDSE, PropertyManager.RootDomainNamingContext);
+                        distinguishedName = (string)PropertyManager.GetPropertyValue(_context, rootDSE, PropertyManager.RootDomainNamingContext)!;
                         break;
                     }
                 case WellKnownDN.DefaultNamingContext:
                     {
                         DirectoryEntry rootDSE = GetCachedDirectoryEntry("RootDSE");
-                        distinguishedName = (string)PropertyManager.GetPropertyValue(_context, rootDSE, PropertyManager.DefaultNamingContext);
+                        distinguishedName = (string)PropertyManager.GetPropertyValue(_context, rootDSE, PropertyManager.DefaultNamingContext)!;
                         break;
                     }
                 case WellKnownDN.SchemaNamingContext:
                     {
                         DirectoryEntry rootDSE = GetCachedDirectoryEntry("RootDSE");
-                        distinguishedName = (string)PropertyManager.GetPropertyValue(_context, rootDSE, PropertyManager.SchemaNamingContext);
+                        distinguishedName = (string)PropertyManager.GetPropertyValue(_context, rootDSE, PropertyManager.SchemaNamingContext)!;
                         break;
                     }
                 case WellKnownDN.ConfigurationNamingContext:
                     {
                         DirectoryEntry rootDSE = GetCachedDirectoryEntry("RootDSE");
-                        distinguishedName = (string)PropertyManager.GetPropertyValue(_context, rootDSE, PropertyManager.ConfigurationNamingContext);
+                        distinguishedName = (string)PropertyManager.GetPropertyValue(_context, rootDSE, PropertyManager.ConfigurationNamingContext)!;
                         break;
                     }
                 case WellKnownDN.PartitionsContainer:
@@ -254,9 +254,9 @@ namespace System.DirectoryServices.ActiveDirectory
             return Bind(path, context.UserName, context.Password, context.useServerBind());
         }
 
-        internal static DirectoryEntry Bind(string ldapPath, string username, string password, bool useServerBind)
+        internal static DirectoryEntry Bind(string ldapPath, string? username, string? password, bool useServerBind)
         {
-            DirectoryEntry de = null;
+            DirectoryEntry? de = null;
             AuthenticationTypes authType = Utils.DefaultAuthType;
 
             //
@@ -274,7 +274,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static string ExpandWellKnownDN(DirectoryContext context, WellKnownDN dn)
         {
-            string distinguishedName = null;
+            string? distinguishedName = null;
 
             switch (dn)
             {
@@ -289,7 +289,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                         try
                         {
-                            distinguishedName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.RootDomainNamingContext);
+                            distinguishedName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.RootDomainNamingContext)!;
                         }
                         finally
                         {
@@ -302,7 +302,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         DirectoryEntry rootDSE = GetDirectoryEntry(context, "RootDSE");
                         try
                         {
-                            distinguishedName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DefaultNamingContext);
+                            distinguishedName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DefaultNamingContext)!;
                         }
                         finally
                         {
@@ -315,7 +315,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         DirectoryEntry rootDSE = GetDirectoryEntry(context, "RootDSE");
                         try
                         {
-                            distinguishedName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.SchemaNamingContext);
+                            distinguishedName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.SchemaNamingContext)!;
                         }
                         finally
                         {
@@ -328,7 +328,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         DirectoryEntry rootDSE = GetDirectoryEntry(context, "RootDSE");
                         try
                         {
-                            distinguishedName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.ConfigurationNamingContext);
+                            distinguishedName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.ConfigurationNamingContext)!;
                         }
                         finally
                         {

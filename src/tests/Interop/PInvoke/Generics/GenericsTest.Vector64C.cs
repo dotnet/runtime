@@ -9,19 +9,19 @@ using TestLibrary;
 unsafe partial class GenericsNative
 {
     [DllImport(nameof(GenericsNative))]
-    public static extern Vector64<char> GetVector64C(char e00, char e01, char e02, char e03);
+    public static extern Vector64<char> GetVector64C([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetVector64COut(char e00, char e01, char e02, char e03, Vector64<char>* value);
+    public static extern void GetVector64COut([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, Vector64<char>* value);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetVector64COut(char e00, char e01, char e02, char e03, out Vector64<char> value);
+    public static extern void GetVector64COut([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, out Vector64<char> value);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern Vector64<char>* GetVector64CPtr(char e00, char e01, char e02, char e03);
+    public static extern Vector64<char>* GetVector64CPtr([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03);
 
     [DllImport(nameof(GenericsNative), EntryPoint = "GetVector64CPtr")]
-    public static extern ref readonly Vector64<char> GetVector64CRef(char e00, char e01, char e02, char e03);
+    public static extern ref readonly Vector64<char> GetVector64CRef([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03);
 
     [DllImport(nameof(GenericsNative))]
     public static extern Vector64<char> AddVector64C(Vector64<char> lhs, Vector64<char> rhs);

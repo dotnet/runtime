@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection : HttpConnectionBase, IDisposable
+    internal sealed partial class HttpConnection : HttpConnectionBase, IDisposable
     {
         /// <summary>Default size of the read buffer used for the connection.</summary>
         private const int InitialReadBufferSize =
@@ -71,6 +71,7 @@ namespace System.Net.Http
 
         public HttpConnection(
             HttpConnectionPool pool,
+            Socket? socket,
             Stream stream,
             TransportContext? transportContext)
         {
@@ -79,10 +80,7 @@ namespace System.Net.Http
 
             _pool = pool;
             _stream = stream;
-            if (stream is NetworkStream networkStream)
-            {
-                _socket = networkStream.Socket;
-            }
+            _socket = socket;
 
             _transportContext = transportContext;
 
@@ -104,7 +102,7 @@ namespace System.Net.Http
 
         public void Dispose() => Dispose(disposing: true);
 
-        protected void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             // Ensure we're only disposed once.  Dispose could be called concurrently, for example,
             // if the request and the response were running concurrently and both incurred an exception.

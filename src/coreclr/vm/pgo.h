@@ -6,6 +6,7 @@
 #include "typehashingalgorithms.h"
 #include "shash.h"
 
+class ReadyToRunInfo;
 
 // PgoManager handles in-process and out of band profile data for jitted code.
 class PgoManager
@@ -21,8 +22,17 @@ public:
 
 public:
 
-    static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData);
+    static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, BYTE **pAllocatedDatapAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData);
     static HRESULT allocPgoInstrumentationBySchema(MethodDesc* pMD, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
+    static HRESULT getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pReadyToRunInfo,
+                                                             Module* pModule,
+                                                             PEDecoder* pNativeImage,
+                                                             BYTE* pR2RFormatData,
+                                                             size_t pR2RFormatDataMaxSize,
+                                                             BYTE** pAllocatedData,
+                                                             ICorJitInfo::PgoInstrumentationSchema** ppSchema,
+                                                             UINT32 *pCountSchemaItems,
+                                                             BYTE**pInstrumentationData);
 
     static void CreatePgoManager(PgoManager* volatile* ppPgoManager, bool loaderAllocator);
 
@@ -137,7 +147,9 @@ public:
 protected:
 
     HRESULT getPgoInstrumentationResultsInstance(MethodDesc* pMD,
-                                                 SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchema,
+                                                 BYTE** pAllocatedData,
+                                                 ICorJitInfo::PgoInstrumentationSchema** ppSchema,
+                                                 UINT32 *pCountSchemaItems,
                                                  BYTE**pInstrumentationData);
 
     HRESULT allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,

@@ -5,8 +5,9 @@
   <PropertyGroup>
     <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
     <PlatformPackageType>RuntimePack</PlatformPackageType>
-    <SharedFrameworkName>Microsoft.NETCore.App.Crossgen2</SharedFrameworkName>
-    <OverridePackageId>Microsoft.NETCore.App.Crossgen2.$(RuntimeIdentifier)</OverridePackageId>
+    <SharedFrameworkName>$(SharedFrameworkName).Crossgen2</SharedFrameworkName>
+    <PgoSuffix Condition="'$(PgoInstrument)' != ''">.PGO</PgoSuffix>
+    <OverridePackageId>$(SharedFrameworkName)$(PgoSuffix).$(RuntimeIdentifier)</OverridePackageId>
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
     <RuntimeIdentifiers>linux-x64;linux-musl-x64;osx-x64;osx-arm64;win-x64</RuntimeIdentifiers>
@@ -61,37 +62,23 @@
   </Target>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
-    <_diaSymArch Condition="'$(_hostArch)' != ''">$(_hostArch)</_diaSymArch>
+    <!-- DiaSymReader for the host architecture, which is used for [cross-]compilation -->
+    <_diaSymArch>$(_hostArch)</_diaSymArch>
     <_diaSymReaderPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymArch).dll</_diaSymReaderPath>
-    <_diaSymReaderPathIfExists Condition="Exists('$(_diaSymReaderPath)')">$(_diaSymReaderPath)</_diaSymReaderPathIfExists>
+
+    <!-- DiaSymReader for the target architecture, which is placed into the package -->
+    <_diaSymTargetArch>$(TargetArchitecture)</_diaSymTargetArch>
+    <_diaSymTargetArch Condition="'$(TargetArchitecture)' == 'x64'">amd64</_diaSymTargetArch>
+    <_diaSymReaderTargetArchPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymTargetArch).dll</_diaSymReaderTargetArchPath>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(_diaSymReaderPathIfExists)' != ''">
-    <NativeRuntimeAsset Include="$(_diaSymReaderPathIfExists)" TargetPath="tools/" />
+  <ItemGroup Condition="Exists('$(_diaSymReaderTargetArchPath)')">
+    <NativeRuntimeAsset Include="$(_diaSymReaderTargetArchPath)" TargetPath="tools/" />
   </ItemGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
-
-  <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
-    <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
-      <_crossTargetJit Include="@(CoreCLRCrossTargetFiles)" Condition="'%(FileName)' == '$(LibPrefix)clrjit' and '%(Extension)' == '$(LibSuffix)'" />
-      <_clrjit Include="@(RuntimeFiles)" Condition="'%(FileName)' == '$(LibPrefix)clrjit' and '%(Extension)' == '$(LibSuffix)'" />
-      <_crossTargetCrossgen Include="@(CoreCLRCrossTargetFiles)" Condition="'%(FileName)' == 'crossgen' and '%(Extension)' == '$(ExeSuffix)'" />
-      <_crossgen Include="@(RuntimeFiles)" Condition="'%(FileName)' == 'crossgen' and '%(Extension)' == '$(ExeSuffix)'" />
-    </ItemGroup>
-    <ItemGroup Condition="'@(_crossTargetJit)' != '' and '@(_crossTargetCrossgen)' != ''">
-      <CrossgenTool Include="@(_crossTargetCrossgen->ClearMetadata())"
-                    JitPath="@(_crossTargetJit)"
-                    DiaSymReader="$(_diaSymReaderPathIfExists)" />
-    </ItemGroup>
-    <ItemGroup Condition="'@(_crossTargetJit)' == '' and '@(_crossTargetCrossgen)' == ''">
-      <CrossgenTool Include="@(_crossgen->ClearMetadata())"
-                    JitPath="@(_clrjit)"
-                    DiaSymReader="$(_diaSymReaderPathIfExists)" />
-    </ItemGroup>
-  </Target>
-
+  <Import Project="ReadyToRun.targets" />
 
   <Target Name="GetFilesToPublish">
     <MSBuild Projects="$(MSBuildProjectFullPath)"

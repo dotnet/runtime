@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.Configuration
 {
     [DebuggerDisplay("SectionRecord {ConfigKey}")]
-    internal class SectionRecord
+    internal sealed class SectionRecord
     {
         //
         // Runtime flags below 0x10000

@@ -169,7 +169,7 @@ LOCAL_LABEL(CpuTypeDone):
     ret
 LEAF_END GetSpecificCpuTypeAsm, _TEXT
 
-// DWORD __stdcall GetSpecificCpuFeaturesAsm(DWORD *pInfo);
+// uint32_t __stdcall GetSpecificCpuFeaturesAsm(uint32_t *pInfo);
 LEAF_ENTRY GetSpecificCpuFeaturesAsm, _TEXT
     push    ebx         // ebx is trashed by the cpuid calls
 

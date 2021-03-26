@@ -60,7 +60,7 @@ namespace System.Net.Http.Headers
             return _product.ToString();
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             ProductInfoHeaderValue? other = obj as ProductInfoHeaderValue;
 

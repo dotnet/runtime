@@ -123,7 +123,7 @@ namespace System.Net.Security
         public SslApplicationProtocol(string protocol) { throw null; }
         public System.ReadOnlyMemory<byte> Protocol { get { throw null; } }
         public bool Equals(System.Net.Security.SslApplicationProtocol other) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Net.Security.SslApplicationProtocol left, System.Net.Security.SslApplicationProtocol right) { throw null; }
         public static bool operator !=(System.Net.Security.SslApplicationProtocol left, System.Net.Security.SslApplicationProtocol right) { throw null; }

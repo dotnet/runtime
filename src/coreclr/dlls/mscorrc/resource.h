@@ -237,7 +237,6 @@
 #define IDS_EE_STRUCTARRAYTOOLARGE              0x1a05
 #define IDS_EE_BADMARSHALFIELD_NOSTRINGBUILDER  0x1a06
 #define IDS_EE_NAME_UNKNOWN                     0x1a07
-#define IDS_EE_NAME_INMEMORYMODULE              0x1a08
 #define IDS_EE_THREAD_NOTSTARTED                0x1a0a
 #define IDS_EE_NO_BACKING_CLASS_FACTORY         0x1a0b
 #define IDS_EE_NAME_UNKNOWN_UNQ                 0x1a0c
@@ -245,7 +244,6 @@
 #define IDS_EE_VARARG_NOT_SUPPORTED             0x1a0f
 
 #define IDS_EE_INVALID_CA                       0x1a10
-#define IDS_EE_INVALID_CA_EX                    0x1a11
 
 #define IDS_EE_THREADSTART_STATE                0x1a12
 
@@ -272,6 +270,7 @@
 #define IDS_EE_INVALIDCOMDEFITF                 0x1a32
 #define IDS_EE_COMDEFITFNOTSUPPORTED            0x1a33
 
+#define IDS_EE_CLASS_TO_VARIANT_TLB_NOT_REG     0x1a35
 #define IDS_EE_CANNOT_MAP_TO_MANAGED_VC         0x1a36
 
 #define IDS_EE_MARSHAL_UNMAPPABLE_CHAR          0x1a37

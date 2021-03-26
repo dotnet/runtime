@@ -17,6 +17,10 @@ namespace System.Linq.Expressions
     /// </summary>
     public abstract partial class Expression
     {
+        internal const string ExpressionRequiresUnreferencedCode = "Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.";
+        internal const string PropertyFromAccessorRequiresUnreferencedCode = "The Property metadata or other accessor may be trimmed.";
+        internal const string GenericMethodRequiresUnreferencedCode = "Calling a generic method cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method. This can be suppressed if the method is not generic.";
+
         private static readonly CacheDict<Type, MethodInfo> s_lambdaDelegateCache = new CacheDict<Type, MethodInfo>(40);
         private static volatile CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>? s_lambdaFactories;
 
@@ -27,7 +31,7 @@ namespace System.Linq.Expressions
         // To support the 3.5 protected constructor, we store the fields that
         // used to be here in a ConditionalWeakTable.
 
-        private class ExtensionInfo
+        private sealed class ExtensionInfo
         {
             public ExtensionInfo(ExpressionType nodeType, Type type)
             {

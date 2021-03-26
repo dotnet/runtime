@@ -9,7 +9,7 @@ using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-internal class Utils
+internal static class Utils
 {
     private static readonly object s_SyncObj = new object();
 
@@ -28,9 +28,10 @@ internal class Utils
         string? workingDir = null,
         bool ignoreErrors = false,
         bool silent = true,
-        MessageImportance outputMessageImportance=MessageImportance.High)
+        MessageImportance outputMessageImportance=MessageImportance.High,
+        MessageImportance debugMessageImportance=MessageImportance.High)
     {
-        LogInfo($"Running: {path} {args}");
+        LogInfo($"Running: {path} {args}", debugMessageImportance);
         var outputBuilder = new StringBuilder();
         var errorBuilder = new StringBuilder();
         var processStartInfo = new ProcessStartInfo
@@ -45,6 +46,8 @@ internal class Utils
 
         if (workingDir != null)
             processStartInfo.WorkingDirectory = workingDir;
+
+        LogInfo($"Using working directory: {workingDir ?? Environment.CurrentDirectory}", debugMessageImportance);
 
         if (envVars != null)
         {

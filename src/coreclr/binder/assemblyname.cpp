@@ -141,7 +141,7 @@ namespace BINDER_SPACE
         }
 
         // Set public key and/or public key token (if we have it)
-        if (pvPublicKeyToken && dwPublicKeyToken)
+        if (dwPublicKeyToken && pvPublicKeyToken)
         {
             SBuffer publicKeyOrTokenBLOB((const BYTE *) pvPublicKeyToken, dwPublicKeyToken);
 

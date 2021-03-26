@@ -211,7 +211,7 @@ function(generate_exports_file)
   list(GET INPUT_LIST -1 outputFilename)
   list(REMOVE_AT INPUT_LIST -1)
 
-  if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+  if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(SCRIPT_NAME generateexportedsymbols.sh)
   else()
     set(SCRIPT_NAME generateversionscript.sh)
@@ -252,7 +252,7 @@ function(strip_symbols targetName outputFilename)
   if (CLR_CMAKE_HOST_UNIX)
     set(strip_source_file $<TARGET_FILE:${targetName}>)
 
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
       set(strip_destination_file ${strip_source_file}.dwarf)
 
       # Ensure that dsymutil and strip are present
@@ -281,7 +281,7 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${strip_command}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
-    else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
       set(strip_destination_file ${strip_source_file}.dbg)
 
       add_custom_command(
@@ -293,7 +293,7 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
-    endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
 
     set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
   else(CLR_CMAKE_HOST_UNIX)
@@ -316,7 +316,7 @@ function(install_with_stripped_symbols targetName kind destination)
       install_symbols(${symbol_file} ${destination})
     endif()
 
-    if ((CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) AND ("${kind}" STREQUAL "TARGETS"))
+    if ((CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) AND ("${kind}" STREQUAL "TARGETS"))
       # We want to avoid the kind=TARGET install behaviors which corrupt code signatures on osx-arm64
       set(kind PROGRAMS)
     endif()
@@ -392,19 +392,24 @@ endfunction()
 # - creating executable pages from anonymous memory,
 # - making read-only-after-relocations (RELRO) data pages writable again.
 function(disable_pax_mprotect targetName)
-  # Try to locate the paxctl tool. Failure to find it is not fatal,
-  # but the generated executables won't work on a system where PAX is set
-  # to prevent applications to create executable memory mappings.
-  find_program(PAXCTL paxctl)
+  # Disabling PAX hardening only makes sense in systems that use Elf image formats. Particularly, looking
+  # for paxctl in macOS is problematic as it collides with popular software for that OS that performs completely
+  # unrelated functionality. Only look for it when we'll generate Elf images.
+  if (CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+    # Try to locate the paxctl tool. Failure to find it is not fatal,
+    # but the generated executables won't work on a system where PAX is set
+    # to prevent applications to create executable memory mappings.
+    find_program(PAXCTL paxctl)
 
-  if (NOT PAXCTL STREQUAL "PAXCTL-NOTFOUND")
-    add_custom_command(
-      TARGET ${targetName}
-      POST_BUILD
-      VERBATIM
-      COMMAND ${PAXCTL} -c -m $<TARGET_FILE:${targetName}>
-    )
-  endif()
+    if (NOT PAXCTL STREQUAL "PAXCTL-NOTFOUND")
+        add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        VERBATIM
+        COMMAND ${PAXCTL} -c -m $<TARGET_FILE:${targetName}>
+        )
+    endif()
+  endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 endfunction()
 
 if (CMAKE_VERSION VERSION_LESS "3.12")
@@ -468,9 +473,12 @@ function(generate_module_index Target ModuleIndexFile)
         set(scriptExt ".sh")
     endif()
 
+    set(index_timestamp ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${Target}_index.timestamp)
+
     add_custom_command(
-        OUTPUT ${ModuleIndexFile}
+        OUTPUT ${index_timestamp}
         COMMAND ${CLR_ENG_NATIVE_DIR}/genmoduleindex${scriptExt} $<TARGET_FILE:${Target}> ${ModuleIndexFile}
+        COMMAND ${CMAKE_COMMAND} -E touch ${index_timestamp}
         DEPENDS ${Target}
         COMMENT "Generating ${Target} module index file -> ${ModuleIndexFile}"
     )
@@ -482,7 +490,7 @@ function(generate_module_index Target ModuleIndexFile)
 
     add_custom_target(
         ${Target}_module_index_header
-        DEPENDS ${ModuleIndexFile}
+        DEPENDS ${index_timestamp}
     )
 endfunction(generate_module_index)
 

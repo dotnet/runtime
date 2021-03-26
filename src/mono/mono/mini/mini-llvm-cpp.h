@@ -16,18 +16,13 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
 
+#include "llvm-intrinsics-types.h"
+
 #ifdef HAVE_UNWIND_H
 #include <unwind.h>
 #endif
 
 G_BEGIN_DECLS
-
-typedef enum {
-#define INTRINS(id, llvm_id) INTRINS_ ## id,
-#define INTRINS_OVR(id, llvm_id) INTRINS_ ## id,
-#include "llvm-intrinsics.h"
-	INTRINS_NUM
-} IntrinsicId;
 
 /*
  * Keep in sync with the enum in utils/mono-memory-model.h.
@@ -215,6 +210,9 @@ mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id);
 
 LLVMValueRef
 mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *types, int ntypes);
+
+unsigned int
+mono_llvm_get_prim_size_bits (LLVMTypeRef type);
 
 G_END_DECLS
 

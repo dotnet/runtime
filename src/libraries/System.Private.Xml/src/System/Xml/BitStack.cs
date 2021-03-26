@@ -9,7 +9,7 @@ namespace System.Xml
     /// <summary>
     /// Manages a stack of bits.  Exposes push, pop, and peek operations.
     /// </summary>
-    internal class BitStack
+    internal sealed class BitStack
     {
         private uint[]? _bitStack;
         private int _stackPos;

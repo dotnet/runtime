@@ -51,18 +51,55 @@ inline ICorJitInfo::PgoInstrumentationKind operator~(ICorJitInfo::PgoInstrumenta
     return static_cast<ICorJitInfo::PgoInstrumentationKind>(~static_cast<int>(a));
 }
 
+inline uint32_t InstrumentationKindToSize(ICorJitInfo::PgoInstrumentationKind kind)
+{
+    switch(kind & ICorJitInfo::PgoInstrumentationKind::MarshalMask)
+    {
+        case ICorJitInfo::PgoInstrumentationKind::None:
+            return 0;
+        case ICorJitInfo::PgoInstrumentationKind::FourByte:
+            return 4;
+        case ICorJitInfo::PgoInstrumentationKind::EightByte:
+            return 8;
+        case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
+            return TARGET_POINTER_SIZE;
+        default:
+            _ASSERTE(FALSE);
+            return 0;
+    }
+}
+
+inline UINT InstrumentationKindToAlignment(ICorJitInfo::PgoInstrumentationKind kind)
+{
+    switch(kind & ICorJitInfo::PgoInstrumentationKind::AlignMask)
+    {
+        case ICorJitInfo::PgoInstrumentationKind::Align4Byte:
+            return 4;
+        case ICorJitInfo::PgoInstrumentationKind::Align8Byte:
+            return 8;
+        case ICorJitInfo::PgoInstrumentationKind::AlignPointer:
+            return TARGET_POINTER_SIZE;
+        default:
+            return (UINT)InstrumentationKindToSize(kind);
+    }
+}
+
+#define SIGN_MASK_ONEBYTE_64BIT  0xffffffffffffffc0LL
+#define SIGN_MASK_TWOBYTE_64BIT  0xffffffffffffe000LL
+#define SIGN_MASK_FOURBYTE_64BIT 0xffffffff80000000LL
+
 template<class IntHandler>
 bool ReadCompressedInts(const uint8_t *pByte, size_t cbDataMax, IntHandler intProcessor)
 {
     while (cbDataMax > 0)
     {
-        // This logic is a variant on CorSigUncompressSignedInt which allows for the full range of an int32_t
-        int32_t signedInt;
+        // This logic is a variant on CorSigUncompressSignedInt which allows for the full range of an int64_t
+        int64_t signedInt;
         if ((*pByte & 0x80) == 0x0) // 0??? ????
         {
             signedInt = *pByte >> 1;
             if (*pByte & 1)
-                signedInt |= SIGN_MASK_ONEBYTE;
+                signedInt |= SIGN_MASK_ONEBYTE_64BIT;
 
             pByte += 1;
             cbDataMax -=1;
@@ -75,10 +112,18 @@ bool ReadCompressedInts(const uint8_t *pByte, size_t cbDataMax, IntHandler intPr
             int shiftedInt = ((*pByte & 0x3f) << 8) | *(pByte + 1);
             signedInt = shiftedInt >> 1;
             if (shiftedInt & 1)
-                signedInt |= SIGN_MASK_TWOBYTE;
+                signedInt |= SIGN_MASK_TWOBYTE_64BIT;
 
             pByte += 2;
             cbDataMax -= 2;
+        }
+        else if ((*pByte) == 0xC1)
+        {
+            if (cbDataMax < 9)
+                return false;
+            signedInt = (int64_t)((((int64_t)*(pByte + 1)) << 56 | ((int64_t)*(pByte+2)) << 48 | ((int64_t)*(pByte+3)) << 40 | ((int64_t)*(pByte+4)) << 32) | ((int64_t)*(pByte + 5)) << 24 | ((int64_t)*(pByte+6)) << 16 | ((int64_t)*(pByte+7)) << 8 | ((int64_t)*(pByte+8)));
+            pByte += 9;
+            cbDataMax -= 9;
         }
         else
         {
@@ -90,7 +135,7 @@ bool ReadCompressedInts(const uint8_t *pByte, size_t cbDataMax, IntHandler intPr
             pByte += 5;
             cbDataMax -= 5;
         }
-        
+
         if (!intProcessor(signedInt))
         {
             return false;
@@ -126,58 +171,137 @@ inline InstrumentationDataProcessingState operator~(InstrumentationDataProcessin
     return static_cast<InstrumentationDataProcessingState>(~static_cast<int>(a));
 }
 
-template<class SchemaHandler>
-bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaHandler handler)
+class ProcessSchemaUpdateFunctor
 {
-    ICorJitInfo::PgoInstrumentationSchema curSchema;
-    InstrumentationDataProcessingState processingState;
-    bool done = false;
-    
-    memset(&curSchema, 0, sizeof(curSchema));
-    processingState = InstrumentationDataProcessingState::UpdateProcessMaskFlag;
-    ReadCompressedInts(pByte, cbDataMax, [&curSchema, handler, &processingState, &done](int32_t curValue)
+    ICorJitInfo::PgoInstrumentationSchema curSchema = {};
+    InstrumentationDataProcessingState processingState = InstrumentationDataProcessingState::UpdateProcessMaskFlag;
+
+public:
+    const ICorJitInfo::PgoInstrumentationSchema& GetSchema() const { return curSchema; }
+    bool ProcessInteger(int32_t curValue)
     {
         if (processingState == InstrumentationDataProcessingState::UpdateProcessMaskFlag)
         {
             processingState = (InstrumentationDataProcessingState)curValue;
-            return true;
+            assert((processingState & ~InstrumentationDataProcessingState::UpdateProcessMask) == InstrumentationDataProcessingState::Done);
+            return false;
         }
 
         if ((processingState & InstrumentationDataProcessingState::ILOffset) == InstrumentationDataProcessingState::ILOffset)
         {
-            curSchema.ILOffset += curValue;
+            curSchema.ILOffset = (int32_t)((int64_t)curSchema.ILOffset + curValue);
             processingState = processingState & ~InstrumentationDataProcessingState::ILOffset;
         }
         else if ((processingState & InstrumentationDataProcessingState::Type) == InstrumentationDataProcessingState::Type)
         {
-            curSchema.InstrumentationKind = static_cast<ICorJitInfo::PgoInstrumentationKind>(static_cast<int>(curSchema.InstrumentationKind) + curValue);
+            curSchema.InstrumentationKind = static_cast<ICorJitInfo::PgoInstrumentationKind>(static_cast<int64_t>(curSchema.InstrumentationKind) + curValue);
             processingState = processingState & ~InstrumentationDataProcessingState::Type;
         }
         else if ((processingState & InstrumentationDataProcessingState::Count) == InstrumentationDataProcessingState::Count)
         {
-            curSchema.Count += curValue;
+            curSchema.Count = (int32_t)((int64_t)curSchema.Count + curValue);
             processingState = processingState & ~InstrumentationDataProcessingState::Count;
         }
         else if ((processingState & InstrumentationDataProcessingState::Other) == InstrumentationDataProcessingState::Other)
         {
-            curSchema.Other += curValue;
+            curSchema.Other = (int32_t)((int64_t)curSchema.Other + curValue);
             processingState = processingState & ~InstrumentationDataProcessingState::Other;
         }
 
         if (processingState == InstrumentationDataProcessingState::Done)
         {
             processingState = InstrumentationDataProcessingState::UpdateProcessMaskFlag;
-            if (curSchema.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::Done)
+            return true;
+        }
+        return false;
+    }
+};
+
+template<class SchemaHandler>
+bool ReadInstrumentationSchema(const uint8_t *pByte, size_t cbDataMax, SchemaHandler handler)
+{
+    ProcessSchemaUpdateFunctor schemaHandlerUpdate;
+    bool done = false;
+    
+    ReadCompressedInts(pByte, cbDataMax, [&handler, &schemaHandlerUpdate, &done](int64_t curValue)
+    {
+        if (schemaHandlerUpdate.ProcessInteger((int32_t)curValue))
+        {
+            if (schemaHandlerUpdate.GetSchema().InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::Done)
             {
                 done = true;
                 return false;
             }
 
-            if (!handler(curSchema))
+            if (!handler(schemaHandlerUpdate.GetSchema()))
             {
                 return false;
             }
+        }
+        return true;
+    });
 
+    return done;
+}
+
+template<class SchemaAndDataHandler>
+bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDataHandler& handler)
+{
+    ProcessSchemaUpdateFunctor schemaHandler;
+    bool done = false;
+    int64_t lastDataValue = 0;
+    int64_t lastTypeDataValue = 0;
+    int32_t dataCountToRead = 0;
+    
+    ReadCompressedInts(pByte, cbDataMax, [&](int64_t curValue)
+    {
+        if (dataCountToRead > 0)
+        {
+            switch(schemaHandler.GetSchema().InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask)
+            {
+            case ICorJitInfo::PgoInstrumentationKind::FourByte:
+            case ICorJitInfo::PgoInstrumentationKind::EightByte:
+                lastDataValue += curValue;
+
+                if (!handler(schemaHandler.GetSchema(), lastDataValue, schemaHandler.GetSchema().Count - dataCountToRead))
+                {
+                    return false;
+                }
+                break;
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
+                lastTypeDataValue += curValue;
+
+                if (!handler(schemaHandler.GetSchema(), lastTypeDataValue, schemaHandler.GetSchema().Count - dataCountToRead))
+                {
+                    return false;
+                }
+                break;
+            default:
+                assert(false);
+                break;
+            }
+            dataCountToRead--;
+            return true;
+        }
+        if (schemaHandler.ProcessInteger((int32_t)curValue))
+        {
+            if (schemaHandler.GetSchema().InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::Done)
+            {
+                done = true;
+                return false;
+            }
+
+            if (InstrumentationKindToSize(schemaHandler.GetSchema().InstrumentationKind) == 0)
+            {
+                if (!handler(schemaHandler.GetSchema(), 0, 0))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                dataCountToRead = schemaHandler.GetSchema().Count;
+            }
         }
         return true;
     });
@@ -188,13 +312,13 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaHandl
 inline bool CountInstrumentationDataSize(const uint8_t *pByte, size_t cbDataMax, int32_t *pInstrumentationSchemaCount)
 {
     *pInstrumentationSchemaCount = 0;
-    return ReadInstrumentationData(pByte, cbDataMax, [pInstrumentationSchemaCount](const ICorJitInfo::PgoInstrumentationSchema& schema) { (*pInstrumentationSchemaCount)++; return true; });
+    return ReadInstrumentationSchema(pByte, cbDataMax, [pInstrumentationSchemaCount](const ICorJitInfo::PgoInstrumentationSchema& schema) { (*pInstrumentationSchemaCount)++; return true; });
 }
 
 inline bool ComparePgoSchemaEquals(const uint8_t *pByte, size_t cbDataMax, const ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas)
 {
     size_t iSchema = 0;
-    return ReadInstrumentationData(pByte, cbDataMax, [schemaTable, cSchemas, &iSchema](const ICorJitInfo::PgoInstrumentationSchema& schema) 
+    return ReadInstrumentationSchema(pByte, cbDataMax, [schemaTable, cSchemas, &iSchema](const ICorJitInfo::PgoInstrumentationSchema& schema) 
     {
         if (iSchema >= cSchemas)
             return false;
@@ -215,39 +339,6 @@ inline bool ComparePgoSchemaEquals(const uint8_t *pByte, size_t cbDataMax, const
     });
 }
 
-inline uint32_t InstrumentationKindToSize(ICorJitInfo::PgoInstrumentationKind kind)
-{
-    switch(kind & ICorJitInfo::PgoInstrumentationKind::MarshalMask)
-    {
-        case ICorJitInfo::PgoInstrumentationKind::None:
-            return 0;
-        case ICorJitInfo::PgoInstrumentationKind::FourByte:
-            return 4;
-        case ICorJitInfo::PgoInstrumentationKind::EightByte:
-            return 8;
-        case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
-            return TARGET_POINTER_SIZE;
-        default:
-            _ASSERTE(FALSE);
-            return 0;
-    }
-}
-
-inline UINT InstrumentationKindToAlignment(ICorJitInfo::PgoInstrumentationKind kind)
-{
-    switch(kind & ICorJitInfo::PgoInstrumentationKind::AlignMask)
-    {
-        case ICorJitInfo::PgoInstrumentationKind::Align4Byte:
-            return 4;
-        case ICorJitInfo::PgoInstrumentationKind::Align8Byte:
-            return 8;
-        case ICorJitInfo::PgoInstrumentationKind::AlignPointer:
-            return TARGET_POINTER_SIZE;
-        default:
-            return (UINT)InstrumentationKindToSize(kind);
-    }
-}
-
 inline void LayoutPgoInstrumentationSchema(const ICorJitInfo::PgoInstrumentationSchema& prevSchema, ICorJitInfo::PgoInstrumentationSchema* currentSchema)
 {
     size_t instrumentationSize = InstrumentationKindToSize(currentSchema->InstrumentationKind);
@@ -263,13 +354,13 @@ inline void LayoutPgoInstrumentationSchema(const ICorJitInfo::PgoInstrumentation
 }
 
 template<class SchemaHandler>
-bool ReadInstrumentationDataWithLayout(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SchemaHandler handler)
+bool ReadInstrumentationSchemaWithLayout(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SchemaHandler& handler)
 {
     ICorJitInfo::PgoInstrumentationSchema prevSchema;
     memset(&prevSchema, 0, sizeof(ICorJitInfo::PgoInstrumentationSchema));
     prevSchema.Offset = initialOffset;
 
-    return ReadInstrumentationData(pByte, cbDataMax, [&prevSchema, handler](ICorJitInfo::PgoInstrumentationSchema curSchema)
+    return ReadInstrumentationSchema(pByte, cbDataMax, [&prevSchema, &handler](ICorJitInfo::PgoInstrumentationSchema curSchema)
     {
         LayoutPgoInstrumentationSchema(prevSchema, &curSchema);
         if (!handler(curSchema))
@@ -279,42 +370,61 @@ bool ReadInstrumentationDataWithLayout(const uint8_t *pByte, size_t cbDataMax, s
     });
 }
 
-inline bool ReadInstrumentationDataWithLayoutIntoSArray(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchemas)
+inline bool ReadInstrumentationSchemaWithLayoutIntoSArray(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchemas)
 {
-    return ReadInstrumentationDataWithLayout(pByte, cbDataMax, initialOffset, [pSchemas](const ICorJitInfo::PgoInstrumentationSchema &schema)
+    auto lambda = [pSchemas](const ICorJitInfo::PgoInstrumentationSchema &schema)
     {
         pSchemas->Append(schema);
         return true;
-    });
+    };
+
+    return ReadInstrumentationSchemaWithLayout(pByte, cbDataMax, initialOffset, lambda);
 }
 
+#define SIGN_MASK_ONEBYTE_64BIT  0xffffffffffffffc0LL
+#define SIGN_MASK_TWOBYTE_64BIT  0xffffffffffffe000LL
+#define SIGN_MASK_FOURBYTE_64BIT 0xffffffff80000000LL
 
 template<class ByteWriter>
-bool WriteCompressedIntToBytes(int32_t value, ByteWriter& byteWriter)
+bool WriteCompressedIntToBytes(int64_t value, ByteWriter& byteWriter)
 {
     uint8_t isSigned = 0;
 
     // This function is modeled on CorSigCompressSignedInt, but differs in that
-    // it handles arbitrary int32 values, not just a subset
+    // it handles arbitrary int64 values, not just a subset
     if (value < 0)
         isSigned = 1;
 
-    if ((value & SIGN_MASK_ONEBYTE) == 0 || (value & SIGN_MASK_ONEBYTE) == SIGN_MASK_ONEBYTE)
+    if ((value & SIGN_MASK_ONEBYTE_64BIT) == 0 || (value & SIGN_MASK_ONEBYTE_64BIT) == SIGN_MASK_ONEBYTE_64BIT)
     {
         return byteWriter((uint8_t)((value & ~SIGN_MASK_ONEBYTE) << 1 | isSigned));
     }
-    else if ((value & SIGN_MASK_TWOBYTE) == 0 || (value & SIGN_MASK_TWOBYTE) == SIGN_MASK_TWOBYTE)
+    else if ((value & SIGN_MASK_TWOBYTE_64BIT) == 0 || (value & SIGN_MASK_TWOBYTE_64BIT) == SIGN_MASK_TWOBYTE_64BIT)
     {
-        int32_t iData = (int32_t)((value & ~SIGN_MASK_TWOBYTE) << 1 | isSigned);
+        int32_t iData = (int32_t)((value & ~SIGN_MASK_TWOBYTE_64BIT) << 1 | isSigned);
         _ASSERTE(iData <= 0x3fff);
         byteWriter(uint8_t((iData >> 8) | 0x80));
         return byteWriter(uint8_t(iData & 0xff));
     }
+    else if ((value & SIGN_MASK_FOURBYTE_64BIT) == 0 || (value & SIGN_MASK_FOURBYTE_64BIT) == SIGN_MASK_FOURBYTE_64BIT)
+    {
+        // Unlike CorSigCompressSignedInt, this just writes a header byte
+        // then 4 bytes, ignoring the whole signed bit detail
+        byteWriter(0xC0);
+        byteWriter(uint8_t((value >> 24) & 0xff));
+        byteWriter(uint8_t((value >> 16) & 0xff));
+        byteWriter(uint8_t((value >> 8) & 0xff));
+        return byteWriter(uint8_t((value >> 0) & 0xff));
+    }
     else
     {
-        // Unlike CorSigCompressSignedInt, this just writes a header bit
-        // then a full 4 bytes, ignoring the whole signed bit detail
-        byteWriter(0xC0);
+        // Unlike CorSigCompressSignedInt, this just writes a header byte
+        // then 8 bytes, ignoring the whole signed bit detail
+        byteWriter(0xC1);
+        byteWriter(uint8_t((value >> 56) & 0xff));
+        byteWriter(uint8_t((value >> 48) & 0xff));
+        byteWriter(uint8_t((value >> 40) & 0xff));
+        byteWriter(uint8_t((value >> 32) & 0xff));
         byteWriter(uint8_t((value >> 24) & 0xff));
         byteWriter(uint8_t((value >> 16) & 0xff));
         byteWriter(uint8_t((value >> 8) & 0xff));
@@ -325,10 +435,10 @@ bool WriteCompressedIntToBytes(int32_t value, ByteWriter& byteWriter)
 template<class ByteWriter>
 bool WriteIndividualSchemaToBytes(ICorJitInfo::PgoInstrumentationSchema prevSchema, ICorJitInfo::PgoInstrumentationSchema curSchema, ByteWriter& byteWriter)
 {
-    int32_t ilOffsetDiff = curSchema.ILOffset - prevSchema.ILOffset;
-    int32_t OtherDiff = curSchema.Other - prevSchema.Other;
-    int32_t CountDiff = curSchema.Count - prevSchema.Count;
-    int32_t TypeDiff = (int32_t)curSchema.InstrumentationKind - (int32_t)prevSchema.InstrumentationKind;
+    int64_t ilOffsetDiff = (int64_t)curSchema.ILOffset - (int64_t)prevSchema.ILOffset;
+    int64_t OtherDiff = (int64_t)curSchema.Other - (int64_t)prevSchema.Other;
+    int64_t CountDiff = (int64_t)curSchema.Count - (int64_t)prevSchema.Count;
+    int64_t TypeDiff = (int64_t)curSchema.InstrumentationKind - (int64_t)prevSchema.InstrumentationKind;
 
     InstrumentationDataProcessingState modifyMask = (InstrumentationDataProcessingState)0;
 
@@ -357,7 +467,7 @@ bool WriteIndividualSchemaToBytes(ICorJitInfo::PgoInstrumentationSchema prevSche
 }
 
 template<class ByteWriter>
-bool WriteInstrumentationToBytes(const ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas, const ByteWriter& byteWriter)
+bool WriteInstrumentationSchemaToBytes(const ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas, const ByteWriter& byteWriter)
 {
     ICorJitInfo::PgoInstrumentationSchema prevSchema;
     memset(&prevSchema, 0, sizeof(ICorJitInfo::PgoInstrumentationSchema));
@@ -378,9 +488,98 @@ bool WriteInstrumentationToBytes(const ICorJitInfo::PgoInstrumentationSchema* sc
     return true;
 }
 
+template<class ByteWriter>
+class SchemaAndDataWriter
+{
+    const ByteWriter& byteWriter;
+    uint8_t* pInstrumentationData;
+    ICorJitInfo::PgoInstrumentationSchema prevSchema = {};
+    int64_t lastIntDataWritten = 0;
+    int64_t lastTypeDataWritten = 0;
+
+public:
+    SchemaAndDataWriter(const ByteWriter& byteWriter, uint8_t* pInstrumentationData) :
+        byteWriter(byteWriter),
+        pInstrumentationData(pInstrumentationData)
+    {}
+
+    bool AppendSchema(ICorJitInfo::PgoInstrumentationSchema schema)
+    {
+        if (!WriteIndividualSchemaToBytes(prevSchema, schema, byteWriter))
+            return false;
+
+        prevSchema = schema;
+        return true;
+    }
+
+    template<class TypeHandleProcessor>
+    bool AppendDataFromLastSchema(TypeHandleProcessor& thProcessor)
+    {
+        uint8_t *pData = (pInstrumentationData + prevSchema.Offset);
+        for (int32_t iDataElem = 0; iDataElem < prevSchema.Count; iDataElem++)
+        {
+            int64_t logicalDataToWrite;
+            switch(prevSchema.InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask)
+            {
+                case ICorJitInfo::PgoInstrumentationKind::None:
+                    return true;
+                case ICorJitInfo::PgoInstrumentationKind::FourByte:
+                {
+                    logicalDataToWrite = *(volatile int32_t*)pData;
+                    bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastIntDataWritten, byteWriter);
+                    lastIntDataWritten = logicalDataToWrite;
+                    if (!returnValue)
+                        return false;
+                    pData += 4;
+                    break;
+                }
+                case ICorJitInfo::PgoInstrumentationKind::EightByte:
+                {
+                    logicalDataToWrite = *(volatile int64_t*)pData;
+                    bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastIntDataWritten, byteWriter);
+                    lastIntDataWritten = logicalDataToWrite;
+                    if (!returnValue)
+                        return false;
+                    pData += 8;
+                    break;
+                }
+                case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
+                {
+                    logicalDataToWrite = *(volatile intptr_t*)pData;
+
+                    // As there could be tearing otherwise, inform the caller of exactly what value was written.
+                    thProcessor(logicalDataToWrite);
+
+                    bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastTypeDataWritten, byteWriter);
+                    lastTypeDataWritten = logicalDataToWrite;
+                    if (!returnValue)
+                        return false;
+                    pData += sizeof(intptr_t);
+                    break;
+                }
+                default:
+                    _ASSERTE(!"Unexpected type");
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    bool Finish()
+    {
+        // Terminate the schema list with an entry which is Done
+        ICorJitInfo::PgoInstrumentationSchema terminationSchema = prevSchema;
+        terminationSchema.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::Done;
+        if (!WriteIndividualSchemaToBytes(prevSchema, terminationSchema, byteWriter))
+            return false;
+
+        return true;
+    }
+};
+
 inline bool WriteInstrumentationSchema(const ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas, uint8_t* array, size_t byteCount)
 {
-    return WriteInstrumentationToBytes(schemaTable, cSchemas, [&array, &byteCount](uint8_t data)
+    return WriteInstrumentationSchemaToBytes(schemaTable, cSchemas, [&array, &byteCount](uint8_t data)
     {
         if (byteCount == 0)
             return false;

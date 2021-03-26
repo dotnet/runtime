@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -54,6 +53,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             internal IntPtr DatagramSend;
         }
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate uint MsQuicOpenDelegate(
+            out NativeApi* registration);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint SetContextDelegate(

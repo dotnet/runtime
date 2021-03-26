@@ -11,7 +11,7 @@
 # Script to orchestrate SuperPMI collections, replays, asm diffs, and SuperPMI
 # data management. Note that some of the options provided by this script are
 # also provided in our SuperPMI collect test. The test can be found here:
-# https://github.com/dotnet/runtime/blob/master/src/tests/JIT/superpmi/superpmicollect.cs.
+# https://github.com/dotnet/runtime/blob/main/src/tests/JIT/superpmi/superpmicollect.cs.
 #
 ################################################################################
 ################################################################################
@@ -37,6 +37,10 @@ import zipfile
 from coreclr_arguments import *
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
+
+# Decide if we're going to download and enumerate Azure Storage using anonymous
+# read access and urllib functions (False), or Azure APIs including authentication (True).
+authenticate_using_azure = False
 
 ################################################################################
 # Azure Storage information
@@ -233,22 +237,26 @@ superpmi_common_parser.add_argument("--sequential", action="store_true", help="R
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
 superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_win_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
+superpmi_common_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
 # subparser for collect
 collect_parser = subparsers.add_parser("collect", description=collect_description, parents=[core_root_parser, target_parser, superpmi_common_parser])
 
 # Add required arguments
 collect_parser.add_argument("collection_command", nargs='?', help=superpmi_collect_help)
-collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command.")
+collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command. This is a single string; quote it if necessary if the arguments contain spaces.")
 
 collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen", action="store_true", help="Run crossgen on a set of directories or assemblies.")
-collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="Pass a sequence of managed dlls or directories to recursively use while collecting with PMI or crossgen. Required if --pmi or --crossgen is specified.")
+collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossgen2 on a set of directories or assemblies.")
+collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI, crossgen, or crossgen2. Required if --pmi, --crossgen, or --crossgen2 is specified.")
+collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
 collect_parser.add_argument("--use_zapdisable", action="store_true", help="Sets COMPlus_ZapDisable=1 and COMPlus_ReadyToRun=0 when doing collection to cause NGEN/ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
+collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets COMPlus_TieredCompilation=1 when doing collections.")
 
 # Allow for continuing a collection in progress
 collect_parser.add_argument("-temp_dir", help="Specify an existing temporary directory to use. Useful if continuing an ongoing collection process, or forcing a temporary directory to a particular hard drive. Optional; default is to create a temporary directory in the usual TEMP location.")
@@ -286,13 +294,14 @@ asm_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the ba
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
 asm_diff_parser.add_argument("-temp_dir", help="Specify a temporary directory used for a previous ASM diffs run (for which --skip_cleanup was used) to view the results. The replay command is skipped.")
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
+asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baselne JIT. Format is key=value, where key is the option name without leading COMPlus_...")
+asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
 
 upload_parser.add_argument("-mch_files", metavar="MCH_FILE", required=True, nargs='+', help=upload_mch_files_help)
 upload_parser.add_argument("-az_storage_key", help="Key for the clrjit Azure Storage location. Default: use the value of the CLRJIT_AZ_KEY environment variable.")
-upload_parser.add_argument("-jit_location", help="Location for the base clrjit. If not passed this will be assumed to be from the Core_Root.")
 upload_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 upload_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 
@@ -322,6 +331,162 @@ merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_
 ################################################################################
 # Helper functions
 ################################################################################
+
+def remove_prefix(text, prefix):
+    """ Helper method to remove a prefix `prefix` from a string `text`
+    """
+    if text.startswith(prefix):
+        return text[len(prefix):]
+    return text
+
+# Have we checked whether we have the Azure Storage libraries yet?
+azure_storage_libraries_check = False
+
+
+def require_azure_storage_libraries(need_azure_storage_blob=True, need_azure_identity=True):
+    """ Check for and import the Azure libraries.
+        We do this lazily, only when we decide we're actually going to need them.
+        Once we've done it once, we don't do it again.
+    """
+    global azure_storage_libraries_check, BlobServiceClient, BlobClient, ContainerClient, AzureCliCredential
+
+    if azure_storage_libraries_check:
+        return
+
+    azure_storage_libraries_check = True
+
+    azure_storage_blob_import_ok = True
+    if need_azure_storage_blob:
+        try:
+            from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+        except:
+            azure_storage_blob_import_ok = False
+
+    azure_identity_import_ok = True
+    if need_azure_identity:
+        try:
+            from azure.identity import AzureCliCredential
+        except:
+            azure_identity_import_ok = False
+
+    if not azure_storage_blob_import_ok or not azure_identity_import_ok:
+        logging.error("One or more required Azure Storage packages is missing.")
+        logging.error("")
+        logging.error("Please install:")
+        logging.error("  pip install azure-storage-blob azure-identity")
+        logging.error("or (Windows):")
+        logging.error("  py -3 -m pip install azure-storage-blob azure-identity")
+        logging.error("See also https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python")
+        raise RuntimeError("Missing Azure Storage package.")
+
+    # The Azure packages spam all kinds of output to the logging channels.
+    # Restrict this to only ERROR and CRITICAL.
+    for name in logging.Logger.manager.loggerDict.keys():
+        if 'azure' in name:
+            logging.getLogger(name).setLevel(logging.ERROR)
+
+
+def download_progress_hook(count, block_size, total_size):
+    """ A hook for urlretrieve to report download progress
+
+    Args:
+        count (int)               : current block index
+        block_size (int)          : size of a block
+        total_size (int)          : total size of a payload
+    """
+    sys.stdout.write("\rDownloading %d/%d..." % (count - 1, total_size / max(block_size, 1)))
+    sys.stdout.flush()
+
+
+def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=True):
+    """ Do an URI download using urllib.request.urlretrieve with a progress hook.
+
+    Args:
+        uri (string)              : URI to download
+        target_location (string)  : local path to put the downloaded object
+        fail_if_not_found (bool)  : if True, fail if a download fails due to file not found (HTTP error 404).
+                                    Otherwise, ignore the failure.
+
+    Returns True if successful, False on failure
+    """
+    logging.info("Download: %s -> %s", uri, target_location)
+
+    ok = True
+    try:
+        urllib.request.urlretrieve(uri, target_location, reporthook=download_progress_hook)
+    except urllib.error.HTTPError as httperror:
+        if (httperror == 404) and fail_if_not_found:
+            logging.error("HTTP 404 error")
+            raise httperror
+        ok = False
+
+    sys.stdout.write("\n") # Add newline after progress hook
+    return ok
+
+
+def report_azure_error():
+    """ Report an Azure error
+    """
+    logging.error("A problem occurred accessing Azure. Are you properly authenticated using the Azure CLI?")
+    logging.error("Install the Azure CLI from https://docs.microsoft.com/en-us/cli/azure/install-azure-cli.")
+    logging.error("Then log in to Azure using `az login`.")
+
+
+def download_with_azure(uri, target_location, fail_if_not_found=True):
+    """ Do an URI download using Azure blob storage API. Compared to urlretrieve,
+        there is no progress hook. Maybe if converted to use the async APIs we
+        could have some kind of progress?
+
+    Args:
+        uri (string)              : URI to download
+        target_location (string)  : local path to put the downloaded object
+        fail_if_not_found (bool)  : if True, fail if a download fails due to file not found (HTTP error 404).
+                                    Otherwise, ignore the failure.
+
+    Returns True if successful, False on failure
+    """
+
+    require_azure_storage_libraries()
+
+    logging.info("Download: %s -> %s", uri, target_location)
+
+    ok = True
+    az_credential = AzureCliCredential()
+    blob = BlobClient.from_blob_url(uri, credential=az_credential)
+    with open(target_location, "wb") as my_blob:
+        try:
+            download_stream = blob.download_blob(retry_total=0)
+            try:
+                my_blob.write(download_stream.readall())
+            except Exception as ex1:
+                logging.error("Error writing data to %s", target_location)
+                report_azure_error()
+                ok = False
+        except Exception as ex2:
+            logging.error("Azure error downloading %s", uri)
+            report_azure_error()
+            ok = False
+
+    if not ok and fail_if_not_found:
+        raise RuntimeError("Azure failed to download")
+    return ok
+
+
+def download_one_url(uri, target_location, fail_if_not_found=True):
+    """ Do an URI download using urllib.request.urlretrieve or Azure Storage APIs.
+
+    Args:
+        uri (string)              : URI to download
+        target_location (string)  : local path to put the downloaded object
+        fail_if_not_found (bool)  : if True, fail if a download fails due to file not found (HTTP error 404).
+                                    Otherwise, ignore the failure.
+
+    Returns True if successful, False on failure
+    """
+    if authenticate_using_azure:
+        return download_with_azure(uri, target_location, fail_if_not_found)
+    else:
+        return download_with_progress_urlretrieve(uri, target_location, fail_if_not_found)
 
 
 def is_zero_length_file(fpath):
@@ -485,9 +650,33 @@ def run_and_log(command, log_level=logging.DEBUG):
     logging.debug("Invoking: %s", " ".join(command))
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout_output, _ = proc.communicate()
-    for line in stdout_output.decode('utf-8').splitlines():  # There won't be any stderr output since it was piped to stdout
+    for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
         logging.log(log_level, line)
     return proc.returncode
+
+
+def write_file_to_log(filepath, log_level=logging.DEBUG):
+    """ Read the text of a file and write it to the logger. If the file doesn't exist, don't output anything.
+
+    Args:
+        filepath (string) : file to log
+        log_level (int)   : log level to use for logging output
+
+    Returns:
+        Nothing
+    """
+    if not os.path.exists(filepath):
+        return
+
+    logging.log(log_level, "============== Contents of %s", filepath)
+
+    with open(filepath) as file_handle:
+        lines = file_handle.readlines()
+        lines = [item.strip() for item in lines]
+        for line in lines:
+            logging.log(log_level, line)
+
+    logging.log(log_level, "============== End contents of %s", filepath)
 
 # Functions to verify the OS and architecture. They take an instance of CoreclrArguments,
 # which is used to find the list of legal OS and architectures
@@ -517,12 +706,13 @@ class TempDir:
 
         Use with: "with TempDir() as temp_dir" to change to that directory and then automatically
         change back to the original working directory afterwards and remove the temporary
-        directory and its contents (if args.skip_cleanup is False).
+        directory and its contents (if skip_cleanup is False).
     """
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, skip_cleanup=False):
         self.mydir = tempfile.mkdtemp() if path is None else path
         self.cwd = None
+        self._skip_cleanup = skip_cleanup
 
     def __enter__(self):
         self.cwd = os.getcwd()
@@ -531,10 +721,7 @@ class TempDir:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.cwd)
-        # Note: we are using the global `args`, not coreclr_args. This works because
-        # the `skip_cleanup` argument is not processed by CoreclrArguments, but is
-        # just copied there.
-        if not args.skip_cleanup:
+        if not self._skip_cleanup:
             shutil.rmtree(self.mydir)
 
 
@@ -591,8 +778,8 @@ class AsyncSubprocessHelper:
         """
 
         # Create a queue with one entry for each of the threads we're
-        # going to allow. By default, this will be one entry per cpu.
-        # using subproc_count_queue.get() will block when we're running
+        # going to allow. By default, this will be one entry per CPU.
+        # Using subproc_count_queue.get() will block when we're running
         # a task on every CPU.
         chunk_size = self.subproc_count
         self.subproc_count_queue = asyncio.Queue(chunk_size)
@@ -681,8 +868,17 @@ class SuperPMICollect:
         if coreclr_args.crossgen:
             self.crossgen_tool = os.path.join(self.core_root, self.crossgen_tool_name)
 
-        if coreclr_args.pmi or coreclr_args.crossgen:
+        if coreclr_args.crossgen2:
+            self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
+            if coreclr_args.dotnet_tool_path is None:
+                self.crossgen2_driver_tool = self.corerun
+            else:
+                self.crossgen2_driver_tool = coreclr_args.dotnet_tool_path
+            logging.debug("Using crossgen2 driver tool %s", self.crossgen2_driver_tool)
+
+        if coreclr_args.pmi or coreclr_args.crossgen or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
+            self.exclude = coreclr_args.exclude
 
         self.coreclr_args = coreclr_args
 
@@ -723,7 +919,7 @@ class SuperPMICollect:
         passed = False
 
         try:
-            with TempDir(self.coreclr_args.temp_dir) as temp_location:
+            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
                 # Setup all of the temp locations
                 self.base_fail_mcl_file = os.path.join(temp_location, "basefail.mcl")
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
@@ -785,31 +981,61 @@ class SuperPMICollect:
         if not self.coreclr_args.skip_collect_mc_files:
             assert os.path.isdir(self.temp_location)
 
-            # Set environment variables.
+            # Set environment variables. For crossgen2, we need to pass the COMPlus variables as arguments to the JIT using
+            # the `-codegenopt` argument.
+
             env_copy = os.environ.copy()
-            env_copy["SuperPMIShimLogPath"] = self.temp_location
-            env_copy["SuperPMIShimPath"] = self.jit_path
-            env_copy["COMPlus_JitName"] = self.collection_shim_name
-            env_copy["COMPlus_EnableExtraSuperPmiQueries"] = "1"
-            env_copy["COMPlus_TieredCompilation"] = "0"
+
+            root_env = {}
+            root_env["SuperPMIShimLogPath"] = self.temp_location
+            root_env["SuperPMIShimPath"] = self.jit_path
+
+            complus_env = {}
+            complus_env["EnableExtraSuperPmiQueries"] = "1"
+
+            if not self.coreclr_args.tiered_compilation:
+                complus_env["TieredCompilation"] = "0"
 
             if self.coreclr_args.use_zapdisable:
-                env_copy["COMPlus_ZapDisable"] = "1"
-                env_copy["COMPlus_ReadyToRun"] = "0"
+                complus_env["ZapDisable"] = "1"
+                complus_env["ReadyToRun"] = "0"
 
             logging.debug("Starting collection.")
             logging.debug("")
-            print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "SuperPMIShimLogPath", self.temp_location)
-            print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "SuperPMIShimPath", self.jit_path)
-            print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "COMPlus_JitName", self.collection_shim_name)
-            print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "COMPlus_EnableExtraSuperPmiQueries", "1")
-            print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "COMPlus_TieredCompilation", "0")
-            if self.coreclr_args.use_zapdisable:
-                print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "COMPlus_ZapDisable", "1")
-                print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "COMPlus_ReadyToRun", "0")
-            logging.debug("")
 
+            def set_and_report_env(env, root_env, complus_env = None):
+                for var, value in root_env.items():
+                    env[var] = value
+                    print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, var, value)
+                if complus_env is not None:
+                    for var, value in complus_env.items():
+                        complus_var = "COMPlus_" + var
+                        env[complus_var] = value
+                        print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, complus_var, value)
+
+            # If we need them, collect all the assemblies we're going to use for the collection(s).
+            # Remove the files matching the `-exclude` arguments (case-insensitive) from the list.
+            if self.coreclr_args.pmi or self.coreclr_args.crossgen or self.coreclr_args.crossgen2:
+                assemblies = []
+                for item in self.assemblies:
+                    assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude)))
+                if len(assemblies) == 0:
+                    logging.error("No assemblies found using `-assemblies` and `-exclude` arguments!")
+                else:
+                    logging.debug("Using assemblies:")
+                    for item in assemblies:
+                        logging.debug("  %s", item)
+                    logging.debug("") # add trailing empty line
+
+            ################################################################################################ Do collection using given collection command (e.g., script)
             if self.collection_command is not None:
+                logging.debug("Starting collection using command")
+
+                collection_command_env = env_copy.copy()
+                collection_complus_env = complus_env.copy()
+                collection_complus_env["JitName"] = self.collection_shim_name
+                set_and_report_env(collection_command_env, root_env, collection_complus_env)
+
                 logging.info("Collecting using command:")
                 logging.info("  %s %s", self.collection_command, " ".join(self.collection_args))
 
@@ -817,17 +1043,16 @@ class SuperPMICollect:
                 assert isinstance(self.collection_args, list)
 
                 command = [self.collection_command, ] + self.collection_args
-                proc = subprocess.Popen(command, env=env_copy, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                proc = subprocess.Popen(command, env=collection_command_env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 stdout_output, _ = proc.communicate()
-                for line in stdout_output.decode('utf-8').splitlines():  # There won't be any stderr output since it was piped to stdout
+                for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
                     logging.debug(line)
+            ################################################################################################ end of "self.collection_command is not None"
 
-            if self.coreclr_args.pmi is True or self.coreclr_args.crossgen is True:
-                assemblies = []
-                for item in self.assemblies:
-                    assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]))
-
+            ################################################################################################ Do collection using PMI
             if self.coreclr_args.pmi is True:
+                logging.debug("Starting collection using PMI")
+
                 async def run_pmi(print_prefix, assembly, self):
                     """ Run pmi over all dlls
                     """
@@ -859,24 +1084,40 @@ class SuperPMICollect:
                             os.remove(stdout_filepath)
                         if is_zero_length_file(stderr_filepath):
                             os.remove(stderr_filepath)
+
+                        return_code = proc.returncode
+                        if return_code != 0:
+                            logging.debug("'%s': Error return code: %s", command_string, return_code)
+                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
+
+                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
                     except OSError as ose:
                         if "[WinError 32] The process cannot access the file because it is being used by another " \
                            "process:" in format(ose):
-                            logging.warning("Skipping file %s. Got error: %s".format(root_output_filename, format(ose)))
+                            logging.warning("Skipping file %s. Got error: %s", root_output_filename, ose)
                         else:
                             raise ose
 
                 # Set environment variables.
+                pmi_command_env = env_copy.copy()
+                pmi_complus_env = complus_env.copy()
+                pmi_complus_env["JitName"] = self.collection_shim_name
+                set_and_report_env(pmi_command_env, root_env, pmi_complus_env)
+
                 old_env = os.environ.copy()
-                os.environ.update(env_copy)
+                os.environ.update(pmi_command_env)
 
                 helper = AsyncSubprocessHelper(assemblies, verbose=True)
                 helper.run_to_completion(run_pmi, self)
 
+                # Review: does this delete the items that weren't there before we updated with the PMI variables?
                 os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.pmi is True"
 
+            ################################################################################################ Do collection using crossgen
             if self.coreclr_args.crossgen is True:
+                logging.debug("Starting collection using crossgen")
+
                 async def run_crossgen(print_prefix, assembly, self):
                     """ Run crossgen over all dlls
                     """
@@ -889,7 +1130,7 @@ class SuperPMICollect:
                     except OSError as ose:
                         if "[WinError 32] The process cannot access the file because it is being used by another " \
                            "process:" in format(ose):
-                            logging.warning("Skipping file %s. Got error: %s".format(root_output_filename, format(ose)))
+                            logging.warning("Skipping file %s. Got error: %s", crossgen_output_assembly_filename, ose)
                             return
                         else:
                             raise ose
@@ -921,22 +1162,157 @@ class SuperPMICollect:
                             os.remove(stdout_filepath)
                         if is_zero_length_file(stderr_filepath):
                             os.remove(stderr_filepath)
+
+                        return_code = proc.returncode
+                        if return_code != 0:
+                            logging.debug("'%s': Error return code: %s", command_string, return_code)
+                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
+
+                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
                     except OSError as ose:
                         if "[WinError 32] The process cannot access the file because it is being used by another " \
                            "process:" in format(ose):
-                            logging.warning("Skipping file %s. Got error: %s".format(root_output_filename, format(ose)))
+                            logging.warning("Skipping file %s. Got error: %s", root_output_filename, ose)
                         else:
                             raise ose
 
                 # Set environment variables.
+                crossgen_command_env = env_copy.copy()
+                crossgen_complus_env = complus_env.copy()
+                crossgen_complus_env["JitName"] = self.collection_shim_name
+                set_and_report_env(crossgen_command_env, root_env, crossgen_complus_env)
+
                 old_env = os.environ.copy()
-                os.environ.update(env_copy)
+                os.environ.update(crossgen_command_env)
 
                 helper = AsyncSubprocessHelper(assemblies, verbose=True)
                 helper.run_to_completion(run_crossgen, self)
 
+                # Review: does this delete the items that weren't there before we updated with the crossgen variables?
                 os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.crossgen is True"
+
+            ################################################################################################ Do collection using crossgen2
+            if self.coreclr_args.crossgen2 is True:
+                logging.debug("Starting collection using crossgen2")
+
+                async def run_crossgen2(print_prefix, assembly, self):
+                    """ Run crossgen2 over all dlls
+                    """
+
+                    root_crossgen2_output_filename = make_safe_filename("crossgen2_" + assembly) + ".out.dll"
+                    crossgen2_output_assembly_filename = os.path.join(self.temp_location, root_crossgen2_output_filename)
+                    try:
+                        if os.path.exists(crossgen2_output_assembly_filename):
+                            os.remove(crossgen2_output_assembly_filename)
+                    except OSError as ose:
+                        if "[WinError 32] The process cannot access the file because it is being used by another " \
+                           "process:" in format(ose):
+                            logging.warning("Skipping file %s. Got error: %s", crossgen2_output_assembly_filename, ose)
+                            return
+                        else:
+                            raise ose
+
+                    root_output_filename = make_safe_filename("crossgen2_" + assembly + "_")
+
+                    # Create a temporary response file to put all the arguments to crossgen2 (otherwise the path length limit could be exceeded):
+                    #
+                    # <dll to compile>
+                    # -o:<output dll>
+                    # -r:<Core_Root>\System.*.dll
+                    # -r:<Core_Root>\Microsoft.*.dll
+                    # -r:<Core_Root>\mscorlib.dll
+                    # -r:<Core_Root>\netstandard.dll
+                    # --jitpath:<self.collection_shim_name>
+                    # --codegenopt:<option>=<value>   /// for each member of complus_env
+                    #
+                    # invoke with:
+                    #
+                    # dotnet <Core_Root>\crossgen2\crossgen2.dll @<temp.rsp>
+                    #
+                    # where "dotnet" is one of:
+                    # 1. <runtime_root>\dotnet.cmd/sh
+                    # 2. "dotnet" on PATH
+                    # 3. corerun in Core_Root
+
+                    rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
+                    with open(rsp_file_handle, "w") as rsp_write_handle:
+                        rsp_write_handle.write(assembly + "\n")
+                        rsp_write_handle.write("-o:" + crossgen2_output_assembly_filename + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "System.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "Microsoft.*.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "mscorlib.dll") + "\n")
+                        rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
+                        rsp_write_handle.write("--parallelism:1" + "\n")
+                        rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
+                        for var, value in complus_env.items():
+                            rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
+
+                    # Log what is in the response file
+                    write_file_to_log(rsp_filepath)
+
+                    command = [self.crossgen2_driver_tool, self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
+                    command_string = " ".join(command)
+                    logging.debug("%s%s", print_prefix, command_string)
+
+                    # Save the stdout and stderr to files, so we can see if crossgen2 wrote any interesting messages.
+                    # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
+                    # is unique.
+                    try:
+                        stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
+                        stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
+
+                        proc = await asyncio.create_subprocess_shell(
+                            command_string,
+                            stdout=stdout_file_handle,
+                            stderr=stderr_file_handle)
+
+                        await proc.communicate()
+
+                        os.close(stdout_file_handle)
+                        os.close(stderr_file_handle)
+
+                        # No need to keep zero-length files
+                        if is_zero_length_file(stdout_filepath):
+                            os.remove(stdout_filepath)
+                        if is_zero_length_file(stderr_filepath):
+                            os.remove(stderr_filepath)
+
+                        return_code = proc.returncode
+                        if return_code != 0:
+                            logging.debug("'%s': Error return code: %s", command_string, return_code)
+                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
+
+                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
+                    except OSError as ose:
+                        if "[WinError 32] The process cannot access the file because it is being used by another " \
+                           "process:" in format(ose):
+                            logging.warning("Skipping file %s. Got error: %s", root_output_filename, ose)
+                        else:
+                            raise ose
+
+                    # Delete the response file unless we are skipping cleanup
+                    if not self.coreclr_args.skip_cleanup:
+                        os.remove(rsp_filepath)
+
+                # Set environment variables.
+                crossgen2_command_env = env_copy.copy()
+                set_and_report_env(crossgen2_command_env, root_env)
+
+                old_env = os.environ.copy()
+                os.environ.update(crossgen2_command_env)
+
+                # Note: crossgen2 compiles in parallel by default. However, it seems to lead to sharing violations
+                # in SuperPMI collection, accessing the MC file. So, disable crossgen2 parallism by using
+                # the "--parallelism:1" switch, and allowing coarse-grained (per-assembly) parallelism here.
+                # It turns out this works better anyway, as there is a lot of non-parallel time between
+                # crossgen2 parallel compilations.
+                helper = AsyncSubprocessHelper(assemblies, verbose=True)
+                helper.run_to_completion(run_crossgen2, self)
+
+                # Review: does this delete the items that weren't there before we updated with the crossgen2 variables?
+                os.environ.update(old_env)
+            ################################################################################################ end of "self.coreclr_args.crossgen2 is True"
 
         mc_files = [os.path.join(self.temp_location, item) for item in os.listdir(self.temp_location) if item.endswith(".mc")]
         if len(mc_files) == 0:
@@ -1074,6 +1450,8 @@ def print_superpmi_failure_code(return_code, coreclr_args):
         logging.warning("Compilation failures")
     elif return_code == 2:
         logging.warning("Asm diffs found")
+    elif return_code == 3:
+        logging.warning("SuperPMI missing data encountered")
     elif return_code == 139 and coreclr_args.host_os != "windows":
         logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
     else:
@@ -1107,7 +1485,7 @@ def save_repro_mc_files(temp_location, coreclr_args, repro_base_command_line):
             shutil.copy2(item, repro_location)
 
         logging.info("")
-        logging.info("Repro .mc files created for failures:")
+        logging.info("Repro {} .mc file(s) created for failures:".format(len(repro_files)))
         for item in repro_files:
             logging.info(item)
 
@@ -1176,7 +1554,7 @@ class SuperPMIReplay:
             repro_flags = []
 
             common_flags = [
-                "-v", "ew",  # only display errors and warnings
+                "-v", "ewmi",  # display errors, warnings, missing, jit info
                 "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
             ]
 
@@ -1201,6 +1579,10 @@ class SuperPMIReplay:
             if self.coreclr_args.spmi_log_file is not None:
                 common_flags += [ "-w", self.coreclr_args.spmi_log_file ]
 
+            if self.coreclr_args.jitoption:
+                for o in self.coreclr_args.jitoption:
+                    repro_flags += "-jitoption", o
+
             common_flags += repro_flags
 
             # For each MCH file that we are going to replay, do the replay and replay post-processing.
@@ -1217,11 +1599,11 @@ class SuperPMIReplay:
 
                 logging.info("Running SuperPMI replay of %s", mch_file)
 
-                flags = common_flags
+                flags = common_flags.copy()
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
                 flags += [
-                    "-f", fail_mcl_file,  # Failing mc List
+                    "-f", fail_mcl_file  # Failing mc List
                 ]
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
@@ -1322,9 +1704,7 @@ class SuperPMIReplayAsmDiffs:
             "COMPlus_JitDiffableDasm": "1",
             "COMPlus_JitEnableNoWayAssert": "1",
             "COMPlus_JitNoForceFallback": "1",
-            "COMPlus_JitRequired": "1",
-            "COMPlus_JitDisasmWithGC": "1",
-            "COMPlus_TieredCompilation": "0" }
+            "COMPlus_JitDisasmWithGC": "1" }
 
         if self.coreclr_args.gcinfo:
             asm_complus_vars.update({
@@ -1343,6 +1723,22 @@ class SuperPMIReplayAsmDiffs:
         altjit_asm_diffs_flags = target_flags
         altjit_replay_flags = target_flags
 
+        if self.coreclr_args.jitoption:
+            logging.warning("Ignoring -jitoption; use -base_jit_option or -diff_jit_option instead");
+
+        base_option_flags = []
+        if self.coreclr_args.base_jit_option:
+            for o in self.coreclr_args.base_jit_option:
+                base_option_flags += "-jitoption", o
+        base_option_flags_for_diff_artifact = base_option_flags
+
+        diff_option_flags = []
+        diff_option_flags_for_diff_artifact = []
+        if self.coreclr_args.diff_jit_option:
+            for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+                diff_option_flags_for_diff_artifact += "-jitoption", o
+
         if self.coreclr_args.altjit:
             altjit_asm_diffs_flags += [
                 "-jitoption", "force", "AltJit=*",
@@ -1360,7 +1756,7 @@ class SuperPMIReplayAsmDiffs:
         files_with_asm_diffs = []
         files_with_replay_failures = []
 
-        with TempDir(self.coreclr_args.temp_dir) as temp_location:
+        with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
             logging.debug("")
             logging.debug("Temp Location: %s", temp_location)
             logging.debug("")
@@ -1386,12 +1782,14 @@ class SuperPMIReplayAsmDiffs:
                 else:
                     flags = [
                         "-a",  # Asm diffs
-                        "-v", "ew",  # only display errors and warnings
+                        "-v", "ewmi",  # display errors, warnings, missing, jit info
                         "-f", fail_mcl_file,  # Failing mc List
                         "-diffMCList", diff_mcl_file,  # Create all of the diffs in an mcl file
                         "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
                     ]
                     flags += altjit_asm_diffs_flags
+                    flags += base_option_flags
+                    flags += diff_option_flags
 
                     if not self.coreclr_args.sequential:
                         flags += [ "-p" ]
@@ -1480,7 +1878,7 @@ class SuperPMIReplayAsmDiffs:
                         # as the LoadLibrary path will be relative to the current directory.
                         with ChangeDir(self.coreclr_args.core_root):
 
-                            async def create_one_artifact(jit_path: str, location: str) -> str:
+                            async def create_one_artifact(jit_path: str, location: str, flags: list[str]) -> str:
                                 command = [self.superpmi_path] + flags + [jit_path, mch_file]
                                 item_path = os.path.join(location, "{}{}".format(item, extension))
                                 with open(item_path, 'w') as file_handle:
@@ -1493,8 +1891,8 @@ class SuperPMIReplayAsmDiffs:
                                 return generated_txt
 
                             # Generate diff and base JIT dumps
-                            base_txt = await create_one_artifact(self.base_jit_path, base_location)
-                            diff_txt = await create_one_artifact(self.diff_jit_path, diff_location)
+                            base_txt = await create_one_artifact(self.base_jit_path, base_location, flags + base_option_flags_for_diff_artifact)
+                            diff_txt = await create_one_artifact(self.diff_jit_path, diff_location, flags + diff_option_flags_for_diff_artifact)
 
                             if base_txt != diff_txt:
                                 jit_differences_queue.put_nowait(item)
@@ -1547,7 +1945,7 @@ class SuperPMIReplayAsmDiffs:
                         path_var = os.environ.get("PATH")
                         if path_var is not None:
                             jit_analyze_file = "jit-analyze.bat" if platform.system() == "Windows" else "jit-analyze.sh"
-                            jit_analyze_path = find_file(jit_analyze_file, path_var.split(";"))
+                            jit_analyze_path = find_file(jit_analyze_file, path_var.split(os.pathsep))
                             if jit_analyze_path is not None:
                                 # It appears we have a built jit-analyze on the path, so try to run it.
                                 command = [ jit_analyze_path, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
@@ -1645,8 +2043,7 @@ def determine_coredis_tools(coreclr_args):
             logging.warning("Warning: Core_Root does not exist at \"%s\"; creating it now", coreclr_args.core_root)
             os.makedirs(coreclr_args.core_root)
         coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
-        logging.info("Download: %s -> %s", coredistools_uri, coredistools_location)
-        urllib.request.urlretrieve(coredistools_uri, coredistools_location)
+        download_one_url(coredistools_uri, coredistools_location)
 
     assert os.path.isfile(coredistools_location)
     return coredistools_location
@@ -1673,7 +2070,7 @@ def determine_pmi_location(coreclr_args):
         logging.info("Using PMI at %s", pmi_location)
     else:
         path_var = os.environ.get("PATH")
-        pmi_location = find_file("pmi.dll", path_var.split(";")) if path_var is not None else None
+        pmi_location = find_file("pmi.dll", path_var.split(os.pathsep)) if path_var is not None else None
         if pmi_location is not None:
             logging.info("Using PMI found on PATH at %s", pmi_location)
         else:
@@ -1682,8 +2079,7 @@ def determine_pmi_location(coreclr_args):
                 logging.info("Using PMI found at %s", pmi_location)
             else:
                 pmi_uri = az_blob_storage_superpmi_container_uri + "/pmi/pmi.dll"
-                logging.info("Download: %s -> %s", pmi_uri, pmi_location)
-                urllib.request.urlretrieve(pmi_uri, pmi_location)
+                download_one_url(pmi_uri, pmi_location)
 
     assert os.path.isfile(pmi_location)
     return pmi_location
@@ -1716,7 +2112,7 @@ def determine_jit_name(coreclr_args):
         raise RuntimeError("Unknown OS.")
 
 
-def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_location=True, search_path=True):
+def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_location=True, search_path=True, throw_on_not_found=True):
     """ Find a tool or any specified file (e.g., clrjit.dll) and return the full path to that tool if found.
 
     Args:
@@ -1749,12 +2145,15 @@ def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_loc
     if search_path:
         path_var = os.environ.get("PATH")
         if path_var is not None:
-            tool_path = find_file(tool_name, path_var.split(";"))
+            tool_path = find_file(tool_name, path_var.split(os.pathsep))
             if tool_path is not None:
                 logging.debug("Using %s from PATH: %s", tool_name, tool_path)
                 return tool_path
 
-    raise RuntimeError("Tool " + tool_name + " not found. Have you built the runtime repo and created a Core_Root, or put it on your PATH?")
+    if throw_on_not_found:
+        raise RuntimeError("Tool " + tool_name + " not found. Have you built the runtime repo and created a Core_Root, or put it on your PATH?")
+
+    return None
 
 
 def determine_superpmi_tool_name(coreclr_args):
@@ -1821,6 +2220,24 @@ def determine_mcs_tool_path(coreclr_args):
     return find_tool(coreclr_args, mcs_tool_name)
 
 
+def determine_dotnet_tool_name(coreclr_args):
+    """ Determine the dotnet tool name based on the OS
+
+    Args:
+        coreclr_args (CoreclrArguments): parsed args
+
+    Return:
+        (str) Name of the dotnet tool to use
+    """
+
+    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+        return "dotnet"
+    elif coreclr_args.host_os == "windows":
+        return "dotnet.exe"
+    else:
+        raise RuntimeError("Unsupported OS.")
+
+
 def determine_jit_ee_version(coreclr_args):
     """ Determine the JIT-EE version to use.
 
@@ -1861,6 +2278,7 @@ def determine_jit_ee_version(coreclr_args):
                 match_obj = re.search(r'^constexpr GUID JITEEVersionIdentifier *= *{ */\* *([^ ]*) *\*/', line)
                 if match_obj is not None:
                     jiteeversionguid_h_jit_ee_version = match_obj.group(1)
+                    jiteeversionguid_h_jit_ee_version = jiteeversionguid_h_jit_ee_version.lower()
                     logging.info("Using JIT/EE Version from jiteeversionguid.h: %s", jiteeversionguid_h_jit_ee_version)
                     return jiteeversionguid_h_jit_ee_version
             logging.warning("Warning: couldn't find JITEEVersionIdentifier in %s; is the file corrupt?", jiteeversionguid_h_path)
@@ -1872,6 +2290,7 @@ def determine_jit_ee_version(coreclr_args):
     return_code = proc.returncode
     if return_code == 0:
         mcs_jit_ee_version = stdout_jit_ee_version.decode('utf-8').strip()
+        mcs_jit_ee_version = mcs_jit_ee_version.lower()
         logging.info("Using JIT/EE Version from mcs: %s", mcs_jit_ee_version)
         return mcs_jit_ee_version
 
@@ -1896,14 +2315,16 @@ def print_platform_specific_environment_vars(loglevel, coreclr_args, var, value)
         logging.log(loglevel, "export %s=%s", var, value)
 
 
-def list_superpmi_collections_container_via_rest_api(url_filter=lambda unused: True):
+def list_superpmi_collections_container_via_rest_api(path_filter=lambda unused: True):
     """ List the superpmi collections using the Azure Storage REST api
 
     Args:
-        url_filter (lambda: string -> bool): filter to apply to the list. The filter takes a URL and returns True if this URL is acceptable.
+        path_filter (lambda: string -> bool): filter to apply to the list. The filter takes a relative
+            collection path and returns True if this path is acceptable.
 
     Returns:
-        urls (list): set of collection URLs in Azure Storage that match the filter.
+        Returns a list of collections, each element a relative path with:
+        <jit-ee-guid>/<os>/<architecture>/<filename>
 
     Notes:
         This method does not require installing the Azure Storage python package.
@@ -1922,18 +2343,18 @@ def list_superpmi_collections_container_via_rest_api(url_filter=lambda unused: T
 
     # Contents is an XML file with contents like:
     #
-    # <EnumerationResults ContainerName="https://clrjit.blob.core.windows.net/superpmi">
+    # <EnumerationResults ContainerName="https://clrjit.blob.core.windows.net/superpmi/collections">
     #   <Blobs>
     #     <Blob>
     #       <Name>jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip</Name>
-    #       <Url>https://clrjit.blob.core.windows.net/superpmi/jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip</Url>
+    #       <Url>https://clrjit.blob.core.windows.net/superpmi/collections/jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip</Url>
     #       <Properties>
     #         ...
     #       </Properties>
     #     </Blob>
     #     <Blob>
     #       <Name>jit-ee-guid/Linux/x64/Linux.x64.Checked.mch.zip</Name>
-    #       <Url>https://clrjit.blob.core.windows.net/superpmi/jit-ee-guid/Linux/x64/Linux.x64.Checked.mch.zip</Url>
+    #       <Url>https://clrjit.blob.core.windows.net/superpmi/collections/jit-ee-guid/Linux/x64/Linux.x64.Checked.mch.zip</Url>
     #     ... etc. ...
     #   </Blobs>
     # </EnumerationResults>
@@ -1941,14 +2362,73 @@ def list_superpmi_collections_container_via_rest_api(url_filter=lambda unused: T
     # We just want to extract the <Url> entries. We could probably use an XML parsing package, but we just
     # use regular expressions.
 
+    url_prefix = az_blob_storage_superpmi_container_uri + "/" + az_collections_root_folder + "/"
+
     urls_split = contents.split("<Url>")[1:]
-    urls = []
+    paths = []
     for item in urls_split:
         url = item.split("</Url>")[0].strip()
-        if url_filter(url):
-            urls.append(url)
+        path = remove_prefix(url, url_prefix)
+        if path_filter(path):
+            paths.append(path)
 
-    return urls
+    return paths
+
+
+def list_superpmi_collections_container_via_azure_api(path_filter=lambda unused: True):
+    """ List the superpmi collections using the Azure Storage API
+
+    Args:
+        path_filter (lambda: string -> bool): filter to apply to the list. The filter takes a relative
+            collection path and returns True if this path is acceptable.
+
+    Returns:
+        Returns a list of collections, each element a relative path with:
+        <jit-ee-guid>/<os>/<architecture>/<filename>
+    """
+
+    require_azure_storage_libraries()
+
+    superpmi_container_url = az_blob_storage_superpmi_container_uri
+
+    paths = []
+    ok = True
+    try:
+        az_credential = AzureCliCredential()
+        container = ContainerClient.from_container_url(superpmi_container_url, credential=az_credential)
+        blob_name_prefix = az_collections_root_folder + "/"
+        blob_list = container.list_blobs(name_starts_with=blob_name_prefix, retry_total=0)
+        for blob in blob_list:
+            # The blob name looks something like:
+            #    collections/f556df6c-b9c7-479c-b895-8e1f1959fe59/Linux/arm/tests.pmi.Linux.arm.checked.mch.zip
+            # remove the leading "collections/" part of the name.
+            path = remove_prefix(blob.name, blob_name_prefix)
+            if path_filter(path):
+                paths.append(path)
+    except Exception as exception:
+        logging.error("Failed to list collections: %s", superpmi_container_url)
+        report_azure_error()
+        logging.error(exception)
+        return None
+
+    return paths
+
+
+def list_superpmi_collections_container(path_filter=lambda unused: True):
+    """ List the superpmi collections using either the REST API or the Azure API with authentication.
+
+    Args:
+        path_filter (lambda: string -> bool): filter to apply to the list. The filter takes a relative
+            collection path and returns True if this path is acceptable.
+
+    Returns:
+        Returns a list of collections, each element a relative path with:
+        <jit-ee-guid>/<os>/<architecture>/<filename>
+    """
+    if authenticate_using_azure:
+        return list_superpmi_collections_container_via_azure_api(path_filter)
+    else:
+        return list_superpmi_collections_container_via_rest_api(path_filter)
 
 
 def process_mch_files_arg(coreclr_args):
@@ -2050,24 +2530,26 @@ def download_mch(coreclr_args, include_baseline_jit=False):
         logging.info("Found download cache directory \"%s\" and --force_download not set; skipping download", default_mch_dir)
         return [ default_mch_dir ]
 
-    blob_filter_string = "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
-    blob_prefix_filter = "{}/{}/{}".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder, blob_filter_string).lower()
+    blob_filter_string = "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
 
-    # Determine if a URL in Azure Storage should be allowed. The URL looks like:
-    #   https://clrjit.blob.core.windows.net/superpmi/jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
+    # Determine if a URL in Azure Storage should be allowed. The path looks like:
+    #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
     # Filter to just the current jit-ee-guid, OS, and architecture.
     # Include both MCH and MCT files as well as the CLR JIT dll (processed below).
     # If there are filters, only download those matching files.
-    def filter_superpmi_collections(url):
-        url = url.lower()
-        if "clrjit" in url and not include_baseline_jit:
+    def filter_superpmi_collections(path):
+        path = path.lower()
+        if "clrjit" in path and not include_baseline_jit:
             return False
-        return url.startswith(blob_prefix_filter) and ((coreclr_args.filter is None) or any((filter_item.lower() in url) for filter_item in coreclr_args.filter))
+        return path.startswith(blob_filter_string) and ((coreclr_args.filter is None) or any((filter_item.lower() in path) for filter_item in coreclr_args.filter))
 
-    urls = list_superpmi_collections_container_via_rest_api(filter_superpmi_collections)
-    if urls is None or len(urls) == 0:
-        print("No MCH files to download from {}".format(blob_prefix_filter))
+    paths = list_superpmi_collections_container(filter_superpmi_collections)
+    if paths is None or len(paths) == 0:
+        print("No MCH files to download from {}".format(blob_filter_string))
         return []
+
+    blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
+    urls = [blob_url_prefix + path for path in paths]
 
     download_urls(urls, default_mch_dir)
     return [ default_mch_dir ]
@@ -2110,15 +2592,8 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
                         os.remove(item)
 
                 download_path = os.path.join(temp_location, item_name)
-
-                try:
-                    if verbose:
-                        logging.info("Download: %s -> %s", url, download_path)
-                    urllib.request.urlretrieve(url, download_path)
-                except urllib.error.HTTPError as httperror:
-                    if (httperror == 404) and fail_if_not_found:
-                        raise httperror
-                    # Otherwise, swallow the error and continue to next file.
+                ok = download_one_url(url, download_path, fail_if_not_found)
+                if not ok:
                     continue
 
                 if verbose:
@@ -2141,17 +2616,10 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
                 if not os.path.isdir(target_dir):
                     os.makedirs(target_dir)
                 download_path = os.path.join(target_dir, item_name)
-
-                try:
-                    if verbose:
-                        logging.info("Download: %s -> %s", url, download_path)
-                    urllib.request.urlretrieve(url, download_path)
-                    local_files.append(download_path)
-                except urllib.error.HTTPError as httperror:
-                    if (httperror == 404) and fail_if_not_found:
-                        raise httperror
-                    # Otherwise, swallow the error and continue to next file.
+                ok = download_one_url(url, download_path, fail_if_not_found)
+                if not ok:
                     continue
+                local_files.append(download_path)
 
     return local_files
 
@@ -2159,11 +2627,11 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
 def upload_mch(coreclr_args):
     """ Upload a set of MCH files. Each MCH file is first ZIP compressed to save data space and upload/download time.
 
-        TODO: Upload baseline altjits or cross-compile JITs?
-
     Args:
         coreclr_args (CoreclrArguments): parsed args
     """
+
+    require_azure_storage_libraries(need_azure_identity=False)
 
     def upload_blob(file, blob_name):
         blob_client = blob_service_client.get_blob_client(container=az_superpmi_container_name, blob=blob_name)
@@ -2199,15 +2667,6 @@ def upload_mch(coreclr_args):
     for item in files_to_upload:
         logging.info("  %s", item)
 
-    try:
-        from azure.storage.blob import BlobServiceClient
-
-    except:
-        logging.error("Please install:")
-        logging.error("  pip install azure-storage-blob")
-        logging.error("See also https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python")
-        raise RuntimeError("Missing azure storage package.")
-
     blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=coreclr_args.az_storage_key)
     blob_folder_name = "{}/{}/{}/{}".format(az_collections_root_folder, coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
 
@@ -2231,24 +2690,6 @@ def upload_mch(coreclr_args):
             logging.info("Uploading: %s (%s) -> %s", file, zip_path, az_blob_storage_superpmi_container_uri + "/" + blob_name)
             upload_blob(zip_path, blob_name)
 
-        # Upload a JIT matching the MCH files just collected.
-        # Consider: rename uploaded JIT to include build_type
-
-        jit_location = coreclr_args.jit_location
-        if jit_location is None:
-            jit_name = determine_jit_name(coreclr_args)
-            jit_location = os.path.join(coreclr_args.core_root, jit_name)
-
-        assert os.path.isfile(jit_location)
-
-        jit_name = os.path.basename(jit_location)
-        jit_blob_name = "{}/{}".format(blob_folder_name, jit_name)
-        logging.info("Uploading: %s -> %s", jit_location, az_blob_storage_superpmi_container_uri + "/" + jit_blob_name)
-        upload_blob(jit_location, jit_blob_name)
-
-        jit_stat_result = os.stat(jit_location)
-        total_bytes_uploaded += jit_stat_result.st_size
-
     logging.info("Uploaded {:n} bytes".format(total_bytes_uploaded))
 
 
@@ -2259,20 +2700,22 @@ def list_collections_command(coreclr_args):
         coreclr_args (CoreclrArguments) : parsed args
     """
 
-    blob_filter_string = "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
-    blob_prefix_filter = "{}/{}/{}".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder, blob_filter_string).lower()
+    blob_filter_string = "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
 
     # Determine if a URL in Azure Storage should be allowed. The URL looks like:
     #   https://clrjit.blob.core.windows.net/superpmi/jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
     # By default, filter to just the current jit-ee-guid, OS, and architecture.
-    # Only include MCH files, not clrjit.dll or MCT (TOC) files.
-    def filter_superpmi_collections(url: str):
-        url = url.lower()
-        return (url.endswith(".mch") or url.endswith(".mch.zip")) and (coreclr_args.all or url.startswith(blob_prefix_filter))
+    # Only include MCH files, not MCT (TOC) files.
+    def filter_superpmi_collections(path: str):
+        path = path.lower()
+        return (path.endswith(".mch") or path.endswith(".mch.zip")) and (coreclr_args.all or path.startswith(blob_filter_string))
 
-    urls = list_superpmi_collections_container_via_rest_api(filter_superpmi_collections)
-    if urls is None:
+    paths = list_superpmi_collections_container(filter_superpmi_collections)
+    if paths is None:
         return
+
+    blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
+    urls = [blob_url_prefix + path for path in paths]
 
     count = len(urls)
 
@@ -2304,7 +2747,7 @@ def list_collections_local_command(coreclr_args):
     # Determine if a file should be allowed. The filenames look like:
     #   c:\gh\runtime\artifacts\spmi\mch\a5eec3a4-4176-43a7-8c2b-a05b551d4f49.windows.x64\corelib.windows.x64.Checked.mch
     #   c:\gh\runtime\artifacts\spmi\mch\a5eec3a4-4176-43a7-8c2b-a05b551d4f49.windows.x64\corelib.windows.x64.Checked.mch.mct
-    # Only include MCH files, not clrjit.dll or MCT (TOC) files.
+    # Only include MCH files, not MCT (TOC) files.
     def filter_superpmi_collections(path: str):
         return path.lower().endswith(".mch")
 
@@ -2406,8 +2849,8 @@ def process_base_jit_path_arg(coreclr_args):
         1. Determine the current git hash using:
              git rev-parse HEAD
            or use the `-git_hash` argument (call the result `git_hash`).
-        2. Determine the baseline: where does this hash meet `master` using:
-             git merge-base `git_hash` master
+        2. Determine the baseline: where does this hash meet `main` using:
+             git merge-base `git_hash` main
            or use the `-base_git_hash` argument (call the result `base_git_hash`).
         3. If the `-base_git_hash` argument is used, use that directly as the exact git
            hash of the baseline JIT to use.
@@ -2462,7 +2905,7 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # We've got the current hash; figure out the baseline hash.
-            command = [ "git", "merge-base", current_hash, "master" ]
+            command = [ "git", "merge-base", current_hash, "main" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_git_merge_base, _ = proc.communicate()
@@ -2602,8 +3045,9 @@ def setup_args(args):
                 os.makedirs(coreclr_args.spmi_location)
     else:
         log_file = coreclr_args.log_file
-        log_dir = os.path.basename(log_file)
+        log_dir = os.path.dirname(log_file)
         if not os.path.isdir(log_dir):
+            print("Creating log directory {} for log file {}".format(log_dir, log_file))
             os.makedirs(log_dir)
 
     if log_file is not None:
@@ -2612,7 +3056,7 @@ def setup_args(args):
         if os.path.isfile(log_file):
             logging.critical("Warning: deleting existing log file %s", log_file)
             os.remove(log_file)
-        file_handler = logging.FileHandler(log_file)
+        file_handler = logging.FileHandler(log_file, encoding='utf8')
         file_handler.setLevel(logging.DEBUG)
         logger.addHandler(file_handler)
         logging.critical("================ Logging to %s", log_file)
@@ -2685,6 +3129,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set spmi_log_file.")
 
+        coreclr_args.verify(args,
+                            "jitoption",
+                            lambda unused: True,
+                            "Unable to set jitoption")
+
         if coreclr_args.spmi_log_file is not None and not coreclr_args.sequential:
             print("-spmi_log_file requires --sequential")
             sys.exit(1)
@@ -2735,8 +3184,8 @@ def setup_args(args):
 
         coreclr_args.verify(args,
                             "collection_command",
-                            lambda command: command is None or os.path.isfile(command),
-                            "Unable to find script.")
+                            lambda unused: True,
+                            "Unable to set collection_command.")
 
         coreclr_args.verify(args,
                             "collection_args",
@@ -2755,10 +3204,20 @@ def setup_args(args):
                             "Unable to set crossgen")
 
         coreclr_args.verify(args,
+                            "crossgen2",
+                            lambda unused: True,
+                            "Unable to set crossgen2")
+
+        coreclr_args.verify(args,
                             "assemblies",
                             lambda unused: True,
                             "Unable to set assemblies",
                             modify_arg=lambda items: [item for item in items if os.path.isdir(item) or os.path.isfile(item)])
+
+        coreclr_args.verify(args,
+                            "exclude",
+                            lambda unused: True,
+                            "Unable to set exclude")
 
         coreclr_args.verify(args,
                             "pmi_location",
@@ -2811,26 +3270,72 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set use_zapdisable")
 
-        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen is False):
-            print("Either a collection command or `--pmi` or `--crossgen` must be specified")
+        coreclr_args.verify(args,
+                            "tiered_compilation",
+                            lambda unused: True,
+                            "Unable to set tiered_compilation")
+
+        if (args.collection_command is None) and (args.pmi is False) and (args.crossgen is False) and (args.crossgen2 is False):
+            print("Either a collection command or `--pmi` or `--crossgen` or `--crossgen2` must be specified")
             sys.exit(1)
 
         if (args.collection_command is not None) and (len(args.assemblies) > 0):
             print("Don't specify `-assemblies` if a collection command is given")
             sys.exit(1)
 
-        if ((args.pmi is True) or (args.crossgen is True)) and (len(args.assemblies) == 0):
-            print("Specify `-assemblies` if `--pmi` or `--crossgen` is given")
+        if (args.collection_command is not None) and (len(args.exclude) > 0):
+            print("Don't specify `-exclude` if a collection command is given")
+            sys.exit(1)
+
+        if ((args.pmi is True) or (args.crossgen is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
+            print("Specify `-assemblies` if `--pmi` or `--crossgen` or `--crossgen2` is given")
             sys.exit(1)
 
         if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None
-            assert (args.pmi is True) or (args.crossgen is True)
+            assert (args.pmi is True) or (args.crossgen is True) or (args.crossgen2 is True)
             assert len(args.assemblies) > 0
 
         if coreclr_args.merge_mch_files:
             assert len(coreclr_args.mch_files) > 0
             coreclr_args.skip_collection_step = True
+
+        if coreclr_args.crossgen2:
+            # Can we find crossgen2?
+            crossgen2_tool_name = "crossgen2.dll"
+            crossgen2_tool_path = os.path.abspath(os.path.join(coreclr_args.core_root, "crossgen2", crossgen2_tool_name))
+            if not os.path.exists(crossgen2_tool_path):
+                print("`--crossgen2` is specified, but couldn't find " + crossgen2_tool_path + ". (Is it built?)")
+                sys.exit(1)
+
+            # Which dotnet will we use to run it?
+            dotnet_script_name = "dotnet.cmd" if platform.system() == "Windows" else "dotnet.sh"
+            dotnet_tool_path = os.path.abspath(os.path.join(coreclr_args.runtime_repo_location, dotnet_script_name))
+            if not os.path.exists(dotnet_tool_path):
+                dotnet_tool_name = determine_dotnet_tool_name(coreclr_args)
+                dotnet_tool_path = find_tool(coreclr_args, dotnet_tool_name, search_core_root=False, search_product_location=False, search_path=True, throw_on_not_found=False)  # Only search path
+
+            coreclr_args.crossgen2_tool_path = crossgen2_tool_path
+            coreclr_args.dotnet_tool_path = dotnet_tool_path
+            logging.debug("Using crossgen2 tool %s", coreclr_args.crossgen2_tool_path)
+            if coreclr_args.dotnet_tool_path is not None:
+                logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
+
+        if coreclr_args.temp_dir is not None:
+            coreclr_args.temp_dir = os.path.abspath(coreclr_args.temp_dir)
+            logging.debug("Using temp_dir %s", coreclr_args.temp_dir)
+
+        if coreclr_args.collection_command is not None:
+            if os.path.isfile(coreclr_args.collection_command):
+                coreclr_args.collection_command = os.path.abspath(coreclr_args.collection_command)
+            else:
+                # Look on path and in Core_Root. Searching Core_Root is useful so you can just specify "corerun.exe" as the collection command in it can be found.
+                collection_tool_path = find_tool(coreclr_args, coreclr_args.collection_command, search_core_root=True, search_product_location=False, search_path=True, throw_on_not_found=False)
+                if collection_tool_path is None:
+                    print("Couldn't find collection command \"{}\"".format(coreclr_args.collection_command))
+                    sys.exit(1)
+                coreclr_args.collection_command = collection_tool_path
+                logging.info("Using collection command from PATH: \"%s\"", coreclr_args.collection_command)
 
     elif coreclr_args.mode == "replay":
 
@@ -2925,6 +3430,16 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set diff_jit_dump.")
 
+        coreclr_args.verify(args,
+                            "base_jit_option",
+                            lambda unused: True,
+                            "Unable to set base_jit_option.")
+
+        coreclr_args.verify(args,
+                            "diff_jit_option",
+                            lambda unused: True,
+                            "Unable to set diff_jit_option.")
+
         process_base_jit_path_arg(coreclr_args)
 
         jit_in_product_location = False
@@ -2972,6 +3487,10 @@ def setup_args(args):
                             os.path.isfile,
                             "Unable to find coredistools.")
 
+        if coreclr_args.temp_dir is not None:
+            coreclr_args.temp_dir = os.path.abspath(coreclr_args.temp_dir)
+            logging.debug("Using temp_dir %s", coreclr_args.temp_dir)
+
     elif coreclr_args.mode == "upload":
 
         verify_target_args()
@@ -2982,11 +3501,6 @@ def setup_args(args):
                             lambda item: item is not None,
                             "Specify az_storage_key or set environment variable CLRJIT_AZ_KEY to the key to use.",
                             modify_arg=lambda arg: os.environ["CLRJIT_AZ_KEY"] if arg is None and "CLRJIT_AZ_KEY" in os.environ else arg)
-
-        coreclr_args.verify(args,
-                            "jit_location",
-                            lambda unused: True,
-                            "Unable to set jit_location.")
 
         coreclr_args.verify(args,
                             "mch_files",
@@ -3058,11 +3572,6 @@ def main(args):
         print("Please install python 3.7 or greater")
 
         return 1
-
-    # Force tiered compilation off. It will affect both collection and replay.
-    # REVIEW: Is this true for replay? We specifically set this when doing collections. Can we remove this line?
-    #         Or move it more close to the location that requires it, and output to the console that we're setting this?
-    os.environ["COMPlus_TieredCompilation"] = "0"
 
     # Parse the arguments.
 
@@ -3160,6 +3669,7 @@ def main(args):
         logging.debug("Elapsed time: %s", elapsed_time)
 
     elif coreclr_args.mode == "upload":
+
         begin_time = datetime.datetime.now()
 
         logging.info("SuperPMI upload")
@@ -3175,6 +3685,7 @@ def main(args):
         logging.debug("Elapsed time: %s", elapsed_time)
 
     elif coreclr_args.mode == "download":
+
         begin_time = datetime.datetime.now()
 
         logging.info("SuperPMI download")

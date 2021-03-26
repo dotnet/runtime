@@ -351,10 +351,10 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask1 = server.AcceptConnectionAsync(async connection1 =>
                     {
                         await connection1.ReadRequestHeaderAsync();
-                        await connection1.Writer.WriteAsync($"HTTP/1.1 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\n");
+                        await connection1.WriteStringAsync($"HTTP/1.1 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\n");
                         serverAboutToBlock.SetResult(true);
                         await blockServerResponse.Task;
-                        await connection1.Writer.WriteAsync("Content-Length: 5\r\n\r\nhello");
+                        await connection1.WriteStringAsync("Content-Length: 5\r\n\r\nhello");
                     });
 
                     Task get1 = client.GetAsync(url);

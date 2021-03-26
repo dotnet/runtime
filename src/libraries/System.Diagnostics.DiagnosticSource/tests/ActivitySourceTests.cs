@@ -574,10 +574,14 @@ namespace System.Diagnostics.Tests
                 Activity activity = aSource.StartActivity("a2", default, ctx);
 
                 Assert.NotNull(activity);
-                Assert.NotEqual(default, ctx);
-                Assert.Equal(ctx.TraceId, activity.TraceId);
-                Assert.Equal(ctx.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
-                Assert.Equal(default(ActivitySpanId).ToHexString(), ctx.SpanId.ToHexString());
+
+                if (activity.IdFormat == ActivityIdFormat.W3C)
+                {
+                    Assert.NotEqual(default, ctx);
+                    Assert.Equal(ctx.TraceId, activity.TraceId);
+                    Assert.Equal(ctx.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
+                    Assert.Equal(default(ActivitySpanId).ToHexString(), ctx.SpanId.ToHexString());
+                }
             }).Dispose();
         }
 
@@ -603,11 +607,15 @@ namespace System.Diagnostics.Tests
                 Activity activity = aSource.StartActivity("a2", default, null);
 
                 Assert.NotNull(activity);
-                Assert.NotEqual(default, ctx);
-                Assert.Equal(ctx.TraceId, activity.TraceId);
-                Assert.Equal(ctx.SpanId, activity.ParentSpanId);
-                Assert.Equal(default(ActivitySpanId), activity.ParentSpanId);
-                Assert.Equal(default(ActivitySpanId), ctx.SpanId);
+
+                if (activity.IdFormat == ActivityIdFormat.W3C)
+                {
+                    Assert.NotEqual(default, ctx);
+                    Assert.Equal(ctx.TraceId, activity.TraceId);
+                    Assert.Equal(ctx.SpanId, activity.ParentSpanId);
+                    Assert.Equal(default(ActivitySpanId), activity.ParentSpanId);
+                    Assert.Equal(default(ActivitySpanId), ctx.SpanId);
+                }
             }).Dispose();
         }
 
@@ -843,6 +851,370 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(new KeyValuePair<string, object>("tag2", "value2"), activity.TagObjects.ElementAt(1));
                 Assert.Equal(new KeyValuePair<string, object>("SamplerTag1", "SamplerValue1"), activity.TagObjects.ElementAt(2));
             }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RestoreOriginalParentTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new ActivitySource("OriginalParentSource");
+                using ActivityListener listener = new ActivityListener();
+
+                listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(source, activitySource);
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllData;
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
+                ActivitySource.AddActivityListener(listener);
+
+                Assert.Null(Activity.Current);
+
+                using (Activity c = source.StartActivity("Root"))
+                {
+                    Assert.NotNull(Activity.Current);
+                    Assert.Equal("Root", Activity.Current.OperationName);
+
+                    // Create Activity with the parent context to not use Activity.Current as a parent
+                    using (Activity d = source.StartActivity("Child", default, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), default, default)))
+                    {
+                        Assert.NotNull(Activity.Current);
+                        Assert.Equal("Child", Activity.Current.OperationName);
+                    }
+
+                    // Now the child activity stopped. We used to restore null to the Activity.Current but now we restore
+                    // the original parent stored in Activity.Current before we started the Activity.
+                    Assert.NotNull(Activity.Current);
+                    Assert.Equal("Root", Activity.Current.OperationName);
+                }
+                Assert.Null(Activity.Current);
+            }).Dispose();
+        }
+
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestActivityCreate()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource aSource = new ActivitySource("SourceActivityCreatorListener");
+                int counter = 0;
+                Assert.False(aSource.HasListeners());
+
+                // No Listeners. return nulls
+
+                Activity a1 = aSource.CreateActivity("a1", default);
+                Assert.Null(a1);
+                a1 = aSource.CreateActivity("a1", default, "StringParentId");
+                Assert.Null(a1);
+                a1 = aSource.CreateActivity("a1", default, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), default, default));
+                Assert.Null(a1);
+
+                // Enable Listener
+
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                listener.ActivityStarted = activity => counter++;
+                listener.ActivityStopped = activity => counter--;
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                ActivitySource.AddActivityListener(listener);
+                Assert.True(aSource.HasListeners());
+
+                Activity root = Activity.Current;
+
+                using (Activity a2 = aSource.CreateActivity("a2", ActivityKind.Server))
+                {
+                    Assert.NotNull(a2);
+                    Assert.Equal(root, Activity.Current);
+                    Assert.Equal(ActivityKind.Server, a2.Kind);
+                    Assert.Equal(0, counter);
+                    a2.Start();
+                    Assert.Equal(1, counter);
+                    Assert.Equal(a2, Activity.Current);
+                    Assert.Equal(root, a2.Parent);
+
+                    List<KeyValuePair<string, object>> tags = new List<KeyValuePair<string, object>>() { new KeyValuePair<string, object>("Key", "Value") };
+                    List<ActivityLink> links = new List<ActivityLink>() { new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key-value")) };
+                    using (Activity a3 = aSource.CreateActivity("a3", ActivityKind.Client, "ParentId", tags, links))
+                    {
+                        Assert.NotNull(a3);
+                        Assert.Equal(tags, a3.TagObjects);
+                        Assert.Equal(links, a3.Links);
+                        Assert.Equal(ActivityKind.Client, a3.Kind);
+                        Assert.Equal(a2, Activity.Current);
+                        Assert.Equal(1, counter);
+                        a3.Start();
+                        Assert.Equal(2, counter);
+                        Assert.Equal(a3, Activity.Current);
+                        Assert.Null(a3.Parent);
+                        Assert.Equal("ParentId", a3.ParentId);
+
+                        ActivityContext parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None);
+                        using (Activity a4 = aSource.CreateActivity("a4", ActivityKind.Internal, parentContext, tags, links))
+                        {
+                            Assert.NotNull(a4);
+                            Assert.Equal(tags, a4.TagObjects);
+                            Assert.Equal(links, a4.Links);
+                            Assert.Equal(ActivityKind.Internal, a4.Kind);
+                            Assert.Equal(a3, Activity.Current);
+                            Assert.Equal(2, counter);
+                            a4.Start();
+                            Assert.Equal(3, counter);
+                            Assert.Equal(a4, Activity.Current);
+                            Assert.Null(a4.Parent);
+                            Assert.Equal(parentContext.TraceId, a4.TraceId);
+                            Assert.Equal(parentContext.SpanId, a4.ParentSpanId);
+                            Assert.Equal(parentContext.TraceFlags, a4.ActivityTraceFlags);
+                            Assert.Equal(parentContext.TraceState, a4.TraceStateString);
+                        }
+
+                        Assert.Equal(2, counter);
+                        Assert.Equal(a3, Activity.Current);
+                    }
+
+                    Assert.Equal(1, counter);
+                    Assert.Equal(a2, Activity.Current);
+                }
+
+                Assert.Equal(0, counter);
+                Assert.Equal(root, Activity.Current);
+
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestAddingMorePropertiesWithActivityCreate()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource aSource = new ActivitySource("SourceActivityCreator");
+
+                List<KeyValuePair<string, object>> tagsToCheckAgainst = null;
+                List<KeyValuePair<string, string>> baggageToCheckAgainst = null;
+                List<ActivityLink> linksToCheckAgainst = null;
+
+                Activity.Current = null;
+
+                // Enable Listener
+
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                listener.ActivityStarted = activity =>
+                {
+                    Assert.Equal(tagsToCheckAgainst, activity.TagObjects);
+                    Assert.Equal(linksToCheckAgainst, activity.Links);
+                    Assert.Equal(baggageToCheckAgainst, activity.Baggage);
+                };
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                ActivitySource.AddActivityListener(listener);
+
+                ActivityContext ac = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key-value");
+                linksToCheckAgainst = new List<ActivityLink>() {new ActivityLink(ac)};
+
+                using (Activity a = aSource.CreateActivity("a", ActivityKind.Server, default(string), default, linksToCheckAgainst))
+                {
+                    Assert.NotNull(a);
+                    a.AddTag("tag1", "value1");
+                    a.AddBaggage("baggage1", "value1");
+
+                    tagsToCheckAgainst = new List<KeyValuePair<string, object>>() { new KeyValuePair<string, object>("tag1", "value1")};
+                    baggageToCheckAgainst = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("baggage1", "value1")};
+
+                    a.Start();
+                }
+            }).Dispose();
+        }
+
+        // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Here is the sequence for how we determin the IdFormat of the Activity we create using ActivitySource:
+        // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        //  - Use the IdFormat passed to the ActivitySource.Create if it is not "Unknown". Otherwise, goto next step.
+        //  - If Activity.ForceDefaultIdFormat is true, then use the value Activity.DefaultIdFormat.  Otherwise, goto next step.
+        //  - If the parentId string is null and parent ActivityContext is default and we have Activity.Current != null, then use Activity.Current.IdFormat. Otherwise, goto next step.
+        //  - If the parentId string is null and parent ActivityContext is default and we have Activity.Current == null, then use Activity.DefaultIdFormat. Otherwise, goto next step.
+        //  - If we have non default parent ActivityContext, then use W3C. Otherwise, goto next step.
+        //  - if we have non null parent id string, try to parse it to W3C. If parsing succeeded then use W3C format. otherwise use Hierarchical format.
+        // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+        //           --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        //           Activity.DefaultIdFormat, Activity.Create(idFormat),   Activity.Current.IdFormat,      parent id,  default parent context, validate trace Id,  expected create format, expected start format
+        //           --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        [InlineData($"Unknown,                  Unknown,                    Unknown,                        null,       true,                   false,              Default,                Default")]
+        [InlineData($"Unknown,                  Unknown,                    W3C,                            null,       true,                   false,              W3C,                    W3C")]
+        [InlineData($"Unknown,                  Unknown,                    Hierarchical,                   null,       true,                   false,              Hierarchical,           Hierarchical")]
+
+        [InlineData($"Unknown,                  Unknown,                    Unknown,                        NonWC3,     true,                   false,              Hierarchical,           Hierarchical")]
+        [InlineData($"Unknown,                  Unknown,                    Unknown,                        W3C,        true,                   false,              W3C,                    W3C")]
+        [InlineData($"Unknown,                  Unknown,                    Unknown,                        null,       false,                  false,              W3C,                    W3C")]
+
+        [InlineData($"W3C,                      Unknown,                    Unknown,                        null,       true,                   false,              W3C,                    W3C")]
+        [InlineData($"Hierarchical,             Unknown,                    Unknown,                        null,       true,                   false,              Hierarchical,           Hierarchical")]
+        [InlineData($"W3C,                      Unknown,                    Hierarchical,                   null,       true,                   false,              W3C,                    W3C")]
+        [InlineData($"Hierarchical,             Unknown,                    W3C,                            null,       true,                   false,              Hierarchical,           Hierarchical")]
+        [InlineData($"W3C,                      Unknown,                    Unknown,                        NonW3C,     true,                   false,              W3C,                    W3C")]
+        [InlineData($"Hierarchical,             Unknown,                    Unknown,                        W3C,        true,                   false,              Hierarchical,           Hierarchical")]
+        [InlineData($"W3C,                      Unknown,                    Unknown,                        null,       false,                  false,              W3C,                    W3C")]
+        [InlineData($"Hierarchical,             Unknown,                    Unknown,                        null,       false,                  false,              Hierarchical,           Hierarchical")]
+
+        [InlineData($"Unknown,                  W3C,                        Unknown,                        null,       true,                   false,              W3C,                    Default")]
+        [InlineData($"Hierarchical,             W3C,                        Unknown,                        null,       true,                   false,              W3C,                    Hierarchical")]
+        [InlineData($"Unknown,                  W3C,                        Hierarchical,                   null,       true,                   false,              W3C,                    Hierarchical")]
+        [InlineData($"Hierarchical,             W3C,                        Hierarchical,                   null,       true,                   false,              W3C,                    Hierarchical")]
+        [InlineData($"Hierarchical,             W3C,                        Hierarchical,                   NonW3C,     true,                   false,              W3C,                    Hierarchical")]
+
+        [InlineData($"Unknown,                  Hierarchical,               Unknown,                        null,       true,                   false,              Hierarchical,           Default")]
+        [InlineData($"W3C,                      Hierarchical,               Unknown,                        null,       true,                   false,              Hierarchical,           W3C")]
+        [InlineData($"Unknown,                  Hierarchical,               W3C,                            null,       true,                   false,              Hierarchical,           W3C")]
+        [InlineData($"W3C,                      Hierarchical,               Hierarchical,                   null,       true,                   false,              Hierarchical,           W3C")]
+        [InlineData($"W3C,                      Hierarchical,               Hierarchical,                   W3C,        true,                   false,              Hierarchical,           W3C")]
+        [InlineData($"Unknown,                  Hierarchical,               Unknown,                        null,       false,                  false,              Hierarchical,           W3C")]
+        [InlineData($"Unknown,                  W3C,                        Unknown,                        null,       false,                  false,              W3C,                    W3C")]
+
+        [InlineData($"Unknown,                  W3C,                        Unknown,                        null,       true,                   true,               W3C,                    Default")]
+        [InlineData($"W3C,                      Unknown,                    Unknown,                        null,       true,                   true,               W3C,                    W3C")]
+        [InlineData($"Unknown,                  Unknown,                    W3C,                            null,       true,                   true,               W3C,                    W3C")]
+        [InlineData($"Unknown,                  Unknown,                    Unknown,                        W3C,        true,                   true,               W3C,                    W3C")]
+        [InlineData($"Unknown,                  Unknown,                    Unknown,                        null,       false,                  true,               W3C,                    W3C")]
+        [InlineData($"W3C,                      Unknown,                    Unknown,                        NonW3C,     true,                   true,               W3C,                    W3C")]
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestIdFormats(string data)
+        {
+            RemoteExecutor.Invoke((d) => {
+
+                //
+                // Extract the data
+                //
+                string [] parts = d.Split(',');
+
+                ActivityIdFormat defaultId = (ActivityIdFormat) Enum.Parse(typeof(ActivityIdFormat), parts[0].Trim());
+                ActivityIdFormat idToForce = (ActivityIdFormat) Enum.Parse(typeof(ActivityIdFormat), parts[1].Trim());
+                ActivityIdFormat parentFormat = (ActivityIdFormat) Enum.Parse(typeof(ActivityIdFormat), parts[2].Trim());
+                string parentId = parts[3].Trim();
+                if (parentId == "null")
+                {
+                    parentId = null;
+                }
+                else if (parentId == "W3C")
+                {
+                    parentId = "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
+                }
+
+                bool defaultParentContext = bool.Parse(parts[4].Trim());
+                bool checkTraceId         = bool.Parse(parts[5].Trim());
+
+                ActivityIdFormat expectedCreateFormat = parts[6].Trim() == "Default" ? Activity.DefaultIdFormat : (ActivityIdFormat) Enum.Parse(typeof(ActivityIdFormat), parts[6].Trim());
+                ActivityIdFormat expectedStartFormat  = parts[7].Trim() == "Default" ? Activity.DefaultIdFormat : (ActivityIdFormat) Enum.Parse(typeof(ActivityIdFormat), parts[7].Trim());
+
+                using ActivitySource aSource = new ActivitySource("FormatIdSource");
+                ActivityTraceId traceId = default;
+                bool sampleCallbackIsInvoked = false;
+
+                //
+                //  Listener Creation
+                //
+
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
+                {
+                    if (checkTraceId)
+                        traceId = activityOptions.TraceId;
+
+                    return ActivitySamplingResult.AllDataAndRecorded;
+                };
+
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    if (checkTraceId)
+                        traceId = activityOptions.TraceId;
+
+                    return ActivitySamplingResult.AllDataAndRecorded;
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                // Creating another listener which provides Sample callback but not providing SampleUsingParentId callback.
+                // This listener will confirm when creating activities with WC3 Ids, the Sample callback will always get called.
+                using ActivityListener listener1 = new ActivityListener();
+                listener1.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                listener1.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    sampleCallbackIsInvoked = true;
+                    if (checkTraceId)
+                        traceId = activityOptions.TraceId;
+
+                    return ActivitySamplingResult.AllDataAndRecorded;
+                };
+
+                ActivitySource.AddActivityListener(listener1);
+
+                //
+                //  Set the global Default Id Format
+                //
+
+                if (defaultId != ActivityIdFormat.Unknown)
+                {
+                    Activity.ForceDefaultIdFormat = true;
+                    Activity.DefaultIdFormat = defaultId;
+                }
+
+                //
+                // Create Parent Activity with specific Id Format
+                //
+
+                if (parentFormat != ActivityIdFormat.Unknown)
+                {
+                    Activity parent = new Activity("Root");
+                    parent.SetIdFormat(parentFormat);
+                    parent.Start();
+                }
+
+                //
+                // Initialize the paren Context
+                //
+
+                ActivityContext parentContext = defaultParentContext ? default : new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), default, default);
+
+                //
+                // Create and Test ActivitySource.CreateActivity
+                //
+
+                Activity a = parentId == null ? aSource.CreateActivity("a", ActivityKind.Server, parentContext, default, default, idToForce) :
+                                                aSource.CreateActivity("a", ActivityKind.Server, parentId, default, default, idToForce);
+
+                Assert.NotNull(a);
+                a.Start();
+
+                Assert.Equal(expectedCreateFormat, a.IdFormat);
+                if (checkTraceId)
+                {
+                    Assert.Equal(traceId, a.TraceId);
+                }
+
+                if (a.IdFormat == ActivityIdFormat.W3C)
+                {
+                    Assert.True(sampleCallbackIsInvoked);
+                }
+
+                a.Stop();
+
+                //
+                // Create and Test ActivitySource.StartActivity
+                //
+
+                a = parentId == null ? aSource.StartActivity("a", ActivityKind.Server, parentContext, default, default) :
+                                       aSource.StartActivity("a", ActivityKind.Server, parentId, default, default);
+
+                Assert.NotNull(a);
+
+                Assert.Equal(expectedStartFormat, a.IdFormat);
+                if (checkTraceId)
+                {
+                    Assert.Equal(traceId, a.TraceId);
+                }
+
+                a.Stop();
+
+            }, data).Dispose();
         }
 
         public void Dispose() => Activity.Current = null;

@@ -69,7 +69,7 @@ namespace System.Net.Http.Headers
             return _tag;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             EntityTagHeaderValue? other = obj as EntityTagHeaderValue;
 

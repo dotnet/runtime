@@ -180,6 +180,7 @@
     <Compile Include="TestExtensions\PerCompilationTypeAttribute.cs" />
     <Compile Include="TestExtensions\TestOrderer.cs" />
     <Compile Include="TestExtensions\TestOrderAttribute.cs" />
+    <Compile Include="TrimCompatibilityTests.cs" />
     <Compile Include="TypeBinary\TypeBinaryTests.cs" />
     <Compile Include="TypeBinary\TypeEqual.cs" />
     <Compile Include="TypeBinary\TypeIs.cs" />

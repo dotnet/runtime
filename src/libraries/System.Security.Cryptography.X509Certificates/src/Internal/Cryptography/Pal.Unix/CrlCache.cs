@@ -28,9 +28,6 @@ namespace Internal.Cryptography.Pal
 
         private const ulong X509_R_CERT_ALREADY_IN_HASH_TABLE = 0x0B07D065;
 
-        [ThreadStatic]
-        private static HashAlgorithm? ts_urlHash;
-
         public static void AddCrlForCertificate(
             SafeX509Handle cert,
             SafeX509StoreHandle store,
@@ -215,21 +212,15 @@ namespace Internal.Cryptography.Pal
             }
 
             uint persistentHash = unchecked((uint)persistentHashLong);
-
-            if (ts_urlHash == null)
-            {
-                ts_urlHash = SHA256.Create();
-            }
-
             Span<byte> hash = stackalloc byte[256 >> 3];
 
             // Endianness isn't important, it just needs to be consistent.
             // (Even if the same storage was used for two different endianness systems it'd stabilize at two files).
             ReadOnlySpan<byte> utf16Url = MemoryMarshal.AsBytes(crlUrl.AsSpan());
 
-            if (!ts_urlHash.TryComputeHash(utf16Url, hash, out int written) || written != hash.Length)
+            if (SHA256.HashData(utf16Url, hash) != hash.Length)
             {
-                Debug.Fail("TryComputeHash failed or produced an incorrect length output");
+                Debug.Fail("HashData failed or produced an incorrect length output");
                 throw new CryptographicException();
             }
 

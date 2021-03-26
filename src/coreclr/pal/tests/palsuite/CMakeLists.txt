@@ -224,8 +224,6 @@ _add_executable(paltests
   c_runtime/qsort/test2/test2.cpp
   c_runtime/rand_srand/test1/test1.cpp
   c_runtime/realloc/test1/test1.cpp
-  c_runtime/scalbn/test1/test1.cpp
-  c_runtime/scalbnf/test1/test1.cpp
   c_runtime/sin/test1/test1.cpp
   c_runtime/sincos/test1/test1.cpp
   c_runtime/sincosf/test1/test1.cpp

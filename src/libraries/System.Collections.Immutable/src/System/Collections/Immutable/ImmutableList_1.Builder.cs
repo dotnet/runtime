@@ -1100,7 +1100,7 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A simple view of the immutable list that the debugger can show to the developer.
     /// </summary>
-    internal class ImmutableListBuilderDebuggerProxy<T>
+    internal sealed class ImmutableListBuilderDebuggerProxy<T>
     {
         /// <summary>
         /// The collection to be enumerated.

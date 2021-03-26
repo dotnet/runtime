@@ -1580,10 +1580,12 @@ typedef enum CV_HREG_e {
     CV_ARM64_LR     =  80,
     CV_ARM64_SP     =  81,
     CV_ARM64_ZR     =  82,
+    CV_ARM64_PC     =  83,
 
-    // statue register
+    // status registers
 
     CV_ARM64_NZCV   =  90,
+    CV_ARM64_CPSR   =  91,
 
     // 32-bit floating point registers
 

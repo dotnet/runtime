@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
-    internal partial class CultureData
+    internal sealed partial class CultureData
     {
         // Wrappers around the GetLocaleInfoEx APIs which handle marshalling the returned
         // data as either and Int or string.
@@ -83,6 +83,12 @@ namespace System.Globalization
             Debug.Assert(ShouldUseUserOverrideNlsData);
             Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
             return ConvertWin32GroupString(GetLocaleInfoFromLCType(_sWindowsName, (uint)type, _bUseOverrides));
+        }
+
+        internal static bool NlsIsEnsurePredefinedLocaleName(string name)
+        {
+            Debug.Assert(GlobalizationMode.UseNls);
+            return CultureData.GetLocaleInfoExInt(name, Interop.Kernel32.LOCALE_ICONSTRUCTEDLOCALE) != 1;
         }
 
         private string? NlsGetTimeFormatString()

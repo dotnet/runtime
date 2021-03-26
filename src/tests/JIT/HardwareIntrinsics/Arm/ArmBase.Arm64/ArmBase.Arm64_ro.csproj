@@ -12,6 +12,8 @@
     <Compile Include="LeadingSignCount.Int64.cs" />
     <Compile Include="LeadingZeroCount.Int64.cs" />
     <Compile Include="LeadingZeroCount.UInt64.cs" />
+    <Compile Include="MultiplyHigh.Int64.cs" />
+    <Compile Include="MultiplyHigh.UInt64.cs" />
     <Compile Include="ReverseElementBits.Int64.cs" />
     <Compile Include="ReverseElementBits.UInt64.cs" />
     <Compile Include="Program.ArmBase.Arm64.cs" />

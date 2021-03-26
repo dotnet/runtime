@@ -32,6 +32,7 @@ namespace ILCompiler
         public bool Verbose;
         public bool Composite;
         public bool CompileNoMethods;
+        public bool EmbedPgoData;
 
         public string DgmlLogFileName;
         public bool GenerateFullDgmlLog;
@@ -46,6 +47,7 @@ namespace ILCompiler
         public bool Resilient;
         public bool Map;
         public bool MapCsv;
+        public bool PrintReproInstructions;
         public bool Pdb;
         public string PdbPath;
         public bool PerfMap;
@@ -101,6 +103,7 @@ namespace ILCompiler
                 syntax.DefineOption("tuning", ref Tuning, SR.TuningImageOption);
                 syntax.DefineOption("partial", ref Partial, SR.PartialImageOption);
                 syntax.DefineOption("compilebubblegenerics", ref CompileBubbleGenerics, SR.BubbleGenericsOption);
+                syntax.DefineOption("embed-pgo-data", ref EmbedPgoData, SR.EmbedPgoDataOption);
                 syntax.DefineOption("dgmllog|dgml-log-file-name", ref DgmlLogFileName, SR.SaveDependencyLogOption);
                 syntax.DefineOption("fulllog|generate-full-dmgl-log", ref GenerateFullDgmlLog, SR.SaveDetailedLogOption);
                 syntax.DefineOption("verbose", ref Verbose, SR.VerboseLoggingOption);
@@ -113,6 +116,7 @@ namespace ILCompiler
                 syntax.DefineOption("targetos", ref TargetOS, SR.TargetOSOption);
                 syntax.DefineOption("jitpath", ref JitPath, SR.JitPathOption);
 
+                syntax.DefineOption("print-repro-instructions", ref PrintReproInstructions, SR.PrintReproInstructionsOption);
                 syntax.DefineOption("singlemethodtypename", ref SingleMethodTypeName, SR.SingleMethodTypeName);
                 syntax.DefineOption("singlemethodname", ref SingleMethodName, SR.SingleMethodMethodName);
                 syntax.DefineOption("singlemethodindex", ref SingleMethodIndex, SR.SingleMethodIndex);

@@ -190,7 +190,7 @@ namespace System.Collections.Generic
         public bool ReserveOrAdd(IEnumerable<T> items)
         {
             int itemCount;
-            if (EnumerableHelpers.TryGetCount(items, out itemCount))
+            if (System.Linq.Enumerable.TryGetNonEnumeratedCount(items, out itemCount))
             {
                 if (itemCount > 0)
                 {

@@ -259,7 +259,8 @@ protected:
                 DWORD dwStubFlags,
                 int iLCIDParamIdx,
                 MethodDesc* pTargetMD)
-            : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx)
+        : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx)
+        , m_dwStubFlags(dwStubFlags)
     {
         STANDARD_VM_CONTRACT;
 
@@ -291,7 +292,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         m_slIL.Begin(dwStubFlags);
-        m_dwStubFlags = dwStubFlags;
+        _ASSERTE(m_dwStubFlags == dwStubFlags);
     }
 
     void MarshalReturn(MarshalInfo* pInfo, int argOffset)
@@ -453,7 +454,7 @@ public:
             pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pNewSig, cbNewSig);
 
             SigPointer  sigPtr(pNewSig, cbNewSig);
-            ULONG       callConvInfo;
+            uint32_t    callConvInfo;
             IfFailThrow(sigPtr.GetCallingConvInfo(&callConvInfo));
 
             if (callConvInfo & CORINFO_CALLCONV_HASTHIS)
@@ -1202,6 +1203,8 @@ public:
     }
 
     TokenLookupMap* GetTokenLookupMap() { WRAPPER_NO_CONTRACT; return m_slIL.GetTokenLookupMap(); }
+
+    DWORD GetFlags() const { return m_dwStubFlags; }
 
 protected:
     CQuickBytes         m_qbNativeFnSigBuffer;
@@ -2364,10 +2367,10 @@ void NDirectStubLinker::EmitObjectValidation(ILCodeStream* pcsEmit, DWORD dwStub
 
     IfFailThrow(ptr.GetData(NULL)); // IMAGE_CEE_CS_CALLCONV_LOCAL_SIG
 
-    ULONG numLocals;
+    uint32_t numLocals;
     IfFailThrow(ptr.GetData(&numLocals));
 
-    for (ULONG i = 0; i < numLocals; i++)
+    for (uint32_t i = 0; i < numLocals; i++)
     {
         BYTE modifier;
         IfFailThrow(ptr.PeekByte(&modifier));
@@ -3116,7 +3119,7 @@ BOOL NDirect::MarshalingRequired(
     // Check to make certain that the signature only contains types that marshal trivially
     SigPointer ptr(pSig);
     IfFailThrow(ptr.GetCallingConvInfo(NULL));
-    ULONG numArgs;
+    uint32_t numArgs;
     IfFailThrow(ptr.GetData(&numArgs));
     numArgs++;   // +1 for return type
 
@@ -4444,7 +4447,6 @@ MethodDesc* CreateInteropILStub(
                          CorNativeLinkType        nlType,
                          CorNativeLinkFlags       nlFlags,
                          CorInfoCallConvExtension unmgdCallConv,
-                         DWORD                    dwStubFlags,            // NDirectStubFlags
                          int                      nParamTokens,
                          mdParamDef*              pParamTokenArray,
                          int                      iLCIDArg,
@@ -4477,6 +4479,8 @@ MethodDesc* CreateInteropILStub(
     // pTargetMD may be null in the case of calli pinvoke
     // and vararg pinvoke.
     //
+
+    DWORD dwStubFlags = pss->GetFlags();
 
 #ifdef FEATURE_COMINTEROP
     //
@@ -4656,7 +4660,7 @@ MethodDesc* CreateInteropILStub(
                         {
                             SigPointer ptr = pSigDesc->m_sig.CreateSigPointer();
 
-                            ULONG callConvInfo;
+                            uint32_t callConvInfo;
                             IfFailThrow(ptr.GetCallingConvInfo(&callConvInfo));
 
                             BOOL fSigIsStatic = !(callConvInfo & IMAGE_CEE_CS_CALLCONV_HASTHIS);
@@ -4820,7 +4824,6 @@ MethodDesc* NDirect::CreateCLRToNativeILStub(
                 nlType,
                 nlFlags,
                 unmgdCallConv,
-                dwStubFlags,
                 numParamTokens,
                 pParamTokenArray,
                 iLCIDArg);
@@ -4894,7 +4897,6 @@ MethodDesc* NDirect::CreateFieldAccessILStub(
                 (CorNativeLinkType)0,
                 (CorNativeLinkFlags)0,
                 MetaSig::GetDefaultUnmanagedCallingConvention(),
-                dwStubFlags,
                 numParamTokens,
                 pParamTokenArray,
                 -1);
@@ -5003,7 +5005,6 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
         (CorNativeLinkType)0,
         (CorNativeLinkFlags)0,
         CorInfoCallConvExtension::Managed,
-        dwStubFlags,
         numParamTokens,
         pParamTokenArray,
         -1,

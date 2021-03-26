@@ -80,7 +80,9 @@ if(CLR_CMAKE_HOST_UNIX)
     endif()
 
     add_subdirectory(pal)
-    add_subdirectory(hosts)
+    if(CLR_CMAKE_BUILD_SUBSET_RUNTIME)
+        add_subdirectory(hosts)
+    endif(CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 else(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_TARGET_UNIX)
         add_subdirectory(pal/src/libunwind)
@@ -103,7 +105,9 @@ endif()
 include_directories("pal/prebuilt/inc")
 include_directories("../../artifacts/obj/coreclr")
 
-add_subdirectory(tools/aot/jitinterface)
+if(CLR_CMAKE_BUILD_SUBSET_JIT)
+  add_subdirectory(tools/aot/jitinterface)
+endif(CLR_CMAKE_BUILD_SUBSET_JIT)
 
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake
@@ -125,6 +129,10 @@ if(FEATURE_STANDALONE_GC)
     add_subdirectory(gc)
   endif (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 endif(FEATURE_STANDALONE_GC)
+
+if(CLR_CMAKE_BUILD_SUBSET_RUNTIME AND NOT CLR_CROSS_COMPONENTS_BUILD)
+  add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
+endif()
 
 if (CLR_CMAKE_HOST_UNIX)
   include_directories("pal/inc")
@@ -202,15 +210,26 @@ if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSI
 endif()
 
 add_subdirectory(utilcode)
-add_subdirectory(gcinfo)
-add_subdirectory(jit)
 add_subdirectory(inc)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_subdirectory(palrt)
 endif(CLR_CMAKE_HOST_UNIX)
 
-add_subdirectory(vm)
+if(CLR_CMAKE_BUILD_SUBSET_ILTOOLS)
+  add_subdirectory(ildasm)
+  add_subdirectory(ilasm)
+endif(CLR_CMAKE_BUILD_SUBSET_ILTOOLS)
+
+if(CLR_CMAKE_BUILD_SUBSET_JIT)
+  add_subdirectory(gcinfo)
+  add_subdirectory(jit)
+  add_subdirectory(vm)
+else(CLR_CMAKE_BUILD_SUBSET_JIT)
+  # The eventing headers are required to build the IL tools and paltests
+  add_subdirectory(vm/eventing)
+endif(CLR_CMAKE_BUILD_SUBSET_JIT)
+
 if (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
   add_subdirectory(md)
   add_subdirectory(debug)
@@ -220,14 +239,17 @@ if (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
   add_subdirectory(ToolBox)
   add_subdirectory(tools)
   add_subdirectory(unwinder)
-  add_subdirectory(ildasm)
-  add_subdirectory(ilasm)
   add_subdirectory(interop)
 
   if(CLR_CMAKE_HOST_WIN32)
     add_subdirectory(hosts)
   endif(CLR_CMAKE_HOST_WIN32)
-else()
+elseif(CLR_CMAKE_BUILD_SUBSET_ILTOOLS)
+  # These parts of the runtime are required to build the IL tools
+  add_subdirectory(md)
+  add_subdirectory(dlls/mscorrc)
+  add_subdirectory(dlls/mscorpe)
+elseif(CLR_CMAKE_BUILD_SUBSET_JIT)
   if(CLR_CMAKE_HOST_UNIX)
     # this is needed to compile the jit on unix platforms.
     # When the runtime subset is compiled, the add_subdirectory(dlls) above

@@ -6,7 +6,7 @@ Param(
   [string][Alias('f')]$framework,
   [string]$vs,
   [string][Alias('v')]$verbosity = "minimal",
-  [ValidateSet("windows","Linux","OSX","Browser")][string]$os,
+  [ValidateSet("windows","Linux","OSX","Android","Browser")][string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
@@ -18,6 +18,7 @@ Param(
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
   [switch]$ninja,
   [string]$cmakeargs,
+  [switch]$pgoinstrument,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -35,7 +36,7 @@ function Get-Help() {
   Write-Host "  -help (-h)                     Print help and exit."
   Write-Host "  -librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   Write-Host "                                 [Default: Debug]"
-  Write-Host "  -os                            Target operating system: windows, Linux, OSX, or Browser."
+  Write-Host "  -os                            Target operating system: windows, Linux, OSX, Android or Browser."
   Write-Host "                                 [Default: Your machine's OS.]"
   Write-Host "  -runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -79,6 +80,7 @@ function Get-Help() {
   Write-Host "Native build settings:"
   Write-Host "  -cmakeargs              User-settable additional arguments passed to CMake."
   Write-Host "  -ninja                  Use Ninja instead of MSBuild to run the native build."
+  Write-Host "  -pgoinstrument          Build the CLR with PGO instrumentation."
 
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
   Write-Host "The above arguments can be shortened as much as to be unambiguous."
@@ -109,7 +111,7 @@ function Get-Help() {
   Write-Host ".\build.cmd mono.corelib+libs.pretest -rc debug -c release"
   Write-Host ""
   Write-Host ""
-  Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
+  Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md"
 }
 
 if ($help) {
@@ -178,7 +180,7 @@ if ($vs) {
       }
     }
   }
-  
+
   . $PSScriptRoot\common\tools.ps1
 
   # This tells .NET Core to use the bootstrapped runtime
@@ -233,6 +235,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
     "cmakeargs"              { $arguments += " /p:CMakeArgs=`"$($PSBoundParameters[$argument])`"" }
     "ninja"                  { $arguments += " /p:Ninja=$($PSBoundParameters[$argument])" }
+    "pgoinstrument"          { $arguments += " /p:PgoInstrument=$($PSBoundParameters[$argument])"}
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}
     "arch"                   {}
@@ -241,6 +244,17 @@ foreach ($argument in $PSBoundParameters.Keys)
 }
 
 $failedBuilds = @()
+
+if ($os -eq "Browser") {
+  # override default arch for Browser, we only support wasm
+  $arch = "wasm"
+
+  if ($ninja -ne $True) {
+    # we need ninja for emscripten on windows
+    $ninja = $True
+    $arguments += " /p:Ninja=$ninja"
+  }
+}
 
 foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";

@@ -1550,7 +1550,7 @@ namespace System.Runtime.Serialization
                 if (endIndex < 0)
                 {
                     if (localName != null)
-                        localName.Append(typeName.Substring(startIndex));
+                        localName.Append(typeName.AsSpan(startIndex));
                     nestedParamCounts.Add(0);
                     break;
                 }
@@ -2182,7 +2182,7 @@ namespace System.Runtime.Serialization
         bool ParametersFromBuiltInNamespaces { get; }
     }
 
-    internal class GenericNameProvider : IGenericNameProvider
+    internal sealed class GenericNameProvider : IGenericNameProvider
     {
         private readonly string _genericTypeName;
         private readonly object[] _genericParams; //Type or DataContract
@@ -2265,7 +2265,7 @@ namespace System.Runtime.Serialization
 
 
 
-    internal class TypeHandleRefEqualityComparer : IEqualityComparer<TypeHandleRef>
+    internal sealed class TypeHandleRefEqualityComparer : IEqualityComparer<TypeHandleRef>
     {
         public bool Equals(TypeHandleRef? x, TypeHandleRef? y)
         {
@@ -2278,7 +2278,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class TypeHandleRef
+    internal sealed class TypeHandleRef
     {
         private RuntimeTypeHandle _value;
 
@@ -2304,7 +2304,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class IntRef
+    internal sealed class IntRef
     {
         private readonly int _value;
 

@@ -9,7 +9,7 @@ namespace System.Threading
     //
     // Unix-specific implementation of Timer
     //
-    internal partial class TimerQueue : IThreadPoolWorkItem
+    internal sealed partial class TimerQueue : IThreadPoolWorkItem
     {
         private static List<TimerQueue>? s_scheduledTimers;
         private static List<TimerQueue>? s_scheduledTimersToFire;
@@ -36,8 +36,11 @@ namespace System.Threading
 
             // The timer thread must start in the default execution context without transferring the context, so
             // using UnsafeStart() instead of Start()
-            Thread timerThread = new Thread(TimerThread);
-            timerThread.IsBackground = true;
+            Thread timerThread = new Thread(TimerThread)
+            {
+                Name = ".NET Timers",
+                IsBackground = true
+            };
             timerThread.UnsafeStart();
 
             // Do this after creating the thread in case thread creation fails so that it will try again next time

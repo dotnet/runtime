@@ -8,7 +8,7 @@ namespace System.Xml.Schema
 
 #pragma warning disable 618
 
-    internal class AutoValidator : BaseValidator
+    internal sealed class AutoValidator : BaseValidator
     {
         public AutoValidator(XmlValidatingReaderImpl reader, XmlSchemaCollection schemaCollection, IValidationEventHandling eventHandling) : base(reader, schemaCollection, eventHandling)
         {

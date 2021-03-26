@@ -19,7 +19,7 @@ namespace System.Linq.Parallel
     /// implementations that always and consistently yield no elements.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class EmptyEnumerable<T> : ParallelQuery<T>
+    internal sealed class EmptyEnumerable<T> : ParallelQuery<T>
     {
         private EmptyEnumerable()
             : base(QuerySettings.Empty)

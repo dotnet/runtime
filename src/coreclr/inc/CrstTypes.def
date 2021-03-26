@@ -327,6 +327,10 @@ Crst StubCache
     AcquiredBefore LoaderHeap
 End
 
+Crst ManagedObjectWrapperMap
+    AcquiredBefore HandleTable
+End
+
 Crst Module
     AcquiredBefore LoaderHeap UniqueStack
 End

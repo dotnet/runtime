@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -537,7 +538,7 @@ namespace System.Net.Http
                     HashCode.Combine(Kind, Host, Port, ProxyUri, Identity) :
                     HashCode.Combine(Kind, Host, Port, SslHostName, ProxyUri, Identity));
 
-            public override bool Equals(object? obj) =>
+            public override bool Equals([NotNullWhen(true)] object? obj) =>
                 obj is HttpConnectionKey hck &&
                 Equals(hck);
 

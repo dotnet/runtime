@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -16,11 +17,13 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
 using Internal.CorConstants;
+using Internal.Pgo;
 using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
+
 
 namespace Internal.JitInterface
 {
@@ -44,17 +47,17 @@ namespace Internal.JitInterface
         public readonly TypeDesc OwningType;
 
 
-        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, object context)
+        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, object context, TypeDesc devirtualizedMethodOwner = null)
         {
             Debug.Assert(!method.IsUnboxingThunk());
             Method = method;
             Token = token;
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
-            OwningType = GetMethodTokenOwningType(this, constrainedType, context, out OwningTypeNotDerivedFromToken);
+            OwningType = GetMethodTokenOwningType(this, constrainedType, context, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
         }
 
-        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc constrainedType, object context, out bool owningTypeNotDerivedFromToken)
+        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc constrainedType, object context, TypeDesc devirtualizedMethodOwner, out bool owningTypeNotDerivedFromToken)
         {
             ModuleToken moduleToken = methodToken.Token;
             owningTypeNotDerivedFromToken = false;
@@ -69,7 +72,7 @@ namespace Internal.JitInterface
             if (moduleToken.TokenType == CorTokenType.mdtMethodDef)
             {
                 var methodDefinition = moduleToken.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)moduleToken.Handle);
-                return HandleContext(moduleToken.Module, methodDefinition.GetDeclaringType(), methodToken.Method.OwningType, constrainedType, context, ref owningTypeNotDerivedFromToken);
+                return HandleContext(moduleToken.Module, methodDefinition.GetDeclaringType(), methodToken.Method.OwningType, constrainedType, context, devirtualizedMethodOwner, ref owningTypeNotDerivedFromToken);
             }
 
             // At this point moduleToken must point at a MemberRef.
@@ -81,14 +84,15 @@ namespace Internal.JitInterface
                 case HandleKind.TypeReference:
                 case HandleKind.TypeSpecification:
                     {
-                        return HandleContext(moduleToken.Module, memberRef.Parent, methodToken.Method.OwningType, constrainedType, context, ref owningTypeNotDerivedFromToken);
+                        Debug.Assert(devirtualizedMethodOwner == null); // Devirtualization is expected to always use a methoddef token
+                        return HandleContext(moduleToken.Module, memberRef.Parent, methodToken.Method.OwningType, constrainedType, context, null, ref owningTypeNotDerivedFromToken);
                     }
 
                 default:
                     return methodToken.Method.OwningType;
             }
 
-            TypeDesc HandleContext(EcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, TypeDesc constrainedType, object context, ref bool owningTypeNotDerivedFromToken)
+            TypeDesc HandleContext(EcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, TypeDesc constrainedType, object context, TypeDesc devirtualizedMethodOwner, ref bool owningTypeNotDerivedFromToken)
             {
                 var tokenOnlyOwningType = module.GetType(handle);
                 TypeDesc actualOwningType;
@@ -113,7 +117,36 @@ namespace Internal.JitInterface
                         typeInstantiation = typeContext.Instantiation;
                     }
 
-                    var instantiatedOwningType = tokenOnlyOwningType.InstantiateSignature(typeInstantiation, methodInstantiation);
+                    TypeDesc instantiatedOwningType = null;
+
+                    if (devirtualizedMethodOwner != null)
+                    {
+                        // We might be in a situation where we use the passed in type (devirtualization scenario)
+                        // Check to see if devirtualizedMethodOwner actually is a type derived from the type definition in some way.
+                        bool derivesFromTypeDefinition = false;
+                        TypeDesc currentType = devirtualizedMethodOwner;
+                        do
+                        {
+                            derivesFromTypeDefinition = currentType.GetTypeDefinition() == tokenOnlyOwningType;
+                            currentType = currentType.BaseType;
+                        } while(currentType != null && !derivesFromTypeDefinition);
+
+                        if (derivesFromTypeDefinition)
+                        {
+                            instantiatedOwningType = devirtualizedMethodOwner;
+                        }
+                        else
+                        {
+                            Debug.Assert(false); // This is expected to fire if and only if we implement devirtualization to default interface methods
+                            throw new RequiresRuntimeJitException(methodTargetOwner.ToString());
+                        }
+                    }
+
+                    if (instantiatedOwningType == null)
+                    {
+                        instantiatedOwningType = tokenOnlyOwningType.InstantiateSignature(typeInstantiation, methodInstantiation);
+                    }
+
                     var canonicalizedOwningType = instantiatedOwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
                     if ((instantiatedOwningType == canonicalizedOwningType) || (constrainedType != null))
                     {
@@ -376,7 +409,32 @@ namespace Internal.JitInterface
             return false;
         }
 
-        public void CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode)
+        private bool FunctionJustThrows(MethodIL ilBody)
+        {
+            try
+            {
+                if (ilBody.GetExceptionRegions().Length != 0)
+                    return false;
+
+                ILReader reader = new ILReader(ilBody.GetILBytes());
+
+                while (reader.HasNext)
+                {
+                    var ilOpcode = reader.ReadILOpcode();
+                    if (ilOpcode == ILOpcode.throw_)
+                        return true;
+                    if (ilOpcode.IsBranch() || ilOpcode == ILOpcode.switch_)
+                        return false;
+                    reader.Skip(ilOpcode);
+                }
+            }
+            catch
+            { }
+
+            return false;
+        }
+
+        public void CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode, Logger logger)
         {
             bool codeGotPublished = false;
             _methodCodeNode = methodCodeNodeNeedingCode;
@@ -386,10 +444,19 @@ namespace Internal.JitInterface
                 if (!ShouldSkipCompilation(MethodBeingCompiled) && !MethodSignatureIsUnstable(MethodBeingCompiled.Signature, out var _))
                 {
                     MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
+
                     if (methodIL != null)
                     {
-                        CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
-                        codeGotPublished = true;
+                        if (!FunctionJustThrows(methodIL))
+                        {
+                            CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+                            codeGotPublished = true;
+                        }
+                        else
+                        {
+                            if (logger.IsVerbose)
+                                logger.Writer.WriteLine($"Warning: Method `{MethodBeingCompiled}` was not compiled because it always throws an exception");
+                        }
                     }
                 }
             }
@@ -475,7 +542,7 @@ namespace Internal.JitInterface
                         object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         if (helperArg is MethodDesc methodDesc)
                         {
-                            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                            var methodIL = HandleToObject(pResolvedToken.tokenScope);
                             MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
                             helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
                         }
@@ -838,7 +905,14 @@ namespace Internal.JitInterface
         private MethodWithToken ComputeMethodWithToken(MethodDesc method, ref CORINFO_RESOLVED_TOKEN pResolvedToken, TypeDesc constrainedType, bool unboxing)
         {
             ModuleToken token = HandleToModuleToken(ref pResolvedToken, method, out object context, ref constrainedType);
-            return new MethodWithToken(method, token, constrainedType: constrainedType, unboxing: unboxing, context: context);
+
+            TypeDesc devirtualizedMethodOwner = null;
+            if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
+            {
+                devirtualizedMethodOwner = HandleToObject(pResolvedToken.hClass);
+            }
+
+            return new MethodWithToken(method, token, constrainedType: constrainedType, unboxing: unboxing, context: context, devirtualizedMethodOwner: devirtualizedMethodOwner);
         }
 
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out object context, ref TypeDesc constrainedType)
@@ -866,7 +940,7 @@ namespace Internal.JitInterface
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             mdToken token = pResolvedToken.token;
-            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+            var methodIL = HandleToObject(pResolvedToken.tokenScope);
             EcmaModule module;
 
             // If the method body is synthetized by the compiler (the definition of the MethodIL is not
@@ -940,7 +1014,7 @@ namespace Internal.JitInterface
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
-            MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
+            MethodIL methodIL = HandleToObject(module);
 
             // If this is not a MethodIL backed by a physical method body, we need to remap the token.
             Debug.Assert(methodIL.GetMethodILDefinition() is EcmaMethodIL);
@@ -1000,6 +1074,9 @@ namespace Internal.JitInterface
             {
                 _debugVarInfos[i] = vars[i];
             }
+            
+            // JIT gave the ownership of this to us, so need to free this.
+            freeArray(vars);
         }
 
         /// <summary>
@@ -1014,6 +1091,9 @@ namespace Internal.JitInterface
             {
                 _debugLocInfos[i] = pMap[i];
             }
+            
+            // JIT gave the ownership of this to us, so need to free this.
+            freeArray(pMap);
         }
 
         private void PublishEmptyCode()
@@ -1441,7 +1521,7 @@ namespace Internal.JitInterface
                     constrainedType == null &&
                     exactType == MethodBeingCompiled.OwningType)
                 {
-                    var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                    var methodIL = HandleToObject(pResolvedToken.tokenScope);
                     var rawMethod = (MethodDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token);
                     if (IsTypeSpecForTypicalInstantiation(rawMethod.OwningType))
                     {
@@ -2354,9 +2434,6 @@ namespace Internal.JitInterface
             return 0;
         }
 
-        private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint pCountSchemaItems, byte** pInstrumentationData)
-        { throw new NotImplementedException("getPgoInstrumentationResults"); }
-
         private CORINFO_CLASS_STRUCT_* getLikelyClass(CORINFO_METHOD_STRUCT_* ftnHnd, CORINFO_CLASS_STRUCT_* baseHnd, uint IlOffset, ref uint pLikelihood, ref uint pNumberOfClasses)
         {
             return null;
@@ -2417,7 +2494,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                var sig = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
+                var sig = HandleToObject(callSiteSig->methodSignature);
                 return Marshaller.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>());
             }
         }

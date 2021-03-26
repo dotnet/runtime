@@ -32,8 +32,6 @@
              Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="..\..\src\System\Net\EndPoint.cs"
              Link="ProductionCode\System\Net\EndPoint.cs" />
-    <Compile Include="$(CommonPath)System\Marvin.cs"
-             Link="ProductionCode\Common\System\Marvin.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
              Link="ProductionCode\Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -44,22 +43,6 @@ internal static partial class Interop
             SafeRsaHandle rsa,
             RsaPadding padding);
 
-        internal static int RsaPrivateDecrypt(
-            int flen,
-            ReadOnlySpan<byte> from,
-            Span<byte> to,
-            SafeRsaHandle rsa,
-            RsaPadding padding) =>
-            RsaPrivateDecrypt(flen, ref MemoryMarshal.GetReference(from), ref MemoryMarshal.GetReference(to), rsa, padding);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaPrivateDecrypt")]
-        private static extern int RsaPrivateDecrypt(
-            int flen,
-            ref byte from,
-            ref byte to,
-            SafeRsaHandle rsa,
-            RsaPadding padding);
-
         internal static int RsaSignPrimitive(
             ReadOnlySpan<byte> from,
             Span<byte> to,
@@ -88,9 +71,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaSize")]
         internal static extern int RsaSize(SafeRsaHandle rsa);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaGenerateKeyEx")]
-        internal static extern int RsaGenerateKeyEx(SafeRsaHandle rsa, int bits, SafeBignumHandle e);
 
         internal static bool RsaSign(int type, ReadOnlySpan<byte> m, int m_len, Span<byte> sigret, out int siglen, SafeRsaHandle rsa) =>
             RsaSign(type, ref MemoryMarshal.GetReference(m), m_len, ref MemoryMarshal.GetReference(sigret), out siglen, rsa);

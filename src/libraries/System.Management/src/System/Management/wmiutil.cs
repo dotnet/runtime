@@ -21,7 +21,7 @@ namespace System.Management
     }
 
     //Class for calling GetErrorInfo from managed code
-    internal class WbemErrorInfo
+    internal static class WbemErrorInfo
     {
         public static IWbemClassObjectFreeThreaded GetErrorInfo()
         {
