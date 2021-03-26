@@ -539,6 +539,7 @@ namespace System.IO.Strategies
                         source.Slice(0, numBytes).CopyTo(_buffer!.AsSpan(_writePos));
                         _writePos += numBytes;
                         source = source.Slice(numBytes);
+                        arraySegment = arraySegment.Array != null ? arraySegment.Slice(numBytes) : arraySegment;
                     }
                 }
 
