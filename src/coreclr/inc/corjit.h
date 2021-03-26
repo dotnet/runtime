@@ -374,6 +374,15 @@ public:
         int32_t Other;
     };
 
+#define DEFAULT_UNKNOWN_TYPEHANDLE 1
+#define UNKNOWN_TYPEHANDLE_MIN 1
+#define UNKNOWN_TYPEHANDLE_MAX 33
+
+    static inline bool IsUnknownTypeHandle(intptr_t typeHandle)
+    {
+        return ((typeHandle >= UNKNOWN_TYPEHANDLE_MIN) && (typeHandle <= UNKNOWN_TYPEHANDLE_MAX));
+    }
+
     // get profile information to be used for optimizing a current method.  The format
     // of the buffer is the same as the format the JIT passes to allocPgoInstrumentationBySchema.
     virtual JITINTERFACE_HRESULT getPgoInstrumentationResults(
