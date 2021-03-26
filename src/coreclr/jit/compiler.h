@@ -6318,13 +6318,8 @@ private:
     void optOptimizeBoolsCondBlock(BasicBlock* b1, BasicBlock* b2, bool* change);
     void optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, BasicBlock* b3, bool* change);
     GenTree* optIsBoolComp(GenTree* tree, GenTree** compPtr, bool* boolPtr);
-    void     optReturnGetFoldAndCompOper(GenTree*    tree1,
-                                         GenTree*    tree2,
-                                         ssize_t     it3val,
-                                         bool        bool1,
-                                         bool        bool2,
-                                         genTreeOps* foldOp,
-                                         genTreeOps* cmpOp);
+    void optReturnGetFoldAndCompOper(
+        GenTree* tree1, GenTree* tree2, ssize_t it3val, bool bool1, bool bool2, genTreeOps* foldOp, genTreeOps* cmpOp);
 #ifdef DEBUG
     void optOptimizeBoolsGcStress(BasicBlock* condBlock);
 #endif

@@ -8079,8 +8079,8 @@ void Compiler::optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, Basic
         return;
     }
 
-    genTreeOps foldOp = GT_NONE;
-    genTreeOps cmpOp  = GT_NONE;
+    genTreeOps foldOp   = GT_NONE;
+    genTreeOps cmpOp    = GT_NONE;
     var_types  foldType = c1->TypeGet();
     if (varTypeIsGC(foldType))
     {
@@ -8106,11 +8106,11 @@ void Compiler::optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, Basic
     }
 
     t1->SetOper(cmpOp);
-    t1->AsOp()->gtOp1         = cmpOp1;
-    t1->AsOp()->gtOp2->gtType = foldType; // Could have been varTypeIsGC()
+    t1->AsOp()->gtOp1                        = cmpOp1;
+    t1->AsOp()->gtOp2->gtType                = foldType; // Could have been varTypeIsGC()
     t1->AsOp()->gtOp2->AsIntCon()->gtIconVal = 0;
-    s1->GetRootNode()->gtOper = GT_RETURN;
-    s1->GetRootNode()->gtType = s2->GetRootNode()->gtType;
+    s1->GetRootNode()->gtOper                = GT_RETURN;
+    s1->GetRootNode()->gtType                = s2->GetRootNode()->gtType;
 
 #if FEATURE_SET_FLAGS
     // For comparisons against zero we will have the GTF_SET_FLAGS set
@@ -8201,13 +8201,8 @@ void Compiler::optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, Basic
 //      foldOp: On success, return the fold operator of GT_AND or GT_OR.
 //      cmpOp:  On success, return the comparison operator of GT_EQ or GT_NE
 //
-void Compiler::optReturnGetFoldAndCompOper(GenTree*    tree1,
-                                           GenTree*    tree2,
-                                           ssize_t     it3val,
-                                           bool        bool1,
-                                           bool        bool2,
-                                           genTreeOps* foldOp,
-                                           genTreeOps* cmpOp)
+void Compiler::optReturnGetFoldAndCompOper(
+    GenTree* tree1, GenTree* tree2, ssize_t it3val, bool bool1, bool bool2, genTreeOps* foldOp, genTreeOps* cmpOp)
 {
     genTreeOps foldOper;
     genTreeOps cmpOper;
@@ -8241,7 +8236,7 @@ void Compiler::optReturnGetFoldAndCompOper(GenTree*    tree1,
         foldOper = GT_AND;
         cmpOper  = GT_EQ;
     }
-    else if((t1Oper == GT_NE && t2Oper == GT_NE) && (it1val == 0 && it2val == 0 && it3val == 1))
+    else if ((t1Oper == GT_NE && t2Oper == GT_NE) && (it1val == 0 && it2val == 0 && it3val == 1))
     {
         // Case: x == 1 || y == 1
         //      t1:c1==1 t2:c2==1 is reversed from optIsBoolComp() to: t1:c1!=0 t2:c2!=0 t3:c3==1
