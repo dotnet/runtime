@@ -3,6 +3,7 @@
 #include <mono/metadata/reflection-cache.h>
 #include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/debug-internals.h>
+#include <mono/utils/unlocked.h>
 
 static LockFreeMempool*
 lock_free_mempool_new (void)
@@ -343,4 +344,212 @@ gpointer
 (mono_mem_manager_alloc0_lock_free) (MonoMemoryManager *memory_manager, guint size)
 {
 	return lock_free_mempool_alloc0 (memory_manager->lock_free_mp, size);
+}
+
+//107, 131, 163
+#define HASH_TABLE_SIZE 163
+static MonoGenericMemoryManager *mem_manager_cache [HASH_TABLE_SIZE];
+static gint32 mem_manager_cache_hit, mem_manager_cache_miss;
+
+static guint32
+mix_hash (uintptr_t source)
+{
+	unsigned int hash = source;
+
+	// Actual hash
+	hash = (((hash * 215497) >> 16) ^ ((hash * 1823231) + hash));
+
+	// Mix in highest bits on 64-bit systems only
+	if (sizeof (source) > 4)
+		hash = hash ^ ((source >> 31) >> 1);
+
+	return hash;
+}
+
+static guint32
+hash_alcs (MonoAssemblyLoadContext **alcs, int nalcs)
+{
+	guint32 res = 0;
+	int i;
+	for (i = 0; i < nalcs; ++i)
+		res += mix_hash ((size_t)alcs [i]);
+
+	return res;
+}
+
+static gboolean
+match_mem_manager (MonoGenericMemoryManager *mm, MonoAssemblyLoadContext **alcs, int nalcs)
+{
+	int j, k;
+
+	if (mm->n_alcs != nalcs)
+		return FALSE;
+	/* The order might differ so check all pairs */
+	for (j = 0; j < nalcs; ++j) {
+		for (k = 0; k < nalcs; ++k)
+			if (mm->alcs [k] == alcs [j])
+				break;
+		if (k == nalcs)
+			/* Not found */
+			break;
+	}
+
+	return j == nalcs;
+}
+
+
+static MonoGenericMemoryManager*
+mem_manager_cache_get (MonoAssemblyLoadContext **alcs, int nalcs)
+{
+	guint32 hash_code = hash_alcs (alcs, nalcs);
+	int index = hash_code % HASH_TABLE_SIZE;
+	MonoGenericMemoryManager *mm = mem_manager_cache [index];
+	if (!mm || !match_mem_manager (mm, alcs, nalcs)) {
+		UnlockedIncrement (&mem_manager_cache_miss);
+		return NULL;
+	}
+	UnlockedIncrement (&mem_manager_cache_hit);
+	return mm;
+}
+
+static void
+mem_manager_cache_add (MonoGenericMemoryManager *mem_manager)
+{
+	guint32 hash_code = hash_alcs (mem_manager->alcs, mem_manager->n_alcs);
+	int index = hash_code % HASH_TABLE_SIZE;
+	mem_manager_cache [index] = mem_manager;
+}
+
+static MonoGenericMemoryManager*
+get_mem_manager_for_alcs (MonoAssemblyLoadContext **alcs, int nalcs)
+{
+	MonoAssemblyLoadContext *alc;
+	MonoAssemblyLoadContext *tmp_alcs [1];
+	GPtrArray *mem_managers;
+	MonoGenericMemoryManager *res;
+
+	/* Can happen for dynamic images */
+	if (nalcs == 0) {
+		nalcs = 1;
+		tmp_alcs [0] = mono_alc_get_default ();
+		alcs = tmp_alcs;
+	}
+
+	/* Common case */
+	if (nalcs == 1 && alcs [0]->generic_memory_manager)
+		return alcs [0]->generic_memory_manager;
+
+	// Check in a lock free cache
+	res = mem_manager_cache_get (alcs, nalcs);
+	if (res)
+		return res;
+
+	/*
+	 * Find an existing mem manager for these ALCs.
+	 * This can exist even if the cache lookup fails since the cache is very simple.
+	 */
+
+	/* We can search any ALC in the list, use the first one for now */
+	alc = alcs [0];
+
+	mono_alc_memory_managers_lock (alc);
+
+	mem_managers = alc->generic_memory_managers;
+
+	res = NULL;
+	for (int mindex = 0; mindex < mem_managers->len; ++mindex) {
+		MonoGenericMemoryManager *mm = (MonoGenericMemoryManager*)g_ptr_array_index (mem_managers, mindex);
+
+		if (match_mem_manager (mm, alcs, nalcs)) {
+			res = mm;
+			break;
+		}
+	}
+
+	mono_alc_memory_managers_unlock (alc);
+
+	if (res)
+		return res;
+
+	/* Create new mem manager */
+	res = g_new0 (MonoGenericMemoryManager, 1);
+	memory_manager_init ((MonoMemoryManager *)res, FALSE);
+
+	res->memory_manager.is_generic = TRUE;
+	res->n_alcs = nalcs;
+	res->alcs = mono_mempool_alloc (res->memory_manager._mp, nalcs * sizeof (MonoAssemblyLoadContext*));
+	memcpy (res->alcs, alcs, nalcs * sizeof (MonoAssemblyLoadContext*));
+	/* The hashes are lazily inited in metadata.c */
+
+	/* Register it into its ALCs */
+	for (int i = 0; i < nalcs; ++i) {
+		mono_alc_memory_managers_lock (alcs [i]);
+		g_ptr_array_add (alcs [i]->generic_memory_managers, res);
+		mono_alc_memory_managers_unlock (alcs [i]);
+	}
+
+	mono_memory_barrier ();
+
+	mem_manager_cache_add (res);
+
+	if (nalcs == 1 && !alcs [0]->generic_memory_manager)
+		alcs [0]->generic_memory_manager = res;
+
+	return res;
+}
+
+/*
+ * mono_mem_manager_get_generic:
+ *
+ *   Return a memory manager for allocating memory owned by the set of IMAGES.
+ */
+MonoGenericMemoryManager*
+mono_mem_manager_get_generic (MonoImage **images, int nimages)
+{
+	MonoAssemblyLoadContext **alcs = g_newa (MonoAssemblyLoadContext*, nimages);
+	int nalcs, j;
+
+	/* Collect the set of ALCs owning the images */
+	nalcs = 0;
+	for (int i = 0; i < nimages; ++i) {
+		MonoAssemblyLoadContext *alc = mono_image_get_alc (images [i]);
+
+		if (!alc)
+			continue;
+
+		/* O(n^2), but shouldn't be a problem in practice */
+		for (j = 0; j < nalcs; ++j)
+			if (alcs [j] == alc)
+				break;
+		if (j == nalcs)
+			alcs [nalcs ++] = alc;
+	}
+
+	return get_mem_manager_for_alcs (alcs, nalcs);
+}
+
+/*
+ * mono_mem_manager_merge:
+ *
+ *   Return a mem manager which depends on the ALCs of MM1/MM2.
+ */
+MonoGenericMemoryManager*
+mono_mem_manager_merge (MonoGenericMemoryManager *mm1, MonoGenericMemoryManager *mm2)
+{
+	MonoAssemblyLoadContext **alcs = g_newa (MonoAssemblyLoadContext*, mm1->n_alcs + mm2->n_alcs);
+
+	memcpy (alcs, mm1->alcs, sizeof (MonoAssemblyLoadContext*) * mm1->n_alcs);
+
+	int nalcs = mm1->n_alcs;
+	/* O(n^2), but shouldn't be a problem in practice */
+	for (int i = 0; i < mm2->n_alcs; ++i) {
+		int j;
+		for (j = 0; j < mm1->n_alcs; ++j) {
+			if (mm2->alcs [i] == mm1->alcs [j])
+				break;
+		}
+		if (j == mm1->n_alcs)
+			alcs [nalcs ++] = mm2->alcs [i];
+	}
+	return get_mem_manager_for_alcs (alcs, nalcs);
 }

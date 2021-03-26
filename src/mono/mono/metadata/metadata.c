@@ -3616,7 +3616,6 @@ static void
 free_inflated_signature (MonoInflatedMethodSignature *sig)
 {
 	mono_metadata_free_inflated_signature (sig->sig);
-	g_free (sig);
 }
 
 static void
@@ -3639,32 +3638,31 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 	MonoInflatedMethodSignature helper;
 	MonoInflatedMethodSignature *res;
 	CollectData data;
-	MonoImageSet *set;
 
 	helper.sig = sig;
 	helper.context.class_inst = context->class_inst;
 	helper.context.method_inst = context->method_inst;
 
 	collect_data_init (&data);
-
 	collect_inflated_signature_images (&helper, &data);
-
-	set = get_image_set (data.images, data.nimages);
-
+	MonoGenericMemoryManager *gen_mm = mono_mem_manager_get_generic (data.images, data.nimages);
+	MonoMemoryManager *mm = (MonoMemoryManager*)gen_mm;
 	collect_data_free (&data);
 
-	mono_image_set_lock (set);
+	mono_mem_manager_lock (mm);
 
-	res = (MonoInflatedMethodSignature *)g_hash_table_lookup (set->gsignature_cache, &helper);
+	if (!gen_mm->gsignature_cache)
+		gen_mm->gsignature_cache = g_hash_table_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature);
+	res = (MonoInflatedMethodSignature *)g_hash_table_lookup (gen_mm->gsignature_cache, &helper);
 	if (!res) {
-		res = g_new0 (MonoInflatedMethodSignature, 1);
+		res = mono_mem_manager_alloc0 (mm, sizeof (MonoInflatedMethodSignature));
 		res->sig = sig;
 		res->context.class_inst = context->class_inst;
 		res->context.method_inst = context->method_inst;
-		g_hash_table_insert (set->gsignature_cache, res, res);
+		g_hash_table_insert (gen_mm->gsignature_cache, res, res);
 	}
 
-	mono_image_set_unlock (set);
+	mono_mem_manager_unlock (mm);
 
 	return res->sig;
 }
@@ -3714,6 +3712,53 @@ mono_metadata_get_image_set_for_aggregate_modifiers (MonoAggregateModContainer *
 	collect_data_free (&image_set_data);
 
 	return set;
+}
+
+MonoGenericMemoryManager *
+mono_metadata_get_mem_manager_for_type (MonoType *type)
+{
+	MonoGenericMemoryManager *mm;
+	CollectData image_set_data;
+
+	collect_data_init (&image_set_data);
+	collect_type_images (type, &image_set_data);
+	mm = mono_mem_manager_get_generic (image_set_data.images, image_set_data.nimages);
+	collect_data_free (&image_set_data);
+
+	return mm;
+}
+
+MonoGenericMemoryManager *
+mono_metadata_get_mem_manager_for_class (MonoClass *klass)
+{
+	return mono_metadata_get_mem_manager_for_type (m_class_get_byval_arg (klass));
+}
+
+MonoGenericMemoryManager *
+mono_metadata_get_mem_manager_for_method (MonoMethodInflated *method)
+{
+	MonoGenericMemoryManager *mm;
+	CollectData image_set_data;
+
+	collect_data_init (&image_set_data);
+	collect_method_images (method, &image_set_data);
+	mm = mono_mem_manager_get_generic (image_set_data.images, image_set_data.nimages);
+	collect_data_free (&image_set_data);
+
+	return mm;
+}
+
+static MonoGenericMemoryManager *
+mono_metadata_get_mem_manager_for_aggregate_modifiers (MonoAggregateModContainer *amods)
+{
+	MonoGenericMemoryManager *mm;
+	CollectData image_set_data;
+	collect_data_init (&image_set_data);
+	collect_aggregate_modifiers_images (amods, &image_set_data);
+	mm = mono_mem_manager_get_generic (image_set_data.images, image_set_data.nimages);
+	collect_data_free (&image_set_data);
+
+	return mm;
 }
 
 MonoImageSet *
@@ -3807,35 +3852,37 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 	CollectData data;
 	int type_argc = candidate->type_argc;
 	gboolean is_open = candidate->is_open;
-	MonoImageSet *set;
 
 	collect_data_init (&data);
-
 	collect_ginst_images (candidate, &data);
-
-	set = get_image_set (data.images, data.nimages);
-
+	MonoGenericMemoryManager *gen_mm = mono_mem_manager_get_generic (data.images, data.nimages);
+	MonoMemoryManager *mm = (MonoMemoryManager*)gen_mm;
 	collect_data_free (&data);
 
-	mono_image_set_lock (set);
+	mono_mem_manager_lock (mm);
 
-	MonoGenericInst *ginst = (MonoGenericInst *)g_hash_table_lookup (set->ginst_cache, candidate);
+	if (!gen_mm->ginst_cache)
+		gen_mm->ginst_cache = g_hash_table_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst);
+
+	MonoGenericInst *ginst = (MonoGenericInst *)g_hash_table_lookup (gen_mm->ginst_cache, candidate);
 	if (!ginst) {
 		int size = MONO_SIZEOF_GENERIC_INST + type_argc * sizeof (MonoType *);
-		ginst = (MonoGenericInst *)mono_image_set_alloc0 (set, size);
+		ginst = (MonoGenericInst *)mono_mem_manager_alloc0 (mm, size);
 #ifndef MONO_SMALL_CONFIG
 		ginst->id = mono_atomic_inc_i32 (&next_generic_inst_id);
 #endif
 		ginst->is_open = is_open;
 		ginst->type_argc = type_argc;
 
+		// FIXME: Dup into the mem manager
 		for (int i = 0; i < type_argc; ++i)
 			ginst->type_argv [i] = mono_metadata_type_dup (NULL, candidate->type_argv [i]);
 
-		g_hash_table_insert (set->ginst_cache, ginst, ginst);
+		g_hash_table_insert (gen_mm->ginst_cache, ginst, ginst);
 	}
 
-	mono_image_set_unlock (set);
+	mono_mem_manager_unlock (mm);
+
 	return ginst;
 }
 
@@ -3843,23 +3890,27 @@ MonoAggregateModContainer *
 mono_metadata_get_canonical_aggregate_modifiers (MonoAggregateModContainer *candidate)
 {
 	g_assert (candidate->count > 0);
-	MonoImageSet *set = mono_metadata_get_image_set_for_aggregate_modifiers (candidate);
+	MonoGenericMemoryManager *gen_mm = mono_metadata_get_mem_manager_for_aggregate_modifiers (candidate);
+	MonoMemoryManager *mm = (MonoMemoryManager*)gen_mm;
 	
-	mono_image_set_lock (set);
+	mono_mem_manager_lock (mm);
 
-	MonoAggregateModContainer *amods = (MonoAggregateModContainer *)g_hash_table_lookup (set->aggregate_modifiers_cache, candidate);
+	if (!gen_mm->aggregate_modifiers_cache)
+		gen_mm->aggregate_modifiers_cache = g_hash_table_new_full (aggregate_modifiers_hash, aggregate_modifiers_equal, NULL, (GDestroyNotify)free_aggregate_modifiers);
+
+	MonoAggregateModContainer *amods = (MonoAggregateModContainer *)g_hash_table_lookup (gen_mm->aggregate_modifiers_cache, candidate);
 	if (!amods) {
 		size_t size = mono_sizeof_aggregate_modifiers (candidate->count);
-		amods = (MonoAggregateModContainer *)mono_image_set_alloc0 (set, size);
+		amods = (MonoAggregateModContainer *)mono_mem_manager_alloc0 (mm, size);
 		amods->count = candidate->count;
 		for (int i = 0; i < candidate->count; ++i) {
 			amods->modifiers [i].required = candidate->modifiers [i].required;
 			amods->modifiers [i].type = mono_metadata_type_dup (NULL, candidate->modifiers [i].type);
 		}
 
-		g_hash_table_insert (set->aggregate_modifiers_cache, amods, amods);
+		g_hash_table_insert (gen_mm->aggregate_modifiers_cache, amods, amods);
 	}
-	mono_image_set_unlock (set);
+	mono_mem_manager_unlock (mm);
 	return amods;
 }
 
@@ -3885,7 +3936,6 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	MonoGenericClass *gclass;
 	MonoGenericClass helper;
 	gboolean is_tb_open = mono_metadata_is_type_builder_generic_type_definition (container_class, inst, is_dynamic);
-	MonoImageSet *set;
 	CollectData data;
 
 	g_assert (mono_class_get_generic_container (container_class)->type_argc == inst->type_argc);
@@ -3897,14 +3947,22 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	helper.is_tb_open = is_tb_open;
 
 	collect_data_init (&data);
-
 	collect_gclass_images (&helper, &data);
-
-	set = get_image_set (data.images, data.nimages);
-
+	MonoGenericMemoryManager *gen_mm = mono_mem_manager_get_generic (data.images, data.nimages);
+	MonoMemoryManager *mm = (MonoMemoryManager*)gen_mm;
 	collect_data_free (&data);
 
-	gclass = (MonoGenericClass *)mono_conc_hashtable_lookup (set->gclass_cache, &helper);
+	if (!gen_mm->gclass_cache) {
+		mono_mem_manager_lock (mm);
+		if (!gen_mm->gclass_cache) {
+			MonoConcurrentHashTable *cache = mono_conc_hashtable_new_full (mono_generic_class_hash, mono_generic_class_equal, NULL, (GDestroyNotify)free_generic_class);
+			mono_memory_barrier ();
+			gen_mm->gclass_cache = cache;
+		}
+		mono_mem_manager_unlock (mm);
+	}
+
+	gclass = (MonoGenericClass *)mono_conc_hashtable_lookup (gen_mm->gclass_cache, &helper);
 
 	/* A tripwire just to keep us honest */
 	g_assert (!helper.cached_class);
@@ -3912,7 +3970,9 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	if (gclass)
 		return gclass;
 
-	gclass = mono_image_set_new0 (set, MonoGenericClass, 1);
+	mono_mem_manager_lock (mm);
+
+	gclass = mono_mem_manager_alloc0 (mm, sizeof (MonoGenericClass));
 	if (is_dynamic)
 		gclass->is_dynamic = 1;
 
@@ -3920,19 +3980,17 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	gclass->container_class = container_class;
 	gclass->context.class_inst = inst;
 	gclass->context.method_inst = NULL;
-	gclass->owner = set;
+	gclass->owner = gen_mm;
 	if (inst == mono_class_get_generic_container (container_class)->context.class_inst && !is_tb_open)
 		gclass->cached_class = container_class;
 
-	mono_image_set_lock (set);
-
-	MonoGenericClass *gclass2 = (MonoGenericClass*)mono_conc_hashtable_insert (set->gclass_cache, gclass, gclass);
+	MonoGenericClass *gclass2 = (MonoGenericClass*)mono_conc_hashtable_insert (gen_mm->gclass_cache, gclass, gclass);
 	if (!gclass2)
 		gclass2 = gclass;
 
 	// g_hash_table_insert (set->gclass_cache, gclass, gclass);
 
-	mono_image_set_unlock (set);
+	mono_mem_manager_unlock (mm);
 
 	return gclass2;
 }

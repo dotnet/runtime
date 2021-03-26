@@ -232,44 +232,6 @@ struct _MonoAssembly {
 };
 
 typedef struct {
-	/*
-	 * indexed by MonoMethodSignature 
-	 * Protected by the marshal lock
-	 */
-	GHashTable *delegate_invoke_cache;
-	GHashTable *delegate_begin_invoke_cache;
-	GHashTable *delegate_end_invoke_cache;
-	GHashTable *runtime_invoke_signature_cache;
-	GHashTable *runtime_invoke_sig_cache;
-
-	/*
-	 * indexed by SignaturePointerPair
-	 */
-	GHashTable *delegate_abstract_invoke_cache;
-	GHashTable *delegate_bound_static_invoke_cache;
-
-	/*
-	 * indexed by MonoMethod pointers
-	 * Protected by the marshal lock
-	 */
-	GHashTable *runtime_invoke_method_cache;
-	GHashTable *managed_wrapper_cache;
-
-	GHashTable *native_wrapper_cache;
-	GHashTable *native_wrapper_aot_cache;
-	GHashTable *native_wrapper_check_cache;
-	GHashTable *native_wrapper_aot_check_cache;
-
-	GHashTable *native_func_wrapper_aot_cache;
-	GHashTable *native_func_wrapper_indirect_cache; /* Indexed by MonoMethodSignature. Protected by the marshal lock */
-	GHashTable *synchronized_cache;
-	GHashTable *unbox_wrapper_cache;
-	GHashTable *cominterop_invoke_cache;
-	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
-	GHashTable *thunk_invoke_cache;
-} MonoWrapperCaches;
-
-typedef struct {
 	const char* data;
 	guint32  size;
 } MonoStreamHeader;

@@ -16,6 +16,7 @@
 #include <mono/utils/mono-coop-mutex.h>
 #include <mono/utils/mono-error.h>
 #include <mono/utils/mono-forward.h>
+#include <mono/utils/mono-conc-hashtable.h>
 
 #if defined(TARGET_OSX)
 #define MONO_LOADER_LIBRARY_NAME "libcoreclr.dylib"
@@ -51,6 +52,44 @@ struct _MonoDllMap {
 };
 #endif
 
+typedef struct {
+	/*
+	 * indexed by MonoMethodSignature
+	 * Protected by the marshal lock
+	 */
+	GHashTable *delegate_invoke_cache;
+	GHashTable *delegate_begin_invoke_cache;
+	GHashTable *delegate_end_invoke_cache;
+	GHashTable *runtime_invoke_signature_cache;
+	GHashTable *runtime_invoke_sig_cache;
+
+	/*
+	 * indexed by SignaturePointerPair
+	 */
+	GHashTable *delegate_abstract_invoke_cache;
+	GHashTable *delegate_bound_static_invoke_cache;
+
+	/*
+	 * indexed by MonoMethod pointers
+	 * Protected by the marshal lock
+	 */
+	GHashTable *runtime_invoke_method_cache;
+	GHashTable *managed_wrapper_cache;
+
+	GHashTable *native_wrapper_cache;
+	GHashTable *native_wrapper_aot_cache;
+	GHashTable *native_wrapper_check_cache;
+	GHashTable *native_wrapper_aot_check_cache;
+
+	GHashTable *native_func_wrapper_aot_cache;
+	GHashTable *native_func_wrapper_indirect_cache; /* Indexed by MonoMethodSignature. Protected by the marshal lock */
+	GHashTable *synchronized_cache;
+	GHashTable *unbox_wrapper_cache;
+	GHashTable *cominterop_invoke_cache;
+	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
+	GHashTable *thunk_invoke_cache;
+} MonoWrapperCaches;
+
 /* Lock-free allocator */
 typedef struct {
 	guint8 *mem;
@@ -69,6 +108,8 @@ struct _MonoAssemblyLoadContext {
 	MonoCoopMutex assemblies_lock;
 	// Holds ALC-specific memory
 	MonoSingletonMemoryManager *memory_manager;
+	// Holds generic instances owned only by this ALC
+	MonoGenericMemoryManager *generic_memory_manager;
 	GPtrArray *generic_memory_managers;
 	// Protects generic_memory_managers; if taking this with the domain alcs_lock, always take this second
 	MonoCoopMutex memory_managers_lock;
@@ -136,12 +177,36 @@ struct _MonoSingletonMemoryManager {
 	MonoAssemblyLoadContext *alc;
 };
 
+/*
+ * Generic instances and aggregated custom modifiers depend on many alcs, and they need to be deleted if one
+ * of the alcs they depend on is unloaded. For example,
+ * List<Foo> depends on both List's alc and Foo's alc.
+ * A MonoGenericMemoryManager is the owner of all generic instances depending on the same set of
+ * alcs.
+ */
 struct _MonoGenericMemoryManager {
 	MonoMemoryManager memory_manager;
 
 	// Parent ALCs
 	int n_alcs;
+	// Allocated from the mempool
 	MonoAssemblyLoadContext **alcs;
+
+	// Generic-specific caches
+	GHashTable *ginst_cache, *gmethod_cache, *gsignature_cache;
+	MonoConcurrentHashTable *gclass_cache;
+
+	/* mirror caches of ones already on MonoImage. These ones contain generics */
+	GHashTable *szarray_cache, *array_cache, *ptr_cache;
+
+	MonoWrapperCaches wrapper_caches;
+
+	GHashTable *aggregate_modifiers_cache;
+
+	/* Indexed by MonoGenericParam pointers */
+	GHashTable **gshared_types;
+	/* The length of the above array */
+	int gshared_types_len;
 };
 
 void
@@ -271,6 +336,12 @@ mono_mem_manager_free_debug_info (MonoMemoryManager *memory_manager);
 
 gboolean
 mono_mem_manager_mp_contains_addr (MonoMemoryManager *memory_manager, gpointer addr);
+
+MonoGenericMemoryManager *
+mono_mem_manager_get_generic (MonoImage **images, int nimages);
+
+MonoGenericMemoryManager*
+mono_mem_manager_merge (MonoGenericMemoryManager *mm1, MonoGenericMemoryManager *mm2);
 
 G_END_DECLS
 
