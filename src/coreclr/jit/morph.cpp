@@ -17778,8 +17778,8 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 
     // Currently, we don't instrument internal blocks, so the only way we can set weights to these blocks
     // is to analyze successors and guess.
-    const float cond2BlockWeight  = max(50.0f * nextBbWeight / currBbWeight + 50.0f, 50.0f);
-    const float helperBlockWeight = max(nextBbWeight * 100.0f / currBbWeight, 100.0f);
+    const float cond2BlockWeight  = min(max(50.0f * nextBbWeight / currBbWeight + 50.0f, 50.0f), 100.0f);
+    const float helperBlockWeight = min(max(nextBbWeight * 100.0f / currBbWeight, 0.0f), 100.0f);
 
     cond2Block->inheritWeightPercentage(block, (UINT32)cond2BlockWeight);
     helperBlock->inheritWeightPercentage(block, (UINT32)helperBlockWeight);
