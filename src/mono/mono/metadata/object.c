@@ -296,24 +296,6 @@ mono_type_initialization_init (void)
 	mono_register_jit_icall (ves_icall_string_alloc, mono_icall_sig_object_int, FALSE);
 }
 
-void
-mono_type_initialization_cleanup (void)
-{
-#if 0
-	/* This is causing race conditions with
-	 * mono_release_type_locks
-	 */
-	mono_coop_mutex_destroy (&type_initialization_section);
-	g_hash_table_destroy (type_initialization_hash);
-	type_initialization_hash = NULL;
-#endif
-	mono_coop_mutex_destroy (&ldstr_section);
-	g_hash_table_destroy (blocked_thread_hash);
-	blocked_thread_hash = NULL;
-
-	free_main_args ();
-}
-
 static MonoException*
 mono_get_exception_type_initialization_checked (const gchar *type_name, MonoException* inner_raw, MonoError *error)
 {
@@ -1812,7 +1794,7 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 
 			sorted = imt_sort_slot_entries (entries);
 
-			*vtable_slot = imt_trampoline_builder (NULL, (MonoIMTCheckItem**)sorted->pdata, sorted->len,
+			*vtable_slot = imt_trampoline_builder (vtable, (MonoIMTCheckItem**)sorted->pdata, sorted->len,
 												   vtable_trampoline);
 
 			while (entries) {

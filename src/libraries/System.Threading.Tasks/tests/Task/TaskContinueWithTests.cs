@@ -1401,7 +1401,7 @@ namespace System.Threading.Tasks.Tests
         {
             if (exception == null)
             {
-                Assert.True(false, string.Format(message + " (no exception thrown)")); ;
+                Assert.True(false, string.Format(message + " (no exception thrown)"));
             }
             else if (exception.GetType() != typeof(AggregateException))
             {

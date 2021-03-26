@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 namespace System.Net
 {
     // _SecPkgInfoW in sspi.h.
-    internal class SecurityPackageInfoClass
+    internal sealed class SecurityPackageInfoClass
     {
         internal int Capabilities;
         internal short Version;

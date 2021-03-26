@@ -3816,14 +3816,6 @@ mono_generic_sharing_init (void)
 	mono_os_mutex_init_recursive (&gshared_mutex);
 }
 
-void
-mono_generic_sharing_cleanup (void)
-{
-	mono_remove_image_unload_hook (mono_class_unregister_image_generic_subclasses, NULL);
-
-	g_hash_table_destroy (generic_subclass_hash);
-}
-
 /*
  * mini_type_var_is_vt:
  *

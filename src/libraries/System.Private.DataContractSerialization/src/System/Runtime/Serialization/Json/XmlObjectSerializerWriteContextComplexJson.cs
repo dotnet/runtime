@@ -13,7 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
+    internal sealed class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
     {
         private readonly EmitTypeInformation _emitXsiType;
         private bool _perCallXsiTypeAlreadyEmitted;

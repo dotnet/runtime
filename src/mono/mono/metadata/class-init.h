@@ -16,9 +16,6 @@ mono_class_init_internal (MonoClass *klass);
 void
 mono_classes_init (void);
 
-void
-mono_classes_cleanup (void);
-
 MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError *error);
 

@@ -65,7 +65,6 @@
     <!-- DiaSymReader for the host architecture, which is used for [cross-]compilation -->
     <_diaSymArch>$(_hostArch)</_diaSymArch>
     <_diaSymReaderPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymArch).dll</_diaSymReaderPath>
-    <_diaSymReaderPathIfExists Condition="Exists('$(_diaSymReaderPath)')">$(_diaSymReaderPath)</_diaSymReaderPathIfExists>
 
     <!-- DiaSymReader for the target architecture, which is placed into the package -->
     <_diaSymTargetArch>$(TargetArchitecture)</_diaSymTargetArch>

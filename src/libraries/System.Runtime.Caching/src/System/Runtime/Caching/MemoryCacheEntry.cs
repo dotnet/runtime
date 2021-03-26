@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace System.Runtime.Caching
 {
-    internal class MemoryCacheEntry : MemoryCacheKey
+    internal sealed class MemoryCacheEntry : MemoryCacheKey
     {
         private readonly object _value;
         private readonly DateTime _utcCreated;

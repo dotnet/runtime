@@ -63,7 +63,7 @@ void* JitHost::allocateSlab(size_t size, size_t* pActualSize)
 {
     size = max(size, sizeof(Slab));
 
-    Thread* pCurrentThread = GetThread();
+    Thread* pCurrentThread = GetThreadNULLOk();
     if (m_pCurrentCachedList != NULL || m_pPreviousCachedList != NULL)
     {
         CrstHolder lock(&m_jitSlabAllocatorCrst);
@@ -124,7 +124,7 @@ void JitHost::freeSlab(void* slab, size_t actualSize)
 
             Slab* pSlab = (Slab*)slab;
             pSlab->size = actualSize;
-            pSlab->affinity = GetThread();
+            pSlab->affinity = GetThreadNULLOk();
             pSlab->pNext = m_pCurrentCachedList;
             m_pCurrentCachedList = pSlab;
             return;

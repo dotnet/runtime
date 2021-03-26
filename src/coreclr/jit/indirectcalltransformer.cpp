@@ -701,7 +701,7 @@ private:
             call->gtCallThisArg = compiler->gtNewCallArgs(compiler->gtNewLclvNode(thisTemp, TYP_REF));
             call->SetIsGuarded();
 
-            JITDUMP("Direct call [%06u] in block BB%02u\n", compiler->dspTreeID(call), thenBlock->bbNum);
+            JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), thenBlock->bbNum);
 
             // Then invoke impDevirtualizeCall to actually
             // transform the call for us. It should succeed.... as we have
@@ -766,7 +766,7 @@ private:
             call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
             call->SetIsGuarded();
 
-            JITDUMP("Residual call [%06u] moved to block BB%02u\n", compiler->dspTreeID(call), elseBlock->bbNum);
+            JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call), elseBlock->bbNum);
 
             if (returnTemp != BAD_VAR_NUM)
             {

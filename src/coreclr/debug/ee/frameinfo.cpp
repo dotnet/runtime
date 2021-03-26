@@ -1957,7 +1957,7 @@ bool ShouldSendUMLeafChain(Thread * pThread)
 
     // If we're tracing ourselves, we must be in managed code.
     // Native user code can't initiate a managed stackwalk.
-    if (pThread == GetThread())
+    if (pThread == GetThreadNULLOk())
     {
         return false;
     }
@@ -2008,7 +2008,7 @@ bool PrepareLeafUMChain(DebuggerFrameData * pData, CONTEXT * pCtxTemp)
 
         // We need to get thread's context (InitRegDisplay will do that under the covers).
         // If this is our thread, we're in bad shape. Fortunately that should never happen.
-        _ASSERTE(thread != GetThread());
+        _ASSERTE(thread != GetThreadNULLOk());
 
         Thread::SuspendThreadResult str = thread->SuspendThread();
         if (str != Thread::STR_Success)

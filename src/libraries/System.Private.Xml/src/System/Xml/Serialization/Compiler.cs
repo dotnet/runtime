@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Xml.Serialization
 {
-    internal class Compiler
+    internal sealed class Compiler
     {
         private readonly StringWriter _writer = new StringWriter(CultureInfo.InvariantCulture);
 

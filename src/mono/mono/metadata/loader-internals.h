@@ -161,9 +161,6 @@ void
 mono_global_loader_cache_init (void);
 
 void
-mono_global_loader_cache_cleanup (void);
-
-void
 mono_set_pinvoke_search_directories (int dir_count, char **dirs);
 
 void

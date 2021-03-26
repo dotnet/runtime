@@ -1462,7 +1462,12 @@ emit_volatile_store (EmitContext *ctx, int vreg)
 
 	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
 		g_assert (ctx->addresses [vreg]);
+#ifdef TARGET_WASM
+		/* Need volatile stores otherwise the compiler might move them */
+		mono_llvm_build_store (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg], TRUE, LLVM_BARRIER_NONE);
+#else
 		LLVMBuildStore (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]);
+#endif
 	}
 }
 
@@ -12394,18 +12399,6 @@ mono_llvm_init (gboolean enable_jit)
 
 	if (enable_jit)
 		mono_llvm_jit_init ();
-}
-
-void
-mono_llvm_cleanup (void)
-{
-	MonoLLVMModule *module = &aot_module;
-
-	if (module->lmodule)
-		LLVMDisposeModule (module->lmodule);
-
-	if (module->context)
-		LLVMContextDispose (module->context);
 }
 
 void

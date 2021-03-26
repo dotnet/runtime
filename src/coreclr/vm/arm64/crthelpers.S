@@ -12,7 +12,7 @@
 LEAF_ENTRY JIT_MemSet, _TEXT
     cbz x2, LOCAL_LABEL(JIT_MemSet_ret)
 
-    strb w1, [x0]
+    ldrb wzr, [x0]
 
     b C_PLTFUNC(memset)
 
@@ -23,7 +23,7 @@ LEAF_END_MARKED JIT_MemSet, _TEXT
 LEAF_ENTRY JIT_MemCpy, _TEXT
     cbz x2, LOCAL_LABEL(JIT_MemCpy_ret)
 
-    strb wzr, [x0]
+    ldrb wzr, [x0]
     ldrb wzr, [x1]
 
     b C_PLTFUNC(memcpy)

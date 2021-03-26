@@ -653,7 +653,7 @@ mono_assembly_fill_assembly_name_full (MonoImage *image, MonoAssemblyName *aname
 	guint32 cols [MONO_ASSEMBLY_SIZE];
 	gint32 machine, flags;
 
-	if (!t->rows)
+	if (!table_info_get_rows (t))
 		return FALSE;
 
 	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
@@ -1237,8 +1237,9 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	if (!image->references) {
 		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 	
-		image->references = g_new0 (MonoAssembly *, t->rows + 1);
-		image->nreferences = t->rows;
+		int n = table_info_get_rows (t);
+		image->references = g_new0 (MonoAssembly *, n + 1);
+		image->nreferences = n;
 	}
 	reference = image->references [index];
 	mono_image_unlock (image);
@@ -1428,17 +1429,6 @@ mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data)
 	mono_install_assembly_load_hook_v1 (func, user_data);
 }
 
-static void
-free_assembly_load_hooks (void)
-{
-	AssemblyLoadHook *hook, *next;
-
-	for (hook = assembly_load_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
-}
-
 typedef struct AssemblySearchHook AssemblySearchHook;
 struct AssemblySearchHook {
 	AssemblySearchHook *next;
@@ -1533,17 +1523,6 @@ mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_da
 {
 	mono_install_assembly_search_hook_internal_v1 (func, user_data, FALSE);
 }	
-
-static void
-free_assembly_search_hooks (void)
-{
-	AssemblySearchHook *hook, *next;
-
-	for (hook = assembly_search_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
-}
 
 /**
  * mono_install_assembly_refonly_search_hook:
@@ -1688,17 +1667,6 @@ mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer 
 	}
 }
 
-static void
-free_assembly_preload_hooks (void)
-{
-	AssemblyPreLoadHook *hook, *next;
-
-	for (hook = assembly_preload_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
-}
-
 typedef struct AssemblyAsmCtxFromPathHook AssemblyAsmCtxFromPathHook;
 struct AssemblyAsmCtxFromPathHook {
 	AssemblyAsmCtxFromPathHook *next;
@@ -1757,18 +1725,6 @@ assembly_invoke_asmctx_from_path_hook (const char *absfname, MonoAssembly *reque
 			return TRUE;
 	}
 	return FALSE;
-}
-
-
-static void
-free_assembly_asmctx_from_path_hooks (void)
-{
-	AssemblyAsmCtxFromPathHook *hook, *next;
-
-	for (hook = assembly_asmctx_from_path_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
 }
 
 static gchar *
@@ -2334,7 +2290,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	predicate = req->predicate;
 	user_data = req->predicate_ud;
 
-	if (!image->tables [MONO_TABLE_ASSEMBLY].rows) {
+	if (!table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLY])) {
 		/* 'image' doesn't have a manifest -- maybe someone is trying to Assembly.Load a .netmodule */
 		*status = MONO_IMAGE_IMAGE_INVALID;
 		return NULL;
@@ -3459,12 +3415,6 @@ mono_assembly_foreach (GFunc func, gpointer user_data)
 void
 mono_assemblies_cleanup (void)
 {
-	mono_os_mutex_destroy (&assemblies_mutex);
-
-	free_assembly_asmctx_from_path_hooks ();
-	free_assembly_load_hooks ();
-	free_assembly_search_hooks ();
-	free_assembly_preload_hooks ();
 }
 
 /*
@@ -3685,7 +3635,8 @@ mono_assembly_has_skip_verification (MonoAssembly *assembly)
 
 	t = &assembly->image->tables [MONO_TABLE_DECLSECURITY];
 
-	for (i = 0; i < t->rows; ++i) {
+	int rows = table_info_get_rows (t);
+	for (i = 0; i < rows; ++i) {
 		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
 		if ((cols [MONO_DECL_SECURITY_PARENT] & MONO_HAS_DECL_SECURITY_MASK) != MONO_HAS_DECL_SECURITY_ASSEMBLY)
 			continue;

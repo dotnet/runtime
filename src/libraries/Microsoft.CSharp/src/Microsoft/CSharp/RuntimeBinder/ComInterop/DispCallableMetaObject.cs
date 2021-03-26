@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    internal class DispCallableMetaObject : DynamicMetaObject
+    internal sealed class DispCallableMetaObject : DynamicMetaObject
     {
         private readonly DispCallable _callable;
 

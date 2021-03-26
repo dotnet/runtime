@@ -888,7 +888,7 @@ ISpGrammarResourceLoader
                     return new PlatformNotSupportedException(SR.Get(srid));
 
                 default:
-                    Exception exReturn = null; ;
+                    Exception exReturn = null;
                     if (srid >= 0)
                     {
                         exReturn = new InvalidOperationException(SR.Get(srid));
