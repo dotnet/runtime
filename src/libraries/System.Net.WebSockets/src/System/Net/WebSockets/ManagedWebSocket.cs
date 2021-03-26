@@ -797,48 +797,32 @@ namespace System.Net.WebSockets
                     // First copy any data lingering in the receive buffer.
                     int totalBytesReceived = 0;
 
-                    // Only start a new receive when we've consumed everything from the inflater, if present.
-                    if (_inflater is null || _inflater.Finished)
+                    // Only start a new receive if we haven't received the entire frame.
+                    if (header.PayloadLength > 0)
                     {
-                        if (_receiveBufferCount > 0)
-                        {
-                            int receiveBufferBytesToCopy = header.Compressed ?
-                                (int)Math.Min(header.PayloadLength, _receiveBufferCount) :
-                                Math.Min(payloadBuffer.Length, (int)Math.Min(header.PayloadLength, _receiveBufferCount));
-                            Debug.Assert(receiveBufferBytesToCopy > 0);
-
-                            if (header.Compressed)
-                            {
-                                Debug.Assert(_inflater is not null);
-                                _inflater.Initialize(header.PayloadLength, payloadBuffer.Length);
-                                _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(_inflater.Span);
-                                ConsumeFromBuffer(receiveBufferBytesToCopy);
-                                totalBytesReceived += receiveBufferBytesToCopy;
-                                Debug.Assert(_receiveBufferCount == 0 || totalBytesReceived == header.PayloadLength);
-                            }
-                            else
-                            {
-                                _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(payloadBuffer.Span);
-                                ConsumeFromBuffer(receiveBufferBytesToCopy);
-                                totalBytesReceived += receiveBufferBytesToCopy;
-                                Debug.Assert(
-                                    _receiveBufferCount == 0 ||
-                                    totalBytesReceived == payloadBuffer.Length ||
-                                    totalBytesReceived == header.PayloadLength);
-                            }
-                        }
-                        else if (header.Compressed)
+                        if (header.Compressed)
                         {
                             Debug.Assert(_inflater is not null);
-                            _inflater.Initialize(header.PayloadLength, payloadBuffer.Length);
+                            _inflater.Prepare(header.PayloadLength, payloadBuffer.Length);
                         }
 
-                        // Then read directly into the appropriate buffer until we've hit a limit.
-                        int limit = (int)Math.Min(header.Compressed ? _inflater!.Memory.Length : payloadBuffer.Length, header.PayloadLength);
+                        // Read directly into the appropriate buffer until we've hit a limit.
+                        int limit = (int)Math.Min(header.Compressed ? _inflater!.Span.Length : payloadBuffer.Length, header.PayloadLength);
+
+                        if (_receiveBufferCount > 0)
+                        {
+                            int receiveBufferBytesToCopy = Math.Min(limit, _receiveBufferCount);
+                            Debug.Assert(receiveBufferBytesToCopy > 0);
+
+                            _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(
+                                header.Compressed ? _inflater!.Span : payloadBuffer.Span);
+                            ConsumeFromBuffer(receiveBufferBytesToCopy);
+                            totalBytesReceived += receiveBufferBytesToCopy;
+                        }
+
                         while (totalBytesReceived < limit)
                         {
-                            int numBytesRead = await _stream.ReadAsync(
-                                header.Compressed ?
+                            int numBytesRead = await _stream.ReadAsync( header.Compressed ?
                                     _inflater!.Memory.Slice(totalBytesReceived, limit - totalBytesReceived) :
                                     payloadBuffer.Slice(totalBytesReceived, limit - totalBytesReceived),
                                 cancellationToken).ConfigureAwait(false);

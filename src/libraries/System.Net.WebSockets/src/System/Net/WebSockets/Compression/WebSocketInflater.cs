@@ -58,15 +58,13 @@ namespace System.Net.WebSockets.Compression
         }
 
         /// <summary>
-        /// Indicates that there is nothing left for inflating. If there is
-        /// more data left to be received for the message then call <see cref="Initialize(long, int)"/>
-        /// and receive directly into <see cref="Memory"/>.
+        /// Indicates that there is nothing left for inflating.
         /// </summary>
         public bool Finished { get; private set; } = true;
 
-        public Memory<byte> Memory => _buffer;
+        public Memory<byte> Memory => _buffer.AsMemory(_position + _available);
 
-        public Span<byte> Span => _buffer;
+        public Span<byte> Span => _buffer.AsSpan(_position + _available);
 
         public void Dispose()
         {
@@ -79,36 +77,62 @@ namespace System.Net.WebSockets.Compression
         /// </summary>
         /// <param name="payloadLength">the length of the message payload</param>
         /// <param name="userBufferLength">the length of the buffer where the payload will be inflated</param>
-        public void Initialize(long payloadLength, int userBufferLength)
+        public void Prepare(long payloadLength, int userBufferLength)
         {
-            Debug.Assert(_available == 0);
-            Debug.Assert(_buffer is null);
+            if (_buffer is not null)
+            {
+                Debug.Assert(_available > 0);
 
-            // Rent a buffer as close to the size of the user buffer as possible,
-            // but not try to rent anything above 1MB because the array pool will allocate.
-            // If the payload is smaller than the user buffer, rent only as much as we need.
-            _buffer = ArrayPool<byte>.Shared.Rent(Math.Min(userBufferLength, (int)Math.Min(payloadLength, 1_000_000)));
-            _position = 0;
+                _buffer.AsSpan(_position, _available).CopyTo(_buffer);
+                _position = 0;
+            }
+            else
+            {
+                // Rent a buffer as close to the size of the user buffer as possible,
+                // but not try to rent anything above 1MB because the array pool will allocate.
+                // If the payload is smaller than the user buffer, rent only as much as we need.
+                _buffer = ArrayPool<byte>.Shared.Rent(Math.Min(userBufferLength, (int)Math.Min(payloadLength, 1_000_000)));
+            }
         }
 
         /// <summary>
         /// Inflates the last receive payload into the provided buffer.
         /// </summary>
-        public void Inflate(int totalBytesReceived, Span<byte> output, bool flush, out int written)
+        public unsafe void Inflate(int totalBytesReceived, Span<byte> output, bool flush, out int written)
         {
             if (totalBytesReceived > 0)
             {
-                Debug.Assert(_buffer is not null, "Initialize must be called.");
-                _available = totalBytesReceived;
+                Debug.Assert(_buffer is not null, "Prepare must be called.");
+                _available += totalBytesReceived;
             }
 
             if (_available > 0)
             {
-                UnsafeInflate(input: new ReadOnlySpan<byte>(_buffer, _position, _available),
-                    output, out int consumed, out written);
+                if (_stream is null)
+                {
+                    Initialize();
+                }
+
+                int consumed;
+
+                fixed (byte* fixedInput = _buffer)
+                fixed (byte* fixedOutput = &MemoryMarshal.GetReference(output))
+                {
+                    _stream.NextIn = (IntPtr)(fixedInput + _position);
+                    _stream.AvailIn = (uint)_available;
+
+                    _stream.NextOut = (IntPtr)fixedOutput;
+                    _stream.AvailOut = (uint)output.Length;
+
+                    Inflate(_stream);
+
+                    consumed = _available - (int)_stream.AvailIn;
+                    written = output.Length - (int)_stream.AvailOut;
+                }
 
                 _position += consumed;
                 _available -= consumed;
+                _needsFlushMarker = _persisted;
             }
             else
             {
@@ -135,42 +159,31 @@ namespace System.Net.WebSockets.Compression
             }
         }
 
-        private unsafe void UnsafeInflate(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
-        {
-            if (_stream is null)
-            {
-                Initialize();
-            }
-            fixed (byte* fixedInput = &MemoryMarshal.GetReference(input))
-            fixed (byte* fixedOutput = &MemoryMarshal.GetReference(output))
-            {
-                _stream.NextIn = (IntPtr)fixedInput;
-                _stream.AvailIn = (uint)input.Length;
-
-                _stream.NextOut = (IntPtr)fixedOutput;
-                _stream.AvailOut = (uint)output.Length;
-
-                Inflate(_stream);
-
-                consumed = input.Length - (int)_stream.AvailIn;
-                written = output.Length - (int)_stream.AvailOut;
-            }
-
-            _needsFlushMarker = _persisted;
-        }
-
         /// <summary>
         /// Finishes the decoding by flushing any outstanding data to the output.
         /// </summary>
         /// <returns>true if the flush completed, false to indicate that there is more outstanding data.</returns>
-        private bool Flush(Span<byte> output, out int written)
+        private unsafe bool Flush(Span<byte> output, out int written)
         {
             Debug.Assert(_stream is not null);
             Debug.Assert(_available == 0);
 
             if (_needsFlushMarker)
             {
-                UnsafeInflate(FlushMarker, output, out var _, out written);
+                fixed (byte* fixedInput = &MemoryMarshal.GetReference(FlushMarker))
+                fixed (byte* fixedOutput = &MemoryMarshal.GetReference(output))
+                {
+                    _stream.NextIn = (IntPtr)fixedInput;
+                    _stream.AvailIn = (uint)FlushMarkerLength;
+
+                    _stream.NextOut = (IntPtr)fixedOutput;
+                    _stream.AvailOut = (uint)output.Length;
+
+                    Inflate(_stream);
+
+                    written = output.Length - (int)_stream.AvailOut;
+                }
+
                 _needsFlushMarker = false;
 
                 if (written < output.Length || IsFinished(_stream, out _remainingByte))
@@ -233,6 +246,7 @@ namespace System.Net.WebSockets.Compression
                 ArrayPool<byte>.Shared.Return(_buffer);
                 _buffer = null;
                 _available = 0;
+                _position = 0;
             }
         }
 

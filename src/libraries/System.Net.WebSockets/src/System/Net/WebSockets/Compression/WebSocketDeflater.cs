@@ -87,21 +87,29 @@ namespace System.Net.WebSockets.Compression
                 Initialize();
             }
 
-            UnsafeDeflate(payload, output, out consumed, out written, out needsMoreOutput);
-            if (needsMoreOutput)
+            if (payload.IsEmpty)
             {
-                return;
+                consumed = 0;
+                written = 0;
+            }
+            else
+            {
+                UnsafeDeflate(payload, output, out consumed, out written, out needsMoreOutput);
+
+                if (needsMoreOutput)
+                {
+                    Debug.Assert(written == output.Length);
+                    return;
+                }
             }
 
-            // See comment by Mark Adler https://github.com/madler/zlib/issues/149#issuecomment-225237457
-            // At that point there will be at most a few bits left to write.
-            // Then call deflate() with Z_FULL_FLUSH and no more input and at least six bytes of available output.
-            if (output.Length - written < 6)
+            written += UnsafeFlush(output.Slice(written), out needsMoreOutput);
+
+            if (needsMoreOutput)
             {
-                needsMoreOutput = true;
+                Debug.Assert(written == output.Length);
                 return;
             }
-            written += UnsafeFlush(output.Slice(written));
             Debug.Assert(output.Slice(written - WebSocketInflater.FlushMarkerLength, WebSocketInflater.FlushMarkerLength)
                                .EndsWith(WebSocketInflater.FlushMarker), "The deflated block must always end with a flush marker.");
 
@@ -131,12 +139,10 @@ namespace System.Net.WebSockets.Compression
                 _stream.NextOut = (IntPtr)fixedOutput;
                 _stream.AvailOut = (uint)output.Length;
 
-                // If flush is set to Z_BLOCK, a deflate block is completed
-                // and emitted, as for Z_SYNC_FLUSH, but the output
-                // is not aligned on a byte boundary, and up to seven bits
-                // of the current block are held to be written as the next byte after
-                // the next deflate block is completed.
-                var errorCode = Deflate(_stream, (FlushCode)5/*Z_BLOCK*/);
+                // The flush is set to Z_NO_FLUSH, which allows deflate to decide
+                // how much data to accumulate before producing output,
+                // in order to maximize compression.
+                var errorCode = Deflate(_stream, FlushCode.NoFlush);
 
                 consumed = input.Length - (int)_stream.AvailIn;
                 written = output.Length - (int)_stream.AvailOut;
@@ -145,7 +151,7 @@ namespace System.Net.WebSockets.Compression
             }
         }
 
-        private unsafe int UnsafeFlush(Span<byte> output)
+        private unsafe int UnsafeFlush(Span<byte> output, out bool needsMoreBuffer)
         {
             Debug.Assert(_stream is not null);
             Debug.Assert(_stream.AvailIn == 0);
@@ -159,11 +165,17 @@ namespace System.Net.WebSockets.Compression
                 _stream.NextOut = (IntPtr)fixedOutput;
                 _stream.AvailOut = (uint)output.Length;
 
-                ErrorCode errorCode = Deflate(_stream, (FlushCode)3/*Z_FULL_FLUSH*/);
-                int writtenBytes = output.Length - (int)_stream.AvailOut;
-                Debug.Assert(errorCode == ErrorCode.Ok);
+                // The flush is set to Z_SYNC_FLUSH, all pending output is flushed
+                // to the output buffer and the output is aligned on a byte boundary,
+                // so that the decompressor can get all input data available so far.
+                // This completes the current deflate block and follows it with an empty
+                // stored block that is three bits plus filler bits to the next byte,
+                // followed by four bytes (00 00 ff ff).
+                ErrorCode errorCode = Deflate(_stream, FlushCode.SyncFlush);
+                Debug.Assert(errorCode is ErrorCode.Ok or ErrorCode.BufError);
 
-                return writtenBytes;
+                needsMoreBuffer = errorCode == ErrorCode.BufError;
+                return output.Length - (int)_stream.AvailOut;
             }
         }
 
@@ -183,10 +195,8 @@ namespace System.Net.WebSockets.Compression
             {
                 case ErrorCode.Ok:
                 case ErrorCode.StreamEnd:
-                    return errorCode;
-
                 case ErrorCode.BufError:
-                    return errorCode;  // This is a recoverable error
+                    return errorCode;
 
                 case ErrorCode.StreamError:
                     throw new WebSocketException(SR.ZLibErrorInconsistentStream);

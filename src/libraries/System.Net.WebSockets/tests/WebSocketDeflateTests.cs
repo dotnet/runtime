@@ -37,7 +37,7 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Fact]
-        public async Task HelloWithContextTakeover()
+        public async Task ReceiveHelloWithContextTakeover()
         {
             WebSocketTestStream stream = new();
             stream.Enqueue(0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
@@ -67,7 +67,28 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Fact]
-        public async Task HelloWithoutContextTakeover()
+        public async Task SendHelloWithContextTakeover()
+        {
+            WebSocketTestStream stream = new();
+            using WebSocket websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            {
+                IsServer = true,
+                DeflateOptions = new()
+            });
+
+            await websocket.SendAsync(Encoding.UTF8.GetBytes("Hello"), WebSocketMessageType.Text, true, CancellationToken);
+            Assert.Equal("C107F248CDC9C90700", Convert.ToHexString(stream.NextAvailableBytes));
+
+            stream.Clear();
+            await websocket.SendAsync(Encoding.UTF8.GetBytes("Hello"), WebSocketMessageType.Text, true, CancellationToken);
+
+            // Because context takeover is set by default if we try to send
+            // the same message it should result in fewer bytes.
+            Assert.Equal("C105F200110000", Convert.ToHexString(stream.NextAvailableBytes));
+        }
+
+        [Fact]
+        public async Task ReceiveHelloWithoutContextTakeover()
         {
             WebSocketTestStream stream = new();
             using WebSocket websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
@@ -92,6 +113,31 @@ namespace System.Net.WebSockets.Tests
                 Assert.Equal(buffer.Length, result.Count);
                 Assert.Equal(WebSocketMessageType.Text, result.MessageType);
                 Assert.Equal("Hello", Encoding.UTF8.GetString(buffer.Span));
+            }
+        }
+
+        [Fact]
+        public async Task SendHelloWithoutContextTakeover()
+        {
+            WebSocketTestStream stream = new();
+            using WebSocket websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            {
+                IsServer = true,
+                DeflateOptions = new()
+                {
+                    ClientContextTakeover = false
+                }
+            });
+
+            Memory<byte> buffer = new byte[5];
+
+            for (var i = 0; i < 100; ++i)
+            {
+                await websocket.SendAsync(Encoding.UTF8.GetBytes("Hello"), WebSocketMessageType.Text, true, CancellationToken);
+
+                // Without context takeover the message should look the same every time
+                Assert.Equal("C107F248CDC9C90700", Convert.ToHexString(stream.NextAvailableBytes));
+                stream.Clear();
             }
         }
 

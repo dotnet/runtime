@@ -58,13 +58,11 @@ namespace System.Net.WebSockets.Tests
             {
                 lock (_inputQueue)
                 {
-                    var block = _inputQueue.Peek();
-
-                    if (block is null)
+                    if (_inputQueue.TryPeek(out Block block))
                     {
-                        return default;
+                        return block.Available;
                     }
-                    return block.Available;
+                    return default;
                 }
             }
         }
@@ -167,6 +165,26 @@ namespace System.Net.WebSockets.Tests
             {
                 _inputLock.Release();
                 _inputQueue.Enqueue(new Block(data.ToArray()));
+            }
+        }
+
+        public void Clear()
+        {
+            lock (_inputQueue)
+            {
+                while (_inputQueue.Count > 0)
+                {
+                    if (_inputQueue.Peek() == Block.ConnectionClosed)
+                    {
+                        break;
+                    }
+                    _inputQueue.Dequeue();
+                }
+
+                while (_inputLock.CurrentCount > _inputQueue.Count)
+                {
+                    _inputLock.Wait(0);
+                }
             }
         }
 
