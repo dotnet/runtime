@@ -224,6 +224,8 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the extension object that is mapped to the specified namespace, or null if no object is mapped.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = XsltArgumentList.ExtensionObjectSuppresion)]
         public object GetLateBoundObject(string namespaceUri)
         {
             return (_argList != null) ? _argList.GetExtensionObject(namespaceUri) : null;

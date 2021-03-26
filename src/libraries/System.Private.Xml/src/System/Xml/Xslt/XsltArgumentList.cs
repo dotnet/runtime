@@ -17,6 +17,10 @@ namespace System.Xml.Xsl
     {
         private readonly Hashtable _parameters = new Hashtable();
         private readonly Hashtable _extensions = new Hashtable();
+        private const string ExtensionObjectWarning = @"The stylesheet may have calls to methods of the extension object passed in which cannot be statically analyzed " +
+            "by the trimmer. Ensure all methods that may be called are preserved.";
+        internal const string ExtensionObjectSuppresion = @"In order for this code path to be hit, a previous call to XsltArgumentList.AddExtensionObject is " +
+            "required. That method is already annotated as unsafe and throwing a warning, so we can suppress here.";
 
         // Used for reporting xsl:message's during execution
         internal XsltMessageEncounteredEventHandler? xsltMessageEncountered;
@@ -28,6 +32,7 @@ namespace System.Xml.Xsl
             return _parameters[new XmlQualifiedName(name, namespaceUri)];
         }
 
+        [RequiresUnreferencedCode(ExtensionObjectWarning)]
         public object? GetExtensionObject(string namespaceUri)
         {
             return _extensions[namespaceUri];
@@ -44,8 +49,7 @@ namespace System.Xml.Xsl
             _parameters.Add(qname, parameter);
         }
 
-        [RequiresUnreferencedCode("The stylesheet may have calls to methods of the extension object passed in which cannot be statically analyzed " +
-            "by the trimmer. Ensure all methods that may be called are kept.")]
+        [RequiresUnreferencedCode(ExtensionObjectWarning)]
         public void AddExtensionObject(string namespaceUri, object extension)
         {
             CheckArgumentNull(namespaceUri, nameof(namespaceUri));
