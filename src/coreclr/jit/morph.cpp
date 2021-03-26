@@ -17773,13 +17773,15 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     asgBlock->inheritWeight(block);
     cond1Block->inheritWeight(block);
 
-    // We shouldn't expand casts inside cold blocks in the first place.
-    assert(currBbWeight > 0);
-
     // Currently, we don't instrument internal blocks, so the only way we can set weights to these blocks
     // is to analyze successors and guess.
-    const float cond2BlockWeight  = min(max(50.0f * nextBbWeight / currBbWeight + 50.0f, 50.0f), 100.0f);
-    const float helperBlockWeight = min(max(nextBbWeight * 100.0f / currBbWeight, 0.0f), 100.0f);
+    float cond2BlockWeight  = 0;
+    float helperBlockWeight = 0;
+    if (currBbWeight > 0)
+    {
+        cond2BlockWeight  = min(max(50.0f * nextBbWeight / currBbWeight + 50.0f, 50.0f), 100.0f);
+        helperBlockWeight = min(max(nextBbWeight * 100.0f / currBbWeight, 0.0f), 100.0f);
+    }
 
     cond2Block->inheritWeightPercentage(block, (UINT32)cond2BlockWeight);
     helperBlock->inheritWeightPercentage(block, (UINT32)helperBlockWeight);
