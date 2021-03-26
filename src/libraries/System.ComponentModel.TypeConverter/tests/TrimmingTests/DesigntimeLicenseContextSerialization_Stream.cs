@@ -5,7 +5,7 @@ using System;
 
 namespace TrimmingTests
 {
-    internal static class SampleStream
+    internal static class DesigntimeLicenseContextSerialization_Stream
     {
         public static byte[] ASampleStream { get; } = new byte[]
         {

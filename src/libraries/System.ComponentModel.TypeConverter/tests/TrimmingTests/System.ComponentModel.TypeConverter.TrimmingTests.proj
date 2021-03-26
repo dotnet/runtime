@@ -5,11 +5,11 @@
     <TestConsoleAppSourceFiles Include="ComObjectTypeTest.cs" />
     <TestConsoleAppSourceFiles Include="DesigntimeLicenseContextSerialization_Serialize.cs" TrimmerRootAssemblies="mscorlib">
       <ExtraTrimmerArgs>--feature System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization true</ExtraTrimmerArgs>
-      <AdditionalSourceFiles>SampleStream.cs</AdditionalSourceFiles>
+      <AdditionalSourceFiles>DesigntimeLicenseContextSerialization_Stream.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="DesigntimeLicenseContextSerialization_Deserialize.cs" TrimmerRootAssemblies="mscorlib">
       <ExtraTrimmerArgs>--feature System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization true</ExtraTrimmerArgs>
-      <AdditionalSourceFiles>SampleStream.cs</AdditionalSourceFiles>
+      <AdditionalSourceFiles>DesigntimeLicenseContextSerialization_Stream.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InterfaceTypeTest.cs" />
     <TestConsoleAppSourceFiles Include="TypeConverterIsReadOnly.cs" />

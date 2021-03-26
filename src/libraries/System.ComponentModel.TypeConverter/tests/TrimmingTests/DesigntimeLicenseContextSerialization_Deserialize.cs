@@ -16,7 +16,13 @@ class Program
     {
         AppContext.SetSwitch("System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization", true);
 
-        using (var stream = new MemoryStream(TrimmingTests.SampleStream.ASampleStream))
+        /*
+        AFAICT, it is not straightforward to call System.ComponentModel.Design.DesigntimeLicenseContextSerializer.Deserialize because:
+            1. It is not public
+            2. RuntimeLicenseContext is internal. Even if we created this somehow, RuntimeLicenseContext._savedLicenseKeys is internal, so we'd have to initialize the HashTable in this test (which would defeat the purpose of having this test)
+            3. The public API that exercises the deserialize method requires the use of a *.lic file that needs to be embedded in some component. This would likely mean checking in some component with a license file and including it in this test. All the examples I've seen use Windows Forms components and add licensing to them. Not sure it is worth the effort here when we can test the same behavior with reflection.
+        */
+        using (MemoryStream stream = new MemoryStream(TrimmingTests.DesigntimeLicenseContextSerialization_Stream.ASampleStream))
         {
             var assembly = typeof(DesigntimeLicenseContextSerializer).Assembly;
             Type runtimeLicenseContextType = assembly.GetType("System.ComponentModel.Design.RuntimeLicenseContext");

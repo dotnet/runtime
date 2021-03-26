@@ -25,7 +25,7 @@ class Program
 
             byte[] currentBuffer = stream.ToArray();
             // Verify contents with saved stream
-            byte[] correctBytes = TrimmingTests.SampleStream.ASampleStream;
+            byte[] correctBytes = TrimmingTests.DesigntimeLicenseContextSerialization_Stream.ASampleStream;
 
             if (currentBuffer.Length != correctBytes.Length)
             {

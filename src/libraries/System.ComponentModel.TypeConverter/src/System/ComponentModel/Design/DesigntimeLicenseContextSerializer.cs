@@ -60,7 +60,7 @@ namespace System.ComponentModel.Design
 #pragma warning restore SYSLIB0011
         }
 
-        internal class StreamWrapper : Stream
+        private class StreamWrapper : Stream
         {
             private Stream _stream;
             private bool _readFirstByte;
@@ -115,7 +115,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// During deserialization, the stream passed in may be binary formatted or may have used binary writer. This is a quick test to discern between them.
         /// </summary>
-        internal static bool StreamIsBinaryFormatted(StreamWrapper stream)
+        private static bool StreamIsBinaryFormatted(StreamWrapper stream)
         {
             // For binary formatter, the first byte is the SerializationHeaderRecord and has a value 0
             int firstByte = stream.ReadByte();
@@ -171,6 +171,7 @@ namespace System.ComponentModel.Design
                     int numEntries = reader.ReadInt32();
                     if (streamCryptoKey == cryptoKey)
                     {
+                        context._savedLicenseKeys.Clear();
                         for (int i = 0; i < numEntries; i++)
                         {
                             string key = reader.ReadString();
