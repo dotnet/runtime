@@ -67,7 +67,7 @@ try {
   --azdev-pat $AzdoToken `
   --bar-uri $MaestroApiEndPoint `
   --password $MaestroToken `
-  @optionalParams
+    @optionalParams
 
   if ($LastExitCode -ne 0) {
     Write-Host "Problems using Darc to promote build ${buildId} to default channels. Stopping execution..."
