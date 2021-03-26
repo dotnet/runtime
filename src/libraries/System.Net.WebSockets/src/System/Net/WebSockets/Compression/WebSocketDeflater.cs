@@ -87,7 +87,7 @@ namespace System.Net.WebSockets.Compression
                 Initialize();
             }
 
-            if (payload.IsEmpty)
+            if (payload.Length == 0)
             {
                 consumed = 0;
                 written = 0;

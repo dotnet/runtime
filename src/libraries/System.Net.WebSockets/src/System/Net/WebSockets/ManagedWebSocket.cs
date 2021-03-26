@@ -538,7 +538,7 @@ namespace System.Net.WebSockets
         /// <summary>Writes a frame into the send buffer, which can then be sent over the network.</summary>
         private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, ReadOnlySpan<byte> payloadBuffer)
         {
-            if (_deflater is not null && !payloadBuffer.IsEmpty)
+            if (_deflater is not null && payloadBuffer.Length > 0)
             {
                 payloadBuffer = _deflater.Deflate(payloadBuffer, opcode == MessageOpcode.Continuation, endOfMessage);
             }
@@ -566,7 +566,7 @@ namespace System.Net.WebSockets
             }
 
             // Write the payload
-            if (!payloadBuffer.IsEmpty)
+            if (payloadBuffer.Length > 0)
             {
                 payloadBuffer.CopyTo(new Span<byte>(_sendBuffer, headerLength, payloadLength));
 
