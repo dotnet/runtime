@@ -17769,22 +17769,18 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     cond1Block->bbJumpDest = remainderBlock;
     cond2Block->bbJumpDest = remainderBlock;
 
-    // Set the weights; some are guesses.
-    asgBlock->inheritWeight(block);
-    cond1Block->inheritWeight(block);
-
     // Currently, we don't instrument internal blocks, so the only way we can set weights to these blocks
-    // is to analyze successors and guess.
-    float cond2BlockWeight  = 0;
-    float helperBlockWeight = 0;
+    // is to analyze successors and take a guess.
+    float cond2BlockWeight = 0;
     if (currBbWeight > 0)
     {
-        cond2BlockWeight  = min(max(50.0f * nextBbWeight / currBbWeight + 50.0f, 50.0f), 100.0f);
-        helperBlockWeight = min(max(nextBbWeight * 100.0f / currBbWeight, 0.0f), 100.0f);
+        cond2BlockWeight = min(max(50.0f * nextBbWeight / currBbWeight + 50.0f, 50.0f), 100.0f);
     }
 
+    asgBlock->inheritWeight(block);
+    cond1Block->inheritWeight(block);
     cond2Block->inheritWeightPercentage(block, (UINT32)cond2BlockWeight);
-    helperBlock->inheritWeightPercentage(block, (UINT32)helperBlockWeight);
+    helperBlock->inheritWeight(cond2Block);
 
     // Append cond1 as JTRUE to cond1Block
     GenTree*   jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condExpr);
