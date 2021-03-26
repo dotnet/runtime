@@ -181,58 +181,43 @@ namespace System.Net.WebSockets.Compression
 
         private static ErrorCode Deflate(ZLibStreamHandle stream, FlushCode flushCode)
         {
-            ErrorCode errorCode;
-            try
+            ErrorCode errorCode = stream.Deflate(flushCode);
+
+            if (errorCode is ErrorCode.Ok or ErrorCode.StreamEnd or ErrorCode.BufError)
             {
-                errorCode = stream.Deflate(flushCode);
-            }
-            catch (Exception cause)
-            {
-                throw new WebSocketException(SR.ZLibErrorDLLLoadError, cause);
+                return errorCode;
             }
 
-            switch (errorCode)
-            {
-                case ErrorCode.Ok:
-                case ErrorCode.StreamEnd:
-                case ErrorCode.BufError:
-                    return errorCode;
-
-                case ErrorCode.StreamError:
-                    throw new WebSocketException(SR.ZLibErrorInconsistentStream);
-
-                default:
-                    throw new WebSocketException(string.Format(SR.ZLibErrorUnexpected, (int)errorCode));
-            }
+            string message = errorCode == ErrorCode.StreamError
+                ? SR.ZLibErrorInconsistentStream
+                : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
+            throw new WebSocketException(message);
         }
 
         [MemberNotNull(nameof(_stream))]
         private void Initialize()
         {
             Debug.Assert(_stream is null);
-
-            var compressionLevel = CompressionLevel.DefaultCompression;
-            var memLevel = Deflate_DefaultMemLevel;
-            var strategy = CompressionStrategy.DefaultStrategy;
-
             ErrorCode errorCode;
             try
             {
-                errorCode = CreateZLibStreamForDeflate(out _stream, compressionLevel, _windowBits, memLevel, strategy);
+                errorCode = CreateZLibStreamForDeflate(out _stream,
+                    level: CompressionLevel.DefaultCompression,
+                    windowBits: _windowBits,
+                    memLevel: Deflate_DefaultMemLevel,
+                    strategy: CompressionStrategy.DefaultStrategy);
             }
             catch (Exception cause)
             {
                 throw new WebSocketException(SR.ZLibErrorDLLLoadError, cause);
             }
 
-            switch (errorCode)
+            if (errorCode != ErrorCode.Ok)
             {
-                case ErrorCode.Ok:
-                    return;
-                case ErrorCode.MemError:
-                    throw new WebSocketException(SR.ZLibErrorNotEnoughMemory);
-                default:
-                    throw new WebSocketException(string.Format(SR.ZLibErrorUnexpected, (int)errorCode));
+                string message = errorCode == ErrorCode.MemError
+                    ? SR.ZLibErrorNotEnoughMemory
+                    : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
+                throw new WebSocketException(message);
             }
         }
     }

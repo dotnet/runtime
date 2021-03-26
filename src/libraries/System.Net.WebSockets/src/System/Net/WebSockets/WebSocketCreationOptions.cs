@@ -5,6 +5,9 @@ using System.Threading;
 
 namespace System.Net.WebSockets
 {
+    /// <summary>
+    /// Options that control how a <seealso cref="WebSocket"/> is created.
+    /// </summary>
     public sealed class WebSocketCreationOptions
     {
         private string? _subProtocol;

@@ -3,8 +3,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using static System.IO.Compression.ZLibNative;
 
 namespace System.Net.WebSockets.Compression
@@ -106,28 +104,19 @@ namespace System.Net.WebSockets.Compression
                 _available += totalBytesReceived;
             }
 
-            if (_available > 0)
-            {
-                if (_stream is null)
-                {
-                    Initialize();
-                }
+            _stream ??= Initialize(_windowBits);
 
+            if (_available > 0 && output.Length > 0)
+            {
                 int consumed;
 
-                fixed (byte* fixedInput = _buffer)
-                fixed (byte* fixedOutput = &MemoryMarshal.GetReference(output))
+                fixed (byte* bufferPtr = _buffer)
                 {
-                    _stream.NextIn = (IntPtr)(fixedInput + _position);
+                    _stream.NextIn = (IntPtr)(bufferPtr + _position);
                     _stream.AvailIn = (uint)_available;
 
-                    _stream.NextOut = (IntPtr)fixedOutput;
-                    _stream.AvailOut = (uint)output.Length;
-
-                    Inflate(_stream);
-
+                    written = Inflate(_stream, output);
                     consumed = _available - (int)_stream.AvailIn;
-                    written = output.Length - (int)_stream.AvailOut;
                 }
 
                 _position += consumed;
@@ -142,16 +131,7 @@ namespace System.Net.WebSockets.Compression
             if (_available == 0)
             {
                 ReleaseBuffer();
-
-                if (flush)
-                {
-                    Finished = Flush(output.Slice(written), out int byteCount);
-                    written += byteCount;
-                }
-                else
-                {
-                    Finished = true;
-                }
+                Finished = flush ? Flush(output, ref written) : true;
             }
             else
             {
@@ -163,80 +143,53 @@ namespace System.Net.WebSockets.Compression
         /// Finishes the decoding by flushing any outstanding data to the output.
         /// </summary>
         /// <returns>true if the flush completed, false to indicate that there is more outstanding data.</returns>
-        private unsafe bool Flush(Span<byte> output, out int written)
+        private unsafe bool Flush(Span<byte> output, ref int written)
         {
             Debug.Assert(_stream is not null);
             Debug.Assert(_available == 0);
 
             if (_needsFlushMarker)
             {
-                fixed (byte* fixedInput = &MemoryMarshal.GetReference(FlushMarker))
-                fixed (byte* fixedOutput = &MemoryMarshal.GetReference(output))
-                {
-                    _stream.NextIn = (IntPtr)fixedInput;
-                    _stream.AvailIn = (uint)FlushMarkerLength;
-
-                    _stream.NextOut = (IntPtr)fixedOutput;
-                    _stream.AvailOut = (uint)output.Length;
-
-                    Inflate(_stream);
-
-                    written = output.Length - (int)_stream.AvailOut;
-                }
-
                 _needsFlushMarker = false;
 
-                if (written < output.Length || IsFinished(_stream, out _remainingByte))
+                // It's OK to use the flush marker like this, because it's pointer is unmovable.
+                fixed (byte* flushMarkerPtr = FlushMarker)
                 {
-                    OnFinished();
-                    return true;
+                    _stream.NextIn = (IntPtr)flushMarkerPtr;
+                    _stream.AvailIn = FlushMarkerLength;
                 }
             }
 
-            written = 0;
-
-            if (output.IsEmpty)
+            if (_remainingByte is not null)
             {
-                if (_remainingByte is not null)
+                if (output.Length == written)
                 {
                     return false;
                 }
-                if (IsFinished(_stream, out _remainingByte))
-                {
-                    OnFinished();
-                    return true;
-                }
+                output[written] = _remainingByte.GetValueOrDefault();
+                _remainingByte = null;
+                written += 1;
             }
-            else
+
+            // If we have more space in the output, try to inflate
+            if (output.Length > written)
             {
-                if (_remainingByte is not null)
-                {
-                    output[0] = _remainingByte.GetValueOrDefault();
-                    written = 1;
-                    _remainingByte = null;
-                }
-
                 written += Inflate(_stream, output[written..]);
+            }
 
-                if (written < output.Length || IsFinished(_stream, out _remainingByte))
+            // After inflate, if we have more space in the output then it means that we
+            // have finished. Otherwise we need to manually check for more data.
+            if (written < output.Length || IsFinished(_stream, out _remainingByte))
+            {
+                if (!_persisted)
                 {
-                    OnFinished();
-                    return true;
+                    _stream.Dispose();
+                    _stream = null;
                 }
+                return true;
             }
 
             return false;
-        }
-
-        private void OnFinished()
-        {
-            Debug.Assert(_stream is not null);
-
-            if (!_persisted)
-            {
-                _stream.Dispose();
-                _stream = null;
-            }
         }
 
         private void ReleaseBuffer()
@@ -252,12 +205,6 @@ namespace System.Net.WebSockets.Compression
 
         private static unsafe bool IsFinished(ZLibStreamHandle stream, out byte? remainingByte)
         {
-            if (stream.AvailIn > 0)
-            {
-                remainingByte = null;
-                return false;
-            }
-
             // There is no other way to make sure that we'e consumed all data
             // but to try to inflate again with at least one byte of output buffer.
             byte b;
@@ -273,34 +220,24 @@ namespace System.Net.WebSockets.Compression
 
         private static unsafe int Inflate(ZLibStreamHandle stream, Span<byte> destination)
         {
-            fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination))
+            Debug.Assert(destination.Length > 0);
+            ErrorCode errorCode;
+
+            fixed (byte* bufPtr = destination)
             {
                 stream.NextOut = (IntPtr)bufPtr;
                 stream.AvailOut = (uint)destination.Length;
 
-                Inflate(stream);
-                return destination.Length - (int)stream.AvailOut;
-            }
-        }
-
-        private static void Inflate(ZLibStreamHandle stream)
-        {
-            ErrorCode errorCode;
-            try
-            {
                 errorCode = stream.Inflate(FlushCode.NoFlush);
+
+                if (errorCode is ErrorCode.Ok or ErrorCode.StreamEnd or ErrorCode.BufError)
+                {
+                    return destination.Length - (int)stream.AvailOut;
+                }
             }
-            catch (Exception cause) // could not load the Zlib DLL correctly
-            {
-                throw new WebSocketException(SR.ZLibErrorDLLLoadError, cause);
-            }
+
             switch (errorCode)
             {
-                case ErrorCode.Ok:           // progress has been made inflating
-                case ErrorCode.StreamEnd:    // The end of the input stream has been reached
-                case ErrorCode.BufError:     // No room in the output buffer - inflate() can be called again with more space to continue
-                    break;
-
                 case ErrorCode.MemError:     // Not enough memory to complete the operation
                     throw new WebSocketException(SR.ZLibErrorNotEnoughMemory);
 
@@ -315,30 +252,31 @@ namespace System.Net.WebSockets.Compression
             }
         }
 
-        [MemberNotNull(nameof(_stream))]
-        private void Initialize()
+        private static ZLibStreamHandle Initialize(int windowBits)
         {
-            Debug.Assert(_stream is null);
+            ZLibStreamHandle stream;
+            ErrorCode errorCode;
 
-            ErrorCode error;
             try
             {
-                error = CreateZLibStreamForInflate(out _stream, _windowBits);
+                errorCode = CreateZLibStreamForInflate(out stream, windowBits);
             }
             catch (Exception exception)
             {
                 throw new WebSocketException(SR.ZLibErrorDLLLoadError, exception);
             }
 
-            switch (error)
+            if (errorCode == ErrorCode.Ok)
             {
-                case ErrorCode.Ok:
-                    return;
-                case ErrorCode.MemError:
-                    throw new WebSocketException(SR.ZLibErrorNotEnoughMemory);
-                default:
-                    throw new WebSocketException(string.Format(SR.ZLibErrorUnexpected, (int)error));
+                return stream;
             }
+
+            stream.Dispose();
+
+            string message = errorCode == ErrorCode.MemError
+                ? SR.ZLibErrorNotEnoughMemory
+                : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
+            throw new WebSocketException(message);
         }
     }
 }

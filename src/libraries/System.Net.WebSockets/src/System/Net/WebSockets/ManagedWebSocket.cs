@@ -822,7 +822,7 @@ namespace System.Net.WebSockets
 
                         while (totalBytesReceived < limit)
                         {
-                            int numBytesRead = await _stream.ReadAsync( header.Compressed ?
+                            int numBytesRead = await _stream.ReadAsync(header.Compressed ?
                                     _inflater!.Memory.Slice(totalBytesReceived, limit - totalBytesReceived) :
                                     payloadBuffer.Slice(totalBytesReceived, limit - totalBytesReceived),
                                 cancellationToken).ConfigureAwait(false);
@@ -872,13 +872,8 @@ namespace System.Net.WebSockets
                         header.EndOfMessage);
                 }
             }
-            catch (Exception exc)
+            catch (Exception exc) when (exc is not OperationCanceledException)
             {
-                if (exc is OperationCanceledException)
-                {
-                    throw;
-                }
-
                 if (_state == WebSocketState.Aborted)
                 {
                     throw new OperationCanceledException(nameof(WebSocketState.Aborted), exc);
