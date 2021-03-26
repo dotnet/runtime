@@ -94,39 +94,15 @@ namespace System.Tests
         [Fact]
         public static void Exception_TargetSite_OtherMethod()
         {
-            bool caught = false;
-
-            try
-            {
-                ThrowException();
-            }
-            catch (Exception ex)
-            {
-                caught = true;
-
-                Assert.Equal(nameof(ThrowException), ex.TargetSite.Name);
-            }
-
-            Assert.True(caught);
+            Exception ex = Assert.ThrowsAny<Exception>(() => ThrowException());
+            Assert.Equal(nameof(ThrowException), ex.TargetSite.Name);
         }
 
         [Fact]
         public static void Exception_TargetSite_Rethrow()
         {
-            bool caught = false;
-
-            try
-            {
-                RethrowException();
-            }
-            catch (Exception ex)
-            {
-                caught = true;
-
-                Assert.Equal(nameof(ThrowException), ex.TargetSite.Name);
-            }
-
-            Assert.True(caught);
+            Exception ex = Assert.ThrowsAny<Exception>(() => RethrowException());
+            Assert.Equal(nameof(ThrowException), ex.TargetSite.Name);
         }
 
         [Fact]
