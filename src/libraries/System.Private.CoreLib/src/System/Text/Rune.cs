@@ -917,30 +917,8 @@ namespace System.Text
         }
 
 #if SYSTEM_PRIVATE_CORELIB
-        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
-        {
-            if (IsBmp)
-            {
-                if (!destination.IsEmpty)
-                {
-                    destination[0] = (char)_value;
-                    charsWritten = 1;
-                    return true;
-                }
-            }
-            else
-            {
-                if (destination.Length >= 2)
-                {
-                    UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar(_value, out destination[0], out destination[1]);
-                    charsWritten = 2;
-                    return true;
-                }
-            }
-
-            charsWritten = 0;
-            return false;
-        }
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            TryEncodeToUtf16(destination, out charsWritten);
 #endif
 
         /// <summary>
