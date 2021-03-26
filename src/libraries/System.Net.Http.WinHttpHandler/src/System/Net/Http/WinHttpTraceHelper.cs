@@ -92,7 +92,7 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_CALLBACK_STATUS_GETPROXYFORURL_COMPLETE => "STATUS_GETPROXYFORURL_COMPLETE",
                 Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CLOSE_COMPLETE => "STATUS_CLOSE_COMPLETE",
                 Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SHUTDOWN_COMPLETE => "STATUS_SHUTDOWN_COMPLETE",
-                _ => string.Format("0x{0:X}", status),
+                _ => $"0x{status:X}",
             };
     }
 }
