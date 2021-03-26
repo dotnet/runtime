@@ -214,14 +214,16 @@ if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSI
 endif()
 
 add_subdirectory(utilcode)
-add_subdirectory(gcinfo)
-add_subdirectory(jit)
 add_subdirectory(inc)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_subdirectory(palrt)
 endif(CLR_CMAKE_HOST_UNIX)
 
+add_subdirectory(ilasm)
+add_subdirectory(ildasm)
+add_subdirectory(gcinfo)
+add_subdirectory(jit)
 add_subdirectory(vm)
 add_subdirectory(md)
 add_subdirectory(debug)
@@ -231,8 +233,6 @@ add_subdirectory(dlls)
 add_subdirectory(ToolBox)
 add_subdirectory(tools)
 add_subdirectory(unwinder)
-add_subdirectory(ildasm)
-add_subdirectory(ilasm)
 add_subdirectory(interop)
 
 if(CLR_CMAKE_HOST_WIN32)
