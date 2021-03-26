@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Collections;
 
-    internal class CopyCodeAction : Action
+    internal sealed class CopyCodeAction : Action
     {
         // Execution states:
         private const int Outputting = 2;

@@ -3388,7 +3388,7 @@ inline void Compiler::LoopDsc::AddModifiedElemType(Compiler* comp, CORINFO_CLASS
     lpArrayElemTypesModified->Set(structHnd, true, ClassHandleSet::Overwrite);
 }
 
-inline void Compiler::LoopDsc::VERIFY_lpIterTree()
+inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
 {
 #ifdef DEBUG
     assert(lpFlags & LPFLG_ITER);
@@ -3397,8 +3397,8 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree()
 
     assert(lpIterTree->OperIs(GT_ASG));
 
-    GenTree* lhs = lpIterTree->AsOp()->gtOp1;
-    GenTree* rhs = lpIterTree->AsOp()->gtOp2;
+    const GenTree* lhs = lpIterTree->AsOp()->gtOp1;
+    const GenTree* rhs = lpIterTree->AsOp()->gtOp2;
     assert(lhs->OperGet() == GT_LCL_VAR);
 
     switch (rhs->gtOper)
@@ -3420,7 +3420,7 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree()
 
 //-----------------------------------------------------------------------------
 
-inline unsigned Compiler::LoopDsc::lpIterVar()
+inline unsigned Compiler::LoopDsc::lpIterVar() const
 {
     VERIFY_lpIterTree();
     return lpIterTree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
@@ -3428,7 +3428,7 @@ inline unsigned Compiler::LoopDsc::lpIterVar()
 
 //-----------------------------------------------------------------------------
 
-inline int Compiler::LoopDsc::lpIterConst()
+inline int Compiler::LoopDsc::lpIterConst() const
 {
     VERIFY_lpIterTree();
     GenTree* rhs = lpIterTree->AsOp()->gtOp2;
@@ -3437,14 +3437,14 @@ inline int Compiler::LoopDsc::lpIterConst()
 
 //-----------------------------------------------------------------------------
 
-inline genTreeOps Compiler::LoopDsc::lpIterOper()
+inline genTreeOps Compiler::LoopDsc::lpIterOper() const
 {
     VERIFY_lpIterTree();
     GenTree* rhs = lpIterTree->AsOp()->gtOp2;
     return rhs->OperGet();
 }
 
-inline var_types Compiler::LoopDsc::lpIterOperType()
+inline var_types Compiler::LoopDsc::lpIterOperType() const
 {
     VERIFY_lpIterTree();
 
@@ -3459,7 +3459,7 @@ inline var_types Compiler::LoopDsc::lpIterOperType()
     return type;
 }
 
-inline void Compiler::LoopDsc::VERIFY_lpTestTree()
+inline void Compiler::LoopDsc::VERIFY_lpTestTree() const
 {
 #ifdef DEBUG
     assert(lpFlags & LPFLG_ITER);
@@ -3505,7 +3505,7 @@ inline void Compiler::LoopDsc::VERIFY_lpTestTree()
 
 //-----------------------------------------------------------------------------
 
-inline bool Compiler::LoopDsc::lpIsReversed()
+inline bool Compiler::LoopDsc::lpIsReversed() const
 {
     VERIFY_lpTestTree();
     return ((lpTestTree->AsOp()->gtOp2->gtOper == GT_LCL_VAR) &&
@@ -3514,7 +3514,7 @@ inline bool Compiler::LoopDsc::lpIsReversed()
 
 //-----------------------------------------------------------------------------
 
-inline genTreeOps Compiler::LoopDsc::lpTestOper()
+inline genTreeOps Compiler::LoopDsc::lpTestOper() const
 {
     VERIFY_lpTestTree();
     genTreeOps op = lpTestTree->OperGet();
@@ -3523,7 +3523,7 @@ inline genTreeOps Compiler::LoopDsc::lpTestOper()
 
 //-----------------------------------------------------------------------------
 
-inline GenTree* Compiler::LoopDsc::lpIterator()
+inline GenTree* Compiler::LoopDsc::lpIterator() const
 {
     VERIFY_lpTestTree();
 
@@ -3532,7 +3532,7 @@ inline GenTree* Compiler::LoopDsc::lpIterator()
 
 //-----------------------------------------------------------------------------
 
-inline GenTree* Compiler::LoopDsc::lpLimit()
+inline GenTree* Compiler::LoopDsc::lpLimit() const
 {
     VERIFY_lpTestTree();
 
@@ -3541,7 +3541,7 @@ inline GenTree* Compiler::LoopDsc::lpLimit()
 
 //-----------------------------------------------------------------------------
 
-inline int Compiler::LoopDsc::lpConstLimit()
+inline int Compiler::LoopDsc::lpConstLimit() const
 {
     VERIFY_lpTestTree();
     assert(lpFlags & LPFLG_CONST_LIMIT);
@@ -3553,7 +3553,7 @@ inline int Compiler::LoopDsc::lpConstLimit()
 
 //-----------------------------------------------------------------------------
 
-inline unsigned Compiler::LoopDsc::lpVarLimit()
+inline unsigned Compiler::LoopDsc::lpVarLimit() const
 {
     VERIFY_lpTestTree();
     assert(lpFlags & LPFLG_VAR_LIMIT);
@@ -3565,7 +3565,7 @@ inline unsigned Compiler::LoopDsc::lpVarLimit()
 
 //-----------------------------------------------------------------------------
 
-inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index)
+inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index) const
 {
     VERIFY_lpTestTree();
     assert(lpFlags & LPFLG_ARRLEN_LIMIT);

@@ -12,7 +12,7 @@ using System.Security;
 
 namespace System.Runtime.Serialization
 {
-    internal class DataMember
+    internal sealed class DataMember
     {
         private readonly CriticalHelper _helper;
 
@@ -147,7 +147,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private class CriticalHelper
+        private sealed class CriticalHelper
         {
             private DataContract? _memberTypeContract;
             private string _name = null!; // Name is always initialized right after construction

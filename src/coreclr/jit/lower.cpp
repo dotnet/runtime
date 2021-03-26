@@ -3555,7 +3555,6 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
     const ClassLayout* layout  = store->GetLayout();
     const var_types    regType = layout->GetRegisterType();
 
-    unsigned storeSize = store->GetLayout()->GetSize();
     if (regType != TYP_UNDEF)
     {
         store->ChangeType(regType);
@@ -5392,10 +5391,9 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         // For -3 we need:
         //     mulhi -= dividend                    ; requires sub adjust
         //     div = signbit(mulhi) + sar(mulhi, 1) ; requires shift adjust
-        bool                 requiresAddSubAdjust     = signum(divisorValue) != signum(magic);
-        bool                 requiresShiftAdjust      = shift != 0;
-        bool                 requiresDividendMultiuse = requiresAddSubAdjust || !isDiv;
-        BasicBlock::weight_t curBBWeight              = comp->compCurBB->getBBWeight(comp);
+        bool requiresAddSubAdjust     = signum(divisorValue) != signum(magic);
+        bool requiresShiftAdjust      = shift != 0;
+        bool requiresDividendMultiuse = requiresAddSubAdjust || !isDiv;
 
         if (requiresDividendMultiuse)
         {

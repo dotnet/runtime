@@ -859,7 +859,7 @@ public:
         WRAPPER_NO_CONTRACT;
         _ASSERTE(!UsePortableThreadPool());
 
-        Thread::IncrementWorkerThreadPoolCompletionCount(GetThread());
+        Thread::IncrementWorkerThreadPoolCompletionCount(GetThreadNULLOk());
         UpdateLastDequeueTime();
     }
 

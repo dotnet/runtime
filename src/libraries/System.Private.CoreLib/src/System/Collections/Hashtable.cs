@@ -1194,7 +1194,7 @@ namespace System.Collections
 
         // Implements a Collection for the keys of a hashtable. An instance of this
         // class is created by the GetKeys method of a hashtable.
-        private class KeyCollection : ICollection
+        private sealed class KeyCollection : ICollection
         {
             private readonly Hashtable _hashtable;
 
@@ -1203,7 +1203,7 @@ namespace System.Collections
                 _hashtable = hashtable;
             }
 
-            public virtual void CopyTo(Array array, int arrayIndex)
+            public void CopyTo(Array array, int arrayIndex)
             {
                 if (array == null)
                     throw new ArgumentNullException(nameof(array));
@@ -1216,21 +1216,21 @@ namespace System.Collections
                 _hashtable.CopyKeys(array, arrayIndex);
             }
 
-            public virtual IEnumerator GetEnumerator()
+            public IEnumerator GetEnumerator()
             {
                 return new HashtableEnumerator(_hashtable, HashtableEnumerator.Keys);
             }
 
-            public virtual bool IsSynchronized => _hashtable.IsSynchronized;
+            public bool IsSynchronized => _hashtable.IsSynchronized;
 
-            public virtual object SyncRoot => _hashtable.SyncRoot;
+            public object SyncRoot => _hashtable.SyncRoot;
 
-            public virtual int Count => _hashtable._count;
+            public int Count => _hashtable._count;
         }
 
         // Implements a Collection for the values of a hashtable. An instance of
         // this class is created by the GetValues method of a hashtable.
-        private class ValueCollection : ICollection
+        private sealed class ValueCollection : ICollection
         {
             private readonly Hashtable _hashtable;
 
@@ -1239,7 +1239,7 @@ namespace System.Collections
                 _hashtable = hashtable;
             }
 
-            public virtual void CopyTo(Array array, int arrayIndex)
+            public void CopyTo(Array array, int arrayIndex)
             {
                 if (array == null)
                     throw new ArgumentNullException(nameof(array));
@@ -1252,22 +1252,22 @@ namespace System.Collections
                 _hashtable.CopyValues(array, arrayIndex);
             }
 
-            public virtual IEnumerator GetEnumerator()
+            public IEnumerator GetEnumerator()
             {
                 return new HashtableEnumerator(_hashtable, HashtableEnumerator.Values);
             }
 
-            public virtual bool IsSynchronized => _hashtable.IsSynchronized;
+            public bool IsSynchronized => _hashtable.IsSynchronized;
 
-            public virtual object SyncRoot => _hashtable.SyncRoot;
+            public object SyncRoot => _hashtable.SyncRoot;
 
-            public virtual int Count => _hashtable._count;
+            public int Count => _hashtable._count;
         }
 
         // Synchronized wrapper for hashtable
-        private class SyncHashtable : Hashtable, IEnumerable
+        private sealed class SyncHashtable : Hashtable, IEnumerable
         {
-            protected Hashtable _table;
+            private Hashtable _table;
 
             internal SyncHashtable(Hashtable table) : base(false)
             {
@@ -1416,7 +1416,7 @@ namespace System.Collections
         // Implements an enumerator for a hashtable. The enumerator uses the
         // internal version number of the hashtable to ensure that no modifications
         // are made to the hashtable while an enumeration is in progress.
-        private class HashtableEnumerator : IDictionaryEnumerator, ICloneable
+        private sealed class HashtableEnumerator : IDictionaryEnumerator, ICloneable
         {
             private readonly Hashtable _hashtable;
             private int _bucket;
@@ -1441,7 +1441,7 @@ namespace System.Collections
 
             public object Clone() => MemberwiseClone();
 
-            public virtual object Key
+            public object Key
             {
                 get
                 {
@@ -1451,7 +1451,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual bool MoveNext()
+            public bool MoveNext()
             {
                 if (_version != _hashtable._version)
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
@@ -1471,7 +1471,7 @@ namespace System.Collections
                 return false;
             }
 
-            public virtual DictionaryEntry Entry
+            public DictionaryEntry Entry
             {
                 get
                 {
@@ -1481,7 +1481,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual object? Current
+            public object? Current
             {
                 get
                 {
@@ -1497,7 +1497,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual object? Value
+            public object? Value
             {
                 get
                 {
@@ -1507,7 +1507,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual void Reset()
+            public void Reset()
             {
                 if (_version != _hashtable._version)
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
@@ -1519,7 +1519,7 @@ namespace System.Collections
         }
 
         // internal debug view class for hashtable
-        internal class HashtableDebugView
+        internal sealed class HashtableDebugView
         {
             private readonly Hashtable _hashtable;
 

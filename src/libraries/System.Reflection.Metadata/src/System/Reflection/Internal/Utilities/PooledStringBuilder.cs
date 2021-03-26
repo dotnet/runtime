@@ -14,7 +14,7 @@ namespace System.Reflection.Internal
     ///        ... sb.ToString() ...
     ///        inst.Free();
     /// </summary>
-    internal class PooledStringBuilder
+    internal sealed class PooledStringBuilder
     {
         public readonly StringBuilder Builder = new StringBuilder();
         private readonly ObjectPool<PooledStringBuilder> _pool;

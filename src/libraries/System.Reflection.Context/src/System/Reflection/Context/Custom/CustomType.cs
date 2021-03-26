@@ -8,7 +8,7 @@ using System.Reflection.Context.Virtual;
 
 namespace System.Reflection.Context.Custom
 {
-    internal class CustomType : ProjectingType
+    internal sealed class CustomType : ProjectingType
     {
         private IEnumerable<PropertyInfo> _newProperties;
 

@@ -8,5 +8,5 @@ namespace System.DirectoryServices
 {
     [System.ComponentModel.TypeConverter(typeof(DirectoryEntryConverter))]
     public partial class DirectoryEntry { }
-    internal class DirectoryEntryConverter { }
+    internal sealed class DirectoryEntryConverter { }
 }

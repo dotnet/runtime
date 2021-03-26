@@ -245,9 +245,15 @@ foreach ($argument in $PSBoundParameters.Keys)
 
 $failedBuilds = @()
 
-if (($os -eq "Browser") -and ($arch -ne "wasm")) {
+if ($os -eq "Browser") {
   # override default arch for Browser, we only support wasm
   $arch = "wasm"
+
+  if ($ninja -ne $True) {
+    # we need ninja for emscripten on windows
+    $ninja = $True
+    $arguments += " /p:Ninja=$ninja"
+  }
 }
 
 foreach ($config in $configuration) {

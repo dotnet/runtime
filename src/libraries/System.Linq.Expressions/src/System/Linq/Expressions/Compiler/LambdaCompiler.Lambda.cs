@@ -12,7 +12,7 @@ namespace System.Linq.Expressions.Compiler
     /// Dynamic Language Runtime Compiler.
     /// This part compiles lambdas.
     /// </summary>
-    internal partial class LambdaCompiler
+    internal sealed partial class LambdaCompiler
     {
 #if FEATURE_COMPILE_TO_METHODBUILDER
         private static int s_counter;

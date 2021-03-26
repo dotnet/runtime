@@ -5,7 +5,7 @@ using System.Xml;
 
 namespace System.Xml.Xsl.Xslt
 {
-    internal class KeywordsTable
+    internal sealed class KeywordsTable
     {
         public XmlNameTable NameTable;
         public string AnalyzeString;

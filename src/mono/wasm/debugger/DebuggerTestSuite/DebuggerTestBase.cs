@@ -927,6 +927,29 @@ namespace DebuggerTests
             __custom_type = "datetime",
             binary = dt.ToBinary()
         });
+
+        internal async Task LoadAssemblyDynamically(string asm_file, string pdb_file)
+        {
+            // Simulate loading an assembly into the framework
+            byte[] bytes = File.ReadAllBytes(asm_file);
+            string asm_base64 = Convert.ToBase64String(bytes);
+
+            string pdb_base64 = null;
+            if (pdb_file != null)
+            {
+                bytes = File.ReadAllBytes(pdb_file);
+                pdb_base64 = Convert.ToBase64String(bytes);
+            }
+
+            var load_assemblies = JObject.FromObject(new
+            {
+                expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTest:LoadLazyAssembly', asm_b64, pdb_b64); }}"
+            });
+
+            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+            Assert.True(load_assemblies_res.IsOk);
+        }
+
     }
 
     class DotnetObjectId

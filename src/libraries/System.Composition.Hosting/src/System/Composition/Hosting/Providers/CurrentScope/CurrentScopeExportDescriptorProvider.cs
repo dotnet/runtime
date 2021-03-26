@@ -6,7 +6,7 @@ using System.Composition.Hosting.Core;
 
 namespace System.Composition.Hosting.Providers.CurrentScope
 {
-    internal class CurrentScopeExportDescriptorProvider : ExportDescriptorProvider
+    internal sealed class CurrentScopeExportDescriptorProvider : ExportDescriptorProvider
     {
         private static readonly CompositionContract s_currentScopeContract = new CompositionContract(typeof(CompositionContext));
 

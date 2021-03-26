@@ -14,7 +14,7 @@ using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
 {
-    internal partial class FindPal : IFindPal
+    internal sealed partial class FindPal : IFindPal
     {
         private readonly StorePal _storePal;
         private readonly X509Certificate2Collection _copyTo;

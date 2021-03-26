@@ -423,7 +423,7 @@ namespace System.Tests
             yield return new object[] { "http://abc\u1234\u2345\u3456@host/", "http", "abc%E1%88%B4%E2%8D%85%E3%91%96", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://\u1234abc\u2345\u3456@host/", "http", "%E1%88%B4abc%E2%8D%85%E3%91%96", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://\u1234\u2345\u3456abc@host/", "http", "%E1%88%B4%E2%8D%85%E3%91%96abc", "host", UriHostNameType.Dns, 80, true, false };
-            yield return new object[] { "http://userinfo!~+-_*()[]:;&$=123USERINFO@host/", "http", "userinfo!~+-_*()[]:;&$=123USERINFO", "host", UriHostNameType.Dns, 80, true, false };
+            yield return new object[] { "http://userinfo!~+-_*()[]:;&$=123PLACEHOLDER@host/", "http", "userinfo!~+-_*()[]:;&$=123PLACEHOLDER", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://%68%65%6C%6C%6F@host/", "http", "hello", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://\u00A3@host/", "http", "%C2%A3", "host", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://\u1234@host/", "http", "%E1%88%B4", "host", UriHostNameType.Dns, 80, true, false };

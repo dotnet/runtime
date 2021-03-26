@@ -60,6 +60,11 @@ TailCallTls::TailCallTls()
 {
 }
 
+Thread* STDCALL GetThreadHelper()
+{
+    return GetThreadNULLOk();
+}
+
 TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size, void* gcDesc)
 {
     CONTRACTL
@@ -406,13 +411,13 @@ DWORD Thread::JoinEx(DWORD timeout, WaitMode mode)
 {
     CONTRACTL {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
     BOOL alertable = (mode & WaitMode_Alertable)?TRUE:FALSE;
 
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = GetThreadNULLOk();
     _ASSERTE(pCurThread || dbgOnly_IsSpecialEEThread());
 
     {
@@ -593,13 +598,13 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     if (pThread != NULL)
     {
         return pThread;
@@ -635,7 +640,7 @@ void DeleteThread(Thread* pThread)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -668,7 +673,7 @@ void DeleteThread(Thread* pThread)
 void EnsurePreemptive()
 {
     WRAPPER_NO_CONTRACT;
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     if (pThread && pThread->PreemptiveGCDisabled())
     {
         pThread->EnablePreemptiveGC();
@@ -681,12 +686,12 @@ Thread* SetupThread()
 {
     CONTRACTL {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
     Thread* pThread;
-    if ((pThread = GetThread()) != NULL)
+    if ((pThread = GetThreadNULLOk()) != NULL)
         return pThread;
 
     // For interop debugging, we must mark that we're in a can't-stop region
@@ -768,7 +773,7 @@ Thread* SetupThread()
 
     Holder<Thread*,DoNothing<Thread*>,DeleteThread> threadHolder(pThread);
 
-    SetupTLSForThread(pThread);
+    SetupTLSForThread();
 
     if (!pThread->InitThread() ||
         !pThread->PrepareApartmentAndContext())
@@ -867,7 +872,7 @@ Thread* SetupUnstartedThread(BOOL bRequiresTSL)
 {
     CONTRACTL {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -1184,7 +1189,7 @@ void InitThreadManager()
 #endif // FEATURE_WRITEBARRIER_COPY
 
 #ifndef TARGET_UNIX
-    _ASSERTE(GetThread() == NULL);
+    _ASSERTE(GetThreadNULLOk() == NULL);
 
     size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo);
 
@@ -1348,7 +1353,7 @@ Thread::Thread()
 {
     CONTRACTL {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -1557,7 +1562,6 @@ Thread::Thread()
     m_ioThreadPoolCompletionCount = 0;
     m_monitorLockContentionCount = 0;
 
-    Thread *pThread = GetThread();
     InitContext();
 
     // Do not expose thread until it is fully constructed
@@ -1612,7 +1616,7 @@ BOOL Thread::InitThread()
 {
     CONTRACTL {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -1796,11 +1800,11 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
     // the runtime.  But sometimes that thread is used for DLL_THREAD_ATTACH notifications
     // that call into managed code.  In that case, the second HasStarted call is
     // redundant and should be ignored.
-    if (GetThread() == this)
+    if (GetThreadNULLOk() == this)
         return TRUE;
 
 
-    _ASSERTE(GetThread() == 0);
+    _ASSERTE(GetThreadNULLOk() == 0);
     _ASSERTE(HasValidThreadHandle());
 
     BOOL    fKeepTLS = FALSE;
@@ -1822,7 +1826,7 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
         // Initialization must happen in the following order - hosts like SQL Server depend on this.
         //
 
-        SetupTLSForThread(this);
+        SetupTLSForThread();
 
         fCanCleanupCOMState = TRUE;
         res = PrepareApartmentAndContext();
@@ -1864,7 +1868,7 @@ FAILURE:
 
         SetThreadState(TS_FailStarted);
 
-        if (GetThread() != NULL && IsAbortRequested())
+        if (GetThreadNULLOk() != NULL && IsAbortRequested())
             UnmarkThreadForAbort();
 
         if (!fKeepTLS)
@@ -1977,7 +1981,7 @@ void Thread::HandleThreadStartupFailure()
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
 
     struct ProtectArgs
     {
@@ -2336,11 +2340,11 @@ int Thread::IncExternalCount()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = GetThreadNULLOk();
 
     _ASSERTE(m_ExternalRefCount > 0);
     int retVal = FastInterlockIncrement((LONG*)&m_ExternalRefCount);
@@ -2367,13 +2371,13 @@ int Thread::DecExternalCount(BOOL holdingLock)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
     // Note that it's possible to get here with a NULL current thread (during
     // shutdown of the thread manager).
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = GetThreadNULLOk();
     _ASSERTE (pCurThread == NULL || IsAtProcessExit()
               || (!holdingLock && !ThreadStore::HoldingThreadStore(pCurThread))
               || (holdingLock && ThreadStore::HoldingThreadStore(pCurThread)));
@@ -2535,7 +2539,7 @@ Thread::~Thread()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -2824,7 +2828,7 @@ void Thread::CleanupCOMState()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -2871,7 +2875,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -2887,7 +2891,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     // Should not use OSThreadId:
     // OSThreadId may change for the current thread is the thread is blocked and rescheduled
     // by host.
-    Thread *pCurrentThread = GetThread();
+    Thread *pCurrentThread = GetThreadNULLOk();
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
 
@@ -2895,7 +2899,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     // If the currently running thread is the thread that died and it is an STA thread, then we
     // need to release all the RCW's in the current context. However, we cannot do this if we
     // are in the middle of process detach.
-    if (!IsAtProcessExit() && this == GetThread())
+    if (!IsAtProcessExit() && this == GetThreadNULLOk())
     {
         CleanupCOMState();
     }
@@ -4097,7 +4101,7 @@ void WINAPI Thread::UserInterruptAPC(ULONG_PTR data)
 
     _ASSERTE(data == APC_Code);
 
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = GetThreadNULLOk();
     if (pCurThread)
     {
         // We should only take action if an interrupt is currently being
@@ -4220,7 +4224,7 @@ OBJECTREF Thread::GetExposedObject()
 
     TRIGGERSGC();
 
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = GetThreadNULLOk();
     _ASSERTE (!(pCurThread == NULL || IsAtProcessExit()));
 
     _ASSERTE(pCurThread->PreemptiveGCDisabled());
@@ -4289,13 +4293,13 @@ void Thread::SetExposedObject(OBJECTREF exposed)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
     if (exposed != NULL)
     {
-        _ASSERTE (GetThread() != this);
+        _ASSERTE (GetThreadNULLOk() != this);
         _ASSERTE(IsUnstarted());
         _ASSERTE(ObjectFromHandle(m_ExposedObject) == NULL);
         // The exposed object keeps us alive until it is GC'ed.  This doesn't mean the
@@ -4800,7 +4804,7 @@ Thread::ApartmentState Thread::GetApartmentRare(Thread::ApartmentState as)
     }
     CONTRACTL_END;
 
-    if (this == GetThread())
+    if (this == GetThreadNULLOk())
     {
         THDTYPE type;
         HRESULT hr = S_OK;
@@ -5230,7 +5234,7 @@ void ThreadStore::AddThread(Thread *newThread, BOOL bRequiresTSL)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -5372,7 +5376,7 @@ void ThreadStore::TransferStartedThread(Thread *thread, BOOL bRequiresTSL)
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThread() == thread);
+    _ASSERTE(GetThreadNULLOk() == thread);
 
     LOG((LF_SYNC, INFO3, "TransferUnstartedThread obtain lock\n"));
     ThreadStoreLockHolder TSLockHolder(FALSE);
@@ -5791,7 +5795,7 @@ BOOL ThreadStore::DbgFindThread(Thread *target)
 
     // Cache the current change stamp for g_TrapReturningThreads
     LONG chgStamp = g_trtChgStamp;
-    STRESS_LOG3(LF_STORE, LL_INFO100, "ThreadStore::DbgFindThread - [thread=%p]. trt=%d. chgStamp=%d\n", GetThread(), g_TrapReturningThreads.Load(), chgStamp);
+    STRESS_LOG3(LF_STORE, LL_INFO100, "ThreadStore::DbgFindThread - [thread=%p]. trt=%d. chgStamp=%d\n", GetThreadNULLOk(), g_TrapReturningThreads.Load(), chgStamp);
 
 #if 0 // g_TrapReturningThreads debug code.
         int             iRetry = 0;
@@ -5864,7 +5868,7 @@ Retry:
     }
 #endif // g_TrapReturningThreads debug code.
 
-    STRESS_LOG4(LF_STORE, LL_INFO100, "ThreadStore::DbgFindThread - [thread=%p]. trt=%d. chg=%d. cnt=%d\n", GetThread(), g_TrapReturningThreads.Load(), g_trtChgStamp.Load(), cntReturn);
+    STRESS_LOG4(LF_STORE, LL_INFO100, "ThreadStore::DbgFindThread - [thread=%p]. trt=%d. chg=%d. cnt=%d\n", GetThreadNULLOk(), g_TrapReturningThreads.Load(), g_trtChgStamp.Load(), cntReturn);
 
     // Because of race conditions and the fact that the GC places its
     // own count, I can't assert this precisely.  But I do want to be
@@ -6281,8 +6285,8 @@ BOOL Thread::UniqueStack(void* stackStart)
     {
         CrstHolder ch(g_pUniqueStackCrst);
 #ifdef _DEBUG
-        if (GetThread ())
-            GetThread ()->m_bUniqueStacking = TRUE;
+        if (GetThreadNULLOk())
+            GetThread()->m_bUniqueStacking = TRUE;
 #endif
         if (g_pUniqueStackMap->LookupValue (stackTraceHash, stackTrace) != (LPVOID)INVALIDENTRY)
         {
@@ -6295,8 +6299,8 @@ BOOL Thread::UniqueStack(void* stackStart)
             UniqueStackHelper(stackTraceHash, stackTrace);
         }
 #ifdef _DEBUG
-        if (GetThread ())
-            GetThread ()->m_bUniqueStacking = FALSE;
+        if (GetThreadNULLOk())
+            GetThread()->m_bUniqueStacking = FALSE;
 #endif
     }
 
@@ -6668,7 +6672,7 @@ void Thread::DebugLogStackMBIs()
     }
     CONTRACTL_END;
 
-    Thread* pThread = GetThread();  // N.B. this can be NULL!
+    Thread* pThread = GetThreadNULLOk();  // N.B. this can be NULL!
 
     UINT_PTR uStackLimit        = (UINT_PTR)GetStackLowerBound();
     UINT_PTR uStackBase         = (UINT_PTR)GetStackUpperBound();
@@ -7028,7 +7032,7 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
 #else
             pctx->ContextFlags = CONTEXT_FULL;
 
-            _ASSERTE(this != GetThread());  // do not call GetThreadContext on the active thread
+            _ASSERTE(this != GetThreadNULLOk());  // do not call GetThreadContext on the active thread
 
             BOOL ret = EEGetThreadContext(this, pctx);
             if (!ret)
@@ -7103,7 +7107,6 @@ void CommonTripThread()
     CONTRACTL_END;
 
     Thread  *thread = GetThread();
-
     thread->HandleThreadAbort ();
 
     if (thread->CatchAtSafePoint())
@@ -7151,7 +7154,7 @@ void Thread::InitContext()
 {
     CONTRACTL {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -7165,7 +7168,7 @@ void Thread::ClearContext()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
 
@@ -7416,7 +7419,6 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
 
     // Get the reference to the current thread..
     Thread *pCurThread = GetThread();
-    _ASSERTE(pCurThread);
 
     //
     // In the default domain, when an exception goes unhandled on a managed thread whose threadbase is in the VM (e.g. explicitly spawned threads,
@@ -7456,7 +7458,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     // HasStarted() must have already been performed by our caller
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
 
     Thread *pThread = GetThread();
 #ifdef FEATURE_EH_FUNCLETS
@@ -8094,9 +8096,6 @@ CHECK DeadlockAwareLock::CheckDeadlock(Thread *pThread)
 BOOL DeadlockAwareLock::CanEnterLock()
 {
     Thread * pThread = GetThread();
-
-    CONSISTENCY_CHECK_MSG(pThread != NULL,
-                          "Cannot do deadlock detection on non-EE thread");
     CONSISTENCY_CHECK_MSG(pThread->m_pBlockingLock.Load() == NULL,
                           "Cannot block on two locks at once");
 
@@ -8144,9 +8143,6 @@ BOOL DeadlockAwareLock::TryBeginEnterLock()
     CONTRACTL_END;
 
     Thread * pThread = GetThread();
-
-    CONSISTENCY_CHECK_MSG(pThread != NULL,
-                          "Cannot do deadlock detection on non-EE thread");
     CONSISTENCY_CHECK_MSG(pThread->m_pBlockingLock.Load() == NULL,
                           "Cannot block on two locks at once");
 
@@ -8196,9 +8192,6 @@ void DeadlockAwareLock::BeginEnterLock()
     CONTRACTL_END;
 
     Thread * pThread = GetThread();
-
-    CONSISTENCY_CHECK_MSG(pThread != NULL,
-                          "Cannot do deadlock detection on non-EE thread");
     CONSISTENCY_CHECK_MSG(pThread->m_pBlockingLock.Load() == NULL,
                           "Cannot block on two locks at once");
 
@@ -8295,7 +8288,7 @@ BOOL dbgOnly_IsSpecialEEThread()
     #endif
 
     //<TODO>Clean this up</TODO>
-    if (GetThread() == NULL)
+    if (GetThreadNULLOk() == NULL)
         return TRUE;
 
 

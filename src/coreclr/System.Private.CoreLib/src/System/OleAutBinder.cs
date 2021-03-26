@@ -12,7 +12,7 @@ using CultureInfo = System.Globalization.CultureInfo;
 namespace System
 {
     // Made serializable in anticipation of this class eventually having state.
-    internal class OleAutBinder : DefaultBinder
+    internal sealed class OleAutBinder : DefaultBinder
     {
         // ChangeType
         // This binder uses OLEAUT to change the type of the variant.

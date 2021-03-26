@@ -671,7 +671,7 @@ namespace System.Threading
         /// <summary>
         /// A manager class that assigns IDs to ThreadLocal instances
         /// </summary>
-        private class IdManager
+        private sealed class IdManager
         {
             // The next ID to try
             private int _nextIdToTry;
@@ -728,7 +728,7 @@ namespace System.Threading
         /// (all those LinkedSlot instances can be found by following references from the table slots) and
         /// releases the table so that it can get GC'd.
         /// </summary>
-        private class FinalizationHelper
+        private sealed class FinalizationHelper
         {
             internal LinkedSlotVolatile[] SlotArray;
             private readonly bool _trackAllValues;
