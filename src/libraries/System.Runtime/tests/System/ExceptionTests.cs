@@ -61,7 +61,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Exception_TargetSite_Jit()
+        public static void Exception_TargetSite()
         {
             bool caught = false;
 
@@ -74,6 +74,56 @@ namespace System.Tests
                 caught = true;
 
                 Assert.Equal(MethodInfo.GetCurrentMethod(), ex.TargetSite);
+            }
+
+            Assert.True(caught);
+        }
+        
+        static void RethrowException()
+        {
+            try
+            {
+                ThrowException();
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        [Fact]
+        public static void Exception_TargetSite_OtherMethod()
+        {
+            bool caught = false;
+
+            try
+            {
+                ThrowException();
+            }
+            catch (Exception ex)
+            {
+                caught = true;
+
+                Assert.Equal(nameof(ThrowException), ex.TargetSite.Name);
+            }
+
+            Assert.True(caught);
+        }
+
+        [Fact]
+        public static void Exception_TargetSite_Rethrow()
+        {
+            bool caught = false;
+
+            try
+            {
+                RethrowException();
+            }
+            catch (Exception ex)
+            {
+                caught = true;
+
+                Assert.Equal(nameof(ThrowException), ex.TargetSite.Name);
             }
 
             Assert.True(caught);
