@@ -946,6 +946,8 @@ void ConsoleArgs::ProcessResponseArgs()
 #endif
 
         TextToArgs(szActualText, &listCurArg->next);
+
+        delete[] szActualText;
         }
 
 CONTINUE:  // remove the response file argument, and continue to the next.
