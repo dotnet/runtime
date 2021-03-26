@@ -99,13 +99,11 @@
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">
     <Compile Include="X509StoreMutableTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
-    <Compile Include="X509StoreMutableTests.Android.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' != 'true'">
     <Compile Include="RevocationTests\DynamicRevocationTests.Default.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
+    <Compile Include="X509StoreMutableTests.Android.cs" />
     <Compile Include="RevocationTests\DynamicRevocationTests.Android.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
