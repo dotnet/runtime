@@ -815,6 +815,7 @@ class AsyncSubprocessHelper:
         reset_env = os.environ.copy()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
+        os.environ.clear()
         os.environ.update(reset_env)
 
 ################################################################################
@@ -1111,7 +1112,7 @@ class SuperPMICollect:
                 helper = AsyncSubprocessHelper(assemblies, verbose=True)
                 helper.run_to_completion(run_pmi, self)
 
-                # Review: does this delete the items that weren't there before we updated with the PMI variables?
+                os.environ.clear()
                 os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.pmi is True"
 
@@ -1189,7 +1190,7 @@ class SuperPMICollect:
                 helper = AsyncSubprocessHelper(assemblies, verbose=True)
                 helper.run_to_completion(run_crossgen, self)
 
-                # Review: does this delete the items that weren't there before we updated with the crossgen variables?
+                os.environ.clear()
                 os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.crossgen is True"
 
@@ -1311,7 +1312,7 @@ class SuperPMICollect:
                 helper = AsyncSubprocessHelper(assemblies, verbose=True)
                 helper.run_to_completion(run_crossgen2, self)
 
-                # Review: does this delete the items that weren't there before we updated with the crossgen2 variables?
+                os.environ.clear()
                 os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.crossgen2 is True"
 
@@ -1717,6 +1718,12 @@ class SuperPMIReplayAsmDiffs:
             "COMPlus_JitDump": "*",
             "COMPlus_NgenDump": "*" })
 
+        asm_complus_vars_full_env = os.environ.copy()
+        asm_complus_vars_full_env.update(asm_complus_vars)
+
+        jit_dump_complus_vars_full_env = os.environ.copy()
+        jit_dump_complus_vars_full_env.update(jit_dump_complus_vars)
+
         target_flags = []
         if self.coreclr_args.arch != self.coreclr_args.target_arch:
             target_flags += [ "-target", self.coreclr_args.target_arch ]
@@ -1860,7 +1867,7 @@ class SuperPMIReplayAsmDiffs:
                     text_differences = queue.Queue()
                     jit_dump_differences = queue.Queue()
 
-                    async def create_replay_artifacts(print_prefix, item, self, mch_file, env_vars, jit_differences_queue, base_location, diff_location, extension):
+                    async def create_replay_artifacts(print_prefix, item, self, mch_file, env, jit_differences_queue, base_location, diff_location, extension):
                         """ Run superpmi over an MC to create JIT asm or JIT dumps for the method.
                         """
                         # Setup flags to call SuperPMI for both the diff jit and the base jit
@@ -1870,9 +1877,6 @@ class SuperPMIReplayAsmDiffs:
                             "-v", "q"  # only log from the jit.
                         ]
                         flags += altjit_replay_flags
-
-                        # Add in all the COMPlus variables we need
-                        os.environ.update(env_vars)
 
                         # Change the working directory to the core root we will call SuperPMI from.
                         # This is done to allow libcoredistools to be loaded correctly on unix
@@ -1885,7 +1889,7 @@ class SuperPMIReplayAsmDiffs:
                                 with open(item_path, 'w') as file_handle:
                                     logging.debug("%sGenerating %s", print_prefix, item_path)
                                     logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
-                                    proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=file_handle, stderr=asyncio.subprocess.PIPE)
+                                    proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=file_handle, stderr=asyncio.subprocess.PIPE, env=env)
                                     await proc.communicate()
                                 with open(item_path, 'r') as file_handle:
                                     generated_txt = file_handle.read()
@@ -1905,11 +1909,11 @@ class SuperPMIReplayAsmDiffs:
 
                     logging.info("Creating dasm files")
                     subproc_helper = AsyncSubprocessHelper(diff_items, verbose=True)
-                    subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, asm_complus_vars, text_differences, base_asm_location, diff_asm_location, ".dasm")
+                    subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, asm_complus_vars_full_env, text_differences, base_asm_location, diff_asm_location, ".dasm")
 
                     if self.coreclr_args.diff_jit_dump:
                         logging.info("Creating JitDump files")
-                        subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, jit_dump_complus_vars, jit_dump_differences, base_dump_location, diff_dump_location, ".txt")
+                        subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, jit_dump_complus_vars_full_env, jit_dump_differences, base_dump_location, diff_dump_location, ".txt")
 
                     logging.info("Differences found. To replay SuperPMI use:")
                     logging.info("")
