@@ -147,6 +147,7 @@ product_location_help = "Built Product directory location. Optional; it will be 
 spmi_location_help = """\
 Directory in which to put SuperPMI files, such as downloaded MCH files, asm diffs, and repro .MC files.
 Optional. Default is 'spmi' within the repo 'artifacts' directory.
+If 'SUPERPMI_CACHE_DIRECTORY' environment variable is set to a path, it will use that directory.
 """
 
 superpmi_collect_help = """\
@@ -3022,7 +3023,13 @@ def setup_args(args):
                         "Unable to set log_file.")
 
     def setup_spmi_location_arg(spmi_location):
-        return os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi")) if spmi_location is None else spmi_location
+        if spmi_location is None:
+            if "SUPERPMI_CACHE_DIRECTORY" in os.environ:
+                spmi_location = os.environ["SUPERPMI_CACHE_DIRECTORY"]
+                spmi_location = os.path.abspath(spmi_location)
+            else:
+                spmi_location = os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi"))
+        return spmi_location
 
     coreclr_args.verify(args,
                         "spmi_location",
