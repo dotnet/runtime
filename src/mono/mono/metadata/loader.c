@@ -2001,6 +2001,7 @@ get_method_update_rva (MonoImage *image_base, uint32_t idx)
 {
 	gpointer loc = NULL;
 	uint32_t cur = mono_metadata_update_get_thread_generation ();
+	int generation = -1;
 	GList *ptr = image_base->delta_image;
 	/* Go through all the updates that the current thread can see and see
 	 * if they updated the method.  Keep the latest visible update */
@@ -2008,9 +2009,18 @@ get_method_update_rva (MonoImage *image_base, uint32_t idx)
 		MonoImage *image_delta = (MonoImage*) ptr->data;
 		if (image_delta->generation > cur)
 			break;
-		if (image_delta->method_table_update)
-			loc = g_hash_table_lookup (image_delta->method_table_update, GUINT_TO_POINTER (idx));
+		if (image_delta->method_table_update) {
+			gpointer result = g_hash_table_lookup (image_delta->method_table_update, GUINT_TO_POINTER (idx));
+			/* if it's not in the table of a later generation, the
+			 * later generation didn't modify the method
+			 */
+			if (result != NULL) {
+				loc = result;
+				generation = image_delta->generation;
+			}
+		}
 	}
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "method lookup idx=0x%08x returned gen=%d il=%p", idx, generation, loc);
 	return loc;
 }
 #endif
