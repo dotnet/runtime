@@ -50,8 +50,8 @@ namespace System.ComponentModel.Design
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "HashTable exists here")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Only simple types (string and HashTable) are serialized with BinaryFormatter. These types can be serialized in a trimmed application.")]
         private static void SerializeWithBinaryFormatter(Stream o, string cryptoKey, DesigntimeLicenseContext context)
         {
             IFormatter formatter = new BinaryFormatter();
@@ -128,7 +128,7 @@ namespace System.ComponentModel.Design
         }
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(Hashtable))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "HashTable's Serialization ctor will be preserved by the DynamicDependency.")]
         private static void DeserializeUsingBinaryFormatter(StreamWrapper wrappedStream, string cryptoKey, RuntimeLicenseContext context)
         {
