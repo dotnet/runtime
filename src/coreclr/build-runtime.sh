@@ -123,7 +123,7 @@ handle_arguments_local() {
             ;;
 
         component|-component)
-            __RequestedBuildComponents="$__RequestedBuildComponents${__RequestedBuildComponents:+-}$2"
+            __RequestedBuildComponents="$__RequestedBuildComponents $2"
             __ShiftArgs=1
             ;;
         *)
@@ -239,23 +239,8 @@ if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"
 fi
 
-__CMakeTarget=""
-if [[ "-$__RequestedBuildComponents-" =~ "-jit-" ]]; then
-    __CMakeTarget="${__CMakeTarget} jit"
-fi
-if [[ "-$__RequestedBuildComponents-" =~ "-alljits-" ]]; then
-    __CMakeTarget="${__CMakeTarget}  all_jits"
-fi
-if [[ "-$__RequestedBuildComponents-" =~ "-runtime-" ]]; then
-    __CMakeTarget="${__CMakeTarget} runtime"
-fi
-if [[ "-$__RequestedBuildComponents-" =~ "-paltests-" ]]; then
-    __CMakeTarget="${__CMakeTarget} paltests_install"
-fi
-if [[ "-$__RequestedBuildComponents-" =~ "-iltools-" ]]; then
-    __CMakeTarget="${__CMakeTarget} iltools"
-fi
-
+__CMakeTarget=" $__RequestedBuildComponents "
+__CMakeTarget="${__CMakeTarget// paltests / paltests_install }"
 if [[ -z "$__CMakeTarget" ]]; then
     __CMakeTarget="install"
 fi

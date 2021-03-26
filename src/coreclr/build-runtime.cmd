@@ -152,7 +152,7 @@ if /i "%1" == "-ninja"               (set __Ninja=1&set processedArgs=!processed
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -414,25 +414,7 @@ if NOT DEFINED PYTHON (
     goto ExitWithError
 )
 
-set __CMakeTarget=
-for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
-    set "string=%%a"
-    if not "!string:-jit-=!"=="!string!" (
-        set __CMakeTarget=!__CMakeTarget! jit
-    )
-    if not "!string:-alljits-=!"=="!string!" (
-        set __CMakeTarget=!__CMakeTarget! all_jits
-    )
-    if not "!string:-runtime-=!"=="!string!" (
-        set __CMakeTarget=!__CMakeTarget! runtime
-    )
-    if not "!string:-paltests-=!"=="!string!" (
-        set __CMakeTarget=!__CMakeTarget! paltests_install
-    )
-    if not "!string:-iltools-=!"=="!string!" (
-        set __CMakeTarget=!__CMakeTarget! iltools
-    )
-)
+set __CMakeTarget=!__RequestedBuildComponents: paltests = paltests_install !
 if [!__CMakeTarget!] == [] (
     set __CMakeTarget=install
 )

@@ -80,7 +80,7 @@ if not "%__ConfigureOnly%" == "1" (
                 echo The CMake command line is the same as the last run. Skipping running CMake.
                 exit /B 0
             ) else (
-                echo The CMake command line different from the last run. Running CMake again.
+                echo The CMake command line differs from the last run. Running CMake again.
                 echo %__ExtraCmakeParams% > %__CmdLineOptionsUpToDateFile%
             )
         ) else (
