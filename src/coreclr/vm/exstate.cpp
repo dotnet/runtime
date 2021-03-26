@@ -533,8 +533,6 @@ ThreadExceptionFlagHolder::ThreadExceptionFlagHolder(ThreadExceptionState::Threa
     WRAPPER_NO_CONTRACT;
 
     Thread* pThread = GetThread();
-    _ASSERTE(pThread);
-
     m_pExState = pThread->GetExceptionState();
 
     m_flag = flag;

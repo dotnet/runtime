@@ -24,7 +24,7 @@ namespace System.Xml.Xsl.IlGen
     /// <summary>
     /// List of all XmlIL runtime constructors.
     /// </summary>
-    internal class XmlILStorageMethods
+    internal sealed class XmlILStorageMethods
     {
         // Aggregates
         public readonly MethodInfo? AggAvg;
@@ -467,7 +467,7 @@ namespace System.Xml.Xsl.IlGen
     /// <summary>
     /// Contains helper methods used during the code generation phase.
     /// </summary>
-    internal class GenerateHelper
+    internal sealed class GenerateHelper
     {
         private MethodBase? _methInfo;
         private ILGenerator? _ilgen;

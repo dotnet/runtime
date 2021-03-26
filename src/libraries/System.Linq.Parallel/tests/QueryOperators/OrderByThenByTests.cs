@@ -177,7 +177,7 @@ namespace System.Linq.Parallel.Tests
         {
             int prev = 0;
             int seen = 0;
-            Assert.All(labeled.Item.OrderBy(x => x).ToList(), x => { Assert.InRange(x, prev, count - 1); ; prev = x; seen++; });
+            Assert.All(labeled.Item.OrderBy(x => x).ToList(), x => { Assert.InRange(x, prev, count - 1); prev = x; seen++; });
             Assert.Equal(count, seen);
         }
 

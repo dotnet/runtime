@@ -9,7 +9,7 @@ namespace System.Net.NetworkInformation
     /// IPInterfaceStatistics provider for Linux.
     /// Reads information out of /proc/net/dev and other locations.
     /// </summary>
-    internal class LinuxIPInterfaceStatistics : IPInterfaceStatistics
+    internal sealed class LinuxIPInterfaceStatistics : IPInterfaceStatistics
     {
         // /proc/net/dev statistics table for network interface
         private readonly IPInterfaceStatisticsTable _table;

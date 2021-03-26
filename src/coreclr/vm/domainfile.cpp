@@ -465,10 +465,7 @@ BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
     if (IsError())
         return FALSE;
 
-    Thread *pThread;
-    pThread = GetThread();
-    _ASSERTE(pThread);
-
+    Thread *pThread = GetThread();
     switch (level)
     {
     case FILE_LOAD_BEGIN:

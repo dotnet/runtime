@@ -7,7 +7,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Text;
 
-    internal class StringOutput : SequentialOutput
+    internal sealed class StringOutput : SequentialOutput
     {
         private readonly StringBuilder _builder;
         private string? _result;

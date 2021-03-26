@@ -14,7 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
+    internal sealed class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
     {
         private string? _extensionDataValueType;
         private readonly DateTimeFormat? _dateTimeFormat;

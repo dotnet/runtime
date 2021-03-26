@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace System.Net.Http.Headers
 {
-    internal class Int32NumberHeaderParser : BaseHeaderParser
+    internal sealed class Int32NumberHeaderParser : BaseHeaderParser
     {
         // Note that we don't need a custom comparer even though we have a value type that gets boxed (comparing two
         // equal boxed value types returns 'false' since the object instances used for boxing the two values are

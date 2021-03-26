@@ -22,7 +22,7 @@ namespace System.IO.Packaging
     /// <para>Setting a property to null deletes this property. 'null' is never strictly speaking
     /// a property value, but an absence indicator.</para>
     /// </remarks>
-    internal class PartBasedPackageProperties : PackageProperties
+    internal sealed class PartBasedPackageProperties : PackageProperties
     {
         #region Constructors
 

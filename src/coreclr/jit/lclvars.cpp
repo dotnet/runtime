@@ -4099,6 +4099,21 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
                 if (varDsc->lvEhWriteThruCandidate || needsExplicitZeroInit)
                 {
+#ifdef DEBUG
+                    if (needsExplicitZeroInit)
+                    {
+                        varDsc->lvDisqualifyEHVarReason = 'Z';
+                        JITDUMP("EH Var V%02u needs explicit zero init. Disqualified as a register candidate.\n",
+                                lclNum);
+                    }
+                    else
+                    {
+                        varDsc->lvDisqualifyEHVarReason = 'M';
+                        JITDUMP("EH Var V%02u has multiple definitions. Disqualified as a register candidate.\n",
+                                lclNum);
+                    }
+
+#endif // DEBUG
                     varDsc->lvEhWriteThruCandidate     = false;
                     varDsc->lvDisqualifyForEhWriteThru = true;
                 }
@@ -4111,6 +4126,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 #endif
                     {
                         varDsc->lvEhWriteThruCandidate = true;
+                        JITDUMP("Marking EH Var V%02u as a register candidate.\n", lclNum);
                     }
                 }
             }
@@ -7365,7 +7381,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
         if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
         {
-            printf("H");
+            printf("%c", varDsc->lvDisqualifyEHVarReason);
         }
         if (varDsc->lvLclFieldExpr)
         {

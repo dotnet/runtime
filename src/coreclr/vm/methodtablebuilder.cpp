@@ -11592,7 +11592,7 @@ MethodTableBuilder::GatherGenericsInfo(
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(bmtGenericsInfo));
     }
@@ -11840,7 +11840,7 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     CONTRACT(TypeHandle)
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(CheckPointer(pModule));
         POSTCONDITION(!RETVAL.IsNull());
         POSTCONDITION(CheckPointer(RETVAL.GetMethodTable()));

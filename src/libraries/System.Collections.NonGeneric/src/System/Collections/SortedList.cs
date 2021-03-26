@@ -1103,7 +1103,7 @@ namespace System.Collections
         }
 
         // internal debug view class for sorted list
-        internal class SortedListDebugView
+        internal sealed class SortedListDebugView
         {
             private readonly SortedList _sortedList;
 

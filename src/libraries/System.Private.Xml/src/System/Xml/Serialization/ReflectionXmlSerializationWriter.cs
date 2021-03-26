@@ -10,7 +10,7 @@ using System.Xml.Schema;
 
 namespace System.Xml.Serialization
 {
-    internal class ReflectionXmlSerializationWriter : XmlSerializationWriter
+    internal sealed class ReflectionXmlSerializationWriter : XmlSerializationWriter
     {
         private readonly XmlMapping _mapping;
 

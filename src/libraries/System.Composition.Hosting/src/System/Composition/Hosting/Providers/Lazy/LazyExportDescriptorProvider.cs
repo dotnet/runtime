@@ -9,7 +9,7 @@ using System.Composition.Hosting.Util;
 
 namespace System.Composition.Hosting.Providers.Lazy
 {
-    internal class LazyExportDescriptorProvider : ExportDescriptorProvider
+    internal sealed class LazyExportDescriptorProvider : ExportDescriptorProvider
     {
         private static readonly MethodInfo s_getLazyDefinitionsMethod = typeof(LazyExportDescriptorProvider)
             .GetTypeInfo().GetDeclaredMethod("GetLazyDefinitions");

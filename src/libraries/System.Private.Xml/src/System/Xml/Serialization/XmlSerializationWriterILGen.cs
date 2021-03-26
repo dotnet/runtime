@@ -15,7 +15,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
-    internal class XmlSerializationWriterILGen : XmlSerializationILGen
+    internal sealed class XmlSerializationWriterILGen : XmlSerializationILGen
     {
         internal XmlSerializationWriterILGen(TypeScope[] scopes, string access, string className)
             : base(scopes, access, className)
@@ -2277,7 +2277,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ReflectionAwareILGen
+    internal sealed class ReflectionAwareILGen
     {
         // reflectionVariables holds mapping between a reflection entity
         // referenced in the generated code (such as TypeInfo,

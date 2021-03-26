@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class ConstantCallSite : ServiceCallSite
+    internal sealed class ConstantCallSite : ServiceCallSite
     {
         private readonly Type _serviceType;
         internal object DefaultValue { get; }

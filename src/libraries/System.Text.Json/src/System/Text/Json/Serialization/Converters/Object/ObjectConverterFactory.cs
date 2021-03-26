@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Converter factory for all object-based types (non-enumerable and non-primitive).
     /// </summary>
-    internal class ObjectConverterFactory : JsonConverterFactory
+    internal sealed class ObjectConverterFactory : JsonConverterFactory
     {
         public override bool CanConvert(Type typeToConvert)
         {

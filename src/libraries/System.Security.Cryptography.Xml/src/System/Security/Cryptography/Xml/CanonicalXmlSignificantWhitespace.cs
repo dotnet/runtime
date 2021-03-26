@@ -7,7 +7,7 @@ using System.Text;
 namespace System.Security.Cryptography.Xml
 {
     // the class that provides node subset state and canonicalization function to XmlSignificantWhitespace
-    internal class CanonicalXmlSignificantWhitespace : XmlSignificantWhitespace, ICanonicalizableNode
+    internal sealed class CanonicalXmlSignificantWhitespace : XmlSignificantWhitespace, ICanonicalizableNode
     {
         private bool _isInNodeSet;
 
