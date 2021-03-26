@@ -3,29 +3,35 @@
 //
 
 #include <config.h>
+
+#ifdef ENABLE_PERFTRACING
 #include "mono/component/diagnostics_server.h"
+
+/*
+ * Forward declares of all static functions.
+ */
 
 static void
 diagnostics_server_stub_cleanup (MonoComponent *self);
 
 static void
-diagnostics_server_stub_ds_server_init (void);
+diagnostics_server_stub_init (void);
 
 static void
-diagnostics_server_stub_ds_server_shutdown (void);
+diagnostics_server_stub_shutdown (void);
 
 static void
-diagnostics_server_stub_ds_server_pause_for_diagnostics_monitor (void);
+diagnostics_server_stub_pause_for_diagnostics_monitor (void);
 
 static void
-diagnostics_server_stub_ds_server_disable (void);
+diagnostics_server_stub_disable (void);
 
 static MonoComponentDiagnosticsServer fn_table = {
 	{ &diagnostics_server_stub_cleanup },
-	&diagnostics_server_stub_ds_server_init,
-	&diagnostics_server_stub_ds_server_shutdown,
-	&diagnostics_server_stub_ds_server_pause_for_diagnostics_monitor,
-	&diagnostics_server_stub_ds_server_disable
+	&diagnostics_server_stub_init,
+	&diagnostics_server_stub_shutdown,
+	&diagnostics_server_stub_pause_for_diagnostics_monitor,
+	&diagnostics_server_stub_disable
 };
 
 #ifdef STATIC_COMPONENTS
@@ -49,21 +55,22 @@ diagnostics_server_stub_cleanup (MonoComponent *self)
 }
 
 static void
-diagnostics_server_stub_ds_server_init (void)
+diagnostics_server_stub_init (void)
 {
 }
 
 static void
-diagnostics_server_stub_ds_server_shutdown (void)
+diagnostics_server_stub_shutdown (void)
 {
 }
 
 static void
-diagnostics_server_stub_ds_server_pause_for_diagnostics_monitor (void)
+diagnostics_server_stub_pause_for_diagnostics_monitor (void)
 {
 }
 
 static void
-diagnostics_server_stub_ds_server_disable (void)
+diagnostics_server_stub_disable (void)
 {
 }
+#endif /* ENABLE_PERFTRACING */

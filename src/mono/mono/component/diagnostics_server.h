@@ -5,14 +5,15 @@
 #ifndef _MONO_COMPONENT_DIAGNOSTICS_SERVER_H
 #define _MONO_COMPONENT_DIAGNOSTICS_SERVER_H
 
+#ifdef ENABLE_PERFTRACING
 #include "mono/component/component.h"
 
 typedef struct _MonoComponentDiagnosticsServer {
 	MonoComponent component;
-	void (*ds_server_init) (void);
-	void (*ds_server_shutdown) (void);
-	void (*ds_server_pause_for_diagnostics_monitor) (void);
-	void (*ds_server_disable) (void);
+	void (*init) (void);
+	void (*shutdown) (void);
+	void (*pause_for_diagnostics_monitor) (void);
+	void (*disable) (void);
 } MonoComponentDiagnosticsServer;
 
 #ifdef STATIC_COMPONENTS
@@ -21,4 +22,5 @@ MonoComponentDiagnosticsServer *
 mono_component_diagnostics_server_init (void);
 #endif
 
+#endif /* ENABLE_PERFTRACING */
 #endif /*_MONO_COMPONENT_DIAGNOSTICS_SERVER_H*/

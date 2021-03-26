@@ -29,20 +29,25 @@ typedef struct _MonoComponentEntry {
 #define COMPONENT_INIT_FUNC(name) (MonoComponentInitFn) mono_component_ ## name ## _stub_init
 #endif
 
+#define HOT_RELOAD_MODULE_NAME "hot_reload"
 MonoComponentHotReload *hot_reload = NULL;
+
+#ifdef ENABLE_PERFTRACING
 MonoComponentEventPipe *event_pipe = NULL;
-MonoComponentEventPipe *diagnostics_server = NULL;
+MonoComponentDiagnosticsServer *diagnostics_server = NULL;
 
 // DiagnosticsServer component currently hosted by EventPipe module.
-#define HOT_RELOAD_MODULE_NAME "hot_reload"
 #define EVENT_PIPE_MODULE_NAME "event_pipe"
 #define DIAGNOSTICS_SERVER_MODULE_NAME EVENT_PIPE_MODULE_NAME
+#endif
 
 /* One per component */
 MonoComponentEntry components[] = {
 	{ HOT_RELOAD_MODULE_NAME, COMPONENT_INIT_FUNC (hot_reload), (MonoComponent**)&hot_reload, NULL },
+#ifdef ENABLE_PERFTRACING
 	{ EVENT_PIPE_MODULE_NAME, COMPONENT_INIT_FUNC (event_pipe), (MonoComponent**)&event_pipe, NULL },
-	{ DIAGNOSTICS_SERVER_MODULE_NAME, COMPONENT_INIT_FUNC (diagnostics_server), (MonoComponent**)&diagnostics_server, NULL }
+	{ DIAGNOSTICS_SERVER_MODULE_NAME, COMPONENT_INIT_FUNC (diagnostics_server), (MonoComponent**)&diagnostics_server, NULL },
+#endif
 };
 
 #ifndef STATIC_COMPONENTS

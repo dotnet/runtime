@@ -1,205 +1,14 @@
 #include <config.h>
 #include <glib.h>
 #include <mono/utils/mono-compiler.h>
-
 #include <mono/metadata/icall-decl.h>
 
 #if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
-#include <eventpipe/ep-rt-config.h>
-#include <eventpipe/ep.h>
-#include <eventpipe/ep-event.h>
-#include <eventpipe/ep-event-instance.h>
-#include <eventpipe/ep-session.h>
-
-#include <mono/utils/checked-build.h>
-#include <mono/utils/mono-time.h>
-#include <mono/utils/mono-proclib.h>
-#include <mono/utils/mono-threads.h>
-#include <mono/utils/mono-rand.h>
-#include <mono/metadata/appdomain.h>
-#include <mono/metadata/profiler.h>
-#include <mono/metadata/assembly.h>
-#include <mono/metadata/class-internals.h>
-#include <mono/metadata/debug-internals.h>
-#include <mono/mini/mini-runtime.h>
-
-// Rundown flags.
-#define METHOD_FLAGS_DYNAMIC_METHOD 0x1
-#define METHOD_FLAGS_GENERIC_METHOD 0x2
-#define METHOD_FLAGS_SHARED_GENERIC_METHOD 0x4
-#define METHOD_FLAGS_JITTED_METHOD 0x8
-#define METHOD_FLAGS_JITTED_HELPER_METHOD 0x10
-
-#define MODULE_FLAGS_NATIVE_MODULE 0x2
-#define MODULE_FLAGS_DYNAMIC_MODULE 0x4
-#define MODULE_FLAGS_MANIFEST_MODULE 0x8
-
-#define ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY 0x2
-#define ASSEMBLY_FLAGS_NATIVE_ASSEMBLY 0x4
-#define ASSEMBLY_FLAGS_COLLECTIBLE_ASSEMBLY 0x8
-
-#define DOMAIN_FLAGS_DEFAULT_DOMAIN 0x1
-#define DOMAIN_FLAGS_EXECUTABLE_DOMAIN 0x2
-
-typedef enum _EventPipeActivityControlCode {
-	EP_ACTIVITY_CONTROL_GET_ID = 1,
-	EP_ACTIVITY_CONTROL_SET_ID = 2,
-	EP_ACTIVITY_CONTROL_CREATE_ID = 3,
-	EP_ACTIVITY_CONTROL_GET_SET_ID = 4,
-	EP_ACTIVITY_CONTROL_CREATE_SET_ID = 5
-} EventPipeActivityControlCode;
-
-typedef struct _EventPipeProviderConfigurationNative {
-	gunichar2 *provider_name;
-	uint64_t keywords;
-	uint32_t logging_level;
-	gunichar2 *filter_data;
-} EventPipeProviderConfigurationNative;
-
-typedef struct _EventPipeSessionInfo {
-	int64_t starttime_as_utc_filetime;
-	int64_t start_timestamp;
-	int64_t timestamp_frequency;
-} EventPipeSessionInfo;
-
-typedef struct _EventPipeEventInstanceData {
-	intptr_t provider_id;
-	uint32_t event_id;
-	uint32_t thread_id;
-	int64_t timestamp;
-	uint8_t activity_id [EP_ACTIVITY_ID_SIZE];
-	uint8_t related_activity_id [EP_ACTIVITY_ID_SIZE];
-	const uint8_t *payload;
-	uint32_t payload_len;
-} EventPipeEventInstanceData;
-
-typedef struct _EventPipeFireMethodEventsData{
-	MonoDomain *domain;
-	uint8_t *buffer;
-	size_t buffer_size;
-	ep_rt_mono_fire_method_rundown_events_func method_events_func;
-} EventPipeFireMethodEventsData;
-
-typedef struct _EventPipeSampleProfileData {
-	EventPipeStackContents stack_contents;
-	uint64_t thread_id;
-	uintptr_t thread_ip;
-	uint32_t payload_data;
-} EventPipeSampleProfileData;
-
-gboolean ep_rt_mono_initialized;
-MonoNativeTlsKey ep_rt_mono_thread_holder_tls_id;
-gpointer ep_rt_mono_rand_provider;
-
-static ep_rt_thread_holder_alloc_func thread_holder_alloc_callback_func;
-static ep_rt_thread_holder_free_func thread_holder_free_callback_func;
-
-static GArray * _ep_rt_mono_sampled_thread_callstacks = NULL;
-static uint32_t _ep_rt_mono_max_sampled_thread_count = 32;
+#include <mono/metadata/components.h>
 
 /*
  * Forward declares of all static functions.
  */
-
-static
-gboolean
-rand_try_get_bytes_func (
-	guchar *buffer,
-	gssize buffer_size,
-	MonoError *error);
-
-static
-EventPipeThread *
-eventpipe_thread_get (void);
-
-static
-EventPipeThread *
-eventpipe_thread_get_or_create (void);
-
-static
-void
-eventpipe_thread_exited (void);
-
-static
-void
-profiler_eventpipe_thread_exited (
-	MonoProfiler *prof,
-	uintptr_t tid);
-
-static
-gpointer
-eventpipe_thread_attach (gboolean background_thread);
-
-static
-void
-eventpipe_thread_detach (void);
-
-static
-void
-eventpipe_fire_method_events (
-	MonoJitInfo *ji,
-	MonoMethod *method,
-	EventPipeFireMethodEventsData *events_data);
-
-static
-void
-eventpipe_fire_method_events_func (
-	MonoJitInfo *ji,
-	gpointer user_data);
-
-static
-void
-eventpipe_fire_assembly_events (
-	MonoDomain *domain,
-	MonoAssembly *assembly,
-	ep_rt_mono_fire_assembly_rundown_events_func assembly_events_func);
-
-static
-gboolean
-eventpipe_execute_rundown (
-	ep_rt_mono_fire_domain_rundown_events_func domain_events_func,
-	ep_rt_mono_fire_assembly_rundown_events_func assembly_events_func,
-	ep_rt_mono_fire_method_rundown_events_func methods_events_func);
-
-static
-gboolean
-eventpipe_walk_managed_stack_for_thread_func (
-	MonoStackFrameInfo *frame,
-	MonoContext *ctx,
-	gpointer data);
-
-static
-gboolean
-eventpipe_walk_managed_stack_for_thread (
-	ep_rt_thread_handle_t thread,
-	EventPipeStackContents *stack_contents);
-
-static
-gboolean
-eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
-	MonoStackFrameInfo *frame,
-	MonoContext *ctx,
-	gpointer data);
-
-static
-gboolean
-eventpipe_sample_profiler_write_sampling_event_for_threads (
-	ep_rt_thread_handle_t sampling_thread,
-	EventPipeEvent *sampling_event);
-
-static
-gboolean
-eventpipe_method_get_simple_assembly_name (
-	ep_rt_method_desc_t *method,
-	ep_char8_t *name,
-	size_t name_len);
-
-static
-gboolean
-evetpipe_method_get_full_name (
-	ep_rt_method_desc_t *method,
-	ep_char8_t *name,
-	size_t name_len);
 
 static
 void
@@ -857,11 +666,11 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (
 
 	char *provider_name_utf8 = mono_string_handle_to_utf8 (provider_name, error);
 	if (is_ok (error) && provider_name_utf8) {
-		provider = ep_create_provider (provider_name_utf8, delegate_callback_func, delegate_callback_data_free_func, callback_data);
+		provider = mono_component_event_pipe ()->create_provider (provider_name_utf8, delegate_callback_func, delegate_callback_data_free_func, callback_data);
 	}
 
 	g_free (provider_name_utf8);
-	return provider;
+	return (gconstpointer)provider;
 }
 
 intptr_t
@@ -877,7 +686,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DefineEvent (
 	g_assert (provider_handle != 0);
 
 	EventPipeProvider *provider = (EventPipeProvider *)provider_handle;
-	EventPipeEvent *ep_event = ep_provider_add_event (provider, event_id, (uint64_t)keywords, event_version, (EventPipeEventLevel)level, /* needStack = */ true, metadata, metadata_len);
+	EventPipeEvent *ep_event = mono_component_event_pipe ()->provider_add_event (provider, event_id, (uint64_t)keywords, event_version, (EventPipeEventLevel)level, /* needStack = */ true, metadata, metadata_len);
 
 	g_assert (ep_event != NULL);
 	return (intptr_t)ep_event;
@@ -886,15 +695,14 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DefineEvent (
 void
 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DeleteProvider (intptr_t provider_handle)
 {
-	if (provider_handle) {
-		ep_delete_provider ((EventPipeProvider *)provider_handle);
-	}
+	if (provider_handle)
+		mono_component_event_pipe ()->delete_provider ((EventPipeProvider *)provider_handle);
 }
 
 void
 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Disable (uint64_t session_id)
 {
-	ep_disable (session_id);
+	mono_component_event_pipe ()->disable (session_id);
 }
 
 uint64_t
@@ -915,42 +723,21 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
 	if (output_file)
 		output_file_utf8 = mono_utf16_to_utf8 (output_file, g_utf16_len (output_file), error);
 
-	EventPipeProviderConfigurationNative *native_config_providers = (EventPipeProviderConfigurationNative *)providers;
-	EventPipeProviderConfiguration *config_providers = g_new0 (EventPipeProviderConfiguration, providers_len);
-
-	if (config_providers) {
-		for (int i = 0; i < providers_len; ++i) {
-			ep_provider_config_init (
-				&config_providers[i],
-				native_config_providers[i].provider_name ? mono_utf16_to_utf8 (native_config_providers[i].provider_name, g_utf16_len (native_config_providers[i].provider_name), error) : NULL,
-				native_config_providers [i].keywords,
-				(EventPipeEventLevel)native_config_providers [i].logging_level,
-				native_config_providers[i].filter_data ? mono_utf16_to_utf8 (native_config_providers[i].filter_data, g_utf16_len (native_config_providers[i].filter_data), error) : NULL);
-		}
-	}
-
-	session_id = ep_enable (
+	session_id = mono_component_event_pipe ()->enable (
 		output_file_utf8,
 		circular_buffer_size_mb,
-		config_providers,
+		(EventPipeProviderConfigurationNative *)providers,
 		providers_len,
 		output_file != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_LISTENER,
 		(EventPipeSerializationFormat)format,
 		true,
 		NULL,
 		NULL);
-	ep_start_streaming (session_id);
 
-	if (config_providers) {
-		for (int i = 0; i < providers_len; ++i) {
-			ep_provider_config_fini (&config_providers[i]);
-			g_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config_providers[i]));
-			g_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config_providers[i]));
-		}
-	}
+	mono_component_event_pipe ()->start_streaming (session_id);
 
 	g_free (output_file_utf8);
-	return session_id;
+	return (uint64_t)session_id;
 }
 
 int32_t
@@ -958,40 +745,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_EventActivityIdControl (
 	uint32_t control_code,
 	/* GUID * */uint8_t *activity_id)
 {
-	int32_t result = 0;
-	ep_rt_thread_activity_id_handle_t activity_id_handle = ep_thread_get_activity_id_handle ();
-
-	if (activity_id_handle == NULL)
-		return 1;
-
-	uint8_t current_activity_id [EP_ACTIVITY_ID_SIZE];
-	EventPipeActivityControlCode activity_control_code = (EventPipeActivityControlCode)control_code;
-	switch (activity_control_code) {
-	case EP_ACTIVITY_CONTROL_GET_ID:
-		ep_thread_get_activity_id (activity_id_handle, activity_id, EP_ACTIVITY_ID_SIZE);
-		break;
-	case EP_ACTIVITY_CONTROL_SET_ID:
-		ep_thread_set_activity_id (activity_id_handle, activity_id, EP_ACTIVITY_ID_SIZE);
-		break;
-	case EP_ACTIVITY_CONTROL_CREATE_ID:
-		ep_thread_create_activity_id (activity_id, EP_ACTIVITY_ID_SIZE);
-		break;
-	case EP_ACTIVITY_CONTROL_GET_SET_ID:
-		ep_thread_get_activity_id (activity_id_handle, current_activity_id, EP_ACTIVITY_ID_SIZE);
-		ep_thread_set_activity_id (activity_id_handle, activity_id, EP_ACTIVITY_ID_SIZE);
-		memcpy (activity_id, current_activity_id, EP_ACTIVITY_ID_SIZE);
-		break;
-	case EP_ACTIVITY_CONTROL_CREATE_SET_ID:
-		ep_thread_get_activity_id (activity_id_handle, activity_id, EP_ACTIVITY_ID_SIZE);
-		ep_thread_create_activity_id (current_activity_id, EP_ACTIVITY_ID_SIZE);
-		ep_thread_set_activity_id (activity_id_handle, current_activity_id, EP_ACTIVITY_ID_SIZE);
-		break;
-	default:
-		result = 1;
-		break;
-	}
-
-	return result;
+	return mono_component_event_pipe ()->thread_ctrl_activity_id ((EventPipeActivityControlCode)control_code, activity_id, EP_ACTIVITY_ID_SIZE) ? 0 : 1;
 }
 
 MonoBoolean
@@ -999,25 +753,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetNextEvent (
 	uint64_t session_id,
 	/* EventPipeEventInstanceData * */void *instance)
 {
-	g_assert (instance != NULL);
-
-	EventPipeEventInstance *const next_instance = ep_get_next_event (session_id);
-	EventPipeEventInstanceData *const data = (EventPipeEventInstanceData *)instance;
-	if (next_instance && data) {
-		const EventPipeEvent *const ep_event = ep_event_instance_get_ep_event (next_instance);
-		if (ep_event) {
-			data->provider_id = (intptr_t)ep_event_get_provider (ep_event);
-			data->event_id = ep_event_get_event_id (ep_event);
-		}
-		data->thread_id = ep_event_instance_get_thread_id (next_instance);
-		data->timestamp = ep_event_instance_get_timestamp (next_instance);
-		memcpy (&data->activity_id, ep_event_instance_get_activity_id_cref (next_instance), EP_ACTIVITY_ID_SIZE);
-		memcpy (&data->related_activity_id, ep_event_instance_get_related_activity_id_cref (next_instance), EP_ACTIVITY_ID_SIZE);
-		data->payload = ep_event_instance_get_data (next_instance);
-		data->payload_len = ep_event_instance_get_data_len (next_instance);
-	}
-
-	return next_instance != NULL;
+	return mono_component_event_pipe ()->get_next_event ((EventPipeSessionID)session_id, (EventPipeEventInstanceData *)instance) ? TRUE : FALSE;
 }
 
 intptr_t
@@ -1029,7 +765,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetProvider (const gunich
 
 	if (provider_name) {
 		provider_name_utf8 = mono_utf16_to_utf8 (provider_name, g_utf16_len (provider_name), error);
-		provider = ep_get_provider (provider_name_utf8);
+		provider = mono_component_event_pipe()->get_provider (provider_name_utf8);
 	}
 
 	g_free (provider_name_utf8);
@@ -1041,25 +777,13 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
 	uint64_t session_id,
 	/* EventPipeSessionInfo * */void *session_info)
 {
-	bool result = false;
-	if (session_info) {
-		EventPipeSession *session = ep_get_session ((EventPipeSessionID)session_id);
-		if (session) {
-			EventPipeSessionInfo *instance = (EventPipeSessionInfo *)session_info;
-			instance->starttime_as_utc_filetime = ep_session_get_session_start_time (session);
-			instance->start_timestamp = ep_session_get_session_start_timestamp (session);
-			instance->timestamp_frequency = ep_perf_frequency_query ();
-			result = true;
-		}
-	}
-
-	return result;
+	return mono_component_event_pipe()->get_session_info (session_id, (EventPipeSessionInfo *)session_info) ? TRUE : FALSE;
 }
 
 intptr_t
 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t session_id)
 {
-	return (intptr_t)ep_get_wait_handle (session_id);
+	return (intptr_t) mono_component_event_pipe()->get_wait_handle ((EventPipeSessionID)session_id);
 }
 
 void
@@ -1072,7 +796,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData (
 {
 	g_assert (event_handle);
 	EventPipeEvent *ep_event = (EventPipeEvent *)event_handle;
-	ep_write_event_2 (ep_event, (EventData *)event_data, event_data_len, activity_id, related_activity_id);
+	mono_component_event_pipe()->write_event_2 (ep_event, (EventData *)event_data, event_data_len, activity_id, related_activity_id);
 }
 
 #else /* ENABLE_PERFTRACING */

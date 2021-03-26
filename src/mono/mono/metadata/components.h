@@ -25,6 +25,7 @@ mono_component_hot_reload (void)
 	return hot_reload;
 }
 
+#ifdef ENABLE_PERFTRACING
 static inline
 MonoComponentEventPipe *
 mono_component_event_pipe (void)
@@ -40,15 +41,18 @@ mono_component_diagnostics_server (void)
 	extern MonoComponentDiagnosticsServer *diagnostics_server;
 	return diagnostics_server;
 }
+#endif
 
 /* Declare each copomnents stub init function here */
 MonoComponentHotReload *
 mono_component_hot_reload_stub_init (void);
 
+#ifdef ENABLE_PERFTRACING
 MonoComponentEventPipe *
 mono_component_event_pipe_stub_init (void);
 
 MonoComponentDiagnosticsServer *
 mono_component_diagnostics_server_stub_init (void);
+#endif
 
 #endif/*_MONO_METADATA_COMPONENTS_H*/

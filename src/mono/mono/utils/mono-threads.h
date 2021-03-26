@@ -23,6 +23,7 @@
 #include <mono/utils/refcount.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/w32subset.h>
+#include <mono/utils/mono-compiler.h>
 
 #include <glib.h>
 #include <config.h>
@@ -506,7 +507,7 @@ mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize);
 MONO_API gboolean
 mono_thread_info_yield (void);
 
-gint
+MONO_COMPONENT_API gint
 mono_thread_info_sleep (guint32 ms, gboolean *alerted);
 
 gint
@@ -624,7 +625,7 @@ gint mono_threads_suspend_get_suspend_signal (void);
 gint mono_threads_suspend_get_restart_signal (void);
 gint mono_threads_suspend_get_abort_signal (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data,
 	gsize* const stack_size, MonoNativeThreadId *tid);
 

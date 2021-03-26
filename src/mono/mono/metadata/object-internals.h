@@ -2070,7 +2070,7 @@ mono_gc_wbarrier_value_copy_internal (void* dest, const void* src, int count, Mo
 void
 mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src);
 
-char *
+MONO_COMPONENT_API char *
 mono_runtime_get_managed_cmd_line (void);
 
 char *

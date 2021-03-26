@@ -279,8 +279,8 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_thread_internal_attach (domain);
 
 #if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
-	mono_component_diagnostics_server ()->ds_server_init ();
-	mono_component_diagnostics_server ()->ds_server_pause_for_diagnostics_monitor ();
+	mono_component_diagnostics_server ()->init ();
+	mono_component_diagnostics_server ()->pause_for_diagnostics_monitor ();
 #endif
 
 	mono_type_initialization_init ();
