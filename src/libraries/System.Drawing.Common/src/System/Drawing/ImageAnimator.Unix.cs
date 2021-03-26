@@ -88,7 +88,7 @@ namespace System.Drawing
             if (ht.ContainsKey(image))
                 return;
 
-            PropertyItem item = image.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
+            PropertyItem item = image.GetPropertyItem(0x5100)!; // FrameDelay in libgdiplus
             byte[] value = item.Value!;
             int[] delay = new int[(value.Length >> 2)];
             for (int i = 0, n = 0; i < value.Length; i += 4, n++)
