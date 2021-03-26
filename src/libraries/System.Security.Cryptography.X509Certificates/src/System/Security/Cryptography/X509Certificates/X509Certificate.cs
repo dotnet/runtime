@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
-using System.Runtime.Versioning;
 using System.Text;
 
 namespace System.Security.Cryptography.X509Certificates
