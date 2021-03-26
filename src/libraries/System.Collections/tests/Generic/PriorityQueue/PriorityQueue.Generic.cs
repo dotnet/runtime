@@ -9,7 +9,7 @@ namespace System.Collections.Tests
     {
         protected override (string, string) CreateT(int seed)
         {
-            var random = new Random();
+            var random = new Random(seed);
             return (CreateString(random), CreateString(random));
 
             static string CreateString(Random random)
