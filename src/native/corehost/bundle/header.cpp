@@ -15,10 +15,11 @@ bool header_fixed_t::is_valid() const
         return false;
     }
 
-    // .net 6 host expects the header version to be 6.0
-    // .net 5 host expects the header version to be 2.0 (this code is not .net 5.0 host)
+    // .net 6 host expects the version information to be 6.0
+    // .net 5 host expects the version information to be 2.0
     // .net core 3 single-file bundles are handled within the netcoreapp3.x apphost, and are not processed here in the framework.
-    return ((major_version == 6) && (minor_version == 0));
+    return ((major_version == 6) && (minor_version == 0)) ||
+           ((major_version == 2) && (minor_version == 0));
 }
 
 header_t header_t::read(reader_t& reader)

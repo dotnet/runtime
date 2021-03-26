@@ -121,7 +121,7 @@ size_t to_size_t_dbgchecked(T value)
 {
     assert(value >= 0);
     size_t result = static_cast<size_t>(value);
-    assert(result >= 0);
+    assert(static_cast<T>(result) == value);
     return result;
 }
 

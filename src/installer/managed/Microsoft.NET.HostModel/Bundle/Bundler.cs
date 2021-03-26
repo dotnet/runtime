@@ -48,6 +48,12 @@ namespace Microsoft.NET.HostModel.Bundle
             OutputDir = Path.GetFullPath(string.IsNullOrEmpty(outputDir) ? Environment.CurrentDirectory : outputDir);
             Target = new TargetInfo(targetOS, targetArch, targetFrameworkVersion);
 
+            if (Target.BundleMajorVersion < 6 &&
+                (options & BundleOptions.EnableCompression) != 0)
+            {
+                throw new ArgumentException("Compression requires framework version 6.0 or above", nameof(options));
+            }
+
             appAssemblyName ??= Target.GetAssemblyName(hostName);
             DepsJson = appAssemblyName + ".deps.json";
             RuntimeConfigJson = appAssemblyName + ".runtimeconfig.json";
@@ -59,12 +65,6 @@ namespace Microsoft.NET.HostModel.Bundle
 
         private bool ShouldCompress(FileType type)
         {
-            // compression is not supported before bundle vesion 6
-            if (Target.BundleMajorVersion < 6)
-            {
-                return false;
-            }
-
             if (!Options.HasFlag(BundleOptions.EnableCompression))
             {
                 return false;
