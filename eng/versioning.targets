@@ -46,7 +46,7 @@
     <SupportedPlatform Condition="'$(Targetsillumos)' == 'true'" Include="illumos"/>
     <SupportedPlatform Condition="'$(TargetsMacCatalyst)' == 'true'" Include="MacCatalyst"/>
     <SupportedPlatform Condition="'$(TargetsSolaris)' == 'true'" Include="Solaris"/>
-	<SupportedPlatform Include="tvos"/>
+    <SupportedPlatform Condition="'$(TargetstvOS)' == 'true'" Include="tvos"/>
     <SupportedPlatform Condition="'$(TargetsUnix)' == 'true'" Include="Unix"/>
   </ItemGroup>
   
