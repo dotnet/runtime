@@ -212,6 +212,7 @@ namespace System.Reflection.Tests
         public void ResolveMethod(MethodInfo t)
         {
             Assert.Equal(t, Module.ResolveMethod(t.MetadataToken));
+            throw new Exception();
         }
 
         public static IEnumerable<object[]> BadResolveMethods =>
@@ -241,6 +242,7 @@ namespace System.Reflection.Tests
         public void ResolveField(FieldInfo t)
         {
             Assert.Equal(t, Module.ResolveField(t.MetadataToken));
+            throw new Exception();
         }
 
         public static IEnumerable<object[]> BadResolveFields =>
