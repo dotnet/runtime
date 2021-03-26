@@ -1586,7 +1586,7 @@ namespace System
                 mask = Ssse3.Shuffle(mask, shuffleConstant);
 
                 uint lowBits = Sse2.ConvertToUInt32(mask.AsUInt32());
-                mask = Sse2.ShiftRightLogical(mask.AsUInt64(), 16).AsByte();
+                mask = Sse2.ShiftRightLogical(mask.AsUInt64(), 32).AsByte();
                 uint highBits = Sse2.ConvertToUInt32(mask.AsUInt32());
 
                 for (int idx = i; lowBits != 0; idx++)
