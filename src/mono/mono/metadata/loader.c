@@ -107,21 +107,6 @@ mono_loader_init ()
 }
 
 void
-mono_loader_cleanup (void)
-{
-#ifndef DISABLE_DLLMAP
-	mono_global_dllmap_cleanup ();
-#endif
-	mono_global_loader_cache_cleanup ();
-
-	mono_native_tls_free (loader_lock_nest_id);
-
-	mono_coop_mutex_destroy (&loader_mutex);
-	mono_os_mutex_destroy (&global_loader_data_mutex);
-	loader_lock_inited = FALSE;	
-}
-
-void
 mono_global_loader_data_lock (void)
 {
 	mono_locks_os_acquire (&global_loader_data_mutex, LoaderGlobalDataLock);

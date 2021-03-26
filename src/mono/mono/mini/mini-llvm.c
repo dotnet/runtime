@@ -12402,18 +12402,6 @@ mono_llvm_init (gboolean enable_jit)
 }
 
 void
-mono_llvm_cleanup (void)
-{
-	MonoLLVMModule *module = &aot_module;
-
-	if (module->lmodule)
-		LLVMDisposeModule (module->lmodule);
-
-	if (module->context)
-		LLVMContextDispose (module->context);
-}
-
-void
 mono_llvm_free_mem_manager (MonoJitMemoryManager *mem_manager)
 {
 	MonoLLVMModule *module = (MonoLLVMModule*)mem_manager->llvm_module;
