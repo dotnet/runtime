@@ -42,7 +42,7 @@
 #define _ICEEFILEGEN_H_
 
 #include <ole2.h>
-#include "cor.h"
+#include "corpriv.h"
 
 class ICeeFileGen;
 
@@ -126,7 +126,7 @@ class ICeeFileGen {
     virtual HRESULT GetIMapTokenIfaceEx(HCEEFILE ceeFile, IMetaDataEmit *emitter, IUnknown **pIMapToken);
 
     virtual HRESULT CreateCeeFileFromICeeGen(
-        ICeeGen *pFromICeeGen, HCEEFILE *ceeFile, DWORD createFlags = ICEE_CREATE_FILE_PURE_IL); // call this to instantiate a file handle
+        ICeeGenInternal *pFromICeeGen, HCEEFILE *ceeFile, DWORD createFlags = ICEE_CREATE_FILE_PURE_IL); // call this to instantiate a file handle
 
     virtual HRESULT SetManifestEntry(HCEEFILE ceeFile, ULONG size, ULONG offset);
 

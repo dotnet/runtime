@@ -56,7 +56,7 @@ HRESULT ICeeFileGen::CreateCeeFileEx2 (HCEEFILE *ceeFile, DWORD createFlags, LPC
     return S_OK;
 }
 
-HRESULT ICeeFileGen::CreateCeeFileFromICeeGen(ICeeGen *pICeeGen, HCEEFILE *ceeFile, DWORD createFlags)
+HRESULT ICeeFileGen::CreateCeeFileFromICeeGen(ICeeGenInternal *pICeeGen, HCEEFILE *ceeFile, DWORD createFlags)
 {
     if (!ceeFile)
         return E_POINTER;

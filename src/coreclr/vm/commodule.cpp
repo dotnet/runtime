@@ -622,7 +622,7 @@ void QCALLTYPE COMModule::SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
 
-    ICeeGen * pGen = pRCW->GetCeeGen();
+    ICeeGenInternal * pGen = pRCW->GetCeeGen();
 
     ReflectionModule * pReflectionModule = pModule->GetReflectionModule();
 

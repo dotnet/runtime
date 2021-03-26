@@ -25,7 +25,7 @@ typedef DWORD StringRef;
  This is a description of the current implementation of these types for generating
  CLR modules.
 
-  ICeeGen - interface to generate in-memory CLR module.
+  ICeeGenInternal - interface to generate in-memory CLR module.
 
   CCeeGen - implementation of ICeeGen. Currently it uses both CeeSections
             as well as PESections (inside PESectionMan), and maintains a
@@ -45,7 +45,7 @@ typedef DWORD StringRef;
                 etc which are not implemented. These are left over from before
 
                                                      +----------------------------+
-                                                     |       ICeeGen              |
+                                                     | ICeeGenInternal            |
                                                      |                            |
                                                      |  COM-style version of      |
                                                      |  ICeeFileGen. HCEEFILE is  |
@@ -174,7 +174,7 @@ class CeeSection {
 // Only handles in memory stuff
 // Base class for CeeFileGenWriter (which actually generates PEFiles)
 
-class CCeeGen : public ICeeGen, ICeeGenInternal {
+class CCeeGen : public ICeeGenInternal {
     LONG m_cRefs;
   protected:
     short m_textIdx;            // m_sections[] index for the .text section
@@ -213,7 +213,7 @@ class CCeeGen : public ICeeGen, ICeeGenInternal {
 
     virtual HRESULT Cleanup();
 
-    // ICeeGen interfaces
+    // ICeeGenInternal interfaces
 
     ULONG STDMETHODCALLTYPE AddRef();
     ULONG STDMETHODCALLTYPE Release();

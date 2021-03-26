@@ -18,7 +18,7 @@
 
 HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen)
 {
-    if (riid != IID_ICeeGen)
+    if (riid != IID_ICeeGenInternal)
         return E_NOTIMPL;
     if (!pCeeGen)
         return E_POINTER;
@@ -67,9 +67,7 @@ STDMETHODIMP CCeeGen::QueryInterface(REFIID riid, void** ppv)
     *ppv = NULL;
 
     if (riid == IID_IUnknown)
-        *ppv = (IUnknown*)(ICeeGen*)this;
-    else if (riid == IID_ICeeGen)
-        *ppv = (ICeeGen*)this;
+        *ppv = (IUnknown*)(ICeeGenInternal*)this;
     else if (riid == IID_ICeeGenInternal)
         *ppv = (ICeeGenInternal*)this;
     if (*ppv == NULL)
