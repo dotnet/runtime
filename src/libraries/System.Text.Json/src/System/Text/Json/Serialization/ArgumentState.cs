@@ -12,7 +12,7 @@ namespace System.Text.Json
     /// Holds relevant state when deserializing objects with parameterized constructors.
     /// Lives on the current ReadStackFrame.
     /// </summary>
-    internal class ArgumentState
+    internal sealed class ArgumentState
     {
         // Cache for parsed constructor arguments.
         public object Arguments = null!;

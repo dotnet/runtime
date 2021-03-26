@@ -5,7 +5,7 @@ using System.Reflection.Context.Projection;
 
 namespace System.Reflection.Context.Custom
 {
-    internal class CustomMethodInfo : ProjectingMethodInfo
+    internal sealed class CustomMethodInfo : ProjectingMethodInfo
     {
         public CustomMethodInfo(MethodInfo template, CustomReflectionContext context)
             : base(template, context.Projector)

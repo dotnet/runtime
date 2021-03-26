@@ -14,7 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
-    internal class TempAssembly
+    internal sealed class TempAssembly
     {
         internal const string GeneratedAssemblyNamespace = "Microsoft.Xml.Serialization.GeneratedAssembly";
         private readonly Assembly? _assembly;
@@ -23,7 +23,7 @@ namespace System.Xml.Serialization
         private IDictionary? _readerMethods;
         private TempMethodDictionary? _methods;
 
-        internal class TempMethod
+        internal sealed class TempMethod
         {
             internal MethodInfo? writeMethod;
             internal MethodInfo? readMethod;
@@ -630,7 +630,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class TempAssemblyCacheKey
+    internal sealed class TempAssemblyCacheKey
     {
         private readonly string? _ns;
         private readonly object _type;
@@ -655,7 +655,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class TempAssemblyCache
+    internal sealed class TempAssemblyCache
     {
         private Dictionary<TempAssemblyCacheKey, TempAssembly> _cache = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
 

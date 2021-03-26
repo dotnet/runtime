@@ -14,7 +14,7 @@ namespace System.Xml.Xsl.Xslt
     using FunctionInfo = XPathBuilder.FunctionInfo<QilGenerator.FuncId>;
     using T = XmlQueryTypeFactory;
 
-    internal partial class QilGenerator : IXPathEnvironment
+    internal sealed partial class QilGenerator : IXPathEnvironment
     {
         // Everywhere in this code in case of error in the stylesheet we should throw XslLoadException.
         // This helper IErrorHelper implementation is used to wrap XmlException's into XslLoadException's.

@@ -14,7 +14,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Contains all static data that is used by the runtime.
     /// </summary>
-    internal class XmlQueryStaticData
+    internal sealed class XmlQueryStaticData
     {
         // Name of the field to serialize to
         public const string DataFieldName = "staticData";
@@ -402,7 +402,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Subclass of BinaryReader used to serialize query static data.
     /// </summary>
-    internal class XmlQueryDataReader : BinaryReader
+    internal sealed class XmlQueryDataReader : BinaryReader
     {
         public XmlQueryDataReader(Stream input) : base(input) { }
 
@@ -432,7 +432,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Subclass of BinaryWriter used to deserialize query static data.
     /// </summary>
-    internal class XmlQueryDataWriter : BinaryWriter
+    internal sealed class XmlQueryDataWriter : BinaryWriter
     {
         public XmlQueryDataWriter(Stream output) : base(output) { }
 

@@ -43,7 +43,7 @@ namespace System.Linq.Parallel
     ///     This is used as the default partitioning strategy by much of the PLINQ infrastructure.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class PartitionedDataSource<T> : PartitionedStream<T, int>
+    internal sealed class PartitionedDataSource<T> : PartitionedStream<T, int>
     {
         //---------------------------------------------------------------------------------------
         // Just constructs a new partition stream.

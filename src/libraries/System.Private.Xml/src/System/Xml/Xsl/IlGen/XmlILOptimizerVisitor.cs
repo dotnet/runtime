@@ -11,7 +11,7 @@ using System.Xml.Xsl.Runtime;
 
 namespace System.Xml.Xsl.IlGen
 {
-    internal class XmlILOptimizerVisitor : QilPatternVisitor
+    internal sealed class XmlILOptimizerVisitor : QilPatternVisitor
     {
         private static readonly QilPatterns s_patternsNoOpt = CreatePatternsNoOpt();
 
@@ -152,7 +152,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Strongly-typed AllowReplace.
         /// </summary>
-        protected bool AllowReplace(XmlILOptimization pattern, QilNode original)
+        private bool AllowReplace(XmlILOptimization pattern, QilNode original)
         {
             return base.AllowReplace((int)pattern, original);
         }
@@ -160,7 +160,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Strongly-typed Replace.
         /// </summary>
-        protected QilNode Replace(XmlILOptimization pattern, QilNode original, QilNode replacement)
+        private QilNode Replace(XmlILOptimization pattern, QilNode original, QilNode replacement)
         {
             return base.Replace((int)pattern, original, replacement);
         }
@@ -5128,7 +5128,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Returns true if there is no PositionOf operator within the "expr" subtree that references iterator "iter".
         /// </summary>
-        protected bool NonPositional(QilNode expr, QilNode iter)
+        private bool NonPositional(QilNode expr, QilNode iter)
         {
             return !(new PositionOfFinder().Find(expr, iter));
         }

@@ -14,7 +14,7 @@ using System.Xml.Serialization;
 
 namespace Microsoft.XmlSerializer.Generator
 {
-    internal class Sgen
+    internal sealed class Sgen
     {
         public static int Main(string[] args)
         {

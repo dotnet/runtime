@@ -512,7 +512,7 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class TypedDynamicExpressionN : DynamicExpressionN
+    internal sealed class TypedDynamicExpressionN : DynamicExpressionN
     {
         internal TypedDynamicExpressionN(Type returnType, Type delegateType, CallSiteBinder binder, IReadOnlyList<Expression> arguments)
             : base(delegateType, binder, arguments)

@@ -273,13 +273,6 @@ mono_images_init (void)
 void
 mono_images_cleanup (void)
 {
-	mono_os_mutex_destroy (&images_mutex);
-
-	g_hash_table_destroy (images_storage_hash);
-
-	mono_os_mutex_destroy (&images_storage_mutex);
-
-	mutex_inited = FALSE;
 }
 
 /**

@@ -12,7 +12,7 @@ using System.Collections.Generic;
 
 namespace System.Xml
 {
-    internal partial class XmlWellFormedWriter : XmlWriter
+    internal sealed partial class XmlWellFormedWriter : XmlWriter
     {
         //
         // Private types used by the XmlWellFormedWriter are defined in XmlWellFormedWriterHelpers.cs

@@ -8,7 +8,7 @@ namespace System.Xml.Serialization
     using System.IO;
     using System.Globalization;
 
-    internal class CaseInsensitiveKeyComparer : CaseInsensitiveComparer, IEqualityComparer
+    internal sealed class CaseInsensitiveKeyComparer : CaseInsensitiveComparer, IEqualityComparer
     {
         public CaseInsensitiveKeyComparer() : base(CultureInfo.CurrentCulture)
         {
