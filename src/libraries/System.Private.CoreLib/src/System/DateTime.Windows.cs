@@ -181,16 +181,9 @@ namespace System
             // limit our cache's lifetime to just a few minutes (the "validity window"). If a deferred
             // OS update occurs and a past leap second is added, this limits the window in which our
             // cache will return incorrect values.
-            //
-            // We don't ever expect FileTimeToSystemTime or SystemTimeToFileTime to fail, but in theory
-            // they could do so if the OS publishes a leap second table update to all applications while
-            // this method is executing. If the time conversion routines fail, we'll re-run this method's
-            // logic from the beginning.
 
             Debug.Assert(s_systemSupportsLeapSeconds);
             Debug.Assert(LeapSecondCache.ValidityPeriodInTicks < TicksPerDay - TicksPerSecond, "Leap second cache validity window should be less than 23:59:59.");
-
-        TryAgain:
 
             ulong fileTimeNow;
             s_pfnGetSystemTimeAsFileTime(&fileTimeNow);
@@ -203,9 +196,9 @@ namespace System
 
             // We need the FILETIME and the SYSTEMTIME to reflect each other's values.
             // If FileTimeToSystemTime fails, call GetSystemTime and try again until it succeeds.
-            while (Interop.Kernel32.FileTimeToSystemTime(&fileTimeNow, &systemTimeNow) == Interop.BOOL.FALSE)
+            if (Interop.Kernel32.FileTimeToSystemTime(&fileTimeNow, &systemTimeNow) == Interop.BOOL.FALSE)
             {
-                goto TryAgain;
+                return LowGranularityNonCachedFallback();
             }
 
             // If we're currently within a positive leap second, early-exit since our cache can't handle
@@ -224,7 +217,7 @@ namespace System
             Interop.Kernel32.SYSTEMTIME systemTimeAtEndOfValidityPeriod;
             if (Interop.Kernel32.FileTimeToSystemTime(&fileTimeAtEndOfValidityPeriod, &systemTimeAtEndOfValidityPeriod) == Interop.BOOL.FALSE)
             {
-                goto TryAgain;
+                return LowGranularityNonCachedFallback();
             }
 
             ulong fileTimeAtStartOfValidityWindow;
@@ -259,24 +252,44 @@ namespace System
                 ulong fileTimeAtBeginningOfDay;
                 if (Interop.Kernel32.SystemTimeToFileTime(&systemTimeAtBeginningOfDay, &fileTimeAtBeginningOfDay) == Interop.BOOL.FALSE)
                 {
-                    goto TryAgain;
+                    return LowGranularityNonCachedFallback();
                 }
 
                 // StartOfValidityWindow = MidnightUtc + 23:59:59 - ValidityPeriod
                 fileTimeAtStartOfValidityWindow = fileTimeAtBeginningOfDay + (TicksPerDay - TicksPerSecond) - LeapSecondCache.ValidityPeriodInTicks;
+                if (fileTimeNow - fileTimeAtStartOfValidityWindow >= LeapSecondCache.ValidityPeriodInTicks)
+                {
+                    // If we're inside this block, then we slid the validity window back so far that the current time is no
+                    // longer within the window. This can only occur if the current time is 23:59:59.xxx and the next second is a
+                    // positive leap second (23:59:60.xxx). For example, if the current time is 23:59:59.123, assuming a
+                    // 5-minute validity period, we'll slide the validity window back to [23:54:59.000, 23:59:59.000).
+                    //
+                    // Depending on how the current process is configured, the OS may report time data in one of two ways. If
+                    // the current process is leap-second aware (has the PROCESS_LEAP_SECOND_INFO_FLAG_ENABLE_SIXTY_SECOND flag set),
+                    // then a SYSTEMTIME object will report leap seconds by setting the 'wSecond' field to 60. If the current
+                    // process is not leap-second aware, the OS will compress the last two seconds of the day as follows.
+                    //
+                    // Actual time      GetSystemTime returns
+                    // ========================================
+                    // 23:59:59.000     23:59:59.000
+                    // 23:59:59.500     23:59:59.250
+                    // 23:59:60.000     23:59:59.500
+                    // 23:59:60.500     23:59:59.750
+                    // 00:00:00.000     00:00:00.000 (next day)
+                    //
+                    // In this scenario, we'll skip the caching logic entirely, relying solely on the OS-provided SYSTEMTIME
+                    // struct to tell us how to interpret the time information.
+
+                    Debug.Assert(systemTimeNow.Hour == 23 && systemTimeNow.Minute == 59 && systemTimeNow.Second == 59);
+                    return CreateDateTimeFromSystemTime(systemTimeNow, hundredNanoSecondNow);
+                }
+
                 dotnetDateDataAtStartOfValidityWindow = CreateDateTimeFromSystemTime(systemTimeAtBeginningOfDay, 0)._dateData + (TicksPerDay - TicksPerSecond) - LeapSecondCache.ValidityPeriodInTicks;
             }
 
-            // Fudge the check below by +TicksPerSecond. This accounts for the current time being 23:59:59, the next second being 23:59:60,
-            // and the "if a leap second will occur in the validity window" block above firing and shoving the entirety of the validity
-            // window before UtcNow. The returned DateTime will still be correct in this scenario. Updating the cache is pointless in
-            // such a scenario, but it only occurs in the second immediately preceding a positive leap second, so we'll accept the
-            // inefficiency this causes.
-
-            Debug.Assert(fileTimeNow - fileTimeAtStartOfValidityWindow < LeapSecondCache.ValidityPeriodInTicks + TicksPerSecond, "We should be within the validity window.");
-
             // Finally, update the cache and return UtcNow.
 
+            Debug.Assert(fileTimeNow - fileTimeAtStartOfValidityWindow < LeapSecondCache.ValidityPeriodInTicks, "We should be within the validity window.");
             Volatile.Write(ref s_leapSecondCache, new LeapSecondCache()
             {
                 OSFileTimeTicksAtStartOfValidityWindow = fileTimeAtStartOfValidityWindow,
@@ -284,6 +297,22 @@ namespace System
             });
 
             return new DateTime(dateData: dotnetDateDataAtStartOfValidityWindow + fileTimeNow - fileTimeAtStartOfValidityWindow);
+
+            static DateTime LowGranularityNonCachedFallback()
+            {
+                // If we reached this point, one of the Win32 APIs FileTimeToSystemTime or SystemTimeToFileTime
+                // failed. This should never happen in practice, as this would imply that the Win32 API
+                // GetSystemTimeAsFileTime returned an invalid value to us at the start of the calling method.
+                // But, just to be safe, if this ever does happen, we'll bypass the caching logic entirely
+                // and fall back to GetSystemTime. This results in a loss of granularity (millisecond-only,
+                // not rdtsc-based), but at least it means we won't fail.
+
+                Debug.Fail("Our Win32 calls should never fail.");
+
+                Interop.Kernel32.SYSTEMTIME systemTimeNow;
+                Interop.Kernel32.GetSystemTime(&systemTimeNow);
+                return CreateDateTimeFromSystemTime(systemTimeNow, 0);
+            }
         }
 
         // The leap second cache. May be accessed by multiple threads simultaneously.
