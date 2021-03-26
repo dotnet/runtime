@@ -19,6 +19,13 @@ internal static partial class Interop
         internal unsafe delegate int SSLReadCallback(byte* data, int offset, int length);
         internal unsafe delegate void SSLWriteCallback(byte* data, int offset, int length);
 
+        internal enum PAL_SSLStreamStatus
+        {
+            OK = 0,
+            NeedData = 1,
+            Error = 2
+        };
+
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreate")]
         internal static extern SafeSslHandle SSLStreamCreate(
             [MarshalAs(UnmanagedType.U1)] bool isServer,
@@ -33,7 +40,7 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.LPUTF8Str)] string targetHost);
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamHandshake")]
-        internal static extern int SSLStreamHandshake(SafeSslHandle sslHandle);
+        internal static extern PAL_SSLStreamStatus SSLStreamHandshake(SafeSslHandle sslHandle);
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateAndStartHandshake")]
         private static extern SafeSslHandle SSLStreamCreateAndStartHandshake(

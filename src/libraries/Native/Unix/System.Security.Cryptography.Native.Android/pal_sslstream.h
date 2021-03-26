@@ -21,26 +21,18 @@ typedef struct SSLStream
     STREAM_WRITER streamWriter;
 } SSLStream;
 
-#define TLS11 11
-#define TLS12 12
-#define TLS13 13
-
-// javax/net/ssl/SSLEngineResult$HandshakeStatus
-#define HANDSHAKE_STATUS__NOT_HANDSHAKING 0
-#define HANDSHAKE_STATUS__FINISHED 1
-#define HANDSHAKE_STATUS__NEED_TASK 2
-#define HANDSHAKE_STATUS__NEED_WRAP 3
-#define HANDSHAKE_STATUS__NEED_UNWRAP 4
-
-// javax/net/ssl/SSLEngineResult$Status
-#define STATUS__BUFFER_UNDERFLOW 0
-#define STATUS__BUFFER_OVERFLOW 1
-#define STATUS__OK 2
-#define STATUS__CLOSED 3
+// Matches managed PAL_SSLStreamStatus enum
+enum
+{
+    SSLStreamStatus_OK = 0,
+    SSLStreamStatus_NeedData = 1,
+    SSLStreamStatus_Error = 2
+};
+typedef int32_t PAL_SSLStreamStatus;
 
 PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreate(bool isServer, STREAM_READER streamReader, STREAM_WRITER streamWriter, int appOutBufferSize, int appInBufferSize);
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamConfigureParameters(SSLStream *sslStream, char* targetHost);
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamHandshake(SSLStream *sslStream);
+PALEXPORT PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamHandshake(SSLStream *sslStream);
 
 PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateAndStartHandshake(STREAM_READER streamReader, STREAM_WRITER streamWriter, int tlsVersion, int appOutBufferSize, int appInBufferSize);
 PALEXPORT int  AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int offset, int length);

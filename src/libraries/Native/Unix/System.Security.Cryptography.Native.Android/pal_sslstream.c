@@ -5,10 +5,29 @@
 
 #define INSUFFICIENT_BUFFER -1
 
+// javax/net/ssl/SSLEngineResult$HandshakeStatus
+enum
+{
+    HANDSHAKE_STATUS__NOT_HANDSHAKING = 0,
+    HANDSHAKE_STATUS__FINISHED = 1,
+    HANDSHAKE_STATUS__NEED_TASK = 2,
+    HANDSHAKE_STATUS__NEED_WRAP = 3,
+    HANDSHAKE_STATUS__NEED_UNWRAP = 4,
+};
+
+// javax/net/ssl/SSLEngineResult$Status
+enum
+{
+    STATUS__BUFFER_UNDERFLOW = 0,
+    STATUS__BUFFER_OVERFLOW = 1,
+    STATUS__OK = 2,
+    STATUS__CLOSED = 3,
+};
+
 static uint16_t* AllocateString(JNIEnv *env, jstring source);
 static int32_t PopulateByteArray(JNIEnv *env, jbyteArray source, uint8_t *dest, int32_t *len);
 
-static void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus);
+static PAL_SSLStreamStatus checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus);
 
 static int getHandshakeStatus(JNIEnv* env, SSLStream* sslStream, jobject engineResult)
 {
@@ -22,7 +41,7 @@ static int getHandshakeStatus(JNIEnv* env, SSLStream* sslStream, jobject engineR
     return status;
 }
 
-static void close(JNIEnv* env, SSLStream* sslStream) {
+static PAL_SSLStreamStatus close(JNIEnv* env, SSLStream* sslStream) {
     /*
         sslEngine.closeOutbound();
         checkHandshakeStatus();
@@ -30,7 +49,7 @@ static void close(JNIEnv* env, SSLStream* sslStream) {
 
     AssertOnJNIExceptions(env);
     (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineCloseOutboundMethod);
-    checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, NULL));
+    return checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, NULL));
 }
 
 static void handleEndOfStream(JNIEnv* env, SSLStream* sslStream)  {
@@ -106,9 +125,9 @@ static jobject ensureRemaining(JNIEnv* env, SSLStream* sslStream, jobject oldBuf
     }
 }
 
-static void doWrap(JNIEnv* env, SSLStream* sslStream)
+static PAL_SSLStreamStatus doWrap(JNIEnv* env, SSLStream* sslStream)
 {
-    LOG_DEBUG("doWwrap");
+    LOG_DEBUG("doWrap");
     /*
         appOutBuffer.flip();
         final SSLEngineResult result;
@@ -142,31 +161,48 @@ static void doWrap(JNIEnv* env, SSLStream* sslStream)
 
     (*env)->DeleteLocalRef(env, (*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferFlipMethod));
     jobject sslEngineResult = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineWrapMethod, sslStream->appOutBuffer, sslStream->netOutBuffer);
+    if (CheckJNIExceptions(env))
+        return SSLStreamStatus_Error;
+
     (*env)->DeleteLocalRef(env, (*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferCompactMethod));
 
     int status = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslEngineResult, g_SSLEngineResultGetStatusMethod));
-    LOG_DEBUG("doWwrap status: %d", status);
+    LOG_DEBUG("doWrap status: %d", status);
     switch (status)
     {
         case STATUS__OK:
+        {
             flush(env, sslStream);
-            checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, sslEngineResult));
+            PAL_SSLStreamStatus statusLocal = checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, sslEngineResult));
+            if (statusLocal != SSLStreamStatus_OK)
+            {
+                return statusLocal;
+            }
+
             if ((*env)->CallIntMethod(env, sslStream->appOutBuffer, g_ByteBufferPositionMethod) > 0)
-                doWrap(env, sslStream);
-            break;
+            {
+                return doWrap(env, sslStream);
+            }
+
+            return SSLStreamStatus_OK;
+        }
         case STATUS__CLOSED:
+        {
             flush(env, sslStream);
-            checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, sslEngineResult));
-            close(env, sslStream);
-            break;
+            PAL_SSLStreamStatus statusLocal = checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, sslEngineResult));
+            assert(statusLocal == SSLStreamStatus_OK);
+            return close(env, sslStream);
+        }
         case STATUS__BUFFER_OVERFLOW:
             sslStream->netOutBuffer = ensureRemaining(env, sslStream, sslStream->netOutBuffer, (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSizeMethod));
-            doWrap(env, sslStream);
-            break;
+            return doWrap(env, sslStream);
+        default:
+            LOG_ERROR("Unknown SSLEngineResult status");
+            return SSLStreamStatus_Error;
     }
 }
 
-static void doUnwrap(JNIEnv* env, SSLStream* sslStream)
+static PAL_SSLStreamStatus doUnwrap(JNIEnv* env, SSLStream* sslStream)
 {
     LOG_DEBUG("doUnwrap");
     /*
@@ -221,9 +257,14 @@ static void doUnwrap(JNIEnv* env, SSLStream* sslStream)
         if (count == -1)
         {
             handleEndOfStream(env, sslStream);
-            return;
+            // [elfung] sholud this be something else
+            return SSLStreamStatus_OK;
         }
-        LOG_DEBUG("streamReader return count: %d", count);
+
+        if (count == 0)
+        {
+            return SSLStreamStatus_NeedData;
+        }
         (*env)->SetByteArrayRegion(env, tmp, 0, count, (jbyte*)(tmpNative));
         (*env)->DeleteLocalRef(env, (*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferPut3Method, tmp, 0, count));
         free(tmpNative);
@@ -232,6 +273,9 @@ static void doUnwrap(JNIEnv* env, SSLStream* sslStream)
 
     (*env)->DeleteLocalRef(env, (*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferFlipMethod));
     jobject sslEngineResult = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineUnwrapMethod, sslStream->netInBuffer, sslStream->appInBuffer);
+    if (CheckJNIExceptions(env))
+        return SSLStreamStatus_Error;
+
     (*env)->DeleteLocalRef(env, (*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferCompactMethod));
 
     int status = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslEngineResult, g_SSLEngineResultGetStatusMethod));
@@ -239,24 +283,26 @@ static void doUnwrap(JNIEnv* env, SSLStream* sslStream)
     switch (status)
     {
         case STATUS__OK:
-            checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, sslEngineResult));
-            break;
+            return checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, sslEngineResult));
         case STATUS__CLOSED:
-            checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, sslEngineResult));
-            close(env, sslStream);
-            break;
+        {
+            PAL_SSLStreamStatus statusLocal = checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, sslEngineResult));
+            assert(statusLocal == SSLStreamStatus_OK);
+            return close(env, sslStream);
+        }
         case STATUS__BUFFER_UNDERFLOW:
             sslStream->netInBuffer = ensureRemaining(env, sslStream, sslStream->netInBuffer, (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSizeMethod));
-            doUnwrap(env, sslStream);
-            break;
+            return doUnwrap(env, sslStream);
         case STATUS__BUFFER_OVERFLOW:
             sslStream->appInBuffer = ensureRemaining(env, sslStream, sslStream->appInBuffer, (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetApplicationBufferSizeMethod));
-            doUnwrap(env, sslStream);
-            break;
+            return doUnwrap(env, sslStream);
+        default:
+            LOG_ERROR("Unknown SSLEngineResult status");
+            return SSLStreamStatus_Error;
     }
 }
 
-static void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus)
+static PAL_SSLStreamStatus checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus)
 {
     /*
         switch (handshakeStatus) {
@@ -279,14 +325,17 @@ static void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshak
     switch (handshakeStatus)
     {
         case HANDSHAKE_STATUS__NEED_WRAP:
-            doWrap(env, sslStream);
-            break;
+            return doWrap(env, sslStream);
         case HANDSHAKE_STATUS__NEED_UNWRAP:
-            doUnwrap(env, sslStream);
-            break;
+            return doUnwrap(env, sslStream);
+        case HANDSHAKE_STATUS__NOT_HANDSHAKING:
+        case HANDSHAKE_STATUS__FINISHED:
+            return SSLStreamStatus_OK;
         case HANDSHAKE_STATUS__NEED_TASK:
             assert(0 && "unexpected NEED_TASK handshake status");
     }
+
+    return SSLStreamStatus_Error;
 }
 
 static void FreeSSLStream(JNIEnv *env, SSLStream *sslStream)
@@ -312,6 +361,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(
     JNIEnv* env = GetJNIEnv();
 
     SSLStream* sslStream = malloc(sizeof(SSLStream));
+    memset(sslStream, 0, sizeof(SSLStream));
 
     // SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
     // sslContext.init(null, null, null);
@@ -400,17 +450,18 @@ cleanup:
     return ret;
 }
 
-int32_t AndroidCryptoNative_SSLStreamHandshake(SSLStream *sslStream)
+PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamHandshake(SSLStream *sslStream)
 {
     assert(sslStream != NULL);
     JNIEnv* env = GetJNIEnv();
 
     (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineBeginHandshakeMethod);
     if (CheckJNIExceptions(env))
-        return FAIL;
+        return SSLStreamStatus_Error;
 
-    checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, NULL));
-    return SUCCESS;
+    PAL_SSLStreamStatus status = checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, NULL));
+    LOG_DEBUG("Returning %d", status);
+    return status;
 }
 
 SSLStream* AndroidCryptoNative_SSLStreamCreateAndStartHandshake(
@@ -536,6 +587,9 @@ void AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, i
 
 void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream)
 {
+    if (sslStream == NULL)
+        return;
+
     JNIEnv* env = GetJNIEnv();
     FreeSSLStream(env, sslStream);
 }
