@@ -208,8 +208,6 @@ namespace System.Security.Cryptography
                     throw new PlatformNotSupportedException(SR.Cryptography_ECC_NamedCurvesOnly);
                 }
 
-                [UnsupportedOSPlatform("ios")]
-                [UnsupportedOSPlatform("tvos")]
                 public override ECParameters ExportParameters(bool includePrivateParameters)
                 {
                     return _ecc.ExportParameters(includePrivateParameters, KeySize);

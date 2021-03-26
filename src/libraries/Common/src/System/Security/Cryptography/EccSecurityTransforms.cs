@@ -34,8 +34,6 @@ namespace System.Security.Cryptography
             _disposed = true;
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         internal int GenerateKey(ECCurve curve)
         {
             curve.Validate();
@@ -68,14 +66,14 @@ namespace System.Security.Cryptography
             return keySize;
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         private SecKeyPair GenerateKey(int keySizeInBits)
         {
             SafeSecKeyRefHandle publicKey;
             SafeSecKeyRefHandle privateKey;
 
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
             Interop.AppleCrypto.EccGenerateKey(keySizeInBits, out publicKey, out privateKey);
+#pragma warning restore CA1416
 
             SecKeyPair newPair = SecKeyPair.PublicPrivatePair(publicKey, privateKey);
             SetKey(newPair);
@@ -90,8 +88,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         internal SecKeyPair GetOrGenerateKeys(int keySizeInBits)
         {
             ThrowIfDisposed();
@@ -122,12 +118,12 @@ namespace System.Security.Cryptography
             current?.Dispose();
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         internal static ECParameters ExportPublicParametersFromPrivateKey(SafeSecKeyRefHandle handle)
         {
             const string ExportPassword = "DotnetExportPassphrase";
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
             byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(handle, exportPrivate: true, password: ExportPassword);
+#pragma warning restore CA1416
             EccKeyFormatHelper.ReadEncryptedPkcs8(keyBlob, ExportPassword, out _, out ECParameters key);
             CryptographicOperations.ZeroMemory(key.D);
             CryptographicOperations.ZeroMemory(keyBlob);
@@ -135,8 +131,6 @@ namespace System.Security.Cryptography
             return key;
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         internal ECParameters ExportParameters(bool includePrivateParameters, int keySizeInBits)
         {
             // Apple requires all private keys to be exported encrypted, but since we're trying to export
@@ -149,10 +143,12 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }
 
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
             byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(
                 includePrivateParameters ? keys.PrivateKey : keys.PublicKey,
                 exportPrivate: includePrivateParameters,
                 password: ExportPassword);
+#pragma warning restore CA1416
 
             try
             {
@@ -180,8 +176,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         internal int ImportParameters(ECParameters parameters)
         {
             parameters.Validate();
@@ -243,8 +237,6 @@ namespace System.Security.Cryptography
             return (int)size;
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         private static SafeSecKeyRefHandle ImportKey(ECParameters parameters)
         {
             AsnWriter keyWriter;
@@ -274,7 +266,9 @@ namespace System.Security.Cryptography
 
             try
             {
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
                 return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
+#pragma warning restore CA1416
             }
             finally
             {
@@ -282,8 +276,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         internal unsafe int ImportSubjectPublicKeyInfo(
             ReadOnlySpan<byte> source,
             out int bytesRead)
@@ -299,7 +291,9 @@ namespace System.Security.Cryptography
                         manager.Memory,
                         out int localRead);
 
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
                     SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.ImportEphemeralKey(source.Slice(0, localRead), false);
+#pragma warning restore CA1416
                     SecKeyPair newKeys = SecKeyPair.PublicOnly(publicKey);
                     int size = GetKeySize(newKeys);
                     SetKey(newKeys);
