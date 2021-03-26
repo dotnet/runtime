@@ -178,6 +178,9 @@ namespace VirtualStaticInterfaceMethodTestGen
 
                 string ApplyGenericSubstitution(string instantiation, string substitution)
                 {
+                    if (instantiation == null)
+                        return instantiation;
+
                     if (instantiation.Contains("!0"))
                     {
                         return instantiation.Replace("!0", StripGenericInstantiation(substitution));
@@ -226,8 +229,8 @@ namespace VirtualStaticInterfaceMethodTestGen
         static void EmitClass(TextWriter tw, ClassDesc clz)
         {
             string genericParamString = "";
-            if (clz.GenericParams != null)
-                genericParamString = $"<{clz.GenericParams}>";
+            if (!String.IsNullOrEmpty(clz.GenericParams))
+                genericParamString = clz.GenericParams;
             tw.WriteLine($".class {clz.ClassFlags} {clz.Name}{genericParamString}");
             if (clz.BaseType != null)
             {
@@ -377,7 +380,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                         throw new Exception("Unkonwn interface approach");
                 }
                 twOutputTest.WriteLine($"    .locals init ({scenario.BaseTypeReturnType} V_O)");
-                twOutputTest.WriteLine($"    ldloca.s V_0");
+                twOutputTest.WriteLine($"    ldloca.s 0");
                 twOutputTest.WriteLine($"    initobj {scenario.BaseTypeReturnType}");
                 twOutputTest.WriteLine($"    ldloc.0");
                 twOutputTest.WriteLine($"    ret");
@@ -434,8 +437,11 @@ namespace VirtualStaticInterfaceMethodTestGen
                 mdIndividualTestMethod.Arguments = "";
 
                 EmitMethod(swTestClassMethods, mdIndividualTestMethod);
-                swTestClassMethods.WriteLine($"    constrained. {derivedType.Name}{scenario.DerivedTypeInstantiation}");
+                swTestClassMethods.WriteLine($"    constrained. class {derivedType.Name}{scenario.DerivedTypeInstantiation}");
                 swTestClassMethods.WriteLine($"    call {scenario.CallReturnType} class {iface.Name}{scenario.CallInterfaceTypeInstantiation}::Method()");
+                swTestClassMethods.WriteLine($"    ldstr \"\"");
+                swTestClassMethods.WriteLine($"    ldstr \"\"");
+                swTestClassMethods.WriteLine($"    call void {CommonCsPrefix}Statics::CheckForFailure(string,string)");
                 swTestClassMethods.WriteLine($"    ret");
                 EmitEndMethod(swTestClassMethods, mdIndividualTestMethod);
                 // Call test method from main method
@@ -446,7 +452,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                     if (String.IsNullOrEmpty(genericParams))
                         return "";
 
-                    return "`{genericParams.Split(',').Length}";
+                    return $"`{genericParams.Split(',').Length}";
                 }
             }
 
