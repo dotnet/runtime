@@ -107,8 +107,25 @@ HRESULT STDMETHODCALLTYPE CordbThread::GetTaskID(TASKID* pTaskId)
 
 HRESULT STDMETHODCALLTYPE CordbThread::GetVolatileOSThreadID(DWORD* pdwTid)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbThread - GetVolatileOSThreadID - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    LOG((LF_CORDB, LL_INFO1000000, "CordbThread - GetActiveFrame - IMPLEMENTED\n"));
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, GetThreadId());
+
+        int cmdId = this->conn->SendEvent(MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_GET_TID, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
+
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+        *pdwTid = (DWORD) m_dbgprot_decode_long(pReply->p, &pReply->p, pReply->end);
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT STDMETHODCALLTYPE CordbThread::InterceptCurrentException(
@@ -292,6 +309,48 @@ HRESULT STDMETHODCALLTYPE CordbThread::QueryInterface(REFIID id, _COM_Outptr_ vo
     else
     {
         *ppInterface = NULL;
+        return E_NOINTERFACE;
+    }
+    AddRef();
+    return S_OK;
+}
+
+CordbThreadEnum::CordbThreadEnum(Connection* conn) : CordbBaseMono(conn)
+{
+
+}
+
+HRESULT STDMETHODCALLTYPE CordbThreadEnum::Next(ULONG celt, ICorDebugThread* values[], ULONG* pceltFetched)
+{
+    return E_NOTIMPL;
+}
+HRESULT STDMETHODCALLTYPE CordbThreadEnum::Skip(ULONG celt)
+{
+    return E_NOTIMPL;
+}
+HRESULT STDMETHODCALLTYPE CordbThreadEnum::Reset(void)
+{
+    return E_NOTIMPL;
+}
+HRESULT STDMETHODCALLTYPE CordbThreadEnum::Clone(ICorDebugEnum** ppEnum)
+{
+    return E_NOTIMPL;
+}
+HRESULT STDMETHODCALLTYPE CordbThreadEnum::GetCount(ULONG* pcelt)
+{
+    *pcelt = 0;
+    return S_OK;
+}
+HRESULT STDMETHODCALLTYPE CordbThreadEnum::QueryInterface(REFIID id, void** pInterface)
+{
+    if (id == IID_IUnknown)
+        *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugThreadEnum*>(this));
+    else if (id == IID_ICorDebugThreadEnum)
+        *pInterface = static_cast<ICorDebugThreadEnum*>(this);
+    else if (id == IID_ICorDebugEnum)
+        *pInterface = static_cast<ICorDebugEnum*>(this);
+    else
+    {
         return E_NOINTERFACE;
     }
     AddRef();

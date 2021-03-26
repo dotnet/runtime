@@ -17,7 +17,7 @@
 #include <socket.h>
 
 #define DEBUG_ADDRESS "127.0.0.1"
-#define DEBUG_PORT "4713"
+#define DEBUG_PORT "55555"
 
 MONO_API HRESULT CoreCLRCreateCordbObjectEx(
     int iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, HMODULE hmodTargetCLR, void** ppCordb)
@@ -135,9 +135,19 @@ Cordb::~Cordb()
 }
 
 HRESULT
-Cordb::QueryInterface(REFIID riid, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+Cordb::QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface)
 {
-    LOG((LF_CORDB, LL_INFO100000, "Cordb - QueryInterface - NOT IMPLEMENTED\n"));
+    if (id == IID_ICorDebug)
+        *pInterface = static_cast<ICorDebug*>(this);
+    else if (id == IID_IUnknown)
+        *pInterface = static_cast<IUnknown*>(static_cast<ICorDebug*>(this));
+    else
+    {
+        *pInterface = NULL;
+        return E_NOINTERFACE;
+    }
+
+    AddRef();
     return S_OK;
 }
 

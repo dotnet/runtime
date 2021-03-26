@@ -228,14 +228,16 @@ public:
                                  ICorDebugProcess**     ppProcess);
 };
 
-#define CHECK_ERROR_RETURN_FALSE(localbuf)                                                                             \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (localbuf->Error() > 0 || localbuf->Error2() > 0)                                                           \
-        {                                                                                                              \
-            LOG((LF_CORDB, LL_INFO100000, "ERROR RECEIVED\n"));                                                        \
+#define CHECK_ERROR_RETURN_FALSE(localbuf)                                                                                             \
+    do                                                                                                                                 \
+    {                                                                                                                                  \
+        if (localbuf->Error() > 0 || localbuf->Error2() > 0)                                                                           \
+                        {                                                                                                              \
+            char *error_msg = m_dbgprot_decode_string(localbuf->Buffer()->p, &localbuf->Buffer()->p, localbuf->Buffer()->end);         \
+            LOG((LF_CORDB, LL_INFO100000, "ERROR RECEIVED - %s\n", error_msg));                                                        \
+            free(error_msg);                                                                                                           \
             EX_THROW(HRException, (E_FAIL));                                                                                           \
-        }                                                                                                              \
+        }                                                                                                                              \
     } while (0)
 
 #endif

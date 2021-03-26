@@ -991,6 +991,8 @@ socket_transport_connect (const char *address)
 
 	conn_fd = -1;
 	listen_fd = -1;
+	
+	mono_networking_init();
 
 	if (host) {
 		int hints[] = {
@@ -998,8 +1000,6 @@ socket_transport_connect (const char *address)
 			MONO_HINT_IPV6 | MONO_HINT_NUMERIC_HOST,
 			MONO_HINT_UNSPECIFIED
 		};
-
-		mono_networking_init ();
 
 		for (int i = 0; i < sizeof(hints) / sizeof(int); i++) {
 			/* Obtain address(es) matching host/port */
@@ -1119,8 +1119,12 @@ socket_transport_connect (const char *address)
 
 				sfd = socket (rp->family, rp->socktype,
 							rp->protocol);
-				if (sfd == -1)
+				if (sfd == -1) {
+					perror("socket");
+					fprintf(stderr, "socket() failed: %s\n", strerror(errno));
+					PRINT_DEBUG_MSG(1, "socket() failed: %s\n", strerror(errno));
 					continue;
+				}
 
 				MONO_ENTER_GC_SAFE;
 				res = connect (sfd, &sockaddr.addr, sock_len);
@@ -6889,6 +6893,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case MDBGPROT_CMD_VM_READ_MEMORY: {
 		guint8* memory = (guint8*) decode_long (p, &p, end);
 		int size = decode_int (p, &p, end);
+		PRINT_DEBUG_MSG(1, "MDBGPROT_CMD_VM_READ_MEMORY - [%p] - size - %d\n", memory, size);
 		buffer_add_byte_array (buf, memory, size);
 		break;
 	}
@@ -7505,14 +7510,25 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case MDBGPROT_CMD_ASSEMBLY_GET_PEIMAGE_ADDRESS: {
-        MonoImage* image = ass->image;
-        if (ass->dynamic) {
-            return ERR_NOT_IMPLEMENTED;
-        }
-		buffer_add_long (buf, (guint64)(gsize)image->raw_data);
-        buffer_add_int (buf, image->raw_data_len);
+		MonoImage* image = ass->image;
+		if (ass->dynamic) {
+		    return ERR_NOT_IMPLEMENTED;
+		}
+		// Mdbg uses arithmetics with this pointer and RVA to get information using readmemory, 
+		// but it doesn't work on mono, it should call mono_cli_rva_image_map to get the right offset and don't use pure RVA.
+		// To workaround it, I'm creating a buffer with the full file content and returning this address, this is not okay for memory
+		// usage, but it will work for now.
+		HMODULE module_handle;
+		gunichar2 *file16;
+		file16 = u8to16(mono_image_get_filename (ass->image)); 
+		module_handle = LoadLibrary (file16);
+		g_free(file16);
+
+		PRINT_DEBUG_MSG(1, "MDBGPROT_CMD_ASSEMBLY_GET_PEIMAGE_ADDRESS - [%p] - %d\n", module_handle, image->raw_data_len);
+		buffer_add_long (buf, (gssize)module_handle);
+		buffer_add_int (buf, image->raw_data_len);
         break;
-    }
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}

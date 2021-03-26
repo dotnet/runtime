@@ -346,6 +346,7 @@ int m_dbgprot_decode_int (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
 int64_t m_dbgprot_decode_long (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
 int m_dbgprot_decode_id (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
 char* m_dbgprot_decode_string (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
+char* m_dbgprot_decode_string_with_len(uint8_t* buf, uint8_t** endbuf, uint8_t* limit, int *len);
 uint8_t* m_dbgprot_decode_byte_array(uint8_t *buf, uint8_t **endbuf, uint8_t *limit, int32_t *len);
 
 /*

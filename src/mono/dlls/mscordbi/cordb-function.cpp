@@ -8,6 +8,7 @@
 #include <cordb-code.h>
 #include <cordb-function.h>
 #include <cordb-process.h>
+#include <cordb-breakpoint.h>
 #include <cordb.h>
 
 using namespace std;
@@ -155,8 +156,15 @@ HRESULT CordbFunction::GetNativeCode(ICorDebugCode** ppCode)
 
 HRESULT CordbFunction::CreateBreakpoint(ICorDebugFunctionBreakpoint** ppBreakpoint)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - CreateBreakpoint - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    if (m_pCode == NULL)
+    {
+        m_pCode = new CordbCode(conn, this);
+        m_pCode->InternalAddRef();
+    }
+    CordbFunctionBreakpoint* bp = new CordbFunctionBreakpoint(conn, m_pCode, 0);
+    bp->QueryInterface(IID_ICorDebugFunctionBreakpoint, (void**)ppBreakpoint);
+    LOG((LF_CORDB, LL_INFO1000000, "CordbFunction - CreateBreakpoint - IMPLEMENTED\n"));
+    return S_OK;
 }
 
 HRESULT CordbFunction::GetLocalVarSigToken(mdSignature* pmdSig)

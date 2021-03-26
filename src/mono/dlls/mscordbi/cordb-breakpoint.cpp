@@ -78,11 +78,16 @@ HRESULT CordbFunctionBreakpoint::QueryInterface(REFIID id, void** pInterface)
     {
         *pInterface = static_cast<ICorDebugFunctionBreakpoint*>(this);
     }
+    else if (id == IID_ICorDebugBreakpoint)
+    {
+        *pInterface = static_cast<ICorDebugBreakpoint*>(this);
+    }
+    else if (id == IID_IUnknown)
+        *pInterface = static_cast<ICorDebugFunctionBreakpoint*>(this);
     else
     {
-        // Not looking for a function breakpoint? See if the base class handles
-        // this interface. (issue 143976)
-        // return CordbBreakpoint::QueryInterface(id, pInterface);
+        *pInterface = NULL;
+        return E_NOINTERFACE;
     }
     AddRef();
     return S_OK;
