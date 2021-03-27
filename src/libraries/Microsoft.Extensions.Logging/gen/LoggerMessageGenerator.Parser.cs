@@ -56,28 +56,28 @@ namespace Microsoft.Extensions.Logging.Generators
                 var exceptionSymbol = _compilation.GetTypeByMetadataName("System.Exception");
                 if (exceptionSymbol == null)
                 {
-                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.Exception");
+                    Diag(DiagDescriptors.MissingRequiredType, null, "System.Exception");
                     return Array.Empty<LoggerClass>();
                 }
 
                 var enumerableSymbol = _compilation.GetTypeByMetadataName("System.Collections.IEnumerable");
                 if (enumerableSymbol == null)
                 {
-                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.Collections.IEnumerable");
+                    Diag(DiagDescriptors.MissingRequiredType, null, "System.Collections.IEnumerable");
                     return Array.Empty<LoggerClass>();
                 }
 
                 var stringSymbol = _compilation.GetTypeByMetadataName("System.String");
                 if (stringSymbol == null)
                 {
-                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.String");
+                    Diag(DiagDescriptors.MissingRequiredType, null, "System.String");
                     return Array.Empty<LoggerClass>();
                 }
 
                 var dateTimeSymbol = _compilation.GetTypeByMetadataName("System.DateTime");
                 if (dateTimeSymbol == null)
                 {
-                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.DateTime");
+                    Diag(DiagDescriptors.MissingRequiredType, null, "System.DateTime");
                     return Array.Empty<LoggerClass>();
                 }
 
@@ -88,16 +88,18 @@ namespace Microsoft.Extensions.Logging.Generators
                 foreach (var group in classes.GroupBy(x => x.SyntaxTree))
                 {
                     SemanticModel? sm = null;
-                    foreach (var classDef in group)
+                    foreach (var classDec in group)
                     {
                         // stop if we're asked to
                         _cancellationToken.ThrowIfCancellationRequested();
 
                         LoggerClass? lc = null;
                         string nspace = string.Empty;
+                        string? loggerField = null;
+                        bool multipleLoggerFields = false;
 
                         ids.Clear();
-                        foreach (var member in classDef.Members)
+                        foreach (var member in classDec.Members)
                         {
                             var method = member as MethodDeclarationSyntax;
                             if (method == null)
@@ -110,7 +112,7 @@ namespace Microsoft.Extensions.Logging.Generators
                             {
                                 foreach (var ma in mal.Attributes)
                                 {
-                                    sm ??= _compilation.GetSemanticModel(classDef.SyntaxTree);
+                                    sm ??= _compilation.GetSemanticModel(classDec.SyntaxTree);
 
                                     var attrCtorSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
                                     if (attrCtorSymbol == null || !loggerMessageAttribute.Equals(attrCtorSymbol.ContainingType, SymbolEqualityComparer.Default))
@@ -142,20 +144,20 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             // can't have logging method names that start with _ since that can lead to conflicting symbol names
                                             // because the generated symbols start with _
-                                            Diag(DiagDescriptors.ErrorInvalidMethodName, method.Identifier.GetLocation());
+                                            Diag(DiagDescriptors.InvalidLoggingMethodName, method.Identifier.GetLocation());
                                         }
 
                                         if (sm.GetTypeInfo(method.ReturnType!).Type!.SpecialType != SpecialType.System_Void)
                                         {
                                             // logging methods must return void
-                                            Diag(DiagDescriptors.ErrorInvalidMethodReturnType, method.ReturnType.GetLocation());
+                                            Diag(DiagDescriptors.LoggingMethodMustReturnVoid, method.ReturnType.GetLocation());
                                             keepMethod = false;
                                         }
 
                                         if (method.Arity > 0)
                                         {
                                             // we don't currently support generic methods
-                                            Diag(DiagDescriptors.ErrorMethodIsGeneric, method.Identifier.GetLocation());
+                                            Diag(DiagDescriptors.LoggingMethodIsGeneric, method.Identifier.GetLocation());
                                             keepMethod = false;
                                         }
 
@@ -177,20 +179,20 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                         if (!isPartial)
                                         {
-                                            Diag(DiagDescriptors.ErrorNotPartialMethod, method.GetLocation());
+                                            Diag(DiagDescriptors.LoggingMethodMustBePartial, method.GetLocation());
                                             keepMethod = false;
                                         }
 
                                         if (method.Body != null)
                                         {
-                                            Diag(DiagDescriptors.ErrorMethodHasBody, method.Body.GetLocation());
+                                            Diag(DiagDescriptors.LoggingMethodHasBody, method.Body.GetLocation());
                                             keepMethod = false;
                                         }
 
                                         // ensure there are no duplicate ids.
                                         if (ids.Contains(lm.EventId))
                                         {
-                                            Diag(DiagDescriptors.ErrorEventIdReuse, ma.GetLocation(), lm.EventId, classDef.Identifier.Text);
+                                            Diag(DiagDescriptors.ShouldntReuseEventIds, ma.GetLocation(), lm.EventId, classDec.Identifier.Text);
                                         }
                                         else
                                         {
@@ -278,7 +280,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 {
                                                     if (t == paramName)
                                                     {
-                                                        Diag(DiagDescriptors.DontMentionExceptionInMessage, p.Identifier.GetLocation(), paramName);
+                                                        Diag(DiagDescriptors.ShouldntMentionExceptionInMessage, p.Identifier.GetLocation(), paramName);
                                                     }
                                                 }
                                             }
@@ -288,7 +290,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 {
                                                     if (t == paramName)
                                                     {
-                                                        Diag(DiagDescriptors.DontMentionLogLevelInMessage, p.Identifier.GetLocation(), paramName);
+                                                        Diag(DiagDescriptors.ShouldntMentionLogLevelInMessage, p.Identifier.GetLocation(), paramName);
                                                     }
                                                 }
                                             }
@@ -297,7 +299,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             {
                                                 // can't have logging method parameter names that start with _ since that can lead to conflicting symbol names
                                                 // because all generated symbols start with _
-                                                Diag(DiagDescriptors.ErrorInvalidParameterName, p.Identifier.GetLocation());
+                                                Diag(DiagDescriptors.InvalidLoggingMethodParameterName, p.Identifier.GetLocation());
                                             }
 
                                             if (lp.IsRegular && !string.IsNullOrEmpty(lm.Message))
@@ -330,17 +332,39 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             if (isStatic && !foundLogger)
                                             {
-                                                Diag(DiagDescriptors.ErrorMissingLogger, method.GetLocation());
+                                                Diag(DiagDescriptors.MissingLoggerArgument, method.GetLocation());
                                                 keepMethod = false;
                                             }
                                             else if (!isStatic && foundLogger)
                                             {
-                                                Diag(DiagDescriptors.ErrorNotStaticMethod, method.GetLocation());
+                                                Diag(DiagDescriptors.LoggingMethodShouldBeStatic, method.GetLocation());
+                                            }
+                                            else if (!isStatic && !foundLogger)
+                                            {
+                                                if (loggerField == null)
+                                                {
+                                                    (loggerField, multipleLoggerFields) = FindLoggerField(sm, classDec, loggerSymbol);
+                                                }
+
+                                                if (multipleLoggerFields)
+                                                {
+                                                    Diag(DiagDescriptors.MultipleLoggerFields, method.GetLocation(), classDec.Identifier.Text);
+                                                    keepMethod = false;
+                                                }
+                                                else if (loggerField == null)
+                                                {
+                                                    Diag(DiagDescriptors.MissingLoggerField, method.GetLocation(), classDec.Identifier.Text);
+                                                    keepMethod = false;
+                                                }
+                                                else
+                                                {
+                                                    lm.LoggerField = loggerField;
+                                                }
                                             }
 
                                             if (level == null && !foundLogLevel)
                                             {
-                                                Diag(DiagDescriptors.ErrorMissingLogLevel, method.GetLocation());
+                                                Diag(DiagDescriptors.MissingLogLevel, method.GetLocation());
                                                 keepMethod = false;
                                             }
 
@@ -366,13 +390,13 @@ namespace Microsoft.Extensions.Logging.Generators
                                         if (lc == null)
                                         {
                                             // determine the namespace the class is declared in, if any
-                                            var ns = classDef.Parent as NamespaceDeclarationSyntax;
+                                            var ns = classDec.Parent as NamespaceDeclarationSyntax;
                                             if (ns == null)
                                             {
-                                                if (classDef.Parent is not CompilationUnitSyntax)
+                                                if (classDec.Parent is not CompilationUnitSyntax)
                                                 {
                                                     // since this generator doesn't know how to generate a nested type...
-                                                    Diag(DiagDescriptors.ErrorNestedType, classDef.Identifier.GetLocation());
+                                                    Diag(DiagDescriptors.LoggingMethodInNestedType, classDec.Identifier.GetLocation());
                                                     keepMethod = false;
                                                 }
                                             }
@@ -397,8 +421,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                             lc ??= new LoggerClass
                                             {
                                                 Namespace = nspace,
-                                                Name = classDef.Identifier.ToString() + classDef.TypeParameterList,
-                                                Constraints = classDef.ConstraintClauses.ToString(),
+                                                Name = classDec.Identifier.ToString() + classDec.TypeParameterList,
+                                                Constraints = classDec.ConstraintClauses.ToString(),
                                             };
 
                                             lc.Methods.Add(lm);
@@ -416,6 +440,38 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
 
                 return results;
+            }
+
+            private (string? loggerField, bool multipleLoggerFields) FindLoggerField(SemanticModel sm, ClassDeclarationSyntax classDec, ITypeSymbol loggerSymbol)
+            {
+                string? loggerField = null;
+
+                foreach (var m in classDec.Members)
+                {
+                    if (m is FieldDeclarationSyntax fds)
+                    {
+                        foreach (var v in fds.Declaration.Variables)
+                        {
+                            var fs = sm.GetDeclaredSymbol(v, _cancellationToken) as IFieldSymbol;
+                            if (fs != null)
+                            {
+                                if (IsBaseOrIdentity(fs.Type, loggerSymbol))
+                                {
+                                    if (loggerField == null)
+                                    {
+                                        loggerField = v.Identifier.Text;
+                                    }
+                                    else
+                                    {
+                                        return (null, true);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return (loggerField, false);
             }
 
             private (int eventId, int? level, string? message, string? eventName) ExtractAttributeValues(AttributeArgumentListSyntax args, SemanticModel sm)
@@ -629,6 +685,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public string? EventName;
             public bool IsExtensionMethod;
             public string Modifiers = string.Empty;
+            public string LoggerField = "_logger";
         }
 
         /// <summary>

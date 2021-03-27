@@ -18,13 +18,11 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private readonly Stack<StringBuilder> _builders = new ();
             private readonly bool _pascalCaseArguments;
-            private readonly string _fieldName;
             private readonly bool _emitDefaultMessage;
 
-            public Emitter(bool pascalCaseArguments, string fieldName = "_logger", bool emitDefaultMessage = true)
+            public Emitter(bool pascalCaseArguments, bool emitDefaultMessage = true)
             {
                 _pascalCaseArguments = pascalCaseArguments;
-                _fieldName = fieldName;
                 _emitDefaultMessage = emitDefaultMessage;
             }
 
@@ -308,24 +306,23 @@ namespace Microsoft.Extensions.Logging.Generators
                     formatFunc = $"(_, _) => \"{EscapeMessageString(lm.Message!)}\"";
                 }
 
-                string loggerArg = _fieldName;
+                string logger = lm.LoggerField;
                 foreach (var p in lm.AllParameters)
                 {
                     if (p.IsLogger)
                     {
-                        loggerArg = p.Name;
+                        logger = p.Name;
                         break;
                     }
                 }
 
-#pragma warning disable S103 // Lines should not be too long
                 return $@"
                             [global::System.Runtime.CompilerServices.CompilerGenerated]
                             {lm.Modifiers} void {lm.Name}({(lm.IsExtensionMethod ? "this " : string.Empty)}{GenParameters(lm)})
                             {{
-                                if ({loggerArg}.IsEnabled({level}))
+                                if ({logger}.IsEnabled({level}))
                                 {{
-                                    {loggerArg}.Log(
+                                    {logger}.Log(
                                         {level},
                                         new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
                                         {GenHolder(lm, formatFunc)},
@@ -334,7 +331,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                 }}
                             }}
                         ";
-#pragma warning restore S103 // Lines should not be too long
             }
 
             private void AutoGenerateMessage(LoggerMethod lm)

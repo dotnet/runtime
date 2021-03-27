@@ -117,70 +117,70 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ErrorInvalidMethodNameTitle" xml:space="preserve">
+  <data name="InvalidLoggingMethodNameTitle" xml:space="preserve">
     <value>Logging method names cannot start with _</value>
   </data>
-  <data name="ErrorInvalidMethodNameMessage" xml:space="preserve">
+  <data name="InvalidLoggingMethodNameMessage" xml:space="preserve">
     <value>Logging method names cannot start with _</value>
   </data>
-  <data name="ErrorInvalidParameterNameTitle" xml:space="preserve">
+  <data name="InvalidLoggingMethodParameterNameTitle" xml:space="preserve">
     <value>Logging method parameter names cannot start with _</value>
   </data>
-  <data name="ErrorInvalidParameterNameMessage" xml:space="preserve">
+  <data name="InvalidLoggingMethodParameterNameMessage" xml:space="preserve">
     <value>Logging method parameter names cannot start with _</value>
   </data>
-  <data name="ErrorNestedTypeTitle" xml:space="preserve">
+  <data name="LoggingMethodInNestedTypeTitle" xml:space="preserve">
     <value>Logging class cannot be in nested types</value>
   </data>
-  <data name="ErrorNestedTypeMessage" xml:space="preserve">
+  <data name="LoggingMethodInNestedTypeMessage" xml:space="preserve">
     <value>Logging class cannot be in nested types</value>
   </data>
-  <data name="ErrorMissingRequiredTypeTitle" xml:space="preserve">
+  <data name="MissingRequiredTypeTitle" xml:space="preserve">
     <value>Could not find a required type definition</value>
   </data>
-  <data name="ErrorMissingRequiredTypeMessage" xml:space="preserve">
+  <data name="MissingRequiredTypeMessage" xml:space="preserve">
     <value>Could not find definition for type {0}</value>
   </data>
-  <data name="ErrorEventIdReuseTitle" xml:space="preserve">
+  <data name="ShouldntReuseEventIdsTitle" xml:space="preserve">
     <value>Multiple logging methods cannot use the same event id within a class</value>
   </data>
-  <data name="ErrorEventIdReuseMessage" xml:space="preserve">
+  <data name="ShouldntReuseEventIdsMessage" xml:space="preserve">
     <value>Multiple logging methods are using event id {0} in class {1}</value>
   </data>
-  <data name="ErrorInvalidMethodReturnTypeTitle" xml:space="preserve">
+  <data name="LoggingMethodMustReturnVoidTitle" xml:space="preserve">
     <value>Logging methods must return void</value>
   </data>
-  <data name="ErrorInvalidMethodReturnTypeMessage" xml:space="preserve">
+  <data name="LoggingMethodMustReturnVoidMessage" xml:space="preserve">
     <value>Logging methods must return void</value>
   </data>
-  <data name="ErrorMissingLoggerTitle" xml:space="preserve">
+  <data name="MissingLoggerArgumentTitle" xml:space="preserve">
     <value>One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</value>
   </data>
-  <data name="ErrorMissingLoggerMessage" xml:space="preserve">
+  <data name="MissingLoggerArgumentMessage" xml:space="preserve">
     <value>One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</value>
   </data>
-  <data name="ErrorNotStaticMethodTitle" xml:space="preserve">
+  <data name="LoggingMethodShouldBeStaticTitle" xml:space="preserve">
     <value>Logging methods must be static</value>
   </data>
-  <data name="ErrorNotStaticMethodMessage" xml:space="preserve">
+  <data name="LoggingMethodShouldBeStaticMessage" xml:space="preserve">
     <value>Logging methods must be static</value>
   </data>
-  <data name="ErrorNotPartialMethodTitle" xml:space="preserve">
+  <data name="LoggingMethodMustBePartialTitle" xml:space="preserve">
     <value>Logging methods must be partial</value>
   </data>
-  <data name="ErrorNotPartialMethodMessage" xml:space="preserve">
+  <data name="LoggingMethodMustBePartialMessage" xml:space="preserve">
     <value>Logging methods must be partial</value>
   </data>
-  <data name="ErrorMethodIsGenericTitle" xml:space="preserve">
+  <data name="LoggingMethodIsGenericTitle" xml:space="preserve">
     <value>Logging methods cannot be generic</value>
   </data>
-  <data name="ErrorMethodIsGenericMessage" xml:space="preserve">
+  <data name="LoggingMethodIsGenericMessage" xml:space="preserve">
     <value>Logging methods cannot be generic</value>
   </data>
-  <data name="DontMentionExceptionInMessageMessage" xml:space="preserve">
+  <data name="ShouldntMentionExceptionInMessageMessage" xml:space="preserve">
     <value>Don't include a template for {0} in the logging message since it is implicitly taken care</value>
   </data>
-  <data name="DontMentionExceptionInMessageTitle" xml:space="preserve">
+  <data name="ShouldntMentionExceptionInMessageTitle" xml:space="preserve">
     <value>Don't include exception parameters as templates in the logging message</value>
   </data>
   <data name="PassingDateTimeMessage" xml:space="preserve">
@@ -207,22 +207,22 @@
   <data name="TemplateHasNoCorrespondingArgumentTitle" xml:space="preserve">
     <value>Logging template has no corresponding method argument</value>
   </data>
-  <data name="ErrorMethodHasBodyTitle" xml:space="preserve">
+  <data name="LoggingMethodHasBodyTitle" xml:space="preserve">
     <value>Logging methods cannot have a body</value>
   </data>
-  <data name="ErrorMethodHasBodyMessage" xml:space="preserve">
+  <data name="LoggingMethodHasBodyMessage" xml:space="preserve">
     <value>Logging methods cannot have a body</value>
   </data>
-  <data name="ErrorMissingLogLevelTitle" xml:space="preserve">
+  <data name="MissingLogLevelTitle" xml:space="preserve">
     <value>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</value>
   </data>
-  <data name="ErrorMissingLogLevelMessage" xml:space="preserve">
+  <data name="MissingLogLevelMessage" xml:space="preserve">
     <value>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</value>
   </data>
-  <data name="DontMentionLogLevelInMessageMessage" xml:space="preserve">
+  <data name="ShouldntMentionLogLevelInMessageMessage" xml:space="preserve">
     <value>Don't include a template for {0} in the logging message since it is implicitly taken care of</value>
   </data>
-  <data name="DontMentionLogLevelInMessageTitle" xml:space="preserve">
+  <data name="ShouldntMentionLogLevelInMessageTitle" xml:space="preserve">
     <value>Don't include log level parameters as templates in the logging message</value>
   </data>
   <data name="DontMentionLoggerInMessageMessage" xml:space="preserve">
@@ -230,5 +230,17 @@
   </data>
   <data name="DontMentionLoggerInMessageTitle" xml:space="preserve">
     <value>Don't include logger parameters as templates in the logging message</value>
+  </data>
+  <data name="MissingLoggerFieldMessage" xml:space="preserve">
+    <value>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</value>
+  </data>
+  <data name="MissingLoggerFieldTitle" xml:space="preserve">
+    <value>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</value>
+  </data>
+  <data name="MultipleLoggerFieldsMessage" xml:space="preserve">
+    <value>Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</value>
+  </data>
+  <data name="MultipleLoggerFieldsTitle" xml:space="preserve">
+    <value>Found multiple fields of type Microsoft.Extensions.Logging.ILogger</value>
   </data>
 </root>

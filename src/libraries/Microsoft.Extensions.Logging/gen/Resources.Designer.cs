@@ -79,24 +79,6 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Don&apos;t include a template for {0} in the logging message since it is implicitly taken care.
-        /// </summary>
-        internal static string DontMentionExceptionInMessageMessage {
-            get {
-                return ResourceManager.GetString("DontMentionExceptionInMessageMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Don&apos;t include exception parameters as templates in the logging message.
-        /// </summary>
-        internal static string DontMentionExceptionInMessageTitle {
-            get {
-                return ResourceManager.GetString("DontMentionExceptionInMessageTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Don&apos;t include a template for {0} in the logging message since it is implicitly taken care of.
         /// </summary>
         internal static string DontMentionLoggerInMessageMessage {
@@ -115,236 +97,236 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Don&apos;t include a template for {0} in the logging message since it is implicitly taken care of.
+        ///   Looks up a localized string similar to Logging method names cannot start with _.
         /// </summary>
-        internal static string DontMentionLogLevelInMessageMessage {
+        internal static string InvalidLoggingMethodNameMessage {
             get {
-                return ResourceManager.GetString("DontMentionLogLevelInMessageMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Don&apos;t include log level parameters as templates in the logging message.
-        /// </summary>
-        internal static string DontMentionLogLevelInMessageTitle {
-            get {
-                return ResourceManager.GetString("DontMentionLogLevelInMessageTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Multiple logging methods are using event id {0} in class {1}.
-        /// </summary>
-        internal static string ErrorEventIdReuseMessage {
-            get {
-                return ResourceManager.GetString("ErrorEventIdReuseMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Multiple logging methods cannot use the same event id within a class.
-        /// </summary>
-        internal static string ErrorEventIdReuseTitle {
-            get {
-                return ResourceManager.GetString("ErrorEventIdReuseTitle", resourceCulture);
+                return ResourceManager.GetString("InvalidLoggingMethodNameMessage", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Logging method names cannot start with _.
         /// </summary>
-        internal static string ErrorInvalidMethodNameMessage {
+        internal static string InvalidLoggingMethodNameTitle {
             get {
-                return ResourceManager.GetString("ErrorInvalidMethodNameMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Logging method names cannot start with _.
-        /// </summary>
-        internal static string ErrorInvalidMethodNameTitle {
-            get {
-                return ResourceManager.GetString("ErrorInvalidMethodNameTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Logging methods must return void.
-        /// </summary>
-        internal static string ErrorInvalidMethodReturnTypeMessage {
-            get {
-                return ResourceManager.GetString("ErrorInvalidMethodReturnTypeMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Logging methods must return void.
-        /// </summary>
-        internal static string ErrorInvalidMethodReturnTypeTitle {
-            get {
-                return ResourceManager.GetString("ErrorInvalidMethodReturnTypeTitle", resourceCulture);
+                return ResourceManager.GetString("InvalidLoggingMethodNameTitle", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Logging method parameter names cannot start with _.
         /// </summary>
-        internal static string ErrorInvalidParameterNameMessage {
+        internal static string InvalidLoggingMethodParameterNameMessage {
             get {
-                return ResourceManager.GetString("ErrorInvalidParameterNameMessage", resourceCulture);
+                return ResourceManager.GetString("InvalidLoggingMethodParameterNameMessage", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Logging method parameter names cannot start with _.
         /// </summary>
-        internal static string ErrorInvalidParameterNameTitle {
+        internal static string InvalidLoggingMethodParameterNameTitle {
             get {
-                return ResourceManager.GetString("ErrorInvalidParameterNameTitle", resourceCulture);
+                return ResourceManager.GetString("InvalidLoggingMethodParameterNameTitle", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Logging methods cannot have a body.
         /// </summary>
-        internal static string ErrorMethodHasBodyMessage {
+        internal static string LoggingMethodHasBodyMessage {
             get {
-                return ResourceManager.GetString("ErrorMethodHasBodyMessage", resourceCulture);
+                return ResourceManager.GetString("LoggingMethodHasBodyMessage", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Logging methods cannot have a body.
         /// </summary>
-        internal static string ErrorMethodHasBodyTitle {
+        internal static string LoggingMethodHasBodyTitle {
             get {
-                return ResourceManager.GetString("ErrorMethodHasBodyTitle", resourceCulture);
+                return ResourceManager.GetString("LoggingMethodHasBodyTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logging class cannot be in nested types.
+        /// </summary>
+        internal static string LoggingMethodInNestedTypeMessage {
+            get {
+                return ResourceManager.GetString("LoggingMethodInNestedTypeMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logging class cannot be in nested types.
+        /// </summary>
+        internal static string LoggingMethodInNestedTypeTitle {
+            get {
+                return ResourceManager.GetString("LoggingMethodInNestedTypeTitle", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Logging methods cannot be generic.
         /// </summary>
-        internal static string ErrorMethodIsGenericMessage {
+        internal static string LoggingMethodIsGenericMessage {
             get {
-                return ResourceManager.GetString("ErrorMethodIsGenericMessage", resourceCulture);
+                return ResourceManager.GetString("LoggingMethodIsGenericMessage", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Logging methods cannot be generic.
         /// </summary>
-        internal static string ErrorMethodIsGenericTitle {
+        internal static string LoggingMethodIsGenericTitle {
             get {
-                return ResourceManager.GetString("ErrorMethodIsGenericTitle", resourceCulture);
+                return ResourceManager.GetString("LoggingMethodIsGenericTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logging methods must be partial.
+        /// </summary>
+        internal static string LoggingMethodMustBePartialMessage {
+            get {
+                return ResourceManager.GetString("LoggingMethodMustBePartialMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logging methods must be partial.
+        /// </summary>
+        internal static string LoggingMethodMustBePartialTitle {
+            get {
+                return ResourceManager.GetString("LoggingMethodMustBePartialTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logging methods must return void.
+        /// </summary>
+        internal static string LoggingMethodMustReturnVoidMessage {
+            get {
+                return ResourceManager.GetString("LoggingMethodMustReturnVoidMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logging methods must return void.
+        /// </summary>
+        internal static string LoggingMethodMustReturnVoidTitle {
+            get {
+                return ResourceManager.GetString("LoggingMethodMustReturnVoidTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logging methods must be static.
+        /// </summary>
+        internal static string LoggingMethodShouldBeStaticMessage {
+            get {
+                return ResourceManager.GetString("LoggingMethodShouldBeStaticMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logging methods must be static.
+        /// </summary>
+        internal static string LoggingMethodShouldBeStaticTitle {
+            get {
+                return ResourceManager.GetString("LoggingMethodShouldBeStaticTitle", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface.
         /// </summary>
-        internal static string ErrorMissingLoggerMessage {
+        internal static string MissingLoggerArgumentMessage {
             get {
-                return ResourceManager.GetString("ErrorMissingLoggerMessage", resourceCulture);
+                return ResourceManager.GetString("MissingLoggerArgumentMessage", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface.
         /// </summary>
-        internal static string ErrorMissingLoggerTitle {
+        internal static string MissingLoggerArgumentTitle {
             get {
-                return ResourceManager.GetString("ErrorMissingLoggerTitle", resourceCulture);
+                return ResourceManager.GetString("MissingLoggerArgumentTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Couldn&apos;t find a field of type Microsoft.Extensions.Logging.ILogger in class {0}.
+        /// </summary>
+        internal static string MissingLoggerFieldMessage {
+            get {
+                return ResourceManager.GetString("MissingLoggerFieldMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Couldn&apos;t find a field of type Microsoft.Extensions.Logging.ILogger.
+        /// </summary>
+        internal static string MissingLoggerFieldTitle {
+            get {
+                return ResourceManager.GetString("MissingLoggerFieldTitle", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method.
         /// </summary>
-        internal static string ErrorMissingLogLevelMessage {
+        internal static string MissingLogLevelMessage {
             get {
-                return ResourceManager.GetString("ErrorMissingLogLevelMessage", resourceCulture);
+                return ResourceManager.GetString("MissingLogLevelMessage", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method.
         /// </summary>
-        internal static string ErrorMissingLogLevelTitle {
+        internal static string MissingLogLevelTitle {
             get {
-                return ResourceManager.GetString("ErrorMissingLogLevelTitle", resourceCulture);
+                return ResourceManager.GetString("MissingLogLevelTitle", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Could not find definition for type {0}.
         /// </summary>
-        internal static string ErrorMissingRequiredTypeMessage {
+        internal static string MissingRequiredTypeMessage {
             get {
-                return ResourceManager.GetString("ErrorMissingRequiredTypeMessage", resourceCulture);
+                return ResourceManager.GetString("MissingRequiredTypeMessage", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Could not find a required type definition.
         /// </summary>
-        internal static string ErrorMissingRequiredTypeTitle {
+        internal static string MissingRequiredTypeTitle {
             get {
-                return ResourceManager.GetString("ErrorMissingRequiredTypeTitle", resourceCulture);
+                return ResourceManager.GetString("MissingRequiredTypeTitle", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Logging class cannot be in nested types.
+        ///   Looks up a localized string similar to Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}.
         /// </summary>
-        internal static string ErrorNestedTypeMessage {
+        internal static string MultipleLoggerFieldsMessage {
             get {
-                return ResourceManager.GetString("ErrorNestedTypeMessage", resourceCulture);
+                return ResourceManager.GetString("MultipleLoggerFieldsMessage", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Logging class cannot be in nested types.
+        ///   Looks up a localized string similar to Found multiple fields of type Microsoft.Extensions.Logging.ILogger.
         /// </summary>
-        internal static string ErrorNestedTypeTitle {
+        internal static string MultipleLoggerFieldsTitle {
             get {
-                return ResourceManager.GetString("ErrorNestedTypeTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Logging methods must be partial.
-        /// </summary>
-        internal static string ErrorNotPartialMethodMessage {
-            get {
-                return ResourceManager.GetString("ErrorNotPartialMethodMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Logging methods must be partial.
-        /// </summary>
-        internal static string ErrorNotPartialMethodTitle {
-            get {
-                return ResourceManager.GetString("ErrorNotPartialMethodTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Logging methods must be static.
-        /// </summary>
-        internal static string ErrorNotStaticMethodMessage {
-            get {
-                return ResourceManager.GetString("ErrorNotStaticMethodMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Logging methods must be static.
-        /// </summary>
-        internal static string ErrorNotStaticMethodTitle {
-            get {
-                return ResourceManager.GetString("ErrorNotStaticMethodTitle", resourceCulture);
+                return ResourceManager.GetString("MultipleLoggerFieldsTitle", resourceCulture);
             }
         }
         
@@ -381,6 +363,60 @@ namespace Microsoft.Extensions.Logging.Generators {
         internal static string RedundantQualifierInMessageTitle {
             get {
                 return ResourceManager.GetString("RedundantQualifierInMessageTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t include a template for {0} in the logging message since it is implicitly taken care.
+        /// </summary>
+        internal static string ShouldntMentionExceptionInMessageMessage {
+            get {
+                return ResourceManager.GetString("ShouldntMentionExceptionInMessageMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t include exception parameters as templates in the logging message.
+        /// </summary>
+        internal static string ShouldntMentionExceptionInMessageTitle {
+            get {
+                return ResourceManager.GetString("ShouldntMentionExceptionInMessageTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t include a template for {0} in the logging message since it is implicitly taken care of.
+        /// </summary>
+        internal static string ShouldntMentionLogLevelInMessageMessage {
+            get {
+                return ResourceManager.GetString("ShouldntMentionLogLevelInMessageMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t include log level parameters as templates in the logging message.
+        /// </summary>
+        internal static string ShouldntMentionLogLevelInMessageTitle {
+            get {
+                return ResourceManager.GetString("ShouldntMentionLogLevelInMessageTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Multiple logging methods are using event id {0} in class {1}.
+        /// </summary>
+        internal static string ShouldntReuseEventIdsMessage {
+            get {
+                return ResourceManager.GetString("ShouldntReuseEventIdsMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Multiple logging methods cannot use the same event id within a class.
+        /// </summary>
+        internal static string ShouldntReuseEventIdsTitle {
+            get {
+                return ResourceManager.GetString("ShouldntReuseEventIdsTitle", resourceCulture);
             }
         }
         

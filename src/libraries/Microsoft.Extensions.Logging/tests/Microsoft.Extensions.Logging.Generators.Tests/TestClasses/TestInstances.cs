@@ -5,13 +5,13 @@
 
 namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
 {
-    internal partial class TestInstances
+    public partial class TestInstances
     {
-        private readonly ILogger _logger;
+        private readonly ILogger _myLogger;
 
         public TestInstances(ILogger logger)
         {
-            _logger = logger;
+            _myLogger = logger;
         }
 
         [LoggerMessage(0, LogLevel.Error, "M0")]
