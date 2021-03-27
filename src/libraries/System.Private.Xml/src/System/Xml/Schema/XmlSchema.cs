@@ -89,13 +89,11 @@ namespace System.Xml.Schema
             return parser.XmlSchema;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(Stream stream)
         {
             Write(stream, null);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(Stream stream, XmlNamespaceManager? namespaceManager)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(stream, null);
@@ -103,13 +101,11 @@ namespace System.Xml.Schema
             Write(xmlWriter, namespaceManager);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(TextWriter writer)
         {
             Write(writer, null);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(TextWriter writer, XmlNamespaceManager? namespaceManager)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(writer);
@@ -117,13 +113,15 @@ namespace System.Xml.Schema
             Write(xmlWriter, namespaceManager);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(XmlWriter writer)
         {
             Write(writer, null);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [DynamicDependency(TrimmerConstants.PublicMembers, typeof(XmlSchema))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Supressing warning since the right members of XmlSchema will be preserved by the " +
+            "DynamicDependency attribute.")]
         public void Write(XmlWriter writer, XmlNamespaceManager? namespaceManager)
         {
             XmlSerializer serializer = new XmlSerializer(typeof(XmlSchema));

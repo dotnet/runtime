@@ -1400,8 +1400,9 @@ namespace System.Xml.Serialization
         }
 
         private static object? GetConvertedDefaultValue(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods
-                | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type? targetType, object? rawDefaultValue)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            Type? targetType,
+            object? rawDefaultValue)
         {
             if (targetType == null)
             {

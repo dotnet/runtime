@@ -242,7 +242,6 @@ namespace System.Xml.Serialization
     public partial class XmlAttributes
     {
         public XmlAttributes() { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public XmlAttributes(System.Reflection.ICustomAttributeProvider provider) { }
         public System.Xml.Serialization.XmlAnyAttributeAttribute? XmlAnyAttribute { get { throw null; } set { } }
         public System.Xml.Serialization.XmlAnyElementAttributes XmlAnyElements { get { throw null; } }

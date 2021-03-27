@@ -150,7 +150,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        // Linker warning messages
+        // Trimmer warning messages
         internal const string TrimSerializationWarning = "Members from serialized types may be trimmed if not referenced directly";
         private const string s_trimDeserializationWarning = "Members from deserialized types may be trimmed if not referenced directly";
 

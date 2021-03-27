@@ -12,8 +12,9 @@ namespace System.Xml.Serialization
         private const string ImplicitCastOperatorName = "op_Implicit";
 
         public static bool TryConvertTo(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods
-                | DynamicallyAccessedMemberTypes.NonPublicMethods)] this Type targetType, object? data, out object? returnValue)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            this Type targetType,
+            object? data, out object? returnValue)
         {
             if (targetType == null)
             {

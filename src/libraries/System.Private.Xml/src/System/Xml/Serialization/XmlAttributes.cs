@@ -3,7 +3,6 @@
 
 using System.Reflection;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
