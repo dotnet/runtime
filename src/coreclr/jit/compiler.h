@@ -6315,11 +6315,25 @@ public:
     void optOptimizeBools();
 
 private:
-    void optOptimizeBoolsCondBlock(BasicBlock* b1, BasicBlock* b2, bool* change);
-    void optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, BasicBlock* b3, bool* change);
-    GenTree* optIsBoolComp(GenTree* tree, GenTree** compPtr, bool* boolPtr);
-    void optReturnGetFoldAndCompOper(
-        GenTree* tree1, GenTree* tree2, ssize_t it3val, bool bool1, bool bool2, genTreeOps* foldOp, genTreeOps* cmpOp);
+    void       optOptimizeBoolsCondBlock(BasicBlock* b1, BasicBlock* b2, bool* change);
+    Statement* optOptimizeBoolsChkBlkCond(
+        BasicBlock* b1, BasicBlock* b2, BasicBlock* b3, GenTree** t1, GenTree** t2, GenTree** t3, bool* sameTarget);
+    GenTree*   optIsBoolComp(GenTree* tree, GenTree** compPtr, bool* boolPtr);
+    bool       optOptimizeBoolsChkTypeCostCond(GenTree* t1, GenTree* t2, GenTree* c1, GenTree* c2);
+    void       optOptimizeBoolsUpdateTrees(BasicBlock* b1,
+                                           BasicBlock* b2,
+                                           BasicBlock* b3,
+                                           GenTree*    t1,
+                                           GenTree*    t2,
+                                           genTreeOps  foldOp,
+                                           var_types   foldType,
+                                           genTreeOps  cmpOp,
+                                           bool        bool1,
+                                           bool        bool2,
+                                           bool        sameTarget);
+    void       optOptimizeBoolsReturnBlock(BasicBlock* b1, BasicBlock* b2, BasicBlock* b3, bool* change);
+    void       optReturnGetFoldAndCompOper(
+              GenTree* tree1, GenTree* tree2, ssize_t it3val, bool bool1,  bool bool2, genTreeOps* foldOp, genTreeOps* cmpOp);
 #ifdef DEBUG
     void optOptimizeBoolsGcStress(BasicBlock* condBlock);
 #endif
