@@ -197,9 +197,9 @@ namespace Microsoft.Extensions.Logging.Test
         public void LogMessage_WithNullParameter_DoesNotMutateArgument()
         {
             // Arrange
-            var format = "TestMessage {param1} {param2} {param3}";
-            var param1 = "foo";
-            var param2 = (string)null;
+            string format = "TestMessage {param1} {param2} {param3}";
+            string param1 = "foo";
+            string param2 = null;
             int param3 = 10;
             var testSink = new TestSink();
             var testLogger = new TestLogger("testlogger", testSink, enabled: true);

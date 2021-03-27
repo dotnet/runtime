@@ -98,11 +98,11 @@ namespace Microsoft.Extensions.Logging.Test
         [Fact]
         public void LogValues_WithNullAndEnumerable_IsNotMutatingParameter()
         {
-            var format = "TestMessage {Param1} {Param2} {Param3} {Param4}";
-            var param1 = 1;
-            var param2 = (string)null;
-            var param3 = new[] { 1, 2, 3, 4 };
-            var param4 = "string";
+            string format = "TestMessage {Param1} {Param2} {Param3} {Param4}";
+            int param1 = 1;
+            string param2 = null;
+            int[] param3 = new[] { 1, 2, 3, 4 };
+            string param4 = "string";
 
             var logValues = new FormattedLogValues(format, param1, param2, param3, param4);
             logValues.ToString();
