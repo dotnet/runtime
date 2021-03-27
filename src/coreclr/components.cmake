@@ -1,6 +1,6 @@
 # Define all the individually buildable components of the CoreCLR build and their respective targets
 add_component(jit)
-add_component(all_jits)
+add_component(alljits)
 add_component(runtime)
 add_component(paltests paltests_install)
 add_component(iltools)
@@ -10,7 +10,7 @@ add_component(iltools)
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME coreclr_misc)
 add_component(coreclr_misc)
 add_dependencies(jit coreclr_misc)
-add_dependencies(all_jits coreclr_misc)
+add_dependencies(alljits coreclr_misc)
 add_dependencies(runtime coreclr_misc)
 add_dependencies(paltests_install coreclr_misc)
 

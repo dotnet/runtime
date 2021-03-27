@@ -453,7 +453,7 @@ function(add_jit jitName)
     )
 
     # add the install targets
-    install_clr(TARGETS ${jitName} ${ARGN} COMPONENT all_jits)
+    install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljits)
 endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
