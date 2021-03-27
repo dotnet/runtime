@@ -8,7 +8,7 @@
     <UseAppHost>true</UseAppHost>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
-    <SingleFileHostSourcePath>$(ArtifactsBinDir)$(RuntimeIdentifier).$(Configuration)/corehost/singlefilehost</SingleFileHostSourcePath>
+    <SingleFileHostSourcePath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)', 'corehost'))/singlefilehost</SingleFileHostSourcePath>
     <SingleFileHostSourcePath Condition="'$(TargetOS)' == 'windows'">$(SingleFileHostSourcePath).exe</SingleFileHostSourcePath>
 
     <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(AssemblyName).exe</RunScriptCommand>
