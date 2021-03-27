@@ -693,11 +693,11 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 
 	if (!table) {
 		/* Lazily allocate method table */
-		mono_domain_lock (vtable->domain);
+		mono_mem_manager_lock (memory_manager);
 		table = get_method_table (vtable, offset);
 		if (!table)
 			table = alloc_method_table (vtable, offset);
-		mono_domain_unlock (vtable->domain);
+		mono_mem_manager_unlock (memory_manager);
 	}
 
 	if (!table [offset]) {

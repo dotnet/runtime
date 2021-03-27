@@ -9167,12 +9167,10 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	}
 	mono_os_mutex_unlock (&calc_section);
 
-	mono_domain_lock (domain);
 	if (mono_stats_method_desc && mono_method_desc_full_match (mono_stats_method_desc, imethod->method)) {
 		g_printf ("Printing runtime stats at method: %s\n", mono_method_get_full_name (imethod->method));
 		mono_runtime_print_stats ();
 	}
-	mono_domain_unlock (domain);
 
 	MonoJitMemoryManager *jit_mm = jit_mm_for_method (imethod->method);
 	jit_mm_lock (jit_mm);
