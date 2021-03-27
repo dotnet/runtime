@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Multiple logging methods are using event id {0}.
+        ///   Looks up a localized string similar to Multiple logging methods are using event id {0} in class {1}.
         /// </summary>
         internal static string ErrorEventIdReuseMessage {
             get {
@@ -142,7 +142,7 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Multiple logging methods cannot use the same event id.
+        ///   Looks up a localized string similar to Multiple logging methods cannot use the same event id within a class.
         /// </summary>
         internal static string ErrorEventIdReuseTitle {
             get {

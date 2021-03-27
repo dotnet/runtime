@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorInvalidMethodName.Id, d[0].Id);
         }
 
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorMissingLogLevel.Id, d[0].Id);
         }
 
@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorMethodHasBody.Id, d[0].Id);
         }
 
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ArgumentHasNoCorrespondingTemplate.Id, d[0].Id);
         }
 
@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.TemplateHasNoCorrespondingArgument.Id, d[0].Id);
         }
 
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.RedundantQualifierInMessage.Id, d[0].Id);
         }
 
@@ -118,7 +118,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.DontMentionExceptionInMessage.Id, d[0].Id);
         }
 
@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.DontMentionLogLevelInMessage.Id, d[0].Id);
         }
 
@@ -148,7 +148,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.DontMentionLoggerInMessage.Id, d[0].Id);
         }
 
@@ -163,7 +163,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorInvalidParameterName.Id, d[0].Id);
         }
 
@@ -178,7 +178,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.PassingDateTime.Id, d[0].Id);
         }
 
@@ -196,7 +196,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorNestedType.Id, d[0].Id);
         }
 
@@ -229,7 +229,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorMissingRequiredType.Id, d[0].Id);
         }
 
@@ -262,7 +262,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorMissingRequiredType.Id, d[0].Id);
         }
 
@@ -295,7 +295,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorMissingRequiredType.Id, d[0].Id);
         }
 
@@ -325,7 +325,7 @@ R9                partial class C
                 }
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorMissingRequiredType.Id, d[0].Id);
         }
 
@@ -381,7 +381,7 @@ R9                partial class C
         public async Task EventIdReuse()
         {
             var d = await RunGenerator(@"
-                partial class C
+                partial class MyClass
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
                     static partial void M1(ILogger logger);
@@ -391,8 +391,9 @@ R9                partial class C
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorEventIdReuse.Id, d[0].Id);
+            Assert.Contains("in class MyClass", d[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
@@ -408,7 +409,7 @@ R9                partial class C
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorInvalidMethodReturnType.Id, d[0].Id);
         }
 
@@ -423,7 +424,7 @@ R9                partial class C
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorMissingLogger.Id, d[0].Id);
         }
 
@@ -438,7 +439,7 @@ R9                partial class C
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorNotStaticMethod.Id, d[0].Id);
         }
 
@@ -469,7 +470,7 @@ R9                partial class C
                 }
             ");
 
-            Assert.Single(d);
+            _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.ErrorMethodIsGeneric.Id, d[0].Id);
         }
 

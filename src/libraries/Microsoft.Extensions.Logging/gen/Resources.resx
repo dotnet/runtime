@@ -142,10 +142,10 @@
     <value>Could not find definition for type {0}</value>
   </data>
   <data name="ErrorEventIdReuseTitle" xml:space="preserve">
-    <value>Multiple logging methods cannot use the same event id</value>
+    <value>Multiple logging methods cannot use the same event id within a class</value>
   </data>
   <data name="ErrorEventIdReuseMessage" xml:space="preserve">
-    <value>Multiple logging methods are using event id {0}</value>
+    <value>Multiple logging methods are using event id {0} in class {1}</value>
   </data>
   <data name="ErrorInvalidMethodReturnTypeTitle" xml:space="preserve">
     <value>Logging methods must return void</value>

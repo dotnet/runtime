@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         // ensure there are no duplicate ids.
                                         if (ids.Contains(lm.EventId))
                                         {
-                                            Diag(DiagDescriptors.ErrorEventIdReuse, ma.GetLocation(), lm.EventId);
+                                            Diag(DiagDescriptors.ErrorEventIdReuse, ma.GetLocation(), lm.EventId, classDef.Identifier.Text);
                                         }
                                         else
                                         {
