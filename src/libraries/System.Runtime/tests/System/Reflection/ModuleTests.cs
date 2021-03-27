@@ -205,7 +205,7 @@ namespace System.Reflection.Tests
         }
 
         public static IEnumerable<object[]> Methods =>
-            typeof(ModuleTests).GetMethods().Select(m => new object[] { m });
+            typeof(ModuleTests).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly).Select(m => new object[] { m });
 
         [Theory]
         [MemberData(nameof(Methods))]
@@ -234,7 +234,7 @@ namespace System.Reflection.Tests
         }
 
         public static IEnumerable<object[]> Fields =>
-            typeof(ModuleTests).GetFields().Select(f => new object[] { f });
+            typeof(ModuleTests).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly).Select(f => new object[] { f });
 
         [Theory]
         [MemberData(nameof(Fields))]
