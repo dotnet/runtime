@@ -209,7 +209,7 @@ CONFIG_DWORD_INFO_EX(INTERNAL_DbgSkipVerCheck, W("DbgSkipVerCheck"), 0, "Allows 
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgTC, W("DbgTC"), 0, "Allows checking boundary compression for offset mappings", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgTransportFaultInject, W("DbgTransportFaultInject"), 0, "Allows injecting a fault for testing the debug transport", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO(INTERNAL_DbgTransportLog, W("DbgTransportLog"), 0 /* LE_None */, "Turns on logging for the debug transport")
-CONFIG_DWORD_INFO(INTERNAL_DbgTransportLogClass, W("DbgTransportLogClass"), -1 /* LC_All */, "Mask to control what is logged in DbgTransportLog")
+CONFIG_DWORD_INFO(INTERNAL_DbgTransportLogClass, W("DbgTransportLogClass"), (DWORD)-1 /* LC_All */, "Mask to control what is logged in DbgTransportLog")
 RETAIL_CONFIG_STRING_INFO_EX(UNSUPPORTED_DbgTransportProxyAddress, W("DbgTransportProxyAddress"), "Allows specifying the transport proxy address", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgTrapOnSkip, W("DbgTrapOnSkip"), 0, "Allows breaking when we skip a breakpoint", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgWaitTimeout, W("DbgWaitTimeout"), 1, "Specifies the timeout value for waits", CLRConfig::EEConfig_default)
