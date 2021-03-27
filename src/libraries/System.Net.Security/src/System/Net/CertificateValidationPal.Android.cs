@@ -24,10 +24,17 @@ namespace System.Net
                 ? SslPolicyErrors.None
                 : SslPolicyErrors.RemoteCertificateChainErrors;
 
-            if (!checkCertName)
-                return errors;
+            if (checkCertName)
+            {
+                System.Diagnostics.Debug.Assert(hostName != null);
+                SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
+                if (!Interop.AndroidCrypto.SSLStreamVerifyHostname(sslContext.SslContext, hostName!))
+                {
+                    errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
+                }
+            }
 
-            throw new NotImplementedException(nameof(VerifyCertificateProperties));
+            return errors;
         }
 
         //

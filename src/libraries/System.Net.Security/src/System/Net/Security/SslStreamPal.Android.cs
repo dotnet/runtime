@@ -7,6 +7,8 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 
+using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
+
 namespace System.Net.Security
 {
     internal static class SslStreamPal
@@ -77,9 +79,26 @@ namespace System.Net.Security
                 SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
                 SafeSslHandle sslHandle = sslContext.SslContext;
 
-                bool success = Interop.AndroidCrypto.SSLStreamWrite(sslHandle, input.Span);
-                if (!success)
-                    return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+                PAL_SSLStreamStatus ret;
+                unsafe
+                {
+                    MemoryHandle memHandle = input.Pin();
+                    try
+                    {
+                        ret = Interop.AndroidCrypto.SSLStreamWrite(sslHandle, (byte*)memHandle.Pointer, input.Length);
+                    }
+                    finally
+                    {
+                        memHandle.Dispose();
+                    }
+                }
+
+                SecurityStatusPalErrorCode statusCode = ret switch
+                {
+                    PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
+                    PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.ContinueNeeded,
+                    _ => SecurityStatusPalErrorCode.InternalError
+                };
 
                 if (sslContext.BytesReadyForConnection <= output?.Length)
                 {
@@ -91,7 +110,7 @@ namespace System.Net.Security
                     resultSize = output.Length;
                 }
 
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+                return new SecurityStatusPal(statusCode);
             }
             catch (Exception e)
             {
@@ -116,12 +135,20 @@ namespace System.Net.Security
                 {
                     fixed (byte* offsetInput = &buffer[offset])
                     {
-                        bool success = Interop.AndroidCrypto.SSLStreamRead(sslHandle, offsetInput, count, out int read);
-                        if (!success)
+                        PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, offsetInput, count, out int read);
+                        if (ret == PAL_SSLStreamStatus.Error)
                             return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
 
                         count = read;
-                        return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+
+                        SecurityStatusPalErrorCode statusCode = ret switch
+                        {
+                            PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
+                            PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.OK,
+                            _ => SecurityStatusPalErrorCode.InternalError
+                        };
+
+                        return new SecurityStatusPal(statusCode);
                     }
                 }
             }
@@ -181,11 +208,11 @@ namespace System.Net.Security
 
                 SafeSslHandle sslHandle = sslContext!.SslContext;
 
-                Interop.AndroidCrypto.PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamHandshake(sslHandle);
+                PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamHandshake(sslHandle);
                 SecurityStatusPalErrorCode statusCode = ret switch
                 {
-                    Interop.AndroidCrypto.PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
-                    Interop.AndroidCrypto.PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.ContinueNeeded,
+                    PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
+                    PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.ContinueNeeded,
                     _ => SecurityStatusPalErrorCode.InternalError
                 };
 
@@ -218,8 +245,8 @@ namespace System.Net.Security
             SafeSslHandle sslHandle = sslContext.SslContext;
 
 
-            // bool success = Interop.AndroidCrypto.SslShutdown(sslHandle);
-            bool success = true;
+            // bool success = Interop.AndroidCrypto.SSLStreamShutdown(sslHandle);
+            bool success = false;
             if (success)
             {
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);

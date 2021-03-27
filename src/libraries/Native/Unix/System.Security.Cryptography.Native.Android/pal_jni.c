@@ -371,6 +371,14 @@ jmethodID g_IteratorNext;
 jclass    g_ListClass;
 jmethodID g_ListGet;
 
+// javax/net/ssl/HostnameVerifier
+jclass    g_HostnameVerifier;
+jmethodID g_HostnameVerifierVerify;
+
+// javax/net/ssl/HttpsURLConnection
+jclass    g_HttpsURLConnection;
+jmethodID g_HttpsURLConnectionGetDefaultHostnameVerifier;
+
 // javax/net/ssl/SNIHostName
 jclass    g_SNIHostName;
 jmethodID g_SNIHostNameCtor;
@@ -913,6 +921,12 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_ListClass =   GetClassGRef(env, "java/util/List");
     g_ListGet =     GetMethod(env, false, g_ListClass, "get", "(I)Ljava/lang/Object;");
+
+    g_HostnameVerifier =        GetClassGRef(env, "javax/net/ssl/HostnameVerifier");
+    g_HostnameVerifierVerify =  GetMethod(env, false, g_HostnameVerifier, "verify", "(Ljava/lang/String;Ljavax/net/ssl/SSLSession;)Z");
+
+    g_HttpsURLConnection =                              GetClassGRef(env, "javax/net/ssl/HttpsURLConnection");
+    g_HttpsURLConnectionGetDefaultHostnameVerifier =    GetMethod(env, true, g_HttpsURLConnection, "getDefaultHostnameVerifier", "()Ljavax/net/ssl/HostnameVerifier;");
 
     g_SNIHostName =     GetClassGRef(env, "javax/net/ssl/SNIHostName");
     g_SNIHostNameCtor = GetMethod(env, false, g_SNIHostName, "<init>", "(Ljava/lang/String;)V");

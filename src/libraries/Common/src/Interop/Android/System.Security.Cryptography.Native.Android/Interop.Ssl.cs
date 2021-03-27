@@ -14,8 +14,8 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        internal unsafe delegate int SSLReadCallback(byte* data, int offset, int length);
-        internal unsafe delegate void SSLWriteCallback(byte* data, int offset, int length);
+        internal unsafe delegate PAL_SSLStreamStatus SSLReadCallback(byte* data, int* length);
+        internal unsafe delegate void SSLWriteCallback(byte* data, int length);
 
         internal enum PAL_SSLStreamStatus
         {
@@ -66,32 +66,17 @@ internal static partial class Interop
         }
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamRead")]
-        private static unsafe extern int SSLStreamRead(
+        internal static unsafe extern PAL_SSLStreamStatus SSLStreamRead(
             SafeSslHandle sslHandle,
             byte* buffer,
-            int offset,
-            int length);
-        internal static unsafe bool SSLStreamRead(SafeSslHandle handle, byte* buffer, int count, out int read)
-        {
-            read = SSLStreamRead(handle, buffer, 0, count);
-            return true;
-        }
+            int length,
+            out int bytesRead);
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamWrite")]
-        private static unsafe extern void SSLStreamWrite(
+        internal static unsafe extern PAL_SSLStreamStatus SSLStreamWrite(
             SafeSslHandle sslHandle,
             byte* buffer,
-            int offset,
             int length);
-        internal static unsafe bool SSLStreamWrite(SafeSslHandle handle, ReadOnlySpan<byte> buffer)
-        {
-            fixed (byte* bufferPtr = buffer)
-            {
-                SSLStreamWrite(handle, bufferPtr, 0, buffer.Length);
-            }
-
-            return true;
-        }
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamRelease")]
         internal static extern void SSLStreamRelease(IntPtr ptr);
@@ -169,6 +154,12 @@ internal static partial class Interop
             Marshal.FreeHGlobal(cipherSuitePtr);
             return cipherSuite;
         }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamVerifyHostname")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static extern bool SSLStreamVerifyHostname(
+            SafeSslHandle ssl,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string hostname);
     }
 }
 

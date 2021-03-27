@@ -9,6 +9,8 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
+using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
+
 namespace System.Net
 {
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
@@ -117,7 +119,7 @@ namespace System.Net
             base.Dispose(disposing);
         }
 
-        private unsafe void WriteToConnection(byte* data, int offset, int dataLength)
+        private unsafe void WriteToConnection(byte* data, int dataLength)
         {
             var inputBuffer = new ReadOnlySpan<byte>(data, dataLength);
 
@@ -126,19 +128,25 @@ namespace System.Net
             _outputBuffer.Commit(dataLength);
         }
 
-        private unsafe int ReadFromConnection(byte* data, int offset, int dataLength)
+        private unsafe PAL_SSLStreamStatus ReadFromConnection(byte* data, int* dataLength)
         {
-            if (dataLength == 0)
-                return 0;
+            int toRead = *dataLength;
+            if (toRead == 0)
+                return PAL_SSLStreamStatus.OK;
 
             if (_inputBuffer.ActiveLength == 0)
-                return 0;
+            {
+                *dataLength = 0;
+                return PAL_SSLStreamStatus.NeedData;
+            }
 
-            int toRead = Math.Min(dataLength, _inputBuffer.ActiveLength);
+            toRead = Math.Min(toRead, _inputBuffer.ActiveLength);
 
             _inputBuffer.ActiveSpan.Slice(0, toRead).CopyTo(new Span<byte>(data, toRead));
             _inputBuffer.Discard(toRead);
-            return toRead;
+
+            *dataLength = toRead;
+            return PAL_SSLStreamStatus.OK;
         }
 
         internal void Write(ReadOnlySpan<byte> buf)

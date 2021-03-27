@@ -385,6 +385,14 @@ extern jmethodID g_IteratorNext;
 extern jclass    g_ListClass;
 extern jmethodID g_ListGet;
 
+// javax/net/ssl/HostnameVerifier
+extern jclass    g_HostnameVerifier;
+extern jmethodID g_HostnameVerifierVerify;
+
+// javax/net/ssl/HttpsURLConnection
+extern jclass    g_HttpsURLConnection;
+extern jmethodID g_HttpsURLConnectionGetDefaultHostnameVerifier;
+
 // javax/net/ssl/SNIHostName
 extern jclass    g_SNIHostName;
 extern jmethodID g_SNIHostNameCtor;

@@ -5,8 +5,8 @@
 
 #include "pal_jni.h"
 
-typedef void (*STREAM_WRITER)(uint8_t*, uint32_t, uint32_t);
-typedef int  (*STREAM_READER)(uint8_t*, uint32_t, uint32_t);
+typedef void (*STREAM_WRITER)(uint8_t*, int32_t);
+typedef int  (*STREAM_READER)(uint8_t*, int32_t*);
 
 typedef struct SSLStream
 {
@@ -35,8 +35,8 @@ PALEXPORT int32_t AndroidCryptoNative_SSLStreamConfigureParameters(SSLStream *ss
 PALEXPORT PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamHandshake(SSLStream *sslStream);
 
 PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateAndStartHandshake(STREAM_READER streamReader, STREAM_WRITER streamWriter, int tlsVersion, int appOutBufferSize, int appInBufferSize);
-PALEXPORT int  AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int offset, int length);
-PALEXPORT void AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int offset, int length);
+PALEXPORT PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int length, int* read);
+PALEXPORT PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int length);
 PALEXPORT void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream);
 
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int* outLen);
@@ -45,3 +45,5 @@ PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetProtocol(SSLStream *sslStream,
 
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLStream *sslStream, jobject* out);
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream *sslStream, jobject** out, int* outLen);
+
+PALEXPORT bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream *sslStream, char* hostname);
