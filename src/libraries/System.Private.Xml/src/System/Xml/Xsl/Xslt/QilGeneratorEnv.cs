@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Schema;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
@@ -95,6 +96,9 @@ namespace System.Xml.Xsl.Xslt
         }
 
         // NOTE: DO NOT call QilNode.Clone() while executing this method since fixup nodes cannot be cloned
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Suppressing the warning for the ResolveFunction call on the Scripts since " +
+            "Scripts functionality is not supported by .NET Core")]
         QilNode IXPathEnvironment.ResolveFunction(string prefix, string name, IList<QilNode> args, IFocus env)
         {
             Debug.Assert(!args.IsReadOnly, "Writable collection expected");
