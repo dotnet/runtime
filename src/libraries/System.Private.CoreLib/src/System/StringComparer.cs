@@ -62,6 +62,68 @@ namespace System
             return new CultureAwareComparer(culture, options);
         }
 
+        public static bool IsWellKnownOrdinalComparer(IEqualityComparer<string?>? comparer, out bool ignoreCase)
+        {
+            if (comparer is IInternalStringEqualityComparer internalStringComparer)
+            {
+                comparer = internalStringComparer.GetUnderlyingEqualityComparer(); // unwrap if necessary
+            }
+
+            if (comparer is StringComparer stringComparer)
+            {
+                return stringComparer.IsWellKnownOrdinalComparerCore(out ignoreCase);
+            }
+            else if (comparer is GenericEqualityComparer<string>)
+            {
+                // special-case EqualityComparer<string>.Default, which is Ordinal-equivalent
+                ignoreCase = false;
+                return true;
+            }
+            else
+            {
+                // unknown comparer
+                ignoreCase = default;
+                return false;
+            }
+        }
+
+        // don't allow callers outside this hierarchy, and only allow overrides from within this assembly
+        private protected virtual bool IsWellKnownOrdinalComparerCore(out bool ignoreCase)
+        {
+            // unless specialized comparer overrides this, we're not a well-known ordinal comparer
+            ignoreCase = default;
+            return false;
+        }
+
+        public static bool IsWellKnownCultureAwareComparer(IEqualityComparer<string?>? comparer, [NotNullWhen(true)] out CompareInfo? compareInfo, out CompareOptions compareOptions)
+        {
+            if (comparer is IInternalStringEqualityComparer internalStringComparer)
+            {
+                comparer = internalStringComparer.GetUnderlyingEqualityComparer(); // unwrap if necessary
+            }
+
+            if (comparer is StringComparer stringComparer)
+            {
+                return stringComparer.IsWellKnownCultureAwareComparerCore(out compareInfo, out compareOptions);
+            }
+            else
+            {
+                // unknown comparer
+                compareInfo = default;
+                compareOptions = default;
+                return false;
+            }
+        }
+
+        // don't allow callers outside this hierarchy, and only allow overrides from within this assembly
+        private protected virtual bool IsWellKnownCultureAwareComparerCore([NotNullWhen(true)] out CompareInfo? compareInfo, out CompareOptions compareOptions)
+        {
+            // unless specialized comparer overrides this, we're not a well-known culture-aware comparer
+            compareInfo = default;
+            compareOptions = default;
+            return false;
+        }
+
         public int Compare(object? x, object? y)
         {
             if (x == y) return 0;
@@ -202,6 +264,13 @@ namespace System
             info.AddValue("_options", _options);
             info.AddValue("_ignoreCase", (_options & CompareOptions.IgnoreCase) != 0);
         }
+
+        private protected override bool IsWellKnownCultureAwareComparerCore([NotNullWhen(true)] out CompareInfo? compareInfo, out CompareOptions compareOptions)
+        {
+            compareInfo = _compareInfo;
+            compareOptions = _options;
+            return true;
+        }
     }
 
     [Serializable]
@@ -279,6 +348,12 @@ namespace System
         {
             int hashCode = nameof(OrdinalComparer).GetHashCode();
             return _ignoreCase ? (~hashCode) : hashCode;
+        }
+
+        private protected override bool IsWellKnownOrdinalComparerCore(out bool ignoreCase)
+        {
+            ignoreCase = _ignoreCase;
+            return true;
         }
     }
 
