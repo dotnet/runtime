@@ -1812,13 +1812,9 @@ var BindingSupportLib = {
 
 			var argumentNames = [];
 			var body = [
-				"var resultRoot = null, exceptionRoot = null;",
-				"if (token !== null) {",
-				"	resultRoot = token.scratchResultRoot;",
-				"	exceptionRoot = token.scratchExceptionRoot;",
-				"	token.scratchResultRoot = null;",
-				"	token.scratchExceptionRoot = null;",
-				"}",
+				"var resultRoot = token.scratchResultRoot, exceptionRoot = token.scratchExceptionRoot;",
+				"token.scratchResultRoot = null;",
+				"token.scratchExceptionRoot = null;",
 				"if (resultRoot === null)",
 				"	resultRoot = library_mono.mono_wasm_new_root ();",
 				"if (exceptionRoot === null)",
