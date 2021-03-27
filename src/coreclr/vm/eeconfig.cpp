@@ -123,6 +123,7 @@ HRESULT EEConfig::Init()
 
     fNgenBindOptimizeNonGac = false;
     fStressLog = false;
+    fForceEnc = false;
     fProbeForStackOverflow = true;
 
     INDEBUG(fStressLog = true;)
@@ -150,8 +151,6 @@ HRESULT EEConfig::Init()
     pPerfTypesToLog = NULL;
     iFastGCStress = 0;
     iInjectFatalError = 0;
-    fSaveThreadInfo = FALSE;
-    dwSaveThreadInfoMask = (DWORD)-1;
 #ifdef TEST_DATA_CONSISTENCY
     // indicates whether to run the self test to determine that we are detecting when a lock is held by the
     // LS in DAC builds. Initialized via the environment variable TestDataConsistency
@@ -180,6 +179,7 @@ HRESULT EEConfig::Init()
     fSuppressChecks = false;
     fConditionalContracts = false;
     fEnableFullDebug = false;
+    iExposeExceptionsInCOM = 0;
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
@@ -201,7 +201,6 @@ HRESULT EEConfig::Init()
 
 #ifdef _DEBUG
     // interop logging
-    m_pTraceIUnknown = NULL;
     m_TraceWrapper = 0;
 #endif
 
@@ -436,10 +435,10 @@ HRESULT EEConfig::sync()
     // Note the global variable is not updated directly by the GetRegKey function
     // so we only update it once (to avoid reentrancy windows)
 
-fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TrackDynamicMethodDebugInfo);
+    fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TrackDynamicMethodDebugInfo);
 
 #ifdef _DEBUG
-    iFastGCStress       = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_FastGCStress, iFastGCStress);
+    iFastGCStress       = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_FastGCStress);
 
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GcCoverage, (LPWSTR*)&pszGcCoverageOnMethod));
     pszGcCoverageOnMethod = NarrowWideChar((LPWSTR)pszGcCoverageOnMethod);
@@ -527,7 +526,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 #ifdef VERIFY_HEAP
     if (bGCStressAndHeapVerifyAllowed)
     {
-        iGCHeapVerify       =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_HeapVerify, iGCHeapVerify);
+        iGCHeapVerify       =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_HeapVerify);
     }
 #endif
 
@@ -552,7 +551,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     iGCAllowVeryLargeObjects = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_gcAllowVeryLargeObjects) != 0);
 #endif
 
-    fGCBreakOnOOM   =  (GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCBreakOnOOM, fGCBreakOnOOM) != 0);
+    fGCBreakOnOOM   =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCBreakOnOOM) != 0);
 
 #ifdef TRACE_GC
     iGCtraceStart       =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCtraceStart, iGCtraceStart);
@@ -562,11 +561,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 #endif
 
 #ifdef _DEBUG
-    iInjectFatalError   = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_InjectFatalError, iInjectFatalError);
-
-    fSaveThreadInfo     =  (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_SaveThreadInfo, fSaveThreadInfo) != 0);
-
-    dwSaveThreadInfoMask     =  GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_SaveThreadInfoMask, dwSaveThreadInfoMask);
+    iInjectFatalError   = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFatalError);
 
     {
         LPWSTR wszSkipGCCoverageList = NULL;
@@ -581,8 +576,8 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
         IfFailRet(hr);
     }
 #endif
-    fStressLog        =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
-    fForceEnc         =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_ForceEnc, fForceEnc) != 0;
+    fStressLog        =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
+    fForceEnc         =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_ForceEnc) != 0;
 
     {
         NewArrayHolder<WCHAR> wszModifiableAssemblies;
@@ -591,7 +586,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
             fDebugAssembliesModifiable = _wcsicmp(wszModifiableAssemblies, W("debug")) == 0;
     }
 
-    iRequireZaps        = RequireZapsType(GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_ZapRequire, iRequireZaps));
+    iRequireZaps        = RequireZapsType(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapRequire, iRequireZaps));
     if (IsCompilationProcess() || iRequireZaps >= REQUIRE_ZAPS_COUNT)
         iRequireZaps = REQUIRE_ZAPS_NONE;
 
@@ -644,7 +639,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    DoubleArrayToLargeObjectHeapThreshold = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
+    DoubleArrayToLargeObjectHeapThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
 #endif
 
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ZapBBInstr, (LPWSTR*)&szZapBBInstr));
@@ -669,7 +664,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
         g_IBCLogger.DisableAllInstr();
 
 
-    dwDisableStackwalkCache = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
+    dwDisableStackwalkCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
 
 
 #ifdef _DEBUG
@@ -695,9 +690,9 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
     dwJitHostMaxSlabCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitHostMaxSlabCache);
 
-    fJitFramed = (GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_JitFramed, fJitFramed) != 0);
-    fJitMinOpts = (GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_JITMinOpts, fJitMinOpts) == 1);
-    iJitOptimizeType      =  GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_JitOptimizeType, iJitOptimizeType);
+    fJitFramed = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitFramed) != 0);
+    fJitMinOpts = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JITMinOpts) == 1);
+    iJitOptimizeType      =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitOptimizeType);
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
 
 #ifdef TARGET_X86
@@ -706,7 +701,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
 
 #ifdef _DEBUG
-    fDebuggable         = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_JitDebuggable,      fDebuggable)         != 0);
+    fDebuggable         = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitDebuggable) != 0);
 
     LPWSTR wszPreStubStuff = NULL;
 
@@ -741,25 +736,25 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnStructMarshalSetup, (LPWSTR*)&pszBreakOnStructMarshalSetup));
     pszBreakOnStructMarshalSetup = NarrowWideChar((LPWSTR)pszBreakOnStructMarshalSetup);
 
-    m_fAssertOnBadImageFormat = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AssertOnBadImageFormat, m_fAssertOnBadImageFormat) != 0);
-    m_fAssertOnFailFast = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AssertOnFailFast, m_fAssertOnFailFast) != 0);
+    m_fAssertOnBadImageFormat = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AssertOnBadImageFormat) != 0);
+    m_fAssertOnFailFast = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AssertOnFailFast) != 0);
 
-    fSuppressChecks = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_SuppressChecks, fSuppressChecks) != 0);
+    fSuppressChecks = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressChecks) != 0);
     CHECK::SetAssertEnforcement(!fSuppressChecks);
 
-    fConditionalContracts = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_ConditionalContracts, fConditionalContracts) != 0);
+    fConditionalContracts = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ConditionalContracts) != 0);
 
 #ifdef ENABLE_CONTRACTS_IMPL
     Contract::SetUnconditionalContractEnforcement(!fConditionalContracts);
 #endif
 
-    fEnableFullDebug = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_EnableFullDebug, fEnableFullDebug) != 0);
+    fEnableFullDebug = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableFullDebug) != 0);
 
-    fVerifierOff    = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_VerifierOff, fVerifierOff) != 0);
+    fVerifierOff    = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_VerifierOff) != 0);
 
-    fJitVerificationDisable = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_JitVerificationDisable, fJitVerificationDisable)         != 0);
+    fJitVerificationDisable = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitVerificationDisable) != 0);
 
-    iExposeExceptionsInCOM = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_ExposeExceptionsInCOM, iExposeExceptionsInCOM);
+    iExposeExceptionsInCOM = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ExposeExceptionsInCOM, iExposeExceptionsInCOM);
 #endif
 
 #ifdef FEATURE_COMINTEROP
@@ -772,7 +767,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 #endif // FEATURE_COMINTEROP
 
 #ifdef _DEBUG
-    fExpandAllOnLoad = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_ExpandAllOnLoad, fExpandAllOnLoad) != 0);
+    fExpandAllOnLoad = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ExpandAllOnLoad) != 0);
 #endif //_DEBUG
 
 #ifdef ENABLE_STARTUP_DELAY
@@ -803,19 +798,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     fInited = true;
 
 #ifdef _DEBUG
-    m_pTraceIUnknown = (IUnknown*)(DWORD_PTR)(GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_TraceIUnknown, (DWORD)(DWORD_PTR)(m_pTraceIUnknown))); // <TODO> WIN64 - conversion from DWORD to IUnknown* of greater size</TODO>
-    m_TraceWrapper = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_TraceWrap, m_TraceWrapper);
-
-    // can't have both
-    if (m_pTraceIUnknown != 0)
-    {
-        m_TraceWrapper = 0;
-    }
-    else
-    if (m_TraceWrapper != 0)
-    {
-        m_pTraceIUnknown = (IUnknown*)-1;
-    }
+    m_TraceWrapper = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_TraceWrap);
 #endif
 
 #ifdef _DEBUG
@@ -849,7 +832,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 #endif
 
 #if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    fStubLinkerUnwindInfoVerificationOn = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_StubLinkerUnwindInfoVerificationOn, fStubLinkerUnwindInfoVerificationOn) != 0);
+    fStubLinkerUnwindInfoVerificationOn = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_StubLinkerUnwindInfoVerificationOn) != 0);
 #endif
 
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_UseMethodDataCache) != 0) {
@@ -862,7 +845,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
 
 #if defined(_DEBUG) && defined(TARGET_AMD64)
-    m_cGenerateLongJumpDispatchStubRatio = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_GenerateLongJumpDispatchStubRatio,
+    m_cGenerateLongJumpDispatchStubRatio = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GenerateLongJumpDispatchStubRatio,
                                                           static_cast<DWORD>(m_cGenerateLongJumpDispatchStubRatio));
 #endif
 

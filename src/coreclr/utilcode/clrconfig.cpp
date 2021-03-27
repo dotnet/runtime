@@ -88,19 +88,13 @@
 // Arguments:
 //     * info - see file:../inc/CLRConfig.h for details.
 //
-//     * useDefaultIfNotSet - if true, fall back to the default value if the value is not set.
-//
-//     * acceptExplicitDefaultFromRegutil - if false, only accept a value returned by REGUTIL if it is
-//           different from the default value. This parameter is useful as a way to preserve existing
-//           behavior.
-//
 //     * result - the result.
 //
 // Return value:
 //     * true for success, false otherwise.
 //
 // static
-DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplicitDefaultFromRegutil, /* [Out] */ bool *isDefault)
+DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, /* [Out] */ bool *isDefault)
 {
     CONTRACTL
     {
@@ -112,7 +106,6 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
 
     _ASSERTE (isDefault != nullptr);
 
-
     //
     // Set up REGUTIL options.
     //
@@ -122,25 +115,11 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
     DWORD resultMaybe;
     HRESULT hr = REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &resultMaybe, level, prependCOMPlus);
 
-    if (!acceptExplicitDefaultFromRegutil)
+    // Ignore the default value even if it's set explicitly.
+    if (resultMaybe != info.defaultValue)
     {
-        // Ignore the default value even if it's set explicitly.
-        if (resultMaybe != info.defaultValue)
-        {
-            *isDefault = false;
-            return resultMaybe;
-        }
-    }
-    else
-    {
-        // If we are willing to accept the default value when it's set explicitly,
-        // checking the HRESULT here is sufficient. E_FAIL is returned when the
-        // default is used.
-        if (SUCCEEDED(hr))
-        {
-            *isDefault = false;
-            return resultMaybe;
-        }
+        *isDefault = false;
+        return resultMaybe;
     }
 
     *isDefault = true;
@@ -154,12 +133,29 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
 //     * info - see file:../inc/CLRConfig.h for details
 //
 // static
+DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, DWORD defaultValue)
+{
+    bool isDefault = false;
+    DWORD valueMaybe = GetConfigValue(info, &isDefault);
+
+    // If the default value was returned, defer to the user supplied version.
+    if (isDefault)
+        return defaultValue;
+
+    return valueMaybe;
+}
+
+//
+// Look up a DWORD config value.
+//
+// Arguments:
+//     * info - see file:../inc/CLRConfig.h for details
+//
+// static
 DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info)
 {
-    // We pass false for 'acceptExplicitDefaultFromRegutil' to maintain the existing behavior of this function.
-    // Callers who don't need that behavior should switch to the other version of this function and pass true.
     bool unused;
-    return GetConfigValue(info, false /* acceptExplicitDefaultFromRegutil */, &unused);
+    return GetConfigValue(info, &unused);
 }
 
 //

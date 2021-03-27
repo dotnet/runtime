@@ -417,22 +417,11 @@ public:
         LIMITED_METHOD_CONTRACT;
         return iInjectFatalError;
     }
-
-    inline BOOL SaveThreadInfo() const
-    {
-        return fSaveThreadInfo;
-    }
-
-    inline DWORD SaveThreadInfoMask() const
-    {
-        return dwSaveThreadInfoMask;
-    }
 #endif
 
 
 #ifdef _DEBUG
     // Interop config
-    IUnknown* GetTraceIUnknown()            const {LIMITED_METHOD_CONTRACT;  return m_pTraceIUnknown; }
     int     GetTraceWrapper()               const {LIMITED_METHOD_CONTRACT;  return m_TraceWrapper;      }
 #endif
 
@@ -660,9 +649,6 @@ private: //----------------------------------------------------------------
 
     DWORD iInjectFatalError;
 
-    BOOL fSaveThreadInfo;
-    DWORD dwSaveThreadInfoMask;
-
     AssemblyNamesList *pSkipGCCoverageList;
 #endif
 
@@ -703,7 +689,6 @@ private: //----------------------------------------------------------------
 
 #ifdef _DEBUG
     // interop logging
-    IUnknown* m_pTraceIUnknown;
     int       m_TraceWrapper;
 #endif
 

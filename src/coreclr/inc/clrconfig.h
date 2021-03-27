@@ -139,7 +139,10 @@ public:
     static DWORD GetConfigValue(const ConfigDWORDInfo & info);
 
     // Look up a DWORD config value.
-    static DWORD GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplicitDefaultFromRegutil, /* [Out] */ bool *isDefault);
+    static DWORD GetConfigValue(const ConfigDWORDInfo & info, /* [Out] */ bool *isDefault);
+
+    // Look up a DWORD config value.
+    static DWORD GetConfigValue(const ConfigDWORDInfo & info, DWORD defaultValue);
 
     // Look up a string config value.
     // You own the string that's returned.

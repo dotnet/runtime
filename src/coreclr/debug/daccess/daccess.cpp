@@ -7084,7 +7084,7 @@ HRESULT ClrDataAccess::VerifyDlls()
         // Note that we check this knob every time because it may be handy to turn it on in
         // the environment mid-flight.
         DWORD dwAssertDefault = m_fEnableDllVerificationAsserts ? 1 : 0;
-        if (REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_DbgDACAssertOnMismatch, dwAssertDefault))
+        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgDACAssertOnMismatch, dwAssertDefault))
         {
             // Output a nice error message that contains the timestamps in string format.
             time_t actualTime = timestamp;
