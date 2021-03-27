@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.IO.Tests.Enumeration
 {
-    public class DepthTests : FileSystemTest
+    public class RecursionDepthTests : FileSystemTest
     {
         public static IEnumerable<string> GetEntryNames(string directory, int depth)
         {

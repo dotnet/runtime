@@ -27,6 +27,8 @@ namespace System.IO
         /// </summary>
         internal static EnumerationOptions Default { get; } = new EnumerationOptions();
 
+        internal const int DefaultMaxRecursionDepth = int.MaxValue;
+
         /// <summary>
         /// Default constructor. Constructs the options class with recommended default options.
         /// </summary>
@@ -34,7 +36,7 @@ namespace System.IO
         {
             IgnoreInaccessible = true;
             AttributesToSkip = FileAttributes.Hidden | FileAttributes.System;
-            MaxRecursionDepth = int.MaxValue;
+            MaxRecursionDepth = DefaultMaxRecursionDepth;
         }
 
         /// <summary>

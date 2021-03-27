@@ -40,7 +40,7 @@ namespace System.IO.Enumeration
             _rootDirectory = Path.TrimEndingDirectorySeparator(path);
             _options = options ?? EnumerationOptions.Default;
 
-            _remainingDepth = _options.MaxRecursionDepth < 0 ? EnumerationOptions.Default.MaxRecursionDepth : _options.MaxRecursionDepth;
+            _remainingDepth = _options.MaxRecursionDepth < 0 ? EnumerationOptions.DefaultMaxRecursionDepth : _options.MaxRecursionDepth;
 
             Init();
         }
