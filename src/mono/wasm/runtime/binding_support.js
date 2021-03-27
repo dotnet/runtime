@@ -1389,6 +1389,9 @@ var BindingSupportLib = {
 				return converter;
 
 			var converterName = args_marshal.replace ("!", "_result_unmarshaled");
+			// Disambiguate different auto converters in the debugger and stack traces
+			if (args_marshal.indexOf("a") >= 0)
+				converterName += "_for_method" + method;
 			converter.name = converterName;
 
 			var body = [];
