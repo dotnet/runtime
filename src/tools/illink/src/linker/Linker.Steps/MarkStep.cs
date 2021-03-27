@@ -1568,11 +1568,10 @@ namespace Mono.Linker.Steps
 
 		protected virtual void MarkSerializable (TypeDefinition type)
 		{
-			// TODO: move after the check once SPC is correctly annotated
-			MarkDefaultConstructor (type, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
-
 			if (_context.GetTargetRuntimeVersion () > TargetRuntimeVersion.NET5)
 				return;
+
+			MarkDefaultConstructor (type, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 
 			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 		}
