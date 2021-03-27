@@ -176,6 +176,7 @@ CONFIG_DWORD_INFO_EX(INTERNAL_DbgBreakOnRawInt3, W("DbgBreakOnRawInt3"), 0, "All
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgBreakOnSendBreakpoint, W("DbgBreakOnSendBreakpoint"), 0, "Allows an assert when sending a breakpoint to the right side", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgBreakOnSetIP, W("DbgBreakOnSetIP"), 0, "Allows an assert when setting the IP", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgCheckInt3, W("DbgCheckInt3"), 0, "Asserts if the debugger explicitly writes int3 instead of calling SetUnmanagedBreakpoint", CLRConfig::EEConfig_default)
+CONFIG_DWORD_INFO(INTERNAL_DbgForcePDBSymbols, W("DbgForcePDBSymbols"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_DbgDACAssertOnMismatch, W("DbgDACAssertOnMismatch"), 0, "Allows an assert when the mscordacwks and mscorwks dll versions don't match")
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgDACEnableAssert, W("DbgDACEnableAssert"), 0, "Enables extra validity checking in DAC - assumes target isn't corrupt", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_DbgDACSkipVerifyDlls, W("DbgDACSkipVerifyDlls"), 0, "Allows disabling the check to ensure mscordacwks and mscorwks dll versions match", CLRConfig::EEConfig_default)

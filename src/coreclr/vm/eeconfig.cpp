@@ -342,81 +342,6 @@ HRESULT EEConfig::Cleanup()
     return S_OK;
 }
 
-
-//
-// NOTE: This function is deprecated; use the CLRConfig class instead.
-// To use the CLRConfig class, add an entry in file:../inc/CLRConfigValues.h.
-//
-HRESULT EEConfig::GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LPWSTR *outVal, BOOL fPrependCOMPLUS)
-{
-    CONTRACT(HRESULT) {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT (CONTRACT_RETURN E_OUTOFMEMORY);
-        PRECONDITION(CheckPointer(name));
-        POSTCONDITION(CheckPointer(outVal, NULL_OK));
-    } CONTRACT_END;
-
-    *outVal = REGUTIL::GetConfigString_DontUse_(name, fPrependCOMPLUS);
-
-    RETURN S_OK;
-}
-
-
-//
-// NOTE: This function is deprecated; use the CLRConfig class instead.
-// To use the CLRConfig class, add an entry in file:../inc/CLRConfigValues.h.
-//
-DWORD EEConfig::GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWORD level, BOOL fPrependCOMPLUS)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(name));
-    } CONTRACTL_END;
-
-    // <TODO>@TODO: After everyone has moved off registry, key remove the following line in golden</TODO>
-    return REGUTIL::GetConfigDWORD_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
-}
-
-//
-// NOTE: This function is deprecated; use the CLRConfig class instead.
-// To use the CLRConfig class, add an entry in file:../inc/CLRConfigValues.h.
-//
-// Note for PAL: right now PAL does not have a _wcstoui64 API, so I am temporarily reading in all numbers as
-// a 32-bit number. When we have the _wcstoui64 API on MAC we will use that instead of wcstoul.
-ULONGLONG EEConfig::GetConfigULONGLONG_DontUse_(__in_z LPCWSTR name, ULONGLONG defValue, DWORD level, BOOL fPrependCOMPLUS)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(name));
-    } CONTRACTL_END;
-
-    // <TODO>@TODO: After everyone has moved off registry, key remove the following line in golden</TODO>
-    return REGUTIL::GetConfigULONGLONG_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
-}
-
-//
-// NOTE: This function is deprecated; use the CLRConfig class instead.
-// To use the CLRConfig class, add an entry in file:../inc/CLRConfigValues.h.
-//
-DWORD EEConfig::GetConfigDWORDInternal_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWORD level, BOOL fPrependCOMPLUS)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(name));
-    } CONTRACTL_END;
-
-    // <TODO>@TODO: After everyone has moved off registry, key remove the following line in golden</TODO>
-    return REGUTIL::GetConfigDWORD_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
-}
-
 /**************************************************************/
 
 HRESULT EEConfig::sync()
@@ -552,13 +477,6 @@ HRESULT EEConfig::sync()
 #endif
 
     fGCBreakOnOOM   =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCBreakOnOOM) != 0);
-
-#ifdef TRACE_GC
-    iGCtraceStart       =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCtraceStart, iGCtraceStart);
-    iGCtraceEnd         =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCtraceEnd, iGCtraceEnd);
-    iGCtraceFac         =  GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_GCtraceFacility, iGCtraceFac);
-    iGCprnLvl           =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCprnLvl, iGCprnLvl);
-#endif
 
 #ifdef _DEBUG
     iInjectFatalError   = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFatalError);

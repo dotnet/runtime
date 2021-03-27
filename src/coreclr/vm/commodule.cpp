@@ -44,7 +44,7 @@ static ISymUnmanagedWriter **CreateISymWriterForDynamicModule(ReflectionModule *
 
 
     static ConfigDWORD dbgForcePDBSymbols;
-    if(dbgForcePDBSymbols.val_DontUse_(W("DbgForcePDBSymbols"), 0) == 1)
+    if(dbgForcePDBSymbols.val(CLRConfig::INTERNAL_DbgForcePDBSymbols) == 1)
     {
         symFormatToUse = eSymbolFormatPDB;
     }
