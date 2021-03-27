@@ -858,7 +858,7 @@ emit_thunk (guint8 *code, gconstpointer target)
 }
 
 static gpointer
-create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target)
+create_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 {
 	MonoJitInfo *ji;
 	MonoThunkJitInfo *info;
@@ -866,9 +866,7 @@ create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 	int thunks_size;
 	guint8 *orig_target;
 	guint8 *target_thunk;
-
-	if (!domain)
-		domain = mono_domain_get ();
+	MonoJitMemoryManager* jit_mm;
 
 	if (cfg) {
 		/*
@@ -905,7 +903,10 @@ create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 
 		orig_target = mono_arch_get_call_target (code + 4);
 
-		mono_domain_lock (domain);
+		/* Arbitrary lock */
+		jit_mm = get_default_jit_mm ();
+
+		jit_mm_lock (jit_mm);
 
 		target_thunk = NULL;
 		if (orig_target >= thunks && orig_target < thunks + thunks_size) {
@@ -928,21 +929,21 @@ create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 		//printf ("THUNK: %p %p %p\n", code, target, target_thunk);
 
 		if (!target_thunk) {
-			mono_domain_unlock (domain);
+			jit_mm_unlock (jit_mm);
 			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE));
 			g_assert_not_reached ();
 		}
 
 		emit_thunk (target_thunk, target);
 
-		mono_domain_unlock (domain);
+		jit_mm_unlock (jit_mm);
 
 		return target_thunk;
 	}
 }
 
 static void
-arm_patch_full (MonoCompile *cfg, MonoDomain *domain, guint8 *code, guint8 *target, int relocation)
+arm_patch_full (MonoCompile *cfg, guint8 *code, guint8 *target, int relocation)
 {
 	switch (relocation) {
 	case MONO_R_ARM64_B:
@@ -952,7 +953,7 @@ arm_patch_full (MonoCompile *cfg, MonoDomain *domain, guint8 *code, guint8 *targ
 		} else {
 			gpointer thunk;
 
-			thunk = create_thunk (cfg, domain, code, target);
+			thunk = create_thunk (cfg, code, target);
 			g_assert (arm_is_bl_disp (code, thunk));
 			arm_b (code, thunk);
 		}
@@ -986,7 +987,7 @@ arm_patch_full (MonoCompile *cfg, MonoDomain *domain, guint8 *code, guint8 *targ
 		} else {
 			gpointer thunk;
 
-			thunk = create_thunk (cfg, domain, code, target);
+			thunk = create_thunk (cfg, code, target);
 			g_assert (arm_is_bl_disp (code, thunk));
 			arm_bl (code, thunk);
 		}
@@ -999,7 +1000,7 @@ arm_patch_full (MonoCompile *cfg, MonoDomain *domain, guint8 *code, guint8 *targ
 static void
 arm_patch_rel (guint8 *code, guint8 *target, int relocation)
 {
-	arm_patch_full (NULL, NULL, code, target, relocation);
+	arm_patch_full (NULL, code, target, relocation);
 }
 
 void
@@ -1012,18 +1013,17 @@ void
 mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	guint8 *ip;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	ip = ji->ip.i + code;
 
 	switch (ji->type) {
 	case MONO_PATCH_INFO_METHOD_JUMP:
 		/* ji->relocation is not set by the caller */
-		arm_patch_full (cfg, domain, ip, (guint8*)target, MONO_R_ARM64_B);
+		arm_patch_full (cfg, ip, (guint8*)target, MONO_R_ARM64_B);
 		mono_arch_flush_icache (ip, 8);
 		break;
 	default:
-		arm_patch_full (cfg, domain, ip, (guint8*)target, ji->relocation);
+		arm_patch_full (cfg, ip, (guint8*)target, ji->relocation);
 		break;
 	case MONO_PATCH_INFO_NONE:
 		break;
