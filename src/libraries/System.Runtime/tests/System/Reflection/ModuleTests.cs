@@ -205,14 +205,13 @@ namespace System.Reflection.Tests
         }
 
         public static IEnumerable<object[]> Methods =>
-            Module.GetMethods().Select(m => new object[] { m });
+            typeof(ModuleTests).GetMethods().Select(m => new object[] { m });
 
         [Theory]
         [MemberData(nameof(Methods))]
         public void ResolveMethod(MethodInfo t)
         {
             Assert.Equal(t, Module.ResolveMethod(t.MetadataToken));
-            throw new Exception();
         }
 
         public static IEnumerable<object[]> BadResolveMethods =>
@@ -235,14 +234,13 @@ namespace System.Reflection.Tests
         }
 
         public static IEnumerable<object[]> Fields =>
-            Module.GetFields().Select(f => new object[] { f });
+            typeof(ModuleTests).GetFields().Select(f => new object[] { f });
 
         [Theory]
         [MemberData(nameof(Fields))]
         public void ResolveField(FieldInfo t)
         {
             Assert.Equal(t, Module.ResolveField(t.MetadataToken));
-            throw new Exception();
         }
 
         public static IEnumerable<object[]> BadResolveFields =>
