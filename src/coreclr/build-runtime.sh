@@ -239,8 +239,11 @@ if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"
 fi
 
-__CMakeTarget=" $__RequestedBuildComponents "
-__CMakeTarget="${__CMakeTarget// paltests / paltests_install }"
+__CMakeTarget=""
+if [[ -n "$__RequestedBuildComponents" ]]; then
+    __CMakeTarget=" $__RequestedBuildComponents "
+    __CMakeTarget="${__CMakeTarget// paltests / paltests_install }"
+fi
 if [[ -z "$__CMakeTarget" ]]; then
     __CMakeTarget="install"
 fi
