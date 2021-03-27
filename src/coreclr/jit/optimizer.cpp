@@ -7860,7 +7860,7 @@ Statement* Compiler::optOptimizeBoolsChkBlkCond(
     }
 
     GenTree* t2 = s2->GetRootNode();
-    
+
     if (!optReturnBlock)
     {
         noway_assert(t2->gtOper == GT_JTRUE);
@@ -8143,7 +8143,6 @@ void Compiler::optOptimizeBoolsUpdateTrees(BasicBlock* b1,
         fgUpdateLoopsAfterCompacting(b1, b3);
     }
 }
-
 
 //
 //  optOptimizeBoolsReturnBlock: Optimize boolean when b1.bbJumpKind is BBJ_COND and b2.bbJumpKind is BBJ_RETURN.
