@@ -139,7 +139,7 @@ namespace Microsoft.Extensions.Logging
                     if (!ReferenceEquals(formattedValue, values[i]))
                     {
                         formattedValues = new object[values.Length];
-                        Array.Copy(values, 0, formattedValues, 0, i);
+                        Array.Copy(values, formattedValues, i);
                         formattedValues[i++] = formattedValue;
                         for (; i < values.Length; i++)
                         {
