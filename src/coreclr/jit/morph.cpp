@@ -12503,19 +12503,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_ARR_LENGTH:
             if (op1->OperIs(GT_CNS_STR))
             {
-                int             length = -1;
-                const char16_t* str    = info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd,
-                                                                         op1->AsStrCon()->gtSconCPX, &length);
+                int length = -1;
+                info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd, op1->AsStrCon()->gtSconCPX, &length);
                 if (length >= 0)
                 {
-                    if (str != nullptr)
-                    {
-                        JITDUMP("Optimizing '\"%ws\".Length' to just '%d'\n", str, length);
-                    }
-                    else
-                    {
-                        JITDUMP("Optimizing 'CNS_STR.Length' to just '%d'\n", length);
-                    }
                     tree = gtNewIconNode(length);
                     INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                     return tree;
