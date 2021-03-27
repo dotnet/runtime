@@ -1535,27 +1535,38 @@ var BindingSupportLib = {
 			return has_args_marshal && has_args;
 		},
 
-		_get_buffer_for_method_call: function (converter) {
+		_get_buffer_for_method_call: function (converter, token) {
 			if (!converter)
 				return 0;
 
-			var result = converter.scratchBuffer;
-			converter.scratchBuffer = 0;
+			var result = 0;
+			if (token !== null)	{
+				result = token.scratchBuffer;
+				token.scratchBuffer = 0;
+			} else {
+				result = converter.scratchBuffer;
+				converter.scratchBuffer = 0;
+			}
 			return result;
 		},
 
-		_get_args_root_buffer_for_method_call: function (converter) {
+		_get_args_root_buffer_for_method_call: function (converter, token) {
 			if (!converter)
 				return null;
 
 			if (!converter.needs_root_buffer)
 				return null;
 
-			var result;
-			if (converter.scratchRootBuffer) {
+			var result = null;
+			if (token !== null) {
+				result = token.scratchRootBuffer;
+				token.scratchRootBuffer = null;
+			} else {
 				result = converter.scratchRootBuffer;
 				converter.scratchRootBuffer = null;
-			} else {
+			}
+
+			if (result === null) {
 				// TODO: Expand the converter's heap allocation and then use
 				//  mono_wasm_new_root_buffer_from_pointer instead. Not that important
 				//  at present because the scratch buffer will be reused unless we are
@@ -1563,15 +1574,19 @@ var BindingSupportLib = {
 				result = MONO.mono_wasm_new_root_buffer (converter.steps.length);
 				result.converter = converter;
 			}
+
 			return result;
 		},
 
-		_release_args_root_buffer_from_method_call: function (converter, argsRootBuffer) {
+		_release_args_root_buffer_from_method_call: function (converter, token, argsRootBuffer) {
 			if (!argsRootBuffer || !converter)
 				return;
 
 			// Store the arguments root buffer for re-use in later calls
-			if (!converter.scratchRootBuffer) {
+			if ((token !== null) && (token.scratchRootBuffer == null)) {
+				argsRootBuffer.clear ();
+				token.scratchRootBuffer = argsRootBuffer;
+			} else if (!converter.scratchRootBuffer) {
 				argsRootBuffer.clear ();
 				converter.scratchRootBuffer = argsRootBuffer;
 			} else {
@@ -1579,11 +1594,13 @@ var BindingSupportLib = {
 			}
 		},
 
-		_release_buffer_from_method_call: function (converter, buffer) {
+		_release_buffer_from_method_call: function (converter, token, buffer) {
 			if (!converter || !buffer)
 				return;
 
-			if (!converter.scratchBuffer)
+			if ((token !== null) && !token.scratchBuffer)
+				token.scratchBuffer = buffer | 0;
+			else if (!converter.scratchBuffer)
 				converter.scratchBuffer = buffer | 0;
 			else
 				Module._free (buffer | 0);
@@ -1658,6 +1675,7 @@ var BindingSupportLib = {
 
 			var needs_converter = this._verify_args_for_method_call (args_marshal, args);
 
+			var token = null;
 			var buffer = 0, converter = null, argsRootBuffer = null;
 			var is_result_marshaled = true;
 
@@ -1672,14 +1690,14 @@ var BindingSupportLib = {
 
 					is_result_marshaled = this._decide_if_result_is_marshaled (converter, args.length);
 
-					argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
+					argsRootBuffer = this._get_args_root_buffer_for_method_call (converter, null);
 
-					var scratchBuffer = this._get_buffer_for_method_call (converter);
+					var scratchBuffer = this._get_buffer_for_method_call (converter, null);
 
 					buffer = converter.compiled_variadic_function (scratchBuffer, argsRootBuffer, method, args);
 				}
 
-				return this._call_method_with_converted_args (method, this_arg, converter, buffer, is_result_marshaled, argsRootBuffer);
+				return this._call_method_with_converted_args (method, this_arg, converter, token, buffer, is_result_marshaled, argsRootBuffer);
 			/*
 			} catch (exc) {
 				console.log("while calling method", this._method_descriptions.get(method) || method);
@@ -1689,38 +1707,46 @@ var BindingSupportLib = {
 		},
 
 		_handle_exception_for_call: function (
-			converter, buffer, resultRoot, exceptionRoot, argsRootBuffer
+			converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer
 		) {
 			var exc = this._convert_exception_for_method_call (resultRoot.value, exceptionRoot.value);
 			if (!exc)
 				return;
 
-			this._teardown_after_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
+			this._teardown_after_call (converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 			throw exc;
 		},
 
 		_handle_exception_and_produce_result_for_call: function (
-			converter, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled
+			converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled
 		) {
-			this._handle_exception_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
+			this._handle_exception_for_call (converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 
 			if (is_result_marshaled)
 				result = this._unbox_mono_obj_root (resultRoot);
 			else
 				result = resultRoot.value;
 
-			this._teardown_after_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
+			this._teardown_after_call (converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 			return result;
 		},
 
-		_teardown_after_call: function (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer) {
-			this._release_args_root_buffer_from_method_call (converter, argsRootBuffer);
-			this._release_buffer_from_method_call (converter, buffer | 0);
+		_teardown_after_call: function (converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer) {
+			this._release_args_root_buffer_from_method_call (converter, token, argsRootBuffer);
+			this._release_buffer_from_method_call (converter, token, buffer | 0);
 
-			if (resultRoot)
-				resultRoot.release ();
-			if (exceptionRoot)
-				exceptionRoot.release ();
+			if (resultRoot) {
+				if ((token !== null) && (token.scratchResultRoot == null))
+					token.scratchResultRoot = resultRoot;
+				else
+					resultRoot.release ();
+			}
+			if (exceptionRoot) {
+				if ((token !== null) && (token.scratchExceptionRoot == null))
+					token.scratchExceptionRoot = exceptionRoot;
+				else
+					exceptionRoot.release ();
+			}
 		},
 
 		_get_method_description: function (method) {
@@ -1733,10 +1759,20 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_call_method_with_converted_args: function (method, this_arg, converter, buffer, is_result_marshaled, argsRootBuffer) {
-			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
+		_call_method_with_converted_args: function (method, this_arg, converter, token, buffer, is_result_marshaled, argsRootBuffer) {
+			var resultRoot = null, exceptionRoot = null;
+			if (token !== null) {
+				resultRoot = token.scratchResultRoot;
+				exceptionRoot = token.scratchExceptionRoot;
+				token.scratchResultRoot = null;
+				token.scratchExceptionRoot = null;
+			}
+			if (resultRoot === null)
+				resultRoot = MONO.mono_wasm_new_root ();
+			if (exceptionRoot === null)
+				exceptionRoot = MONO.mono_wasm_new_root ();
 			resultRoot.value = this.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
-			return this._handle_exception_and_produce_result_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
+			return this._handle_exception_and_produce_result_for_call (converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
 		},
 
 		bind_method: function (method, this_arg, args_marshal, friendly_name) {
@@ -1752,11 +1788,21 @@ var BindingSupportLib = {
 				converter = this._compile_converter_for_marshal_string (classPtr, method, args_marshal);
 			}
 
+			var token = {
+				friendlyName: friendly_name,
+				method: method,
+				converter: converter,
+				scratchRootBuffer: null,
+				scratchBuffer: 0,
+				scratchResultRoot: MONO.mono_wasm_new_root (),
+				scratchExceptionRoot: MONO.mono_wasm_new_root ()
+			};
 			var closure = {
 				library_mono: MONO,
 				binding_support: this,
 				method: method,
-				this_arg: this_arg
+				this_arg: this_arg,
+				token: token
 			};
 
 			var converterKey = "converter_" + converter.name;
@@ -1766,14 +1812,24 @@ var BindingSupportLib = {
 
 			var argumentNames = [];
 			var body = [
-				"var resultRoot = library_mono.mono_wasm_new_root (), exceptionRoot = library_mono.mono_wasm_new_root ();",
+				"var resultRoot = null, exceptionRoot = null;",
+				"if (token !== null) {",
+				"	resultRoot = token.scratchResultRoot;",
+				"	exceptionRoot = token.scratchExceptionRoot;",
+				"	token.scratchResultRoot = null;",
+				"	token.scratchExceptionRoot = null;",
+				"}",
+				"if (resultRoot === null)",
+				"	resultRoot = library_mono.mono_wasm_new_root ();",
+				"if (exceptionRoot === null)",
+				"	exceptionRoot = library_mono.mono_wasm_new_root ();",
 				""
 			];
 
 			if (converter) {
 				body.push(
-					`var argsRootBuffer = binding_support._get_args_root_buffer_for_method_call (${converterKey});`,
-					`var scratchBuffer = binding_support._get_buffer_for_method_call (${converterKey});`,
+					`var argsRootBuffer = binding_support._get_args_root_buffer_for_method_call (${converterKey}, token);`,
+					`var scratchBuffer = binding_support._get_buffer_for_method_call (${converterKey}, token);`,
 					`var buffer = ${converterKey}.compiled_function (`,
 					"    scratchBuffer, argsRootBuffer, method,"
 				);
@@ -1817,7 +1873,7 @@ var BindingSupportLib = {
 			body.push(
 				"",
 				"resultRoot.value = binding_support.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
-				`binding_support._handle_exception_for_call (${converterKey}, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
+				`binding_support._handle_exception_for_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
 				"",
 				"var resultPtr = resultRoot.value, result = undefined;",
 				"if (!is_result_marshaled) ",
@@ -1850,7 +1906,7 @@ var BindingSupportLib = {
 				"    }",
 				"}",
 				"",
-				`binding_support._teardown_after_call (${converterKey}, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
+				`binding_support._teardown_after_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
 				"return result;"
 			);
 
