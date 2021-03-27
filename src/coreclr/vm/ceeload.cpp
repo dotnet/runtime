@@ -12520,7 +12520,7 @@ void ReflectionModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     Module::Initialize(pamTracker);
 
-    IfFailThrow(CreateICeeGen(IID_ICeeGen, (void **)&m_pCeeFileGen));
+    IfFailThrow(CreateICeeGen(IID_ICeeGenInternal, (void **)&m_pCeeFileGen));
 
     // Collectible modules should try to limit the growth of their associate IL section, as common scenarios for collectible
     // modules include single type modules
