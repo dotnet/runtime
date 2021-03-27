@@ -9198,6 +9198,10 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvFastcall() { }
     }
+    public partial class CallConvMemberFunction
+    {
+        public CallConvMemberFunction() { }
+    }
     public partial class CallConvStdcall
     {
         public CallConvStdcall() { }
