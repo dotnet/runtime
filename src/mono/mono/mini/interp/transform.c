@@ -9048,7 +9048,6 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	MonoMethodSignature *signature = mono_method_signature_internal (method);
 	MonoVTable *method_class_vt;
 	MonoGenericContext *generic_context = NULL;
-	MonoDomain *domain = mono_get_root_domain ();
 	InterpMethod tmp_imethod;
 	InterpMethod *real_imethod;
 
