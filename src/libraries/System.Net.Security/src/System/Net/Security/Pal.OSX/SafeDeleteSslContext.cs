@@ -160,6 +160,9 @@ namespace System.Net
 
         private unsafe int WriteToConnection(void* connection, byte* data, void** dataLength)
         {
+            // We don't pool these buffers and we can't because there's a race between their us in the native
+            // read/write callbacks and being disposed when the SafeHandle is disposed. This race is benign currently,
+            // but if we were to pool the buffers we would have a potential use-after-free issue.
             try
             {
                 ulong length = (ulong)*dataLength;
