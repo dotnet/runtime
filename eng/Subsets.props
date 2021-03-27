@@ -259,9 +259,13 @@
     <ProjectToBuild Include="$(LibrariesProjectRoot)libraries-packages.proj" Category="libs" Pack="true" />
   </ItemGroup>
 
-  <!-- Hosts -->
+  <ItemGroup Condition="$(_subset.Contains('+libs.tests+'))">
+    <ProjectToBuild Include="$(LibrariesProjectRoot)tests.proj" Category="libs" Test="true" />
+  </ItemGroup>
+
+  <!-- Host sets -->
   <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
-    <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost\corehost.proj" SignPhase="Binaries" BuildInParallel="false" />
+    <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost.proj" SignPhase="Binaries" BuildInParallel="false" />
     <ProjectToBuild Include="@(CorehostProjectToBuild)" Pack="true" Category="host" />
   </ItemGroup>
 
@@ -271,16 +275,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+host.pkg+'))">
-    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" BuildInParallel="false" />
+    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.pkgproj" SignPhase="MsiFiles" BuildInParallel="false" />
     <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="host" />
   </ItemGroup>
 
-  <!-- Libs test -->
-  <ItemGroup Condition="$(_subset.Contains('+libs.tests+'))">
-    <ProjectToBuild Include="$(LibrariesProjectRoot)tests.proj" Category="libs" Test="true" />
-  </ItemGroup>
-
-  <!-- Host tests  -->
   <ItemGroup Condition="$(_subset.Contains('+host.tests+'))">
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.AppHost.Tests\Microsoft.NET.HostModel.AppHost.Tests.csproj" />
