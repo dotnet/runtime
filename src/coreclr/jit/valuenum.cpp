@@ -3346,87 +3346,101 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
 ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
     ValueNum resultVN = NoVN; // set default result to unsuccessful
+    ValueNum ZeroVN;
+    ValueNum OneVN;
 
     if (typ == TYP_BYREF) // We don't want/need to optimize a zero byref
     {
         return resultVN; // return the unsuccessful value
     }
 
+    // (0 + x) == x
+    // (x + 0) == x
+    // This identity does not apply for floating point (when x == -0.0).
+    auto identityForAddition = [=]() -> ValueNum {
+        if (!varTypeIsFloating(typ))
+        {
+            ValueNum ZeroVN = VNZeroForType(typ);
+            if (arg0VN == ZeroVN)
+            {
+                return arg1VN;
+            }
+            else if (arg1VN == ZeroVN)
+            {
+                return arg0VN;
+            }
+        }
+
+        return NoVN;
+    };
+
+    // (x - 0) == x
+    // (x - x) == 0
+    // This identity does not apply for floating point (when x == -0.0).
+    auto identityForSubtraction = [=]() -> ValueNum {
+        if (!varTypeIsFloating(typ))
+        {
+            ValueNum ZeroVN = VNZeroForType(typ);
+            if (arg1VN == ZeroVN)
+            {
+                return arg0VN;
+            }
+            else if (arg0VN == arg1VN)
+            {
+                return ZeroVN;
+            }
+        }
+
+        return NoVN;
+    };
+
+    // These identities do not apply for floating point.
+    auto identityForMultiplication = [=]() -> ValueNum {
+        if (!varTypeIsFloating(typ))
+        {
+            // (0 * x) == 0
+            // (x * 0) == 0
+            ValueNum ZeroVN = VNZeroForType(typ);
+            if (arg0VN == ZeroVN)
+            {
+                return ZeroVN;
+            }
+            else if (arg1VN == ZeroVN)
+            {
+                return ZeroVN;
+            }
+
+            // (x * 1) == x
+            // (1 * x) == x
+            ValueNum OneVN = VNOneForType(typ);
+            if (arg0VN == OneVN)
+            {
+                return arg1VN;
+            }
+            else if (arg1VN == OneVN)
+            {
+                return arg0VN;
+            }
+        }
+
+        return NoVN;
+    };
+
     // We have ways of evaluating some binary functions.
     if (func < VNF_Boundary)
     {
         switch (genTreeOps(func))
         {
-            ValueNum ZeroVN;
-            ValueNum OneVN;
-
             case GT_ADD:
-                // (0 + x) == x
-                // (x + 0) == x
-                // This identity does not apply for floating point (when x == -0.0)
-                //
-                if (!varTypeIsFloating(typ))
-                {
-                    ZeroVN = VNZeroForType(typ);
-                    if (arg0VN == ZeroVN)
-                    {
-                        resultVN = arg1VN;
-                    }
-                    else if (arg1VN == ZeroVN)
-                    {
-                        resultVN = arg0VN;
-                    }
-                }
+                resultVN = identityForAddition();
                 break;
 
             case GT_SUB:
-                // (x - 0) == x
-                // (x - x) == 0
-                // This identity does not apply for floating point (when x == -0.0)
-                //
-                if (!varTypeIsFloating(typ))
-                {
-                    ZeroVN = VNZeroForType(typ);
-                    if (arg1VN == ZeroVN)
-                    {
-                        resultVN = arg0VN;
-                    }
-                    else if (arg0VN == arg1VN)
-                    {
-                        resultVN = ZeroVN;
-                    }
-                }
+                resultVN = identityForSubtraction();
                 break;
 
             case GT_MUL:
-                // These identities do not apply for floating point
-                //
-                if (!varTypeIsFloating(typ))
-                {
-                    // (0 * x) == 0
-                    // (x * 0) == 0
-                    ZeroVN = VNZeroForType(typ);
-                    if (arg0VN == ZeroVN)
-                    {
-                        resultVN = ZeroVN;
-                    }
-                    else if (arg1VN == ZeroVN)
-                    {
-                        resultVN = ZeroVN;
-                    }
-
-                    // (x * 1) == x
-                    // (1 * x) == x
-                    OneVN = VNOneForType(typ);
-                    if (arg0VN == OneVN)
-                    {
-                        resultVN = arg1VN;
-                    }
-                    else if (arg1VN == OneVN)
-                    {
-                        resultVN = arg0VN;
-                    }
-                }
+                resultVN = identityForMultiplication();
                 break;
 
             case GT_DIV:
@@ -3551,6 +3565,21 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     {
         switch (func)
         {
+            case VNF_ADD_OVF:
+            case VNF_ADD_UN_OVF:
+                resultVN = identityForAddition();
+                break;
+
+            case VNF_SUB_OVF:
+            case VNF_SUB_UN_OVF:
+                resultVN = identityForSubtraction();
+                break;
+
+            case VNF_MUL_OVF:
+            case VNF_MUL_UN_OVF:
+                resultVN = identityForMultiplication();
+                break;
+
             case VNF_LT_UN:
                 // (x < 0) == false
                 // (x < x) == false
