@@ -32,14 +32,6 @@
     const CLRConfig::ConfigStringInfo CLRConfig::symbol = {name, CLRConfig::EEConfig_default};
 #define RETAIL_CONFIG_STRING_INFO_EX(symbol, name, description, lookupOptions) \
     const CLRConfig::ConfigStringInfo CLRConfig::symbol = {name, lookupOptions};
-
-// TEMPORARY macros that intialize strings for config value accesses that haven't been moved over to
-// CLRConfig yet. Once all accesses have been moved, these macros (and corresponding instantiations in
-// file:../utilcode/CLRConfig.h) should be removed.
-#define RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(symbol, name, description) \
-    const LPCWSTR CLRConfig::symbol = name;
-#define RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(symbol, name, description) \
-    const LPCWSTR CLRConfig::symbol = name;
 //
 // Debug versions of the macros
 //
@@ -52,17 +44,11 @@
         const CLRConfig::ConfigStringInfo CLRConfig::symbol = {name, CLRConfig::EEConfig_default};
     #define CONFIG_STRING_INFO_EX(symbol, name, description, lookupOptions) \
         const CLRConfig::ConfigStringInfo CLRConfig::symbol = {name, lookupOptions};
-    #define CONFIG_DWORD_INFO_DIRECT_ACCESS(symbol, name, description) \
-        const LPCWSTR CLRConfig::symbol = name;
-    #define CONFIG_STRING_INFO_DIRECT_ACCESS(symbol, name, description) \
-        const LPCWSTR CLRConfig::symbol = name;
 #else
     #define CONFIG_DWORD_INFO(symbol, name, defaultValue, description)
     #define CONFIG_DWORD_INFO_EX(symbol, name, defaultValue, description, lookupOptions)
     #define CONFIG_STRING_INFO(symbol, name, description)
     #define CONFIG_STRING_INFO_EX(symbol, name, description, lookupOptions)
-    #define CONFIG_DWORD_INFO_DIRECT_ACCESS(symbol, name, description)
-    #define CONFIG_STRING_INFO_DIRECT_ACCESS(symbol, name, description)
 #endif // _DEBUG
 
     // Now that we have defined what what the macros in file:../inc/CLRConfigValues.h mean, include it to generate the code.
@@ -72,14 +58,10 @@
 #undef RETAIL_CONFIG_STRING_INFO
 #undef RETAIL_CONFIG_DWORD_INFO_EX
 #undef RETAIL_CONFIG_STRING_INFO_EX
-#undef RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS
-#undef RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS
 #undef CONFIG_DWORD_INFO
 #undef CONFIG_STRING_INFO
 #undef CONFIG_DWORD_INFO_EX
 #undef CONFIG_STRING_INFO_EX
-#undef CONFIG_DWORD_INFO_DIRECT_ACCESS
-#undef CONFIG_STRING_INFO_DIRECT_ACCESS
 
 
 //

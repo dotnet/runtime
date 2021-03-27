@@ -9,7 +9,7 @@
 // registry and config file.
 //
 // Given any config knob below that looks like this example:
-//    RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogEnable, W("LogEnable"), "Turns on the traditional CLR log.")
+//    RETAIL_CONFIG_DWORD_INFO(INTERNAL_LogEnable, W("LogEnable"), 0, "Turns on the traditional CLR log.")
 //                                                                  ---------
 //                                                                     |
 //                                                 --------------------
