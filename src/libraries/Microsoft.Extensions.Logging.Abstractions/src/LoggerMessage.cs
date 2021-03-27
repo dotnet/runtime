@@ -552,7 +552,7 @@ namespace Microsoft.Extensions.Logging
 
             private object?[] ToArray() => new object?[] { _value0, _value1, _value2, _value3 };
 
-            public override string ToString() => _formatter.FormatQuick(ToArray());
+            public override string ToString() => _formatter.FormatWithOverwrite(ToArray());
 
             public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
             {
@@ -617,7 +617,7 @@ namespace Microsoft.Extensions.Logging
 
             private object?[] ToArray() => new object?[] { _value0, _value1, _value2, _value3, _value4 };
 
-            public override string ToString() => _formatter.FormatQuick(ToArray());
+            public override string ToString() => _formatter.FormatWithOverwrite(ToArray());
 
             public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
             {
@@ -686,7 +686,7 @@ namespace Microsoft.Extensions.Logging
 
             private object?[] ToArray() => new object?[] { _value0, _value1, _value2, _value3, _value4, _value5 };
 
-            public override string ToString() => _formatter.FormatQuick(ToArray());
+            public override string ToString() => _formatter.FormatWithOverwrite(ToArray());
 
             public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
             {

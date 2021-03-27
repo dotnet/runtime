@@ -153,7 +153,8 @@ namespace Microsoft.Extensions.Logging
             return string.Format(CultureInfo.InvariantCulture, _format, formattedValues ?? Array.Empty<object>());
         }
 
-        internal string FormatQuick(object?[]? values)
+        // NOTE: This method mutates the items in the array if needed to avoid extra allocations, and should only be used when caller expects this to happen
+        internal string FormatWithOverwrite(object?[]? values)
         {
             if (values != null)
             {
