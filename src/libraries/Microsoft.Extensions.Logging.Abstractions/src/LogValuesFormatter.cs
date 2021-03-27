@@ -136,6 +136,7 @@ namespace Microsoft.Extensions.Logging
                 for (int i = 0; i < values.Length; i++)
                 {
                     object formattedValue = FormatArgument(values[i]);
+                    // If the formatted value is changed, we allocate and copy items to a new array to avoid mutating the array passed in to this method
                     if (!ReferenceEquals(formattedValue, values[i]))
                     {
                         formattedValues = new object[values.Length];
