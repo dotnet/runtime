@@ -12500,6 +12500,29 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 #endif // !TARGET_64BIT
             break;
 
+        case GT_ARR_LENGTH:
+            if (op1->OperIs(GT_CNS_STR))
+            {
+                int             length = -1;
+                const char16_t* str    = info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd,
+                                                                         op1->AsStrCon()->gtSconCPX, &length);
+                if (length >= 0)
+                {
+                    if (str != nullptr)
+                    {
+                        JITDUMP("Optimizing '\"%ws\".Length' to just '%d'\n", str, length);
+                    }
+                    else
+                    {
+                        JITDUMP("Optimizing 'CNS_STR.Length' to just '%d'\n", length);
+                    }
+                    tree = gtNewIconNode(length);
+                    INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    return tree;
+                }
+            }
+            break;
+
         case GT_DIV:
             // Replace "val / dcon" with "val * (1.0 / dcon)" if dcon is a power of two.
             // Powers of two within range are always exactly represented,
