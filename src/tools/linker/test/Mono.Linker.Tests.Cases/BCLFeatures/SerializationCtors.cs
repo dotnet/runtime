@@ -16,9 +16,6 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures
 	[Serializable]
 	class C
 	{
-		//#if !NET6_0
-		[Kept]
-		//#endif
 		public C ()
 		{
 		}
