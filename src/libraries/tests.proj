@@ -340,12 +340,16 @@
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator')">
     <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
                       BuildInParallel="false" />
+    <!-- Disable iOS.Simulator.Aot.Test.csproj temporarily due to https://github.com/dotnet/runtime/issues/49757 -->
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\**\*.Test.csproj"
+                      Exclude="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\AOT\iOS.Simulator.Aot.Test.csproj"
                       BuildInParallel="false" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator')">
+    <!-- Disable tvOS.Simulator.Aot.Test.csproj temporarily due to https://github.com/dotnet/runtime/issues/49757 -->
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\**\*.Test.csproj"
+                      Exclude="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Simulator\AOT\tvOS.Simulator.Aot.Test.csproj"
                       BuildInParallel="false" />
   </ItemGroup>
   
