@@ -163,7 +163,7 @@ namespace System.Runtime.Caching
 
             _filePaths = SanitizeFilePathsList(filePaths);
 
-#if NET5_0
+#if NETCOREAPP3_1_OR_GREATER
             if (!OperatingSystem.IsBrowser())
 #endif
                 InitFCN();

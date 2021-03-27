@@ -9,9 +9,9 @@ namespace System.Runtime.Caching
 {
     internal sealed partial class PhysicalMemoryMonitor : MemoryMonitor
     {
-        /* There are sysconf and /proc/meminfo ways to get this information before .Net 5,
+        /* There are sysconf and /proc/meminfo ways to get this information before .Net 3,
          * but it is very complicated to do it correctly, especially when accounting for
-         * container scenarios. The GC does this for us in .Net 5.
+         * container scenarios. The GC does this for us in .Net 3.
          *
          * Note: This is still a little bit off in some restrited memory scenarios, as
          * 'TotalAvailableMemoryBytes' does not exactly report all of the available bytes.
@@ -22,19 +22,22 @@ namespace System.Runtime.Caching
          * highlights how our behavior might be slightly different from windows in these
          * cases since this was a monitor that cared about actual physical memory.
          */
-#if NET5_0
-        private long lastGCIndex;
+#if NETCOREAPP3_1_OR_GREATER
+        private int lastGCCount;
 
         protected override int GetCurrentPressure()
         {
-            // Get stats from GC. Try to get them to refresh if they haven't been updated since our last check.
-            GCMemoryInfo memInfo = GC.GetGCMemoryInfo();
-            if (memInfo.Index <= lastGCIndex)
+            // Try to refresh GC stats if they haven't been updated since our last check.
+            int ccount = GC.CollectionCount(0);
+            if (ccount == lastGCCount)
             {
                 GC.Collect(0, GCCollectionMode.Optimized); // A quick, ephemeral Gen 0 collection
-                memInfo = GC.GetGCMemoryInfo();
+                ccount = GC.CollectionCount(0);
             }
-            lastGCIndex = memInfo.Index;
+            lastGCCount = ccount;
+
+            // Get stats from GC.
+            GCMemoryInfo memInfo = GC.GetGCMemoryInfo();
 
             if (memInfo.TotalAvailableMemoryBytes >= memInfo.MemoryLoadBytes)
             {
