@@ -1812,7 +1812,7 @@ var BindingSupportLib = {
 
 			var argumentNames = [];
 			var body = [
-				"var resultRoot = token.scratchResultRoot, exceptionRoot = token.scratchExceptionRoot;",
+				"let resultRoot = token.scratchResultRoot, exceptionRoot = token.scratchExceptionRoot;",
 				"token.scratchResultRoot = null;",
 				"token.scratchExceptionRoot = null;",
 				"if (resultRoot === null)",
@@ -1824,9 +1824,9 @@ var BindingSupportLib = {
 
 			if (converter) {
 				body.push(
-					`var argsRootBuffer = binding_support._get_args_root_buffer_for_method_call (${converterKey}, token);`,
-					`var scratchBuffer = binding_support._get_buffer_for_method_call (${converterKey}, token);`,
-					`var buffer = ${converterKey}.compiled_function (`,
+					`let argsRootBuffer = binding_support._get_args_root_buffer_for_method_call (${converterKey}, token);`,
+					`let scratchBuffer = binding_support._get_buffer_for_method_call (${converterKey}, token);`,
+					`let buffer = ${converterKey}.compiled_function (`,
 					"    scratchBuffer, argsRootBuffer, method,"
 				);
 
@@ -1846,15 +1846,15 @@ var BindingSupportLib = {
 				body.push(");");
 
 			} else {
-				body.push("var argsRootBuffer = null, buffer = 0;");
+				body.push("let argsRootBuffer = null, buffer = 0;");
 			}
 
 			if (converter.is_result_definitely_unmarshaled) {
-				body.push ("var is_result_marshaled = false;");
+				body.push ("let is_result_marshaled = false;");
 			} else if (converter.is_result_possibly_unmarshaled) {
-				body.push (`var is_result_marshaled = arguments.length !== ${converter.result_unmarshaled_if_argc};`);
+				body.push (`let is_result_marshaled = arguments.length !== ${converter.result_unmarshaled_if_argc};`);
 			} else {
-				body.push ("var is_result_marshaled = true;");
+				body.push ("let is_result_marshaled = true;");
 			}
 
 			// We inline a bunch of the invoke and marshaling logic here in order to eliminate the GC pressure normally
@@ -1871,36 +1871,47 @@ var BindingSupportLib = {
 				"resultRoot.value = binding_support.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
 				`binding_support._handle_exception_for_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
 				"",
-				"var resultPtr = resultRoot.value, result = undefined;",
-				"if (!is_result_marshaled) ",
-				"    result = resultPtr;",
-				"else if (resultPtr !== 0) {",
-				// For the common scenario where the return type is a primitive, we want to try and unbox it directly
-				//  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
-				//  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
-				//  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
-				"    var unbox_buffer = binding_support._unbox_buffer;",
-				"    var resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultPtr, unbox_buffer, binding_support._unbox_buffer_size);",
-				"    switch (resultType) {",
-				"    case 1:", // int
-				"        result = Module.HEAP32[unbox_buffer / 4]; break;",
-				"    case 4:", // struct
-				"        result = binding_support._unbox_struct_rooted (unbox_buffer, resultPtr); break;",
-				"    case 25:", // uint32
-				"        result = Module.HEAPU32[unbox_buffer / 4]; break;",
-				"    case 24:", // float32
-				"        result = Module.HEAPF32[unbox_buffer / 4]; break;",
-				"    case 2:", // float64
-				"        result = Module.HEAPF64[unbox_buffer / 8]; break;",
-				"    case 8:", // boolean
-				"        result = (Module.HEAP32[unbox_buffer / 4]) !== 0; break;",
-				"    case 28:", // char
-				"        result = String.fromCharCode(Module.HEAP32[unbox_buffer / 4]); break;",
-				"    default:",
-				"        var klass = Module.HEAPU32[unbox_buffer / 4];",
-				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultPtr, resultType, klass); break;",
-				"    }",
-				"}",
+				"let resultPtr = resultRoot.value, result = undefined;"
+			);
+
+			if (converter.is_result_possibly_unmarshaled)
+				body.push("if (!is_result_marshaled) ");
+			
+			if (converter.is_result_definitely_unmarshaled || converter.is_result_possibly_unmarshaled)
+				body.push("    result = resultPtr;");
+			
+			if (!converter.is_result_definitely_unmarshaled)
+				body.push(
+					"if (is_result_marshaled && (resultPtr !== 0)) {",
+					// For the common scenario where the return type is a primitive, we want to try and unbox it directly
+					//  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
+					//  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
+					//  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
+					"    let unbox_buffer = binding_support._unbox_buffer;",
+					"    let resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultPtr, unbox_buffer, binding_support._unbox_buffer_size);",
+					"    switch (resultType) {",
+					"    case 1:", // int
+					"        result = Module.HEAP32[unbox_buffer / 4]; break;",
+					"    case 4:", // struct
+					"        result = binding_support._unbox_struct_rooted (unbox_buffer, resultPtr); break;",
+					"    case 25:", // uint32
+					"        result = Module.HEAPU32[unbox_buffer / 4]; break;",
+					"    case 24:", // float32
+					"        result = Module.HEAPF32[unbox_buffer / 4]; break;",
+					"    case 2:", // float64
+					"        result = Module.HEAPF64[unbox_buffer / 8]; break;",
+					"    case 8:", // boolean
+					"        result = (Module.HEAP32[unbox_buffer / 4]) !== 0; break;",
+					"    case 28:", // char
+					"        result = String.fromCharCode(Module.HEAP32[unbox_buffer / 4]); break;",
+					"    default:",
+					"        var klass = Module.HEAPU32[unbox_buffer / 4];",
+					"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultPtr, resultType, klass); break;",
+					"    }",
+					"}"
+				);
+
+			body.push(
 				"",
 				`binding_support._teardown_after_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
 				"return result;"
