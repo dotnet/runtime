@@ -64,7 +64,7 @@ namespace System.Xml.Xsl.Runtime
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Supressing warning about not having the RequiresUnreferencedCode attribute since this code path " +
             "will only be emitting IL that will later be called by Transform() method which is already annotated as RequiresUnreferencedCode")]
-        public static MethodInfo GetFunctionAvailableMethod() => typeof(XsltLibrary).GetMethod("FunctionAvailable");
+        private static MethodInfo GetFunctionAvailableMethod() => typeof(XsltLibrary).GetMethod("FunctionAvailable");
         public static readonly MethodInfo ElementAvailable = typeof(XsltLibrary).GetMethod("ElementAvailable");
         public static readonly MethodInfo RegisterDecimalFormat = typeof(XsltLibrary).GetMethod("RegisterDecimalFormat");
         public static readonly MethodInfo RegisterDecimalFormatter = typeof(XsltLibrary).GetMethod("RegisterDecimalFormatter");
