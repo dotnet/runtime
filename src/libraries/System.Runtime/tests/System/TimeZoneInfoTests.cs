@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -2437,6 +2438,79 @@ namespace System.Tests
                 {
                     Assert.True(Math.Abs((tzi.GetUtcOffset(ar.DateStart)).TotalHours) <= 14.0);
                 }
+            }
+        }
+
+        private static byte [] timeZoneFileContents = new byte[]
+        {
+            0x54, 0x5A, 0x69, 0x66, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x54, 0x5A, 0x69, 0x66,
+            0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+            0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x0C, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0xFF, 0xFF, 0xF8, 0xE4, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x10, 0x01, 0x04, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x08, 0x00, 0x00, 0x0E, 0x10, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x4C,
+            0x4D, 0x54, 0x00, 0x2B, 0x30, 0x31, 0x00, 0x2B, 0x30, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00,
+            // POSIX Rule
+            // 0x0A, 0x3C, 0x2B, 0x30, 0x30, 0x3E, 0x30, 0x3C, 0x2B, 0x30, 0x31,
+            // 0x3E, 0x2C, 0x30, 0x2F, 0x30, 0x2C, 0x4A, 0x33, 0x36, 0x35, 0x2F, 0x32, 0x35, 0x0A
+        };
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("<+00>0<+01>,0/0,J365/25", 1, 1, true)]
+        [InlineData("<+00>0<+01>,30/0,J365/25", 31, 1, true)]
+        [InlineData("<+00>0<+01>,31/0,J365/25", 1, 2, true)]
+        [InlineData("<+00>0<+01>,58/0,J365/25", 28, 2, true)]
+        [InlineData("<+00>0<+01>,59/0,J365/25", 0, 0, false)]
+        [InlineData("<+00>0<+01>,9999999/0,J365/25", 0, 0, false)]
+        [InlineData("<+00>0<+01>,A/0,J365/25", 0, 0, false)]
+        public static void NJulianRuleTest(string posixRule, int dayNumber, int monthNumber, bool shouldSucceed)
+        {
+            string zoneFilePath = Path.GetTempPath() + "dotnet_tz";
+            using (FileStream fs = new FileStream(zoneFilePath, FileMode.Create))
+            {
+                fs.Write(timeZoneFileContents.AsSpan());
+
+                // Append the POSIX rule
+                fs.WriteByte(0x0A);
+                foreach (char c in posixRule)
+                {
+                    fs.WriteByte((byte) c);
+                }
+                fs.WriteByte(0x0A);
+            }
+
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
+                psi.Environment.Add("TZ", zoneFilePath);
+
+                RemoteExecutor.Invoke((day, month, succeed) =>
+                {
+                    bool expectedToSucceed = bool.Parse(succeed);
+                    int d = int.Parse(day);
+                    int m = int.Parse(month);
+
+                    TimeZoneInfo.AdjustmentRule [] rules = TimeZoneInfo.Local.GetAdjustmentRules();
+
+                    if (expectedToSucceed)
+                    {
+                        Assert.Equal(1, rules.Length);
+                        Assert.Equal(d, rules[0].DaylightTransitionStart.Day);
+                        Assert.Equal(m, rules[0].DaylightTransitionStart.Month);
+                    }
+                    else
+                    {
+                        Assert.Equal(0, rules.Length);
+                    }
+                }, dayNumber.ToString(), monthNumber.ToString(), shouldSucceed.ToString(), new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
+            }
+            finally
+            {
+                try { File.Delete(zoneFilePath); } catch { } // don't fail the test if we couldn't delete the file.
             }
         }
 
