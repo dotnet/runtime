@@ -238,7 +238,8 @@ var Module = {
 			}
 
 			FS.chdir (working_dir);
-			App.init ();
+            if (globalThis._dontRunAppInit === undefined || globalThis._dontRunAppInit === false)
+			    App.init ();
 		};
 		config.fetch_file_cb = function (asset) {
 			// console.log("fetch_file_cb('" + asset + "')");

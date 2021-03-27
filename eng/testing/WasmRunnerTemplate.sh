@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 EXECUTION_DIR=$(dirname $0)
-SCENARIO=$3
+SCENARIO=${SCENARIO-$3}
 
 cd $EXECUTION_DIR
 
