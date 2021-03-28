@@ -21,7 +21,7 @@ namespace System.Threading.Channels.Tests
 
         public static IEnumerable<object[]> ChannelDropModes()
         {
-            foreach (var mode in Enum.GetValues(typeof(BoundedChannelFullMode)).Cast<BoundedChannelFullMode>())
+            foreach (BoundedChannelFullMode mode in Enum.GetValues(typeof(BoundedChannelFullMode)))
             {
                 if (mode != BoundedChannelFullMode.Wait)
                 {
@@ -266,7 +266,7 @@ namespace System.Threading.Channels.Tests
         [MemberData(nameof(ChannelDropModes))]
         public void DroppedDelegateIsNull_SyncWrites(BoundedChannelFullMode boundedChannelFullMode)
         {
-            var c = Channel.CreateBounded<int>(new BoundedChannelOptions(1) { FullMode = boundedChannelFullMode }, itemDropped: null);
+            Channel<int> c = Channel.CreateBounded<int>(new BoundedChannelOptions(1) { FullMode = boundedChannelFullMode }, itemDropped: null);
 
             Assert.True(c.Writer.TryWrite(5));
             Assert.True(c.Writer.TryWrite(5));
@@ -276,7 +276,7 @@ namespace System.Threading.Channels.Tests
         [MemberData(nameof(ChannelDropModes))]
         public async Task DroppedDelegateIsNull_AsyncWrites(BoundedChannelFullMode boundedChannelFullMode)
         {
-            var c = Channel.CreateBounded<int>(new BoundedChannelOptions(1) { FullMode = boundedChannelFullMode }, itemDropped: null);
+            Channel<int> c = Channel.CreateBounded<int>(new BoundedChannelOptions(1) { FullMode = boundedChannelFullMode }, itemDropped: null);
 
             await c.Writer.WriteAsync(5);
             await c.Writer.WriteAsync(5);
