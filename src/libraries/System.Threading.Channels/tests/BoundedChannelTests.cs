@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -15,6 +17,17 @@ namespace System.Threading.Channels.Tests
             var c = Channel.CreateBounded<T>(new BoundedChannelOptions(1) { AllowSynchronousContinuations = AllowSynchronousContinuations });
             c.Writer.WriteAsync(default).AsTask().Wait();
             return c;
+        }
+
+        public static IEnumerable<object[]> ChannelDropModes()
+        {
+            foreach (var mode in Enum.GetValues(typeof(BoundedChannelFullMode)).Cast<BoundedChannelFullMode>())
+            {
+                if (mode != BoundedChannelFullMode.Wait)
+                {
+                    yield return new object[] { mode };
+                }
+            }
         }
 
         [Fact]
@@ -247,6 +260,94 @@ namespace System.Threading.Channels.Tests
 
             Assert.False(c.Reader.TryRead(out result));
             Assert.Equal(0, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(ChannelDropModes))]
+        public void DroppedDelegateIsNull_SyncWrites(BoundedChannelFullMode boundedChannelFullMode)
+        {
+            var c = Channel.CreateBounded<int>(new BoundedChannelOptions(1) { FullMode = boundedChannelFullMode }, itemDropped: null);
+
+            Assert.True(c.Writer.TryWrite(5));
+            Assert.True(c.Writer.TryWrite(5));
+        }
+
+        [Theory]
+        [MemberData(nameof(ChannelDropModes))]
+        public async Task DroppedDelegateIsNull_AsyncWrites(BoundedChannelFullMode boundedChannelFullMode)
+        {
+            var c = Channel.CreateBounded<int>(new BoundedChannelOptions(1) { FullMode = boundedChannelFullMode }, itemDropped: null);
+
+            await c.Writer.WriteAsync(5);
+            await c.Writer.WriteAsync(5);
+        }
+
+        [Theory]
+        [MemberData(nameof(ChannelDropModes))]
+        public void DroppedDelegateCalledOnChannelFull_SyncWrites(BoundedChannelFullMode boundedChannelFullMode)
+        {
+            var droppedItems = new HashSet<int>();
+
+            void AddDroppedItem(int itemDropped)
+            {
+                Assert.True(droppedItems.Add(itemDropped));
+            }
+
+            const int channelCapacity = 10;
+            var c = Channel.CreateBounded<int>(new BoundedChannelOptions(channelCapacity)
+            {
+                FullMode = boundedChannelFullMode
+            }, AddDroppedItem);
+
+            for (int i = 0; i < channelCapacity; i++)
+            {
+                Assert.True(c.Writer.TryWrite(i));
+            }
+
+            // No dropped delegate should be called while channel is not full
+            Assert.Empty(droppedItems);
+
+            for (int i = channelCapacity; i < channelCapacity + 10; i++)
+            {
+                Assert.True(c.Writer.TryWrite(i));
+            }
+
+            // Assert expected number of dropped items delegate calls
+            Assert.Equal(10, droppedItems.Count);
+        }
+
+        [Theory]
+        [MemberData(nameof(ChannelDropModes))]
+        public async Task DroppedDelegateCalledOnChannelFull_AsyncWrites(BoundedChannelFullMode boundedChannelFullMode)
+        {
+            var droppedItems = new HashSet<int>();
+
+            void AddDroppedItem(int itemDropped)
+            {
+                Assert.True(droppedItems.Add(itemDropped));
+            }
+
+            const int channelCapacity = 10;
+            var c = Channel.CreateBounded<int>(new BoundedChannelOptions(channelCapacity)
+            {
+                FullMode = boundedChannelFullMode
+            }, AddDroppedItem);
+
+            for (int i = 0; i < channelCapacity; i++)
+            {
+                await c.Writer.WriteAsync(i);
+            }
+
+            // No dropped delegate should be called while channel is not full
+            Assert.Empty(droppedItems);
+
+            for (int i = channelCapacity; i < channelCapacity + 10; i++)
+            {
+                await c.Writer.WriteAsync(i);
+            }
+
+            // Assert expected number of dropped items delegate calls
+            Assert.Equal(10, droppedItems.Count);
         }
 
         [Fact]

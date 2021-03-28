@@ -15,6 +15,8 @@ namespace System.Threading.Channels
     {
         /// <summary>The mode used when the channel hits its bound.</summary>
         private readonly BoundedChannelFullMode _mode;
+        /// <summary>The mode used when the channel hits its bound.</summary>
+        private readonly Action<T>? _itemDropped;
         /// <summary>Task signaled when the channel has completed.</summary>
         private readonly TaskCompletionSource _completion;
         /// <summary>The maximum capacity of the channel.</summary>
@@ -40,12 +42,14 @@ namespace System.Threading.Channels
         /// <param name="bufferedCapacity">The positive bounded capacity for the channel.</param>
         /// <param name="mode">The mode used when writing to a full channel.</param>
         /// <param name="runContinuationsAsynchronously">Whether to force continuations to be executed asynchronously.</param>
-        internal BoundedChannel(int bufferedCapacity, BoundedChannelFullMode mode, bool runContinuationsAsynchronously)
+        /// <param name="itemDropped">Delegate that will be called when item is being dropped from channel. See <see cref="BoundedChannelFullMode"/>.</param>
+        internal BoundedChannel(int bufferedCapacity, BoundedChannelFullMode mode, bool runContinuationsAsynchronously, Action<T>? itemDropped)
         {
             Debug.Assert(bufferedCapacity > 0);
             _bufferedCapacity = bufferedCapacity;
             _mode = mode;
             _runContinuationsAsynchronously = runContinuationsAsynchronously;
+            _itemDropped = itemDropped;
             _completion = new TaskCompletionSource(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
             Reader = new BoundedChannelReader(this);
             Writer = new BoundedChannelWriter(this);
@@ -393,6 +397,7 @@ namespace System.Threading.Channels
                     {
                         // The channel is full.  Just ignore the item being added
                         // but say we added it.
+                        _parent._itemDropped?.Invoke(item);
                         return true;
                     }
                     else
@@ -401,11 +406,13 @@ namespace System.Threading.Channels
                         // Drop either the oldest or the newest and write the new item.
                         if (parent._mode == BoundedChannelFullMode.DropNewest)
                         {
-                            parent._items.DequeueTail();
+                            var droppedItem = parent._items.DequeueTail();
+                            _parent._itemDropped?.Invoke(droppedItem);
                         }
                         else
                         {
-                            parent._items.DequeueHead();
+                            var droppedItem = parent._items.DequeueHead();
+                            _parent._itemDropped?.Invoke(droppedItem);
                         }
                         parent._items.EnqueueTail(item);
                         return true;
@@ -569,6 +576,7 @@ namespace System.Threading.Channels
                     {
                         // The channel is full and we're in ignore mode.
                         // Ignore the item but say we accepted it.
+                        _parent._itemDropped?.Invoke(item);
                         return default;
                     }
                     else
@@ -577,11 +585,13 @@ namespace System.Threading.Channels
                         // Drop either the oldest or the newest and write the new item.
                         if (parent._mode == BoundedChannelFullMode.DropNewest)
                         {
-                            parent._items.DequeueTail();
+                            var droppedItem = parent._items.DequeueTail();
+                            _parent._itemDropped?.Invoke(droppedItem);
                         }
                         else
                         {
-                            parent._items.DequeueHead();
+                            var droppedItem = parent._items.DequeueHead();
+                            _parent._itemDropped?.Invoke(droppedItem);
                         }
                         parent._items.EnqueueTail(item);
                         return default;
