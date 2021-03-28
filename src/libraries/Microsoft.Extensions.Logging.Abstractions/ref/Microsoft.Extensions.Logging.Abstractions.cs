@@ -94,6 +94,7 @@ namespace Microsoft.Extensions.Logging
     public static partial class LoggerMessage
     {
         public static System.Action<Microsoft.Extensions.Logging.ILogger, System.Exception?> Define(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString) { throw null; }
+        public static System.Action<Microsoft.Extensions.Logging.ILogger, System.Exception?> Define(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string formatString, bool skipEnabledCheck) { throw null; }
         public static System.Func<Microsoft.Extensions.Logging.ILogger, System.IDisposable> DefineScope(string formatString) { throw null; }
         public static System.Func<Microsoft.Extensions.Logging.ILogger, T1, System.IDisposable> DefineScope<T1>(string formatString) { throw null; }
         public static System.Func<Microsoft.Extensions.Logging.ILogger, T1, T2, System.IDisposable> DefineScope<T1, T2>(string formatString) { throw null; }
