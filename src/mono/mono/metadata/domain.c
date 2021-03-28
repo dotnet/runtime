@@ -315,8 +315,6 @@ mono_domain_create (void)
 
 	domain->domain_assemblies = NULL;
 
-	mono_coop_mutex_init_recursive (&domain->lock);
-
 	mono_coop_mutex_init_recursive (&domain->assemblies_lock);
 
 	mono_appdomains_lock ();
@@ -1254,18 +1252,6 @@ const MonoRuntimeInfo*
 mono_get_runtime_info (void)
 {
 	return current_runtime;
-}
-
-void
-mono_domain_lock (MonoDomain *domain)
-{
-	mono_locks_coop_acquire (&domain->lock, DomainLock);
-}
-
-void
-mono_domain_unlock (MonoDomain *domain)
-{
-	mono_locks_coop_release (&domain->lock, DomainLock);
 }
 
 GPtrArray*

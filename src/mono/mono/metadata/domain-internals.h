@@ -256,13 +256,6 @@ typedef struct _MonoJitCodeHash MonoJitCodeHash;
 
 struct _MonoDomain {
 	/*
-	 * This lock must never be taken before the loader lock,
-	 * i.e. if both are taken by the same thread, the loader lock
-	 * must taken first.
-	 */
-	MonoCoopMutex    lock;
-
-	/*
 	 * keep all the managed objects close to each other for the precise GC
 	 * For the Boehm GC we additionally keep close also other GC-tracked pointers.
 	 */
@@ -319,9 +312,6 @@ mono_domain_assemblies_unlock (MonoDomain *domain)
 }
 
 typedef MonoDomain* (*MonoLoadFunc) (const char *filename, const char *runtime_version);
-
-void mono_domain_lock (MonoDomain *domain);
-void mono_domain_unlock (MonoDomain *domain);
 
 void
 mono_install_runtime_load  (MonoLoadFunc func);
