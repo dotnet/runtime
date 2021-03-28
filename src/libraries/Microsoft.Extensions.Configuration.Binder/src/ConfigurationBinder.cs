@@ -208,7 +208,7 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            propertyValue = BindInstance(property.PropertyType, propertyValue, config.GetSection(property.Name), options);
+            propertyValue = GetPropertyValue(property, instance, config, options);
 
             if (propertyValue != null && hasSetter)
             {
@@ -574,6 +574,43 @@ namespace Microsoft.Extensions.Configuration
             while (type != typeof(object));
 
             return allProperties;
+        }
+
+        private static object GetPropertyValue(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
+        {
+            object propertyValue = property.GetValue(instance);
+            string propertyName = GetPropertyAttributeKeyName(property);
+
+            if (string.IsNullOrEmpty(propertyName))
+            {
+                propertyName = property.Name;
+            }
+
+            return BindInstance(property.PropertyType, propertyValue, config.GetSection(propertyName), options);
+        }
+
+        private static string GetPropertyAttributeKeyName(MemberInfo property)
+        {
+            if (property == null)
+            {
+                return string.Empty;
+            }
+
+            foreach (var attributeData in property.GetCustomAttributesData())
+            {
+                if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute))
+                {
+                    continue;
+                }
+
+                var constructorArgument = attributeData.ConstructorArguments.FirstOrDefault();
+                if (constructorArgument.ArgumentType == typeof(string))
+                {
+                    return constructorArgument.Value?.ToString() ?? string.Empty;
+                }
+            }
+
+            return string.Empty;
         }
     }
 }
