@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
-using System.Runtime.Serialization;
 using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Binder.Test
@@ -37,7 +36,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
 
             [ConfigurationKeyName("Named_Property")]
-            [DataMember(Name = "Named_Property")]
             public string NamedProperty { get; set; }
 
             protected string ProtectedPrivateSet { get; private set; }
