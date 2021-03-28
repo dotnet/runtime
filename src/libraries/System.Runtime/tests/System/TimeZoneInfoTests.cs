@@ -2469,7 +2469,7 @@ namespace System.Tests
         [InlineData("<+00>0<+01>,A/0,J365/25", 0, 0, false)]
         public static void NJulianRuleTest(string posixRule, int dayNumber, int monthNumber, bool shouldSucceed)
         {
-            string zoneFilePath = Path.GetTempPath() + "dotnet_tz";
+            string zoneFilePath = Path.GetTempPath() + Path.GetRandomFileName();
             using (FileStream fs = new FileStream(zoneFilePath, FileMode.Create))
             {
                 fs.Write(timeZoneFileContents.AsSpan());
