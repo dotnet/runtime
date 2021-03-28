@@ -650,6 +650,11 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowKeyNullException();
             }
 
+            if (valueFactory is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(valueFactory));
+            }
+
             return _table.GetOrAdd(key, valueFactory);
         }
 
