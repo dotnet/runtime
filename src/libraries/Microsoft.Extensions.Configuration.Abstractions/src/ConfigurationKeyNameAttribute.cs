@@ -8,10 +8,6 @@ namespace Microsoft.Extensions.Configuration
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class ConfigurationKeyNameAttribute : Attribute
     {
-        public ConfigurationKeyNameAttribute()
-        {
-        }
-
         public ConfigurationKeyNameAttribute(string name) => Name = name;
 
         public string Name { get; }
