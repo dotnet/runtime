@@ -10,6 +10,21 @@
     <Compile Include="System\Collections\Concurrent\CDSCollectionETWBCLProvider.cs" />
     <Compile Include="System\Collections\Concurrent\ConcurrentBag.cs" />
     <Compile Include="System\Collections\Concurrent\ConcurrentDictionary.cs" />
+
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImpl.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImpl.Enumerators.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImpl`2.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImpl`3.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImplBoxed.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImplInt.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImplLong.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImplNint.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImplRef.cs" />
+
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\Counter\CounterBase.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\Counter\Counter32.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\Counter\Counter64.cs" />
+
     <Compile Include="System\Collections\Concurrent\ConcurrentStack.cs" />
     <Compile Include="System\Collections\Concurrent\OrderablePartitioner.cs" />
     <Compile Include="System\Collections\Concurrent\Partitioner.cs" />

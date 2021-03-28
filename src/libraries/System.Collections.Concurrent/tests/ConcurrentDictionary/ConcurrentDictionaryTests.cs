@@ -656,13 +656,15 @@ namespace System.Collections.Concurrent.Tests
 
             void AssertDefaultComparerBehavior(ConcurrentDictionary<EqualityApiSpy, int> dictionary)
             {
-                var spyKey = new EqualityApiSpy();
+                object identity = new object();
+                var spyKey1 = new EqualityApiSpy(identity);
+                var spyKey2 = new EqualityApiSpy(identity);
 
-                Assert.True(dictionary.TryAdd(spyKey, 1));
-                Assert.False(dictionary.TryAdd(spyKey, 1));
+                Assert.True(dictionary.TryAdd(spyKey1, 1));
+                Assert.False(dictionary.TryAdd(spyKey2, 1));
 
-                Assert.False(spyKey.ObjectApiUsed);
-                Assert.True(spyKey.IEquatableApiUsed);
+                Assert.False(spyKey1.ObjectApiUsed || spyKey2.ObjectApiUsed);
+                Assert.True(spyKey1.IEquatableApiUsed || spyKey2.IEquatableApiUsed);
             }
         }
 
@@ -689,19 +691,27 @@ namespace System.Collections.Concurrent.Tests
             public bool ObjectApiUsed { get; private set; }
             public bool IEquatableApiUsed { get; private set; }
 
+            private object _identity;
+
+            public EqualityApiSpy(object identity)
+            {
+                _identity = identity;
+            }
+
+            public EqualityApiSpy() : this(new object()) { }
 
             public override bool Equals(object obj)
             {
                 ObjectApiUsed = true;
-                return ReferenceEquals(this, obj);
+                return ReferenceEquals(this._identity, ((EqualityApiSpy)obj)._identity);
             }
 
-            public override int GetHashCode() => base.GetHashCode();
+            public override int GetHashCode() => _identity.GetHashCode();
 
             public bool Equals(EqualityApiSpy other)
             {
                 IEquatableApiUsed = true;
-                return ReferenceEquals(this, other);
+                return ReferenceEquals(this._identity, other._identity);
             }
         }
 
