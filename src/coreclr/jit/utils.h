@@ -786,6 +786,11 @@ bool IntMulOverflows(int32_t firstFactor, int32_t secondFactor, bool unsignedMul
 bool LongAddOverflows(int64_t firstAddend, int64_t secondAddend, bool unsignedAddition);
 bool LongSubOverflows(int64_t minuend, int64_t subtrahend, bool unsignedSubtraction);
 bool LongMulOverflows(int64_t firstFactor, int64_t secondFactor, bool unsignedMultiplication);
+
+bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned);
+bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigned);
+bool CastFromFloatOverflows(float fromValue, var_types toType);
+bool CastFromDoubleOverflows(double fromValue, var_types toType);
 }
 
 #endif // _UTILS_H_
