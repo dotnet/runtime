@@ -56,78 +56,78 @@ namespace System.Runtime.Tests
             yield return new object[] { typeof(ArrayPool<>) };
         }
 
-        [Theory]
-        [MemberData(nameof(NullableMetadataTypesTestData))]
-        public static void NullableAttributesOnPublicApiOnly(Type type)
-        {
-            MemberInfo[] internalMembers = type.GetMembers(BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+        //[Theory]
+        //[MemberData(nameof(NullableMetadataTypesTestData))]
+        //public static void NullableAttributesOnPublicApiOnly(Type type)
+        //{
+        //    MemberInfo[] internalMembers = type.GetMembers(BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
 
-            foreach (MemberInfo internalMember in internalMembers)
-            {
-                // When using BindingFlags.NonPublic protected members are included and those are expected
-                // to have Nullable attributes.
-                if (internalMember.IsProtected() || internalMember is PropertyInfo)
-                    continue;
+        //    foreach (MemberInfo internalMember in internalMembers)
+        //    {
+        //        // When using BindingFlags.NonPublic protected members are included and those are expected
+        //        // to have Nullable attributes.
+        //        if (internalMember.IsProtected() || internalMember is PropertyInfo)
+        //            continue;
 
-                Assert.Empty(internalMember.CustomAttributes.GetNullableAttributes());
+        //        Assert.Empty(internalMember.CustomAttributes.GetNullableAttributes());
 
-                if (internalMember is MethodInfo methodInfo)
-                {
-                    Assert.Empty(methodInfo.ReturnParameter.CustomAttributes.GetNullableAttributes());
+        //        if (internalMember is MethodInfo methodInfo)
+        //        {
+        //            Assert.Empty(methodInfo.ReturnParameter.CustomAttributes.GetNullableAttributes());
 
-                    foreach (ParameterInfo param in methodInfo.GetParameters())
-                    {
-                        Assert.Empty(param.CustomAttributes.GetNullableAttributes());
-                    }
-                }
-            }
+        //            foreach (ParameterInfo param in methodInfo.GetParameters())
+        //            {
+        //                Assert.Empty(param.CustomAttributes.GetNullableAttributes());
+        //            }
+        //        }
+        //    }
 
-            Assert.True(type.CustomAttributes.GetNullableAttributes().Any());
+        //    Assert.True(type.CustomAttributes.GetNullableAttributes().Any());
 
-            bool foundAtLeastOneNullableAttribute = type.CustomAttributes.Where(a => a.AttributeType.Name.Equals(NullableContextAttributeFullName)).Any();
+        //    bool foundAtLeastOneNullableAttribute = type.CustomAttributes.Where(a => a.AttributeType.Name.Equals(NullableContextAttributeFullName)).Any();
 
-            // If there is a NullableContextAttribute there is no guarantee that its members will have
-            // nullable attributes, if a class declare all reference types with the same nullability
-            // none will contain an attribute and will take the type's NullableContextAttribute value.
-            if (!foundAtLeastOneNullableAttribute)
-            {
-                MemberInfo[] publicMembers = type.GetMembers(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
-                foreach (MemberInfo publicMember in publicMembers)
-                {
-                    if (publicMember.CustomAttributes.GetNullableAttributes().Any())
-                    {
-                        foundAtLeastOneNullableAttribute = true;
-                        break;
-                    }
+        //    // If there is a NullableContextAttribute there is no guarantee that its members will have
+        //    // nullable attributes, if a class declare all reference types with the same nullability
+        //    // none will contain an attribute and will take the type's NullableContextAttribute value.
+        //    if (!foundAtLeastOneNullableAttribute)
+        //    {
+        //        MemberInfo[] publicMembers = type.GetMembers(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+        //        foreach (MemberInfo publicMember in publicMembers)
+        //        {
+        //            if (publicMember.CustomAttributes.GetNullableAttributes().Any())
+        //            {
+        //                foundAtLeastOneNullableAttribute = true;
+        //                break;
+        //            }
 
-                    if (publicMember is MethodInfo methodInfo)
-                    {
-                        if (methodInfo.ReturnParameter.CustomAttributes.GetNullableAttributes().Any())
-                        {
-                            foundAtLeastOneNullableAttribute = true;
-                            break;
-                        }
-                    }
+        //            if (publicMember is MethodInfo methodInfo)
+        //            {
+        //                if (methodInfo.ReturnParameter.CustomAttributes.GetNullableAttributes().Any())
+        //                {
+        //                    foundAtLeastOneNullableAttribute = true;
+        //                    break;
+        //                }
+        //            }
 
-                    if (publicMember is MethodBase methodBase)
-                    {
-                        foreach (ParameterInfo param in methodBase.GetParameters())
-                        {
-                            if (param.CustomAttributes.GetNullableAttributes().Any())
-                            {
-                                foundAtLeastOneNullableAttribute = true;
-                                break;
-                            }
-                        }
+        //            if (publicMember is MethodBase methodBase)
+        //            {
+        //                foreach (ParameterInfo param in methodBase.GetParameters())
+        //                {
+        //                    if (param.CustomAttributes.GetNullableAttributes().Any())
+        //                    {
+        //                        foundAtLeastOneNullableAttribute = true;
+        //                        break;
+        //                    }
+        //                }
 
-                        if (foundAtLeastOneNullableAttribute)
-                            break;
-                    }
-                }
-            }
+        //                if (foundAtLeastOneNullableAttribute)
+        //                    break;
+        //            }
+        //        }
+        //    }
 
-            Assert.True(foundAtLeastOneNullableAttribute);
-        }
+        //    Assert.True(foundAtLeastOneNullableAttribute);
+        //}
 
         [Theory]
         [InlineData("mscorlib")]
