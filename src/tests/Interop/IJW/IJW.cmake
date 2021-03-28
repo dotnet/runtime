@@ -2,6 +2,9 @@ if (CLR_CMAKE_HOST_WIN32)
   # 4365 - signed/unsigned mismatch
   add_compile_options(/wd4365)
 
+  # IJW
+  add_compile_options(/clr:netcore /AI${CLR_REPO_ROOT_DIR}/.dotnet/sdk/6.0.100-preview.2.21155.3/ref)
+
   # IJW requires the CRT as a dll, not linked in
   set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:Debug>DLL)
 
