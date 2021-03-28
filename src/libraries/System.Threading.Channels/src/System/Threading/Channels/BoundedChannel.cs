@@ -15,7 +15,7 @@ namespace System.Threading.Channels
     {
         /// <summary>The mode used when the channel hits its bound.</summary>
         private readonly BoundedChannelFullMode _mode;
-        /// <summary>The mode used when the channel hits its bound.</summary>
+        /// <summary>The delegate that will be called when channel hits its bound and item is being dropped from channel.</summary>
         private readonly Action<T>? _itemDropped;
         /// <summary>Task signaled when the channel has completed.</summary>
         private readonly TaskCompletionSource _completion;
