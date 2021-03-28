@@ -651,5 +651,9 @@
 			<method name="ApplyUpdateSdb" />
 		</type>
 
+		<type fullname="System.ValueType">
+			<!-- https://github.com/dotnet/runtime/issues/47909 -->
+			<method signature="System.Void .ctor()" />
+		</type>
 	</assembly>
 </linker>
