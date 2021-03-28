@@ -206,10 +206,6 @@ namespace System.Collections.Concurrent
             if (this.cellCount == curCellCount)
             {
                 Interlocked.CompareExchange(ref this.cellCount, curCellCount + 1, curCellCount);
-                //if (Interlocked.CompareExchange(ref this.cellCount, curCellCount + 1, curCellCount) == curCellCount)
-                //{
-                //    System.Console.WriteLine(curCellCount + 1);
-                //}
             }
         }
     }
