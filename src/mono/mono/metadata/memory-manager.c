@@ -95,7 +95,6 @@ memory_manager_init (MonoMemoryManager *memory_manager, gboolean collectible)
 {
 	MonoDomain *domain = mono_get_root_domain ();
 
-	memory_manager->domain = domain;
 	memory_manager->freeing = FALSE;
 
 	mono_coop_mutex_init_recursive (&memory_manager->lock);
@@ -218,15 +217,13 @@ mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gbo
 void
 mono_mem_manager_lock (MonoMemoryManager *memory_manager)
 {
-	//mono_coop_mutex_lock (&memory_manager->lock);
-	mono_domain_lock (memory_manager->domain);
+	mono_coop_mutex_lock (&memory_manager->lock);
 }
 
 void
 mono_mem_manager_unlock (MonoMemoryManager *memory_manager)
 {
-	//mono_coop_mutex_unlock (&memory_manager->lock);
-	mono_domain_unlock (memory_manager->domain);
+	mono_coop_mutex_unlock (&memory_manager->lock);
 }
 
 static inline void

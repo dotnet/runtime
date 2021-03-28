@@ -86,7 +86,6 @@ struct _MonoAssemblyLoadContext {
 };
 
 struct _MonoMemoryManager {
-	MonoDomain *domain;
 	// Whether the MemoryManager can be unloaded on netcore; should only be set at creation
 	gboolean collectible;
 	// Whether this is a singleton or generic MemoryManager
