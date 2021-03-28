@@ -117,6 +117,7 @@ namespace System.Collections.Concurrent
             return key == entryKeyValue;
         }
 
+        // inline the base implementation to devirtualize calls to hash and keyEqual
         internal override object TryGetValue(long key)
         {
             return base.TryGetValue(key);

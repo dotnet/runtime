@@ -83,9 +83,6 @@ namespace System.Collections.Concurrent
                         if (nextV != null)
                         {
                             _nextK = nextK;
-
-                            // PERF: this would be nice to have as a helper,
-                            // but it does not get inlined
                             if (default(TValue) == null && nextV == NULLVALUE)
                             {
                                 _nextV = default(TValue);

@@ -3,7 +3,6 @@
 
 #nullable disable
 #pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
-#pragma warning disable CA1507 // Use nameof to express symbol names
 
 using System;
 using System.Collections;
@@ -11,7 +10,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 using static System.Collections.Concurrent.DictionaryImpl;
@@ -541,16 +539,21 @@ namespace System.Collections.Concurrent
         {
             get
             {
+                if (key is null)
+                {
+                    ThrowHelper.ThrowKeyNullException();
+                }
+
                 object oldValObj = _table.TryGetValue(key);
-
                 Debug.Assert(!(oldValObj is Prime));
-
                 if (oldValObj != null)
                 {
                     return FromObjectValue(oldValObj);
                 }
 
-                throw new KeyNotFoundException();
+                ThrowKeyNotFoundException(key);
+                // call above does not return
+                while (true) ;
             }
             set
             {
@@ -992,13 +995,7 @@ namespace System.Collections.Concurrent
         /// contains too many elements.</exception>
         /// <exception cref="ArgumentException">An element with the same key already exists in the
         /// <see cref="Dictionary{TKey,TValue}"/></exception>
-        void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> keyValuePair)
-        {
-            if (!TryAdd(keyValuePair.Key, keyValuePair.Value))
-            {
-                throw new ArgumentException("AddingDuplicate");
-            }
-        }
+        void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> keyValuePair) => ((IDictionary<TKey, TValue>)this).Add(keyValuePair.Key, keyValuePair.Value);
 
         /// <summary>
         /// Determines whether the <see cref="ICollection{T}"/>

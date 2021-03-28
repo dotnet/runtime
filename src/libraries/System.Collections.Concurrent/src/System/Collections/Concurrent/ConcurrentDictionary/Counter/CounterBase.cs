@@ -25,7 +25,7 @@ namespace System.Collections.Concurrent
 
         private protected CounterBase()
         {
-            // touch static
+            // touch a static
             _ = s_MaxCellCount;
         }
 

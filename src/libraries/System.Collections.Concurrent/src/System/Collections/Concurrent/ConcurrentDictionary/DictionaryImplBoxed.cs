@@ -82,6 +82,7 @@ namespace System.Collections.Concurrent
 #pragma warning disable CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()
     internal class Boxed<T>
     {
+        // 0 - allow writes, 1 - someone is writing, 2 frozen.
         public int writeStatus;
         public T Value;
 

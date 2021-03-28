@@ -9,9 +9,6 @@
 
 #nullable disable
 
-#pragma warning disable CA1507 // Use nameof to express symbol names
-
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -169,10 +166,7 @@ namespace System.Collections.Concurrent
 
         protected virtual int hash(TKey key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException("key");
-            }
+            Debug.Assert(!(key is null));
 
             int h = _keyComparer.GetHashCode(key);
 
@@ -230,6 +224,9 @@ namespace System.Collections.Concurrent
                     {
                         break;
                     }
+
+                    // "READ BARRIER", if copying has started, we must help with copying and
+                    // read from the new table.
 
                     // if no new table, no need to check for primed value,
                     // but TOMBPRIME is possible when sweeping, check for that
@@ -634,11 +631,6 @@ namespace System.Collections.Concurrent
 
         internal sealed override TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
         {
-            if (valueFactory == null)
-            {
-                throw new ArgumentNullException("valueFactory");
-            }
-
             object newValObj = null;
             TValue result = default(TValue);
 

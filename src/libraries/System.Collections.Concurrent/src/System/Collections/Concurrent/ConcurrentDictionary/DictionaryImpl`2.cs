@@ -16,13 +16,19 @@ namespace System.Collections.Concurrent
     {
         internal IEqualityComparer<TKey> _keyComparer;
 
+        // We want to call DictionaryImpl.CreateRef<TKey, TValue>(topDict, capacity)
+        // TKey is a reference type, but that is not statically known, so
+        // we use the following to get around "as class" contraint.
         internal static Func<ConcurrentDictionary<TKey, TValue>, int, DictionaryImpl<TKey, TValue>> CreateRefUnsafe =
             (ConcurrentDictionary<TKey, TValue> topDict, int capacity) =>
             {
-                var mObj = new Func<ConcurrentDictionary<object, object>, int, DictionaryImpl<object, object>> (DictionaryImpl.CreateRef);
-                var method = mObj.GetMethodInfo().GetGenericMethodDefinition().MakeGenericMethod(new Type[] { typeof(TKey), typeof(TValue) });
-                var del = (Func<ConcurrentDictionary<TKey, TValue>, int, DictionaryImpl<TKey, TValue>>)method
-                    .CreateDelegate(typeof(Func<ConcurrentDictionary<TKey, TValue>, int, DictionaryImpl<TKey, TValue>>));
+                var method = typeof(DictionaryImpl).
+                    GetMethod("CreateRef", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).
+                    MakeGenericMethod(new Type[] { typeof(TKey), typeof(TValue) });
+
+                var del = (Func<ConcurrentDictionary<TKey, TValue>, int, DictionaryImpl<TKey, TValue>>)Delegate.CreateDelegate(
+                    typeof(Func<ConcurrentDictionary<TKey, TValue>, int, DictionaryImpl<TKey, TValue>>),
+                    method);
 
                 var result = del(topDict, capacity);
                 CreateRefUnsafe = del;
@@ -59,7 +65,8 @@ namespace System.Collections.Concurrent
                     var curValue = this._curValue;
                     if (curValue == NULLVALUE)
                     {
-                        // undefined behavior
+                        // undefined behavior or throw?
+                        // current implementation returns things
                         return default;
                     }
 
