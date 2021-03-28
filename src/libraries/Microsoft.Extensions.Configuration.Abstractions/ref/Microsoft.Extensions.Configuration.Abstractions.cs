@@ -4,8 +4,17 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System;
+
 namespace Microsoft.Extensions.Configuration
 {
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public sealed class ConfigurationKeyNameAttribute : Attribute
+    {
+        public ConfigurationKeyNameAttribute(string name) => Name = name;
+
+        public string Name { get; }
+    }
     public static partial class ConfigurationExtensions
     {
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder Add<TSource>(this Microsoft.Extensions.Configuration.IConfigurationBuilder builder, System.Action<TSource> configureSource) where TSource : Microsoft.Extensions.Configuration.IConfigurationSource, new() { throw null; }

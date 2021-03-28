@@ -205,7 +205,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Null(options.Section.Value);
         }
 
-
         [Fact]
         public void CanBindAttributesIConfigurationSection()
         {
