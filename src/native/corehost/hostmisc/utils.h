@@ -120,7 +120,7 @@ template<typename T>
 size_t to_size_t_dbgchecked(T value)
 {
     assert(value >= 0);
-    assert(value < static_cast<T>(std::numeric_limits<size_t>::max()));
+    assert(value < std::numeric_limits<size_t>::max());
     return static_cast<size_t>(value);
 }
 
