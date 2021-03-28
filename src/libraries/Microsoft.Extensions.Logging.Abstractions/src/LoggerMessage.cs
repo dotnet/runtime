@@ -142,11 +142,21 @@ namespace Microsoft.Extensions.Logging
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
 
+            void Log(ILogger logger, Exception? exception)
+            {
+                logger.Log(logLevel, eventId, new LogValues(formatter), exception, LogValues.Callback);
+            }
+
+            if (skipEnabledCheck)
+            {
+                return (logger, exception) => Log(logger, exception);
+            }
+
             return (logger, exception) =>
             {
-                if (skipEnabledCheck || logger.IsEnabled(logLevel))
+                if (logger.IsEnabled(logLevel))
                 {
-                    logger.Log(logLevel, eventId, new LogValues(formatter), exception, LogValues.Callback);
+                    Log(logger, exception);
                 }
             };
         }
@@ -180,9 +190,14 @@ namespace Microsoft.Extensions.Logging
                 logger.Log(logLevel, eventId, new LogValues<T1>(formatter, arg1), exception, LogValues<T1>.Callback);
             }
 
+            if (skipEnabledCheck)
+            {
+                return (logger, arg1, exception) => Log(logger, arg1, exception);
+            }
+
             return (logger, arg1, exception) =>
             {
-                if (skipEnabledCheck || logger.IsEnabled(logLevel))
+                if (logger.IsEnabled(logLevel))
                 {
                     Log(logger, arg1, exception);
                 }
@@ -220,9 +235,14 @@ namespace Microsoft.Extensions.Logging
                 logger.Log(logLevel, eventId, new LogValues<T1, T2>(formatter, arg1, arg2), exception, LogValues<T1, T2>.Callback);
             }
 
+            if (skipEnabledCheck)
+            {
+                return (logger, arg1, arg2, exception) => Log(logger, arg1, arg2, exception);
+            }
+
             return (logger, arg1, arg2, exception) =>
             {
-                if (skipEnabledCheck || logger.IsEnabled(logLevel))
+                if (logger.IsEnabled(logLevel))
                 {
                     Log(logger, arg1, arg2, exception);
                 }
@@ -262,9 +282,14 @@ namespace Microsoft.Extensions.Logging
                 logger.Log(logLevel, eventId, new LogValues<T1, T2, T3>(formatter, arg1, arg2, arg3), exception, LogValues<T1, T2, T3>.Callback);
             }
 
+            if (skipEnabledCheck)
+            {
+                return (logger, arg1, arg2, arg3, exception) => Log(logger, arg1, arg2, arg3, exception);
+            }
+
             return (logger, arg1, arg2, arg3, exception) =>
             {
-                if (skipEnabledCheck || logger.IsEnabled(logLevel))
+                if (logger.IsEnabled(logLevel))
                 {
                     Log(logger, arg1, arg2, arg3, exception);
                 }
@@ -306,9 +331,14 @@ namespace Microsoft.Extensions.Logging
                 logger.Log(logLevel, eventId, new LogValues<T1, T2, T3, T4>(formatter, arg1, arg2, arg3, arg4), exception, LogValues<T1, T2, T3, T4>.Callback);
             }
 
+            if (skipEnabledCheck)
+            {
+                return (logger, arg1, arg2, arg3, arg4, exception) => Log(logger, arg1, arg2, arg3, arg4, exception);
+            }
+
             return (logger, arg1, arg2, arg3, arg4, exception) =>
             {
-                if (skipEnabledCheck || logger.IsEnabled(logLevel))
+                if (logger.IsEnabled(logLevel))
                 {
                     Log(logger, arg1, arg2, arg3, arg4, exception);
                 }
@@ -347,11 +377,21 @@ namespace Microsoft.Extensions.Logging
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 5);
 
+            void Log(ILogger logger, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, Exception? exception)
+            {
+                logger.Log(logLevel, eventId, new LogValues<T1, T2, T3, T4, T5>(formatter, arg1, arg2, arg3, arg4, arg5), exception, LogValues<T1, T2, T3, T4, T5>.Callback);
+            }
+
+            if (skipEnabledCheck)
+            {
+                return (logger, arg1, arg2, arg3, arg4, arg5, exception) => Log(logger, arg1, arg2, arg3, arg4, arg5, exception);
+            }
+
             return (logger, arg1, arg2, arg3, arg4, arg5, exception) =>
             {
-                if (skipEnabledCheck || logger.IsEnabled(logLevel))
+                if (logger.IsEnabled(logLevel))
                 {
-                    logger.Log(logLevel, eventId, new LogValues<T1, T2, T3, T4, T5>(formatter, arg1, arg2, arg3, arg4, arg5), exception, LogValues<T1, T2, T3, T4, T5>.Callback);
+                    Log(logger, arg1, arg2, arg3, arg4, arg5, exception);
                 }
             };
         }
@@ -390,11 +430,21 @@ namespace Microsoft.Extensions.Logging
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 6);
 
+            void Log(ILogger logger, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, Exception? exception)
+            {
+                logger.Log(logLevel, eventId, new LogValues<T1, T2, T3, T4, T5, T6>(formatter, arg1, arg2, arg3, arg4, arg5, arg6), exception, LogValues<T1, T2, T3, T4, T5, T6>.Callback);
+            }
+
+            if (skipEnabledCheck)
+            {
+                return (logger, arg1, arg2, arg3, arg4, arg5, arg6, exception) => Log(logger, arg1, arg2, arg3, arg4, arg5, arg6, exception);
+            }
+
             return (logger, arg1, arg2, arg3, arg4, arg5, arg6, exception) =>
             {
-                if (skipEnabledCheck || logger.IsEnabled(logLevel))
+                if (logger.IsEnabled(logLevel))
                 {
-                    logger.Log(logLevel, eventId, new LogValues<T1, T2, T3, T4, T5, T6>(formatter, arg1, arg2, arg3, arg4, arg5, arg6), exception, LogValues<T1, T2, T3, T4, T5, T6>.Callback);
+                    Log(logger, arg1, arg2, arg3, arg4, arg5, arg6, exception);
                 }
             };
         }
