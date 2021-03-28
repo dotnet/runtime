@@ -49,7 +49,7 @@ namespace System.Threading.Channels
                 throw new ArgumentNullException(nameof(options));
             }
 
-            return new BoundedChannel<T>(options.Capacity, options.FullMode, !options.AllowSynchronousContinuations, itemDropped: null);
+            return CreateBounded<T>(options, itemDropped: null);
         }
 
         /// <summary>Creates a channel subject to the provided options.</summary>
