@@ -3860,14 +3860,9 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, ref_tb, cattrs);
 	mono_save_custom_attrs (klass->image, klass, MONO_HANDLE_RAW (cattrs)); /* FIXME use handles */
 
-	/* 
-	 * we need to lock the domain because the lock will be taken inside
-	 * So, we need to keep the locking order correct.
-	 */
 	mono_loader_lock ();
-	mono_domain_lock (domain);
+
 	if (klass->wastypebuilder) {
-		mono_domain_unlock (domain);
 		mono_loader_unlock ();
 
 		return mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
@@ -3957,7 +3952,6 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 		goto_if_nok (error, failure);
 	}
 
-	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 
 	if (klass->enumtype && !mono_class_is_valid_enum (klass)) {
@@ -3975,7 +3969,6 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 failure:
 	mono_class_set_type_load_failure (klass, "TypeBuilder could not create runtime class due to: %s", mono_error_get_message (error));
 	klass->wastypebuilder = TRUE;
-	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 failure_unlocked:
 	return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
