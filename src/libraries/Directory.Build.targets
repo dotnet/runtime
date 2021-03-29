@@ -50,6 +50,7 @@
 
     <PackageOutputPath Condition="'$(IsShippingPackage)' == 'true'">$(ArtifactsShippingPackagesDir)</PackageOutputPath>
     <PackageOutputPath Condition="'$(IsShippingPackage)' != 'true'">$(ArtifactsNonShippingPackagesDir)</PackageOutputPath>
+    <PkgProjPath>$(MSBuildProjectDirectory)\..\pkg\$(MSBuildProjectName).pkgproj</PkgProjPath>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
@@ -295,4 +296,24 @@
     <DefaultValidateFramework Remove="net6.0" />
   </ItemGroup>
 
+  <PropertyGroup Condition="Exists('$(PkgProjPath)')"> 
+    <ServicingVersion Condition="'$(ServicingVersion)' == ''">0</ServicingVersion>
+    <!-- Always update the package version.-->
+    <PackageVersion>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</PackageVersion>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="Exists('$(PkgProjPath)') and '$(AssemblyVersion)' == '$(MajorVersion).$(MinorVersion).0.0'">       
+    <AssemblyInNetCoreApp Condition="$(NetCoreAppLibrary.Contains('$(AssemblyName);')) or $(NetCoreAppLibraryNoReference.Contains('$(AssemblyName);'))">true</AssemblyInNetCoreApp>
+    <AssemblyInAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</AssemblyInAspNetCoreApp>
+    <AssemblyInWindowsDesktop Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</AssemblyInWindowsDesktop>
+    <AssemblyInRefPack  Condition="'$(AssemblyInNetCoreApp)' == 'true' or '$(AssemblyInAspNetCoreApp)' == 'true' or '$(AssemblyInWindowsDesktop)' == 'true'">true</AssemblyInRefPack>
+    <!-- Assembly version donot get updated in non-netfx ref pack assemblies. -->
+    <AssemblyVersion  Condition="'$(AssemblyInRefPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
+    <AssemblyVersion Condition="$(TargetFramework.StartsWith('net4')) and '$(AssemblyInRefPack)' == 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- PackageValidation will fail because of how we calculate the assembly version for supported target frameworks.-->
+    <SkipValidatePackage Condition="'$(AssemblyInRefPack)' == 'true'">true</SkipValidatePackage>
+  </PropertyGroup>
 </Project>
