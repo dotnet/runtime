@@ -199,7 +199,7 @@ run-debugger-tests:
 		unset LC_ALL; \
 	else \
 		export LC_ALL=en_US.UTF-8; \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) $(TEST_ARGS); \
+		$(DOTNET) test  --blame-hang --blame-hang-timeout 5m $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) $(TEST_ARGS); \
 		unset LC_ALL; \
 	fi
 
