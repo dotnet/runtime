@@ -36,20 +36,22 @@ namespace System.Reflection.Internal
             return handle;
         }
 
-        internal static unsafe bool TryReadFile(Stream stream, byte* buffer, int size)
+        internal static unsafe bool TryReadFile(Stream stream, byte* buffer, int size, out int bytesRead)
         {
             if (!IsReadFileAvailable)
             {
+                bytesRead = 0;
                 return false;
             }
 
             SafeHandle? handle = GetSafeFileHandle(stream);
             if (handle == null)
             {
+                bytesRead = 0;
                 return false;
             }
 
-            int result = Interop.Kernel32.ReadFile(handle, buffer, size, out int bytesRead, IntPtr.Zero);
+            int result = Interop.Kernel32.ReadFile(handle, buffer, size, out bytesRead, IntPtr.Zero);
 
             if (result == 0 || bytesRead != size)
             {
