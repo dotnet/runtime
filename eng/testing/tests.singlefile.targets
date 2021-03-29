@@ -15,9 +15,6 @@
     <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">chmod +rwx $(AssemblyName) &amp;&amp; ./$(AssemblyName)</RunScriptCommand>
   </PropertyGroup>
 
-  <PropertyGroup>
-  </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="$(CommonTestPath)SingleFileTestRunner\SingleFileTestRunner.cs"
              Link="Common\SingleFileTestRunner\SingleFileTestRunner.cs" />
