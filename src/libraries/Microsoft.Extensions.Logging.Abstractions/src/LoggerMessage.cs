@@ -149,7 +149,7 @@ namespace Microsoft.Extensions.Logging
 
             if (skipEnabledCheck)
             {
-                return (logger, exception) => Log(logger, exception);
+                return Log;
             }
 
             return (logger, exception) =>
@@ -192,7 +192,7 @@ namespace Microsoft.Extensions.Logging
 
             if (skipEnabledCheck)
             {
-                return (logger, arg1, exception) => Log(logger, arg1, exception);
+                return Log;
             }
 
             return (logger, arg1, exception) =>
@@ -237,7 +237,7 @@ namespace Microsoft.Extensions.Logging
 
             if (skipEnabledCheck)
             {
-                return (logger, arg1, arg2, exception) => Log(logger, arg1, arg2, exception);
+                return Log;
             }
 
             return (logger, arg1, arg2, exception) =>
@@ -284,7 +284,7 @@ namespace Microsoft.Extensions.Logging
 
             if (skipEnabledCheck)
             {
-                return (logger, arg1, arg2, arg3, exception) => Log(logger, arg1, arg2, arg3, exception);
+                return Log;
             }
 
             return (logger, arg1, arg2, arg3, exception) =>
@@ -333,7 +333,7 @@ namespace Microsoft.Extensions.Logging
 
             if (skipEnabledCheck)
             {
-                return (logger, arg1, arg2, arg3, arg4, exception) => Log(logger, arg1, arg2, arg3, arg4, exception);
+                return Log;
             }
 
             return (logger, arg1, arg2, arg3, arg4, exception) =>
@@ -384,7 +384,7 @@ namespace Microsoft.Extensions.Logging
 
             if (skipEnabledCheck)
             {
-                return (logger, arg1, arg2, arg3, arg4, arg5, exception) => Log(logger, arg1, arg2, arg3, arg4, arg5, exception);
+                return Log;
             }
 
             return (logger, arg1, arg2, arg3, arg4, arg5, exception) =>
@@ -437,7 +437,7 @@ namespace Microsoft.Extensions.Logging
 
             if (skipEnabledCheck)
             {
-                return (logger, arg1, arg2, arg3, arg4, arg5, arg6, exception) => Log(logger, arg1, arg2, arg3, arg4, arg5, arg6, exception);
+                return Log;
             }
 
             return (logger, arg1, arg2, arg3, arg4, arg5, arg6, exception) =>
