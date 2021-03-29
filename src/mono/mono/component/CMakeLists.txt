@@ -1,5 +1,3 @@
-
-
 # a list of every component.
 set(components "")
 
@@ -71,7 +69,7 @@ endforeach()
 if (NOT STATIC_COMPONENTS)
   # define a shared library for each component
   foreach (component IN LISTS components)
-    target_compile_definitions ("${component}-objects" PRIVATE -DCOMPILING_COMPONENT_DYNAMIC)
+    target_compile_definitions ("${component}-objects" PRIVATE -DCOMPILING_COMPONENT_DYNAMIC;-DMONO_DLL_IMPORT)
     add_library("mono-component-${component}" SHARED $<TARGET_OBJECTS:${component}-objects>)
     if (NOT DISABLE_SHARED_LIBS)
       # each shared library component gets its own copy for eglib

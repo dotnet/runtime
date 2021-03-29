@@ -106,7 +106,6 @@ if(DISABLE_INTERPRETER)
 endif()
 
 add_definitions(-DHAVE_CONFIG_H)
-add_definitions(-DMONO_DLL_EXPORT)
 
 if(GCC)
   add_definitions(-g)  # TODO: should this really be on by default?
