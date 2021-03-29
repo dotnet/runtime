@@ -20,7 +20,7 @@ namespace System.IO.Tests
                     .GetField("_strategy", BindingFlags.NonPublic | BindingFlags.Instance)
                     .GetValue(fileStream);
 
-                Assert.Contains(strategy.GetType().FullName, "Legacy");
+                Assert.Contains("Legacy", strategy.GetType().FullName);
             }
 
             File.Delete(filePath);
