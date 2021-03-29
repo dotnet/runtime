@@ -201,7 +201,7 @@ namespace System.Tests
             RunTest(GetNonRandomizedComparer("WrappedAroundStringComparerOrdinalIgnoreCase"), null, default);
             RunTest(new CustomStringComparer(), null, default); // not an inbox comparer
             RunTest(ci_enUS.GetStringComparer(CompareOptions.None), ci_enUS, CompareOptions.None);
-            RunTest(ci_enUS.GetStringComparer(CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType), ci_enUS, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType);
+            RunTest(ci_enUS.GetStringComparer(CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType), ci_enUS, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType);
             RunTest(ci_enUS.GetStringComparer(CompareOptions.Ordinal), null, default); // not linguistic
             RunTest(ci_enUS.GetStringComparer(CompareOptions.OrdinalIgnoreCase), null, default); // not linguistic
             RunTest(StringComparer.Create(CultureInfo.InvariantCulture, false), ci_inv, CompareOptions.None);
