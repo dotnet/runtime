@@ -374,6 +374,11 @@ bool ValueNumStore::VNFuncIsOverflowArithmetic(VNFunc vnf)
     return VNF_ADD_OVF <= vnf && vnf <= VNF_MUL_UN_OVF;
 }
 
+bool ValueNumStore::VNFuncIsNumericCast(VNFunc vnf)
+{
+    return (vnf == VNF_Cast) || (vnf == VNF_CastOvf);
+}
+
 unsigned ValueNumStore::VNFuncArity(VNFunc vnf)
 {
     // Read the bit field out of the table...
@@ -1747,7 +1752,7 @@ ValueNum ValueNumStore::VNForByrefCon(size_t cnsVal)
     return VnForConst(cnsVal, GetByrefCnsMap(), TYP_BYREF);
 }
 
-ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned /*=false*/)
+ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned /*=false*/ DEBUGARG(bool printResult))
 {
     assert(castToType != TYP_STRUCT);
     INT32 cnsVal = INT32(castToType) << INT32(VCA_BitCount);
@@ -1761,7 +1766,7 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned /
     ValueNum result = VNForIntCon(cnsVal);
 
 #ifdef DEBUG
-    if (m_pComp->verbose)
+    if (printResult && m_pComp->verbose)
     {
         printf("    VNForCastOper(%s%s) is " FMT_VN "\n", varTypeName(castToType), srcIsUnsigned ? ", unsignedSrc" : "",
                result);
@@ -1769,6 +1774,21 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned /
 #endif
 
     return result;
+}
+
+void ValueNumStore::GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool* pSrcIsUnsigned)
+{
+    assert(pCastToType != nullptr);
+    assert(pSrcIsUnsigned != nullptr);
+    assert(IsVNInt32Constant(vn));
+
+    int value = GetConstantInt32(vn);
+    assert(value >= 0);
+
+    *pSrcIsUnsigned = (value & INT32(VCA_UnsignedSrc)) != 0;
+    *pCastToType    = var_types(value >> INT32(VCA_BitCount));
+
+    assert(VNForCastOper(*pCastToType, *pSrcIsUnsigned DEBUGARG(false)) == vn);
 }
 
 ValueNum ValueNumStore::VNForHandle(ssize_t cnsVal, unsigned handleFlags)
@@ -1976,26 +1996,23 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         // Special case for VNF_Cast of constant handles
         // Don't allow an eval/fold of a GT_CAST(non-I_IMPL, Handle)
         //
-        if ((func == VNF_Cast) && (typ != TYP_I_IMPL) && IsVNHandle(arg0VN))
+        if (VNFuncIsNumericCast(func) && (typ != TYP_I_IMPL) && IsVNHandle(arg0VN))
         {
             canFold = false;
         }
 
-        // Currently CanEvalForConstantArgs() returns false for VNF_CastOvf
-        // In the future we could handle this case in folding.
-        assert(func != VNF_CastOvf);
-
         // It is possible for us to have mismatched types (see Bug 750863)
         // We don't try to fold a binary operation when one of the constant operands
-        // is a floating-point constant and the other is not.
-        //
+        // is a floating-point constant and the other is not, except for casts.
+        // For casts, the second operand just carries the information about the source.
+
         var_types arg0VNtyp      = TypeOfVN(arg0VN);
         bool      arg0IsFloating = varTypeIsFloating(arg0VNtyp);
 
         var_types arg1VNtyp      = TypeOfVN(arg1VN);
         bool      arg1IsFloating = varTypeIsFloating(arg1VNtyp);
 
-        if (arg0IsFloating != arg1IsFloating)
+        if (!VNFuncIsNumericCast(func) && (arg0IsFloating != arg1IsFloating))
         {
             canFold = false;
         }
@@ -2634,7 +2651,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
     assert(!VNHasExc(arg0VN) && !VNHasExc(arg1VN)); // Otherwise, would not be constant.
 
     // if our func is the VNF_Cast operation we handle it first
-    if (func == VNF_Cast)
+    if (VNFuncIsNumericCast(func))
     {
         return EvalCastForConstantArgs(typ, func, arg0VN, arg1VN);
     }
@@ -2845,7 +2862,7 @@ ValueNum ValueNumStore::EvalFuncForConstantFPArgs(var_types typ, VNFunc func, Va
 //
 ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
-    assert(func == VNF_Cast);
+    assert(VNFuncIsNumericCast(func));
     assert(IsVNConstant(arg0VN) && IsVNConstant(arg1VN));
 
     // Stack-normalize the result type.
@@ -2855,12 +2872,6 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
     }
 
     var_types arg0VNtyp = TypeOfVN(arg0VN);
-    var_types arg1VNtyp = TypeOfVN(arg1VN);
-
-    // arg1VN is really the gtCastType that we are casting to
-    assert(arg1VNtyp == TYP_INT);
-    int arg1Val = ConstantValue<int>(arg1VN);
-    assert(arg1Val >= 0);
 
     if (IsVNHandle(arg0VN))
     {
@@ -2868,12 +2879,12 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
         assert(typ == TYP_I_IMPL);
     }
 
-    // We previously encoded the castToType operation using vnForCastOper()
-    //
-    bool      srcIsUnsigned = ((arg1Val & INT32(VCA_UnsignedSrc)) != 0);
-    var_types castToType    = var_types(arg1Val >> INT32(VCA_BitCount));
-
+    // We previously encoded the castToType operation using VNForCastOper().
+    var_types castToType;
+    bool      srcIsUnsigned;
+    GetCastOperFromVN(arg1VN, &castToType, &srcIsUnsigned);
     var_types castFromType = arg0VNtyp;
+    bool checkedCast       = func == VNF_CastOvf;
 
     switch (castFromType) // GT_CAST source type
     {
@@ -2884,6 +2895,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
         case TYP_INT:
         {
             int arg0Val = GetConstantInt32(arg0VN);
+            assert(!checkedCast || !CheckedOps::CastFromIntOverflows(arg0Val, castToType, srcIsUnsigned));
 
             switch (castToType)
             {
@@ -2966,6 +2978,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
 #endif
                 case TYP_LONG:
                     INT64 arg0Val = GetConstantInt64(arg0VN);
+                    assert(!checkedCast || !CheckedOps::CastFromLongOverflows(arg0Val, castToType, srcIsUnsigned));
 
                     switch (castToType)
                     {
@@ -3022,6 +3035,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
         case TYP_FLOAT:
         {
             float arg0Val = GetConstantSingle(arg0VN);
+            assert(!checkedCast || !CheckedOps::CastFromFloatOverflows(arg0Val, castToType));
 
             switch (castToType)
             {
@@ -3063,6 +3077,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
         case TYP_DOUBLE:
         {
             double arg0Val = GetConstantDouble(arg0VN);
+            assert(!checkedCast || !CheckedOps::CastFromDoubleOverflows(arg0Val, castToType));
 
             switch (castToType)
             {
@@ -3192,6 +3207,7 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
             case VNF_MUL_UN_OVF:
 
             case VNF_Cast:
+            case VNF_CastOvf:
                 // We can evaluate these.
                 return true;
 
@@ -3323,6 +3339,29 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
             // TODO-Review: what about TYP_BYREF?
             assert(!"Unexpected type in VNEvalShouldFold for overflow arithmetic");
             return false;
+        }
+    }
+
+    // Is this a checked cast that will always throw an exception?
+    if (func == VNF_CastOvf)
+    {
+        var_types castToType;
+        bool      fromUnsigned;
+        GetCastOperFromVN(arg1VN, &castToType, &fromUnsigned);
+        var_types castFromType = TypeOfVN(arg0VN);
+
+        switch (castFromType)
+        {
+            case TYP_INT:
+                return !CheckedOps::CastFromIntOverflows(GetConstantInt32(arg0VN), castToType, fromUnsigned);
+            case TYP_LONG:
+                return !CheckedOps::CastFromLongOverflows(GetConstantInt64(arg0VN), castToType, fromUnsigned);
+            case TYP_FLOAT:
+                return !CheckedOps::CastFromFloatOverflows(GetConstantSingle(arg0VN), castToType);
+            case TYP_DOUBLE:
+                return !CheckedOps::CastFromDoubleOverflows(GetConstantDouble(arg0VN), castToType);
+            default:
+                return false;
         }
     }
 
@@ -9196,7 +9235,7 @@ void Compiler::fgValueNumberCastTree(GenTree* tree)
     bool         srcIsUnsigned    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
     bool         hasOverflowCheck = tree->gtOverflowEx();
 
-    assert(genActualType(castToType) == genActualType(tree->TypeGet())); // Insure that the resultType is correct
+    assert(genActualType(castToType) == genActualType(tree->TypeGet())); // Ensure that the resultType is correct
 
     tree->gtVNPair = vnStore->VNPairForCast(srcVNPair, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 }
@@ -9276,10 +9315,24 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
     // If we have a check for overflow, add the exception information.
     if (hasOverflowCheck)
     {
-        ValueNumPair ovfChk = VNPairForFunc(TYP_REF, VNF_ConvOverflowExc, castArgVNP, castTypeVNPair);
-        ValueNumPair excSet = VNPExcSetSingleton(ovfChk);
-        excSet              = VNPExcSetUnion(excSet, castArgxVNP);
-        resultVNP           = VNPWithExc(castNormRes, excSet);
+        ValueNumPair excSet = ValueNumStore::VNPForEmptyExcSet();
+
+        ValueNumKind vnKinds[2] = { VNK_Liberal, VNK_Conservative };
+        for (ValueNumKind vnKind : vnKinds)
+        {
+            // Do not add exceptions for folded casts.
+            // We only fold checked casts that do not overflow.
+            if (IsVNConstant(castNormRes.Get(vnKind)))
+            {
+                continue;
+            }
+
+            ValueNum ovfChk = VNForFunc(TYP_REF, VNF_ConvOverflowExc, castArgVNP.Get(vnKind), castTypeVNPair.Get(vnKind));
+            excSet.Set(vnKind, VNExcSetSingleton(ovfChk));
+        }
+
+        excSet    = VNPExcSetUnion(excSet, castArgxVNP);
+        resultVNP = VNPWithExc(castNormRes, excSet);
     }
 
     return resultVNP;
@@ -9607,34 +9660,18 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_LNG2DBL:
-            vnf = VNF_Lng2Dbl;
-            break;
         case CORINFO_HELP_ULNG2DBL:
-            vnf = VNF_ULng2Dbl;
-            break;
         case CORINFO_HELP_DBL2INT:
-            vnf = VNF_Dbl2Int;
+        case CORINFO_HELP_DBL2LNG:
+        case CORINFO_HELP_DBL2UINT:
+        case CORINFO_HELP_DBL2ULNG:
+            vnf = VNF_Cast;
             break;
         case CORINFO_HELP_DBL2INT_OVF:
-            vnf = VNF_Dbl2Int;
-            break;
-        case CORINFO_HELP_DBL2LNG:
-            vnf = VNF_Dbl2Lng;
-            break;
         case CORINFO_HELP_DBL2LNG_OVF:
-            vnf = VNF_Dbl2Lng;
-            break;
-        case CORINFO_HELP_DBL2UINT:
-            vnf = VNF_Dbl2UInt;
-            break;
         case CORINFO_HELP_DBL2UINT_OVF:
-            vnf = VNF_Dbl2UInt;
-            break;
-        case CORINFO_HELP_DBL2ULNG:
-            vnf = VNF_Dbl2ULng;
-            break;
         case CORINFO_HELP_DBL2ULNG_OVF:
-            vnf = VNF_Dbl2ULng;
+            vnf = VNF_CastOvf;
             break;
         case CORINFO_HELP_FLTREM:
             vnf = VNFunc(GT_MOD);
@@ -9859,8 +9896,8 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         //
         switch (helpFunc)
         {
+            // This helper always throws the VNF_OverflowExc exception.
             case CORINFO_HELP_OVERFLOW:
-                // This helper always throws the VNF_OverflowExc exception
                 vnpExc = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_OverflowExc, vnStore->VNPForVoid()));
                 break;
@@ -9896,6 +9933,63 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         if (!needsFurtherWork && (pure || isAlloc))
         {
             VNFunc vnf = fgValueNumberJitHelperMethodVNFunc(helpFunc);
+
+            // We have a special case: a helper call that represents a cast.
+            // For VN purposes, we do not care that it is actually a call, so
+            // value number it like any normal cast.
+            // TODO-Cleanup: consider moving the expansion to casting helpers
+            // from morph to lower to avoid having to do this special handling
+            // and carbon-copying fgValueNumberCastTree, and having to
+            // handle the actual folding in gtFoldExprCall().
+            if (ValueNumStore::VNFuncIsNumericCast(vnf))
+            {
+                assert(pure && !isAlloc && !modHeap && !mayRunCctor);
+
+                GenTree*     src          = call->gtCallArgs->GetNode();
+                ValueNumPair srcVNPair    = src->gtVNPair;
+                var_types    castFromType = src->TypeGet();
+
+                // The call tree for the helper lost the information about the whether the
+                // destination is signed or not. As such we need to query for the type of helper
+                // we have, again...
+                var_types castToType = TYP_UNDEF;
+                switch (helpFunc)
+                {
+                    case CORINFO_HELP_DBL2INT:
+                    case CORINFO_HELP_DBL2INT_OVF:
+                        castToType = TYP_INT;
+                        break;
+                    case CORINFO_HELP_DBL2UINT:
+                    case CORINFO_HELP_DBL2UINT_OVF:
+                        castToType = TYP_UINT;
+                        break;
+                    case CORINFO_HELP_DBL2LNG_OVF:
+                        castToType = TYP_LONG;
+                        break;
+                    case CORINFO_HELP_DBL2ULNG:
+                    case CORINFO_HELP_DBL2ULNG_OVF:
+                        castToType = TYP_ULONG;
+                        break;
+                    case CORINFO_HELP_LNG2DBL:
+                    case CORINFO_HELP_ULNG2DBL:
+                        castToType = TYP_DOUBLE;
+                        break;
+                    case CORINFO_HELP_DBL2LNG:
+                        castToType = TYP_LONG;
+                        break;
+                    default:
+                        assert(!"Unexpected helper for casts");
+                }
+
+                // CORINFO_HELP_ULNG2DBL is the only helper that casts from an unsigned integer.
+                bool         srcIsUnsigned    = helpFunc == CORINFO_HELP_ULNG2DBL;
+                bool         hasOverflowCheck = vnf == VNF_CastOvf;
+
+                call->gtVNPair = vnStore->VNPairForCast(srcVNPair, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
+
+                // Casting helpers, checked or not, do not modify the heap.
+                return false;
+            }
 
             if (mayRunCctor)
             {
