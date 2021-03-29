@@ -7,7 +7,7 @@ namespace System.Drawing.Imaging
 
     // sdkinc\imaging.h
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
-    internal class ImageCodecInfoPrivate
+    internal sealed class ImageCodecInfoPrivate
     {
 #pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
         [MarshalAs(UnmanagedType.Struct)]

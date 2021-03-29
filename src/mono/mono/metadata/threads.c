@@ -2701,39 +2701,6 @@ mono_thread_callbacks_init (void)
 void
 mono_thread_cleanup (void)
 {
-	/* Wait for pending threads to park on joinable threads list */
-	/* NOTE, waiting on this should be extremely rare and will only happen */
-	/* under certain specific conditions. */
-	gboolean wait_result = threads_wait_pending_joinable_threads (2000);
-	if (!wait_result)
-		g_warning ("Waiting on threads to park on joinable thread list timed out.");
-
-	mono_threads_join_threads ();
-
-#if !defined(HOST_WIN32)
-	/* The main thread must abandon any held mutexes (particularly
-	 * important for named mutexes as they are shared across
-	 * processes, see bug 74680.)  This will happen when the
-	 * thread exits, but if it's not running in a subthread it
-	 * won't exit in time.
-	 */
-	if (!mono_runtime_get_no_exec ())
-		abandon_mutexes (mono_thread_internal_current ());
-#endif
-
-#if 0
-	/* This stuff needs more testing, it seems one of these
-	 * critical sections can be locked when mono_thread_cleanup is
-	 * called.
-	 */
-	mono_coop_mutex_destroy (&threads_mutex);
-	mono_os_mutex_destroy (&mono_interlocked_mutex);
-	mono_os_mutex_destroy (&delayed_free_table_mutex);
-	mono_os_mutex_destroy (&small_id_mutex);
-	mono_coop_cond_destroy (&zero_pending_joinable_thread_event);
-	mono_coop_cond_destroy (&pending_native_thread_join_calls_event);
-	mono_os_event_destroy (&background_change_event);
-#endif
 }
 
 void

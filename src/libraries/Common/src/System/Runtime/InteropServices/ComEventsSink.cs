@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices
     /// managed delegates to COM's connection point based events.
     /// </summary>
     [SupportedOSPlatform("windows")]
-    internal partial class ComEventsSink : IDispatch, ICustomQueryInterface
+    internal sealed partial class ComEventsSink : IDispatch, ICustomQueryInterface
     {
         private Guid _iidSourceItf;
         private ComTypes.IConnectionPoint? _connectionPoint;

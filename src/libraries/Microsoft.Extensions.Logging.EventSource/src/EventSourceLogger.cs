@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// On Windows platforms EventSource will deliver messages using Event Tracing for Windows (ETW) events.
     /// On Linux EventSource will use LTTng (http://lttng.org) to deliver messages.
     /// </remarks>
-    internal class EventSourceLogger : ILogger
+    internal sealed class EventSourceLogger : ILogger
     {
         private static int _activityIds;
         private readonly LoggingEventSource _eventSource;

@@ -16,7 +16,7 @@ namespace System.Xml.Xsl.Runtime
     /// This class keeps a list of whitespace rules in order to determine whether whitespace children of particular
     /// elements should be stripped.
     /// </summary>
-    internal class WhitespaceRuleLookup
+    internal sealed class WhitespaceRuleLookup
     {
         private readonly Hashtable _qnames;
         private readonly ArrayList _wildcards;

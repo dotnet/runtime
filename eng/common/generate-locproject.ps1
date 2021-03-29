@@ -38,7 +38,7 @@ if ($allXlfFiles) {
     $langXlfFiles = Get-ChildItem -Recurse -Path "$SourcesDirectory\*\*.$firstLangCode.xlf"
 }
 $langXlfFiles | ForEach-Object {
-    $null = $_.Name -Match "([^.]+)\.[\w-]+\.xlf" # matches '[filename].[langcode].xlf'
+    $null = $_.Name -Match "(.+)\.[\w-]+\.xlf" # matches '[filename].[langcode].xlf
     
     $destinationFile = "$($_.Directory.FullName)\$($Matches.1).xlf"
     $xlfFiles += Copy-Item "$($_.FullName)" -Destination $destinationFile -PassThru
@@ -52,7 +52,7 @@ $locJson = @{
             LanguageSet = $LanguageSet
             LocItems = @(
                 $locFiles | ForEach-Object {
-                    $outputPath = "Localize\$(($_.DirectoryName | Resolve-Path -Relative) + "\")" 
+                    $outputPath = "$(($_.DirectoryName | Resolve-Path -Relative) + "\")" 
                     $continue = $true
                     foreach ($exclusion in $exclusions.Exclusions) {
                         if ($outputPath.Contains($exclusion))

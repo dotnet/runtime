@@ -1424,7 +1424,7 @@ namespace System.Xml.Serialization
             return _aliasBase + _tempNamespacePrefix;
         }
 
-        internal class TypeEntry
+        internal sealed class TypeEntry
         {
             internal XmlSerializationWriteCallback? callback;
             internal string? typeNs;
@@ -1532,7 +1532,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ReflectionAwareCodeGen
+    internal sealed class ReflectionAwareCodeGen
     {
         private const string arrayMemberKey = "0";
         // reflectionVariables holds mapping between a reflection entity
@@ -2187,7 +2187,7 @@ namespace System.Xml.Serialization
 ";
     }
 
-    internal class XmlSerializationWriterCodeGen : XmlSerializationCodeGen
+    internal sealed class XmlSerializationWriterCodeGen : XmlSerializationCodeGen
     {
         internal XmlSerializationWriterCodeGen(IndentedWriter writer, TypeScope[] scopes, string access, string className) : base(writer, scopes, access, className)
         {

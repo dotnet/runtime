@@ -2736,6 +2736,9 @@ public:
     virtual
     HRESULT IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped) = 0;
 
+    virtual
+    bool MetadataUpdatesApplied() = 0;
+
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL
 

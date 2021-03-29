@@ -8,7 +8,7 @@ namespace System.Threading.Tasks
     /// <seealso cref="OperationCanceledException"/>s contain the relevant <see cref="CancellationToken"/>,
     /// while also avoiding unnecessary allocations for closure captures.
     /// </summary>
-    internal class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
+    internal sealed class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
     {
         public TaskCompletionSourceWithCancellation() : base(TaskCreationOptions.RunContinuationsAsynchronously)
         {

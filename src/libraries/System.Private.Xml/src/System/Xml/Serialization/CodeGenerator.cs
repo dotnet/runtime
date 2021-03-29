@@ -21,7 +21,7 @@ using System.Xml.Extensions;
 
 namespace System.Xml.Serialization
 {
-    internal class CodeGenerator
+    internal sealed class CodeGenerator
     {
         internal const BindingFlags InstancePublicBindingFlags = BindingFlags.Instance | BindingFlags.Public;
         internal const BindingFlags InstanceBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
@@ -1337,7 +1337,7 @@ namespace System.Xml.Serialization
             Br(_methodEndLabel);
         }
 
-        internal class WhileState
+        internal sealed class WhileState
         {
             public Label StartLabel;
             public Label CondLabel;
@@ -1405,7 +1405,7 @@ namespace System.Xml.Serialization
     }
 
 
-    internal class ArgBuilder
+    internal sealed class ArgBuilder
     {
         internal string Name;
         internal int Index;
@@ -1418,7 +1418,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ForState
+    internal sealed class ForState
     {
         private readonly LocalBuilder _indexVar;
         private readonly Label _beginLabel;
@@ -1476,7 +1476,7 @@ namespace System.Xml.Serialization
         GreaterThanOrEqualTo
     }
 
-    internal class IfState
+    internal sealed class IfState
     {
         private Label _elseBegin;
         private Label _endIf;
@@ -1506,7 +1506,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class LocalScope
+    internal sealed class LocalScope
     {
         public readonly LocalScope? parent;
         private readonly Dictionary<string, LocalBuilder> _locals;
@@ -1581,7 +1581,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class MethodBuilderInfo
+    internal sealed class MethodBuilderInfo
     {
         public readonly MethodBuilder MethodBuilder;
         public readonly Type[] ParameterTypes;
@@ -1605,7 +1605,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class CodeGeneratorConversionException : Exception
+    internal sealed class CodeGeneratorConversionException : Exception
     {
         private readonly Type _sourceType;
         private readonly Type _targetType;
