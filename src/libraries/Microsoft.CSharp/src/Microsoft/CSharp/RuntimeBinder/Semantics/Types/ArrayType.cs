@@ -48,7 +48,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override Type AssociatedSystemType
         {
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 Type elementType = ElementType.AssociatedSystemType;
@@ -62,7 +62,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override ConstValKind ConstValKind => ConstValKind.IntPtr;
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public override AggregateType GetAts() => SymbolLoader.GetPredefindType(PredefinedType.PT_ARRAY);
     }
 }

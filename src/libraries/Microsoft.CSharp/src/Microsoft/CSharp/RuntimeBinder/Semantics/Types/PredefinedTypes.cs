@@ -14,7 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private static readonly AggregateSymbol[] s_predefSymbols = new AggregateSymbol[(int)PredefinedType.PT_COUNT];
 
         // We want to delay load the predefined symbols as needed.
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static AggregateSymbol DelayLoadPredefSym(PredefinedType pt)
         {
             AggregateType type = (AggregateType)SymbolTable.GetCTypeFromType(PredefinedTypeFacts.GetAssociatedSystemType(pt));
@@ -31,7 +31,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return sym;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static AggregateSymbol GetPredefinedAggregate(PredefinedType pt) =>
             s_predefSymbols[(int)pt] ?? (s_predefSymbols[(int)pt] = DelayLoadPredefSym(pt));
 

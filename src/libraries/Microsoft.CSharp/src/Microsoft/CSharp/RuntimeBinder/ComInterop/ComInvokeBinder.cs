@@ -149,7 +149,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return marshalType;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal DynamicMetaObject Invoke()
         {
             _keywordArgNames = _callInfo.ArgumentNames.ToArray();
@@ -193,7 +193,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return vars.Count > 0 ? Expression.Block(vars, expression) : expression;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expression GenerateTryBlock()
         {
             //
@@ -398,7 +398,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// Create a stub for the target of the optimized lopop.
         /// </summary>
         /// <returns></returns>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expression MakeIDispatchInvokeTarget()
         {
             Debug.Assert(_varEnumSelector.VariantBuilders.Length == _totalExplicitArgs);

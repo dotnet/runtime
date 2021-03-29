@@ -75,7 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Set the values of the BinOpFullSig from the given BinOpSig. The ExpressionBinder is needed to get
                 the predefined types. Returns true iff the predef types are found.
             ***************************************************************************************************/
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             public BinOpFullSig(ExpressionBinder fnc, BinOpSig bos)
             {
                 this.pt1 = bos.pt1;

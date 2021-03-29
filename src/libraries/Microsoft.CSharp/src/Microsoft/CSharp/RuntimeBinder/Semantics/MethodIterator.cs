@@ -56,7 +56,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             public bool CanUseCurrentSymbol
             {
-                [RequiresUnreferencedCode("Types and members might be removed")]
+                [RequiresUnreferencedCode(Binder.TrimmerWarning)]
                 get
                 {
                     // Make sure that whether we're seeing a ctor is consistent with the flag.

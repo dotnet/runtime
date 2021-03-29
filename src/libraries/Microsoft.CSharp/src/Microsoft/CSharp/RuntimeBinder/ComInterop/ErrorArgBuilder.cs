@@ -17,7 +17,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Debug.Assert(parameterType == typeof(ErrorWrapper));
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression Marshal(Expression parameter)
         {
             // parameter.ErrorCode

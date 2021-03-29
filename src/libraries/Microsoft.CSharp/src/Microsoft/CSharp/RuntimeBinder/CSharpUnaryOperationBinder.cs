@@ -31,11 +31,11 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public BindingFlag BindingFlags => 0;
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
             => runtimeBinder.BindUnaryOperation(this, arguments, locals);
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
             => SymbolTable.PopulateSymbolTableWithName(Operation.GetCLROperatorName(), null, arguments[0].Type);
 
@@ -58,7 +58,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="isChecked">True if the operation is defined in a checked context; otherwise, false.</param>
         /// <param name="callingContext">The <see cref="Type"/> that indicates where this operation is defined.</param>
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public CSharpUnaryOperationBinder(
             ExpressionType operation,
             bool isChecked,

@@ -17,10 +17,10 @@ namespace Microsoft.CSharp.RuntimeBinder
         // are only dispatched dynamically when the receiver is dynamic, and hence boxed.
         bool IsBinderThatCanHaveRefReceiver { get; }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments);
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals);
 
         BindingFlag BindingFlags { get; }

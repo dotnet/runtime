@@ -35,7 +35,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Create an expr for exprSrc.Value where exprSrc.type is a NullableType.
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static Expr BindNubValue(Expr exprSrc)
         {
             Debug.Assert(exprSrc != null && exprSrc.Type is NullableType);
@@ -59,7 +59,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Create an expr for new T?(exprSrc) where T is exprSrc.type.
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static ExprCall BindNubNew(Expr exprSrc)
         {
             Debug.Assert(exprSrc != null);

@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public BindingFlag BindingFlags => 0;
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
         {
             Debug.Assert(arguments.Length == 1);
@@ -38,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 : runtimeBinder.BindImplicitConversion(arguments, Type, locals, ConversionKind == CSharpConversionKind.ArrayCreationConversion);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
         {
             // Conversions don't need to do anything, since they're just conversions!
@@ -65,7 +65,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="conversionKind">The kind of conversion for this operation.</param>
         /// <param name="isChecked">True if the operation is defined in a checked context; otherwise, false.</param>
         /// <param name="callingContext">The <see cref="Type"/> that indicates where this operation is defined.</param>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public CSharpConvertBinder(
             Type type,
             CSharpConversionKind conversionKind,

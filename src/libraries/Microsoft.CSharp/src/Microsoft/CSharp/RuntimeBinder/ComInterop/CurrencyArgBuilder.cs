@@ -19,7 +19,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Debug.Assert(parameterType == typeof(CurrencyWrapper));
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression Marshal(Expression parameter)
         {
             // parameter.WrappedObject
@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             );
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression MarshalToRef(Expression parameter)
         {
             // Decimal.ToOACurrency(parameter.WrappedObject)

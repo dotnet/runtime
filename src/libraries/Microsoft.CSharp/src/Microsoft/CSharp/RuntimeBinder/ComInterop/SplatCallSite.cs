@@ -26,7 +26,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         public delegate object InvokeDelegate(object[] args);
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal object Invoke(object[] args)
         {
             Debug.Assert(args != null);

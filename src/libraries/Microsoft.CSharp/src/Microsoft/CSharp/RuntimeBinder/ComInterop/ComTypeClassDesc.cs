@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         private LinkedList<string> _sourceItfs; // source interfaces supported by this coclass
         private Type _typeObj;
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public object CreateInstance()
         {
             if (_typeObj == null)
@@ -26,7 +26,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return Activator.CreateInstance(Type.GetTypeFromCLSID(Guid));
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal ComTypeClassDesc(ComTypes.ITypeInfo typeInfo, ComTypeLibDesc typeLibDesc) :
             base(typeInfo, typeLibDesc)
         {

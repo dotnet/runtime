@@ -20,7 +20,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private static MethodInfo s_DoubleIsNaN;
         private static MethodInfo s_SingleIsNaN;
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal static DynamicMetaObject Bind(
                 ICSharpBinder action,
                 RuntimeBinder binder,

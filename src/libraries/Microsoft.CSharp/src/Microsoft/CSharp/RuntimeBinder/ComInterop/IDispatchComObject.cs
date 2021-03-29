@@ -79,7 +79,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         private ComTypeDesc _comTypeDesc;
         private static readonly Dictionary<Guid, ComTypeDesc> s_cacheComTypeDesc = new Dictionary<Guid, ComTypeDesc>();
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal IDispatchComObject(IDispatch rcw)
             : base(rcw)
         {

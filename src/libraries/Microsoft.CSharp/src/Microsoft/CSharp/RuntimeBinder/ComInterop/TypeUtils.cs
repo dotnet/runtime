@@ -74,7 +74,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 IsImplicitBoxingConversion(source, destination);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal static bool IsImplicitlyConvertible(Type source, Type destination, bool considerUserDefined)
         {
             return IsImplicitlyConvertible(source, destination) ||
@@ -82,7 +82,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         //CONFORMING
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal static MethodInfo GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType, bool implicitOnly)
         {
             // check for implicit coercions first

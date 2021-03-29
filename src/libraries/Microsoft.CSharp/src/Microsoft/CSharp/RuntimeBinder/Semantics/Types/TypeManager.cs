@@ -179,7 +179,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pParamModifier;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static AggregateSymbol GetNullable() => GetPredefAgg(PredefinedType.PT_G_OPTIONAL);
 
         private static CType SubstType(CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, bool denormMeth)
@@ -546,7 +546,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static AggregateSymbol GetPredefAgg(PredefinedType pt) => PredefinedTypes.GetPredefinedAggregate(pt);
 
         public static AggregateType SubstType(AggregateType typeSrc, SubstContext ctx) =>
@@ -586,7 +586,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // RUNTIME BINDER ONLY CHANGE
         // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal static CType GetBestAccessibleType(AggregateSymbol context, CType typeSrc)
         {
             // This method implements the "best accessible type" algorithm for determining the type
@@ -663,7 +663,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GetPredefAgg(PredefinedType.PT_VALUE).getThisType();
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static bool TryVarianceAdjustmentToGetAccessibleType(AggregateSymbol context, AggregateType typeSrc, out CType typeDst)
         {
             Debug.Assert(typeSrc != null);
@@ -724,7 +724,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static bool TryArrayVarianceAdjustmentToGetAccessibleType(AggregateSymbol context, ArrayType typeSrc, out CType typeDst)
         {
             Debug.Assert(typeSrc != null);

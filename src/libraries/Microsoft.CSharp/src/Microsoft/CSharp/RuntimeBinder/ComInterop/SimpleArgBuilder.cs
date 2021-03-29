@@ -22,7 +22,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         protected Type ParameterType { get; }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression Marshal(Expression parameter)
         {
             Debug.Assert(parameter != null);

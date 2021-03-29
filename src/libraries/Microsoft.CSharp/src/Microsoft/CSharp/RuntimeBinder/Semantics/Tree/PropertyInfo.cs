@@ -22,7 +22,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public PropertyInfo PropertyInfo
         {
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 // To do this, we need to construct a type array of the parameter types,

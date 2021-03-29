@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Debug.Assert(parameterType == typeof(DateTime));
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression MarshalToRef(Expression parameter)
         {
             // parameter.ToOADate()

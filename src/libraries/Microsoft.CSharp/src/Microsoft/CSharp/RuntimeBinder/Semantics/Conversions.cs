@@ -24,7 +24,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             when the source is a reference type and the destination is a base type of the source. Note
             that typeDst.IsRefType() may still return false (when both are type parameters).
         ***************************************************************************************************/
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static bool FImpRefConv(CType typeSrc, CType typeDst) =>
             typeSrc.IsReferenceType && SymbolLoader.HasIdentityOrImplicitReferenceConversion(typeSrc, typeDst);
 
@@ -72,7 +72,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             The latter two cases can happen with type variables even though the other type variable is not
             a reference type.
         ***************************************************************************************************/
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static bool FExpRefConv(CType typeSrc, CType typeDst)
         {
             Debug.Assert(typeSrc != null);
@@ -218,11 +218,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             o If type parameter Xi is declared to be contravariant ("in") then either Si must be identical to Ti,
               or Si and Ti must both be reference types.
         ***************************************************************************************************/
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static bool HasGenericDelegateExplicitReferenceConversion(CType source, CType target) =>
             target is AggregateType aggTarget && HasGenericDelegateExplicitReferenceConversion(source, aggTarget);
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static bool HasGenericDelegateExplicitReferenceConversion(CType pSource, AggregateType pTarget)
         {
             if (!(pSource is AggregateType aggSrc) ||

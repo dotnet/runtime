@@ -38,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return mo.Expression is ParameterExpression pe && pe.IsByRef;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal static bool IsStrongBoxArg(DynamicMetaObject o)
         {
             Type t = o.LimitType;
@@ -47,7 +47,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         // This helper prepares arguments for COM binding by transforming ByVal StrongBox arguments
         // into ByRef expressions that represent the argument's Value fields.
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal static bool[] ProcessArgumentsForCom(ref DynamicMetaObject[] args)
         {
             Debug.Assert(args != null);

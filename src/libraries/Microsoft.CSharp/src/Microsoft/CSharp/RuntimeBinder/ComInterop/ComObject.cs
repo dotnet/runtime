@@ -31,7 +31,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// Gets a <see cref="ComObject"/> that wraps the runtime-callable-wrapper, or creates one if none currently exists.
         /// </summary>
         /// <returns></returns>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static ComObject ObjectToComObject(object rcw)
         {
             Debug.Assert(ComBinder.IsComObject(rcw));
@@ -72,7 +72,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         // Expression that finds or creates a ComObject that corresponds to given Rcw
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal static MethodCallExpression RcwToComObject(Expression rcw)
         {
             return Expression.Call(
@@ -81,7 +81,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             );
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static ComObject CreateComObject(object rcw)
         {
             if (rcw is IDispatch dispatchObject)

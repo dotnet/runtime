@@ -9,7 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     internal interface IPseudoComObject
     {
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         DynamicMetaObject GetMetaObject(Expression expression);
     }
 }

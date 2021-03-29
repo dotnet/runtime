@@ -18,13 +18,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             _innerBuilder = innerBuilder;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression Marshal(Expression parameter)
         {
             return _innerBuilder.Marshal(Helpers.Convert(parameter, _parameterType));
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression MarshalToRef(Expression parameter)
         {
             //we are not supporting conversion InOut

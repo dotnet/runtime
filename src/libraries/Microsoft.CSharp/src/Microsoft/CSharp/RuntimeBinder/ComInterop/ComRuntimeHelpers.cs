@@ -15,6 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     internal static class ComRuntimeHelpers
     {
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static void CheckThrowException(int hresult, ref ExcepInfo excepInfo, uint argErr, string message)
         {
             if (ComHresults.IsSuccess(hresult))
@@ -206,7 +207,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static BoundDispEvent CreateComEvent(object rcw, Guid sourceIid, int dispid)
         {
             return new BoundDispEvent(rcw, sourceIid, dispid);

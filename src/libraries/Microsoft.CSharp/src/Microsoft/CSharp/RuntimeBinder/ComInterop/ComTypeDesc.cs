@@ -26,7 +26,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             TypeLib = typeLibDesc;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal static ComTypeDesc FromITypeInfo(ITypeInfo typeInfo, TYPEATTR typeAttr)
         {
             switch (typeAttr.typekind)

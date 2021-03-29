@@ -50,7 +50,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Set the values of the UnaOpFullSig from the given UnaOpSig. The ExpressionBinder is needed to get
                 the predefined type. Returns true iff the predef type is found.
             ***************************************************************************************************/
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             public UnaOpFullSig(ExpressionBinder fnc, UnaOpSig uos)
             {
                 this.pt = uos.pt;

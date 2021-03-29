@@ -76,7 +76,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public AggregateType BaseClass
         {
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 if (_baseType == null)
@@ -112,7 +112,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public IEnumerable<AggregateType> TypeHierarchy
         {
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 if (IsInterfaceType)
@@ -157,7 +157,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool IsCollectionType
         {
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 Type sysType = AssociatedSystemType;
@@ -183,7 +183,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeArray WinRTCollectionIfacesAll
         {
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 if (_winrtifacesAll == null)
@@ -302,11 +302,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override Type AssociatedSystemType
         {
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get => _associatedSystemType ?? (_associatedSystemType = CalculateAssociatedSystemType());
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Type CalculateAssociatedSystemType()
         {
             Type uninstantiatedType = OwningAggregate.AssociatedSystemType;
@@ -409,7 +409,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public override AggregateType GetAts() => this;
     }
 }

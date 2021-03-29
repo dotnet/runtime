@@ -269,7 +269,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Context = context;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static AggregateType GetPredefindType(PredefinedType pt)
         {
             Debug.Assert(pt != PredefinedType.PT_VOID); // use getVoidType()
@@ -277,14 +277,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return SymbolLoader.GetPredefindType(pt);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateAssignmentConversion(Expr op1, Expr op2, bool allowExplicit) =>
             allowExplicit ? mustCastCore(op2, op1.Type, 0) : mustConvertCore(op2, op1.Type);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Bind the simple assignment operator =.
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public Expr BindAssignment(Expr op1, Expr op2, bool allowExplicit)
         {
             Debug.Assert(op1 is ExprCast
@@ -299,7 +299,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateOptimizedAssignment(op1, op2);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal Expr BindArrayIndexCore(Expr pOp1, Expr pOp2)
         {
             CType pIntType = GetPredefindType(PredefinedType.PT_INT);
@@ -339,11 +339,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
         // Create a cast node with the given expression flags.
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private void bindSimpleCast(Expr exprSrc, CType typeDest, out Expr pexprDest) =>
             bindSimpleCast(exprSrc, typeDest, out pexprDest, 0);
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private void bindSimpleCast(Expr exprSrc, CType typeDest, out Expr pexprDest, EXPRFLAG exprFlags)
         {
             Debug.Assert(typeDest != null);
@@ -386,7 +386,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // args      - arguments
         // exprFlags - Flags to put on the generated expr
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private ExprCall BindToMethod(MethWithInst mwi, Expr pArguments, ExprMemberGroup pMemGroup, MemLookFlags flags)
         {
             Debug.Assert(mwi.Sym is MethodSymbol && (!mwi.Meth().isOverride || mwi.Meth().isHideByName));
@@ -431,7 +431,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Construct the Expr node which corresponds to a field expression
         // for a given field and pObject pointer.
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal Expr BindToField(Expr pOptionalObject, FieldWithType fwt, BindingFlag bindFlags)
         {
             Debug.Assert(fwt.GetType() != null && fwt.Field().getClass() == fwt.GetType().OwningAggregate);
@@ -457,7 +457,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal ExprProperty BindToProperty(Expr pObject, PropWithType pwt, BindingFlag bindFlags, Expr args, ExprMemberGroup pMemGroup)
         {
             Debug.Assert(pwt.Sym is PropertySymbol &&
@@ -533,7 +533,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return result;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal Expr bindUDUnop(ExpressionKind ek, Expr arg)
         {
             Name pName = ExpressionKindName(ek);
@@ -648,7 +648,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return ExprFactory.CreateUserDefinedUnaryOperator(ek, call.Type, arg, call, pmethBest.mpwi);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private ExprCall BindLiftedUDUnop(Expr arg, CType typeArg, MethPropWithInst mpwi)
         {
             CType typeRaw = typeArg.StripNubs();
@@ -677,7 +677,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return call;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private ExprCall BindUDUnopCall(Expr arg, CType typeArg, MethPropWithInst mpwi)
         {
             CType typeRet = TypeManager.SubstType(mpwi.Meth().RetType, mpwi.GetType());
@@ -692,7 +692,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
         // Given a method group or indexer group, bind it to the arguments for an
         // invocation.
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private GroupToArgsBinderResult BindMethodGroupToArgumentsCore(BindingFlag bindFlags, ExprMemberGroup grp, Expr args, int carg, NamedArgumentsKind namedArgumentsKind)
         {
             ArgInfos pargInfo = new ArgInfos { carg = carg };
@@ -710,7 +710,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
         // Given a method group or indexer group, bind it to the arguments for an
         // invocation.
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal ExprWithArgs BindMethodGroupToArguments(BindingFlag bindFlags, ExprMemberGroup grp, Expr args)
         {
             Debug.Assert(grp.SymKind == SYMKIND.SK_MethodSymbol || grp.SymKind == SYMKIND.SK_PropertySymbol && ((grp.Flags & EXPRFLAG.EXF_INDEXER) != 0));
@@ -817,7 +817,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 : ErrorCode.ERR_AssgLvalueExpected;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private void CheckLvalueProp(ExprProperty prop)
         {
             Debug.Assert(prop != null);
@@ -834,7 +834,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CheckPropertyAccess(prop.MethWithTypeSet, prop.PropWithTypeSlot, type);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private void CheckPropertyAccess(MethWithType mwt, PropWithType pwtSlot, CType type)
         {
             switch (CSemanticChecker.CheckAccess2(mwt.Meth(), mwt.GetType(), ContextForMemberLookup, type))
@@ -849,7 +849,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
         // A false return means not to process the expr any further - it's totally out
         // of place. For example - a method group or an anonymous method.
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private void CheckLvalue(Expr expr, CheckLvalueKind kind)
         {
             if (expr.isLvalue())
@@ -941,7 +941,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr AdjustMemberObject(SymWithType swt, Expr pObject)
         {
             // Assert that the type is present and is an instantiation of the member's parent.
@@ -1058,7 +1058,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                    );
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private void verifyMethodArgs(ExprWithArgs call, CType callingObjectType)
         {
             Debug.Assert(call != null);
@@ -1071,7 +1071,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             call.OptionalArguments = newArgs;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private void AdjustCallArgumentsForParams(CType callingObjectType, CType type, MethodOrPropertySymbol mp, TypeArray pTypeArgs, Expr argsPtr, out Expr newArgs)
         {
             Debug.Assert(mp != null);
@@ -1283,7 +1283,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             PredefinedType.PT_ULONG
         };
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal CType ChooseArrayIndexType(Expr args)
         {
             // first, select the allowable types
@@ -1405,13 +1405,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
         // Check to see if an integral constant is within range of a integral
         // destination type.
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static bool isConstantInRange(ExprConstant exprSrc, CType typeDest)
         {
             return isConstantInRange(exprSrc, typeDest, false);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static bool isConstantInRange(ExprConstant exprSrc, CType typeDest, bool realsOk)
         {
             FUNDTYPE ftSrc = exprSrc.Type.FundamentalType;

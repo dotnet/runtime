@@ -54,7 +54,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
              *
              * returns true if the conversion can be made, false if not.
              */
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             public bool Bind()
             {
                 // 13.1 Implicit conversions
@@ -260,7 +260,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Some nullable conversion are NOT standard conversions. In particular, if S => T is implicit
                 then S? => T is not standard. Similarly if S => T is not implicit then S => T? is not standard.
             ***************************************************************************************************/
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool BindNubConversion(NullableType nubDst)
             {
                 // This code assumes that STANDARD and ISEXPLICIT are never both set.
@@ -392,7 +392,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionFromNull()
             {
                 // null type can be implicitly converted to any reference type or pointer type or type
@@ -417,7 +417,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionFromNullable(NullableType nubSrc)
             {
                 // We can convert T? using a boxing conversion, we can convert it to ValueType, and
@@ -462,7 +462,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return 0 == (_flags & CONVERTTYPE.NOUDC) && _binder.bindUserDefinedConversion(_exprSrc, nubSrc, _typeDest, _needsExprDest, out _exprDest, true);
             }
 
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionFromArray()
             {
                 // 13.1.4
@@ -509,7 +509,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionFromPointer()
             {
                 // 27.4 Pointer conversions
@@ -532,7 +532,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionFromAgg(AggregateType aggTypeSrc)
             {
                 // GENERICS: The case for constructed types is very similar to types with
@@ -567,7 +567,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return bindImplicitConversionToBase(aggTypeSrc);
             }
 
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionToBase(AggregateType pSource)
             {
                 // 13.1.4 Implicit reference conversions
@@ -597,7 +597,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
             }
 
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionFromEnum(AggregateType aggTypeSrc)
             {
                 // 13.1.5 Boxing conversions
@@ -664,7 +664,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             private bool bindImplicitConversionBetweenSimpleTypes(AggregateType aggTypeSrc)
             {
                 AggregateSymbol aggSrc = aggTypeSrc.OwningAggregate;

@@ -20,14 +20,14 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public BindingFlag BindingFlags => BindingFlag.BIND_RVALUEREQUIRED;
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
         {
             Expr indexerArguments = runtimeBinder.CreateArgumentListEXPR(arguments, locals, 1, arguments.Length);
             return runtimeBinder.BindProperty(this, arguments[0], locals[0], indexerArguments);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
             => SymbolTable.PopulateSymbolTableWithName(SpecialNames.Indexer, null, arguments[0].Type);
 
@@ -46,7 +46,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// </summary>
         /// <param name="callingContext">The <see cref="System.Type"/> that indicates where this operation is defined.</param>
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public CSharpGetIndexBinder(
             Type callingContext,
             IEnumerable<CSharpArgumentInfo> argumentInfo) :

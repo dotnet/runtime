@@ -9,10 +9,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExpressionTreeRewriter : ExprVisitorBase
     {
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static ExprBinOp Rewrite(ExprBoundLambda expr) => new ExpressionTreeRewriter().VisitBoundLambda(expr);
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr Dispatch(Expr expr)
         {
             Debug.Assert(expr != null);
@@ -27,7 +27,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /////////////////////////////////////////////////////////////////////////////////
         // Statement types.
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitASSIGNMENT(ExprAssignment assignment)
         {
             Debug.Assert(assignment != null);
@@ -66,13 +66,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_ASSIGN, lhs, rhs);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitMULTIGET(ExprMultiGet pExpr)
         {
             return Visit(pExpr.OptionalMulti.Left);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitMULTI(ExprMulti pExpr)
         {
             Expr rhs = Visit(pExpr.Operator);
@@ -83,7 +83,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /////////////////////////////////////////////////////////////////////////////////
         // Expression types.
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private ExprBinOp VisitBoundLambda(ExprBoundLambda anonmeth)
         {
             Debug.Assert(anonmeth != null);
@@ -107,14 +107,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return ExprFactory.CreateSequence(createParameters, call);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitCONSTANT(ExprConstant expr)
         {
             Debug.Assert(expr != null);
             return GenerateConstant(expr);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitLOCAL(ExprLocal local)
         {
             Debug.Assert(local != null);
@@ -122,7 +122,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return local.Local.wrap;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitFIELD(ExprField expr)
         {
             Debug.Assert(expr != null);
@@ -139,14 +139,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_FIELD, pObject, pFieldInfo);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitUSERDEFINEDCONVERSION(ExprUserDefinedConversion expr)
         {
             Debug.Assert(expr != null);
             return GenerateUserDefinedConversion(expr, expr.Argument);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitCAST(ExprCast pExpr)
         {
             Debug.Assert(pExpr != null);
@@ -180,7 +180,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return result;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitCONCAT(ExprConcat expr)
         {
             Debug.Assert(expr != null);
@@ -200,7 +200,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_ADD_USER_DEFINED, p1, p2, methodInfo);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitBINOP(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
@@ -214,7 +214,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitUNARYOP(ExprUnaryOp pExpr)
         {
             Debug.Assert(pExpr != null);
@@ -228,7 +228,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitARRAYINDEX(ExprArrayIndex pExpr)
         {
             Debug.Assert(pExpr != null);
@@ -242,7 +242,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_ARRAYINDEX, arr, args);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitCALL(ExprCall expr)
         {
             Debug.Assert(expr != null);
@@ -307,7 +307,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(pdm, pObject, methodInfo, Params);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitPROP(ExprProperty expr)
         {
             Debug.Assert(expr != null);
@@ -331,7 +331,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_PROPERTY, pObject, propInfo);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitARRINIT(ExprArrayInit expr)
         {
             Debug.Assert(expr != null);
@@ -342,21 +342,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_NEWARRAYINIT, pTypeOf, Params);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitZEROINIT(ExprZeroInit expr)
         {
             Debug.Assert(expr != null);
             return GenerateConstant(expr);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         protected override Expr VisitTYPEOF(ExprTypeOf expr)
         {
             Debug.Assert(expr != null);
             return GenerateConstant(expr);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateDelegateInvoke(ExprCall expr)
         {
             Debug.Assert(expr != null);
@@ -370,7 +370,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_INVOKE, pObject, Params);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateBuiltInBinaryOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
@@ -471,7 +471,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return call;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateBuiltInUnaryOperator(ExprUnaryOp expr)
         {
             Debug.Assert(expr != null);
@@ -495,7 +495,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(pdm, Visit(origOp));
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateUserDefinedBinaryOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
@@ -575,7 +575,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return call;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateUserDefinedUnaryOperator(ExprUnaryOp expr)
         {
             Debug.Assert(expr != null);
@@ -626,7 +626,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(pdm, op, methodInfo);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateUserDefinedComparisonOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
@@ -664,11 +664,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(pdm, p1, p2, lift, methodInfo);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateConversion(Expr arg, CType CType, bool bChecked) =>
             GenerateConversionWithSource(Visit(arg), CType, bChecked || arg.isChecked());
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static Expr GenerateConversionWithSource(Expr pTarget, CType pType, bool bChecked)
         {
             PREDEFMETH pdm = bChecked ? PREDEFMETH.PM_EXPRESSION_CONVERTCHECKED : PREDEFMETH.PM_EXPRESSION_CONVERT;
@@ -676,7 +676,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(pdm, pTarget, pTypeOf);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateValueAccessConversion(Expr pArgument)
         {
             Debug.Assert(pArgument != null);
@@ -685,14 +685,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, Visit(pArgument), pStrippedTypeExpr);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateUserDefinedConversion(Expr arg, CType type, MethWithInst method)
         {
             Expr target = Visit(arg);
             return GenerateUserDefinedConversion(arg, type, target, method);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static Expr GenerateUserDefinedConversion(Expr arg, CType CType, Expr target, MethWithInst method)
         {
             // The user-defined explicit conversion from enum? to decimal or decimal? requires
@@ -735,7 +735,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(pdmOuter, callUserDefinedConversion, typeofOuter);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateUserDefinedConversion(ExprUserDefinedConversion pExpr, Expr pArgument)
         {
             Expr pCastCall = pExpr.UserDefinedCall;
@@ -784,7 +784,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateUserDefinedConversion(pCastArgument, pExpr.Type, pConversionSource, pExpr.UserDefinedCallMethod);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static Expr GenerateParameter(string name, CType CType)
         {
             SymbolLoader.GetPredefindType(PredefinedType.PT_STRING);  // force an ensure state
@@ -793,13 +793,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_PARAMETER, pTypeOf, nameString);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static MethodSymbol GetPreDefMethod(PREDEFMETH pdm) => PredefinedMembers.GetMethod(pdm);
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static ExprTypeOf CreateTypeOf(CType type) => ExprFactory.CreateTypeOf(type);
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static Expr CreateWraps(ExprBoundLambda anonmeth)
         {
             Expr sequence = null;
@@ -827,7 +827,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return sequence;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateConstructor(ExprCall expr)
         {
             Debug.Assert(expr != null);
@@ -838,7 +838,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_NEW, constructorInfo, Params);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateArgsList(Expr oldArgs)
         {
             Expr newArgs = null;
@@ -851,7 +851,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return newArgs;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private Expr GenerateIndexList(Expr oldIndices)
         {
             CType intType = SymbolLoader.GetPredefindType(PredefinedType.PT_INT);
@@ -872,7 +872,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return newIndices;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static Expr GenerateConstant(Expr expr)
         {
             EXPRFLAG flags = 0;
@@ -897,7 +897,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONSTANT_OBJECT_TYPE, cast, pTypeOf2);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
@@ -913,7 +913,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return call;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1, Expr arg2)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
@@ -928,7 +928,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return call;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1, Expr arg2, Expr arg3)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
@@ -943,7 +943,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return call;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1, Expr arg2, Expr arg3, Expr arg4)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
@@ -958,7 +958,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return call;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static ExprArrayInit GenerateParamsArray(Expr args, PredefinedType pt)
         {
             int parameterCount = ExpressionIterator.Count(args);
@@ -968,7 +968,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return ExprFactory.CreateArrayInit(paramsArrayType, args, paramsArrayArg, new int[] { parameterCount });
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static void FixLiftedUserDefinedBinaryOperators(ExprBinOp expr, ref Expr pp1, ref Expr pp2)
         {
             // If we have lifted T1 op T2 to T1? op T2?, and we have an expression T1 op T2? or T1? op T2 then

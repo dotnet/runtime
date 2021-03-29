@@ -31,7 +31,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         private static readonly Dictionary<VarEnum, Type> s_comToManagedPrimitiveTypes = CreateComToManagedPrimitiveTypes();
         private static readonly IList<IList<VarEnum>> s_comPrimitiveTypeFamilies = CreateComPrimitiveTypeFamilies();
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal VarEnumSelector(Type[] explicitArgTypes)
         {
             VariantBuilders = new VariantBuilder[explicitArgTypes.Length];
@@ -143,7 +143,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// <summary>
         /// Get the (one representative type for each) primitive type families that the argument can be converted to
         /// </summary>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static List<VarEnum> GetConversionsToComPrimitiveTypeFamilies(Type argumentType)
         {
             List<VarEnum> compatibleComTypes = new List<VarEnum>();
@@ -275,7 +275,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// <summary>
         /// Is there a unique primitive type that has the best conversion for the argument
         /// </summary>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static bool TryGetPrimitiveComTypeViaConversion(Type argumentType, out VarEnum primitiveVarEnum)
         {
             // Look for a unique type family that the argument can be converted to.
@@ -377,7 +377,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// <summary>
         /// Get the COM Variant type that argument should be marshaled as for a call to COM
         /// </summary>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private VariantBuilder GetVariantBuilder(Type argumentType)
         {
             //argumentType is coming from MarshalType, null means the dynamic object holds
@@ -424,7 +424,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         // This helper is called when we are looking for a ByVal marshalling
         // In a ByVal case we can take into account conversions or IConvertible if all other
         // attempts to find marshalling type failed
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static ArgBuilder GetByValArgBuilder(Type elementType, ref VarEnum elementVarEnum)
         {
             // If VT indicates that marshalling type is unknown.

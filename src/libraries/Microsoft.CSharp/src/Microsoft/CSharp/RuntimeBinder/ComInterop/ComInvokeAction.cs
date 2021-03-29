@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// </summary>
     internal sealed class ComInvokeAction : InvokeBinder
     {
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal ComInvokeAction(CallInfo callInfo)
             : base(callInfo)
         {
@@ -53,10 +53,10 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         internal static readonly SplatInvokeBinder s_instance = new SplatInvokeBinder();
 
         // The only callsite using this type is also marked as unsafe
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         static SplatInvokeBinder() { }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal SplatInvokeBinder() { }
 
         // Just splat the args and dispatch through a nested site

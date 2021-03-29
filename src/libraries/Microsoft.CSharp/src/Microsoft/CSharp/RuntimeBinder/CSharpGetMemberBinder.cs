@@ -20,14 +20,14 @@ namespace Microsoft.CSharp.RuntimeBinder
     {
         public BindingFlag BindingFlags => BindingFlag.BIND_RVALUEREQUIRED;
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
         {
             Debug.Assert(arguments.Length == 1);
             return runtimeBinder.BindProperty(this, arguments[0], locals[0], null);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
             => SymbolTable.PopulateSymbolTableWithName(Name, null, arguments[0].Type);
 
@@ -52,7 +52,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="resultIndexed">Determines if COM binder should return a callable object.</param>
         /// <param name="callingContext">The <see cref="System.Type"/> that indicates where this operation is defined.</param>
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public CSharpGetMemberBinder(
                 string name,
                 bool resultIndexed,

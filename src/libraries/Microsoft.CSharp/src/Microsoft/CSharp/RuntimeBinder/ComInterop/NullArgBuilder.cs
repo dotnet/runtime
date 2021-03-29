@@ -13,7 +13,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     {
         internal NullArgBuilder() { }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression Marshal(Expression parameter)
         {
             return Expression.Constant(null);

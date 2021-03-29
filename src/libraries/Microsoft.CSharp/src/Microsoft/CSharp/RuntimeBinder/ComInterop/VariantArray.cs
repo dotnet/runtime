@@ -50,13 +50,21 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         // (guarenteed less than 28, in practice 0-2)
         private static readonly List<Type> s_generatedTypes = new List<Type>(0);
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(VariantArray1))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(VariantArray2))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(VariantArray4))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(VariantArray8))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "Types are either dynamically created or have dynamic dependency.")]
         internal static MemberExpression GetStructField(ParameterExpression variantArray, int field)
         {
             return Expression.Field(variantArray, "Element" + field);
         }
 
-        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Variant))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(VariantArray1))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(VariantArray2))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(VariantArray4))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(VariantArray8))]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "Types are either dynamically created or have dynamic dependency.")]
         internal static Type GetStructType(int args)

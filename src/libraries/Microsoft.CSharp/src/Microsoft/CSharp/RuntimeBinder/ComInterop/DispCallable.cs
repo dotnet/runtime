@@ -33,7 +33,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         public int DispId { get; }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public DynamicMetaObject GetMetaObject(Expression parameter)
         {
             return new DispCallableMetaObject(parameter, this);

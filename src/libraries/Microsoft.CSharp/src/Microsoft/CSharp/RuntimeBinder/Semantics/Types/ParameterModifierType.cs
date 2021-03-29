@@ -30,7 +30,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override Type AssociatedSystemType
         {
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get => ParameterType.AssociatedSystemType.MakeByRefType();
         }
 

@@ -10,7 +10,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     // Note: we only need to support the operations used by ComBinder
     internal class ComMetaObject : DynamicMetaObject
     {
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal ComMetaObject(Expression expression, BindingRestrictions restrictions, object arg)
             : base(expression, restrictions, arg)
         {

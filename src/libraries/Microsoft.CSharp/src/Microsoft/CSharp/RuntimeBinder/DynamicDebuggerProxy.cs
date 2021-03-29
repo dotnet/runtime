@@ -80,7 +80,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
         internal DynamicProperty[] Items
         {
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 if (results == null || results.Count == 0)
@@ -108,7 +108,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
         private static readonly ParameterExpression parameter = Expression.Parameter(typeof(object), "debug");
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static object TryEvalBinaryOperators<T1, T2>(
             T1 arg1,
             T2 arg2,
@@ -131,7 +131,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             return site.Target(site, arg1, arg2);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static object TryEvalUnaryOperators<T>(T obj, ExpressionType oper, Type accessibilityContext)
         {
             if (oper == ExpressionType.IsTrue || oper == ExpressionType.IsFalse)
@@ -152,7 +152,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             return site.Target(site, obj);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static K TryEvalCast<T, K>(T obj, Type type, CSharpBinderFlags kind, Type accessibilityContext)
         {
             var site = CallSite<Func<CallSite, T, K>>.Create(Binder.Convert(kind, type, accessibilityContext));
@@ -203,7 +203,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// Creates a delegate based on type array that describe its signature and invokes it.
         /// </summary>
         /// <returns>Result of invoking the delegate.</returns>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static object CreateDelegateAndInvoke(Type[] delegateSignatureTypes, CallSiteBinder binder, object[] args)
         {
             Type delegateType = Expression.GetDelegateType(delegateSignatureTypes);
@@ -229,7 +229,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="accessibilityContext">Type that determines context in which method should be called.</param>
         /// <param name="typeArguments">Generic type arguments if there are any.</param>
         /// <returns>Result of method invocation.</returns>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static object TryEvalMethodVarArgs(
             object[] methodArgs,
             Type[] argTypes,
@@ -280,7 +280,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="accessibilityContext">Type that determines context in which method should be called.</param>
         /// <param name="isResultIndexed">Determines if COM binder should return a callable object.</param>
         /// <returns>Result of property invocation.</returns>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static object TryGetMemberValue<T>(T obj, string propName, Type accessibilityContext, bool isResultIndexed)
         {
             // In most cases it's ok to use CSharpArgumentInfoFlags.None since target of property call is dynamic.
@@ -308,7 +308,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="argFlags">Flags describing each argument.</param>
         /// <param name="accessibilityContext">Type that determines context in which method should be called.</param>
         /// <returns>Result of property invocation.</returns>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static object TryGetMemberValueVarArgs(
             object[] propArgs,
             Type[] argTypes,
@@ -342,7 +342,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="valueFlags"></param>
         /// <param name="accessibilityContext">Type that determines context in which method should be called.</param>
         /// <returns>Result of property invocation.</returns>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static object TrySetMemberValue<TObject, TValue>(
             TObject obj,
             string propName,
@@ -374,7 +374,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="argFlags">Flags describing each argument.</param>
         /// <param name="accessibilityContext">Type that determines context in which method should be called.</param>
         /// <returns>Result of property invocation.</returns>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static object TrySetMemberValueVarArgs(
             object[] propArgs,
             Type[] argTypes,
@@ -431,7 +431,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private static readonly Type ComObjectType = Type.GetType("System.__ComObject, System.Private.CoreLib");
 #endif
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static IList<KeyValuePair<string, object>> QueryDynamicObject(object obj)
         {
             IDynamicMetaObjectProvider ido = obj as IDynamicMetaObjectProvider;

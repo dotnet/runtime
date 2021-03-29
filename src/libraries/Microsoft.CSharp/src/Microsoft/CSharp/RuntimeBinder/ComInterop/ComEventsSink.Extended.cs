@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices
             Advise(rcw);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Microsoft.CSharp.RuntimeBinder.Binder.TrimmerWarning)]
         public void AddHandler(int dispid, object func)
         {
             ComEventsMethod method = FindMethod(dispid);

@@ -17,14 +17,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// <summary>
         /// Provides the Expression which provides the value to be passed to the argument.
         /// </summary>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal abstract Expression Marshal(Expression parameter);
 
         /// <summary>
         /// Provides the Expression which provides the value to be passed to the argument.
         /// This method is called when result is intended to be used ByRef.
         /// </summary>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal virtual Expression MarshalToRef(Expression parameter)
         {
             return Marshal(parameter);

@@ -19,11 +19,11 @@ namespace Microsoft.CSharp.RuntimeBinder
     {
         public BindingFlag BindingFlags => 0;
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
             => runtimeBinder.DispatchPayload(this, arguments, locals);
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
             => RuntimeBinder.PopulateSymbolTableWithPayloadInformation(this, callingType, arguments);
 
@@ -55,7 +55,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="flags">Extra information about this operation that is not specific to any particular argument.</param>
         /// <param name="callingContext">The <see cref="System.Type"/> that indicates where this operation is defined.</param>
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public CSharpInvokeBinder(
                 CSharpCallFlags flags,
                 Type callingContext,

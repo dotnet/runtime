@@ -198,14 +198,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private static readonly MethodSymbol[] _methods = new MethodSymbol[(int)PREDEFMETH.PM_COUNT];
         private static readonly PropertySymbol[] _properties = new PropertySymbol[(int)PREDEFPROP.PP_COUNT];
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static PropertySymbol LoadProperty(PREDEFPROP property)
         {
             PredefinedPropertyInfo info = GetPropInfo(property);
             return LoadProperty(property, NameManager.GetPredefinedName(info.name), info.getter);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static PropertySymbol LoadProperty(
             PREDEFPROP predefProp,
             Name propertyName,
@@ -224,10 +224,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return property;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static AggregateSymbol GetPredefAgg(PredefinedType pt) => SymbolLoader.GetPredefAgg(pt);
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static CType LoadTypeFromSignature(int[] signature, ref int indexIntoSignatures, TypeArray classTyVars)
         {
             Debug.Assert(signature != null);
@@ -268,7 +268,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static TypeArray LoadTypeArrayFromSignature(int[] signature, ref int indexIntoSignatures, TypeArray classTyVars)
         {
             Debug.Assert(signature != null);
@@ -302,21 +302,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 #endif
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static PropertySymbol GetProperty(PREDEFPROP property)
         {
             Debug.Assert(property >= 0 && property < PREDEFPROP.PP_COUNT);
             return _properties[(int)property] ?? (_properties[(int)property] = LoadProperty(property));
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static MethodSymbol GetMethod(PREDEFMETH method)
         {
             Debug.Assert(method >= 0 && method < PREDEFMETH.PM_COUNT);
             return _methods[(int)method] ?? (_methods[(int)method] = LoadMethod(method));
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static MethodSymbol LoadMethod(
                         AggregateSymbol type,
                         int[] signature,
@@ -372,7 +372,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return null;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static MethodSymbol LoadMethod(PREDEFMETH method)
         {
             PredefinedMethodInfo info = GetMethInfo(method);

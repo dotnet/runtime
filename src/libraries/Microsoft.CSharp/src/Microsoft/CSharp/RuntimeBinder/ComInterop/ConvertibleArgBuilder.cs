@@ -9,13 +9,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     internal class ConvertibleArgBuilder : ArgBuilder
     {
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression Marshal(Expression parameter)
         {
             return Helpers.Convert(parameter, typeof(IConvertible));
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression MarshalToRef(Expression parameter)
         {
             //we are not supporting convertible InOut

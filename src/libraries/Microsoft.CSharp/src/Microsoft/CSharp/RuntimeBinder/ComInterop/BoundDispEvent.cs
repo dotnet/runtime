@@ -15,7 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         private readonly Guid _sourceIid;
         private readonly int _dispid;
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal BoundDispEvent(object rcw, Guid sourceIid, int dispid)
         {
             _rcw = rcw;
@@ -75,7 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// </summary>
         /// <param name="handler">The handler to be added.</param>
         /// <returns>The original event with handler added.</returns>
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private object InPlaceAdd(object handler)
         {
             Requires.NotNull(handler, nameof(handler));

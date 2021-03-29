@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     {
         private readonly IDispatchComObject _self;
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal IDispatchMetaObject(Expression expression, IDispatchComObject self)
             : base(expression, BindingRestrictions.Empty, self)
         {

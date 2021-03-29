@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             get { return (_targetComType & VarEnum.VT_BYREF) != 0; }
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal Expression InitializeArgumentVariant(MemberExpression variant, Expression parameter)
         {
             //NOTE: we must remember our variant

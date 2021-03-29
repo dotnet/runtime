@@ -11,7 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     {
         private readonly DispCallable _callable;
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal DispCallableMetaObject(Expression expression, DispCallable callable)
             : base(expression, BindingRestrictions.Empty, callable)
         {

@@ -20,7 +20,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             _isWrapper = parameterType == typeof(BStrWrapper);
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression Marshal(Expression parameter)
         {
             parameter = base.Marshal(parameter);
@@ -37,7 +37,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return parameter;
         }
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression MarshalToRef(Expression parameter)
         {
             parameter = Marshal(parameter);

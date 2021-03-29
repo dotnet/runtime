@@ -46,8 +46,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return result;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "All exceptions returned by Marshal.GetExceptionForHR will not be trimmed.")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal Exception GetException()
         {
             Debug.Assert(pfnDeferredFillIn == IntPtr.Zero);

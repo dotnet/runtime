@@ -52,7 +52,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         #endregion
 
-        [RequiresUnreferencedCode("Types and members might be removed")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal static ComTypeLibDesc GetFromTypeLib(ComTypes.ITypeLib typeLib)
         {
             // check whether we have already loaded this type library

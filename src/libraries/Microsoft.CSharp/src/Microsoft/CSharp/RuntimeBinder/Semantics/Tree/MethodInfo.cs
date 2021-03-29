@@ -22,7 +22,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public MethodInfo MethodInfo
         {
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 // To do this, we need to construct a type array of the parameter types,
@@ -95,7 +95,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ConstructorInfo ConstructorInfo
         {
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 // To do this, we need to construct a type array of the parameter types,
@@ -147,7 +147,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override object Object
         {
-            [RequiresUnreferencedCode("Types and members might be removed")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get => MethodInfo;
         }
     }
