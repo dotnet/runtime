@@ -729,10 +729,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/*">
             <Issue>https://github.com/dotnet/runtime/issues/47294</Issue>
         </ExcludeList>
-        <!-- JitStress1 Failures -->
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/generics/threadstart/**">
-            <Issue>https://github.com/dotnet/runtime/issues/48791</Issue>
-        </ExcludeList>
         <!-- Tracing failures -->
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsvalidation/ThreadPool/*">
             <Issue>https://github.com/dotnet/runtime/issues/48727</Issue>
