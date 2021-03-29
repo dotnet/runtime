@@ -123,7 +123,7 @@ namespace System.IO
                 if (sourceStat.Dev == destStat.Dev &&
                     sourceStat.Ino == destStat.Ino)
                   {
-                      throw new IOException(SR.IO_CannotReplaceSameFile);
+                      throw new IOException(SR.Format(SR.IO_CannotReplaceSameFile, sourceFullPath, destFullPath));
                   }
             }
 

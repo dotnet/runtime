@@ -198,7 +198,7 @@
     <value>The specified directory '{0}' cannot be created.</value>
   </data>
   <data name="IO_CannotReplaceSameFile" xml:space="preserve">
-    <value>The source and destination are the same file.</value>
+    <value>The source '{0}' and destination '{1}' are the same file.</value>
   </data>
   <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
     <value>Unable to read beyond the end of the stream.</value>
