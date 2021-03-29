@@ -21539,12 +21539,12 @@ void Compiler::considerGuardedDevirtualization(
 
     JITDUMP("Considering guarded devirtualization\n");
 
-    // We currently only get likely class guesses when there is PGO data. So if we've disabled
-    // PGO, just bail out.
-
-    if (JitConfig.JitDisablePGO() != 0)
+    // We currently only get likely class guesses when there is PGO data
+    // with class profiles.
+    //
+    if (fgPgoClassProfiles == 0)
     {
-        JITDUMP("Not guessing for class; pgo disabled\n");
+        JITDUMP("Not guessing for class: no class profile pgo data, or pgo disabled\n");
         return;
     }
 
