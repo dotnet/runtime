@@ -305,7 +305,7 @@ HRESULT EnsureEEStarted()
     {
         BEGIN_ENTRYPOINT_NOTHROW;
 
-        // The sooner we do this, the sooner we avoid probing registry entries.
+        // Initialize our configuration cache to avoid unuseful probing.
         CLRConfig::InitCache();
 
         BOOL bStarted=FALSE;
