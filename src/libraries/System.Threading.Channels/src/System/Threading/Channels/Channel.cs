@@ -44,11 +44,6 @@ namespace System.Threading.Channels
         /// <returns>The created channel.</returns>
         public static Channel<T> CreateBounded<T>(BoundedChannelOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
             return CreateBounded<T>(options, itemDropped: null);
         }
 

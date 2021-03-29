@@ -287,23 +287,6 @@ namespace System.Threading.Channels
                 _waiterSingleton = new AsyncOperation<bool>(runContinuationsAsynchronously: true, pooled: true);
             }
 
-            private struct DropItem
-            {
-                internal T Item { get; private set; }
-                internal bool HasValue { get; private set; }
-
-                internal static readonly DropItem None = new DropItem { HasValue = false };
-
-                internal static DropItem Create(T itemToDrop)
-                {
-                    return new DropItem
-                    {
-                        HasValue = true,
-                        Item = itemToDrop,
-                    };
-                }
-            }
-
             public override bool TryComplete(Exception? error)
             {
                 BoundedChannel<T> parent = _parent;
@@ -353,98 +336,99 @@ namespace System.Threading.Channels
                 AsyncOperation<bool>? waitingReadersTail = null;
 
                 BoundedChannel<T> parent = _parent;
-                DropItem dropitem = DropItem.None;
+
+                bool releaseLock = true;
 
                 try
                 {
-                    lock (parent.SyncObj)
+                    Monitor.Enter(parent.SyncObj);
+
+                    parent.AssertInvariants();
+
+                    // If we're done writing, nothing more to do.
+                    if (parent._doneWriting != null)
                     {
-                        parent.AssertInvariants();
+                        return false;
+                    }
 
-                        // If we're done writing, nothing more to do.
-                        if (parent._doneWriting != null)
+                    // Get the number of items in the channel currently.
+                    int count = parent._items.Count;
+
+                    if (count == 0)
+                    {
+                        // There are no items in the channel, which means we may have blocked/waiting readers.
+
+                        // If there are any blocked readers, find one that's not canceled
+                        // and store it to complete outside of the lock, in case it has
+                        // continuations that'll run synchronously
+                        while (!parent._blockedReaders.IsEmpty)
                         {
-                            return false;
-                        }
-
-                        // Get the number of items in the channel currently.
-                        int count = parent._items.Count;
-
-                        if (count == 0)
-                        {
-                            // There are no items in the channel, which means we may have blocked/waiting readers.
-
-                            // If there are any blocked readers, find one that's not canceled
-                            // and store it to complete outside of the lock, in case it has
-                            // continuations that'll run synchronously
-                            while (!parent._blockedReaders.IsEmpty)
+                            AsyncOperation<T> r = parent._blockedReaders.DequeueHead();
+                            if (r.UnregisterCancellation()) // ensure that once we grab it, we own its completion
                             {
-                                AsyncOperation<T> r = parent._blockedReaders.DequeueHead();
-                                if (r.UnregisterCancellation()) // ensure that once we grab it, we own its completion
-                                {
-                                    blockedReader = r;
-                                    break;
-                                }
-                            }
-
-                            if (blockedReader == null)
-                            {
-                                // If there wasn't a blocked reader, then store the item. If no one's waiting
-                                // to be notified about a 0-to-1 transition, we're done.
-                                parent._items.EnqueueTail(item);
-                                waitingReadersTail = parent._waitingReadersTail;
-                                if (waitingReadersTail == null)
-                                {
-                                    return true;
-                                }
-                                parent._waitingReadersTail = null;
+                                blockedReader = r;
+                                break;
                             }
                         }
-                        else if (count < parent._bufferedCapacity)
+
+                        if (blockedReader == null)
                         {
-                            // There's room in the channel.  Since we're not transitioning from 0-to-1 and
-                            // since there's room, we can simply store the item and exit without having to
-                            // worry about blocked/waiting readers.
+                            // If there wasn't a blocked reader, then store the item. If no one's waiting
+                            // to be notified about a 0-to-1 transition, we're done.
                             parent._items.EnqueueTail(item);
-                            return true;
-                        }
-                        else if (parent._mode == BoundedChannelFullMode.Wait)
-                        {
-                            // The channel is full and we're in a wait mode.
-                            // Simply exit and let the caller know we didn't write the data.
-                            return false;
-                        }
-                        else if (parent._mode == BoundedChannelFullMode.DropWrite)
-                        {
-                            // The channel is full.  Just ignore the item being added
-                            // but say we added it.
-                            dropitem = DropItem.Create(item);
-                            return true;
-                        }
-                        else
-                        {
-                            // The channel is full, and we're in a dropping mode.
-                            // Drop either the oldest or the newest and write the new item.
-                            if (parent._mode == BoundedChannelFullMode.DropNewest)
+                            waitingReadersTail = parent._waitingReadersTail;
+                            if (waitingReadersTail == null)
                             {
-                                var droppedItem = parent._items.DequeueTail();
-                                dropitem = DropItem.Create(droppedItem);
+                                return true;
                             }
-                            else
-                            {
-                                var droppedItem = parent._items.DequeueHead();
-                                dropitem = DropItem.Create(droppedItem);
-                            }
-                            parent._items.EnqueueTail(item);
-                            return true;
+                            parent._waitingReadersTail = null;
                         }
+                    }
+                    else if (count < parent._bufferedCapacity)
+                    {
+                        // There's room in the channel.  Since we're not transitioning from 0-to-1 and
+                        // since there's room, we can simply store the item and exit without having to
+                        // worry about blocked/waiting readers.
+                        parent._items.EnqueueTail(item);
+                        return true;
+                    }
+                    else if (parent._mode == BoundedChannelFullMode.Wait)
+                    {
+                        // The channel is full and we're in a wait mode.
+                        // Simply exit and let the caller know we didn't write the data.
+                        return false;
+                    }
+                    else if (parent._mode == BoundedChannelFullMode.DropWrite)
+                    {
+                        // The channel is full.  Just ignore the item being added
+                        // but say we added it.
+                        Monitor.Exit(parent.SyncObj);
+                        releaseLock = false;
+                        _parent._itemDropped?.Invoke(item);
+                        return true;
+                    }
+                    else
+                    {
+                        // The channel is full, and we're in a dropping mode.
+                        // Drop either the oldest or the newest
+                        T droppedItem = parent._mode == BoundedChannelFullMode.DropNewest ?
+                            parent._items.DequeueTail() :
+                            parent._items.DequeueHead();
+
+                        Monitor.Exit(parent.SyncObj);
+                        releaseLock = false;
+                        _parent._itemDropped?.Invoke(droppedItem);
+
+                        // and enque the new item
+                        parent._items.EnqueueTail(item);
+                        return true;
                     }
                 }
                 finally
                 {
-                    if (dropitem.HasValue)
+                    if (releaseLock)
                     {
-                        _parent._itemDropped?.Invoke(dropitem.Item);
+                        Monitor.Exit(parent.SyncObj);
                     }
                 }
 
@@ -528,114 +512,113 @@ namespace System.Threading.Channels
                 AsyncOperation<bool>? waitingReadersTail = null;
 
                 BoundedChannel<T> parent = _parent;
-                DropItem dropItem = DropItem.None;
+                bool releaseLock = true;
 
                 try
                 {
-                    lock (parent.SyncObj)
+                    Monitor.Enter(parent.SyncObj);
+
+                    parent.AssertInvariants();
+
+                    // If we're done writing, trying to write is an error.
+                    if (parent._doneWriting != null)
                     {
-                        parent.AssertInvariants();
+                        return new ValueTask(Task.FromException(ChannelUtilities.CreateInvalidCompletionException(parent._doneWriting)));
+                    }
 
-                        // If we're done writing, trying to write is an error.
-                        if (parent._doneWriting != null)
+                    // Get the number of items in the channel currently.
+                    int count = parent._items.Count;
+
+                    if (count == 0)
+                    {
+                        // There are no items in the channel, which means we may have blocked/waiting readers.
+
+                        // If there are any blocked readers, find one that's not canceled
+                        // and store it to complete outside of the lock, in case it has
+                        // continuations that'll run synchronously
+                        while (!parent._blockedReaders.IsEmpty)
                         {
-                            return new ValueTask(Task.FromException(ChannelUtilities.CreateInvalidCompletionException(parent._doneWriting)));
-                        }
-
-                        // Get the number of items in the channel currently.
-                        int count = parent._items.Count;
-
-                        if (count == 0)
-                        {
-                            // There are no items in the channel, which means we may have blocked/waiting readers.
-
-                            // If there are any blocked readers, find one that's not canceled
-                            // and store it to complete outside of the lock, in case it has
-                            // continuations that'll run synchronously
-                            while (!parent._blockedReaders.IsEmpty)
+                            AsyncOperation<T> r = parent._blockedReaders.DequeueHead();
+                            if (r.UnregisterCancellation()) // ensure that once we grab it, we own its completion
                             {
-                                AsyncOperation<T> r = parent._blockedReaders.DequeueHead();
-                                if (r.UnregisterCancellation()) // ensure that once we grab it, we own its completion
-                                {
-                                    blockedReader = r;
-                                    break;
-                                }
-                            }
-
-                            if (blockedReader == null)
-                            {
-                                // If there wasn't a blocked reader, then store the item. If no one's waiting
-                                // to be notified about a 0-to-1 transition, we're done.
-                                parent._items.EnqueueTail(item);
-                                waitingReadersTail = parent._waitingReadersTail;
-                                if (waitingReadersTail == null)
-                                {
-                                    return default;
-                                }
-                                parent._waitingReadersTail = null;
+                                blockedReader = r;
+                                break;
                             }
                         }
-                        else if (count < parent._bufferedCapacity)
+
+                        if (blockedReader == null)
                         {
-                            // There's room in the channel.  Since we're not transitioning from 0-to-1 and
-                            // since there's room, we can simply store the item and exit without having to
-                            // worry about blocked/waiting readers.
+                            // If there wasn't a blocked reader, then store the item. If no one's waiting
+                            // to be notified about a 0-to-1 transition, we're done.
                             parent._items.EnqueueTail(item);
-                            return default;
+                            waitingReadersTail = parent._waitingReadersTail;
+                            if (waitingReadersTail == null)
+                            {
+                                return default;
+                            }
+                            parent._waitingReadersTail = null;
                         }
-                        else if (parent._mode == BoundedChannelFullMode.Wait)
-                        {
-                            // The channel is full and we're in a wait mode.  We need to queue a writer.
+                    }
+                    else if (count < parent._bufferedCapacity)
+                    {
+                        // There's room in the channel.  Since we're not transitioning from 0-to-1 and
+                        // since there's room, we can simply store the item and exit without having to
+                        // worry about blocked/waiting readers.
+                        parent._items.EnqueueTail(item);
+                        return default;
+                    }
+                    else if (parent._mode == BoundedChannelFullMode.Wait)
+                    {
+                        // The channel is full and we're in a wait mode.  We need to queue a writer.
 
-                            // If we're able to use the singleton writer, do so.
-                            if (!cancellationToken.CanBeCanceled)
+                        // If we're able to use the singleton writer, do so.
+                        if (!cancellationToken.CanBeCanceled)
+                        {
+                            VoidAsyncOperationWithData<T> singleton = _writerSingleton;
+                            if (singleton.TryOwnAndReset())
                             {
-                                VoidAsyncOperationWithData<T> singleton = _writerSingleton;
-                                if (singleton.TryOwnAndReset())
-                                {
-                                    singleton.Item = item;
-                                    parent._blockedWriters.EnqueueTail(singleton);
-                                    return singleton.ValueTask;
-                                }
+                                singleton.Item = item;
+                                parent._blockedWriters.EnqueueTail(singleton);
+                                return singleton.ValueTask;
                             }
+                        }
 
-                            // Otherwise, queue a new writer.
-                            var writer = new VoidAsyncOperationWithData<T>(runContinuationsAsynchronously: true, cancellationToken);
-                            writer.Item = item;
-                            parent._blockedWriters.EnqueueTail(writer);
-                            return writer.ValueTask;
-                        }
-                        else if (parent._mode == BoundedChannelFullMode.DropWrite)
-                        {
-                            // The channel is full and we're in ignore mode.
-                            // Ignore the item but say we accepted it.
-                            dropItem = DropItem.Create(item);
-                            return default;
-                        }
-                        else
-                        {
-                            // The channel is full, and we're in a dropping mode.
-                            // Drop either the oldest or the newest and write the new item.
-                            if (parent._mode == BoundedChannelFullMode.DropNewest)
-                            {
-                                var droppedItem = parent._items.DequeueTail();
-                                dropItem = DropItem.Create(droppedItem);
-                            }
-                            else
-                            {
-                                var droppedItem = parent._items.DequeueHead();
-                                dropItem = DropItem.Create(droppedItem);
-                            }
-                            parent._items.EnqueueTail(item);
-                            return default;
-                        }
+                        // Otherwise, queue a new writer.
+                        var writer = new VoidAsyncOperationWithData<T>(runContinuationsAsynchronously: true, cancellationToken);
+                        writer.Item = item;
+                        parent._blockedWriters.EnqueueTail(writer);
+                        return writer.ValueTask;
+                    }
+                    else if (parent._mode == BoundedChannelFullMode.DropWrite)
+                    {
+                        // The channel is full and we're in ignore mode.
+                        // Ignore the item but say we accepted it.
+                        Monitor.Exit(parent.SyncObj);
+                        releaseLock = false;
+                        _parent._itemDropped?.Invoke(item);
+                        return default;
+                    }
+                    else
+                    {
+                        // The channel is full, and we're in a dropping mode.
+                        // Drop either the oldest or the newest and write the new item.
+                        T droppedItem = parent._mode == BoundedChannelFullMode.DropNewest ?
+                            parent._items.DequeueTail() :
+                            parent._items.DequeueHead();
+
+                        Monitor.Exit(parent.SyncObj);
+                        releaseLock = false;
+                        _parent._itemDropped?.Invoke(droppedItem);
+
+                        parent._items.EnqueueTail(item);
+                        return default;
                     }
                 }
                 finally
                 {
-                    if (dropItem.HasValue)
+                    if (releaseLock)
                     {
-                        _parent._itemDropped?.Invoke(dropItem.Item);
+                        Monitor.Exit(parent.SyncObj);
                     }
                 }
 
