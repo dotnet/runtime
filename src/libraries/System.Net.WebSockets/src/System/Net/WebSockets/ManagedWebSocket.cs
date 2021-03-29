@@ -555,13 +555,13 @@ namespace System.Net.WebSockets
             {
                 // The server doesn't send a mask, so the mask offset returned by WriteHeader
                 // is actually the end of the header.
-                headerLength = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: false, compressed: _inflater is not null);
+                headerLength = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: false, compressed: _deflater is not null);
             }
             else
             {
                 // We need to know where the mask starts so that we can use the mask to manipulate the payload data,
                 // and we need to know the total length for sending it on the wire.
-                maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true, compressed: _inflater is not null);
+                maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true, compressed: _deflater is not null);
                 headerLength = maskOffset.GetValueOrDefault() + MaskLength;
             }
 
