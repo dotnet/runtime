@@ -106,10 +106,7 @@ namespace System
         internal void SetCurrentStackTrace()
         {
             // Check to see if the exception already has a stack set in it.
-            if (_traceIPs != null || _stackTraceString != null || _remoteStackTraceString != null)
-            {
-                ThrowHelper.ThrowInvalidOperationException();
-            }
+            ThrowIfStackTraceAlreadyExists();
 
             // Store the current stack trace into the "remote" stack trace, which was originally introduced to support
             // remoting of exceptions cross app-domain boundaries, and is thus concatenated into Exception.StackTrace
@@ -118,6 +115,26 @@ namespace System
             new StackTrace(fNeedFileInfo: true).ToString(Diagnostics.StackTrace.TraceFormat.TrailingNewLine, sb);
             sb.AppendLine(SR.Exception_EndStackTraceFromPreviousThrow);
             _remoteStackTraceString = sb.ToString();
+        }
+
+        [StackTraceHidden]
+        internal void SetRemoteStackTrace()
+        {
+            // Check to see if the exception already has a stack set in it.
+            ThrowIfStackTraceAlreadyExists();
+
+            // Store the provided text into the "remote" stack trace, following the same format SetCurrentStackTrace
+            // would have generated.
+            _remoteStackTraceString = stackTrace + Environment.NewLineConst + SR.Exception_EndStackTraceFromPreviousThrow + Environment.NewLineConst;
+        }
+
+        [StackTraceHidden]
+        private void ThrowIfStackTraceAlreadyExists()
+        {
+            if (_traceIPs != null || _stackTraceString != null || _remoteStackTraceString != null)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+            }
         }
 
         private string? CreateSourceName()

@@ -326,17 +326,9 @@ namespace System
         [StackTraceHidden]
         internal void SetCurrentStackTrace()
         {
-            // If this is a preallocated singleton exception, silently skip the operation,
-            // regardless of the value of throwIfHasExistingStack.
-            if (IsImmutableAgileException(this))
+            if (!CanSetRemoteStackTrace())
             {
-                return;
-            }
-
-            // Check to see if the exception already has a stack set in it.
-            if (_stackTrace != null || _stackTraceString != null || _remoteStackTraceString != null)
-            {
-                ThrowHelper.ThrowInvalidOperationException();
+                return; // early-exit
             }
 
             // Store the current stack trace into the "remote" stack trace, which was originally introduced to support
@@ -346,6 +338,41 @@ namespace System
             new StackTrace(fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.TrailingNewLine, sb);
             sb.AppendLine(SR.Exception_EndStackTraceFromPreviousThrow);
             _remoteStackTraceString = sb.ToString();
+        }
+
+        [StackTraceHidden]
+        internal void SetRemoteStackTrace(string stackTrace)
+        {
+            if (!CanSetRemoteStackTrace())
+            {
+                return; // early-exit
+            }
+
+            // Store the provided text into the "remote" stack trace, following the same format SetCurrentStackTrace
+            // would have generated.
+            _remoteStackTraceString = stackTrace + Environment.NewLineConst + SR.Exception_EndStackTraceFromPreviousThrow + Environment.NewLineConst;
+        }
+
+        // Returns true if setting the _remoteStackTraceString field is legal, false if not (immutable exception).
+        // A false return value means the caller should early-exit the operation.
+        // Can also throw InvalidOperationException if a stack trace is already set or if object has been thrown.
+        [StackTraceHidden]
+        private bool CanSetRemoteStackTrace()
+        {
+            // If this is a preallocated singleton exception, silently skip the operation,
+            // regardless of the value of throwIfHasExistingStack.
+            if (IsImmutableAgileException(this))
+            {
+                return false;
+            }
+
+            // Check to see if the exception already has a stack set in it.
+            if (_stackTrace != null || _stackTraceString != null || _remoteStackTraceString != null)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
+            }
+
+            return true;
         }
     }
 }
