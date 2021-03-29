@@ -236,10 +236,10 @@ namespace System.Tests
             Type nonRandomizedComparerType = typeof(StringComparer).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer");
             Assert.NotNull(nonRandomizedComparerType);
 
-            PropertyInfo pi = nonRandomizedComparerType.GetProperty(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-            Assert.NotNull(pi);
+            FieldInfo fi = nonRandomizedComparerType.GetField(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+            Assert.NotNull(fi);
 
-            return (IEqualityComparer<string>)pi.GetValue(null);
+            return (IEqualityComparer<string>)fi.GetValue(null);
         }
 
         private class CustomStringComparer : StringComparer
