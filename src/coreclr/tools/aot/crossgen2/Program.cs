@@ -293,65 +293,101 @@ namespace ILCompiler
 
         private int Run(string[] args)
         {
+            InitializeDefaultOptions();
+
+            ProcessCommandLine(args);
+
+            if (_commandLineOptions.Help)
+            {
+                Console.WriteLine(_commandLineOptions.HelpText);
+                return 1;
+            }
+
+            if (_commandLineOptions.OutputFilePath == null && !_commandLineOptions.OutNearInput)
+                throw new CommandLineException(SR.MissingOutputFile);
+
+            ConfigureTarget();
+            InstructionSetSupport instructionSetSupport = ConfigureInstructionSetSupport();
+
+            SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
+
+            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.CoreRTArmel : TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
+
+            bool versionBubbleIncludesCoreLib = false;
+            if (_commandLineOptions.InputBubble)
+            {
+                versionBubbleIncludesCoreLib = true;
+            }
+            else
+            {
+                if (!_commandLineOptions.SingleFileCompilation)
+                {
+                    foreach (var inputFile in _inputFilePaths)
+                    {
+                        if (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0)
+                        {
+                            versionBubbleIncludesCoreLib = true;
+                            break;
+                        }
+                    }
+                }
+                if (!versionBubbleIncludesCoreLib)
+                {
+                    foreach (var inputFile in _unrootedInputFilePaths)
+                    {
+                        if (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0)
+                        {
+                            versionBubbleIncludesCoreLib = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            var retcode = 0;
+
+            if (_commandLineOptions.SingleFileCompilation)
+            {
+                var singleCompilationInputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var inputFile in _inputFilePaths)
+                {
+                    singleCompilationInputFilePaths.Clear();
+                    singleCompilationInputFilePaths.Add(inputFile.Key, inputFile.Value);
+
+                    retcode = RunSingleCompilation(singleCompilationInputFilePaths, instructionSetSupport, targetDetails, genericsMode, versionBubbleIncludesCoreLib);
+                    if (retcode != 0)
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                retcode = RunSingleCompilation(_inputFilePaths, instructionSetSupport, targetDetails, genericsMode, versionBubbleIncludesCoreLib);
+            }
+
+            return retcode;
+        }
+
+        private int RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, TargetDetails targetDetails,
+                                         SharedGenericsMode genericsMode, bool versionBubbleIncludesCoreLib)
+        {
+            //
+            // Initialize type system context
+            //
+            _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib);
+
+            //
+            // Initialize output filename
+            //
+            var outFile = _commandLineOptions.OutNearInput ? inFilePaths.First().Value.Replace(".dll", ".ni.dll") : _commandLineOptions.OutputFilePath;
+
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
                 ICompilation compilation;
                 using (PerfEventSource.StartStopEvents.LoadingEvents())
                 {
-                    InitializeDefaultOptions();
-
-                    ProcessCommandLine(args);
-
-                    if (_commandLineOptions.Help)
-                    {
-                        Console.WriteLine(_commandLineOptions.HelpText);
-                        return 1;
-                    }
-
-                    if (_commandLineOptions.OutputFilePath == null)
-                        throw new CommandLineException(SR.MissingOutputFile);
-
-                    ConfigureTarget();
-                    InstructionSetSupport instructionSetSupport = ConfigureInstructionSetSupport();
-
-                    //
-                    // Initialize type system context
-                    //
-
-                    SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
-
-                    var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.CoreRTArmel : TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
-
-                    bool versionBubbleIncludesCoreLib = false;
-                    if (_commandLineOptions.InputBubble)
-                    {
-                        versionBubbleIncludesCoreLib = true;
-                    }
-                    else
-                    {
-                        foreach (var inputFile in _inputFilePaths)
-                        {
-                            if (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0)
-                            {
-                                versionBubbleIncludesCoreLib = true;
-                                break;
-                            }
-                        }
-                        if (!versionBubbleIncludesCoreLib)
-                        {
-                            foreach (var inputFile in _unrootedInputFilePaths)
-                            {
-                                if (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0)
-                                {
-                                    versionBubbleIncludesCoreLib = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib);
-
                     string compositeRootPath = _commandLineOptions.CompositeRootPath;
 
                     //
@@ -361,12 +397,12 @@ namespace ILCompiler
                     // See: https://github.com/dotnet/corert/issues/2785
                     //
                     // When we undo this this hack, replace this foreach with
-                    //  typeSystemContext.InputFilePaths = _inputFilePaths;
+                    //  typeSystemContext.InputFilePaths = inFilePaths;
                     //
                     Dictionary<string, string> allInputFilePaths = new Dictionary<string, string>();
                     Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
                     List<ModuleDesc> referenceableModules = new List<ModuleDesc>();
-                    foreach (var inputFile in _inputFilePaths)
+                    foreach (var inputFile in inFilePaths)
                     {
                         try
                         {
@@ -578,7 +614,7 @@ namespace ILCompiler
                         }
                     }
                     // In single-file compilation mode, use the assembly's DebuggableAttribute to determine whether to optimize
-                    // or produce debuggable code if an explicit optimization level was not specified on the command line 
+                    // or produce debuggable code if an explicit optimization level was not specified on the command line
                     if (_optimizationMode == OptimizationMode.None && !_commandLineOptions.OptimizeDisabled && !_commandLineOptions.Composite)
                     {
                         System.Diagnostics.Debug.Assert(inputModules.Count == 1);
@@ -614,7 +650,7 @@ namespace ILCompiler
                         .UseInstructionSetSupport(instructionSetSupport)
                         .UseCustomPESectionAlignment(_commandLineOptions.CustomPESectionAlignment)
                         .UseVerifyTypeAndFieldLayout(_commandLineOptions.VerifyTypeAndFieldLayout)
-                        .GenerateOutputFile(_commandLineOptions.OutputFilePath)
+                        .GenerateOutputFile(outFile)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)
@@ -628,7 +664,7 @@ namespace ILCompiler
                     compilation = builder.ToCompilation();
 
                 }
-                compilation.Compile(_commandLineOptions.OutputFilePath);
+                compilation.Compile(outFile);
 
                 if (_commandLineOptions.DgmlLogFileName != null)
                     compilation.WriteDependencyLog(_commandLineOptions.DgmlLogFileName);
