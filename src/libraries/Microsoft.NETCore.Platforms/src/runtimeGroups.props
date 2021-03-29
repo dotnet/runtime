@@ -262,15 +262,21 @@
     </RuntimeGroupWithQualifiers>
   </ItemGroup>
 
-  <Target Name="GenerateRuntimeJson" BeforeTargets="CreatePackage">
+  <PropertyGroup>
+    <_generateRuntimeGraphTask Condition="'$(MSBuildRuntimeType)' == 'core'">$(NuGetPackageRoot)microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\tools\netcoreapp3.1\Microsoft.DotNet.Build.Tasks.Packaging.dll</_generateRuntimeGraphTask>
+    <_generateRuntimeGraphTask Condition="'$(MSBuildRuntimeType)' != 'core'">$(NuGetPackageRoot)microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\tools\net472\Microsoft.DotNet.Build.Tasks.Packaging.dll</_generateRuntimeGraphTask>
+  </PropertyGroup>
+  <UsingTask TaskName="GenerateRuntimeGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
+
+  <Target Name="GenerateRuntimeJson" BeforeTargets="Pack">
     <!-- Generates a Runtime graph using RuntimeGroups and diffs it with the graph described by runtime.json and runtime.compatibility.json
          Specifying UpdateRuntimeFiles=true skips the diff and updates those files.
          The graph can be visualized using the generated dmgl -->
-    <MakeDir Directories="$(PackageReportDir)" />
+    <MakeDir Directories="$(OutputPath)" />
     <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroupWithQualifiers)"
                           RuntimeJson="runtime.json"
                           CompatibilityMap="runtime.compatibility.json"
-                          RuntimeDirectedGraph="$(PackageReportDir)$(Id)$(NuspecSuffix)-runtime.json.dgml"
+                          RuntimeDirectedGraph="$(OutputPath)runtime.json.dgml"
                           UpdateRuntimeFiles="$(UpdateRuntimeFiles)" />
   </Target>
 </Project>

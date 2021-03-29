@@ -3,7 +3,20 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard1.0</TargetFrameworks>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <!-- Avoid trying to binplace non existent documentation file.-->
-    <EnableBinPlacing>false</EnableBinPlacing>
+
+    <IsSourceProject>false</IsSourceProject>
+    <IsPackable>true</IsPackable>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <NoWarn>$(NoWarn);NU5128</NoWarn> <!-- No Dependencies-->
+    <PackageDescription>Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.</PackageDescription>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="runtime.json" PackagePath="/" />
+    <Content Include="_._" PackagePath="lib/netstandard1.0" />
+    
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" />
+  </ItemGroup>
+  
+  <Import Project="runtimeGroups.props" />
 </Project>
