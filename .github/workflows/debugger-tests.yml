@@ -40,4 +40,4 @@ jobs:
       - name: Build
         run: make -C src/mono/wasm build-all
       - name: Test
-        run: make -C src/mono/wasm debugger-tests
+        run: make -C src/mono/wasm run-debugger-tests
