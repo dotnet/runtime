@@ -3879,20 +3879,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     // Optimize `ldstr + String::get_Length()` to CNS_INT
                     // e.g. "Hello".Length => 5
-                    int             length = -1;
-                    const char16_t* str    = info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd,
-                                                                             op1->AsStrCon()->gtSconCPX, &length);
-                    if (length >= 0)
+                    GenTreeIntCon* iconNode = impStringLiteralLength(op1->AsStrCon());
+                    if (iconNode != nullptr)
                     {
-                        retNode = gtNewIconNode(length);
-                        if (str != nullptr) // can be NULL for dynamic context
-                        {
-                            JITDUMP("Optimizing '\"%ws\".Length' to just '%d'\n", str, length);
-                        }
-                        else
-                        {
-                            JITDUMP("Optimizing 'CNS_STR.Length' to just '%d'\n", length);
-                        }
+                        retNode = iconNode;
                         break;
                     }
                 }
@@ -18415,6 +18405,28 @@ void Compiler::impWalkSpillCliqueFromPred(BasicBlock* block, SpillCliqueWalker* 
     // miss walking back to include the predecessor we started from.
     // This most likely cause: missing or out of date bbPreds
     assert(impSpillCliqueGetMember(SpillCliquePred, block) != 0);
+}
+
+GenTreeIntCon* Compiler::impStringLiteralLength(GenTreeStrCon* node)
+{
+    int             length = -1;
+    const char16_t* str    = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, &length);
+    if (length >= 0)
+    {
+        GenTreeIntCon* iconNode = gtNewIconNode(length);
+
+        // str can be NULL for dynamic context
+        if (str != nullptr)
+        {
+            JITDUMP("Optimizing '\"%ws\".Length' to just '%d'\n", str, length)
+        }
+        else
+        {
+            JITDUMP("Optimizing 'CNS_STR.Length' to just '%d'\n", length)
+        }
+        return iconNode;
+    }
+    return nullptr;
 }
 
 void Compiler::SetSpillTempsBase::Visit(SpillCliqueDir predOrSucc, BasicBlock* blk)

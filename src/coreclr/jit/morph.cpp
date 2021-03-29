@@ -12503,13 +12503,13 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_ARR_LENGTH:
             if (op1->OperIs(GT_CNS_STR))
             {
-                int length = -1;
-                info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd, op1->AsStrCon()->gtSconCPX, &length);
-                if (length >= 0)
+                // Optimize `ldstr + String::get_Length()` to CNS_INT
+                // e.g. "Hello".Length => 5
+                GenTreeIntCon* iconNode = impStringLiteralLength(op1->AsStrCon());
+                if (iconNode != nullptr)
                 {
-                    tree = gtNewIconNode(length);
-                    INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-                    return tree;
+                    INDEBUG(iconNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    return iconNode;
                 }
             }
             break;

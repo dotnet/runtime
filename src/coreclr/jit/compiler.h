@@ -4400,6 +4400,8 @@ private:
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
 
+    GenTreeIntCon* impStringLiteralLength(GenTreeStrCon* tree);
+
 #ifdef TARGET_ARM
     void impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* op, CORINFO_CLASS_HANDLE hClass);
 #endif
