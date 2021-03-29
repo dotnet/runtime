@@ -292,7 +292,7 @@ namespace System.Security.AccessControl.Tests
 
                 rawAcl = new RawAcl(0, 1);
                 opaque = new byte[4];
-                gAce = new CustomAce(AceType.MaxDefinedAceType + 1, AceFlags.InheritanceFlags, opaque); ;
+                gAce = new CustomAce(AceType.MaxDefinedAceType + 1, AceFlags.InheritanceFlags, opaque);
                 rawAcl.InsertAce(0, gAce);
                 discretionaryAcl = new DiscretionaryAcl(isContainer, isDS, rawAcl);
 
@@ -326,7 +326,7 @@ namespace System.Security.AccessControl.Tests
             rawAcl = new RawAcl(0, 1);
             opaque = new byte[GenericAcl.MaxBinaryLength + 1 - 8 - 4 - 16];
             gAce = new CustomAce(AceType.MaxDefinedAceType + 1,
-                AceFlags.InheritanceFlags, opaque); ;
+                AceFlags.InheritanceFlags, opaque);
             rawAcl.InsertAce(0, gAce);
             discretionaryAcl = new DiscretionaryAcl(isContainer, isDS, rawAcl);
             //After Mark changes design to make ACL with any CustomAce, CompoundAce uncanonical and

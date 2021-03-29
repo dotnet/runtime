@@ -175,9 +175,6 @@ leave:
 void
 mono_debug_cleanup (void)
 {
-	if (mono_debug_handles)
-		g_hash_table_destroy (mono_debug_handles);
-	mono_debug_handles = NULL;
 }
 
 /**

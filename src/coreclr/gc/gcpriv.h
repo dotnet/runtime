@@ -5329,6 +5329,11 @@ private:
     size_t region_alignment;
     size_t large_region_alignment;
 
+    GCSpinLock region_allocator_lock;
+
+    void enter_spin_lock();
+    void leave_spin_lock();
+
     uint32_t* region_map_start;
     uint32_t* region_map_end;
 

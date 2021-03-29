@@ -42,9 +42,6 @@ MONO_END_DECLS
 MONO_API void
 mono_trace_init (void);
 
-void 
-mono_trace_cleanup (void);
-
 MONO_API void
 mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args);
 

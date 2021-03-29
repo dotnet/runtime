@@ -409,7 +409,7 @@ namespace System.Diagnostics
             /// One node in the linked list of subscriptions that AllListenerObservable keeps.   It is
             /// IDisposable, and when that is called it removes itself from the list.
             /// </summary>
-            internal class AllListenerSubscription : IDisposable
+            internal sealed class AllListenerSubscription : IDisposable
             {
                 internal AllListenerSubscription(AllListenerObservable owner, IObserver<DiagnosticListener> subscriber, AllListenerSubscription? next)
                 {

@@ -62,25 +62,6 @@ mono_trace_init (void)
 }
 
 /**
- * mono_trace_cleanup:
- *
- * Releases the mono tracer.
- */
-void 
-mono_trace_cleanup (void)
-{
-	if(level_stack != NULL) {
-		while(!g_queue_is_empty (level_stack)) {
-			g_free (g_queue_pop_head (level_stack));
-		}
-
-		logCallback.closer();
-		g_queue_free (level_stack);
-		level_stack = NULL;
-	}
-}
-
-/**
  * mono_tracev_inner:
  * \param level Verbose level of the specified message
  * \param mask Type of the specified message

@@ -2667,7 +2667,7 @@ namespace System
                         case UriFormat.UriEscaped:
                             if (NotAny(Flags.UserEscaped))
                             {
-                                UriHelper.EscapeString(slice, ref dest, checkExistingEscaped: true, '?', '#');;
+                                UriHelper.EscapeString(slice, ref dest, checkExistingEscaped: true, '?', '#');
                             }
                             else
                             {

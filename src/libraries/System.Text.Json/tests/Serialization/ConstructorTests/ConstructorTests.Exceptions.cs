@@ -72,7 +72,7 @@ namespace System.Text.Json.Serialization.Tests
             var employee = await Serializer.DeserializeWrapper<Employee>(json);
 
             Assert.Equal("Jet", employee.Name);
-            Assert.Null(employee.Manager.Name); ;
+            Assert.Null(employee.Manager.Name);
             Assert.Null(employee.Manager.Manager);
 
             // Metadata not supported with preserve ref feature on.

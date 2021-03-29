@@ -5,7 +5,7 @@ using System;
 
 namespace System.Xml.Serialization
 {
-    internal class XmlSerializationPrimitiveWriter : System.Xml.Serialization.XmlSerializationWriter
+    internal sealed class XmlSerializationPrimitiveWriter : System.Xml.Serialization.XmlSerializationWriter
     {
         internal void Write_string(object? o)
         {
@@ -229,7 +229,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class XmlSerializationPrimitiveReader : System.Xml.Serialization.XmlSerializationReader
+    internal sealed class XmlSerializationPrimitiveReader : System.Xml.Serialization.XmlSerializationReader
     {
         internal object? Read_string()
         {

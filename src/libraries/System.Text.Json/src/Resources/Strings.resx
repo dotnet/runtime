@@ -554,4 +554,7 @@
   <data name="DeserializeUnableToAssignNull" xml:space="preserve">
     <value>Unable to assign 'null' to the property or field of type '{0}'.</value>
   </data>
+  <data name="SerializerConverterFactoryReturnsJsonConverterFactory" xml:space="preserve">
+    <value>The converter '{0}' cannot return an instance of JsonConverterFactory.</value>
+  </data>
 </root>

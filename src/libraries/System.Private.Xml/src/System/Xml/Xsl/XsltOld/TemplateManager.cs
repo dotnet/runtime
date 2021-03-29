@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Collections;
 
-    internal class TemplateManager
+    internal sealed class TemplateManager
     {
         private readonly XmlQualifiedName _mode;
         internal ArrayList? templates;

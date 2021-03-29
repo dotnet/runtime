@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.Collections.Generic;
 using System.IO.Pipes;
 using System.Linq;
 using System.Threading.Tasks;
@@ -97,6 +98,40 @@ namespace System.IO.Tests
 
             byte[] allBytes = File.ReadAllBytes(filePath);
             Assert.Equal(initialData.Concat(writeBuffer), allBytes);
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public async Task NoDataIsLostWhenWritingToFile(ReadWriteMode mode)
+        {
+            string filePath;
+            List<byte> writtenBytes = new List<byte>();
+
+            using (FileStream stream = (FileStream)await CreateWriteOnlyStreamCore(Array.Empty<byte>()))
+            {
+                filePath = stream.Name;
+
+                // the following buffer fits into internal FileStream buffer
+                byte[] small = Enumerable.Repeat(byte.MinValue, BufferSize - 1).ToArray();
+                // the following buffer does not fit into internal FileStream buffer
+                byte[] big = Enumerable.Repeat(byte.MaxValue, BufferSize + 1).ToArray();
+                // in this test we are selecting a random buffer and write it to file
+                // the goal is to cover all possible scenarios for the internal buffering logic
+                Random random = new Random(12345);
+                for (int i = 0; i < 1000; i++)
+                {
+                    byte[] bytes = random.Next() % 2 == 0 ? small : big;
+
+                    await WriteAsync(mode, stream, bytes, 0, bytes.Length);
+
+                    writtenBytes.AddRange(bytes);
+                    Assert.Equal(writtenBytes.Count, stream.Length);
+                    Assert.Equal(stream.Length, stream.Position);
+                }
+            }
+
+            byte[] allBytes = File.ReadAllBytes(filePath);
+            Assert.Equal(writtenBytes.ToArray(), allBytes);
         }
     }
 

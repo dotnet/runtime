@@ -87,7 +87,7 @@ namespace SustainedLowLatencyTest
                           failed = true;
                           break;
                       }
-                      GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency; ;
+                      GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
 
                       GCLatencyMode lm = GCSettings.LatencyMode;
                       //   Console.WriteLine(lm);
