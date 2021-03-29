@@ -198,6 +198,9 @@
   <data name="OptimizeSpeedOption" xml:space="preserve">
     <value>Enable optimizations, favor code speed</value>
   </data>
+  <data name="OutNearInputOption" xml:space="preserve">
+    <value>Create output files near input files with ni.dll suffix</value>
+  </data>
   <data name="OutputFilePath" xml:space="preserve">
     <value>Output file path</value>
   </data>
@@ -221,6 +224,9 @@
   </data>
   <data name="SaveDetailedLogOption" xml:space="preserve">
     <value>Save detailed log of dependency analysis</value>
+  </data>
+  <data name="SingleFileCompilationOption" xml:space="preserve">
+    <value>Compile each of the input files separately</value>
   </data>
   <data name="SingleMethodGenericArgs" xml:space="preserve">
     <value>Single method compilation: generic arguments to the method</value>
