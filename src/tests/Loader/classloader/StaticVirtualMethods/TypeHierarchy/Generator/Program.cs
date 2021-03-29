@@ -71,6 +71,7 @@ namespace VirtualStaticInterfaceMethodTestGen
             public static IEnumerable<TestScenario> GetScenarios()
             {
                 int scenarioIndex = 1;
+                int covariantScenarios = 0;
                 // Scenario
                 // InterfaceReturnType, InterfaceTypeGenericParams, BaseType, BaseTypeGenericParams, BaseTypeReturnType, DerivedType, DerivedTypeGenericParams, DerivedTypeReturnType, DerivedTypeInstantiation, ExactDispatchType, MethodImplOnDerivedType
                 foreach (string interfaceTypeGenericParams in new string[] { "", "<U>" })
@@ -103,70 +104,84 @@ namespace VirtualStaticInterfaceMethodTestGen
                             }
                             foreach (string interfaceTypeInstantiationOnBaseType in possibleInterfaceTypeInstantiationOnBaseType)
                             {
-                                string baseTypeReturnType;
+                                List<string> possibleBaseTypeReturnTypes = new List<string>();
                                 if (!interfaceReturnType.Contains("!0"))
                                 {
-                                    baseTypeReturnType = interfaceReturnType;
+                                    possibleBaseTypeReturnTypes.Add(interfaceReturnType);
+                                    if (interfaceReturnType == "object")
+                                    {
+                                        possibleBaseTypeReturnTypes.Add("string"); // Covariant return testing
+                                    }
                                 }
                                 else
                                 {
-                                    baseTypeReturnType = ApplyGenericSubstitution(interfaceReturnType, interfaceTypeInstantiationOnBaseType);
+                                    possibleBaseTypeReturnTypes.Add(ApplyGenericSubstitution(interfaceReturnType, interfaceTypeInstantiationOnBaseType));
                                 }
 
-                                foreach (string derivedTypeGenericParams in new string[] {"", "<V>"})
+                                foreach (string baseTypeReturnType in possibleBaseTypeReturnTypes)
                                 {
-                                    List<string> possibleBaseTypeInstantiationOnDerivedType = new List<string>();
-                                    if (baseTypeGenericParams == "")
+                                    foreach (string derivedTypeGenericParams in new string[] { "", "<V>" })
                                     {
-                                        possibleBaseTypeInstantiationOnDerivedType.Add("");
-                                    }
-                                    else
-                                    {
-                                        possibleBaseTypeInstantiationOnDerivedType.Add("<string>");
-                                        if (derivedTypeGenericParams == "<V>")
+                                        List<string> possibleBaseTypeInstantiationOnDerivedType = new List<string>();
+                                        if (baseTypeGenericParams == "")
                                         {
-                                            possibleBaseTypeInstantiationOnDerivedType.Add("<!0>");
-                                            possibleBaseTypeInstantiationOnDerivedType.Add("<class [System.Runtime]System.Func`1<!0>>");
-                                        }
-                                    }
-
-                                    foreach (string baseTypeInstantiationOnDerivedType in possibleBaseTypeInstantiationOnDerivedType)
-                                    {
-                                        string interfaceTypeInstantiationOnDerivedType = ApplyGenericSubstitution(interfaceTypeInstantiationOnBaseType, baseTypeInstantiationOnDerivedType);
-                                        string derivedTypeReturnType = ApplyGenericSubstitution(interfaceReturnType, interfaceTypeInstantiationOnDerivedType);
-
-                                        List<string> possibleDerivedTypeInstantiation = new List<string>();
-                                        if (derivedTypeGenericParams == "")
-                                        {
-                                            possibleDerivedTypeInstantiation.Add("");
+                                            possibleBaseTypeInstantiationOnDerivedType.Add("");
                                         }
                                         else
                                         {
-                                            possibleDerivedTypeInstantiation.Add("<string>");
-                                            possibleDerivedTypeInstantiation.Add("<int32>");
+                                            possibleBaseTypeInstantiationOnDerivedType.Add("<string>");
+                                            if (derivedTypeGenericParams == "<V>")
+                                            {
+                                                possibleBaseTypeInstantiationOnDerivedType.Add("<!0>");
+                                                possibleBaseTypeInstantiationOnDerivedType.Add("<class [System.Runtime]System.Func`1<!0>>");
+                                            }
                                         }
 
-                                        foreach (string derivedTypeInstantiation in possibleDerivedTypeInstantiation)
+                                        foreach (string baseTypeInstantiationOnDerivedType in possibleBaseTypeInstantiationOnDerivedType)
                                         {
-                                            string callReturnType = interfaceReturnType;
-                                            string callInterfaceTypeInstantiation = ApplyGenericSubstitution(interfaceTypeInstantiationOnDerivedType, derivedTypeInstantiation);
+                                            string interfaceTypeInstantiationOnDerivedType = ApplyGenericSubstitution(interfaceTypeInstantiationOnBaseType, baseTypeInstantiationOnDerivedType);
+                                            string derivedTypeReturnType = ApplyGenericSubstitution(baseTypeReturnType, interfaceTypeInstantiationOnDerivedType);
 
-                                            foreach (var interfaceImplementationApproach in (InterfaceImplementationApproach[])Enum.GetValues(typeof(InterfaceImplementationApproach)))
+                                            List<string> possibleDerivedTypeInstantiation = new List<string>();
+                                            if (derivedTypeGenericParams == "")
                                             {
-                                                yield return new TestScenario(scenarioIndex++,
-                                                                              interfaceReturnType,
-                                                                              interfaceTypeGenericParams,
-                                                                              baseTypeGenericParams,
-                                                                              baseTypeReturnType,
-                                                                              interfaceTypeInstantiationOnBaseType,
-                                                                              derivedTypeGenericParams,
-                                                                              derivedTypeReturnType,
-                                                                              interfaceTypeInstantiationOnDerivedType,
-                                                                              baseTypeInstantiationOnDerivedType,
-                                                                              derivedTypeInstantiation,
-                                                                              callReturnType,
-                                                                              callInterfaceTypeInstantiation,
-                                                                              interfaceImplementationApproach);
+                                                possibleDerivedTypeInstantiation.Add("");
+                                            }
+                                            else
+                                            {
+                                                possibleDerivedTypeInstantiation.Add("<string>");
+                                                possibleDerivedTypeInstantiation.Add("<int32>");
+                                            }
+
+                                            foreach (string derivedTypeInstantiation in possibleDerivedTypeInstantiation)
+                                            {
+                                                string callReturnType = interfaceReturnType;
+                                                string callInterfaceTypeInstantiation = ApplyGenericSubstitution(interfaceTypeInstantiationOnDerivedType, derivedTypeInstantiation);
+
+                                                foreach (var interfaceImplementationApproach in (InterfaceImplementationApproach[])Enum.GetValues(typeof(InterfaceImplementationApproach)))
+                                                {
+                                                    if (baseTypeReturnType == "string")
+                                                    {
+                                                        covariantScenarios++;
+                                                        // This isn't a good place for extensive covariant return testing
+                                                        if ((covariantScenarios % 20) != 0)
+                                                            continue;
+                                                    }
+                                                    yield return new TestScenario(scenarioIndex++,
+                                                                                  interfaceReturnType,
+                                                                                  interfaceTypeGenericParams,
+                                                                                  baseTypeGenericParams,
+                                                                                  baseTypeReturnType,
+                                                                                  interfaceTypeInstantiationOnBaseType,
+                                                                                  derivedTypeGenericParams,
+                                                                                  derivedTypeReturnType,
+                                                                                  interfaceTypeInstantiationOnDerivedType,
+                                                                                  baseTypeInstantiationOnDerivedType,
+                                                                                  derivedTypeInstantiation,
+                                                                                  callReturnType,
+                                                                                  callInterfaceTypeInstantiation,
+                                                                                  interfaceImplementationApproach);
+                                                }
                                             }
                                         }
                                     }
@@ -369,7 +384,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                 {
                     case InterfaceImplementationApproach.OnBaseType:
                     case InterfaceImplementationApproach.OnBothBaseAndDerived:
-                        twOutputTest.WriteLine($"    .override method {scenario.BaseTypeReturnType} class {iface.Name}{scenario.InterfaceTypeInstantiationOnBaseType}::Method()");
+                        twOutputTest.WriteLine($"    .override method {scenario.InterfaceReturnType} class {iface.Name}{scenario.InterfaceTypeInstantiationOnBaseType}::Method()");
                         break;
 
                     case InterfaceImplementationApproach.OnBothBaseAndDerivedBaseIsAbstract:
