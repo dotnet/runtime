@@ -69,18 +69,15 @@ namespace System
                 comparer = internalStringComparer.GetUnderlyingEqualityComparer(); // unwrap if necessary
             }
 
-            if (comparer is StringComparer stringComparer)
+            switch (comparer)
             {
+            case StringComparer stringComparer:
                 return stringComparer.IsWellKnownOrdinalComparerCore(out ignoreCase);
-            }
-            else if (comparer is GenericEqualityComparer<string>)
-            {
+            case GenericEqualityComparer<string>:
                 // special-case EqualityComparer<string>.Default, which is Ordinal-equivalent
                 ignoreCase = false;
                 return true;
-            }
-            else
-            {
+            default:
                 // unknown comparer
                 ignoreCase = default;
                 return false;
