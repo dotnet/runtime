@@ -74,7 +74,7 @@ namespace System.Security.Cryptography
         {
             return s_lookup.GetOrAdd(
                 hashAlgorithmName,
-                alg =>
+                static hashAlgorithmName =>
                 {
                     using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName))
                     {
