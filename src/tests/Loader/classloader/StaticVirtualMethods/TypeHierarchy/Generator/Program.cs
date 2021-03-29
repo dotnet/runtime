@@ -317,10 +317,17 @@ namespace VirtualStaticInterfaceMethodTestGen
 
         static void Main(string[] args)
         {
+            int maxCases = Int32.MaxValue;
             string rootPath = Path.GetDirectoryName(typeof(Program).Assembly.Location);
+            string scenarioSuffix = "";
             if (args.Length > 0)
                 rootPath = args[0];
-            using StreamWriter twOutputTest = new StreamWriter(Path.Combine(rootPath, @$"{TestAssemblyName}.il"));
+            if (args.Length > 2)
+            {
+                maxCases = Int32.Parse(args[1]);
+                scenarioSuffix = args[2];
+            }
+            using StreamWriter twOutputTest = new StreamWriter(Path.Combine(rootPath, @$"{TestAssemblyName}{scenarioSuffix}.il"));
 
             StringWriter swMainMethodBody = new StringWriter();
             StringWriter swTestClassMethods = new StringWriter();
@@ -328,8 +335,11 @@ namespace VirtualStaticInterfaceMethodTestGen
             EmitTestGlobalHeader(twOutputTest);
             EmitAssemblyRecord(twOutputTest, TestAssemblyName);
 
+            int currentCase = 0;
             foreach (var scenario in TestScenario.GetScenarios())
             {
+                if ((++currentCase) > maxCases)
+                    break;
                 string scenarioName = scenario.ToString();
 
                 // Emit interface
