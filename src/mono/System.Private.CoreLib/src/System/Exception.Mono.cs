@@ -118,7 +118,7 @@ namespace System
         }
 
         [StackTraceHidden]
-        internal void SetRemoteStackTrace()
+        internal void SetRemoteStackTrace(string stackTrace)
         {
             // Check to see if the exception already has a stack set in it.
             ThrowIfStackTraceAlreadyExists();
