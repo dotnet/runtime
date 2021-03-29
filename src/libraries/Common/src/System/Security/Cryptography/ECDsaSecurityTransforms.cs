@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Runtime.Versioning;
 using System.Security.Cryptography.Apple;
 using Internal.Cryptography;
 
@@ -95,8 +94,6 @@ namespace System.Security.Cryptography
                     }
                 }
 
-                [UnsupportedOSPlatform("ios")]
-                [UnsupportedOSPlatform("tvos")]
                 public override byte[] SignHash(byte[] hash)
                 {
                     if (hash == null)
@@ -117,8 +114,6 @@ namespace System.Security.Cryptography
                     return ieeeFormatSignature;
                 }
 
-                [UnsupportedOSPlatform("ios")]
-                [UnsupportedOSPlatform("tvos")]
                 public override bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
                 {
                     SecKeyPair keys = GetKeys();
@@ -145,8 +140,6 @@ namespace System.Security.Cryptography
                     }
                 }
 
-                [UnsupportedOSPlatform("ios")]
-                [UnsupportedOSPlatform("tvos")]
                 public override bool VerifyHash(byte[] hash, byte[] signature)
                 {
                     if (hash == null)
@@ -157,8 +150,6 @@ namespace System.Security.Cryptography
                     return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
                 }
 
-                [UnsupportedOSPlatform("ios")]
-                [UnsupportedOSPlatform("tvos")]
                 public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
                 {
                     ThrowIfDisposed();
@@ -213,8 +204,6 @@ namespace System.Security.Cryptography
                     return _ecc.ExportParameters(includePrivateParameters, KeySize);
                 }
 
-                [UnsupportedOSPlatform("ios")]
-                [UnsupportedOSPlatform("tvos")]
                 public override void ImportParameters(ECParameters parameters)
                 {
                     KeySizeValue = _ecc.ImportParameters(parameters);
@@ -238,15 +227,11 @@ namespace System.Security.Cryptography
                     base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
                 }
 
-                [UnsupportedOSPlatform("ios")]
-                [UnsupportedOSPlatform("tvos")]
                 public override void GenerateKey(ECCurve curve)
                 {
                     KeySizeValue = _ecc.GenerateKey(curve);
                 }
 
-                [UnsupportedOSPlatform("ios")]
-                [UnsupportedOSPlatform("tvos")]
                 internal SecKeyPair GetKeys()
                 {
                     return _ecc.GetOrGenerateKeys(KeySize);
