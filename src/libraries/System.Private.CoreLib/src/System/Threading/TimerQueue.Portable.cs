@@ -115,7 +115,7 @@ namespace System.Threading
                             continue;
                         }
 
-                        if (waitDurationMs < shortestWaitDurationMs)
+                        if (waitDurationMs > 0 && waitDurationMs < shortestWaitDurationMs)
                         {
                             shortestWaitDurationMs = (int)waitDurationMs;
                         }
