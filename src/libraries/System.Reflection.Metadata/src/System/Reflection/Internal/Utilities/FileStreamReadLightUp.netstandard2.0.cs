@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -9,12 +8,7 @@ namespace System.Reflection.Internal
 {
     internal static class FileStreamReadLightUp
     {
-        private static bool IsReadFileAvailable =>
-#if NETCOREAPP
-            OperatingSystem.IsWindows();
-#else
-            Path.DirectorySeparatorChar == '\\';
-#endif
+        private static bool IsReadFileAvailable => Path.DirectorySeparatorChar == '\\';
 
         internal static bool IsFileStream(Stream stream) => stream is FileStream;
 
@@ -42,7 +36,7 @@ namespace System.Reflection.Internal
             return handle;
         }
 
-        internal static unsafe bool TryReadFile(Stream stream, byte* buffer, long start, int size)
+        internal static unsafe bool TryReadFile(Stream stream, byte* buffer, int size)
         {
             if (!IsReadFileAvailable)
             {

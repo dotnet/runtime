@@ -86,7 +86,7 @@ namespace System.Reflection.Internal
             return handle;
         }
 
-        internal static unsafe bool TryReadFile(Stream stream, byte* buffer, long start, int size)
+        internal static unsafe bool TryReadFile(Stream stream, byte* buffer, int size)
         {
             if (readFileNotAvailable)
             {
