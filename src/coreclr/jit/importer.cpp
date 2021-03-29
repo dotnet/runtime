@@ -15970,6 +15970,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     op1 = gtNewHelperCallNode(helper, TYP_VOID, gtNewCallArgs(op2, op1));
 
+                    // In this case helper call is a fallback to throw an exception.
+                    op1->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+
                     op1 = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), op1);
                     op1 = gtNewQmarkNode(TYP_VOID, condBox, op1);
 

@@ -18034,6 +18034,12 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         }
         Statement* trueStmt = fgNewStmtFromTree(trueExpr, stmt->GetILOffsetX());
         fgInsertStmtAtEnd(thenBlock, trueStmt);
+
+        // Convert the whole block to BBJ_THROW if trueExpr is a no-return call
+        if (trueExpr->IsCall() && trueExpr->AsCall()->IsNoReturn())
+        {
+            fgConvertBBToThrowBB(thenBlock);
+        }
     }
 
     // Assign the falseExpr into the dst or tmp, insert in elseBlock
@@ -18045,6 +18051,12 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         }
         Statement* falseStmt = fgNewStmtFromTree(falseExpr, stmt->GetILOffsetX());
         fgInsertStmtAtEnd(elseBlock, falseStmt);
+
+        // Convert the whole block to BBJ_THROW if falseExpr is a no-return call
+        if (falseExpr->IsCall() && falseExpr->AsCall()->IsNoReturn())
+        {
+            fgConvertBBToThrowBB(elseBlock);
+        }
     }
 
 #ifdef DEBUG
