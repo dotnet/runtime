@@ -113,7 +113,7 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
 {
     FILE* file = create_extraction_file(entry.relative_path());
     reader.set_offset(entry.offset());
-    size_t size = entry.size();
+    int64_t size = entry.size();
     size_t cast_size = to_size_t_dbgchecked(size);
     size_t extracted_size = 0;
 
@@ -163,7 +163,7 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
 
         CompressionNative_InflateEnd(&zStream);
 #else
-        trace::error(_X("Compressed file in a standalone host scenario?"));
+        trace::error(_X("Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost."));
         throw StatusCode::BundleExtractionIOError;
 #endif
     }

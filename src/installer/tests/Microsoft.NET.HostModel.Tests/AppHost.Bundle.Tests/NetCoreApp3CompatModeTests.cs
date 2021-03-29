@@ -26,9 +26,8 @@ namespace AppHost.Bundle.Tests
         public void Bundle_Is_Extracted()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            UseSingleFileSelfContainedHost(fixture);
-            BundleOptions options = BundleOptions.EnableCompression | BundleOptions.BundleAllContent;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, options);
+            BundleOptions options = BundleOptions.BundleAllContent;
+            Bundler bundler = BundleSelfContainedApp(fixture, out string singleFile, options);
             var extractionBaseDir = BundleHelper.GetExtractionRootDir(fixture);
 
             Command.Create(singleFile, "executing_assembly_location trusted_platform_assemblies assembly_location System.Console")
