@@ -30,16 +30,13 @@ jobs:
           dotnet-version: 5.0.x
       - name: Setup chromedriver
         uses: nanasess/setup-chromedriver@master
-          
-      - name: Setup emsdk
-        uses: mymindstorm/setup-emsdk@v7
-        with:
-          version: 2.0.12
 
       # Runs a single command using the runners shell
       - name: Run a one-line script
         run: echo Hello, world!
 
+      - name: Provision emsdk
+        run: make -C src/mono/wasm provision-wasm
       - name: Build
         run: make -C src/mono/wasm build-all
       - name: Test
