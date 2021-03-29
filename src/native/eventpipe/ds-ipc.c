@@ -164,7 +164,7 @@ ipc_stream_factory_build_and_add_port (
 	bool result = false;
 	DiagnosticsIpc *ipc = NULL;
 
-#ifndef DS_IPC_PAL_TCP
+#ifndef DS_IPC_DISABLE_LISTEN_PORTS
 	if (!default_port && builder->type == DS_PORT_TYPE_LISTEN) {
 		// Ignore listen type (see conversation in https://github.com/dotnet/runtime/pull/40499 for details)
 		DS_LOG_INFO_0 ("ipc_stream_factory_build_and_add_port - Ignoring LISTEN port configuration");

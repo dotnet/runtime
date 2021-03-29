@@ -34,6 +34,7 @@ if(ENABLE_PERFTRACING)
 
     set(event_pipe-sources_base
       ${eventpipe_sources}
+      ${diagnostic_server_sources}
       event_pipe.c
       event_pipe.h
       diagnostics_server.c
