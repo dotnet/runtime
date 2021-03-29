@@ -2523,7 +2523,7 @@ void Compiler::fgIncorporateEdgeCounts()
 //
 // Returns:
 //    true if the edge weight was adjusted
-//    false if the edge weight update was inconsisten with the
+//    false if the edge weight update was inconsistent with the
 //      edge's current [min,max}
 //
 bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
@@ -2622,7 +2622,7 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
 //
 // Returns:
 //    true if the edge weight was adjusted
-//    false if the edge weight update was inconsisten with the
+//    false if the edge weight update was inconsistent with the
 //      edge's current [min,max}
 //
 bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
