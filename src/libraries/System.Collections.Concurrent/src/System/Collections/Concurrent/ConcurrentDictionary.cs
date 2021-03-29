@@ -33,16 +33,17 @@ namespace System.Collections.Concurrent
         internal uint _lastResizeTickMillis;
         internal object _sweeperInstance;
         internal int _sweepRequests;
+
         /// <summary>The default capacity, i.e. the initial # of buckets.</summary>
         /// <remarks>
         /// When choosing this value, we are making a trade-off between the size of a very small dictionary,
-        /// and the number of resizes when constructing a large dictionary. Also, the capacity should not be
-        /// divisible by a small prime.
+        /// and the number of resizes when constructing a large dictionary.
         /// </remarks>
-        private const int DefaultCapacity = 31;
+        private const int DefaultCapacity = 8;
 
-        /// <summary>The number of concurrent writes for which to optimize by default.</summary>
-        private static int DefaultConcurrencyLevel => Environment.ProcessorCount;
+        /// <summary>Concurrency level is ignored. However it must be > 0.</summary>
+        private static int DefaultConcurrencyLevel => 1;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ConcurrentDictionary{TKey,TValue}"/>
         /// class that is empty, has the default concurrency level, has the default initial capacity, and
@@ -399,19 +400,29 @@ namespace System.Collections.Concurrent
         public KeyValuePair<TKey, TValue>[] ToArray()
         {
             var snapshot = _table.GetSnapshot();
-            var array = new KeyValuePair<TKey, TValue>[snapshot.Count];
 
+            int count = snapshot.Count;
+            if (count == 0)
+            {
+                return Array.Empty<KeyValuePair<TKey, TValue>>();
+            }
+
+            var array = new KeyValuePair<TKey, TValue>[count];
             int idx = 0;
-            while (snapshot.MoveNext())
+            while (snapshot.MoveNext() && idx < array.Length)
             {
                 array[idx++] = snapshot.Current;
+            }
+
+            if (idx != array.Length)
+            {
+                Array.Resize(ref array, idx);
             }
 
             return array;
         }
 
-        /// <summary>Copy dictionary contents to an array - shared implementation between ToArray and CopyTo.</summary>
-        /// <remarks>Important: the caller must hold all locks in _locks before calling CopyToPairs.</remarks>
+        /// <summary>Copy dictionary contents to an array.</summary>
         private void CopyToPairs(KeyValuePair<TKey, TValue>[] array, int index)
         {
             if (array is null)
@@ -443,8 +454,7 @@ namespace System.Collections.Concurrent
             }
         }
 
-        /// <summary>Copy dictionary contents to an array - shared implementation between ToArray and CopyTo.</summary>
-        /// <remarks>Important: the caller must hold all locks in _locks before calling CopyToEntries.</remarks>
+        /// <summary>Copy dictionary contents to an array.</summary>
         private void CopyToEntries(DictionaryEntry[] array, int index)
         {
             if (array is null)
@@ -476,8 +486,7 @@ namespace System.Collections.Concurrent
             }
         }
 
-        /// <summary>Copy dictionary contents to an array - shared implementation between ToArray and CopyTo.</summary>
-        /// <remarks>Important: the caller must hold all locks in _locks before calling CopyToPairs.</remarks>
+        /// <summary>Copy dictionary contents to an array.</summary>
         private void CopyToObjects(object[] array, int index)
         {
             if (array is null)
@@ -573,6 +582,9 @@ namespace System.Collections.Concurrent
         private static void ThrowKeyNotFoundException(TKey key) =>
             throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
 
+        /// <summary>
+        /// Fetches the actual value from an object form used by the table.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal TValue FromObjectValue(object obj)
         {
@@ -857,7 +869,6 @@ namespace System.Collections.Concurrent
             }
             return tValue2;
         }
-
 
         /// <summary>
         /// Adds a key/value pair to the <see cref="ConcurrentDictionary{TKey,TValue}"/> if the key does not already

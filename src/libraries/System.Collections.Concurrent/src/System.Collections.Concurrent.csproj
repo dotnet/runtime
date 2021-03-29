@@ -12,7 +12,7 @@
     <Compile Include="System\Collections\Concurrent\ConcurrentDictionary.cs" />
 
     <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImpl.cs" />
-    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImpl.Enumerators.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImpl.SnapshotImpl.cs" />
     <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImpl`2.cs" />
     <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImpl`3.cs" />
     <Compile Include="System\Collections\Concurrent\ConcurrentDictionary\DictionaryImplBoxed.cs" />
