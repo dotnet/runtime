@@ -7,7 +7,6 @@ using System.Formats.Asn1;
 using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
@@ -88,8 +87,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             public override RSAParameters ExportParameters(bool includePrivateParameters)
             {
                 // Apple requires all private keys to be exported encrypted, but since we're trying to export
@@ -102,10 +99,12 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
                 }
 
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
                 byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(
                     includePrivateParameters ? keys.PrivateKey : keys.PublicKey,
                     exportPrivate: includePrivateParameters,
                     password: ExportPassword);
+#pragma warning restore CA1416
 
                 try
                 {
@@ -152,8 +151,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             public override void ImportParameters(RSAParameters parameters)
             {
                 ValidateParameters(parameters);
@@ -195,8 +192,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             public override unsafe void ImportSubjectPublicKeyInfo(
                 ReadOnlySpan<byte> source,
                 out int bytesRead)
@@ -212,7 +207,9 @@ namespace System.Security.Cryptography
                             manager.Memory,
                             out int localRead);
 
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
                         SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.ImportEphemeralKey(source.Slice(0, localRead), false);
+#pragma warning restore CA1416
                         SetKey(SecKeyPair.PublicOnly(publicKey));
 
                         bytesRead = localRead;
@@ -220,8 +217,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
             {
                 ThrowIfDisposed();
@@ -270,8 +265,6 @@ namespace System.Security.Cryptography
                 base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
             {
                 if (data == null)
@@ -299,8 +292,6 @@ namespace System.Security.Cryptography
                 return output;
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
             {
                 if (padding == null)
@@ -329,12 +320,14 @@ namespace System.Security.Cryptography
                             SR.Format(SR.Cryptography_Encryption_MessageTooLong, maxAllowed));
                     }
 
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
                     return Interop.AppleCrypto.TryRsaEncrypt(
                         GetKeys().PublicKey,
                         data,
                         destination,
                         padding,
                         out bytesWritten);
+#pragma warning restore CA1416
                 }
 
                 RsaPaddingProcessor? processor;
@@ -379,8 +372,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
             {
                 if (data == null)
@@ -408,7 +399,9 @@ namespace System.Security.Cryptography
 
                 if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1)
                 {
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
                     return Interop.AppleCrypto.RsaDecrypt(keys.PrivateKey, data, padding);
+#pragma warning restore CA1416
                 }
 
                 int maxOutputSize = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
@@ -432,8 +425,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             public override bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
             {
                 if (padding == null)
@@ -451,8 +442,6 @@ namespace System.Security.Cryptography
                 return TryDecrypt(keys.PrivateKey, data, destination, padding, out bytesWritten);
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             private bool TryDecrypt(
                 SafeSecKeyRefHandle privateKey,
                 ReadOnlySpan<byte> data,
@@ -478,7 +467,9 @@ namespace System.Security.Cryptography
                 if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1 ||
                     padding == RSAEncryptionPadding.OaepSHA1)
                 {
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
                     return Interop.AppleCrypto.TryRsaDecrypt(privateKey, data, destination, padding, out bytesWritten);
+#pragma warning restore CA1416
                 }
 
                 Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Oaep);
@@ -506,8 +497,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
                 if (hash == null)
@@ -544,10 +533,12 @@ namespace System.Security.Cryptography
                                 hashAlgorithm.Name));
                     }
 
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
                     return Interop.AppleCrypto.GenerateSignature(
                         keys.PrivateKey,
                         hash,
                         palAlgId);
+#pragma warning restore CA1416
                 }
 
                 // A signature will always be the keysize (in ceiling-bytes) in length.
@@ -564,8 +555,6 @@ namespace System.Security.Cryptography
                 return output;
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
             {
                 if (string.IsNullOrEmpty(hashAlgorithm.Name))
@@ -623,12 +612,14 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
                     return Interop.AppleCrypto.TryGenerateSignature(
                         keys.PrivateKey,
                         hash,
                         destination,
                         palAlgId,
                         out bytesWritten);
+#pragma warning restore CA1416
                 }
 
                 Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss);
@@ -654,8 +645,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             public override bool VerifyHash(
                 byte[] hash,
                 byte[] signature,
@@ -674,8 +663,6 @@ namespace System.Security.Cryptography
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature, hashAlgorithm, padding);
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
                 if (string.IsNullOrEmpty(hashAlgorithm.Name))
@@ -693,7 +680,9 @@ namespace System.Security.Cryptography
                 {
                     Interop.AppleCrypto.PAL_HashAlgorithm palAlgId =
                         PalAlgorithmFromAlgorithmName(hashAlgorithm, out int expectedSize);
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
                     return Interop.AppleCrypto.VerifySignature(GetKeys().PublicKey, hash, signature, palAlgId);
+#pragma warning restore CA1416
                 }
                 else if (padding.Mode == RSASignaturePaddingMode.Pss)
                 {
@@ -807,8 +796,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             internal SecKeyPair GetKeys()
             {
                 ThrowIfDisposed();
@@ -822,8 +809,9 @@ namespace System.Security.Cryptography
                 SafeSecKeyRefHandle publicKey;
                 SafeSecKeyRefHandle privateKey;
 
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
                 Interop.AppleCrypto.RsaGenerateKey(KeySizeValue, out publicKey, out privateKey);
-
+#pragma warning restore CA1416
                 current = SecKeyPair.PublicPrivatePair(publicKey, privateKey);
                 _keys = current;
                 return current;
@@ -843,8 +831,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             private static SafeSecKeyRefHandle ImportKey(RSAParameters parameters)
             {
                 AsnWriter keyWriter;
@@ -874,7 +860,9 @@ namespace System.Security.Cryptography
 
                 try
                 {
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
                     return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
+#pragma warning restore CA1416
                 }
                 finally
                 {
