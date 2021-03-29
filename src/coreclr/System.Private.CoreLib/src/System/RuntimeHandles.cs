@@ -209,7 +209,7 @@ namespace System
             return outHandles;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter)
+        internal static object CreateInstanceForAnotherGenericParameter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type, RuntimeType genericParameter)
         {
             object? instantiatedObject = null;
 
@@ -224,7 +224,7 @@ namespace System
             return instantiatedObject!;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter1, RuntimeType genericParameter2)
+        internal static object CreateInstanceForAnotherGenericParameter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type, RuntimeType genericParameter1, RuntimeType genericParameter2)
         {
             object? instantiatedObject = null;
 
