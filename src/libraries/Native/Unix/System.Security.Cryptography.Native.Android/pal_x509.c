@@ -11,20 +11,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define INIT_LOCALS(name, ...) \
-    enum { __VA_ARGS__, count_##name }; \
-    jobject name[count_##name] = { 0 }; \
-
-#define RELEASE_LOCALS(name, env) \
-{ \
-    for (int i_##name = 0; i_##name < count_##name; ++i_##name) \
-    { \
-        jobject local = name[i_##name]; \
-        if (local != NULL) \
-            (*env)->DeleteLocalRef(env, local); \
-    } \
-} \
-
 #define INSUFFICIENT_BUFFER -1
 
 static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len);
@@ -36,7 +22,7 @@ jobject /*X509Certificate*/ AndroidCryptoNative_X509Decode(const uint8_t* buf, i
     JNIEnv* env = GetJNIEnv();
 
     jobject ret = NULL;
-    INIT_LOCALS(loc, bytes, stream, certType, certFactory)
+    INIT_LOCALS(loc, bytes, stream, certType, certFactory);
 
     // byte[] bytes = new byte[] { ... }
     // InputStream stream = new ByteArrayInputStream(bytes);
@@ -58,7 +44,7 @@ jobject /*X509Certificate*/ AndroidCryptoNative_X509Decode(const uint8_t* buf, i
         ret = ToGRef(env, ret);
 
 cleanup:
-    RELEASE_LOCALS(loc, env)
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -89,7 +75,7 @@ int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t* buf,
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
-    INIT_LOCALS(loc, bytes, stream, certType, certFactory, certs, iter)
+    INIT_LOCALS(loc, bytes, stream, certType, certFactory, certs, iter);
 
     // byte[] bytes = new byte[] { ... }
     // InputStream stream = new ByteArrayInputStream(bytes);
@@ -151,7 +137,7 @@ int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t* buf,
     ret = SUCCESS;
 
 cleanup:
-    RELEASE_LOCALS(loc, env)
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -165,12 +151,12 @@ int32_t AndroidCryptoNative_X509ExportPkcs7(jobject* /*X509Certificate[]*/ certs
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
-    INIT_LOCALS(loc, certList, certType, certFactory, certPath, pkcs7Type, encoded)
+    INIT_LOCALS(loc, certList, certType, certFactory, certPath, pkcs7Type, encoded);
 
     // ArrayList<Certificate> certList = new ArrayList<Certificate>();
     // foreach (Certificate cert in certs)
     //     certList.add(cert);
-    loc[certList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor, certsLen);
+    loc[certList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtorWithCapacity, certsLen);
     for (int i = 0; i < certsLen; ++i)
     {
         (*env)->CallBooleanMethod(env, loc[certList], g_ArrayListAdd, certs[i]);
@@ -193,7 +179,7 @@ int32_t AndroidCryptoNative_X509ExportPkcs7(jobject* /*X509Certificate[]*/ certs
     ret = PopulateByteArray(env, loc[encoded], out, outLen);
 
 cleanup:
-    RELEASE_LOCALS(loc, env)
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -203,9 +189,9 @@ PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t* buf, i
     JNIEnv* env = GetJNIEnv();
 
     PAL_X509ContentType ret = PAL_X509Unknown;
-    INIT_LOCALS(loc, bytes, stream, certType, certFactory, pkcs7Type, certPath, cert)
+    INIT_LOCALS(loc, bytes, stream, certType, certFactory, pkcs7Type, certPath, cert);
 
-    // This functin checks:
+    // This function checks:
     // - PKCS7 DER/PEM
     // - X509 DER/PEM
     // The generateCertificate method used for the X509 DER/PEM check will succeed for some
@@ -243,7 +229,7 @@ PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t* buf, i
     }
 
 cleanup:
-    RELEASE_LOCALS(loc, env)
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
