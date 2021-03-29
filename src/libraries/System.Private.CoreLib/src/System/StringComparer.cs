@@ -71,20 +71,19 @@ namespace System
 
             switch (comparer)
             {
-            case StringComparer stringComparer:
-                return stringComparer.IsWellKnownOrdinalComparerCore(out ignoreCase);
-            case GenericEqualityComparer<string>:
-                // special-case EqualityComparer<string>.Default, which is Ordinal-equivalent
-                ignoreCase = false;
-                return true;
-            default:
-                // unknown comparer
-                ignoreCase = default;
-                return false;
+                case StringComparer stringComparer:
+                    return stringComparer.IsWellKnownOrdinalComparerCore(out ignoreCase);
+                case GenericEqualityComparer<string>:
+                    // special-case EqualityComparer<string>.Default, which is Ordinal-equivalent
+                    ignoreCase = false;
+                    return true;
+                default:
+                    // unknown comparer
+                    ignoreCase = default;
+                    return false;
             }
         }
 
-        // don't allow callers outside this hierarchy, and only allow overrides from within this assembly
         private protected virtual bool IsWellKnownOrdinalComparerCore(out bool ignoreCase)
         {
             // unless specialized comparer overrides this, we're not a well-known ordinal comparer
@@ -112,7 +111,6 @@ namespace System
             }
         }
 
-        // don't allow callers outside this hierarchy, and only allow overrides from within this assembly
         private protected virtual bool IsWellKnownCultureAwareComparerCore([NotNullWhen(true)] out CompareInfo? compareInfo, out CompareOptions compareOptions)
         {
             // unless specialized comparer overrides this, we're not a well-known culture-aware comparer
