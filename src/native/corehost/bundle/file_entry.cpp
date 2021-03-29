@@ -23,7 +23,7 @@ file_entry_t file_entry_t::read(reader_t &reader, uint32_t bundle_major_version,
     fixed_data.size   = *(int64_t*)reader.read_direct(sizeof(int64_t));
 
     // compressedSize is present only in v6+ headers
-    fixed_data.compressedSize = major_version >= 6 ?
+    fixed_data.compressedSize = bundle_major_version >= 6 ?
                         *(int64_t*)reader.read_direct(sizeof(int64_t)) :
                         0;
 
