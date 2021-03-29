@@ -25,9 +25,11 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       - name: Setup .NET
-        uses: actions/setup-dotnet@v1, nanasess/setup-chromedriver@master
+        uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 5.0.x
+      - name: Setup chromedriver
+        uses: nanasess/setup-chromedriver@master
           
       - name: Setup emsdk
         uses: mymindstorm/setup-emsdk@v7
