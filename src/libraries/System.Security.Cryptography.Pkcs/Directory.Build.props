@@ -2,7 +2,8 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <PackageVersion>5.0.1</PackageVersion>
+    <ServicingVersion>1</ServicingVersion>
+    <!-- This should be pinned to 5.0.0.1 going forward as it is part of aspnetcore ref pack.-->
     <AssemblyVersion>5.0.0.1</AssemblyVersion>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>

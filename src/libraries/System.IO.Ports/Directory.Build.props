@@ -4,6 +4,6 @@
     <StrongNameKeyId>Open</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
-    <PackageVersion>5.0.1</PackageVersion>
+    <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 </Project>
