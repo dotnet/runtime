@@ -1643,8 +1643,7 @@ typedef enum {
 
 typedef enum {
 	MONO_CFG_USES_SIMD_INTRINSICS = 1 << 0,
-	MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION = 1 << 1,
-	MONO_CFG_USES_SIMD_INTRINSICS_DECOMPOSE_VTYPE = 1 << 2
+	MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION = 1 << 1
 } MonoSimdIntrinsicsFlags;
 
 typedef struct {
@@ -2190,7 +2189,6 @@ mini_register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, co
 #endif // __cplusplus
 
 void              mono_trampolines_init (void);
-void              mono_trampolines_cleanup (void);
 guint8 *          mono_get_trampoline_code (MonoTrampolineType tramp_type);
 gpointer          mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, guint32 *code_len);
 gpointer          mono_create_jump_trampoline (MonoMethod *method, 
@@ -2717,7 +2715,6 @@ gpointer mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoVTable *v
 					  gint32 rgctx_index);
 
 void mono_generic_sharing_init (void);
-void mono_generic_sharing_cleanup (void);
 
 MonoClass* mini_class_get_container_class (MonoClass *klass);
 MonoGenericContext* mini_class_get_context (MonoClass *klass);

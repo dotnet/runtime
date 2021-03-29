@@ -2033,7 +2033,7 @@ namespace System.Xml.Serialization
     ///<internalonly/>
     public delegate object? XmlSerializationReadCallback();
 
-    internal class XmlSerializationReaderCodeGen : XmlSerializationCodeGen
+    internal sealed class XmlSerializationReaderCodeGen : XmlSerializationCodeGen
     {
         private readonly Hashtable _idNames = new Hashtable();
         private Hashtable? _enums;

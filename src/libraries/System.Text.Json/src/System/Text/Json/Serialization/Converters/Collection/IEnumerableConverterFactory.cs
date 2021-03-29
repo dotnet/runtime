@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Converter factory for all IEnumerable types.
     /// </summary>
-    internal class IEnumerableConverterFactory : JsonConverterFactory
+    internal sealed class IEnumerableConverterFactory : JsonConverterFactory
     {
         private static readonly IDictionaryConverter<IDictionary> s_converterForIDictionary = new IDictionaryConverter<IDictionary>();
         private static readonly IEnumerableConverter<IEnumerable> s_converterForIEnumerable = new IEnumerableConverter<IEnumerable>();

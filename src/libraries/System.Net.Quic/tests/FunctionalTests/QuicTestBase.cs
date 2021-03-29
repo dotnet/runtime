@@ -22,7 +22,8 @@ namespace System.Net.Quic.Tests
         {
             return new SslServerAuthenticationOptions()
             {
-                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol }
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate()
             };
         }
 

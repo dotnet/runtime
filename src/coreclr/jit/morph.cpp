@@ -6520,7 +6520,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 if (isStaticReadOnlyInited)
                 {
                     JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
-                    tree->gtFlags |= GTF_IND_INVARIANT;
+
+                    // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
+                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
                     tree->gtFlags &= ~GTF_ICON_INITCLASS;
                     addr->gtFlags = GTF_ICON_CONST_PTR;
                 }
@@ -9588,7 +9590,19 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
     // guarantee slow performance for that block. Instead cache the return value
     // of CORINFO_HELP_STRCNS and go to cache first giving reasonable perf.
 
+    bool useLazyStrCns = false;
     if (compCurBB->bbJumpKind == BBJ_THROW)
+    {
+        useLazyStrCns = true;
+    }
+    else if (fgGlobalMorph && compCurStmt->GetRootNode()->IsCall())
+    {
+        // Quick check: if the root node of the current statement happens to be a noreturn call.
+        GenTreeCall* call = compCurStmt->GetRootNode()->AsCall();
+        useLazyStrCns     = call->IsNoReturn() || fgIsThrow(call);
+    }
+
+    if (useLazyStrCns)
     {
         CorInfoHelpFunc helper = info.compCompHnd->getLazyStringLiteralHelper(tree->AsStrCon()->gtScpHnd);
         if (helper != CORINFO_HELP_UNDEF)
@@ -16643,7 +16657,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 #ifdef DEBUG
                         if (verbose)
                         {
-                            printf("Removing loop L%02u (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
+                            printf("Removing loop " FMT_LP " (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
                                    optLoopTable[loopNum].lpFirst->bbNum, optLoopTable[loopNum].lpBottom->bbNum);
                         }
 #endif

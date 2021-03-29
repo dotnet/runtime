@@ -16,7 +16,7 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
-    <ILLinkTrimXml>$(IntermediateOutputPath)System.Private.CoreLib.xml</ILLinkTrimXml>
+    <ILLinkDescriptorsXml>$(IntermediateOutputPath)ILLink.Descriptors.xml</ILLinkDescriptorsXml>
     <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
 
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>

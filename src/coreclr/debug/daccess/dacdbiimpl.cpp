@@ -4253,6 +4253,16 @@ HRESULT DacDbiInterfaceImpl::IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isMo
     return hr;
 }
 
+bool DacDbiInterfaceImpl::MetadataUpdatesApplied()
+{
+    DD_ENTER_MAY_THROW;
+#ifdef EnC_SUPPORTED
+    return g_metadataUpdatesApplied;
+#else
+    return false;
+#endif
+}
+
 // Helper to intialize a TargetBuffer from a MemoryRange
 //
 // Arguments:

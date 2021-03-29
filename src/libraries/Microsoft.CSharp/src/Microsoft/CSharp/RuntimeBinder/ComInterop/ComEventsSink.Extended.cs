@@ -7,7 +7,7 @@ using Microsoft.CSharp.RuntimeBinder.ComInterop;
 
 namespace System.Runtime.InteropServices
 {
-    internal partial class ComEventsSink
+    internal sealed partial class ComEventsSink
     {
         private void Initialize(object rcw, Guid iid)
         {

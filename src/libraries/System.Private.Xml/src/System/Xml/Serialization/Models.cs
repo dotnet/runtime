@@ -14,7 +14,7 @@ namespace System.Xml.Serialization
     // by looking for a particular set of custom attributes specific to the serialization format
     // and building an appropriate set of accessors/mappings.
 
-    internal class ModelScope
+    internal sealed class ModelScope
     {
         private readonly TypeScope _typeScope;
         private readonly Dictionary<Type, TypeModel> _models = new Dictionary<Type, TypeModel>();
@@ -116,7 +116,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ArrayModel : TypeModel
+    internal sealed class ArrayModel : TypeModel
     {
         internal ArrayModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
 
@@ -126,17 +126,17 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class PrimitiveModel : TypeModel
+    internal sealed class PrimitiveModel : TypeModel
     {
         internal PrimitiveModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
     }
 
-    internal class SpecialModel : TypeModel
+    internal sealed class SpecialModel : TypeModel
     {
         internal SpecialModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
     }
 
-    internal class StructModel : TypeModel
+    internal sealed class StructModel : TypeModel
     {
         internal StructModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
 
@@ -247,7 +247,7 @@ namespace System.Xml.Serialization
         ReadWrite,
     }
 
-    internal class FieldModel
+    internal sealed class FieldModel
     {
         private readonly SpecifiedAccessor _checkSpecified = SpecifiedAccessor.None;
         private readonly MemberInfo? _memberInfo;
@@ -369,7 +369,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ConstantModel
+    internal sealed class ConstantModel
     {
         private readonly FieldInfo _fieldInfo;
         private readonly long _value;
@@ -396,7 +396,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class EnumModel : TypeModel
+    internal sealed class EnumModel : TypeModel
     {
         private ConstantModel[]? _constants;
 

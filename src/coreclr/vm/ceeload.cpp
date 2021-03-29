@@ -11855,7 +11855,7 @@ HRESULT Module::WriteMethodProfileDataLogFile(bool cleanup)
     {
         if (GetAssembly()->IsInstrumented() && (m_pProfilingBlobTable != NULL) && (m_tokenProfileData != NULL))
         {
-            ProfileEmitter * pEmitter = new ProfileEmitter();
+            NewHolder<ProfileEmitter> pEmitter;
 
             // Get this ahead of time - metadata access may be logged, which will
             // take the m_tokenProfileData->crst, which we take a couple lines below
@@ -12520,7 +12520,7 @@ void ReflectionModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     Module::Initialize(pamTracker);
 
-    IfFailThrow(CreateICeeGen(IID_ICeeGen, (void **)&m_pCeeFileGen));
+    IfFailThrow(CreateICeeGen(IID_ICeeGenInternal, (void **)&m_pCeeFileGen));
 
     // Collectible modules should try to limit the growth of their associate IL section, as common scenarios for collectible
     // modules include single type modules

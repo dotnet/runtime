@@ -30,6 +30,7 @@ namespace Microsoft.Extensions.Hosting
         private HostBuilderContext _hostBuilderContext;
         private HostingEnvironment _hostingEnvironment;
         private IServiceProvider _appServices;
+        private PhysicalFileProvider _defaultProvider;
 
         /// <summary>
         /// A central location for sharing state between components during the host building process.
@@ -162,7 +163,7 @@ namespace Microsoft.Extensions.Hosting
                 _hostingEnvironment.ApplicationName = Assembly.GetEntryAssembly()?.GetName().Name;
             }
 
-            _hostingEnvironment.ContentRootFileProvider = new PhysicalFileProvider(_hostingEnvironment.ContentRootPath);
+            _hostingEnvironment.ContentRootFileProvider = _defaultProvider = new PhysicalFileProvider(_hostingEnvironment.ContentRootPath);
         }
 
         private string ResolveContentRootPath(string contentRootPath, string basePath)
@@ -219,6 +220,8 @@ namespace Microsoft.Extensions.Hosting
             services.AddSingleton<IHost>(_ =>
             {
                 return new Internal.Host(_appServices,
+                    _hostingEnvironment,
+                    _defaultProvider,
                     _appServices.GetRequiredService<IHostApplicationLifetime>(),
                     _appServices.GetRequiredService<ILogger<Internal.Host>>(),
                     _appServices.GetRequiredService<IHostLifetime>(),

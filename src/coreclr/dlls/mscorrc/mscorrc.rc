@@ -413,7 +413,7 @@ BEGIN
 
     IDS_INVALID_REDIM                       "Illegal attempt to replace or redimension a fixed or locked SafeArray."
 
-    IDS_INVALID_PINVOKE_CALLCONV            "Invalid unmanaged calling convention: must be one of stdcall, cdecl, or thiscall."
+    IDS_INVALID_PINVOKE_CALLCONV            "Unsupported unmanaged calling convention."
     IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was not given an explicit offset."
     IDS_WRONGSIZEARRAY_IN_NSTRUCT           "Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout."
 

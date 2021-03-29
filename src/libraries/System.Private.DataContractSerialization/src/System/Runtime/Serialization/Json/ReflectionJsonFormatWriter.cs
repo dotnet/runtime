@@ -13,7 +13,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class ReflectionJsonFormatWriter
+    internal sealed class ReflectionJsonFormatWriter
     {
         private readonly ReflectionJsonClassWriter _reflectionClassWriter = new ReflectionJsonClassWriter();
 
@@ -188,7 +188,7 @@ namespace System.Runtime.Serialization.Json
         }
     }
 
-    internal class ReflectionJsonClassWriter : ReflectionClassWriter
+    internal sealed class ReflectionJsonClassWriter : ReflectionClassWriter
     {
         protected override int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract, int childElementIndex, XmlDictionaryString[]? memberNames)
         {

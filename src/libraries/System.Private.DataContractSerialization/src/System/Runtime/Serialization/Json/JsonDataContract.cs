@@ -298,7 +298,7 @@ namespace System.Runtime.Serialization.Json
         }
     }
 
-    internal class JsonReadWriteDelegates
+    internal sealed class JsonReadWriteDelegates
     {
         // this is the global dictionary for JSON delegates introduced for multi-file
         private static readonly Dictionary<DataContract, JsonReadWriteDelegates> s_jsonDelegates = new Dictionary<DataContract, JsonReadWriteDelegates>();

@@ -94,7 +94,7 @@ namespace System.Xml
     // Int8 is not supported since sbyte[] is non-CLS compliant, and uncommon
     // UniqueId is not supported since elements may be variable size strings
 
-    internal class BooleanArrayHelperWithString : ArrayHelper<string, bool>
+    internal sealed class BooleanArrayHelperWithString : ArrayHelper<string, bool>
     {
         public static readonly BooleanArrayHelperWithString Instance = new BooleanArrayHelperWithString();
 
@@ -109,7 +109,7 @@ namespace System.Xml
         }
     }
 
-    internal class BooleanArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, bool>
+    internal sealed class BooleanArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, bool>
     {
         public static readonly BooleanArrayHelperWithDictionaryString Instance = new BooleanArrayHelperWithDictionaryString();
 
@@ -124,7 +124,7 @@ namespace System.Xml
         }
     }
 
-    internal class Int16ArrayHelperWithString : ArrayHelper<string, short>
+    internal sealed class Int16ArrayHelperWithString : ArrayHelper<string, short>
     {
         public static readonly Int16ArrayHelperWithString Instance = new Int16ArrayHelperWithString();
 
@@ -139,7 +139,7 @@ namespace System.Xml
         }
     }
 
-    internal class Int16ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, short>
+    internal sealed class Int16ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, short>
     {
         public static readonly Int16ArrayHelperWithDictionaryString Instance = new Int16ArrayHelperWithDictionaryString();
 
@@ -154,7 +154,7 @@ namespace System.Xml
         }
     }
 
-    internal class Int32ArrayHelperWithString : ArrayHelper<string, int>
+    internal sealed class Int32ArrayHelperWithString : ArrayHelper<string, int>
     {
         public static readonly Int32ArrayHelperWithString Instance = new Int32ArrayHelperWithString();
 
@@ -169,7 +169,7 @@ namespace System.Xml
         }
     }
 
-    internal class Int32ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, int>
+    internal sealed class Int32ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, int>
     {
         public static readonly Int32ArrayHelperWithDictionaryString Instance = new Int32ArrayHelperWithDictionaryString();
 
@@ -184,7 +184,7 @@ namespace System.Xml
         }
     }
 
-    internal class Int64ArrayHelperWithString : ArrayHelper<string, long>
+    internal sealed class Int64ArrayHelperWithString : ArrayHelper<string, long>
     {
         public static readonly Int64ArrayHelperWithString Instance = new Int64ArrayHelperWithString();
 
@@ -199,7 +199,7 @@ namespace System.Xml
         }
     }
 
-    internal class Int64ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, long>
+    internal sealed class Int64ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, long>
     {
         public static readonly Int64ArrayHelperWithDictionaryString Instance = new Int64ArrayHelperWithDictionaryString();
 
@@ -214,7 +214,7 @@ namespace System.Xml
         }
     }
 
-    internal class SingleArrayHelperWithString : ArrayHelper<string, float>
+    internal sealed class SingleArrayHelperWithString : ArrayHelper<string, float>
     {
         public static readonly SingleArrayHelperWithString Instance = new SingleArrayHelperWithString();
 
@@ -229,7 +229,7 @@ namespace System.Xml
         }
     }
 
-    internal class SingleArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, float>
+    internal sealed class SingleArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, float>
     {
         public static readonly SingleArrayHelperWithDictionaryString Instance = new SingleArrayHelperWithDictionaryString();
 
@@ -244,7 +244,7 @@ namespace System.Xml
         }
     }
 
-    internal class DoubleArrayHelperWithString : ArrayHelper<string, double>
+    internal sealed class DoubleArrayHelperWithString : ArrayHelper<string, double>
     {
         public static readonly DoubleArrayHelperWithString Instance = new DoubleArrayHelperWithString();
 
@@ -259,7 +259,7 @@ namespace System.Xml
         }
     }
 
-    internal class DoubleArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, double>
+    internal sealed class DoubleArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, double>
     {
         public static readonly DoubleArrayHelperWithDictionaryString Instance = new DoubleArrayHelperWithDictionaryString();
 
@@ -274,7 +274,7 @@ namespace System.Xml
         }
     }
 
-    internal class DecimalArrayHelperWithString : ArrayHelper<string, decimal>
+    internal sealed class DecimalArrayHelperWithString : ArrayHelper<string, decimal>
     {
         public static readonly DecimalArrayHelperWithString Instance = new DecimalArrayHelperWithString();
 
@@ -289,7 +289,7 @@ namespace System.Xml
         }
     }
 
-    internal class DecimalArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, decimal>
+    internal sealed class DecimalArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, decimal>
     {
         public static readonly DecimalArrayHelperWithDictionaryString Instance = new DecimalArrayHelperWithDictionaryString();
 
@@ -304,7 +304,7 @@ namespace System.Xml
         }
     }
 
-    internal class DateTimeArrayHelperWithString : ArrayHelper<string, DateTime>
+    internal sealed class DateTimeArrayHelperWithString : ArrayHelper<string, DateTime>
     {
         public static readonly DateTimeArrayHelperWithString Instance = new DateTimeArrayHelperWithString();
 
@@ -319,7 +319,7 @@ namespace System.Xml
         }
     }
 
-    internal class DateTimeArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, DateTime>
+    internal sealed class DateTimeArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, DateTime>
     {
         public static readonly DateTimeArrayHelperWithDictionaryString Instance = new DateTimeArrayHelperWithDictionaryString();
 
@@ -334,7 +334,7 @@ namespace System.Xml
         }
     }
 
-    internal class GuidArrayHelperWithString : ArrayHelper<string, Guid>
+    internal sealed class GuidArrayHelperWithString : ArrayHelper<string, Guid>
     {
         public static readonly GuidArrayHelperWithString Instance = new GuidArrayHelperWithString();
 
@@ -349,7 +349,7 @@ namespace System.Xml
         }
     }
 
-    internal class GuidArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, Guid>
+    internal sealed class GuidArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, Guid>
     {
         public static readonly GuidArrayHelperWithDictionaryString Instance = new GuidArrayHelperWithDictionaryString();
 
@@ -364,7 +364,7 @@ namespace System.Xml
         }
     }
 
-    internal class TimeSpanArrayHelperWithString : ArrayHelper<string, TimeSpan>
+    internal sealed class TimeSpanArrayHelperWithString : ArrayHelper<string, TimeSpan>
     {
         public static readonly TimeSpanArrayHelperWithString Instance = new TimeSpanArrayHelperWithString();
 
@@ -379,7 +379,7 @@ namespace System.Xml
         }
     }
 
-    internal class TimeSpanArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, TimeSpan>
+    internal sealed class TimeSpanArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, TimeSpan>
     {
         public static readonly TimeSpanArrayHelperWithDictionaryString Instance = new TimeSpanArrayHelperWithDictionaryString();
 

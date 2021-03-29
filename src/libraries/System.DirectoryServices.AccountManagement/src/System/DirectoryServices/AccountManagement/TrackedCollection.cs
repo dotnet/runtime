@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class TrackedCollection<T> : ICollection<T>, ICollection, IEnumerable<T>, IEnumerable
+    internal sealed class TrackedCollection<T> : ICollection<T>, ICollection, IEnumerable<T>, IEnumerable
     {
         //
         // ICollection
@@ -197,7 +197,7 @@ namespace System.DirectoryServices.AccountManagement
         // Private implementation
         //
 
-        internal class ValueEl
+        internal sealed class ValueEl
         {
             public bool isInserted;
 
