@@ -38,13 +38,21 @@ namespace System.Linq
 
         private static IEnumerable<TSource> DistinctByIterator<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
         {
-            var set = new HashSet<TKey>(DefaultInternalSetCapacity, comparer);
-            foreach (TSource element in source)
+            using IEnumerator<TSource> enumerator = source.GetEnumerator();
+
+            if (enumerator.MoveNext())
             {
-                if (set.Add(keySelector(element)))
+                var set = new HashSet<TKey>(DefaultInternalSetCapacity, comparer);
+                do
                 {
-                    yield return element;
+                    TSource element = enumerator.Current;
+                    if (set.Add(keySelector(element)))
+                    {
+                        yield return element;
+                    }
+
                 }
+                while (enumerator.MoveNext());
             }
         }
 
