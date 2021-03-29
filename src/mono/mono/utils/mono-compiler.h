@@ -14,6 +14,8 @@
 #include <unistd.h>
 #endif
 
+#include <mono/utils/mono-publib.h>
+
 #ifdef __GNUC__
 #define MONO_ATTR_USED __attribute__ ((__used__))
 #else

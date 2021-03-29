@@ -691,6 +691,7 @@ mono_get_runtime_callbacks (void);
 void
 mono_install_eh_callbacks (MonoRuntimeExceptionHandlingCallbacks *cbs);
 
+MONO_COMPONENT_API
 MonoRuntimeExceptionHandlingCallbacks *
 mono_get_eh_callbacks (void);
 
@@ -1795,6 +1796,7 @@ mono_string_from_utf32_checked (const mono_unichar4 *data, MonoError *error);
 char*
 mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error);
 
+MONO_COMPONENT_API
 char*
 mono_utf16_to_utf8 (const mono_unichar2 *s, gsize slength, MonoError *error);
 

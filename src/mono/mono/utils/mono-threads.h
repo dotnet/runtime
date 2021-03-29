@@ -452,6 +452,7 @@ mono_thread_info_unset_internal_thread_gchandle (THREAD_INFO_TYPE *info);
 gboolean
 mono_thread_info_is_exiting (void);
 
+MONO_COMPONENT_API
 #ifdef HOST_WIN32
 G_EXTERN_C // due to THREAD_INFO_TYPE varying
 #endif
@@ -471,6 +472,7 @@ mono_thread_info_current_unchecked (void);
 MONO_API int
 mono_thread_info_get_small_id (void);
 
+MONO_COMPONENT_API
 MonoLinkedListSet*
 mono_thread_info_list_head (void);
 
@@ -764,6 +766,7 @@ gboolean mono_threads_transition_peek_blocking_suspend_requested (THREAD_INFO_TY
 void mono_threads_transition_begin_no_safepoints (THREAD_INFO_TYPE* info, const char *func);
 void mono_threads_transition_end_no_safepoints (THREAD_INFO_TYPE* info, const char *func);
 
+MONO_COMPONENT_API
 G_EXTERN_C // due to THREAD_INFO_TYPE varying
 MonoThreadUnwindState* mono_thread_info_get_suspend_state (THREAD_INFO_TYPE *info);
 
@@ -774,7 +777,7 @@ mono_threads_enter_gc_unsafe_region_cookie (void);
 void mono_thread_info_wait_for_resume (THREAD_INFO_TYPE *info);
 /* Advanced suspend API, used for suspending multiple threads as once. */
 G_EXTERN_C // due to THREAD_INFO_TYPE varying
-gboolean mono_thread_info_is_running (THREAD_INFO_TYPE *info);
+MONO_COMPONENT_API gboolean mono_thread_info_is_running (THREAD_INFO_TYPE *info);
 gboolean mono_thread_info_is_live (THREAD_INFO_TYPE *info);
 G_EXTERN_C // due to THREAD_INFO_TYPE varying
 int mono_thread_info_suspend_count (THREAD_INFO_TYPE *info);
