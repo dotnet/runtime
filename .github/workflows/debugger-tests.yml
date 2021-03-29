@@ -25,9 +25,14 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       - name: Setup .NET
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v1, nanasess/setup-chromedriver@master
         with:
           dotnet-version: 5.0.x
+          
+      - name: Setup emsdk
+        uses: mymindstorm/setup-emsdk@v7
+        with:
+          version: 2.0.12
 
       # Runs a single command using the runners shell
       - name: Run a one-line script
