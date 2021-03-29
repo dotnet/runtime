@@ -14,7 +14,7 @@ bool file_entry_t::is_valid() const
         static_cast<file_type_t>(m_type) < file_type_t::__last;
 }
 
-file_entry_t file_entry_t::read(reader_t &reader, uint32_t major_version, bool force_extraction)
+file_entry_t file_entry_t::read(reader_t &reader, uint32_t bundle_major_version, bool force_extraction)
 {
     // First read the fixed-sized portion of file-entry
     file_entry_fixed_t fixed_data;
