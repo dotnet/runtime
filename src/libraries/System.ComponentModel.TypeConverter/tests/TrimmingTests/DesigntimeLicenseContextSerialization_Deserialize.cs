@@ -24,12 +24,11 @@ class Program
         */
         using (MemoryStream stream = new MemoryStream(TrimmingTests.DesigntimeLicenseContextSerialization_Stream.ASampleStream))
         {
-            var assembly = typeof(DesigntimeLicenseContextSerializer).Assembly;
-            Type runtimeLicenseContextType = assembly.GetType("System.ComponentModel.Design.RuntimeLicenseContext");
-            object runtimeLicenseContext = Activator.CreateInstance(runtimeLicenseContextType);
+            Type runtimeLicenseContextType = Type.GetType("System.ComponentModel.Design.RuntimeLicenseContext, System.ComponentModel.TypeConverter");
+            object runtimeLicenseContext = Activator.CreateInstance(runtimeLicenseContextType, true);
             FieldInfo _savedLicenseKeys = runtimeLicenseContextType.GetField("_savedLicenseKeys", BindingFlags.NonPublic | BindingFlags.Instance);
 
-            Type designtimeLicenseContextSerializer = assembly.GetType("System.ComponentModel.Design.DesigntimeLicenseContextSerializer");
+            Type designtimeLicenseContextSerializer = Type.GetType("System.ComponentModel.Design.DesigntimeLicenseContextSerializer,System.ComponentModel.TypeConverter");
             MethodInfo deserializeMethod = designtimeLicenseContextSerializer.GetMethod("Deserialize", BindingFlags.NonPublic | BindingFlags.Static);
 
             deserializeMethod.Invoke(null, new object[] { stream, "key", runtimeLicenseContext });
