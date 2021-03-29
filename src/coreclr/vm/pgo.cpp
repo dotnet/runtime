@@ -765,7 +765,7 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                                 {
                                     INT_PTR* typeHandleValueAddress = (INT_PTR*)(found->GetData() + schema->Offset + iEntry * InstrumentationKindToSize(schema->InstrumentationKind));
                                     INT_PTR initialTypeHandleValue = VolatileLoad(typeHandleValueAddress);
-                                    if (((initialTypeHandleValue & 1) == 1) && !IsUnknownTypeHandle(initialTypeHandleValue))
+                                    if (((initialTypeHandleValue & 1) == 1) && !ICorJitInfo::IsUnknownTypeHandle(initialTypeHandleValue))
                                     {
                                         INT_PTR newPtr = 0;
                                         TypeHandle th;

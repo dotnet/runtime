@@ -42,6 +42,7 @@ namespace Internal.Pgo
         Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
         NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema
         EdgeIntCount = (DescriptorMin * 6) | FourByte, // 4 byte edge counter, using unsigned 4 byte int
+        GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
     }
 
     public interface IPgoSchemaDataLoader<TType>

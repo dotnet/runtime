@@ -21285,19 +21285,25 @@ struct LikelyClassHistogramEntry
 //
 struct LikelyClassHistogram
 {
-    LikelyClassHistogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount, const CompAllocator& allocator);
+    LikelyClassHistogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount, LikelyClassHistogramEntry*pTempArray, UINT32 countTempArraySize);
 
     // Sum of counts from all entries in the histogram. This includes "unknown" entries which are not captured in m_histogram
     unsigned m_totalCount;
     // Rough guess at count of unknown types
     unsigned m_unknownTypes;
     // Histogram entries, in no particular order.
-    jitstd::vector<LikelyClassHistogramEntry> *m_histogram;
+    LikelyClassHistogramEntry *m_histogram;
+    UINT32 countHistogramElements = 0;
+
+    LikelyClassHistogramEntry HistogramEntryAt(unsigned index)
+    {
+        return m_histogram[index];
+    }
 };
 
-LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount, const CompAllocator& allocator)
+LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount, LikelyClassHistogramEntry*pTempArray, UINT32 countTempArraySize)
 {
-    m_histogram = new (allocator) jitstd::vector<LikelyClassHistogramEntry>(allocator);
+    m_histogram = pTempArray;
     m_unknownTypes = 0;
     m_totalCount = 0;
     uint32_t unknownTypeHandleMask = 0;
@@ -21315,11 +21321,11 @@ LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* his
         
         bool found = false;
         unsigned h = 0;
-        for(; h < m_histogram->size(); h++)
+        for(; h < countHistogramElements; h++)
         {
-            if ((*m_histogram)[h].m_mt == currentEntry)
+            if (m_histogram[h].m_mt == currentEntry)
             {
-                (*m_histogram)[h].m_count++;
+                m_histogram[h].m_count++;
                 found = true;
                 break;
             }
@@ -21330,17 +21336,35 @@ LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* his
             LikelyClassHistogramEntry newEntry;
             newEntry.m_mt = currentEntry;
             newEntry.m_count = 1;
-            (*m_histogram).push_back(newEntry);
+            m_histogram[countHistogramElements++] = newEntry;
         }
     }
 }
 
-CORINFO_CLASS_HANDLE getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema, UINT32 countSchemaItems, BYTE*pInstrumentationData, int32_t ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses, const CompAllocator& allocator)
+DLLEXPORT CORINFO_CLASS_HANDLE getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema, UINT32 countSchemaItems, BYTE*pInstrumentationData, int32_t ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses, LikelyClassHistogramEntry* pTempArray, UINT32 countTempArraySize)
 {
+    *pLikelihood = 0;
+    *pNumberOfClasses = 0;
+
+    if (schema == NULL)
+        return NULL;
+
     for (COUNT_T i = 0; i < countSchemaItems; i++)
     {
         if (schema[i].ILOffset != (int32_t)ilOffset)
             continue;
+
+        if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass) &&
+            (schema[i].Count == 1))
+        {
+            *pNumberOfClasses = (UINT32)schema[i].Other >> 8;
+            *pLikelihood = (UINT32)(schema[i].Other && 0xFF);
+            INT_PTR result = *(INT_PTR*)(pInstrumentationData + schema[i + 1].Offset);
+            if (ICorJitInfo::IsUnknownTypeHandle(result))
+                return NULL;
+            else
+                return (CORINFO_CLASS_HANDLE)result;
+        }
 
         if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount) &&
             (schema[i].Count == 1) &&
@@ -21349,11 +21373,11 @@ CORINFO_CLASS_HANDLE getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schem
         {
             // Form a histogram
             //
-            LikelyClassHistogram h(*(uint32_t*)(pInstrumentationData + schema[i].Offset), (INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count, allocator);
+            LikelyClassHistogram h(*(uint32_t*)(pInstrumentationData + schema[i].Offset), (INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count, pTempArray, countTempArraySize);
 
             // Use histogram count as number of classes estimate
             //
-            *pNumberOfClasses = (uint32_t)h.m_histogram->size() + h.m_unknownTypes;
+            *pNumberOfClasses = (uint32_t)h.countHistogramElements + h.m_unknownTypes;
 
             // Report back what we've learned
             // (perhaps, use count to augment likelihood?)
@@ -21368,26 +21392,26 @@ CORINFO_CLASS_HANDLE getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schem
 
                 case 1:
                 {
-                    if (ICorJitInfo::IsUnknownTypeHandle(h.m_histogram->at(0).m_mt))
+                    if (ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(0).m_mt))
                     {
                         return NULL;
                     }
                     *pLikelihood = 100;
-                    return (CORINFO_CLASS_HANDLE)h.m_histogram->at(0).m_mt;
+                    return (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(0).m_mt;
                 }
                 break;
 
                 case 2:
                 {
-                    if ((h.m_histogram->at(0).m_count >= h.m_histogram->at(1).m_count) && !ICorJitInfo::IsUnknownTypeHandle(h.m_histogram->at(0).m_mt))
+                    if ((h.HistogramEntryAt(0).m_count >= h.HistogramEntryAt(1).m_count) && !ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(0).m_mt))
                     {
-                        *pLikelihood = (100 * h.m_histogram->at(0).m_count) / h.m_totalCount;
-                        return (CORINFO_CLASS_HANDLE)h.m_histogram->at(0).m_mt;
+                        *pLikelihood = (100 * h.HistogramEntryAt(0).m_count) / h.m_totalCount;
+                        return (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(0).m_mt;
                     }
-                    else if (!ICorJitInfo::IsUnknownTypeHandle(h.m_histogram->at(1).m_mt))
+                    else if (!ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(1).m_mt))
                     {
-                        *pLikelihood = (100 * h.m_histogram->at(1).m_count) / h.m_totalCount;
-                        return (CORINFO_CLASS_HANDLE)h.m_histogram->at(1).m_mt;
+                        *pLikelihood = (100 * h.HistogramEntryAt(1).m_count) / h.m_totalCount;
+                        return (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(1).m_mt;
                     }
                     else
                     {
@@ -21403,19 +21427,19 @@ CORINFO_CLASS_HANDLE getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schem
                     unsigned maxKnownIndex = 0;
                     unsigned maxKnownCount = 0;
 
-                    for (unsigned m = 0; m < h.m_histogram->size(); m++)
+                    for (unsigned m = 0; m < h.countHistogramElements; m++)
                     {
-                        if ((h.m_histogram->at(m).m_count > maxKnownCount) && !ICorJitInfo::IsUnknownTypeHandle(h.m_histogram->at(m).m_mt))
+                        if ((h.HistogramEntryAt(m).m_count > maxKnownCount) && !ICorJitInfo::IsUnknownTypeHandle(h.HistogramEntryAt(m).m_mt))
                         {
                             maxKnownIndex = m;
-                            maxKnownCount = h.m_histogram->at(m).m_count;
+                            maxKnownCount = h.HistogramEntryAt(m).m_count;
                         }
                     }
 
                     if (maxKnownCount > 0)
                     {
                         *pLikelihood = (100 * maxKnownCount) / h.m_totalCount;;
-                        return (CORINFO_CLASS_HANDLE)h.m_histogram->at(maxKnownIndex).m_mt;
+                        return (CORINFO_CLASS_HANDLE)h.HistogramEntryAt(maxKnownIndex).m_mt;
                     }
 
                     return NULL;
@@ -21479,7 +21503,7 @@ void Compiler::considerGuardedDevirtualization(
     unsigned             likelihood          = 0;
     unsigned             numberOfClasses     = 0;
 
-    CORINFO_CLASS_HANDLE likelyClass = getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses, getAllocator());
+    CORINFO_CLASS_HANDLE likelyClass = getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses, (LikelyClassHistogramEntry*)_alloca(fgPgoSchemaCount * sizeof(LikelyClassHistogramEntry)), fgPgoSchemaCount);
 
     if (likelyClass == NO_CLASS_HANDLE)
     {
