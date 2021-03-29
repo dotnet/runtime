@@ -213,7 +213,7 @@ namespace System
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
             RuntimeType genericParameter)
         {
-            Debug.Assert(type.GetConstructor(Type.EmptyTypes) != null,
+            Debug.Assert(type.GetConstructor(Type.EmptyTypes) is ConstructorInfo c && c.IsPublic,
                 $"CreateInstanceForAnotherGenericParameter requires {nameof(type)} to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.");
 
             object? instantiatedObject = null;
@@ -234,7 +234,7 @@ namespace System
             RuntimeType genericParameter1,
             RuntimeType genericParameter2)
         {
-            Debug.Assert(type.GetConstructor(Type.EmptyTypes) != null,
+            Debug.Assert(type.GetConstructor(Type.EmptyTypes) is ConstructorInfo c && c.IsPublic,
                 $"CreateInstanceForAnotherGenericParameter requires {nameof(type)} to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.");
 
             object? instantiatedObject = null;
