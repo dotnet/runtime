@@ -4,6 +4,7 @@
 
 #include <config.h>
 #include <glib.h>
+#include <gmodule.h>
 #include "mono/component/component.h"
 #include "mono/component/hot_reload.h"
 #include "mono/component/event_pipe.h"
@@ -133,12 +134,8 @@ components_dir (void)
 {
 	static char *dir = NULL;
 	if (!dir) {
-		/* FIXME: this is right for self-contained apps, but if we're
-		 * started by a host, the components are next to
-		 * libmonosgen-2.0.so, not next to the host app.
-		 */
 		char buf[4096];
-		if (mono_dl_get_executable_path (buf, sizeof(buf)) != -1) {
+		if (g_module_address ((void *)components_dir, buf, sizeof (buf), NULL, NULL, 0, NULL)) {
 			char *resolvedname = mono_path_resolve_symlinks (buf);
 			dir = g_path_get_dirname (resolvedname);
 			g_free (resolvedname);
