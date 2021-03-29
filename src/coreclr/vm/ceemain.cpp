@@ -305,12 +305,8 @@ HRESULT EnsureEEStarted()
     {
         BEGIN_ENTRYPOINT_NOTHROW;
 
-#ifndef TARGET_UNIX
         // The sooner we do this, the sooner we avoid probing registry entries.
-        // (Perf Optimization for VSWhidbey:113373.)
-        REGUTIL::InitOptionalConfigCache();
-#endif
-
+        CLRConfig::InitCache();
 
         BOOL bStarted=FALSE;
 
