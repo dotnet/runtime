@@ -122,7 +122,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public static void BasicLockTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -511,7 +510,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public static void WaitingWritersTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -543,7 +541,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public static void ReadersWaitingOnWaitingWriterTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -594,7 +591,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public static void ReadersWaitingOnWaitingUpgraderTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -648,7 +644,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public static void WaitingUpgradersTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -694,7 +689,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public static void AtomicRecursiveReaderTest()
         {
             var trwl = new TestReaderWriterLock();
@@ -721,7 +715,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public static void AtomicDowngradeTest()
         {
             var trwl = new TestReaderWriterLock();

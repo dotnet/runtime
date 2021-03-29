@@ -11,7 +11,6 @@ namespace System.IO.Pipes.Tests
     {
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49873", TestPlatforms.Android)]
         public void NamedPipeServer_Connects_With_UnixDomainSocketEndPointClient()
         {
             string pipeName = Path.Combine("/tmp", "pipe-tests-corefx-" + Path.GetRandomFileName());
@@ -29,7 +28,6 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49873", TestPlatforms.Android)]
         public async Task NamedPipeClient_Connects_With_UnixDomainSocketEndPointServer()
         {
             string pipeName = Path.Combine("/tmp", "pipe-tests-corefx-" + Path.GetRandomFileName());

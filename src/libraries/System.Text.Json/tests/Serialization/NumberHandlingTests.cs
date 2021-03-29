@@ -359,7 +359,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49936", TestPlatforms.Android)]
         public static void Number_AsCollectionElement_RoundTrip()
         {
             RunAsCollectionElementTest(JsonNumberTestData.Bytes);
@@ -981,7 +980,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49936", TestPlatforms.Android)]
         public static void EscapingTest()
         {
             // Cause all characters to be escaped.
