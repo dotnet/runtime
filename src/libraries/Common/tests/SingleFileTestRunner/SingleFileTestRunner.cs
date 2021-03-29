@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Threading.Tasks;
@@ -47,9 +48,16 @@ public class SingleFileTestRunner : XunitTestFramework
         var xunitTestFx = new SingleFileTestRunner(diagnosticSink);
         var asmInfo = Reflector.Wrap(asm);
         var asmName = asm.GetName();
-        var executor = xunitTestFx.CreateExecutor(asmName);
 
-        executor.RunAll(resultsSink, TestFrameworkOptions.ForDiscovery(), TestFrameworkOptions.ForExecution());
+        var discoverySink = new TestDiscoverySink();
+        var discoverer = xunitTestFx.CreateDiscoverer(asmInfo);
+        discoverer.Find(false, discoverySink, TestFrameworkOptions.ForDiscovery());
+        discoverySink.Finished.WaitOne();
+        XunitFilters filters = new XunitFilters();
+        filters.ExcludedTraits.Add("category", new List<string> { "failing" });
+        var filteredTestCases = discoverySink.TestCases.Where(filters.Filter).ToList();
+        var executor = xunitTestFx.CreateExecutor(asmName);
+        executor.RunTests(filteredTestCases, resultsSink, TestFrameworkOptions.ForExecution());
 
         resultsSink.Finished.WaitOne();
 

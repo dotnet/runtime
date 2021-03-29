@@ -19,10 +19,6 @@
     <RunScriptCommand Condition="'$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TestSingleFile)' == 'true'">
-    <RunScriptCommand>$(AssemblyName).exe</RunScriptCommand>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(UseXunitExcludesTxtFile)' != 'true'">
     <!-- Add local and global options to the argument stack. -->
     <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
