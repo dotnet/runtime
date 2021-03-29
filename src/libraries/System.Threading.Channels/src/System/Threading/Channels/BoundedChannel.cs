@@ -338,11 +338,10 @@ namespace System.Threading.Channels
                 BoundedChannel<T> parent = _parent;
 
                 bool releaseLock = true;
+                Monitor.Enter(parent.SyncObj);
 
                 try
                 {
-                    Monitor.Enter(parent.SyncObj);
-
                     parent.AssertInvariants();
 
                     // If we're done writing, nothing more to do.
@@ -404,7 +403,7 @@ namespace System.Threading.Channels
                         // but say we added it.
                         Monitor.Exit(parent.SyncObj);
                         releaseLock = false;
-                        _parent._itemDropped?.Invoke(item);
+                        parent._itemDropped?.Invoke(item);
                         return true;
                     }
                     else
@@ -417,9 +416,8 @@ namespace System.Threading.Channels
 
                         Monitor.Exit(parent.SyncObj);
                         releaseLock = false;
-                        _parent._itemDropped?.Invoke(droppedItem);
+                        parent._itemDropped?.Invoke(droppedItem);
 
-                        // and enque the new item
                         parent._items.EnqueueTail(item);
                         return true;
                     }
@@ -512,12 +510,12 @@ namespace System.Threading.Channels
                 AsyncOperation<bool>? waitingReadersTail = null;
 
                 BoundedChannel<T> parent = _parent;
+
                 bool releaseLock = true;
+                Monitor.Enter(parent.SyncObj);
 
                 try
                 {
-                    Monitor.Enter(parent.SyncObj);
-
                     parent.AssertInvariants();
 
                     // If we're done writing, trying to write is an error.
@@ -595,7 +593,7 @@ namespace System.Threading.Channels
                         // Ignore the item but say we accepted it.
                         Monitor.Exit(parent.SyncObj);
                         releaseLock = false;
-                        _parent._itemDropped?.Invoke(item);
+                        parent._itemDropped?.Invoke(item);
                         return default;
                     }
                     else
@@ -608,7 +606,7 @@ namespace System.Threading.Channels
 
                         Monitor.Exit(parent.SyncObj);
                         releaseLock = false;
-                        _parent._itemDropped?.Invoke(droppedItem);
+                        parent._itemDropped?.Invoke(droppedItem);
 
                         parent._items.EnqueueTail(item);
                         return default;
