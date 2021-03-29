@@ -1454,8 +1454,7 @@ namespace System
             {
                 if (date[0] != 'J')
                 {
-                    // should be n Julian day format which we don't support.
-                    //
+                    // should be n Julian day format.
                     // This specifies the Julian day, with n between 0 and 365. February 29 is counted in leap years.
                     //
                     // n would be a relative number from the beginning of the year. which should handle if the
@@ -1471,11 +1470,30 @@ namespace System
                     // 0                30 31              58 59              89      334            364
                     // |-------Jan--------|-------Feb--------|-------Mar--------|....|-------Dec--------|
                     //
-                    //
                     // For example if n is specified as 60, this means in leap year the rule will start at Mar 1,
                     // while in non leap year the rule will start at Mar 2.
                     //
-                    // If we need to support n format, we'll have to have a floating adjustment rule support this case.
+                    // This n Julian day format is very uncommon and mostly  used for convenience to specify dates like January 1st
+                    // which we can support without any major modification to the Adjustment rules. We'll support this rule  for day
+                    // numbers less than 59 (up to Feb 28). Otherwise we'll skip this POSIX rule.
+                    // We've never encountered any time zone file using this format for days beyond Feb 28.
+
+                    if (int.TryParse(date, out int julianDay) && julianDay < 59)
+                    {
+                        int d, m;
+                        if (julianDay <= 30) // January
+                        {
+                            m = 1;
+                            d = julianDay + 1;
+                        }
+                        else // February
+                        {
+                            m = 2;
+                            d = julianDay - 30;
+                        }
+
+                        return TransitionTime.CreateFixedDateRule(ParseTimeOfDay(time), m, d);
+                    }
 
                     // Since we can't support this rule, return null to indicate to skip the POSIX rule.
                     return null;
@@ -1488,7 +1506,7 @@ namespace System
         }
 
         /// <summary>
-        /// Parses a string like Jn or n into month and day values.
+        /// Parses a string like Jn into month and day values.
         /// </summary>
         private static void TZif_ParseJulianDay(ReadOnlySpan<char> date, out int month, out int day)
         {

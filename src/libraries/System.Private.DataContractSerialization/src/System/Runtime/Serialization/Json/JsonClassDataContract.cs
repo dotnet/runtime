@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonClassDataContract : JsonDataContract
+    internal sealed class JsonClassDataContract : JsonDataContract
     {
         private readonly JsonClassDataContractCriticalHelper _helper;
 

@@ -708,12 +708,6 @@ mono_cominterop_init (void)
 #ifndef DISABLE_COM
 
 void
-mono_cominterop_cleanup (void)
-{
-	mono_os_mutex_destroy (&cominterop_mutex);
-}
-
-void
 mono_mb_emit_cominterop_get_function_pointer (MonoMethodBuilder *mb, MonoMethod *method)
 {
 #ifndef DISABLE_JIT
@@ -1833,48 +1827,6 @@ void
 ves_icall_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj, MonoError *error)
 {
 	mono_System_ComObject_ReleaseInterfaces (obj);
-}
-
-static gboolean    
-cominterop_rcw_finalizer (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoGCHandle gchandle = NULL;
-
-	gchandle = (MonoGCHandle)value;
-	if (gchandle) {
-		MonoComInteropProxy* proxy = (MonoComInteropProxy*)mono_gchandle_get_target_internal (gchandle);
-
-		if (proxy) {
-			if (proxy->com_object->itf_hash) {
-				g_hash_table_foreach_remove (proxy->com_object->itf_hash, cominterop_rcw_interface_finalizer, NULL);
-				g_hash_table_destroy (proxy->com_object->itf_hash);
-			}
-			mono_IUnknown_Release (proxy->com_object->iunknown);
-			proxy->com_object->iunknown = NULL;
-			proxy->com_object->itf_hash = NULL;
-		}
-		
-		mono_gchandle_free_internal (gchandle);
-	}
-
-	return TRUE;
-}
-
-void
-mono_cominterop_release_all_rcws (void)
-{
-#ifndef DISABLE_COM
-	if (!rcw_hash)
-		return;
-
-	mono_cominterop_lock ();
-
-	g_hash_table_foreach_remove (rcw_hash, cominterop_rcw_finalizer, NULL);
-	g_hash_table_destroy (rcw_hash);
-	rcw_hash = NULL;
-
-	mono_cominterop_unlock ();
-#endif
 }
 
 gpointer
@@ -4124,16 +4076,6 @@ void mono_marshal_safearray_free_indices (gpointer indices)
 }
 
 #else /* DISABLE_COM */
-
-void
-mono_cominterop_cleanup (void)
-{
-}
-
-void
-mono_cominterop_release_all_rcws (void)
-{
-}
 
 gboolean
 mono_marshal_free_ccw (MonoObject* object)

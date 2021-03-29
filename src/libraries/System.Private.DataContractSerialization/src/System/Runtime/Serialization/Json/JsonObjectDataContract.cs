@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonObjectDataContract : JsonDataContract
+    internal sealed class JsonObjectDataContract : JsonDataContract
     {
         public JsonObjectDataContract(DataContract traditionalDataContract)
             : base(traditionalDataContract)

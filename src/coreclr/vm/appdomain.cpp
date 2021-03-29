@@ -1115,7 +1115,7 @@ void SystemDomain::DetachBegin()
     // yet).
 
     // TODO: we should really not running managed DLLMain during process detach.
-    if (GetThread() == NULL)
+    if (GetThreadNULLOk() == NULL)
     {
         return;
     }
@@ -1611,8 +1611,6 @@ void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
     STANDARD_VM_CONTRACT;
 
     Thread* pThread = GetThread();
-    _ASSERTE(pThread);
-
     if(state == Thread::AS_InSTA)
     {
         Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InSTA);
@@ -3548,7 +3546,7 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=T
     CONTRACTL
     {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
     }
@@ -3602,7 +3600,7 @@ LPCWSTR AppDomain::GetFriendlyName(BOOL fDebuggerCares/*=TRUE*/)
     CONTRACT (LPCWSTR)
     {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -3633,7 +3631,7 @@ LPCWSTR AppDomain::GetFriendlyNameForDebugger()
     CONTRACT (LPCWSTR)
     {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
         POSTCONDITION(CheckPointer(RETVAL));
     }
@@ -4537,7 +4535,6 @@ void AppDomain::ExceptionUnwind(Frame *pFrame)
 
     LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind for %8.8x\n", pFrame));
     Thread *pThread = GetThread();
-    _ASSERTE(pThread);
 
     LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind: not first transition or abort\n"));
 }

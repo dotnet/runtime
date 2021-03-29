@@ -55,7 +55,7 @@ namespace System.Net.Quic
         /// </summary>
         public bool Connected => _provider.Connected;
 
-        public IPEndPoint LocalEndPoint => _provider.LocalEndPoint;
+        public IPEndPoint? LocalEndPoint => _provider.LocalEndPoint;
 
         public EndPoint RemoteEndPoint => _provider.RemoteEndPoint;
 

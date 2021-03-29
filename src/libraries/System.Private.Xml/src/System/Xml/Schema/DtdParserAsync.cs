@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal partial class DtdParser : IDtdParser
+    internal sealed partial class DtdParser : IDtdParser
     {
         //
         // IDtdParser interface

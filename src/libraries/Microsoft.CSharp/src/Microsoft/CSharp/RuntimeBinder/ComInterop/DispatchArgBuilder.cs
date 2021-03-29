@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    internal class DispatchArgBuilder : SimpleArgBuilder
+    internal sealed class DispatchArgBuilder : SimpleArgBuilder
     {
         private readonly bool _isWrapper;
 

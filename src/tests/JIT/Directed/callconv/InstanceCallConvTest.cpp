@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdio.h>
-#include <xplatform.h>
 #include <platformdefines.h>
+
+#ifndef INSTANCE_CALLCONV
+#error The INSTANCE_CALLCONV define must be defined as the calling convention to use for the instance methods.
+#endif
 
 struct SizeF
 {
@@ -38,32 +41,31 @@ public:
         height(height)
     {}
 
-    virtual SizeF GetSize()
+    virtual SizeF INSTANCE_CALLCONV GetSize(int)
     {
         return {width, height};
     }
 
-    virtual Width GetWidth()
+    virtual Width INSTANCE_CALLCONV GetWidth()
     {
         return {width};
     }
 
-    virtual IntWrapper GetHeightAsInt()
+    virtual IntWrapper INSTANCE_CALLCONV GetHeightAsInt()
     {
         return {(int)height};
     }
 
-    virtual E GetE()
+    virtual E INSTANCE_CALLCONV GetE()
     {
         return dummy;
     }
 
-    virtual long GetWidthAsLong()
+    virtual long INSTANCE_CALLCONV GetWidthAsLong()
     {
         return (long)width;
     }
 };
-
 
 extern "C" DLL_EXPORT C* STDMETHODCALLTYPE CreateInstanceOfC(float width, float height)
 {
@@ -72,7 +74,7 @@ extern "C" DLL_EXPORT C* STDMETHODCALLTYPE CreateInstanceOfC(float width, float 
 
 extern "C" DLL_EXPORT SizeF STDMETHODCALLTYPE GetSizeFromManaged(C* c)
 {
-    return c->GetSize();
+    return c->GetSize(9876);
 }
 
 extern "C" DLL_EXPORT Width STDMETHODCALLTYPE GetWidthFromManaged(C* c)

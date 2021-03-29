@@ -8,7 +8,7 @@ using System.Security;
 
 namespace System.Runtime.Serialization
 {
-    internal class BitFlagsGenerator
+    internal sealed class BitFlagsGenerator
     {
         private readonly int _bitCount;
         private readonly CodeGenerator _ilg;

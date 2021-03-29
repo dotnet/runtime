@@ -15,7 +15,7 @@ namespace System.Xml.Serialization
 {
     internal delegate void UnknownNodeAction(object? o);
 
-    internal class ReflectionXmlSerializationReader : XmlSerializationReader
+    internal sealed class ReflectionXmlSerializationReader : XmlSerializationReader
     {
         private static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
         private static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
@@ -2003,11 +2003,11 @@ namespace System.Xml.Serialization
             CreateUnknownNodeException();
         }
 
-        internal class CollectionMember : List<object?>
+        internal sealed class CollectionMember : List<object?>
         {
         }
 
-        internal class Member
+        internal sealed class Member
         {
             public MemberMapping Mapping;
             public CollectionMember? Collection;
@@ -2026,7 +2026,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal class CheckTypeSource
+        internal sealed class CheckTypeSource
         {
             public string? Id { get; set; }
             public bool IsObject { get; set; }
@@ -2034,7 +2034,7 @@ namespace System.Xml.Serialization
             public object? RefObject { get; set; }
         }
 
-        internal class ObjectHolder
+        internal sealed class ObjectHolder
         {
             public object? Object;
         }

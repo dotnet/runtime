@@ -27,7 +27,7 @@ namespace System.Xml
      *
      * Note: Only strings composed of ASCII characters can exist in the tree.
      */
-    internal class TernaryTreeReadOnly
+    internal sealed class TernaryTreeReadOnly
     {
         private readonly byte[] _nodeBuffer;
 

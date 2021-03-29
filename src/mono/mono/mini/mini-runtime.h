@@ -523,7 +523,6 @@ MONO_API void
 mono_install_ftnptr_eh_callback (MonoFtnPtrEHCallback callback);
 
 void      mini_jit_init                    (void);
-void      mini_jit_cleanup                 (void);
 void      mono_disable_optimizations       (guint32 opts);
 void      mono_set_optimizations           (guint32 opts);
 void      mono_precompile_assemblies        (void);
@@ -607,13 +606,7 @@ void
 mono_runtime_install_custom_handlers_usage (void);
 
 void
-mono_runtime_cleanup_handlers (void);
-
-void
 mono_runtime_setup_stat_profiler (void);
-
-void
-mono_runtime_shutdown_stat_profiler (void);
 
 void
 mono_runtime_posix_install_handlers (void);
@@ -626,9 +619,6 @@ mono_cross_helpers_run (void);
 
 void
 mono_init_native_crash_info (void);
-
-void
-mono_cleanup_native_crash_info (void);
 
 void
 mono_dump_native_crash_info (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info);

@@ -5,7 +5,7 @@ using System.Reflection.Context.Projection;
 
 namespace System.Reflection.Context.Custom
 {
-    internal class CustomFieldInfo : ProjectingFieldInfo
+    internal sealed class CustomFieldInfo : ProjectingFieldInfo
     {
         public CustomFieldInfo(FieldInfo template, CustomReflectionContext context)
             : base(template, context.Projector)
