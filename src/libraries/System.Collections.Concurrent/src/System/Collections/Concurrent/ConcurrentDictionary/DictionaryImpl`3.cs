@@ -437,7 +437,6 @@ namespace System.Collections.Concurrent
                 match == ValueMatch.OldValue ||
                 match == ValueMatch.Any);
 
-
             var curTable = this;
             int fullHash = curTable.hash(key);
 
@@ -971,7 +970,6 @@ namespace System.Collections.Concurrent
             return EstimatedSlotsUsed > (_entries.Length >> 2) * 3;
         }
 
-
         // Help along an existing resize operation.  This is just a fast cut-out
         // wrapper, to encourage inlining for the fast no-copy-in-progress case.
         private void HelpCopyIfNeeded()
@@ -1020,7 +1018,6 @@ namespace System.Collections.Concurrent
                         if (claimedChunk > (toCopy / (CHUNK_SIZE / 2)))
                         {
                             panic = true;
-                            //System.Console.WriteLine("panic");
                             break;
                         }
 
@@ -1098,7 +1095,6 @@ namespace System.Collections.Concurrent
                 // Attempt to promote
                 if (Interlocked.CompareExchange(ref _topDict._table, this._newTable, this) == this)
                 {
-                    // System.Console.WriteLine("size: " + _newTable.Length);
                     _topDict._lastResizeTickMillis = CurrentTickMillis();
                 }
             }
@@ -1197,7 +1193,7 @@ namespace System.Collections.Concurrent
             {
                 // volatile read here since we need to make sure
                 // that the key read below happens after we have read oldval above
-                // (this read is a dependednt read after oldval, and reading the key is after)
+                // (this read is a dependednt read after oldval, and reading the key happens-after)
                 Volatile.Read(ref box.originalValue);
             }
             else
@@ -1371,7 +1367,6 @@ namespace System.Collections.Concurrent
             }
             else
             {
-                //Console.WriteLine("resized: " + newsz);
                 return newTable;
             }
         }
