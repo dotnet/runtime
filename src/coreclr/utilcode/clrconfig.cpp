@@ -32,14 +32,6 @@
     const CLRConfig::ConfigStringInfo CLRConfig::symbol = {name, CLRConfig::EEConfig_default};
 #define RETAIL_CONFIG_STRING_INFO_EX(symbol, name, description, lookupOptions) \
     const CLRConfig::ConfigStringInfo CLRConfig::symbol = {name, lookupOptions};
-
-// TEMPORARY macros that intialize strings for config value accesses that haven't been moved over to
-// CLRConfig yet. Once all accesses have been moved, these macros (and corresponding instantiations in
-// file:../utilcode/CLRConfig.h) should be removed.
-#define RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(symbol, name, description) \
-    const LPCWSTR CLRConfig::symbol = name;
-#define RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(symbol, name, description) \
-    const LPCWSTR CLRConfig::symbol = name;
 //
 // Debug versions of the macros
 //
@@ -52,17 +44,11 @@
         const CLRConfig::ConfigStringInfo CLRConfig::symbol = {name, CLRConfig::EEConfig_default};
     #define CONFIG_STRING_INFO_EX(symbol, name, description, lookupOptions) \
         const CLRConfig::ConfigStringInfo CLRConfig::symbol = {name, lookupOptions};
-    #define CONFIG_DWORD_INFO_DIRECT_ACCESS(symbol, name, description) \
-        const LPCWSTR CLRConfig::symbol = name;
-    #define CONFIG_STRING_INFO_DIRECT_ACCESS(symbol, name, description) \
-        const LPCWSTR CLRConfig::symbol = name;
 #else
     #define CONFIG_DWORD_INFO(symbol, name, defaultValue, description)
     #define CONFIG_DWORD_INFO_EX(symbol, name, defaultValue, description, lookupOptions)
     #define CONFIG_STRING_INFO(symbol, name, description)
     #define CONFIG_STRING_INFO_EX(symbol, name, description, lookupOptions)
-    #define CONFIG_DWORD_INFO_DIRECT_ACCESS(symbol, name, description)
-    #define CONFIG_STRING_INFO_DIRECT_ACCESS(symbol, name, description)
 #endif // _DEBUG
 
     // Now that we have defined what what the macros in file:../inc/CLRConfigValues.h mean, include it to generate the code.
@@ -72,14 +58,10 @@
 #undef RETAIL_CONFIG_STRING_INFO
 #undef RETAIL_CONFIG_DWORD_INFO_EX
 #undef RETAIL_CONFIG_STRING_INFO_EX
-#undef RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS
-#undef RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS
 #undef CONFIG_DWORD_INFO
 #undef CONFIG_STRING_INFO
 #undef CONFIG_DWORD_INFO_EX
 #undef CONFIG_STRING_INFO_EX
-#undef CONFIG_DWORD_INFO_DIRECT_ACCESS
-#undef CONFIG_STRING_INFO_DIRECT_ACCESS
 
 
 //
@@ -88,19 +70,13 @@
 // Arguments:
 //     * info - see file:../inc/CLRConfig.h for details.
 //
-//     * useDefaultIfNotSet - if true, fall back to the default value if the value is not set.
-//
-//     * acceptExplicitDefaultFromRegutil - if false, only accept a value returned by REGUTIL if it is
-//           different from the default value. This parameter is useful as a way to preserve existing
-//           behavior.
-//
 //     * result - the result.
 //
 // Return value:
 //     * true for success, false otherwise.
 //
 // static
-DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplicitDefaultFromRegutil, /* [Out] */ bool *isDefault)
+DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, /* [Out] */ bool *isDefault)
 {
     CONTRACTL
     {
@@ -112,7 +88,6 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
 
     _ASSERTE (isDefault != nullptr);
 
-
     //
     // Set up REGUTIL options.
     //
@@ -122,25 +97,11 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
     DWORD resultMaybe;
     HRESULT hr = REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &resultMaybe, level, prependCOMPlus);
 
-    if (!acceptExplicitDefaultFromRegutil)
+    // Ignore the default value even if it's set explicitly.
+    if (resultMaybe != info.defaultValue)
     {
-        // Ignore the default value even if it's set explicitly.
-        if (resultMaybe != info.defaultValue)
-        {
-            *isDefault = false;
-            return resultMaybe;
-        }
-    }
-    else
-    {
-        // If we are willing to accept the default value when it's set explicitly,
-        // checking the HRESULT here is sufficient. E_FAIL is returned when the
-        // default is used.
-        if (SUCCEEDED(hr))
-        {
-            *isDefault = false;
-            return resultMaybe;
-        }
+        *isDefault = false;
+        return resultMaybe;
     }
 
     *isDefault = true;
@@ -154,12 +115,29 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
 //     * info - see file:../inc/CLRConfig.h for details
 //
 // static
+DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, DWORD defaultValue)
+{
+    bool isDefault = false;
+    DWORD valueMaybe = GetConfigValue(info, &isDefault);
+
+    // If the default value was returned, defer to the user supplied version.
+    if (isDefault)
+        return defaultValue;
+
+    return valueMaybe;
+}
+
+//
+// Look up a DWORD config value.
+//
+// Arguments:
+//     * info - see file:../inc/CLRConfig.h for details
+//
+// static
 DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info)
 {
-    // We pass false for 'acceptExplicitDefaultFromRegutil' to maintain the existing behavior of this function.
-    // Callers who don't need that behavior should switch to the other version of this function and pass true.
     bool unused;
-    return GetConfigValue(info, false /* acceptExplicitDefaultFromRegutil */, &unused);
+    return GetConfigValue(info, &unused);
 }
 
 //

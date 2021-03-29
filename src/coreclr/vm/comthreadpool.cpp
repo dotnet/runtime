@@ -150,7 +150,7 @@ FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
         [=](const CLRConfig::ConfigDWORDInfo &configInfo, bool isBoolean, const WCHAR *appContextConfigName) -> bool
     {
         bool wasNotConfigured = true;
-        *configValueRef = CLRConfig::GetConfigValue(configInfo, true /* acceptExplicitDefaultFromRegutil */, &wasNotConfigured);
+        *configValueRef = CLRConfig::GetConfigValue(configInfo, &wasNotConfigured);
         if (wasNotConfigured)
         {
             return false;
