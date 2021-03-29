@@ -396,12 +396,12 @@ namespace Internal.TypeSystem
             }
         }
 
-        protected static ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
+        protected ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
         {
             var offsets = new FieldAndOffset[numInstanceFields];
 
             // For types inheriting from another type, field offsets continue on from where they left off
-            LayoutInt cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldOffsetForType(type, requiresAlign8: false);
 
             var layoutMetadata = type.GetClassLayout();
 
@@ -451,8 +451,6 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
         {
-            // For types inheriting from another type, field offsets continue on from where they left off
-            LayoutInt cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
             TypeSystemContext context = type.Context;
 
             var layoutMetadata = type.GetClassLayout();
@@ -552,19 +550,8 @@ namespace Internal.TypeSystem
             largestAlignmentRequired = context.Target.GetObjectAlignment(largestAlignmentRequired);
             bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && largestAlignmentRequired.AsInt > 4;
 
-            if (!type.IsValueType)
-            {
-                DefType baseType = type.BaseType;
-                if (baseType != null && !baseType.IsObject)
-                {
-                    if (!requiresAlign8 && baseType.RequiresAlign8())
-                    {
-                        requiresAlign8 = true;
-                    }
-
-                    AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8);
-                }
-            }
+            // For types inheriting from another type, field offsets continue on from where they left off
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldOffsetForType(type, requiresAlign8);
 
             // We've finished placing the fields into their appropriate arrays
             // The next optimization may place non-GC Pointers, so repurpose our
@@ -775,13 +762,14 @@ namespace Internal.TypeSystem
             return type.IsValueType && !type.IsPrimitive && !type.IsEnum;
         }
 
-        private static LayoutInt ComputeBytesUsedInParentType(DefType type)
+        private LayoutInt CalculateFieldOffsetForType(DefType type, bool requiresAlign8)
         {
             LayoutInt cumulativeInstanceFieldPos = LayoutInt.Zero;
 
             if (!type.IsValueType && type.HasBaseType)
             {
                 cumulativeInstanceFieldPos = type.BaseType.InstanceByteCountUnaligned;
+                AlignBaseOffsetIfNecessary((MetadataType)type, ref cumulativeInstanceFieldPos, requiresAlign8 || type.BaseType.RequiresAlign8());
             }
 
             return cumulativeInstanceFieldPos;

@@ -835,7 +835,7 @@ namespace ILCompiler
 
             LayoutInt alignment = new LayoutInt(type.Context.Target.PointerSize);
 
-            if (requiresAlign8)
+            if (requiresAlign8 || type.Context.Target.Architecture == TargetArchitecture.ARM)
             {
                 alignment = new LayoutInt(8);
             }
