@@ -18,6 +18,7 @@ namespace System.Net.Http
         private const string Qop = "qop";
         private const string Auth = "auth";
         private const string AuthInt = "auth-int";
+        private const string Domain = "domain";
         private const string Nonce = "nonce";
         private const string NC = "nc";
         private const string Realm = "realm";
@@ -404,7 +405,7 @@ namespace System.Net.Http
                     string? value = GetNextValue(challenge, parsedIndex, MustValueBeQuoted(key), out parsedIndex);
                     // Ensure value is valid.
                     if (string.IsNullOrEmpty(value)
-                        && (value == null || !key.Equals(Opaque, StringComparison.OrdinalIgnoreCase)))
+                        && (value == null || (!key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) && !key.Equals(Domain, StringComparison.OrdinalIgnoreCase))))
                         break;
 
                     // Add the key-value pair to Parameters.
