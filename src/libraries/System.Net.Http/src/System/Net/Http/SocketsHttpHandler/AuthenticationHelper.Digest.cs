@@ -403,9 +403,13 @@ namespace System.Net.Http
 
                     // Get the value.
                     string? value = GetNextValue(challenge, parsedIndex, MustValueBeQuoted(key), out parsedIndex);
+                    if (value == null)
+                        break;
+
                     // Ensure value is valid.
-                    if (string.IsNullOrEmpty(value)
-                        && (value == null || (!key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) && !key.Equals(Domain, StringComparison.OrdinalIgnoreCase))))
+                    // Opaque and Domain can have empty string
+                    if (value == string.Empty &&
+                       (!key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) && !key.Equals(Domain, StringComparison.OrdinalIgnoreCase)))
                         break;
 
                     // Add the key-value pair to Parameters.
