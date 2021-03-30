@@ -86,7 +86,6 @@ struct _MonoAssemblyLoadContext {
 };
 
 struct _MonoMemoryManager {
-	MonoDomain *domain;
 	// Whether the MemoryManager can be unloaded on netcore; should only be set at creation
 	gboolean collectible;
 	// Whether this is a singleton or generic MemoryManager
@@ -98,9 +97,14 @@ struct _MonoMemoryManager {
 	// Currently unused, we take the domain lock instead
 	MonoCoopMutex lock;
 
-	MonoMemPool *mp;
+	// Private, don't access directly
+	MonoMemPool *_mp;
 	MonoCodeManager *code_mp;
 	LockFreeMempool *lock_free_mp;
+
+	// Protects access to _mp
+	// Non-coop, non-recursive
+	mono_mutex_t mp_mutex;
 
 	GPtrArray *class_vtable_array;
 	GHashTable *generic_virtual_cases;
@@ -238,13 +242,7 @@ void *
 mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size);
 
 void *
-mono_mem_manager_alloc_nolock (MonoMemoryManager *memory_manager, guint size);
-
-void *
 mono_mem_manager_alloc0 (MonoMemoryManager *memory_manager, guint size);
-
-void *
-mono_mem_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size);
 
 gpointer
 mono_mem_manager_alloc0_lock_free (MonoMemoryManager *memory_manager, guint size);
@@ -270,6 +268,9 @@ mono_mem_manager_strdup (MonoMemoryManager *memory_manager, const char *s);
 
 void
 mono_mem_manager_free_debug_info (MonoMemoryManager *memory_manager);
+
+gboolean
+mono_mem_manager_mp_contains_addr (MonoMemoryManager *memory_manager, gpointer addr);
 
 G_END_DECLS
 
