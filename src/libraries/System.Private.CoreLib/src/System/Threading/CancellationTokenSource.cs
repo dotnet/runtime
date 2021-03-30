@@ -375,13 +375,14 @@ namespace System.Threading
         /// <remarks>
         /// <see cref="TryReset"/> is intended to be used by the sole owner of the <see cref="CancellationTokenSource"/>
         /// when it is known that the operation with which the <see cref="CancellationTokenSource"/> was used has
-        /// completed, no one else will be attempting to cancel it (usage of <see cref="TryReset"/> concurrently with
-        /// issuing cancellation is not thread-safe), and any registrations still remaining are erroneous.  Upon a
-        /// successful reset, such registrations will no longer be notified for any subsequent cancellation of the
+        /// completed, no one else will be attempting to cancel it, and any registrations still remaining are erroneous.
+        /// Upon a successful reset, such registrations will no longer be notified for any subsequent cancellation of the
         /// <see cref="CancellationTokenSource"/>; however, if any component still holds a reference to this
         /// <see cref="CancellationTokenSource"/> either directly or indirectly via a <see cref="CancellationToken"/>
         /// handed out from it, polling via their reference will show the current state any time after the reset as
-        /// it's the same instance.
+        /// it's the same instance.  Usage of <see cref="TryReset"/> concurrently with requesting cancellation is not
+        /// thread-safe and may result in TryReset returning true even if cancellation was already requested and may result
+        /// in registrations not being invoked as part of the concurrent cancellation request.
         /// </remarks>
         public bool TryReset()
         {
