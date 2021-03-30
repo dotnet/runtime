@@ -58,6 +58,7 @@
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/mono-state.h>
 #include <mono/metadata/mono-config.h>
+#include <mono/metadata/jit-info.h>
 #include <mono/utils/mono-tls-inline.h>
 #include <mono/utils/lifo-semaphore.h>
 #include <mono/utils/w32subset.h>
