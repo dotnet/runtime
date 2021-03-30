@@ -112,6 +112,21 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
+    - script: echo ${{ variables.EnvVars }}
+      displayName: Test
+      continueOnError: true
+
+    - script: echo ${{ EnvVars }}
+      displayName: Test
+      continueOnError: true
+
+    - script: echo $[variables.EnvVars]
+      displayName: Test
+      continueOnError: true
+
+    - script: echo $[EnvVars]
+      displayName: Test
+      continueOnError: false
     - powershell: $(Build.SourcesDirectory)\eng\common\performance\performance-setup.ps1 $(IsInternal)$(Interpreter) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} ${{ parameters.extraSetupParameters }}
       displayName: Performance Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))

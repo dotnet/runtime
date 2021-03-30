@@ -32,22 +32,6 @@ schedules:
 
 jobs:
 
-- script: echo ${{ variables.EnvVars }}
-  displayName: Test
-  continueOnError: true
-
-- script: echo ${{ EnvVars }}
-  displayName: Test
-  continueOnError: true
-
-- script: echo $[variables.EnvVars]
-  displayName: Test
-  continueOnError: true
-
-- script: echo $[EnvVars]
-  displayName: Test
-  continueOnError: false
-
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
   
   # build mono
