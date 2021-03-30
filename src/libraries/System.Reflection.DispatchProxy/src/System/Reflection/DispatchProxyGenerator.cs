@@ -396,22 +396,16 @@ namespace System.Reflection
                 ParameterInfo[] parameters = mi.GetParameters();
                 Type[] paramTypes = new Type[parameters.Length];
                 Type[][] paramReqMods = new Type[paramTypes.Length][];
-                Type[][] paramOptMods = new Type[paramTypes.Length][];
 
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     paramTypes[i] = parameters[i].ParameterType;
                     paramReqMods[i] = parameters[i].GetRequiredCustomModifiers();
-                    paramOptMods[i] = parameters[i].GetOptionalCustomModifiers();
                 }
 
-                ParameterInfo returnParameter = mi.ReturnParameter;
-                Type[] returnReqMods = returnParameter.GetRequiredCustomModifiers();
-                Type[] returnOptMods = returnParameter.GetOptionalCustomModifiers();
-
-                MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.HasThis,
-                    returnParameter.ParameterType, returnReqMods, returnOptMods,
-                    paramTypes, paramReqMods, paramOptMods);
+                MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.Standard,
+                    mi.ReturnType, null, null,
+                    paramTypes, paramReqMods, null);
 
                 if (mi.ContainsGenericParameters)
                 {
