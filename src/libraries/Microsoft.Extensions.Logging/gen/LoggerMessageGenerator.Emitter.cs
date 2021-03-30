@@ -1,6 +1,7 @@
 // © Microsoft Corporation. All rights reserved.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -15,6 +16,7 @@ namespace Microsoft.Extensions.Logging.Generators
             private const int MaxLogValuesArity = 6;
             private const int MinLogValuesWithNameArray = 2;
             private const string InternalNamespace = "Microsoft.Extensions.Logging.Internal";
+            private readonly string GeneratedCodeAttribute = $"global::System.CodeDom.Compiler.GeneratedCodeAttribute(\"{Assembly.GetExecutingAssembly().GetName().Name}\", \"{Assembly.GetExecutingAssembly().GetName().Version}\")";
 
             private readonly Stack<StringBuilder> _builders = new ();
             private readonly bool _pascalCaseArguments;
@@ -203,7 +205,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
 
                     return $@"
-                            [global::System.Runtime.CompilerServices.CompilerGenerated]
+                            [{GeneratedCodeAttribute}]
                             private static readonly global::System.Func<{typeName}, global::System.Exception?, string> _format{lm.Name} = (_holder, _) =>
                             {{
 {sb}
@@ -228,7 +230,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 var sb = GetStringBuilder();
                 try
                 {
-                    _ = sb.Append("\n                            [global::System.Runtime.CompilerServices.CompilerGenerated]\n");
+                    _ = sb.Append($"\n                            [{GeneratedCodeAttribute}]\n");
                     _ = sb.Append($"                            private static readonly string[] _names{lm.Name} = new[] {{ ");
                     foreach (var p in lm.RegularParameters)
                     {
@@ -317,7 +319,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
 
                 return $@"
-                            [global::System.Runtime.CompilerServices.CompilerGenerated]
+                            [{GeneratedCodeAttribute}]
                             {lm.Modifiers} void {lm.Name}({(lm.IsExtensionMethod ? "this " : string.Empty)}{GenParameters(lm)})
                             {{
                                 if ({logger}.IsEnabled({level}))
