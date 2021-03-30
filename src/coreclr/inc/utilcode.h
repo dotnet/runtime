@@ -1134,50 +1134,7 @@ private:
     static HKEY s_hUserFrameworkKey;
 };
 
-// need this here because CLRConfig depends on REGUTIL, and ConfigStringHolder depends on CLRConfig
 #include "clrconfig.h"
-
-//-----------------------------------------------------------------------------
-// Wrapper for configuration strings.
-// This serves as a holder to call FreeConfigString.
-class ConfigStringHolder
-{
-public:
-    ConfigStringHolder() { m_wszString = NULL; }
-    ~ConfigStringHolder()
-    {
-        Clear();
-    }
-
-    //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead.
-    // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    //
-    void Init_DontUse_(LPCWSTR wszName)
-    {
-        Clear();
-        m_wszString = REGUTIL::GetConfigString_DontUse_(wszName);
-    }
-
-    // Free resources.
-    void Clear()
-    {
-        if (m_wszString != NULL)
-        {
-            REGUTIL::FreeConfigString(m_wszString);
-            m_wszString = NULL;
-        }
-    }
-
-    // Get the string value. NULL if not set.
-    LPCWSTR Value()
-    {
-        return m_wszString;
-    }
-
-private:
-    LPWSTR m_wszString;
-};
 
 #endif // defined(NO_CLRCONFIG)
 
@@ -3796,19 +3753,6 @@ public:
 class ConfigDWORD
 {
 public:
-    //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead.
-    // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    //
-    inline DWORD val_DontUse_(__in __in_z LPCWSTR keyName, DWORD defaultVal=0)
-    {
-        WRAPPER_NO_CONTRACT;
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
-        if (!m_inited) init_DontUse_(keyName, defaultVal);
-        return m_value;
-    }
     inline DWORD val(const CLRConfig::ConfigDWORDInfo & info)
     {
         WRAPPER_NO_CONTRACT;
@@ -3820,7 +3764,6 @@ public:
     }
 
 private:
-    void init_DontUse_(__in __in_z LPCWSTR keyName, DWORD defaultVal=0);
     void init(const CLRConfig::ConfigDWORDInfo & info);
 
 private:

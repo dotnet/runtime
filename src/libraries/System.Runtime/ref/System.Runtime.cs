@@ -11020,6 +11020,7 @@ namespace System.Threading
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(params System.Threading.CancellationToken[] tokens) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public bool TryReset() { throw null; }
     }
     public enum LazyThreadSafetyMode
     {

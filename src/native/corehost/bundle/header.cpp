@@ -15,9 +15,11 @@ bool header_fixed_t::is_valid() const
         return false;
     }
 
+    // .net 6 host expects the version information to be 6.0
     // .net 5 host expects the version information to be 2.0
     // .net core 3 single-file bundles are handled within the netcoreapp3.x apphost, and are not processed here in the framework.
-    return (major_version == header_t::major_version) && (minor_version == header_t::minor_version);
+    return ((major_version == 6) && (minor_version == 0)) ||
+           ((major_version == 2) && (minor_version == 0));
 }
 
 header_t header_t::read(reader_t& reader)
@@ -32,7 +34,7 @@ header_t header_t::read(reader_t& reader)
         throw StatusCode::BundleExtractionFailure;
     }
 
-    header_t header(fixed_header->num_embedded_files);
+    header_t header(fixed_header->major_version, fixed_header->minor_version, fixed_header->num_embedded_files);
 
     // bundle_id is a component of the extraction path
     reader.read_path_string(header.m_bundle_id);
