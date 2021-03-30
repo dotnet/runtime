@@ -16,7 +16,7 @@ namespace System
         /// of Knuth's subtractive random number generator algorithm.  See https://github.com/dotnet/runtime/issues/23198
         /// for a discussion of some of the modifications / discrepancies.
         /// </summary>
-        private sealed class LegacyImpl : ImplBase
+        private sealed class Net5CompatImpl : ImplBase
         {
             /// <summary>Thread-static instance used to seed any legacy implementations created with the default ctor.</summary>
             [ThreadStatic]
@@ -29,11 +29,11 @@ namespace System
             private int _inext;
             private int _inextp;
 
-            public LegacyImpl(Random parent) : this(parent, (t_seedGenerator ??= new()).Next())
+            public Net5CompatImpl(Random parent) : this(parent, (t_seedGenerator ??= new()).Next())
             {
             }
 
-            public LegacyImpl(Random parent, int Seed)
+            public Net5CompatImpl(Random parent, int Seed)
             {
                 _parent = parent;
 
