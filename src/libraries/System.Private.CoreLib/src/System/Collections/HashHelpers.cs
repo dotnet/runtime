@@ -71,7 +71,7 @@ namespace System.Collections
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryBinarySearchForPrime(int min, out int prime)
+        private static bool TryBinarySearchForPrime(int target, out int prime)
         {
             var primes = s_primes;
 
@@ -80,14 +80,14 @@ namespace System.Collections
             while (lo <= hi)
             {
                 int i = lo + ((hi - lo) >> 1);
-                var target = primes[i];
+                var mid = primes[i];
 
-                if (target == min)
+                if (mid == target)
                 {
-                    prime = target;
+                    prime = mid;
                     return true;
                 }
-                if (min < target)
+                if (target < mid)
                 {
                     lo = i + 1;
                 }
