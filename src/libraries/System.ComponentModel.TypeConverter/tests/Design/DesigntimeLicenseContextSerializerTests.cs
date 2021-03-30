@@ -86,62 +86,55 @@ namespace System.ComponentModel.Design.Tests
             AppContext.SetSwitch(enableBinaryFormatterInTypeConverter, true);
             var context = new DesigntimeLicenseContext();
             context.SetSavedLicenseKey(typeof(int), key);
-            var assembly = typeof(DesigntimeLicenseContextSerializer).Assembly;
             string tempPath = Path.GetTempPath();
-            using (MemoryStream stream = new MemoryStream())
+            try
             {
-                long position = stream.Position;
-                DesigntimeLicenseContextSerializer.Serialize(stream, key, context);
-                stream.Seek(position, SeekOrigin.Begin);
-                VerifyStreamFormatting(stream);
 
-                using (FileStream outStream = File.Create(Path.Combine(tempPath, "_temp_SerializeWithBinaryFormatter_DeserializeWithBinaryWriter")))
+                using (MemoryStream stream = new MemoryStream())
                 {
+                    long position = stream.Position;
+                    DesigntimeLicenseContextSerializer.Serialize(stream, key, context);
                     stream.Seek(position, SeekOrigin.Begin);
-                    stream.CopyTo(outStream);
+                    VerifyStreamFormatting(stream);
+
+                    using (FileStream outStream = File.Create(Path.Combine(tempPath, "_temp_SerializeWithBinaryFormatter_DeserializeWithBinaryWriter")))
+                    {
+                        stream.Seek(position, SeekOrigin.Begin);
+                        stream.CopyTo(outStream);
+                    }
                 }
-            }
 
-            RemoteInvokeHandle handle = RemoteExecutor.Invoke((key) =>
-            {
-                var assembly = typeof(DesigntimeLicenseContextSerializer).Assembly;
-                Type runtimeLicenseContextType = assembly.GetType("System.ComponentModel.Design.RuntimeLicenseContext");
-                Assert.NotNull(runtimeLicenseContextType);
-                object runtimeLicenseContext = Activator.CreateInstance(runtimeLicenseContextType);
-                Assert.NotNull(runtimeLicenseContext);
-                FieldInfo _savedLicenseKeys = runtimeLicenseContextType.GetField("_savedLicenseKeys", BindingFlags.NonPublic | BindingFlags.Instance);
-                Assert.NotNull(_savedLicenseKeys);
-                _savedLicenseKeys.SetValue(runtimeLicenseContext, new Hashtable());
-
-                Type designtimeLicenseContextSerializer = assembly.GetType("System.ComponentModel.Design.DesigntimeLicenseContextSerializer");
-                Assert.NotNull(designtimeLicenseContextSerializer);
-                MethodInfo deserializeMethod = designtimeLicenseContextSerializer.GetMethod("Deserialize", BindingFlags.NonPublic | BindingFlags.Static);
-                Assert.NotNull(deserializeMethod);
-
-                string tempPath = Path.GetTempPath();
-                using (FileStream stream = File.Open(Path.Combine(tempPath, "_temp_SerializeWithBinaryFormatter_DeserializeWithBinaryWriter"), FileMode.Open))
+                RemoteInvokeHandle handle = RemoteExecutor.Invoke((key) =>
                 {
-                    try
-                    {
-                        deserializeMethod.Invoke(null, new object[] { stream, key, runtimeLicenseContext });
-                    }
-                    catch (TargetInvocationException exception)
-                    {
-                        Exception baseException = exception.GetBaseException();
-                        Assert.IsType<NotSupportedException>(baseException);
-                        return;
-                    }
-                    catch
-                    {
-                        throw;
-                    }
-                    throw new Exception("Expected to throw a TargetInvocationException");
-                }
-            }, key);
+                    var assembly = typeof(DesigntimeLicenseContextSerializer).Assembly;
+                    Type runtimeLicenseContextType = assembly.GetType("System.ComponentModel.Design.RuntimeLicenseContext");
+                    Assert.NotNull(runtimeLicenseContextType);
+                    object runtimeLicenseContext = Activator.CreateInstance(runtimeLicenseContextType);
+                    Assert.NotNull(runtimeLicenseContext);
+                    FieldInfo _savedLicenseKeys = runtimeLicenseContextType.GetField("_savedLicenseKeys", BindingFlags.NonPublic | BindingFlags.Instance);
+                    Assert.NotNull(_savedLicenseKeys);
+                    _savedLicenseKeys.SetValue(runtimeLicenseContext, new Hashtable());
 
-            handle.Process.WaitForExit();
-            handle.Dispose();
-            File.Delete(Path.Combine(tempPath, "_temp_SerializeWithBinaryFormatter_DeserializeWithBinaryWriter"));
+                    Type designtimeLicenseContextSerializer = assembly.GetType("System.ComponentModel.Design.DesigntimeLicenseContextSerializer");
+                    Assert.NotNull(designtimeLicenseContextSerializer);
+                    MethodInfo deserializeMethod = designtimeLicenseContextSerializer.GetMethod("Deserialize", BindingFlags.NonPublic | BindingFlags.Static);
+                    Assert.NotNull(deserializeMethod);
+
+                    string tempPath = Path.GetTempPath();
+                    using (FileStream stream = File.Open(Path.Combine(tempPath, "_temp_SerializeWithBinaryFormatter_DeserializeWithBinaryWriter"), FileMode.Open))
+                    {
+                        TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => deserializeMethod.Invoke(null, new object[] { stream, key, runtimeLicenseContext }));
+                        Assert.IsType<NotSupportedException>(exception.InnerException);
+                    }
+                }, key);
+
+                handle.Process.WaitForExit();
+                handle.Dispose();
+            }
+            finally
+            {
+                File.Delete(Path.Combine(tempPath, "_temp_SerializeWithBinaryFormatter_DeserializeWithBinaryWriter"));
+            }
         }
     }
 }
