@@ -121,7 +121,7 @@ jobs:
           filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
 
       - script: $(Build.SourcesDirectory)\eng\common\stop-build-processes.ps1
-          displayName: Stop build processes
+        displayName: Stop build processes
 
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
