@@ -163,10 +163,9 @@ namespace System
 
             public override void NextBytes(Span<byte> buffer)
             {
-                for (int i = 0; i < buffer.Length; i++)
-                {
-                    buffer[i] = (byte)_parent.Next();
-                }
+                byte[] tmpBuf = new byte[buffer.Length];
+                NextBytes(tmpBuf);
+                MemoryExtensions.CopyTo<byte>(tmpBuf, buffer);
             }
 
             private int InternalSample()
