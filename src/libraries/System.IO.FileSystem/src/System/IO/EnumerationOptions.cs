@@ -12,7 +12,7 @@ namespace System.IO
 {
     public class EnumerationOptions
     {
-        private int _maxRecursionDepth = DefaultMaxRecursionDepth;
+        private int _maxRecursionDepth;
 
         /// <summary>
         /// For internal use. These are the options we want to use if calling the existing Directory/File APIs where you don't

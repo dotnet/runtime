@@ -39,8 +39,16 @@ namespace System.IO.Tests.Enumeration
             fileTwo.Create().Dispose();
             fileThree.Create().Dispose();
 
-            string[] results = GetEntryNames(testDirectory.FullName, depth).ToArray();
-            Assert.Equal(expectedCount, results.Length);
+            if (depth >= 0)
+            {
+                string[] results = GetEntryNames(testDirectory.FullName, depth).ToArray();
+
+                Assert.Equal(expectedCount, results.Length);
+            }
+            else
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => GetEntryNames(testDirectory.FullName, depth));
+            }
         }
     }
 }
