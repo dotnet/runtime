@@ -3613,8 +3613,6 @@ public:
     }
 };
 
-#if !defined(NO_CLRCONFIG)
-
 #include "clrconfig.h"
 
 /**************************************************************************/
@@ -3708,8 +3706,6 @@ private:
 
     BYTE m_inited;
 };
-
-#endif // !defined(NO_CLRCONFIG)
 
 //*****************************************************************************
 // Convert a pointer to a string into a GUID.
