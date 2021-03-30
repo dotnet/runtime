@@ -1321,7 +1321,7 @@ namespace System.Xml.Serialization
             return members;
         }
 
-        [RequiresUnreferencedCode("calls .ctor")]
+        [RequiresUnreferencedCode("Calls TypeScope.GetTypeDesc(Type) and XmlReflectionImporter.ImportAccessorMapping both of which RequireUnreferencedCode")]
         private MemberMapping ImportMemberMapping(XmlReflectionMember xmlReflectionMember, string? ns, XmlReflectionMember[] xmlReflectionMembers, bool rpc, bool openModel, RecursionLimiter limiter)
         {
             XmlSchemaForm form = rpc ? XmlSchemaForm.Unqualified : XmlSchemaForm.Qualified;
@@ -2254,7 +2254,7 @@ namespace System.Xml.Serialization
         }
 
         // will create a shallow type mapping for a top-level type
-        [RequiresUnreferencedCode("calls .ctor")]
+        [RequiresUnreferencedCode("Calls TypeScope.GetTypeDesc(Type) which has RequiresUnreferencedCode")]
         internal static XmlTypeMapping GetTopLevelMapping(Type type, string? defaultNamespace)
         {
             defaultNamespace = defaultNamespace ?? string.Empty;

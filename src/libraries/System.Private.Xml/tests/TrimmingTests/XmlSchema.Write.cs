@@ -1,5 +1,9 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.IO;
+using System.Text;
 using System.Xml;
 using System.Xml.Schema;
 
@@ -9,6 +13,7 @@ class XMLSchemaExamples
     {
 
         XmlSchema schema = new XmlSchema();
+        string expectedSchema = @"???<?xml version=""1.0"" encoding=""utf-8""?><xs:schema xmlns:xs=""http://www.w3.org/2001/XMLSchema""><xs:element name=""cat"" type=""xs:string"" /><xs:element name=""dog"" type=""xs:string"" /><xs:element name=""redDog"" substitutionGroup=""dog"" /><xs:element name=""brownDog"" substitutionGroup=""dog"" /><xs:element name=""pets"" /></xs:schema>";
 
         // <xs:element name="cat" type="xs:string"/>
         XmlSchemaElement elementCat = new XmlSchemaElement();
@@ -40,11 +45,18 @@ class XMLSchemaExamples
         elementPets.Name = "pets";
 
         using (var stream = new MemoryStream())
-        using (var writer = XmlWriter.Create(stream))
         {
-            schema.Write(writer, null);
-        }
+            using (var writer = XmlWriter.Create(stream))
+            {
+                schema.Write(writer);
+            }
 
-        return 100;
+            var str = Encoding.ASCII.GetString(stream.ToArray());
+            if (str.Equals(expectedSchema, StringComparison.OrdinalIgnoreCase))
+            {
+                return 100;
+            }
+            return -1;
+        }
     }
 }
