@@ -57,43 +57,84 @@ namespace Mono.Linker.Steps
 					continue;
 
 				CustomAttribute customAttribute = CreateCustomAttribute (iterator, attributeType);
-				if (customAttribute != null)
+				if (customAttribute != null) {
+					_context.LogMessage ($"Assigning external custom attribute '{FormatCustomAttribute (customAttribute)}' instance to '{provider}'");
 					attributes.Add (customAttribute);
+				}
 			}
 
 			return attributes;
+
+			static string FormatCustomAttribute (CustomAttribute ca)
+			{
+				StringBuilder sb = new StringBuilder ();
+				sb.Append (ca.Constructor.GetDisplayName ());
+				sb.Append (" { args: ");
+				for (int i = 0; i < ca.ConstructorArguments.Count; ++i) {
+					if (i > 0)
+						sb.Append (", ");
+
+					var caa = ca.ConstructorArguments[i];
+					sb.Append ($"{caa.Type.GetDisplayName ()} {caa.Value}");
+				}
+				sb.Append (" }");
+
+				return sb.ToString ();
+			}
 		}
 
 		CustomAttribute CreateCustomAttribute (XPathNodeIterator iterator, TypeDefinition attributeType)
 		{
-			string[] attributeArguments = GetAttributeChildren (iterator.Current.SelectChildren ("argument", string.Empty)).ToArray ();
-			var attributeArgumentCount = attributeArguments == null ? 0 : attributeArguments.Length;
-			MethodDefinition constructor = attributeType.Methods.Where (method => method.IsInstanceConstructor ()).FirstOrDefault (c => c.Parameters.Count == attributeArgumentCount);
+			CustomAttributeArgument[] arguments = ReadCustomAttributeArguments (iterator);
+
+			MethodDefinition constructor = FindBestMatchingConstructor (attributeType, arguments);
 			if (constructor == null) {
 				_context.LogWarning (
-					$"Could not find a constructor for type '{attributeType}' that has '{attributeArgumentCount}' arguments",
+					$"Could not find matching constructor for custom attribute '{attributeType.GetDisplayName ()}' arguments",
 					2022,
 					_xmlDocumentLocation);
 				return null;
 			}
 
 			CustomAttribute customAttribute = new CustomAttribute (constructor);
-			var arguments = ProcessAttributeArguments (constructor, attributeArguments);
-			if (arguments != null)
-				foreach (var argument in arguments)
-					customAttribute.ConstructorArguments.Add (argument);
+			foreach (var argument in arguments)
+				customAttribute.ConstructorArguments.Add (argument);
 
-			var properties = ProcessAttributeProperties (iterator.Current.SelectChildren ("property", string.Empty), attributeType);
-			if (properties != null)
-				foreach (var property in properties)
-					customAttribute.Properties.Add (property);
+			ReadCustomAttributeProperties (iterator.Current.SelectChildren ("property", string.Empty), attributeType, customAttribute);
 
 			return customAttribute;
 		}
 
-		List<CustomAttributeNamedArgument> ProcessAttributeProperties (XPathNodeIterator iterator, TypeDefinition attributeType)
+		static MethodDefinition FindBestMatchingConstructor (TypeDefinition attributeType, CustomAttributeArgument[] args)
 		{
-			List<CustomAttributeNamedArgument> attributeProperties = new List<CustomAttributeNamedArgument> ();
+			var methods = attributeType.Methods;
+			for (int i = 0; i < attributeType.Methods.Count; ++i) {
+				var m = methods[i];
+				if (!m.IsInstanceConstructor ())
+					continue;
+
+				var p = m.Parameters;
+				if (args.Length != p.Count)
+					continue;
+
+				bool match = true;
+				for (int ii = 0; match && ii != args.Length; ++ii) {
+					//
+					// No candidates betterness, only exact matches are supported
+					//
+					if (p[ii].ParameterType.Resolve () != args[ii].Type.Resolve ())
+						match = false;
+				}
+
+				if (match)
+					return m;
+			}
+
+			return null;
+		}
+
+		void ReadCustomAttributeProperties (XPathNodeIterator iterator, TypeDefinition attributeType, CustomAttribute customAttribute)
+		{
 			while (iterator.MoveNext ()) {
 				string propertyName = GetName (iterator.Current);
 				if (string.IsNullOrEmpty (propertyName)) {
@@ -107,40 +148,166 @@ namespace Mono.Linker.Steps
 					continue;
 				}
 
-				var propertyValue = iterator.Current.Value;
-				if (!TryConvertValue (propertyValue, property.PropertyType, out object value)) {
-					_context.LogWarning ($"Invalid value '{propertyValue}' for property '{propertyName}'", 2053, _xmlDocumentLocation);
+				var caa = ReadCustomAttributeArgument (iterator);
+				if (caa is null)
 					continue;
-				}
 
-				attributeProperties.Add (new CustomAttributeNamedArgument (property.Name,
-					new CustomAttributeArgument (property.PropertyType, value)));
+				customAttribute.Properties.Add (new CustomAttributeNamedArgument (property.Name, caa.Value));
 			}
-
-			return attributeProperties;
 		}
 
-		List<CustomAttributeArgument> ProcessAttributeArguments (MethodDefinition attributeConstructor, string[] arguments)
+		CustomAttributeArgument[] ReadCustomAttributeArguments (XPathNodeIterator iterator)
 		{
-			if (arguments == null)
+			var args = new ArrayBuilder<CustomAttributeArgument> ();
+
+			iterator = iterator.Current.SelectChildren ("argument", string.Empty);
+			while (iterator.MoveNext ()) {
+				CustomAttributeArgument? caa = ReadCustomAttributeArgument (iterator);
+				if (caa is not null)
+					args.Add (caa.Value);
+			}
+
+			return args.ToArray () ?? Array.Empty<CustomAttributeArgument> ();
+		}
+
+		CustomAttributeArgument? ReadCustomAttributeArgument (XPathNodeIterator iterator)
+		{
+			TypeReference typeref = ResolveArgumentType (iterator);
+			if (typeref is null)
 				return null;
 
-			List<CustomAttributeArgument> attributeArguments = new List<CustomAttributeArgument> ();
-			for (int i = 0; i < arguments.Length; i++) {
-				object argValue;
-				TypeDefinition parameterType = attributeConstructor.Parameters[i].ParameterType.Resolve ();
-				if (!TryConvertValue (arguments[i], parameterType, out argValue)) {
-					_context.LogWarning (
-						$"Invalid argument value '{arguments[i]}' for parameter type '{parameterType.GetDisplayName ()}' of attribute '{attributeConstructor.DeclaringType.GetDisplayName ()}'",
-						2054,
-						_xmlDocumentLocation);
+			string svalue = iterator.Current.Value;
+
+			//
+			// Builds CustomAttributeArgument in the same way as it would be
+			// represented in the metadata if encoded there. This simplifies
+			// any custom attributes handling in linker by using same attributes
+			// value extraction or mathing logic.
+			//
+			switch (typeref.MetadataType) {
+			case MetadataType.Object:
+				iterator = iterator.Current.SelectChildren ("argument", string.Empty);
+				if (iterator?.MoveNext () != true) {
+					_context.LogError ($"Custom attribute argument for 'System.Object' requires nested 'argument' node", 1043);
 					return null;
 				}
 
-				attributeArguments.Add (new CustomAttributeArgument (parameterType, argValue));
+				var boxedValue = ReadCustomAttributeArgument (iterator);
+				if (boxedValue is null)
+					return null;
+
+				return new CustomAttributeArgument (typeref, boxedValue);
+
+			case MetadataType.Char:
+			case MetadataType.Byte:
+			case MetadataType.SByte:
+			case MetadataType.Int16:
+			case MetadataType.UInt16:
+			case MetadataType.Int32:
+			case MetadataType.UInt32:
+			case MetadataType.UInt64:
+			case MetadataType.Int64:
+			case MetadataType.String:
+				return new CustomAttributeArgument (typeref, ConvertStringValue (svalue, typeref));
+
+			case MetadataType.ValueType:
+				var enumType = typeref.Resolve ();
+				if (enumType?.IsEnum != true)
+					goto default;
+
+				var enumField = enumType.Fields.Where (f => f.IsStatic && f.Name == svalue).FirstOrDefault ();
+				object evalue = enumField?.Constant ?? svalue;
+
+				typeref = enumType.GetEnumUnderlyingType ();
+				return new CustomAttributeArgument (enumType, ConvertStringValue (evalue, typeref));
+
+			case MetadataType.Class:
+				if (!typeref.IsTypeOf ("System", "Type"))
+					goto default;
+
+				TypeReference type = _context.TypeNameResolver.ResolveTypeName (svalue);
+				if (type == null) {
+					_context.LogError ($"Could not resolve custom attribute type value '{svalue}'", 1044, _xmlDocumentLocation);
+					return null;
+				}
+
+				return new CustomAttributeArgument (typeref, type);
+			default:
+				// TODO: Add support for null values
+				// TODO: Add suppport for arrays
+				_context.LogError ($"Unexpected attribute argument type '{typeref.GetDisplayName ()}'", 1045);
+				return null;
 			}
 
-			return attributeArguments;
+			TypeReference ResolveArgumentType (XPathNodeIterator iterator)
+			{
+				string typeName = GetAttribute (iterator.Current, "type");
+				if (string.IsNullOrEmpty (typeName))
+					typeName = "System.String";
+
+				TypeReference typeref = _context.TypeNameResolver.ResolveTypeName (typeName);
+				if (typeref == null) {
+					_context.LogError ($"The type '{typeName}' used with attribute value '{iterator.Current.Value}' could not be found", 1041, _xmlDocumentLocation);
+					return null;
+				}
+
+				return typeref;
+			}
+		}
+
+		object ConvertStringValue (object value, TypeReference targetType)
+		{
+			TypeCode typeCode;
+			switch (targetType.MetadataType) {
+			case MetadataType.String:
+				typeCode = TypeCode.String;
+				break;
+			case MetadataType.Char:
+				typeCode = TypeCode.Char;
+				break;
+			case MetadataType.Byte:
+				typeCode = TypeCode.Byte;
+				break;
+			case MetadataType.SByte:
+				typeCode = TypeCode.SByte;
+				break;
+			case MetadataType.Int16:
+				typeCode = TypeCode.Int16;
+				break;
+			case MetadataType.UInt16:
+				typeCode = TypeCode.UInt16;
+				break;
+			case MetadataType.Int32:
+				typeCode = TypeCode.Int32;
+				break;
+			case MetadataType.UInt32:
+				typeCode = TypeCode.UInt32;
+				break;
+			case MetadataType.UInt64:
+				typeCode = TypeCode.UInt64;
+				break;
+			case MetadataType.Int64:
+				typeCode = TypeCode.Int64;
+				break;
+			case MetadataType.Boolean:
+				typeCode = TypeCode.Boolean;
+				break;
+			case MetadataType.Single:
+				typeCode = TypeCode.Single;
+				break;
+			case MetadataType.Double:
+				typeCode = TypeCode.Double;
+				break;
+			default:
+				throw new NotSupportedException (targetType.ToString ());
+			}
+
+			try {
+				return Convert.ChangeType (value, typeCode);
+			} catch {
+				_context.LogError ($"Cannot convert value '{value}' to type '{targetType.GetDisplayName ()}'", 1042);
+				return null;
+			}
 		}
 
 		void ProcessInternalAttribute (ICustomAttributeProvider provider, string internalAttribute)
@@ -190,15 +357,6 @@ namespace Mono.Linker.Steps
 			}
 
 			return true;
-		}
-
-		static ArrayBuilder<string> GetAttributeChildren (XPathNodeIterator iterator)
-		{
-			ArrayBuilder<string> children = new ArrayBuilder<string> ();
-			while (iterator.MoveNext ()) {
-				children.Add (iterator.Current.Value);
-			}
-			return children;
 		}
 
 		protected override AllowedAssemblies AllowedAssemblySelector {

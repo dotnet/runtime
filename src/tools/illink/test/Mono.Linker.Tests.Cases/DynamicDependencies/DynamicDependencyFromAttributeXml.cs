@@ -22,6 +22,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		public static void Main ()
 		{
 			DependencyToUnusedMethod ();
+			DependencyToUnusedType ();
 		}
 
 		[Kept]
@@ -32,6 +33,24 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		[Kept]
 		static void UnusedMethod ()
 		{
+		}
+
+		[Kept]
+		static void DependencyToUnusedType ()
+		{
+		}
+
+		class NonUsedType
+		{
+			[Kept]
+			public NonUsedType ()
+			{
+			}
+
+			[Kept]
+			public static void PleasePreserveThisMethod ()
+			{
+			}
 		}
 	}
 }

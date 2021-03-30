@@ -3,7 +3,7 @@
     <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.EmbeddedLinkAttributes">
       <field name="_typeWithPublicParameterlessConstructor">
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
-          <argument>PublicParameterlessConstructor</argument>
+          <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicParameterlessConstructor</argument>
         </attribute>
       </field>
     </type>
@@ -11,7 +11,7 @@
   <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.EmbeddedLinkAttributes">
     <field name="_typeWithPublicFields">
       <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
-        <argument>PublicFields</argument>
+        <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicFields</argument>
       </attribute>
     </field>
   </type>
