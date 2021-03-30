@@ -87,7 +87,7 @@ namespace System.Collections
                     prime = mid;
                     return true;
                 }
-                if (target < mid)
+                if (mid < target)
                 {
                     lo = i + 1;
                 }
