@@ -491,7 +491,10 @@ namespace Internal.TypeSystem.Ecma
             {
                 arguments[i] = ParseType();
             }
-            return arguments;
+            if (_resolutionFailure == null)
+                return arguments;
+            else
+                return null;
         }
 
         public MarshalAsDescriptor ParseMarshalAsDescriptor()
