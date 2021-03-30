@@ -14411,8 +14411,12 @@ DONE_MORPHING_CHILDREN:
 
         case GT_NOT:
         case GT_NEG:
-            // Remove double negation/not
-            if (op1->OperIs(oper) && opts.OptimizationEnabled())
+            // Remove double negation/not.
+            // Note: this is not a safe tranformation if "tree" is a CSE candidate.
+            // Consider for example the following expression: NEG(NEG(OP)), where the top-level
+            // NEG is a CSE candidate. Were we to morph this to just OP, CSE would fail to find
+            // the original NEG in the statement.
+            if (op1->OperIs(oper) && opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree))
             {
                 GenTree* child = op1->AsOp()->gtGetOp1();
                 return child;
