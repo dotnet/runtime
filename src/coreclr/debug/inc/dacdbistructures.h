@@ -784,5 +784,12 @@ struct MSLAYOUT DacSharedReJitInfo
     CORDB_ADDRESS  m_rgInstrumentedMapEntries;
 };
 
+// These represent the allocated bytes so far on the thread.
+struct MSLAYOUT DacThreadAllocInfo
+{
+    ULONG m_allocBytesSOH;
+    ULONG m_allocBytesUOH;
+};
+
 #include "dacdbistructures.inl"
 #endif // DACDBISTRUCTURES_H_

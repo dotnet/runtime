@@ -783,6 +783,9 @@ public:
     // Return the object handle for the managed Thread object corresponding to the specified thread.
     VMPTR_OBJECTHANDLE GetThreadObject(VMPTR_Thread vmThread);
 
+    // Get the alocated bytes for this thread.
+    void GetThreadAllocInfo(VMPTR_Thread vmThread, DacThreadAllocInfo* threadAllocInfo);
+
     // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
     // according to the CorDebugThreadState.
     void SetDebugState(VMPTR_Thread        vmThread,
