@@ -11,30 +11,23 @@ namespace Mono.Linker
 {
 	public class AttributeInfo
 	{
-		public Dictionary<ICustomAttributeProvider, IEnumerable<CustomAttribute>> CustomAttributes { get; }
-		public Dictionary<ICustomAttributeProvider, IEnumerable<Attribute>> InternalAttributes { get; }
+		public Dictionary<ICustomAttributeProvider, CustomAttribute[]> CustomAttributes { get; }
 
 		public AttributeInfo ()
 		{
-			CustomAttributes = new Dictionary<ICustomAttributeProvider, IEnumerable<CustomAttribute>> ();
-			InternalAttributes = new Dictionary<ICustomAttributeProvider, IEnumerable<Attribute>> ();
+			CustomAttributes = new Dictionary<ICustomAttributeProvider, CustomAttribute[]> ();
 		}
 
-		public void AddCustomAttributes (ICustomAttributeProvider provider, IEnumerable<CustomAttribute> customAttributes)
+		public void AddCustomAttributes (ICustomAttributeProvider provider, CustomAttribute[] customAttributes)
 		{
 			if (!CustomAttributes.TryGetValue (provider, out var existing)) {
 				CustomAttributes.Add (provider, customAttributes);
 			} else {
-				CustomAttributes[provider] = existing.Concat (customAttributes);
-			}
-		}
+				int existingLength = existing.Length;
+				Array.Resize (ref existing, existingLength + customAttributes.Length);
+				customAttributes.CopyTo (existing, existingLength);
 
-		public void AddInternalAttributes (ICustomAttributeProvider provider, IEnumerable<Attribute> attributes)
-		{
-			if (!InternalAttributes.TryGetValue (provider, out var existing)) {
-				InternalAttributes.Add (provider, attributes);
-			} else {
-				InternalAttributes[provider] = existing.Concat (attributes);
+				CustomAttributes[provider] = existing;
 			}
 		}
 	}

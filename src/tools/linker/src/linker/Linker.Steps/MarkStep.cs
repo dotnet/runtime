@@ -228,8 +228,6 @@ namespace Mono.Linker.Steps
 			// instead of the per-assembly stores.
 			foreach (var (provider, annotations) in xmlInfo.CustomAttributes)
 				_context.CustomAttributes.PrimaryAttributeInfo.AddCustomAttributes (provider, annotations);
-			foreach (var (provider, annotations) in xmlInfo.InternalAttributes)
-				_context.CustomAttributes.PrimaryAttributeInfo.AddInternalAttributes (provider, annotations);
 		}
 
 		void Complete ()
@@ -275,7 +273,7 @@ namespace Mono.Linker.Steps
 
 			foreach (var ca in type.CustomAttributes) {
 				TypeDefinition caType = ca.AttributeType.Resolve ();
-				if (caType.Name == "DynamicInterfaceCastableImplementationAttribute" && caType.Namespace == "System.Runtime.InteropServices")
+				if (caType?.Name == "DynamicInterfaceCastableImplementationAttribute" && caType.Namespace == "System.Runtime.InteropServices")
 					return true;
 			}
 			return false;

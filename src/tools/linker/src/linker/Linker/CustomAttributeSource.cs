@@ -68,7 +68,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public bool HasCustomAttributes (ICustomAttributeProvider provider)
+		public bool HasAny (ICustomAttributeProvider provider)
 		{
 			if (provider.HasCustomAttributes)
 				return true;
@@ -81,35 +81,5 @@ namespace Mono.Linker
 
 			return embeddedXml.CustomAttributes.ContainsKey (provider);
 		}
-
-		public IEnumerable<Attribute> GetInternalAttributes (ICustomAttributeProvider provider)
-		{
-			if (PrimaryAttributeInfo.InternalAttributes.TryGetValue (provider, out var annotations)) {
-				foreach (var attribute in annotations)
-					yield return attribute;
-			}
-
-			if (!TryGetEmbeddedXmlInfo (provider, out var embeddedXml))
-				yield break;
-
-			if (embeddedXml.InternalAttributes.TryGetValue (provider, out annotations)) {
-				foreach (var attribute in annotations)
-					yield return attribute;
-			}
-		}
-
-		public bool HasInternalAttributes (ICustomAttributeProvider provider)
-		{
-			if (PrimaryAttributeInfo.InternalAttributes.ContainsKey (provider))
-				return true;
-
-			if (!TryGetEmbeddedXmlInfo (provider, out var embeddedXml))
-				return false;
-
-			return embeddedXml.InternalAttributes.ContainsKey (provider);
-		}
-
-		public bool HasAttributes (ICustomAttributeProvider provider) =>
-			HasCustomAttributes (provider) || HasInternalAttributes (provider);
 	}
 }

@@ -1,7 +1,0 @@
-<linker>
-  <assembly fullname="*">
-    <type fullname="System.MockCorelibAttributeToRemove">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-  </assembly>
-</linker>

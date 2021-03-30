@@ -538,11 +538,11 @@ namespace Mono.Linker
 		public bool HasLinkerAttribute<T> (IMemberDefinition member) where T : Attribute
 		{
 			// Avoid setting up and inserting LinkerAttributesInformation for members without attributes.
-			if (!context.CustomAttributes.HasAttributes (member))
+			if (!context.CustomAttributes.HasAny (member))
 				return false;
 
 			if (!linker_attributes.TryGetValue (member, out var linkerAttributeInformation)) {
-				linkerAttributeInformation = new LinkerAttributesInformation (context, member);
+				linkerAttributeInformation = LinkerAttributesInformation.Create (context, member);
 				linker_attributes.Add (member, linkerAttributeInformation);
 			}
 
@@ -552,11 +552,11 @@ namespace Mono.Linker
 		public IEnumerable<T> GetLinkerAttributes<T> (IMemberDefinition member) where T : Attribute
 		{
 			// Avoid setting up and inserting LinkerAttributesInformation for members without attributes.
-			if (!context.CustomAttributes.HasAttributes (member))
+			if (!context.CustomAttributes.HasAny (member))
 				return Enumerable.Empty<T> ();
 
 			if (!linker_attributes.TryGetValue (member, out var linkerAttributeInformation)) {
-				linkerAttributeInformation = new LinkerAttributesInformation (context, member);
+				linkerAttributeInformation = LinkerAttributesInformation.Create (context, member);
 				linker_attributes.Add (member, linkerAttributeInformation);
 			}
 
