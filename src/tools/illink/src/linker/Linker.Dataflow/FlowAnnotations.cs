@@ -105,7 +105,7 @@ namespace Mono.Linker.Dataflow
 
 		DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMembersAttribute (ICustomAttributeProvider provider, IMemberDefinition locationMember = null)
 		{
-			if (!_context.CustomAttributes.HasCustomAttributes (provider))
+			if (!_context.CustomAttributes.HasAny (provider))
 				return DynamicallyAccessedMemberTypes.None;
 			foreach (var attribute in _context.CustomAttributes.GetCustomAttributes (provider)) {
 				if (!IsDynamicallyAccessedMembersAttribute (attribute))

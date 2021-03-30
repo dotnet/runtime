@@ -59,8 +59,7 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 
 	[LogDoesNotContain ("IL2045")] // No other 2045 messages should be logged
 
-	[ExpectedWarning ("IL2048", "RemoveAttributeInstances", "methodWithCustomAttribute", FileName = "LinkerAttributeRemoval.xml")]
-	[ExpectedWarning ("IL2049", "InvalidInternal", FileName = "LinkerAttributeRemoval.xml")]
+	[ExpectedWarning ("IL2048", "RemoveAttributeInstances", FileName = "LinkerAttributeRemoval.xml")]
 
 	[KeptMember (".ctor()")]
 	class LinkerAttributeRemoval

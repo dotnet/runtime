@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Mono.Cecil;
@@ -14,41 +15,58 @@ namespace Mono.Linker
 	{
 		readonly Dictionary<Type, List<Attribute>> _linkerAttributes;
 
-		public LinkerAttributesInformation (LinkContext context, ICustomAttributeProvider provider)
+		private LinkerAttributesInformation (Dictionary<Type, List<Attribute>> cache)
 		{
-			_linkerAttributes = null;
-			if (context.CustomAttributes.HasCustomAttributes (provider)) {
-				foreach (var customAttribute in context.CustomAttributes.GetCustomAttributes (provider)) {
-					var attributeType = customAttribute.AttributeType;
-					Attribute attributeValue = null;
-					if (attributeType.IsTypeOf<RequiresUnreferencedCodeAttribute> ())
-						attributeValue = ProcessRequiresUnreferencedCodeAttribute (context, provider, customAttribute);
-					else if (attributeType.IsTypeOf<DynamicDependencyAttribute> ())
-						attributeValue = DynamicDependency.ProcessAttribute (context, provider, customAttribute);
-					AddAttribute (ref _linkerAttributes, attributeValue);
-				}
-			}
-			if (context.CustomAttributes.HasInternalAttributes (provider)) {
-				foreach (var internalAttribute in context.CustomAttributes.GetInternalAttributes (provider))
-					AddAttribute (ref _linkerAttributes, internalAttribute);
-			}
+			this._linkerAttributes = cache;
 		}
 
-		static void AddAttribute (ref Dictionary<Type, List<Attribute>> attributes, Attribute attributeValue)
+		public static LinkerAttributesInformation Create (LinkContext context, ICustomAttributeProvider provider)
 		{
-			if (attributeValue == null)
-				return;
+			Debug.Assert (context.CustomAttributes.HasAny (provider));
 
-			if (attributes == null)
-				attributes = new Dictionary<Type, List<Attribute>> ();
+			Dictionary<Type, List<Attribute>> cache = null;
 
-			Type attributeValueType = attributeValue.GetType ();
-			if (!attributes.TryGetValue (attributeValueType, out var attributeList)) {
-				attributeList = new List<Attribute> ();
-				attributes.Add (attributeValueType, attributeList);
+			foreach (var customAttribute in context.CustomAttributes.GetCustomAttributes (provider)) {
+				var attributeType = customAttribute.AttributeType;
+
+				Attribute attributeValue;
+				switch (attributeType.Name) {
+				case "RequiresUnreferencedCodeAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
+					attributeValue = ProcessRequiresUnreferencedCodeAttribute (context, provider, customAttribute);
+					break;
+				case "DynamicDependencyAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
+					attributeValue = DynamicDependency.ProcessAttribute (context, provider, customAttribute);
+					break;
+				case "RemoveAttributeInstancesAttribute":
+					if (provider is not TypeDefinition td)
+						continue;
+
+					// The attribute is never removed if it's explicitly preserved (e.g. via xml descriptor)
+					if (context.Annotations.TryGetPreserve (td, out TypePreserve preserve) && preserve != TypePreserve.Nothing)
+						continue;
+
+					attributeValue = new RemoveAttributeInstancesAttribute ();
+					break;
+				default:
+					continue;
+				}
+
+				if (attributeValue == null)
+					continue;
+
+				if (cache == null)
+					cache = new Dictionary<Type, List<Attribute>> ();
+
+				Type attributeValueType = attributeValue.GetType ();
+				if (!cache.TryGetValue (attributeValueType, out var attributeList)) {
+					attributeList = new List<Attribute> ();
+					cache.Add (attributeValueType, attributeList);
+				}
+
+				attributeList.Add (attributeValue);
 			}
 
-			attributeList.Add (attributeValue);
+			return new LinkerAttributesInformation (cache);
 		}
 
 		public bool HasAttribute<T> () where T : Attribute
