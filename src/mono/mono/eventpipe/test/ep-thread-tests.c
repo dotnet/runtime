@@ -126,9 +126,11 @@ test_get_or_create_thread (void)
 
 	test_location = 4;
 
+#ifdef _CRTDBG_MAP_ALLOC
 	// Need to emulate a thread exit to make sure TLS gets cleaned up for current thread
 	// or we will get memory leaks reported.
 	ep_rt_mono_thread_exited ();
+#endif
 
 	thread = ep_thread_get ();
 	if (thread) {

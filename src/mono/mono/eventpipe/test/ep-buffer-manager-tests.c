@@ -581,11 +581,11 @@ ep_on_error:
 static RESULT
 test_buffer_manager_teardown (void)
 {
+#ifdef _CRTDBG_MAP_ALLOC
 	// Need to emulate a thread exit to make sure TLS gets cleaned up for current thread
 	// or we will get memory leaks reported.
 	ep_rt_mono_thread_exited ();
 
-#ifdef _CRTDBG_MAP_ALLOC
 	_CrtMemCheckpoint (&eventpipe_memory_end_snapshot);
 	if ( _CrtMemDifference( &eventpipe_memory_diff_snapshot, &eventpipe_memory_start_snapshot, &eventpipe_memory_end_snapshot) ) {
 		_CrtMemDumpStatistics( &eventpipe_memory_diff_snapshot );

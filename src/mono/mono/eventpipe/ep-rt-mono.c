@@ -1485,12 +1485,8 @@ profiler_eventpipe_thread_exited (
 	MonoProfiler *prof,
 	uintptr_t tid)
 {
-	if (_ep_rt_mono_initialized) {
-		EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (_ep_rt_mono_thread_holder_tls_id);
-		if (thread_holder)
-			thread_holder_free_func (thread_holder);
-		mono_native_tls_set_value (_ep_rt_mono_thread_holder_tls_id, NULL);
-	}
+	void ep_rt_mono_thread_exited (void);
+	ep_rt_mono_thread_exited ();
 }
 
 void
@@ -1567,6 +1563,17 @@ ep_rt_mono_thread_detach (void)
 	MonoThread *current_thread = mono_thread_current ();
 	if (current_thread)
 		mono_thread_internal_detach (current_thread);
+}
+
+void
+ep_rt_mono_thread_exited (void)
+{
+	if (_ep_rt_mono_initialized) {
+		EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (_ep_rt_mono_thread_holder_tls_id);
+		if (thread_holder)
+			thread_holder_free_func (thread_holder);
+		mono_native_tls_set_value (_ep_rt_mono_thread_holder_tls_id, NULL);
+	}
 }
 
 #ifdef HOST_WIN32

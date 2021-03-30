@@ -348,46 +348,6 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_HASH_MAP_ITERATOR(hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_ITERATOR_PREFIX(ep, hash_map_name, hash_map_type, iterator_type, key_type, value_type)
 
-void
-ep_rt_mono_system_time_get (EventPipeSystemTime *system_time);
-
-int64_t
-ep_rt_mono_system_timestamp_get (void);
-
-void
-ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
-
-void
-ep_rt_mono_init_providers_and_events (void);
-
-void
-ep_rt_mono_fini_providers_and_events (void);
-
-bool
-ep_rt_mono_walk_managed_stack_for_thread (
-	ep_rt_thread_handle_t thread,
-	EventPipeStackContents *stack_contents);
-
-bool
-ep_rt_mono_method_get_simple_assembly_name (
-	ep_rt_method_desc_t *method,
-	ep_char8_t *name,
-	size_t name_len);
-
-bool
-ep_rt_mono_method_get_full_name (
-	ep_rt_method_desc_t *method,
-	ep_char8_t *name,
-	size_t name_len);
-
-bool
-ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
-	ep_rt_thread_handle_t sampling_thread,
-	EventPipeEvent *sampling_event);
-
-void
-ep_rt_mono_execute_rundown (void);
-
 static
 inline
 char *
@@ -705,6 +665,7 @@ ep_rt_walk_managed_stack_for_thread (
 	ep_rt_thread_handle_t thread,
 	EventPipeStackContents *stack_contents)
 {
+	extern bool ep_rt_mono_walk_managed_stack_for_thread (ep_rt_thread_handle_t thread, EventPipeStackContents *stack_contents);
 	return ep_rt_mono_walk_managed_stack_for_thread (thread, stack_contents);
 }
 
@@ -716,6 +677,7 @@ ep_rt_method_get_simple_assembly_name (
 	ep_char8_t *name,
 	size_t name_len)
 {
+	extern bool ep_rt_mono_method_get_simple_assembly_name (ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
 	return ep_rt_mono_method_get_simple_assembly_name (method, name, name_len);
 }
 
@@ -727,6 +689,7 @@ ep_rt_method_get_full_name (
 	ep_char8_t *name,
 	size_t name_len)
 {
+	extern bool ep_rt_mono_method_get_full_name (ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
 	return ep_rt_mono_method_get_full_name (method, name, name_len);
 }
 
@@ -743,6 +706,7 @@ inline
 void
 ep_rt_init_providers_and_events (void)
 {
+	extern void ep_rt_mono_init_providers_and_events (void);
 	ep_rt_mono_init_providers_and_events ();
 }
 
@@ -934,6 +898,7 @@ static
 void
 ep_rt_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event)
 {
+	extern bool ep_rt_mono_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event);
 	ep_rt_mono_sample_profiler_write_sampling_event_for_threads (sampling_thread, sampling_event);
 }
 
@@ -1186,8 +1151,10 @@ ep_rt_execute_rundown (void)
 {
 	if (ep_rt_config_value_get_rundown () > 0) {
 		// Ask the runtime to emit rundown events.
-		if (/*is_running &&*/ !ep_rt_process_shutdown ())
+		if (/*is_running &&*/ !ep_rt_process_shutdown ()) {
+			extern void ep_rt_mono_execute_rundown (void);
 			ep_rt_mono_execute_rundown ();
+		}
 	}
 }
 
@@ -1329,6 +1296,7 @@ inline
 void
 ep_rt_system_time_get (EventPipeSystemTime *system_time)
 {
+	extern void ep_rt_mono_system_time_get (EventPipeSystemTime *system_time);
 	ep_rt_mono_system_time_get (system_time);
 }
 
@@ -1337,6 +1305,7 @@ inline
 int64_t
 ep_rt_system_timestamp_get (void)
 {
+	extern int64_t ep_rt_mono_system_timestamp_get (void);
 	return ep_rt_mono_system_timestamp_get ();
 }
 
@@ -1467,6 +1436,7 @@ inline
 void
 ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 {
+	extern void ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
 	ep_rt_mono_os_environment_get_utf16 (env_array);
 }
 

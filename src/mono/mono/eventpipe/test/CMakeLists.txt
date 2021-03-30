@@ -1,6 +1,7 @@
 if(ENABLE_PERFTRACING)
 
-    if(ENABLE_EVENTPIPE_TEST AND (NOT DISABLE_LIBS) AND (NOT DISABLE_EXECUTABLES))
+    # TODO: Add support for dynamic components once package/deploy have been resolved.
+    if(ENABLE_EVENTPIPE_TEST AND STATIC_COMPONENTS AND (NOT DISABLE_LIBS) AND (NOT DISABLE_EXECUTABLES))
         set(EVENTPIPE_TEST_SOURCES "")
         set(EVENTPIPE_TEST_HEADERS "")
 
@@ -55,13 +56,13 @@ if(ENABLE_PERFTRACING)
 
         set(CMAKE_SKIP_RPATH 1)
         add_executable(ep-test ${EVENTPIPE_TEST_SOURCES} ${EVENTPIPE_TEST_HEADERS})
-        target_link_libraries(ep-test monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+        target_link_libraries(ep-test monosgen-static "mono-components-static" ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
         if(ICU_LDFLAGS)
             set_target_properties(ep-test PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
         endif()
         install(TARGETS ep-test RUNTIME)
-    else(ENABLE_EVENTPIPE_TEST AND (NOT DISABLE_LIBS) AND (NOT DISABLE_EXECUTABLES))
+    else(ENABLE_EVENTPIPE_TEST AND STATIC_COMPONENTS AND (NOT DISABLE_LIBS) AND (NOT DISABLE_EXECUTABLES))
         message(VERBOSE "Skip building native EventPipe library test runner.")
-    endif(ENABLE_EVENTPIPE_TEST AND (NOT DISABLE_LIBS) AND (NOT DISABLE_EXECUTABLES))
+    endif(ENABLE_EVENTPIPE_TEST AND STATIC_COMPONENTS AND (NOT DISABLE_LIBS) AND (NOT DISABLE_EXECUTABLES))
 
 endif(ENABLE_PERFTRACING)
