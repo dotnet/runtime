@@ -7,6 +7,7 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "mono/component/component.h"
+#include "mono/utils/mono-compiler.h"
 
 typedef struct _MonoComponentDiagnosticsServer {
 	MonoComponent component;

@@ -6,6 +6,7 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "mono/component/event_pipe.h"
+#include "mono/metadata/components.h"
 
 static EventPipeSessionID _dummy_session_id;
 
@@ -238,7 +239,7 @@ event_pipe_stub_thread_ctrl_activity_id (
 
 #ifdef STATIC_COMPONENTS
 MONO_COMPONENT_EXPORT_ENTRYPOINT
-MonoComponentEventpipe *
+MonoComponentEventPipe *
 mono_component_event_pipe_init (void)
 {
 	return mono_component_event_pipe_stub_init ();

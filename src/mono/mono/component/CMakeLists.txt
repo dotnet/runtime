@@ -88,14 +88,14 @@ if (NOT STATIC_COMPONENTS)
     install(TARGETS "mono-component-${component}" LIBRARY)
   endforeach()
 
-  # define a single components_stubs_objects target that will be linked into
+  # define a single static library mono-components-stubs-static that will be linked into
   # the runtime to be used as fallbacks if the dynamic components are not
   # available
-  add_library (components_stubs_objects OBJECT)
+  add_library ("mono-components-stubs-static" STATIC)
   foreach (component IN LISTS components)
-    target_sources (components_stubs_objects PRIVATE ${${component}-stub-sources})
+    target_sources ("mono-components-stubs-static" PRIVATE $<TARGET_OBJECTS:${component}-stub-objects>)
   endforeach()
-  target_link_libraries(components_stubs_objects component_base)
+  target_link_libraries("mono-components-stubs-static" component_base)
 
 else()
 
@@ -109,11 +109,11 @@ else()
     install(TARGETS "mono-component-${component}-stub-static" LIBRARY)
   endforeach()
 
-  # define a single components_static_objects target for mini if building a shared libmono with static-linked components
-  add_library (components_static_objects OBJECT)
+  # define a single static library mono-components-static for mini if building a shared libmono with static-linked components
+  add_library ("mono-components-static" STATIC)
   foreach (component IN LISTS components)
-    target_sources (components_static_objects PRIVATE ${${component}-sources})
+    target_sources ("mono-components-static" PRIVATE $<TARGET_OBJECTS:${component}-objects>)
   endforeach()
-  target_link_libraries(components_static_objects component_base)
+  target_link_libraries("mono-components-static" component_base)
 
 endif()

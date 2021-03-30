@@ -6,6 +6,7 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "mono/component/diagnostics_server.h"
+#include "mono/metadata/components.h"
 
 /*
  * Forward declares of all static functions.
@@ -34,21 +35,6 @@ static MonoComponentDiagnosticsServer fn_table = {
 	&diagnostics_server_stub_disable
 };
 
-#ifdef STATIC_COMPONENTS
-MONO_COMPONENT_EXPORT_ENTRYPOINT
-MonoComponentDiagnosticsServer *
-mono_component_diagnostics_server_init (void)
-{
-	return mono_component_diagnostics_server_stub_init ();
-}
-#endif
-
-MonoComponentDiagnosticsServer *
-mono_component_diagnostics_server_stub_init (void)
-{
-	return &fn_table;
-}
-
 static void
 diagnostics_server_stub_cleanup (MonoComponent *self)
 {
@@ -72,5 +58,20 @@ diagnostics_server_stub_pause_for_diagnostics_monitor (void)
 static void
 diagnostics_server_stub_disable (void)
 {
+}
+
+#ifdef STATIC_COMPONENTS
+MONO_COMPONENT_EXPORT_ENTRYPOINT
+MonoComponentDiagnosticsServer *
+mono_component_diagnostics_server_init (void)
+{
+	return mono_component_diagnostics_server_stub_init ();
+}
+#endif
+
+MonoComponentDiagnosticsServer *
+mono_component_diagnostics_server_stub_init (void)
+{
+	return &fn_table;
 }
 #endif /* ENABLE_PERFTRACING */

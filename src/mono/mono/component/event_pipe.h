@@ -8,6 +8,7 @@
 #ifdef ENABLE_PERFTRACING
 
 #include <mono/component/component.h>
+#include "mono/utils/mono-compiler.h"
 
 #include <eventpipe/ep-ipc-pal-types-forward.h>
 #include <eventpipe/ep-types-forward.h>
