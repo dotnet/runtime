@@ -78,7 +78,7 @@ namespace System.Reflection.Internal
 
                 int bytesRead = 0;
 
-                if (!isFileStream || !FileStreamReadLightUp.TryReadFile(stream, block.Pointer, size, out bytesRead))
+                if (!isFileStream || (bytesRead = FileStreamReadLightUp.ReadFile(stream, block.Pointer, size)) != size)
                 {
                     stream.CopyTo(block.Pointer + bytesRead, size - bytesRead);
                 }

@@ -9,11 +9,7 @@ namespace System.Reflection.Internal
     {
         internal static bool IsFileStream(Stream stream) => stream is FileStream;
 
-        internal static unsafe bool TryReadFile(Stream stream, byte* buffer, int size, out int bytesRead)
-        {
-            bytesRead = stream.Read(new Span<byte>(buffer, size));
-
-            return bytesRead == size;
-        }
+        internal static unsafe int ReadFile(Stream stream, byte* buffer, int size)
+            => stream.Read(new Span<byte>(buffer, size));
     }
 }
