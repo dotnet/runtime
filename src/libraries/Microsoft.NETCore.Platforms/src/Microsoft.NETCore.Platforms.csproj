@@ -23,6 +23,8 @@
     <Compile Include="BuildTask.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="GenerateRuntimeGraph.cs" />
+    <Compile Include="RID.cs" />
+    <Compile Include="RuntimeGroup.cs" />
   </ItemGroup>
 
   <ItemGroup>
