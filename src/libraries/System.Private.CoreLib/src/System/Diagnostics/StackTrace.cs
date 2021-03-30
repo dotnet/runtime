@@ -326,9 +326,9 @@ namespace System.Diagnostics
                             sb.Append(' ');
                             sb.AppendFormat(CultureInfo.InvariantCulture, inFileLineNum, fileName, sf.GetFileLineNumber());
                         }
-                        else if (LocalAppContextSwitches.ILOffsetToStackTrace && mb.ReflectedType != null)
+                        else if (LocalAppContextSwitches.ShowILOffsets && mb.ReflectedType != null)
                         {
-                            string assemblyName = System.IO.Path.GetFileName(mb.ReflectedType.Assembly.Location);
+                            string assemblyName = mb.ReflectedType.Module.ScopeName;
                             try
                             {
                                 int token = mb.MetadataToken;

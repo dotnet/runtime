@@ -48,11 +48,11 @@ namespace System
             get => GetCachedSwitchValue("Switch.System.Runtime.Serialization.SerializationGuard", ref s_serializationGuard);
         }
 
-        private static int s_ilOffsetToStackTrace;
-        public static bool ILOffsetToStackTrace
+        private static int s_showILOffset;
+        public static bool ShowILOffsets
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetCachedSwitchValue("Switch.System.Diagnostics.StackTrace.ILOffsetToStackTrace", ref s_ilOffsetToStackTrace);
+            get => GetCachedSwitchValue("Switch.System.Diagnostics.StackTrace.ShowILOffsets", ref s_showILOffset);
         }
 
     }

@@ -56,9 +56,14 @@ namespace System
                 return true;
             }
 
-            if (switchName == "Switch.System.Diagnostics.StackTrace.ILOffsetToStackTrace")
+            if (switchName == "Switch.System.Diagnostics.StackTrace.ShowILOffsets")
             {
-                return Environment.GetEnvironmentVariable("COMPlus_ILOffsetToStackTrace") == "1" ? true : false;
+                if (!AppContext.TryGetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", out bool ret))
+                {
+                    ret = Environment.GetEnvironmentVariable("DOTNET_ILOffsetToStackTrace") == "1" ? true : false;
+                }
+
+                return ret;
             }
 
             return false;
