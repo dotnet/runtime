@@ -19304,7 +19304,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             }
 
             // It's better for JIT to keep these methods not inlined for CQ.
-            NamedIntrinsic ni = pParam->pThis->gtGetNamedIntrinsicForCall(pParam->call);
+            NamedIntrinsic ni;
+            ni = pParam->pThis->gtGetNamedIntrinsicForCall(pParam->call);
             if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
                 (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
             {
