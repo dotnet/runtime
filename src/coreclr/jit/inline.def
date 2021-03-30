@@ -57,6 +57,7 @@ INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",     
 INLINE_OBSERVATION(TOO_MANY_ARGUMENTS,        bool,   "too many arguments",                   FATAL,       CALLEE)
 INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",                      FATAL,       CALLEE)
 INLINE_OBSERVATION(EXPLICIT_TAIL_PREFIX,      bool,   "explicit tail prefix in callee",       FATAL,       CALLEE)
+INLINE_OBSERVATION(SPECIAL_INTRINSIC,         bool,   "skipped for special intrinsic",        FATAL,       CALLEE)
 
 // ------ Callee Performance -------
 

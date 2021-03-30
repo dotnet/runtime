@@ -19303,6 +19303,15 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 goto _exit;
             }
 
+            // It's better for JIT to keep these methods not inlined for CQ.
+            NamedIntrinsic ni = pParam->pThis->gtGetNamedIntrinsicForCall(pParam->call);
+            if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
+                (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
+            {
+                pParam->result->NoteFatal(InlineObservation::CALLEE_SPECIAL_INTRINSIC);
+                goto _exit;
+            }
+
             // Speculatively check if initClass() can be done.
             // If it can be done, we will try to inline the method.
             initClassResult =
