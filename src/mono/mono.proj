@@ -363,7 +363,6 @@
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,portability,logging" />
       <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING=1"/>
-      <_MonoCMakeArgs Include="-DENABLE_PERFTRACING=0"/>
 
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-mtune=cortex-a8" />
@@ -408,6 +407,11 @@
 
     <ItemGroup Condition="'$(MonoMsCorDbi)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MSCORDBI=1" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_LISTEN_PORTS=1"/>
     </ItemGroup>
 
     <!-- Components -->
