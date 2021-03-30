@@ -648,7 +648,7 @@ def run_and_log(command, log_level=logging.DEBUG):
         Process return code
     """
 
-    logging.debug("Invoking: %s", " ".join(command))
+    logging.log(log_level, "Invoking: %s", " ".join(command))
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout_output, _ = proc.communicate()
     for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
@@ -696,6 +696,32 @@ def check_target_arch(coreclr_args, target_arch):
 
 def check_mch_arch(coreclr_args, mch_arch):
     return (mch_arch is not None) and (mch_arch in coreclr_args.valid_arches)
+
+
+def create_artifacts_base_name(coreclr_args, mch_file):
+    """ Create an appropriate "base" name for use creating a directory name related to MCH file playback.
+        This will later be prepended by "asm." or "jitdump.", for example, and
+        create_unique_directory_name() should be called on the final name to ensure it is unique.
+
+        Use the MCH file base name as the main part of the directory name, removing
+        the trailing ".mch", if any.
+        
+        If there is a tag specified (for asm diffs), prepend the tag.
+
+    Args:
+        coreclr_args   : the parsed arguments
+        mch_file (str) : the MCH file name that is being replayed.
+
+    Returns:
+        A directory name to be used.
+    """
+    artifacts_base_name = os.path.basename(mch_file)
+    if artifacts_base_name.lower().endswith(".mch"):
+        artifacts_base_name = artifacts_base_name[:-4]
+    if hasattr(coreclr_args, "tag") and coreclr_args.tag is not None:
+        artifacts_base_name = "{}.{}".format(coreclr_args.tag, artifacts_base_name)
+    return artifacts_base_name
+
 
 ################################################################################
 # Helper classes
@@ -1623,12 +1649,7 @@ class SuperPMIReplay:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
                     print_fail_mcl_file_method_numbers(fail_mcl_file)
                     repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(repro_flags), self.jit_path)
-
-                    # Use the MCH file base name as the main part of the directory for generated repro artifacts.
-                    # Remove the trailing ".mch", if any.
-                    artifacts_base_name = os.path.basename(mch_file)
-                    artifacts_base_name = artifacts_base_name[:-4] if artifacts_base_name.lower().endswith(".mch") else artifacts_base_name
-
+                    artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
                     save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
                 if not self.coreclr_args.skip_cleanup:
@@ -1830,11 +1851,7 @@ class SuperPMIReplayAsmDiffs:
                             files_with_replay_failures.append(mch_file)
                             result = False
 
-                # Use the MCH file base name as the main part of the directory for generated asm/jitdump/repro artifacts.
-                # Remove the trailing ".mch", and prepend the tag, if any.
-                artifacts_base_name = os.path.basename(mch_file)
-                artifacts_base_name = artifacts_base_name[:-4] if artifacts_base_name.lower().endswith(".mch") else artifacts_base_name
-                artifacts_base_name = "{}.{}".format(self.coreclr_args.tag, artifacts_base_name) if self.coreclr_args.tag is not None else artifacts_base_name
+                artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
 
                 if is_nonzero_length_file(fail_mcl_file):
                     # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
