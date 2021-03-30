@@ -2884,7 +2884,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
     bool      srcIsUnsigned;
     GetCastOperFromVN(arg1VN, &castToType, &srcIsUnsigned);
     var_types castFromType = arg0VNtyp;
-    bool checkedCast       = func == VNF_CastOvf;
+    bool      checkedCast  = func == VNF_CastOvf;
 
     switch (castFromType) // GT_CAST source type
     {
@@ -3275,7 +3275,7 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
             // Note that while INT_MIN % -1 is mathematically well-defined (and equal to 0),
             // we still give up on folding it because the "idiv" instruction is used to compute it on x64.
             // And "idiv" raises an exception on such inputs.
-            INT64 dividend = CoercedConstantValue<INT64>(arg0VN);
+            INT64 dividend    = CoercedConstantValue<INT64>(arg0VN);
             INT64 badDividend = typ == TYP_INT ? INT32_MIN : INT64_MIN;
 
             // Only fold if our dividend is good.
@@ -3396,8 +3396,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     // (0 + x) == x
     // (x + 0) == x
     // This identity does not apply for floating point (when x == -0.0).
-    auto identityForAddition = [=]() -> ValueNum
-    {
+    auto identityForAddition = [=]() -> ValueNum {
         if (!varTypeIsFloating(typ))
         {
             ValueNum ZeroVN = VNZeroForType(typ);
@@ -3417,8 +3416,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     // (x - 0) == x
     // (x - x) == 0
     // This identity does not apply for floating point (when x == -0.0).
-    auto identityForSubtraction = [=]() -> ValueNum
-    {
+    auto identityForSubtraction = [=]() -> ValueNum {
         if (!varTypeIsFloating(typ))
         {
             ValueNum ZeroVN = VNZeroForType(typ);
@@ -3436,8 +3434,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     };
 
     // These identities do not apply for floating point.
-    auto identityForMultiplication = [=]() -> ValueNum
-    {
+    auto identityForMultiplication = [=]() -> ValueNum {
         if (!varTypeIsFloating(typ))
         {
             // (0 * x) == 0
@@ -9317,7 +9314,7 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
     {
         ValueNumPair excSet = ValueNumStore::VNPForEmptyExcSet();
 
-        ValueNumKind vnKinds[2] = { VNK_Liberal, VNK_Conservative };
+        ValueNumKind vnKinds[2] = {VNK_Liberal, VNK_Conservative};
         for (ValueNumKind vnKind : vnKinds)
         {
             // Do not add exceptions for folded casts.
@@ -9327,7 +9324,8 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
                 continue;
             }
 
-            ValueNum ovfChk = VNForFunc(TYP_REF, VNF_ConvOverflowExc, castArgVNP.Get(vnKind), castTypeVNPair.Get(vnKind));
+            ValueNum ovfChk =
+                VNForFunc(TYP_REF, VNF_ConvOverflowExc, castArgVNP.Get(vnKind), castTypeVNPair.Get(vnKind));
             excSet.Set(vnKind, VNExcSetSingleton(ovfChk));
         }
 
@@ -9982,10 +9980,11 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 }
 
                 // CORINFO_HELP_ULNG2DBL is the only helper that casts from an unsigned integer.
-                bool         srcIsUnsigned    = helpFunc == CORINFO_HELP_ULNG2DBL;
-                bool         hasOverflowCheck = vnf == VNF_CastOvf;
+                bool srcIsUnsigned    = helpFunc == CORINFO_HELP_ULNG2DBL;
+                bool hasOverflowCheck = vnf == VNF_CastOvf;
 
-                call->gtVNPair = vnStore->VNPairForCast(srcVNPair, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
+                call->gtVNPair =
+                    vnStore->VNPairForCast(srcVNPair, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 
                 // Casting helpers, checked or not, do not modify the heap.
                 return false;
@@ -10338,7 +10337,7 @@ void Compiler::fgValueNumberAddExceptionSetForOverflow(GenTree* tree)
     VNFunc vnf = GetVNFuncForNode(tree);
     assert(ValueNumStore::VNFuncIsOverflowArithmetic(vnf));
 
-    ValueNumKind vnKinds[2] = { VNK_Liberal, VNK_Conservative };
+    ValueNumKind vnKinds[2] = {VNK_Liberal, VNK_Conservative};
     for (ValueNumKind vnKind : vnKinds)
     {
         ValueNum vn = tree->GetVN(vnKind);

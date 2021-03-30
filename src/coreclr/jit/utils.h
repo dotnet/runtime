@@ -776,7 +776,7 @@ double CachedCyclesPerSecond();
 namespace CheckedOps
 {
 const bool Unsigned = true;
-const bool Signed = false;
+const bool Signed   = false;
 
 bool IntAddOverflows(int32_t firstAddend, int32_t secondAddend, bool unsignedAdd);
 bool IntSubOverflows(int32_t minuend, int32_t subtrahend, bool unsignedSub);

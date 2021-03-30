@@ -14419,8 +14419,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     case GT_CAST:
 
                         if (tree->gtOverflow() &&
-                            ((op1->TypeIs(TYP_DOUBLE) &&
-                              CheckedOps::CastFromDoubleOverflows(d1, tree->CastToType())) ||
+                            ((op1->TypeIs(TYP_DOUBLE) && CheckedOps::CastFromDoubleOverflows(d1, tree->CastToType())) ||
                              (op1->TypeIs(TYP_FLOAT) &&
                               CheckedOps::CastFromDoubleOverflows(forceCastToFloat(d1), tree->CastToType()))))
                         {
@@ -15265,7 +15264,7 @@ INTEGRAL_OVF:
     }
 
     var_types type = genActualType(tree->TypeGet());
-    op1 = type == TYP_LONG ? gtNewLconNode(0) : gtNewIconNode(0);
+    op1            = type == TYP_LONG ? gtNewLconNode(0) : gtNewIconNode(0);
     if (vnStore != nullptr)
     {
         op1->gtVNPair.SetBoth(vnStore->VNZeroForType(type));
@@ -15282,18 +15281,16 @@ INTEGRAL_OVF:
     assert(op1 != nullptr);
 
     op2 = op1;
-    op1 = gtNewHelperCallNode(CORINFO_HELP_OVERFLOW, TYP_VOID,
-        gtNewCallArgs(gtNewIconNode(compCurBB->bbTryIndex)));
+    op1 = gtNewHelperCallNode(CORINFO_HELP_OVERFLOW, TYP_VOID, gtNewCallArgs(gtNewIconNode(compCurBB->bbTryIndex)));
 
     // op1 is a call to the JIT helper that throws an Overflow exception.
     // Attach the ExcSet for VNF_OverflowExc(Void) to this call.
 
     if (vnStore != nullptr)
     {
-        op1->gtVNPair =
-            vnStore->VNPWithExc(ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid()),
-                vnStore->VNPExcSetSingleton(
-                    vnStore->VNPairForFunc(TYP_REF, VNF_OverflowExc, vnStore->VNPForVoid())));
+        op1->gtVNPair = vnStore->VNPWithExc(ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid()),
+                                            vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_OverflowExc,
+                                                                                               vnStore->VNPForVoid())));
     }
 
     tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), op1, op2);
