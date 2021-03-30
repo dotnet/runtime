@@ -214,7 +214,7 @@
       <AppleTestTarget Condition="'$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</AppleTestTarget>
       <AppleTestTarget Condition="'$(TargetOS)' == 'tvOSSimulator'">tvos-simulator</AppleTestTarget>
       <AppleTestTarget Condition="'$(TargetOS)' == 'iOS'">ios-device</AppleTestTarget>
-      <AppleTestTarget Condition="'$(TargetOS)' == 'tvOS'">tvos-simulator</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'tvOS'">tvos-device</AppleTestTarget>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
