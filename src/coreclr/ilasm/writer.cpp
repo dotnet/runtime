@@ -322,13 +322,12 @@ HRESULT Assembler::CreateExportDirectory()
 
     IMAGE_EXPORT_DIRECTORY  exportDirIDD;
     DWORD                   exportDirDataSize;
-    BYTE                   *exportDirData;
     EATEntry               *pEATE;
     unsigned                i, L, ordBase = 0xFFFFFFFF, Ldllname;
     // get the DLL name from output file name
     char*                   pszDllName;
     Ldllname = (unsigned)wcslen(m_wzOutputFileName)*3+3;
-    char*                   szOutputFileName = new char[Ldllname];
+    NewArrayHolder<char>    szOutputFileName(new char[Ldllname]);
     memset(szOutputFileName,0,wcslen(m_wzOutputFileName)*3+3);
     WszWideCharToMultiByte(CP_ACP,0,m_wzOutputFileName,-1,szOutputFileName,Ldllname,NULL,NULL);
     pszDllName = strrchr(szOutputFileName,DIRECTORY_SEPARATOR_CHAR_A);
@@ -341,11 +340,11 @@ HRESULT Assembler::CreateExportDirectory()
     // Allocate buffer for tables
     for(i = 0, L=0; i < Nentries; i++) L += 1+(unsigned)strlen(m_EATList.PEEK(i)->szAlias);
     exportDirDataSize = Nentries*5*sizeof(WORD) + L + Ldllname;
-    exportDirData = new BYTE[exportDirDataSize];
+    NewArrayHolder<BYTE> exportDirData(new BYTE[exportDirDataSize]);
     memset(exportDirData,0,exportDirDataSize);
 
     // Export address table
-    DWORD*  pEAT = (DWORD*)exportDirData;
+    DWORD*  pEAT = (DWORD*)(BYTE*)exportDirData;
     // Name pointer table
     DWORD*  pNPT = pEAT + Nentries;
     // Ordinal table
@@ -356,7 +355,7 @@ HRESULT Assembler::CreateExportDirectory()
     char*   pDLLName = pENT + L;
 
     // sort the names/ordinals
-    char**  pAlias = new char*[Nentries];
+    NewArrayHolder<char*> pAlias(new char*[Nentries]);
     for(i = 0; i < Nentries; i++)
     {
         pEATE = m_EATList.PEEK(i);
@@ -474,8 +473,6 @@ HRESULT Assembler::CreateExportDirectory()
     // Copy the debug directory into the section.
     memcpy(de, &exportDirIDD, sizeof(IMAGE_EXPORT_DIRECTORY));
     memcpy(de + sizeof(IMAGE_EXPORT_DIRECTORY), exportDirData, exportDirDataSize);
-    delete [] pAlias;
-    delete [] exportDirData;
     return S_OK;
 }
 
