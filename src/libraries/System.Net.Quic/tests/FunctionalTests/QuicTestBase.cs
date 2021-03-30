@@ -62,14 +62,34 @@ namespace System.Net.Quic.Tests
                 {
                     using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
                     await serverFunction(serverConnection);
+                    await serverConnection.CloseAsync(0);
                 }),
                 Task.Run(async () =>
                 {
                     using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
                     await clientConnection.ConnectAsync();
                     await clientFunction(clientConnection);
+                    await clientConnection.CloseAsync(0);
                 })
             }.WhenAllOrAnyFailed(millisecondsTimeout);
+        }
+
+        internal async Task<int> ReadAll(QuicStream stream, byte[] buffer)
+        {
+            Memory<byte> memory = buffer;
+            int bytesRead = 0;
+            while (true)
+            {
+                int res = await stream.ReadAsync(memory);
+                if (res == 0)
+                {
+                    break;
+                }
+                bytesRead += res;
+                memory = memory[res..];
+            }
+
+            return bytesRead;
         }
     }
 

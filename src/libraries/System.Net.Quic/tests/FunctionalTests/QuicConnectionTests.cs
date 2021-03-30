@@ -37,6 +37,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
         public async Task AcceptStream_ConnectionAborted_ByClient_Throws()
         {

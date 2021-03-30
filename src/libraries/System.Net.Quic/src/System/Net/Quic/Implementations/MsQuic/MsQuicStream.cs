@@ -62,6 +62,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             // Set once writes have been shutdown.
             public readonly TaskCompletionSource ShutdownWriteCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            // Set once stream have been shutdown.
+            public readonly TaskCompletionSource ShutdownCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
         // inbound.
@@ -256,6 +259,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_state.ReadState == ReadState.ReadsCompleted)
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"[{_state.GetHashCode()}] all reads completed");
                     return 0;
                 }
                 else if (_state.ReadState == ReadState.Aborted)
@@ -318,7 +322,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (_state.ReadState == ReadState.IndividualReadComplete)
                 {
                     _state.ReceiveQuicBuffers.Clear();
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"[{_state.GetHashCode()}] will inform {actual} bytes consumed");
                     ReceiveComplete(actual);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"[{_state.GetHashCode()}] will enable next receive");
                     EnableReceive();
                     _state.ReadState = ReadState.None;
                 }
@@ -394,6 +400,17 @@ namespace System.Net.Quic.Implementations.MsQuic
             });
 
             await _state.ShutdownWriteCompletionSource.Task.ConfigureAwait(false);
+        }
+
+        internal override async ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+                _state.ShutdownCompletionSource.SetException(new OperationCanceledException("Shutdown was canceled", cancellationToken))
+            );
+
+            await _state.ShutdownCompletionSource.Task.ConfigureAwait(false);
         }
 
         internal override void Shutdown()
@@ -481,6 +498,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEvent(State state, ref StreamEvent evt)
         {
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[{state.GetHashCode()}] received event {evt.Type}");
+
             try
             {
                 switch ((QUIC_STREAM_EVENT_TYPE)evt.Type)
@@ -543,6 +562,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldComplete)
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[{state.GetHashCode()}] {receiveEvent.TotalBufferLength} bytes available to read");
                 state.ReceiveResettableCompletionSource.Complete((uint)receiveEvent.TotalBufferLength);
             }
 
@@ -636,6 +656,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldReadComplete)
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[{state.GetHashCode()}] no more data available to read");
                 state.ReceiveResettableCompletionSource.Complete(0);
             }
 
@@ -643,6 +664,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 state.ShutdownWriteCompletionSource.TrySetResult();
             }
+
+            state.ShutdownCompletionSource.TrySetResult();
 
             return MsQuicStatusCodes.Success;
         }
