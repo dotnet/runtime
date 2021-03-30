@@ -20,7 +20,8 @@ parameters:
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
   projectFile: 'microbenchmarks.proj'   # optional -- project file to build helix workitems
   runKind: ''                     # required -- test category
-  logicalMachine: ''                       # required -- Used to specify a which pool of machines the test should run against
+  logicalMachine: ''              # required -- Used to specify a which pool of machines the test should run against
+  envVars: ''                     # optional -- Environment variables passed from launch
 jobs:
 - template: xplat-pipeline-job.yml
   parameters:
@@ -119,7 +120,7 @@ jobs:
       displayName: Performance Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) --env-args="$[variables.EnvVars]"
+    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) --env-args="${{ parameters.envVars }}"
       displayName: Run ci setup script
       # Run perf testing in helix
     - template: /eng/common/templates/steps/perf-send-to-helix.yml
