@@ -57,11 +57,9 @@ namespace System.Collections
             if (min < 0)
                 throw new ArgumentException(SR.Arg_HTCapacityOverflow);
 
-            foreach (int prime in s_primes)
-            {
-                if (prime >= min)
-                    return prime;
-            }
+
+            if (TryBinarySearchForPrime(min, out int prime))
+                return prime;
 
             // Outside of our predefined table. Compute the hard way.
             for (int i = (min | 1); i < int.MaxValue; i += 2)
@@ -70,6 +68,43 @@ namespace System.Collections
                     return i;
             }
             return min;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryBinarySearchForPrime(int min, out int prime)
+        {
+            var primes = s_primes;
+
+            int lo = 0;
+            int hi = primes.Length - 1;
+            while (lo <= hi)
+            {
+                int i = lo + ((hi - lo) >> 1);
+                var target = primes[i];
+
+                if (target == min)
+                {
+                    prime = target;
+                    return true;
+                }
+                if (min < target)
+                {
+                    lo = i + 1;
+                }
+                else
+                {
+                    hi = i - 1;
+                }
+            }
+
+            if (lo >= primes.Length)
+            {
+                prime = default;
+                return false;
+            }
+
+            prime = primes[lo];
+            return true;
         }
 
         // Returns size of hashtable to grow to.
