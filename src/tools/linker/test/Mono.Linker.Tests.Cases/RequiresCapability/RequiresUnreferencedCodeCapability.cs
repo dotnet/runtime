@@ -156,7 +156,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		class TestType { }
 
 		[ExpectedWarning ("IL2026", "--MethodWithDuplicateRequiresAttribute--")]
-		[LogDoesNotContain ("Message for MethodWithDuplicateRequiresAttribute from link attributes XML")]
 		static void TestDuplicateRequiresAttribute ()
 		{
 			MethodWithDuplicateRequiresAttribute ();

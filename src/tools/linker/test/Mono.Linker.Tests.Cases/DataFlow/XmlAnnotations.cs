@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
 	[SetupLinkAttributesFile ("XmlAnnotations.xml")]
-	[ExpectedWarning ("IL2031", "System.DoesNotExistAttribute", FileName = "XmlAnnotations.xml")]
+	[ExpectedWarning ("IL2031", "Attribute type 'System.DoesNotExistAttribute' could not be found", FileName = "XmlAnnotations.xml")]
 	[LogDoesNotContain ("IL2067: Mono.Linker.Tests.Cases.DataFlow.XmlAnnotations.ReadFromInstanceField():*", true)]
 	class XmlAnnotations
 	{

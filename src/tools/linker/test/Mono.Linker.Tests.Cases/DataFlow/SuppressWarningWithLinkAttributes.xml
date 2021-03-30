@@ -11,7 +11,7 @@
           <argument>0</argument>
         </attribute>
         <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
-          <argument>PublicParameterlessConstructor</argument>
+          <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicParameterlessConstructor</argument>
         </attribute>
       </field>
     </type>

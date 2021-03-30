@@ -135,7 +135,27 @@ the error code. For example:
 
 #### `IL1040`: Failed to resolve {name}
 
-Metadata element 'name' cannot be resolved. This usually means there is a version mismatch between dependencies.
+- Metadata element 'name' cannot be resolved. This usually means there is a version mismatch between dependencies.
+
+#### `IL1041`: The type '{typeName}' used with attribute value 'value' could not be found
+
+- The type name used to define custom attribute value could not be resolved. This can mean the assembly reference is missing or that the type does not exist.
+
+#### `IL1042`: Cannot convert value '{value}' to type '{typeName}'
+
+- The 'value' specified for the custom attribute value cannot be converted to specified argument type 'typeName'.
+
+#### `IL1043`: Custom attribute argument for 'type' type requires nested 'argument' node
+
+- The syntax for custom attribute value for 'type' requires to also specify the underlying attribute type.
+
+#### `IL1044`: Could not resolve custom attribute type value '{value}'
+
+- The 'value' specified for the custom attribute of `System.Type` type could not be resolved.
+
+#### `IL1045`: Unexpected attribute argument type 'type'
+
+- The type name used with attribute type is not one of the supported types.
 
 ----
 ## Warning Codes
@@ -403,12 +423,12 @@ Metadata element 'name' cannot be resolved. This usually means there is a versio
   </linker>
   ```
 
-#### `IL2022`: Could not find a constructor for type 'attribute type' that has 'number of arguments' arguments
+#### `IL2022`: Could not find matching constructor for custom attribute 'attribute-type' arguments
 
-- The XML attribute for attribute type 'attribute type' specifies 'number of arguments' arguments but there's no constructor for 'attribute type' which has that many arguments
+- The XML attribute arguments for attribute type 'attribute-type' use values or types which don't match to any constructor on 'attribute-type'
 
   ```XML
-  <!-- IL2022: Could not find a constructor for type 'AttributeWithNoParametersAttribute' that has '1' arguments -->
+  <!-- IL2022: Could not find matching constructor for custom attribute 'attribute-type' arguments -->
   <linker>
     <assembly fullname="MyAssembly">
       <type fullname="MyType">
