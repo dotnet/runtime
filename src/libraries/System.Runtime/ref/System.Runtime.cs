@@ -9114,16 +9114,10 @@ namespace System.Runtime.CompilerServices
     {
         public AsyncIteratorStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
     public sealed partial class AsyncMethodBuilderAttribute : System.Attribute
     {
         public AsyncMethodBuilderAttribute(System.Type builderType) { }
-        public System.Type BuilderType { get { throw null; } }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Property | System.AttributeTargets.Module, Inherited = false, AllowMultiple = true)]
-    public sealed partial class AsyncMethodBuilderOverrideAttribute : System.Attribute
-    {
-        public AsyncMethodBuilderOverrideAttribute(System.Type builderType) { }
         public System.Type BuilderType { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]

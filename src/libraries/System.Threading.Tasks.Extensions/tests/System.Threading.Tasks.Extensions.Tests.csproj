@@ -6,7 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncMethodBuilderAttributeTests.cs" />
-    <Compile Include="AsyncMethodBuilderOverrideAttributeTests.cs" />
     <Compile Include="AsyncValueTaskMethodBuilderTests.cs" />
     <Compile Include="ManualResetValueTaskSourceTests.cs" />
     <Compile Include="PoolingAsyncValueTaskMethodBuilderTests.cs" />
