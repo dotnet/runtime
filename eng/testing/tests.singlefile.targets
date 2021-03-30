@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit.runner.utility" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.utility" Version="$(XUnitVersion)" />
   </ItemGroup>
 
   <Target Name="__ExcludeAssembliesFromSingleFile"
