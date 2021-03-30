@@ -12,6 +12,8 @@ namespace System.IO
 {
     public class EnumerationOptions
     {
+        private int _maxRecursionDepth = DefaultMaxRecursionDepth;
+
         /// <summary>
         /// For internal use. These are the options we want to use if calling the existing Directory/File APIs where you don't
         /// explicitly specify EnumerationOptions.
@@ -103,7 +105,19 @@ namespace System.IO
         /// <value>A number that represents the maximum directory depth to recurse while enumerating. The default value is <see cref="int.MaxValue" />.</value>
         /// <remarks>If <see cref="MaxRecursionDepth" /> is set to a negative number, the default value <see cref="int.MaxValue" /> is used.
         /// If <see cref="MaxRecursionDepth" /> is set to zero, enumeration returns the contents of the initial directory.</remarks>
-        public int MaxRecursionDepth { get; set; }
+        public int MaxRecursionDepth
+        {
+            get => _maxRecursionDepth;
+            set
+            {
+                if (value < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+                }
+
+                _maxRecursionDepth = value;
+            }
+        }
 
         /// <summary>
         /// Set to true to return "." and ".." directory entries.
