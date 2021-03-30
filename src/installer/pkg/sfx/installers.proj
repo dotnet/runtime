@@ -23,4 +23,5 @@
              Targets="GenerateInstallers"
              SkipNonexistentTargets="true" />
   </Target>
+
 </Project>
