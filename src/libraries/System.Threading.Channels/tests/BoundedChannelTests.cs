@@ -262,6 +262,50 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(0, result);
         }
 
+        [Fact]
+        public void DroppedDelegateNotCalledOnWaitMode_SyncWrites()
+        {
+            bool dropDelegateCalled = false;
+
+            Channel<int> c = Channel.CreateBounded<int>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.Wait },
+                item =>
+                {
+                    dropDelegateCalled = true;
+                });
+
+            Assert.True(c.Writer.TryWrite(1));
+            Assert.False(c.Writer.TryWrite(1));
+
+            Assert.False(dropDelegateCalled);
+        }
+
+        [Fact]
+        public async Task DroppedDelegateNotCalledOnWaitMode_AsyncWrites()
+        {
+            bool dropDelegateCalled = false;
+
+            Channel<int> c = Channel.CreateBounded<int>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.Wait },
+                item =>
+                {
+                    dropDelegateCalled = true;
+                });
+
+            // First async write should pass
+            await c.Writer.WriteAsync(1);
+
+            // Second write should wait
+            var secondWriteTask = c.Writer.WriteAsync(2);
+            Assert.False(secondWriteTask.IsCompleted);
+
+            // Read from chanell to free up space
+            var readItem = await c.Reader.ReadAsync();
+            // Second write should complete
+            await secondWriteTask;
+
+            // No dropped delegate should be called
+            Assert.False(dropDelegateCalled);
+        }
+
         [Theory]
         [MemberData(nameof(ChannelDropModes))]
         public void DroppedDelegateIsNull_SyncWrites(BoundedChannelFullMode boundedChannelFullMode)
@@ -314,6 +358,84 @@ namespace System.Threading.Channels.Tests
 
             // Assert expected number of dropped items delegate calls
             Assert.Equal(10, droppedItems.Count);
+        }
+
+        [Theory]
+        [MemberData(nameof(ChannelDropModes))]
+        public void DroppedDelegateCalledAfterLockReleased_SyncWrites(BoundedChannelFullMode boundedChannelFullMode)
+        {
+            Channel<int> c = null;
+            bool dropDelegateCalled = false;
+            
+            c = Channel.CreateBounded<int>(new BoundedChannelOptions(1)
+            {
+                FullMode = boundedChannelFullMode
+            }, (droppedItem) =>
+            {
+                if (dropDelegateCalled)
+                {
+                    // Prevent infinite callbacks being called
+                    return;
+                }
+
+                dropDelegateCalled = true;
+
+                // Dropped delegate should not be called while holding the channel synchronisation lock.
+                // Verify this by trying to write into the channel from different thread.
+                // If lock is held during callback, this should effecitvely cause deadlock.
+                var mres = new ManualResetEventSlim();
+                ThreadPool.QueueUserWorkItem(delegate
+                {
+                    c.Writer.TryWrite(11);
+                    mres.Set();
+                });
+
+                mres.Wait();
+            });
+
+            Assert.True(c.Writer.TryWrite(1));
+            Assert.True(c.Writer.TryWrite(2));
+
+            Assert.True(dropDelegateCalled);
+        }
+
+        [Theory]
+        [MemberData(nameof(ChannelDropModes))]
+        public async Task DroppedDelegateCalledAfterLockReleased_AsyncWrites(BoundedChannelFullMode boundedChannelFullMode)
+        {
+            Channel<int> c = null;
+            bool dropDelegateCalled = false;
+
+            c = Channel.CreateBounded<int>(new BoundedChannelOptions(1)
+            {
+                FullMode = boundedChannelFullMode
+            }, (droppedItem) =>
+            {
+                if (dropDelegateCalled)
+                {
+                    // Prevent infinite callbacks being called
+                    return;
+                }
+
+                dropDelegateCalled = true;
+
+                // Dropped delegate should not be called while holding the channel synchronisation lock.
+                // Verify this by trying to write into the channel from different thread.
+                // If lock is held during callback, this should effecitvely cause deadlock.
+                var mres = new ManualResetEventSlim();
+                ThreadPool.QueueUserWorkItem(delegate
+                {
+                    c.Writer.TryWrite(11);
+                    mres.Set();
+                });
+
+                mres.Wait();
+            });
+
+            await c.Writer.WriteAsync(1);
+            await c.Writer.WriteAsync(2);
+
+            Assert.True(dropDelegateCalled);
         }
 
         [Theory]

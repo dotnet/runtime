@@ -337,11 +337,12 @@ namespace System.Threading.Channels
 
                 BoundedChannel<T> parent = _parent;
 
-                bool releaseLock = true;
-                Monitor.Enter(parent.SyncObj);
+                bool releaseLock = false;
 
                 try
                 {
+                    Monitor.Enter(parent.SyncObj, ref releaseLock);
+
                     parent.AssertInvariants();
 
                     // If we're done writing, nothing more to do.
@@ -414,11 +415,12 @@ namespace System.Threading.Channels
                             parent._items.DequeueTail() :
                             parent._items.DequeueHead();
 
+                        parent._items.EnqueueTail(item);
+
                         Monitor.Exit(parent.SyncObj);
                         releaseLock = false;
                         parent._itemDropped?.Invoke(droppedItem);
 
-                        parent._items.EnqueueTail(item);
                         return true;
                     }
                 }
@@ -511,11 +513,12 @@ namespace System.Threading.Channels
 
                 BoundedChannel<T> parent = _parent;
 
-                bool releaseLock = true;
-                Monitor.Enter(parent.SyncObj);
+                bool releaseLock = false;
 
                 try
                 {
+                    Monitor.Enter(parent.SyncObj, ref releaseLock);
+
                     parent.AssertInvariants();
 
                     // If we're done writing, trying to write is an error.
@@ -604,11 +607,12 @@ namespace System.Threading.Channels
                             parent._items.DequeueTail() :
                             parent._items.DequeueHead();
 
+                        parent._items.EnqueueTail(item);
+
                         Monitor.Exit(parent.SyncObj);
                         releaseLock = false;
                         parent._itemDropped?.Invoke(droppedItem);
 
-                        parent._items.EnqueueTail(item);
                         return default;
                     }
                 }
