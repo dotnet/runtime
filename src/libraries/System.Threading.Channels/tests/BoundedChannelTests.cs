@@ -386,7 +386,7 @@ namespace System.Threading.Channels.Tests
                 var mres = new ManualResetEventSlim();
                 ThreadPool.QueueUserWorkItem(delegate
                 {
-                    c.Writer.TryWrite(11);
+                    c.Writer.TryWrite(3);
                     mres.Set();
                 });
 
