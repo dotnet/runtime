@@ -38,7 +38,6 @@ public class SingleFileTestRunner : XunitTestFramework
         testSink.Execution.TestSkippedEvent += args => { Console.WriteLine($"[SKIP] {args.Message.Test.DisplayName}"); };
         testSink.Execution.TestFailedEvent += args => { Console.WriteLine($"[FAIL] {args.Message.Test.DisplayName}{Environment.NewLine}{Xunit.ExceptionUtility.CombineMessages(args.Message)}{Environment.NewLine}{Xunit.ExceptionUtility.CombineStackTraces(args.Message)}"); };
 
-        //testSink.Execution.TestAssemblyStartingEvent += args => { Console.WriteLine($"Running tests for {args.Message.TestAssembly.Assembly}"); };
         testSink.Execution.TestAssemblyFinishedEvent += args =>
         {
             Console.WriteLine($"Finished {args.Message.TestAssembly.Assembly}{Environment.NewLine}");
