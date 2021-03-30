@@ -9406,17 +9406,29 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     }
     else
     {
-        if (call->TypeGet() == TYP_VOID)
+        NamedIntrinsic ni = gtGetNamedIntrinsicForCall(call);
+        if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
         {
-            call->gtVNPair.SetBoth(ValueNumStore::VNForVoid());
+            call->gtVNPair.SetBoth(vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultEqualityComparer));
+        }
+        else if (ni == NI_System_Collections_Generic_Comparer_get_Default)
+        {
+            call->gtVNPair.SetBoth(vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultComparer));
         }
         else
         {
-            call->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
-        }
+            if (call->TypeGet() == TYP_VOID)
+            {
+                call->gtVNPair.SetBoth(ValueNumStore::VNForVoid());
+            }
+            else
+            {
+                call->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
+            }
 
-        // For now, arbitrary side effect on GcHeap/ByrefExposed.
-        fgMutateGcHeap(call DEBUGARG("CALL"));
+            // For now, arbitrary side effect on GcHeap/ByrefExposed.
+            fgMutateGcHeap(call DEBUGARG("CALL"));
+        }
     }
 }
 

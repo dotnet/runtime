@@ -3084,6 +3084,15 @@ public:
         return (callMethodHandle == impInlineRoot()->info.compMethodHnd);
     }
 
+    NamedIntrinsic gtGetNamedIntrinsicForCall(GenTreeCall* call)
+    {
+        if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+        {
+            return lookupNamedIntrinsic(call->gtCallMethHnd);
+        }
+        return NI_Illegal;
+    }
+
     //-------------------------------------------------------------------------
 
     GenTree* gtFoldExpr(GenTree* tree);
