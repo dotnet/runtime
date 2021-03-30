@@ -60,7 +60,7 @@
 
     #define Debug_ReportError(strMessage)                                                           \
         do {                                                                                        \
-            if (REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AssertOnBadImageFormat, 0))    \
+            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AssertOnBadImageFormat))    \
             { _ASSERTE_MSG(FALSE, (strMessage)); }                                                  \
         } while(0)
     #define Debug_ReportInternalError(strMessage) _ASSERTE_MSG(FALSE, (strMessage))

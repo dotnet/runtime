@@ -82,14 +82,6 @@ public:
     #define RETAIL_CONFIG_STRING_INFO_EX(symbol, name, description, lookupOptions) \
         static const ConfigStringInfo symbol;
 
-    // TEMPORARY macros that declare strings. These are used for config value accesses that haven't been
-    // moved over to CLRConfig yet. Once all accesses have been moved, these macros (and corresponding
-    // instantiations in file:../utilcode/CLRConfig.cpp) should be removed.
-    #define RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(symbol, name, description) \
-        static const LPCWSTR symbol;
-    #define RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(symbol, name, description) \
-        static const LPCWSTR symbol;
-
     //
     // Debug versions of the macros
     //
@@ -102,17 +94,11 @@ public:
         static const ConfigStringInfo symbol;
     #define CONFIG_STRING_INFO_EX(symbol, name, description, lookupOptions) \
         static const ConfigStringInfo symbol;
-    #define CONFIG_DWORD_INFO_DIRECT_ACCESS(symbol, name, description) \
-        static const LPCWSTR symbol;
-    #define CONFIG_STRING_INFO_DIRECT_ACCESS(symbol, name, description) \
-        static const LPCWSTR symbol;
 #else
     #define CONFIG_DWORD_INFO(symbol, name, defaultValue, description)
     #define CONFIG_DWORD_INFO_EX(symbol, name, defaultValue, description, lookupOptions)
     #define CONFIG_STRING_INFO(symbol, name, description)
     #define CONFIG_STRING_INFO_EX(symbol, name, description, lookupOptions)
-    #define CONFIG_DWORD_INFO_DIRECT_ACCESS(symbol, name, description)
-    #define CONFIG_STRING_INFO_DIRECT_ACCESS(symbol, name, description)
 #endif // _DEBUG
         // Now that we have defined what what the macros in file:CLRConfigValues.h mean, include it to generate the code.
         #include "clrconfigvalues.h"
@@ -121,14 +107,10 @@ public:
     #undef RETAIL_CONFIG_STRING_INFO
     #undef RETAIL_CONFIG_DWORD_INFO_EX
     #undef RETAIL_CONFIG_STRING_INFO_EX
-    #undef RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS
-    #undef RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS
     #undef CONFIG_DWORD_INFO
     #undef CONFIG_STRING_INFO
     #undef CONFIG_DWORD_INFO_EX
     #undef CONFIG_STRING_INFO_EX
-    #undef CONFIG_DWORD_INFO_DIRECT_ACCESS
-    #undef CONFIG_STRING_INFO_DIRECT_ACCESS
 
     //
     // Methods to do config value (DWORD and String) lookups.
@@ -139,7 +121,10 @@ public:
     static DWORD GetConfigValue(const ConfigDWORDInfo & info);
 
     // Look up a DWORD config value.
-    static DWORD GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplicitDefaultFromRegutil, /* [Out] */ bool *isDefault);
+    static DWORD GetConfigValue(const ConfigDWORDInfo & info, /* [Out] */ bool *isDefault);
+
+    // Look up a DWORD config value.
+    static DWORD GetConfigValue(const ConfigDWORDInfo & info, DWORD defaultValue);
 
     // Look up a string config value.
     // You own the string that's returned.

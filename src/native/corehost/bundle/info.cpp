@@ -11,11 +11,12 @@ using namespace bundle;
 const info_t* info_t::the_app = nullptr;
 
 info_t::info_t(const pal::char_t* bundle_path,
-               const pal::char_t* app_path,
-               int64_t header_offset)
+    const pal::char_t* app_path,
+    int64_t header_offset)
     : m_bundle_path(bundle_path)
     , m_bundle_size(0)
     , m_header_offset(header_offset)
+    , m_header(0, 0, 0)
 {
     m_base_path = get_directory(m_bundle_path);
 

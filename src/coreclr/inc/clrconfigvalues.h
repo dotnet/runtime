@@ -9,7 +9,7 @@
 // registry and config file.
 //
 // Given any config knob below that looks like this example:
-//    RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogEnable, W("LogEnable"), "Turns on the traditional CLR log.")
+//    RETAIL_CONFIG_DWORD_INFO(INTERNAL_LogEnable, W("LogEnable"), 0, "Turns on the traditional CLR log.")
 //                                                                  ---------
 //                                                                     |
 //                                                 --------------------
@@ -117,7 +117,7 @@ CONFIG_DWORD_INFO(INTERNAL_ADForceSB, W("ADForceSB"), 0, "Forces sync block crea
 CONFIG_DWORD_INFO(INTERNAL_ADLogMemory, W("ADLogMemory"), 0, "Superseded by test hooks")
 CONFIG_DWORD_INFO(INTERNAL_ADTakeDHSnapShot, W("ADTakeDHSnapShot"), 0, "Superseded by test hooks")
 CONFIG_DWORD_INFO(INTERNAL_ADTakeSnapShot, W("ADTakeSnapShot"), 0, "Superseded by test hooks")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_EnableFullDebug, W("EnableFullDebug"), "Heavy-weight checking for AD boundary violations (AD leaks)")
+CONFIG_DWORD_INFO(INTERNAL_EnableFullDebug, W("EnableFullDebug"), 0, "Heavy-weight checking for AD boundary violations (AD leaks)")
 
 ///
 /// Jit Pitching
@@ -176,7 +176,8 @@ CONFIG_DWORD_INFO_EX(INTERNAL_DbgBreakOnRawInt3, W("DbgBreakOnRawInt3"), 0, "All
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgBreakOnSendBreakpoint, W("DbgBreakOnSendBreakpoint"), 0, "Allows an assert when sending a breakpoint to the right side", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgBreakOnSetIP, W("DbgBreakOnSetIP"), 0, "Allows an assert when setting the IP", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgCheckInt3, W("DbgCheckInt3"), 0, "Asserts if the debugger explicitly writes int3 instead of calling SetUnmanagedBreakpoint", CLRConfig::EEConfig_default)
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_DbgDACAssertOnMismatch, W("DbgDACAssertOnMismatch"), "Allows an assert when the mscordacwks and mscorwks dll versions don't match")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgForcePDBSymbols, W("DbgForcePDBSymbols"), 0, "")
+CONFIG_DWORD_INFO(INTERNAL_DbgDACAssertOnMismatch, W("DbgDACAssertOnMismatch"), 0, "Allows an assert when the mscordacwks and mscorwks dll versions don't match")
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgDACEnableAssert, W("DbgDACEnableAssert"), 0, "Enables extra validity checking in DAC - assumes target isn't corrupt", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_DbgDACSkipVerifyDlls, W("DbgDACSkipVerifyDlls"), 0, "Allows disabling the check to ensure mscordacwks and mscorwks dll versions match", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgDelayHelper, W("DbgDelayHelper"), 0, "Varies the wait in the helper thread startup for testing race between threads", CLRConfig::EEConfig_default)
@@ -195,21 +196,20 @@ CONFIG_DWORD_INFO_EX(INTERNAL_DbgNoDebugger, W("DbgNoDebugger"), 0, "Allows brea
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_DbgNoForceContinue, W("DbgNoForceContinue"), 1, "Used to force a continue on longhorn", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgNoOpenMDByFile, W("DbgNoOpenMDByFile"), 0, "Allows opening MD by memory for perf testing", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO(INTERNAL_DbgOOBinFEEE, W("DbgOOBinFEEE"), 0, "Allows forcing oob breakpoints when a fatal error occurs")
-RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(EXTERNAL_DbgPackShimPath, W("DbgPackShimPath"), "CoreCLR path to dbgshim.dll - we are trying to figure out if we can remove this")
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgPingInterop, W("DbgPingInterop"), 0, "Allows checking for deadlocks in interop debugging", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgRace, W("DbgRace"), 0, "Allows pausing for native debug events to get hijicked", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_DbgRedirect, W("DbgRedirect"), 0, "Allows for redirecting the event pipeline", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(EXTERNAL_DbgRedirectApplication, W("DbgRedirectApplication"), "Specifies the auxiliary debugger application to launch.")
-RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(EXTERNAL_DbgRedirectAttachCmd, W("DbgRedirectAttachCmd"), "Specifies command parameters for attaching the auxiliary debugger.")
-RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(EXTERNAL_DbgRedirectCommonCmd, W("DbgRedirectCommonCmd"), "Specifies a command line format string for the auxiliary debugger.")
-RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(EXTERNAL_DbgRedirectCreateCmd, W("DbgRedirectCreateCmd"), "Specifies command parameters when creating the auxiliary debugger.")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_DbgRedirectApplication, W("DbgRedirectApplication"), "Specifies the auxiliary debugger application to launch.")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_DbgRedirectAttachCmd, W("DbgRedirectAttachCmd"), "Specifies command parameters for attaching the auxiliary debugger.")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_DbgRedirectCommonCmd, W("DbgRedirectCommonCmd"), "Specifies a command line format string for the auxiliary debugger.")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_DbgRedirectCreateCmd, W("DbgRedirectCreateCmd"), "Specifies command parameters when creating the auxiliary debugger.")
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgShortcutCanary, W("DbgShortcutCanary"), 0, "Allows a way to force canary to fail to be able to test failure paths", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgSkipMEOnStep, W("DbgSkipMEOnStep"), 0, "Turns off MethodEnter checks", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgSkipVerCheck, W("DbgSkipVerCheck"), 0, "Allows different RS and LS versions (for servicing work)", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgTC, W("DbgTC"), 0, "Allows checking boundary compression for offset mappings", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgTransportFaultInject, W("DbgTransportFaultInject"), 0, "Allows injecting a fault for testing the debug transport", CLRConfig::EEConfig_default)
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_DbgTransportLog, W("DbgTransportLog"), "Turns on logging for the debug transport")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_DbgTransportLogClass, W("DbgTransportLogClass"), "Mask to control what is logged in DbgTransportLog")
+CONFIG_DWORD_INFO(INTERNAL_DbgTransportLog, W("DbgTransportLog"), 0 /* LE_None */, "Turns on logging for the debug transport")
+CONFIG_DWORD_INFO(INTERNAL_DbgTransportLogClass, W("DbgTransportLogClass"), (DWORD)-1 /* LC_All */, "Mask to control what is logged in DbgTransportLog")
 RETAIL_CONFIG_STRING_INFO_EX(UNSUPPORTED_DbgTransportProxyAddress, W("DbgTransportProxyAddress"), "Allows specifying the transport proxy address", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgTrapOnSkip, W("DbgTrapOnSkip"), 0, "Allows breaking when we skip a breakpoint", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_DbgWaitTimeout, W("DbgWaitTimeout"), 1, "Specifies the timeout value for waits", CLRConfig::EEConfig_default)
@@ -245,13 +245,13 @@ CONFIG_DWORD_INFO_EX(INTERNAL_DbgNativeCodeBpBindsAcrossVersions, W("DbgNativeCo
 ///
 /// Diagnostics (internal general-purpose)
 ///
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_ConditionalContracts, W("ConditionalContracts"), "If ENABLE_CONTRACTS_IMPL is defined, sets whether contracts are conditional. (?)")
+CONFIG_DWORD_INFO(INTERNAL_ConditionalContracts, W("ConditionalContracts"), 0, "If ENABLE_CONTRACTS_IMPL is defined, sets whether contracts are conditional. (?)")
 CONFIG_DWORD_INFO(INTERNAL_ConsistencyCheck, W("ConsistencyCheck"), 0, "")
 CONFIG_DWORD_INFO_EX(INTERNAL_ContinueOnAssert, W("ContinueOnAssert"), 0, "If set, doesn't break on asserts.", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_disableStackOverflowProbing, W("disableStackOverflowProbing"), 0, "", CLRConfig::EEConfig_default)
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_InjectFatalError, W("InjectFatalError"), "")
+CONFIG_DWORD_INFO(INTERNAL_InjectFatalError, W("InjectFatalError"), 0, "")
 CONFIG_DWORD_INFO_EX(INTERNAL_InjectFault, W("InjectFault"), 0, "", CLRConfig::EEConfig_default)
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_SuppressChecks, W("SuppressChecks"), "")
+CONFIG_DWORD_INFO(INTERNAL_SuppressChecks, W("SuppressChecks"),0,  "")
 #ifdef FEATURE_EH_FUNCLETS
 CONFIG_DWORD_INFO(INTERNAL_SuppressLockViolationsOnReentryFromOS, W("SuppressLockViolationsOnReentryFromOS"), 0, "64 bit OOM tests re-enter the CLR via RtlVirtualUnwind.  This indicates whether to suppress resulting locking violations.")
 #endif // FEATURE_EH_FUNCLETS
@@ -259,7 +259,7 @@ CONFIG_DWORD_INFO(INTERNAL_SuppressLockViolationsOnReentryFromOS, W("SuppressLoc
 ///
 /// Exception Handling
 ///
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_AssertOnFailFast, W("AssertOnFailFast"), "")
+CONFIG_DWORD_INFO(INTERNAL_AssertOnFailFast, W("AssertOnFailFast"), 1, "")
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_legacyCorruptedStateExceptionsPolicy, W("legacyCorruptedStateExceptionsPolicy"), 0, "Enabled Pre-V4 CSE behavior", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExceptionTypeAssert"), 0, "", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "", CLRConfig::EEConfig_default)
@@ -269,8 +269,8 @@ RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Cor
 /// Garbage collector
 ///
 CONFIG_DWORD_INFO(INTERNAL_FastGCCheckStack, W("FastGCCheckStack"), 0, "")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_FastGCStress, W("FastGCStress"), "Reduce the number of GCs done by enabling GCStress")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_GCBreakOnOOM, W("GCBreakOnOOM"), "Does a DebugBreak at the soonest time we detect an OOM")
+CONFIG_DWORD_INFO(INTERNAL_FastGCStress, W("FastGCStress"), 0, "Reduce the number of GCs done by enabling GCStress")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCBreakOnOOM, W("GCBreakOnOOM"), 0, "Does a DebugBreak at the soonest time we detect an OOM")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_gcConcurrent, W("gcConcurrent"), (DWORD)-1, "Enables/Disables concurrent GC")
 
 #ifdef FEATURE_CONSERVATIVE_GC
@@ -285,7 +285,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCLOHThreshold, W("GCLOHThreshold"), 0, "Speci
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_gcAllowVeryLargeObjects, W("gcAllowVeryLargeObjects"), 1, "Allow allocation of 2GB+ objects on GC heap")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_GCStress, W("GCStress"), 0, "Trigger GCs at regular intervals", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_GcStressOnDirectCalls, W("GcStressOnDirectCalls"), 0, "Whether to trigger a GC on direct calls", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_HeapVerify, W("HeapVerify"), "When set verifies the integrity of the managed heap on entry and exit of each GC")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_HeapVerify, W("HeapVerify"), 0, "When set verifies the integrity of the managed heap on entry and exit of each GC")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCNumaAware, W("GCNumaAware"), 1, "Specifies if to enable GC NUMA aware")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCCpuGroup, W("GCCpuGroup"), 0, "Specifies if to enable GC to support CPU groups")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCName, W("GCName"), "")
@@ -294,7 +294,6 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCName, W("GCName"), "")
 /// IBC
 ///
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_ConvertIbcData, W("ConvertIbcData"), 1, "Converts between v1 and v2 IBC data", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_DisableHotCold, W("DisableHotCold"), "Master hot/cold splitting switch in Jit64")
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_DisableIBC, W("DisableIBC"), 0, "Disables the use of IBC data", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_UseIBCFile, W("UseIBCFile"), 0, "", CLRConfig::EEConfig_default)
 
@@ -303,18 +302,18 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_UseIBCFile, W("UseIBCFile"), 0, "", CLRConf
 /// JIT
 ///
 CONFIG_DWORD_INFO_EX(INTERNAL_JitBreakEmit, W("JitBreakEmit"), (DWORD)-1, "", CLRConfig::EEConfig_default)
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_JitDebuggable, W("JitDebuggable"), "")
+CONFIG_DWORD_INFO(INTERNAL_JitDebuggable, W("JitDebuggable"), 0, "")
 #if !defined(DEBUG) && !defined(_DEBUG)
 #define INTERNAL_JitEnableNoWayAssert_Default 0
 #else
 #define INTERNAL_JitEnableNoWayAssert_Default 1
 #endif
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_JitEnableNoWayAssert, W("JitEnableNoWayAssert"), INTERNAL_JitEnableNoWayAssert_Default, "", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_JitFramed, W("JitFramed"), "Forces EBP frames")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitFramed, W("JitFramed"), 0, "Forces EBP frames")
 CONFIG_DWORD_INFO_EX(INTERNAL_JitGCStress, W("JitGCStress"), 0, "GC stress mode for jit", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO(INTERNAL_JitHeartbeat, W("JitHeartbeat"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_JitHelperLogging, W("JitHelperLogging"), 0, "")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_JITMinOpts, W("JITMinOpts"), "Forces MinOpts")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JITMinOpts, W("JITMinOpts"), 0, "Forces MinOpts")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_JitName, W("JitName"), "Primary Jit to use")
 #if defined(ALLOW_SXS_JIT)
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_AltJitName, W("AltJitName"), "Alternative Jit to use, will fall back to primary jit.", CLRConfig::EEConfig_default)
@@ -335,13 +334,13 @@ RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_AltJitNgen, W("AltJitNgen"), "Enables AltJ
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitHostMaxSlabCache, W("JitHostMaxSlabCache"), 0x1000000, "Sets jit host max slab cache size, 16MB default")
 
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_JitOptimizeType, W("JitOptimizeType"), "")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitOptimizeType, W("JitOptimizeType"), 0 /* OPT_DEFAULT */, "")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_JitPrintInlinedMethods, W("JitPrintInlinedMethods"), 0, "", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitTelemetry, W("JitTelemetry"), 1, "If non-zero, gather JIT telemetry data")
 RETAIL_CONFIG_STRING_INFO(INTERNAL_JitTimeLogFile, W("JitTimeLogFile"), "If set, gather JIT throughput data and write to this file.")
 RETAIL_CONFIG_STRING_INFO(INTERNAL_JitTimeLogCsv, W("JitTimeLogCsv"), "If set, gather JIT throughput data and write to a CSV file. This mode must be used in internal retail builds.")
 RETAIL_CONFIG_STRING_INFO(INTERNAL_JitFuncInfoLogFile, W("JitFuncInfoLogFile"), "If set, gather JIT function info and write to this file.")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_JitVerificationDisable, W("JitVerificationDisable"), "")
+CONFIG_DWORD_INFO(INTERNAL_JitVerificationDisable, W("JitVerificationDisable"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitLockWrite, W("JitLockWrite"), 0, "Force all volatile writes to be 'locked'")
 CONFIG_STRING_INFO_EX(INTERNAL_TailCallMax, W("TailCallMax"), "", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_TailCallOpt, W("TailCallOpt"), "", CLRConfig::EEConfig_default)
@@ -424,24 +423,24 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_BreakOnOutOfMemoryWithinRange, W("BreakOnOutOf
 ///
 /// Log
 ///
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogEnable, W("LogEnable"), "Turns on the traditional CLR log.")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogFacility,  W("LogFacility"),  "Specifies a facility mask for CLR log. (See 'loglf.h'; VM interprets string value as hex number.) Also used by stresslog.")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogFacility2, W("LogFacility2"), "Specifies a facility mask for CLR log. (See 'loglf.h'; VM interprets string value as hex number.) Also used by stresslog.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_LogEnable, W("LogEnable"), 0, "Turns on the traditional CLR log.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_LogFacility,  W("LogFacility"), 0, "Specifies a facility mask for CLR log. (See 'loglf.h'; VM interprets string value as hex number.) Also used by stresslog.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_LogFacility2, W("LogFacility2"), 0, "Specifies a facility mask for CLR log. (See 'loglf.h'; VM interprets string value as hex number.) Also used by stresslog.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_logFatalError, W("logFatalError"), 1, "Specifies whether EventReporter logs fatal errors in the Windows event log.")
 CONFIG_STRING_INFO_EX(INTERNAL_LogFile, W("LogFile"), "Specifies a file name for the CLR log.", CLRConfig::EEConfig_default)
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogFileAppend, W("LogFileAppend"), "Specifies whether to append to or replace the CLR log file.")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogFlushFile, W("LogFlushFile"), "Specifies whether to flush the CLR log file on each write.")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_LogLevel, W("LogLevel"), "4=10 msgs, 9=1000000, 10=everything")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogToConsole, W("LogToConsole"), "Writes the CLR log to console.")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogToDebugger, W("LogToDebugger"), "Writes the CLR log to debugger (OutputDebugStringA).")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogToFile, W("LogToFile"), "Writes the CLR log to a file.")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_LogWithPid, W("LogWithPid"), "Appends pid to filename for the CLR log.")
+CONFIG_DWORD_INFO(INTERNAL_LogFileAppend, W("LogFileAppend"), 0 , "Specifies whether to append to or replace the CLR log file.")
+CONFIG_DWORD_INFO(INTERNAL_LogFlushFile, W("LogFlushFile"), 0 , "Specifies whether to flush the CLR log file on each write.")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_LogLevel, W("LogLevel"), 0 , "4=10 msgs, 9=1000000, 10=everything")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_LogToConsole, W("LogToConsole"), 0 , "Writes the CLR log to console.")
+CONFIG_DWORD_INFO(INTERNAL_LogToDebugger, W("LogToDebugger"), 0 , "Writes the CLR log to debugger (OutputDebugStringA).")
+CONFIG_DWORD_INFO(INTERNAL_LogToFile, W("LogToFile"), 0 , "Writes the CLR log to a file.")
+CONFIG_DWORD_INFO(INTERNAL_LogWithPid, W("LogWithPid"), FALSE, "Appends pid to filename for the CLR log.")
 
 ///
 /// MetaData
 ///
 CONFIG_DWORD_INFO_EX(INTERNAL_MD_ApplyDeltaBreak, W("MD_ApplyDeltaBreak"), 0, "ASSERT when applying EnC", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_AssertOnBadImageFormat, W("AssertOnBadImageFormat"), "ASSERT when invalid MD read")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_AssertOnBadImageFormat, W("AssertOnBadImageFormat"), 0, "ASSERT when invalid MD read")
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_MD_DeltaCheck, W("MD_DeltaCheck"), 1, "Some checks of GUID when applying EnC (?)", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_MD_EncDelta, W("MD_EncDelta"), 0, "Forces EnC Delta format in MD (?)", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_MD_ForceNoColDesSharing, W("MD_ForceNoColDesSharing"), 0, "Don't know - the only usage I could find is #if 0 (?)", CLRConfig::EEConfig_default)
@@ -545,12 +544,11 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_StartupDelayMS, W("StartupDelayMS"), "")
 /// Stress
 ///
 CONFIG_DWORD_INFO_EX(INTERNAL_StressCOMCall, W("StressCOMCall"), 0, "", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_StressLog, W("StressLog"), "Turns on the stress log.")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_ForceEnc, W("ForceEnc"), "Forces Edit and Continue to be on for all eligible modules.")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_StressLogSize, W("StressLogSize"), "Stress log size in bytes per thread.")
-RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(UNSUPPORTED_StressLogFilename, W("StressLogFilename"), "Stress log filename for memory mapped stress log.")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_StressLog, W("StressLog"), 0, "Turns on the stress log.")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ForceEnc, W("ForceEnc"), 0, "Forces Edit and Continue to be on for all eligible modules.")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_StressLogSize, W("StressLogSize"), 0, "Stress log size in bytes per thread.")
+RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_StressLogFilename, W("StressLogFilename"), "Stress log filename for memory mapped stress log.")
 CONFIG_DWORD_INFO_EX(INTERNAL_stressSynchronized, W("stressSynchronized"), 0, "Unknown if or where this is used; unless a test is specifically depending on this, it can be removed.", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_StressThreadCount, W("StressThreadCount"), "")
 
 ///
 /// Thread Suspend
@@ -686,7 +684,7 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapBBInstrDir, W("ZapBBInstrDir"), "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ZapDisable, W("ZapDisable"), 0, "")
 CONFIG_STRING_INFO_EX(INTERNAL_ZapExclude, W("ZapExclude"), "", CLRConfig::EEConfig_default)
 CONFIG_STRING_INFO_EX(INTERNAL_ZapOnly, W("ZapOnly"), "", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_ZapRequire, W("ZapRequire"), "")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ZapRequire, W("ZapRequire"), 0, "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapRequireExcludeList, W("ZapRequireExcludeList"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapRequireList, W("ZapRequireList"), "")
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_ZapSet, W("ZapSet"), "", CLRConfig::EEConfig_default)
@@ -704,7 +702,7 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_EventNameFilter, W("EventNameFilter"), "")
 ///
 /// Interop
 ///
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_ExposeExceptionsInCOM, W("ExposeExceptionsInCOM"), "")
+CONFIG_DWORD_INFO(INTERNAL_ExposeExceptionsInCOM, W("ExposeExceptionsInCOM"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_InteropValidatePinnedObjects, W("InteropValidatePinnedObjects"), 0, "After returning from a managed-to-unmanaged interop call, validate GC heap around objects pinned by IL stubs.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_InteropLogArguments, W("InteropLogArguments"), 0, "Log all pinned arguments passed to an interop call")
 RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_LogCCWRefCountChange, W("LogCCWRefCountChange"), "Outputs debug information and calls LogCCWRefCountChange_BREAKPOINT when AddRef or Release is called on a CCW.")
@@ -766,27 +764,24 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"
 // DO NOT ADD ANY MORE CONFIG SWITCHES TO THIS SECTION!
 // **
 CONFIG_DWORD_INFO_EX(INTERNAL_ActivatePatchSkip, W("ActivatePatchSkip"), 0, "Allows an assert when ActivatePatchSkip is called", CLRConfig::EEConfig_default)
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_AlwaysUseMetadataInterfaceMapLayout, W("AlwaysUseMetadataInterfaceMapLayout"), "Used for debugging generic interface map layout.")
+CONFIG_DWORD_INFO(INTERNAL_AlwaysUseMetadataInterfaceMapLayout, W("AlwaysUseMetadataInterfaceMapLayout"), 0, "Used for debugging generic interface map layout.")
 CONFIG_DWORD_INFO(INTERNAL_AssertOnUnneededThis, W("AssertOnUnneededThis"), 0, "While the ConfigDWORD is unnecessary, the contained ASSERT should be kept. This may result in some work tracking down violating MethodDescCallSites.")
 CONFIG_DWORD_INFO_EX(INTERNAL_AssertStacktrace, W("AssertStacktrace"), 1, "", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_clearNativeImageStress, W("clearNativeImageStress"), 0, "", CLRConfig::EEConfig_default)
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_CPUFamily, W("CPUFamily"), "")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_CPUFeatures, W("CPUFeatures"), "")
+CONFIG_DWORD_INFO(INTERNAL_CPUFamily, W("CPUFamily"), 0xFFFFFFFF, "")
+CONFIG_DWORD_INFO(INTERNAL_CPUFeatures, W("CPUFeatures"), 0xFFFFFFFF, "")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DisableConfigCache, W("DisableConfigCache"), 0, "Used to disable the \"probabilistic\" config cache, which walks through the appropriate config registry keys on init and probabilistically keeps track of which exist.", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_DisableStackwalkCache, W("DisableStackwalkCache"), "")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_DoubleArrayToLargeObjectHeap, W("DoubleArrayToLargeObjectHeap"), "Controls double[] placement")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DisableStackwalkCache, W("DisableStackwalkCache"), 0, "")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DoubleArrayToLargeObjectHeap, W("DoubleArrayToLargeObjectHeap"), 0, "Controls double[] placement")
 CONFIG_STRING_INFO(INTERNAL_DumpOnClassLoad, W("DumpOnClassLoad"), "Dumps information about loaded class to log.")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_ExpandAllOnLoad, W("ExpandAllOnLoad"), "")
-CONFIG_STRING_INFO_DIRECT_ACCESS(INTERNAL_ForcedRuntime, W("ForcedRuntime"), "Verify version of CLR loaded")
+CONFIG_DWORD_INFO(INTERNAL_ExpandAllOnLoad, W("ExpandAllOnLoad"), 0, "")
 CONFIG_DWORD_INFO_EX(INTERNAL_ForceRelocs, W("ForceRelocs"), 0, "", CLRConfig::EEConfig_default)
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_GenerateLongJumpDispatchStubRatio, W("GenerateLongJumpDispatchStubRatio"), "Useful for testing VSD on AMD64")
+CONFIG_DWORD_INFO(INTERNAL_GenerateLongJumpDispatchStubRatio, W("GenerateLongJumpDispatchStubRatio"), 0, "Useful for testing VSD on AMD64")
 CONFIG_DWORD_INFO_EX(INTERNAL_HashStack, W("HashStack"), 0, "", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO(INTERNAL_HostManagerConfig, W("HostManagerConfig"), (DWORD)-1, "")
 CONFIG_DWORD_INFO(INTERNAL_HostTestThreadAbort, W("HostTestThreadAbort"), 0, "")
 CONFIG_STRING_INFO(INTERNAL_InvokeHalt, W("InvokeHalt"), "Throws an assert when the given method is invoked through reflection.")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_MaxStackDepth, W("MaxStackDepth"), "")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_MaxStubUnwindInfoSegmentSize, W("MaxStubUnwindInfoSegmentSize"), "")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_MaxThreadRecord, W("MaxThreadRecord"), "")
+CONFIG_DWORD_INFO(INTERNAL_MaxStubUnwindInfoSegmentSize, W("MaxStubUnwindInfoSegmentSize"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_MessageDebugOut, W("MessageDebugOut"), 0, "")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_NativeImageRequire, W("NativeImageRequire"), 0, "", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_NestedEhOom, W("NestedEhOom"), 0, "", CLRConfig::EEConfig_default)
@@ -794,8 +789,7 @@ CONFIG_DWORD_INFO_EX(INTERNAL_NestedEhOom, W("NestedEhOom"), 0, "", CLRConfig::E
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_NoGuiOnAssert, W("NoGuiOnAssert"), INTERNAL_NoGuiOnAssert_Default, "", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_NoProcedureSplitting, W("NoProcedureSplitting"), 0, "", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_NoStringInterning, W("NoStringInterning"), 1, "Disallows string interning. I see no value in it anymore.", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_NotifyBadAppCfg, W("NotifyBadAppCfg"), "Whether to show a message box for bad application config file.")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_PauseOnLoad, W("PauseOnLoad"), "Stops in SystemDomain::init. I think it can be removed.")
+CONFIG_DWORD_INFO(INTERNAL_PauseOnLoad, W("PauseOnLoad"), 0, "Stops in SystemDomain::init. I think it can be removed.")
 CONFIG_DWORD_INFO(INTERNAL_PerfAllocsSizeThreshold, W("PerfAllocsSizeThreshold"), 0x3FFFFFFF, "Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler.")
 CONFIG_DWORD_INFO(INTERNAL_PerfNumAllocsThreshold, W("PerfNumAllocsThreshold"), 0x3FFFFFFF, "Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler.")
 CONFIG_STRING_INFO(INTERNAL_PerfTypesToLog, W("PerfTypesToLog"), "Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler.")
@@ -805,31 +799,24 @@ CONFIG_STRING_INFO(INTERNAL_PrestubHalt, W("PrestubHalt"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_RestrictedGCStressExe, W("RestrictedGCStressExe"), "")
 CONFIG_DWORD_INFO_EX(INTERNAL_ReturnSourceTypeForTesting, W("ReturnSourceTypeForTesting"), 0, "Allows returning the (internal only) source type of an IL to Native mapping for debugging purposes", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_RSStressLog, W("RSStressLog"), 0, "Allows turning on logging for RS startup", CLRConfig::EEConfig_default)
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_SaveThreadInfo, W("SaveThreadInfo"), "")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_SaveThreadInfoMask, W("SaveThreadInfoMask"), "")
 CONFIG_DWORD_INFO(INTERNAL_SBDumpOnNewIndex, W("SBDumpOnNewIndex"), 0, "Used for Syncblock debugging. It's been a while since any of those have been used.")
 CONFIG_DWORD_INFO(INTERNAL_SBDumpOnResize, W("SBDumpOnResize"), 0, "Used for Syncblock debugging. It's been a while since any of those have been used.")
 CONFIG_DWORD_INFO(INTERNAL_SBDumpStyle, W("SBDumpStyle"), 0, "Used for Syncblock debugging. It's been a while since any of those have been used.")
-RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(UNSUPPORTED_ShimDatabaseVersion, W("ShimDatabaseVersion"), "Force using shim database version in registry")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_SleepOnExit, W("SleepOnExit"), 0, "Used for lrak detection. I'd say deprecated by umdh.")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_StubLinkerUnwindInfoVerificationOn, W("StubLinkerUnwindInfoVerificationOn"), "")
+CONFIG_DWORD_INFO(INTERNAL_StubLinkerUnwindInfoVerificationOn, W("StubLinkerUnwindInfoVerificationOn"), 0, "")
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_SuccessExit, W("SuccessExit"), 0, "", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_SymbolReadingPolicy, W("SymbolReadingPolicy"), "Specifies when PDBs may be read")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TestDataConsistency, W("TestDataConsistency"), FALSE, "Allows ensuring the left side is not holding locks (and may thus be in an inconsistent state) when inspection occurs")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_ThreadGuardPages, W("ThreadGuardPages"), 0, "", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_Timeline, W("Timeline"), 0, "", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_TotalStressLogSize, W("TotalStressLogSize"), "Total stress log size in bytes.")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TotalStressLogSize, W("TotalStressLogSize"), 0, "Total stress log size in bytes.")
 
 #ifdef _DEBUG
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_TraceIUnknown, W("TraceIUnknown"), "")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_TraceWrap, W("TraceWrap"), "")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TraceWrap, W("TraceWrap"), 0, "")
 #endif
 
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_TURNOFFDEBUGINFO, W("TURNOFFDEBUGINFO"), "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_UseMethodDataCache, W("UseMethodDataCache"), FALSE, "Used during feature development; may now be removed.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_UseParentMethodData, W("UseParentMethodData"), TRUE, "Used during feature development; may now be removed.")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_VerifierOff, W("VerifierOff"), "")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_VerifyAllOnLoad, W("VerifyAllOnLoad"), "")
+CONFIG_DWORD_INFO(INTERNAL_VerifierOff, W("VerifierOff"), 0, "")
 // **
 // PLEASE MOVE ANY CONFIG SWITCH YOU OWN OUT OF THIS SECTION INTO A CATEGORY ABOVE
 //
