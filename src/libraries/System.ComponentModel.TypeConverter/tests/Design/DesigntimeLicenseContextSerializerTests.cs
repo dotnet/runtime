@@ -23,17 +23,11 @@ namespace System.ComponentModel.Design.Tests
             int firstByte = stream.ReadByte();
             if (binaryFormatterUsageInTypeConverterIsEnabled)
             {
-                if (firstByte != 0)
-                {
-                    Assert.False(true, "Expected this stream to have used BinaryFormatter");
-                }
+                Assert.Equal(0, firstByte);
             }
             else
             {
-                if (firstByte != 255)
-                {
-                    Assert.False(true, "Expected this stream to have used BinaryWriter");
-                }
+                Assert.Equal(255, firstByte);
             }
             stream.Seek(position, SeekOrigin.Begin);
         }
@@ -93,6 +87,7 @@ namespace System.ComponentModel.Design.Tests
             var context = new DesigntimeLicenseContext();
             context.SetSavedLicenseKey(typeof(int), key);
             var assembly = typeof(DesigntimeLicenseContextSerializer).Assembly;
+            string tempPath = Path.GetTempPath();
             using (MemoryStream stream = new MemoryStream())
             {
                 long position = stream.Position;
@@ -100,7 +95,6 @@ namespace System.ComponentModel.Design.Tests
                 stream.Seek(position, SeekOrigin.Begin);
                 VerifyStreamFormatting(stream);
 
-                string tempPath = Path.GetTempPath();
                 using (FileStream outStream = File.Create(Path.Combine(tempPath, "_temp_SerializeWithBinaryFormatter_DeserializeWithBinaryWriter")))
                 {
                     stream.Seek(position, SeekOrigin.Begin);
@@ -108,7 +102,7 @@ namespace System.ComponentModel.Design.Tests
                 }
             }
 
-            RemoteExecutor.Invoke((key) =>
+            RemoteInvokeHandle handle = RemoteExecutor.Invoke((key) =>
             {
                 var assembly = typeof(DesigntimeLicenseContextSerializer).Assembly;
                 Type runtimeLicenseContextType = assembly.GetType("System.ComponentModel.Design.RuntimeLicenseContext");
@@ -135,10 +129,19 @@ namespace System.ComponentModel.Design.Tests
                     {
                         Exception baseException = exception.GetBaseException();
                         Assert.IsType<NotSupportedException>(baseException);
+                        return;
                     }
+                    catch
+                    {
+                        throw;
+                    }
+                    throw new Exception("Expected to throw a TargetInvocationException");
                 }
-                File.Delete(Path.Combine(tempPath, "_temp_SerializeWithBinaryFormatter_DeserializeWithBinaryWriter"));
-            }, key).Dispose();
+            }, key);
+
+            handle.Process.WaitForExit();
+            handle.Dispose();
+            File.Delete(Path.Combine(tempPath, "_temp_SerializeWithBinaryFormatter_DeserializeWithBinaryWriter"));
         }
     }
 }
