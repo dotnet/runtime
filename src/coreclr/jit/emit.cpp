@@ -3460,6 +3460,10 @@ void emitter::emitDispIGflags(unsigned flags)
     {
         printf(", extend");
     }
+    if (flags & IGF_LOOP_ALIGN)
+    {
+        printf(", align");
+    }
 }
 
 void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
