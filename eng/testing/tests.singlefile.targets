@@ -4,15 +4,18 @@
 
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    <PublishSingleFile>true</PublishSingleFile>
-    <UseAppHost>true</UseAppHost>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-    <SelfContained>true</SelfContained>
-    <SingleFileHostSourcePath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)', 'corehost'))/singlefilehost</SingleFileHostSourcePath>
-    <SingleFileHostSourcePath Condition="'$(TargetOS)' == 'windows'">$(SingleFileHostSourcePath).exe</SingleFileHostSourcePath>
 
     <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(AssemblyName).exe</RunScriptCommand>
     <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">chmod +rwx $(AssemblyName) &amp;&amp; ./$(AssemblyName)</RunScriptCommand>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <PublishSingleFile>true</PublishSingleFile>
+    <UseAppHost>true</UseAppHost>
+    <SelfContained>true</SelfContained>
+    <SingleFileHostSourcePath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)', 'corehost'))/singlefilehost</SingleFileHostSourcePath>
+    <SingleFileHostSourcePath Condition="'$(TargetOS)' == 'windows'">$(SingleFileHostSourcePath).exe</SingleFileHostSourcePath>
   </PropertyGroup>
 
   <ItemGroup>
