@@ -14,7 +14,7 @@ namespace System.Composition.TypedParts.ActivationFeatures
     /// Modifies activators of parts with property imports so that the properties
     /// are set appropriately.
     /// </summary>
-    internal class PropertyInjectionFeature : ActivationFeature
+    internal sealed class PropertyInjectionFeature : ActivationFeature
     {
         private readonly AttributedModelProvider _attributeContext;
         private static readonly MethodInfo s_activatorInvokeMethod = typeof(CompositeActivator).GetTypeInfo().GetDeclaredMethod("Invoke");

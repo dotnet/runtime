@@ -247,10 +247,13 @@ void Compiler::lvaInitTypeRef()
             break;
         case CorInfoCallConvExtension::C:
         case CorInfoCallConvExtension::Stdcall:
+        case CorInfoCallConvExtension::CMemberFunction:
+        case CorInfoCallConvExtension::StdcallMemberFunction:
             varDscInfo.Init(lvaTable, hasRetBuffArg, 0, 0);
             break;
         case CorInfoCallConvExtension::Managed:
         case CorInfoCallConvExtension::Fastcall:
+        case CorInfoCallConvExtension::FastcallMemberFunction:
         default:
             varDscInfo.Init(lvaTable, hasRetBuffArg, MAX_REG_ARG, MAX_FLOAT_REG_ARG);
             break;
@@ -4099,6 +4102,21 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
                 if (varDsc->lvEhWriteThruCandidate || needsExplicitZeroInit)
                 {
+#ifdef DEBUG
+                    if (needsExplicitZeroInit)
+                    {
+                        varDsc->lvDisqualifyEHVarReason = 'Z';
+                        JITDUMP("EH Var V%02u needs explicit zero init. Disqualified as a register candidate.\n",
+                                lclNum);
+                    }
+                    else
+                    {
+                        varDsc->lvDisqualifyEHVarReason = 'M';
+                        JITDUMP("EH Var V%02u has multiple definitions. Disqualified as a register candidate.\n",
+                                lclNum);
+                    }
+
+#endif // DEBUG
                     varDsc->lvEhWriteThruCandidate     = false;
                     varDsc->lvDisqualifyForEhWriteThru = true;
                 }
@@ -4111,6 +4129,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 #endif
                     {
                         varDsc->lvEhWriteThruCandidate = true;
+                        JITDUMP("Marking EH Var V%02u as a register candidate.\n", lclNum);
                     }
                 }
             }
@@ -5466,9 +5485,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     // the native return buffer parameter.
     if (callConvIsInstanceMethodCallConv(info.compCallConv))
     {
-        noway_assert(lvaTable[lclNum].lvIsRegArg);
-#ifndef TARGET_X86
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
+#ifdef TARGET_X86
+        if (!lvaTable[lclNum].lvIsRegArg)
+        {
+            argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
+        }
+#else
+        argOffs              = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
 #endif // TARGET_X86
         lclNum++;
         userArgsToSkip++;
@@ -7365,7 +7388,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
         if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
         {
-            printf("H");
+            printf("%c", varDsc->lvDisqualifyEHVarReason);
         }
         if (varDsc->lvLclFieldExpr)
         {

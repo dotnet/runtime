@@ -15,7 +15,7 @@ namespace System.Xml
         Item = 2
     }
 
-    internal class StringHandle : IEquatable<StringHandle>
+    internal sealed class StringHandle : IEquatable<StringHandle>
     {
         private readonly XmlBufferReader _bufferReader;
         private StringHandleType _type;

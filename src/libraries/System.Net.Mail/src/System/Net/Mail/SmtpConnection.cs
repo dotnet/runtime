@@ -17,7 +17,7 @@ using System.Threading;
 
 namespace System.Net.Mail
 {
-    internal partial class SmtpConnection
+    internal sealed partial class SmtpConnection
     {
         private static readonly ContextCallback s_AuthenticateCallback = new ContextCallback(AuthenticateCallback);
 

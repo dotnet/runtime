@@ -6,7 +6,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal class Function : AstNode
+    internal sealed class Function : AstNode
     {
         public enum FunctionType
         {

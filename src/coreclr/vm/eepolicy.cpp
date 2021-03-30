@@ -133,8 +133,7 @@ void EEPolicy::HandleStackOverflow()
 
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleStackOverflow\n");
 
-    Thread *pThread = GetThread();
-
+    Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         // For security reason, it is not safe to continue execution if stack overflow happens
@@ -353,7 +352,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 
     static Thread *volatile s_pCrashingThread = FatalErrorNotSeenYet;
 
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     Thread *pPreviousThread = InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, pThread, FatalErrorNotSeenYet);
 
     if (pPreviousThread == pThread)
@@ -541,7 +540,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
     {
 #ifdef DEBUGGING_SUPPORTED
         //Give a managed debugger a chance if this fatal error is on a managed thread.
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
 
         if (pThread && !g_fFatalErrorOccuredOnGCThread)
         {
@@ -639,7 +638,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     {
         DisplayStackOverflowException();
 
-        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThread(), W(".NET Stack overflow trace logger"));
+        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET Stack overflow trace logger"));
         if (stackDumpThreadHandle != INVALID_HANDLE_VALUE)
         {
             // Wait for the stack trace logging completion
@@ -670,7 +669,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
     if (!fSkipDebugger)
     {
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         BOOL fTreatAsNativeUnhandledException = FALSE;
         if (pThread)
         {
@@ -789,7 +788,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         // because debugger is going to take CrstDebuggerMutex, whose lock level is higher than that of
         // CrstThreadStore.  It should be safe to release the lock since execution will not be resumed
         // after fatal errors.
-        if (ThreadStore::HoldingThreadStore(GetThread()))
+        if (ThreadStore::HoldingThreadStore(GetThreadNULLOk()))
         {
             ThreadSuspend::UnlockThreadStore();
         }

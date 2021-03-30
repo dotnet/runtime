@@ -1462,7 +1462,7 @@ emit_volatile_store (EmitContext *ctx, int vreg)
 
 	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
 		g_assert (ctx->addresses [vreg]);
-#ifdef HOST_WASM
+#ifdef TARGET_WASM
 		/* Need volatile stores otherwise the compiler might move them */
 		mono_llvm_build_store (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg], TRUE, LLVM_BARRIER_NONE);
 #else
@@ -12402,18 +12402,6 @@ mono_llvm_init (gboolean enable_jit)
 }
 
 void
-mono_llvm_cleanup (void)
-{
-	MonoLLVMModule *module = &aot_module;
-
-	if (module->lmodule)
-		LLVMDisposeModule (module->lmodule);
-
-	if (module->context)
-		LLVMContextDispose (module->context);
-}
-
-void
 mono_llvm_free_mem_manager (MonoJitMemoryManager *mem_manager)
 {
 	MonoLLVMModule *module = (MonoLLVMModule*)mem_manager->llvm_module;
@@ -13713,6 +13701,10 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 #endif
 #if defined(TARGET_WASM)
 		{ "simd",	MONO_CPU_WASM_SIMD },
+#endif
+// flags_map cannot be zero length in MSVC, so add useless dummy entry for arm32
+#if defined(TARGET_ARM) && defined(HOST_WIN32)
+		{ "inited",	MONO_CPU_INITED},
 #endif
 	};
 	if (!cpu_features)

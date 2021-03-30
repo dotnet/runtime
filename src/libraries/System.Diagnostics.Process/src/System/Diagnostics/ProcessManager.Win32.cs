@@ -252,7 +252,7 @@ namespace System.Diagnostics
         private const int DefaultCachedBufferSize = 128 * 1024;
 #endif
 
-        internal static ProcessInfo[] GetProcessInfos(Predicate<int>? processIdFilter = null)
+        internal static ProcessInfo[] GetProcessInfos(int? processIdFilter = null)
         {
             ProcessInfo[] processInfos;
 
@@ -342,7 +342,7 @@ namespace System.Diagnostics
             return newSize;
         }
 
-        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, Predicate<int>? processIdFilter)
+        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, int? processIdFilter)
         {
             // Use a dictionary to avoid duplicate entries if any
             // 60 is a reasonable number for processes on a normal machine.
@@ -356,7 +356,7 @@ namespace System.Diagnostics
 
                 // Process ID shouldn't overflow. OS API GetCurrentProcessID returns DWORD.
                 int processInfoProcessId = pi.UniqueProcessId.ToInt32();
-                if (processIdFilter == null || processIdFilter(processInfoProcessId))
+                if (processIdFilter == null || processIdFilter.GetValueOrDefault() == processInfoProcessId)
                 {
                     // get information for a process
                     ProcessInfo processInfo = new ProcessInfo((int)pi.NumberOfThreads)

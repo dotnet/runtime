@@ -8,7 +8,7 @@ using System.Reflection.Context.Virtual;
 
 namespace System.Reflection.Context
 {
-    internal class IdentityReflectionContext : ReflectionContext
+    internal sealed class IdentityReflectionContext : ReflectionContext
     {
         public override Assembly MapAssembly(Assembly assembly) { return assembly; }
         public override TypeInfo MapType(TypeInfo type) { return type; }

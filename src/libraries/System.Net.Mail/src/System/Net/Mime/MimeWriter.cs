@@ -12,7 +12,7 @@ namespace System.Net.Mime
     /// Provides an abstraction for writing a MIME multi-part
     /// message.
     /// </summary>
-    internal class MimeWriter : BaseWriter
+    internal sealed class MimeWriter : BaseWriter
     {
         private static readonly byte[] s_DASHDASH = new byte[] { (byte)'-', (byte)'-' };
 

@@ -2189,6 +2189,12 @@
   <Comment>The delegate contains a delegate currently not supported by the API.</Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x80131c69">
+  <SymbolicName>CORDBG_E_ASSEMBLY_UPDATES_APPLIED</SymbolicName>
+  <Message>"The operation is not supported because assembly updates have been applied."</Message>
+  <Comment>The operation is not supported because assembly updates have been applied.</Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x80131d02">
 	<SymbolicName>PEFMT_E_64BIT</SymbolicName>
 	<Message>"File is PE32+."</Message>

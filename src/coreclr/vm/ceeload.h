@@ -3208,7 +3208,7 @@ class ReflectionModule : public Module
     HCEESECTION m_sdataSection;
 
  protected:
-    ICeeGen * m_pCeeFileGen;
+    ICeeGenInternal * m_pCeeFileGen;
 private:
     Assembly             *m_pCreatingAssembly;
     ISymUnmanagedWriter  *m_pISymUnmanagedWriter;
@@ -3284,7 +3284,7 @@ public:
         m_pCreatingAssembly = assembly;
     }
 
-    ICeeGen *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
+    ICeeGenInternal *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
 
     RefClassWriter *GetClassWriter()
     {

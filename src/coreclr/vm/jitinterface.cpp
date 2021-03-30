@@ -76,7 +76,6 @@
 //
 
 #define JIT_TO_EE_TRANSITION()          MAKE_CURRENT_THREAD_AVAILABLE_EX(m_pThread);                \
-                                        _ASSERTE(CURRENT_THREAD == GetThread());                    \
                                         INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;               \
                                         COOPERATIVE_TRANSITION_BEGIN();                             \
 

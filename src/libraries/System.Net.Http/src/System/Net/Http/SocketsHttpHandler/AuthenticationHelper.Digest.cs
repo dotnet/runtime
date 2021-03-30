@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class AuthenticationHelper
+    internal static partial class AuthenticationHelper
     {
         // Define digest constants
         private const string Qop = "qop";
@@ -240,7 +240,7 @@ namespace System.Net.Http
             }
         }
 
-        internal class DigestResponse
+        internal sealed class DigestResponse
         {
             internal readonly Dictionary<string, string> Parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             internal const string NonceCount = "00000001";

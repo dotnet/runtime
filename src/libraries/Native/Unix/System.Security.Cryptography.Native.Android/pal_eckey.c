@@ -137,6 +137,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByOid(const char* oid)
     }
 
     jobject curveParameters = (*env)->CallObjectMethod(env, keySpec, g_ECPublicKeySpecGetParams);
+    ReleaseLRef(env, keySpec);
     return AndroidCryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
 }
 

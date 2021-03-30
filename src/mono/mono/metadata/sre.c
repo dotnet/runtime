@@ -50,8 +50,20 @@
 #include "icall-decl.h"
 
 /* Maps MonoMethod* to weak links to DynamicMethod objects */
-/* Protected by the domain lock */
 static GHashTable *method_to_dyn_method;
+static mono_mutex_t method_to_dyn_method_lock;
+
+static inline void
+dyn_methods_lock (void)
+{
+	mono_os_mutex_lock (&method_to_dyn_method_lock);
+}
+
+static inline void
+dyn_methods_unlock (void)
+{
+	mono_os_mutex_unlock (&method_to_dyn_method_lock);
+}
 
 static GENERATE_GET_CLASS_WITH_CACHE (marshal_as_attribute, "System.Runtime.InteropServices", "MarshalAsAttribute");
 #ifndef DISABLE_REFLECTION_EMIT
@@ -100,6 +112,8 @@ void
 mono_reflection_emit_init (void)
 {
 	mono_dynamic_images_init ();
+
+	mono_os_mutex_init_recursive (&method_to_dyn_method_lock);
 }
 
 char*
@@ -3980,14 +3994,13 @@ static void
 free_dynamic_method (void *dynamic_method)
 {
 	DynamicMethodReleaseData *data = (DynamicMethodReleaseData *)dynamic_method;
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoMethod *method = data->handle;
 	MonoGCHandle dis_link;
 
-	mono_domain_lock (domain);
+	dyn_methods_lock ();
 	dis_link = g_hash_table_lookup (method_to_dyn_method, method);
 	g_hash_table_remove (method_to_dyn_method, method);
-	mono_domain_unlock (domain);
+	dyn_methods_unlock ();
 	g_assert (dis_link);
 	mono_gchandle_free_internal (dis_link);
 
@@ -4006,7 +4019,6 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
 	MonoClass *klass;
-	MonoDomain *domain;
 	GSList *l;
 	int i;
 	gboolean ret = TRUE;
@@ -4119,12 +4131,11 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	}
 	g_slist_free (mb->referenced_by);
 
-	domain = mono_get_root_domain ();
-	mono_domain_lock (domain);
+	dyn_methods_lock ();
 	if (!method_to_dyn_method)
 		method_to_dyn_method = g_hash_table_new (NULL, NULL);
 	g_hash_table_insert (method_to_dyn_method, handle, mono_gchandle_new_weakref_internal ((MonoObject *)mb, TRUE));
-	mono_domain_unlock (domain);
+	dyn_methods_unlock ();
 
 	goto exit;
 exit_false:
@@ -4590,10 +4601,9 @@ mono_method_to_dyn_method (MonoMethod *method)
 	if (!method_to_dyn_method)
 		return (MonoGCHandle)NULL;
 
-	MonoDomain *domain = mono_get_root_domain ();
-	mono_domain_lock (domain);
+	dyn_methods_lock ();
 	handle = (MonoGCHandle*)g_hash_table_lookup (method_to_dyn_method, method);
-	mono_domain_unlock (domain);
+	dyn_methods_unlock ();
 
 	return handle;
 }

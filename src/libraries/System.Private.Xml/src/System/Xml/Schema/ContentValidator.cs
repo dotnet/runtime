@@ -15,7 +15,7 @@ namespace System.Xml.Schema
     /// <summary>
     /// UPA violations will throw this exception
     /// </summary>
-    internal class UpaException : Exception
+    internal sealed class UpaException : Exception
     {
         private readonly object? _particle1;
         private readonly object? _particle2;
@@ -36,7 +36,7 @@ namespace System.Xml.Schema
     /// SymbolsDictionary always recognizes all the symbols - the last one is a true wildcard -
     ///      both name and namespace can be anything that none of the other symbols matched.
     /// </summary>
-    internal class SymbolsDictionary
+    internal sealed class SymbolsDictionary
     {
         private int _last;
         private readonly Hashtable _names;
@@ -253,7 +253,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class Positions
+    internal sealed class Positions
     {
         private readonly ArrayList _positions = new ArrayList();
 
@@ -362,10 +362,10 @@ namespace System.Xml.Schema
     /// <summary>
     /// Temporary node to represent NamespaceList. Will be expended as a choice of symbols
     /// </summary>
-    internal class NamespaceListNode : SyntaxTreeNode
+    internal sealed class NamespaceListNode : SyntaxTreeNode
     {
-        protected NamespaceList namespaceList;
-        protected object particle;
+        private NamespaceList namespaceList;
+        private object particle;
 
         public NamespaceListNode(NamespaceList namespaceList, object particle)
         {
@@ -373,7 +373,7 @@ namespace System.Xml.Schema
             this.particle = particle;
         }
 
-        public virtual ICollection GetResolvedSymbols(SymbolsDictionary symbols)
+        public ICollection GetResolvedSymbols(SymbolsDictionary symbols)
         {
             return symbols.GetNamespaceListSymbols(namespaceList);
         }

@@ -150,7 +150,7 @@ FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
         [=](const CLRConfig::ConfigDWORDInfo &configInfo, bool isBoolean, const WCHAR *appContextConfigName) -> bool
     {
         bool wasNotConfigured = true;
-        *configValueRef = CLRConfig::GetConfigValue(configInfo, true /* acceptExplicitDefaultFromRegutil */, &wasNotConfigured);
+        *configValueRef = CLRConfig::GetConfigValue(configInfo, &wasNotConfigured);
         if (wasNotConfigured)
         {
             return false;
@@ -366,7 +366,6 @@ FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
     // we need a thread adjustment, before setting up the frame.
     //
     Thread *pThread = GetThread();
-    _ASSERTE (pThread);
 
     INT32 priority = pThread->ResetManagedThreadObjectInCoopMode(ThreadNative::PRIORITY_NORMAL);
 
@@ -469,7 +468,7 @@ RegisterWaitForSingleObjectCallback_Worker(LPVOID ptr)
 
 VOID NTAPI RegisterWaitForSingleObjectCallback(PVOID delegateInfo, BOOLEAN TimerOrWaitFired)
 {
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         ClrFlsSetThreadType(ThreadType_Threadpool_Worker);
@@ -529,7 +528,6 @@ FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
     _ASSERTE(hWaitHandle);
 
     Thread* pCurThread = GetThread();
-    _ASSERTE( pCurThread);
 
     DelegateInfoHolder delegateInfo = DelegateInfo::MakeDelegateInfo(
                                                                 &gc.state,
@@ -781,7 +779,7 @@ void __stdcall BindIoCompletionCallbackStubEx(DWORD ErrorCode,
                                               LPOVERLAPPED lpOverlapped,
                                               BOOL setStack)
 {
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         // TODO: how do we notify user of OOM here?
@@ -913,7 +911,7 @@ void AppDomainTimerCallback_Worker(LPVOID ptr)
 
 VOID WINAPI AppDomainTimerCallback(PVOID callbackState, BOOLEAN timerOrWaitFired)
 {
-    Thread* pThread = GetThread();
+    Thread* pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         // TODO: how do we notify user of OOM here?

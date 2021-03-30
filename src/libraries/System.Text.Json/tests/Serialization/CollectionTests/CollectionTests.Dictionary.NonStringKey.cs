@@ -619,5 +619,69 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(Expected, JsonSerializer.Serialize(dictionary));
             }
         }
+
+        [Fact]
+        public static void KeyWithCustomConverter()
+        {
+            // TODO: update these tests after https://github.com/dotnet/runtime/issues/50071 is implemented.
+
+            JsonSerializerOptions options = new()
+            {
+                Converters = { new ConverterForInt32(), new ComplexKeyConverter() }
+            };
+
+            // Primitive key
+            string json = @"{
+    ""PrimitiveKey"":{
+        ""1"":""1""
+    }
+}
+";
+            ClassWithNonStringDictKeys obj = new()
+            {
+                PrimitiveKey = new Dictionary<int, string> { [1] = "1" },
+            };
+            RunTest(obj, json, typeof(int).ToString(), typeof(ConverterForInt32).ToString());
+
+            // Complex key
+            json = @"{
+    ""ComplexKey"":{
+        ""SomeStringRepresentation"":""1""
+    }
+}
+";
+            obj = new()
+            {
+                ComplexKey = new Dictionary<ClassWithIDictionary, string> { [new ClassWithIDictionary()] = "1" },
+            };
+            RunTest(obj, json, typeof(ClassWithIDictionary).ToString(), typeof(ComplexKeyConverter).ToString());
+
+            void RunTest(ClassWithNonStringDictKeys obj, string payload, string keyTypeAsStr, string converterTypeAsStr)
+            {
+                NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj, options));
+                string exAsStr = ex.ToString();
+                Assert.Contains(keyTypeAsStr, exAsStr);
+                Assert.Contains(converterTypeAsStr, exAsStr);
+
+                ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithNonStringDictKeys>(payload, options));
+                exAsStr = ex.ToString();
+                Assert.Contains(keyTypeAsStr, exAsStr);
+                Assert.Contains(converterTypeAsStr, exAsStr);
+            }
+        }
+
+        private class ClassWithNonStringDictKeys
+        {
+            public Dictionary<int, string> PrimitiveKey { get; set; }
+            public Dictionary<ClassWithIDictionary, string> ComplexKey { get; set; }
+        }
+
+        private class ComplexKeyConverter : JsonConverter<ClassWithIDictionary>
+        {
+            public override ClassWithIDictionary? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+            public override void Write(Utf8JsonWriter writer, ClassWithIDictionary value, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+        }
     }
 }

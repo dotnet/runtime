@@ -19,6 +19,8 @@
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
     <EscapedQuoteW Condition="'$(OS)' == 'Windows_NT'">\&quot;</EscapedQuoteW>
+    <PythonCmd Condition="'$(OS)' != 'Windows_NT'">python3</PythonCmd>
+    <PythonCmd Condition="'$(OS)' == 'Windows_NT'">python</PythonCmd>
     <CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</CoreClrFileName>
     <CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</CoreClrFileName>
     <CoreClrFileName Condition="'$(TargetsMacCatalyst)' == 'true'">libcoreclr.dylib</CoreClrFileName>
@@ -36,17 +38,20 @@
     <XcodeDir Condition="'$(XcodeDir)' == ''">/Applications/Xcode.app/Contents/Developer</XcodeDir>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
-    <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true' and ('$(OS)' != 'Windows_NT' or '$(BuildMonoAOTCrossCompilerOnly)' == 'true')">true</BuildMonoAOTCrossCompiler>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsAndroid)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <MonoAOTEnableLLVM Condition="'$(TargetsiOS)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetstvOS)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsBrowser)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsAndroid)' == 'true'">true</MonoAOTEnableLLVM>
-    <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$([MSBuild]::NormalizePath('$(MonoObjDir)', 'cross', 'config.h'))</CrossConfigH>
+    <MonoObjCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross'))</MonoObjCrossDir>
+    <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$([MSBuild]::NormalizePath('$(MonoObjCrossDir)', 'config.h'))</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
     <MonoAOTBundleLLVMOptimizer Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(TargetsBrowser)' != 'true'">true</MonoAOTBundleLLVMOptimizer>
     <MonoCCompiler>$(Compiler)</MonoCCompiler>
     <MonoCCompiler Condition="'$(MonoCCompiler)' == ''">clang</MonoCCompiler>
+    <_CompilerTargetArch Condition="'$(RealTargetArchitecture)' == ''">$(Platform)</_CompilerTargetArch>
+    <_CompilerTargetArch Condition="'$(RealTargetArchitecture)' != ''">$(RealTargetArchitecture)</_CompilerTargetArch>
     <!-- when we use runtime/build.sh -gcc, it is passed to eng/build.sh which sets the raw value to $(Compiler); strip the leading hyphens. -->
     <MonoCCompiler Condition="$(MonoCCompiler.StartsWith('-'))">$(MonoCCompiler.TrimStart('-'))</MonoCCompiler>
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'clang'">clang++</MonoCxxCompiler>
@@ -404,17 +409,17 @@
     <PropertyGroup>
       <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)'))</EMSDK_PATH>
       <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) $(MonoCCompiler) &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(_CompilerTargetArch) $(MonoCCompiler) &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(OS)' != 'Windows_NT'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(OS)' == 'Windows_NT'">call &quot;$(EMSDK_PATH)emsdk_env.bat&quot; &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(OS)' == 'Windows_NT'">call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
 
       <_MonoCMakeBuildCommand>cmake --build . --target install --config $(Configuration)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoCMakeBuildCommand) --verbose</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(OS)' != 'Windows_NT'">@(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
-      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
+      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjDir)" />
@@ -437,7 +442,7 @@
       <MonoAotCMakeSysroot Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">$(XcodeDir)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(iOSVersion).sdk</MonoAotCMakeSysroot>
       <MonoAotCMakeSysroot Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true'">$(XcodeDir)/Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS$(tvOSVersion).sdk</MonoAotCMakeSysroot>
       <MonoAotCMakeSysroot Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' == 'true'">$(XcodeDir)/Platforms/AppleTVSimulator.platform/Developer/SDKs/AppleTVSimulator$(tvOSVersion).sdk</MonoAotCMakeSysroot>
-      <MonoAotOffsetsFile>$(MonoObjDir)cross/offsets-$(Platform)-darwin.h</MonoAotOffsetsFile>
+      <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-$(Platform)-darwin.h</MonoAotOffsetsFile>
       <MonoAotAbi Condition="'$(Platform)' == 'arm64'">aarch64-apple-darwin10</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'arm'">arm-apple-darwin10</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'x86'">i386-apple-darwin10</MonoAotAbi>
@@ -450,7 +455,7 @@
     <PropertyGroup Condition="'$(TargetOS)' == 'Linux' and '$(Platform)' == 'arm64'">
       <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotAbi>aarch64-linux-gnu</MonoAotAbi>
-      <MonoAotOffsetsFile>$(MonoObjDir)cross/offsets-aarch-linux-gnu.h</MonoAotOffsetsFile>
+      <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-aarch-linux-gnu.h</MonoAotOffsetsFile>
       <MonoAotOffsetsPrefix>$(MonoCrossDir)/usr/lib/gcc/aarch64-linux-gnu/5</MonoAotOffsetsPrefix>
     </PropertyGroup>
 
@@ -458,9 +463,11 @@
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
       <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotAbi>wasm32-unknown-none</MonoAotAbi>
-      <MonoAotOffsetsFile>$(MonoObjDir)cross/offsets-wasm32-unknown-none.h</MonoAotOffsetsFile>
+      <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-wasm32-unknown-none.h</MonoAotOffsetsFile>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(EMSDK_PATH)/upstream/lib/libclang.dylib</MonoLibClang>
-      <MonoLibClang Condition="!$([MSBuild]::IsOSPlatform('OSX'))">$(EMSDK_PATH)/upstream/lib/libclang.so</MonoLibClang>
+      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(EMSDK_PATH)/upstream/lib/libclang.so</MonoLibClang>
+      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'bin', 'libclang.dll'))</MonoLibClang>
+      <PythonCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; python</PythonCmd>
     </PropertyGroup>
 
     <!-- Windows specific options -->
@@ -515,13 +522,13 @@
     <ItemGroup Condition="'$(MonoUseCrossTool)' == 'true'">
       <MonoAotCrossOffsetsToolParams Include="--abi=$(MonoAotAbi)" />
       <MonoAotCrossOffsetsToolParams Include="--netcore" />
-      <MonoAotCrossOffsetsToolParams Include="--targetdir=&quot;$(MonoObjDir)&quot;" />
+      <MonoAotCrossOffsetsToolParams Include="--targetdir=&quot;$(MonoObjDir.TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoAotOffsetsFile)&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(MonoLibClang)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotOffsetsPrefix)' != ''" Include="--prefix=&quot;$(MonoAotOffsetsPrefix)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotCMakeSysroot)' != ''" Include="--sysroot=&quot;$(MonoAotCMakeSysroot)&quot;" />
-      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$(EMSDK_PATH)/upstream/emscripten&quot;" />
+      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'emscripten'))&quot;" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -531,7 +538,7 @@
     <ItemGroup>
       <MonoAOTCMakeArgs Include="-DAOT_TARGET_TRIPLE=$(MonoAotAbi)"/>
       <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' == 'true'" Include="-G Ninja"/>
-      <MonoAOTCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$([MSBuild]::NormalizePath('$(MonoObjDir)', 'cross', 'out'))"/>
+      <MonoAOTCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$([MSBuild]::NormalizePath('$(MonoObjCrossDir)', 'out'))"/>
       <MonoAOTCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
       <!-- FIXME: Disable more -->
       <MonoAOTCMakeArgs Include="-DENABLE_MINIMAL=" />
@@ -550,28 +557,28 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
+      <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">$(PythonCmd) $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
       <_MonoAotCMakeConfigureCommand>cmake @(MonoAOTCMakeArgs, ' ') $(MonoProjectRoot)</_MonoAotCMakeConfigureCommand>
-      <_MonoAotCMakeConfigureCommand Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)\cross&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
+      <_MonoAotCMakeConfigureCommand Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjCrossDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeBuildCommand>cmake --build . --target install --config $(Configuration)</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoAotCMakeBuildCommand) --verbose</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoAotCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoAotCMakeBuildCommand>
-      <_MonoAotCMakeBuildCommand Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)\cross&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeBuildCommand)</_MonoAotCMakeBuildCommand>
+      <_MonoAotCMakeBuildCommand Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjCrossDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeBuildCommand)</_MonoAotCMakeBuildCommand>
       <_MonoAotPrebuiltOffsetsFile>$(ArtifactsObjDir)\mono\offsetfiles\$(PlatformConfigPathPart)\cross\$([System.IO.Path]::GetFileName('$(MonoAotOffsetsFile)'))</_MonoAotPrebuiltOffsetsFile>
     </PropertyGroup>
 
-    <MakeDir Directories="$(MonoObjDir)/cross" />
+    <MakeDir Directories="$(MonoObjCrossDir)" />
     <!-- offsets tool -->
     <Message Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" Text="Out-of-tree offset file found, moving into place" Importance="High" />
     <Copy Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" SourceFiles="$(_MonoAotPrebuiltOffsetsFile)" DestinationFolder="$([System.IO.Path]::GetDirectoryName('$(MonoAotOffsetsFile)'))" />
     <Message Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Text="Running '$(_MonoAotCrossOffsetsCommand)'" Importance="High" />
     <Exec Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Command="$(_MonoAotCrossOffsetsCommand)" IgnoreStandardErrorWarningFormat="true" />
     <!-- configure -->
-    <Message Text="Running '$(_MonoAotCMakeConfigureCommand)' in '$(MonoObjDir)/cross'" Importance="High" />
-    <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)/cross"/>
+    <Message Text="Running '$(_MonoAotCMakeConfigureCommand)' in '$(MonoObjCrossDir)'" Importance="High" />
+    <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>
     <!-- build -->
-    <Message Text="Running '$(_MonoAotCMakeBuildCommand)' in '$(MonoObjDir)/cross'" Importance="High" />
-    <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)/cross"/>
+    <Message Text="Running '$(_MonoAotCMakeBuildCommand)' in '$(MonoObjCrossDir)'" Importance="High" />
+    <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>
   </Target>
 
   <Target Name="InitializeGenerateRuntimeVersionFile"
@@ -587,7 +594,7 @@
     <MSBuild Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'"
              Projects="$(RepoRoot)eng\empty.csproj"
              Targets="GenerateRuntimeVersionFile"
-             Properties="NativeVersionFile=$(MonoObjDir)cross\_version.h;RuntimeVersionFile=$(MonoObjDir)cross\runtime_version.h" />
+             Properties="NativeVersionFile=$(MonoObjCrossDir)_version.h;RuntimeVersionFile=$(MonoObjCrossDir)runtime_version.h" />
   </Target>
 
   <!-- The standard set of targets that need to run before the BuildMono target runs -->
@@ -611,7 +618,7 @@
       <_MonoIncludeIcuFiles Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</_MonoIncludeIcuFiles>
     </PropertyGroup>
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
-      <_MonoAotCrossFilePath>$(MonoObjDir)cross\out\bin\mono-sgen$(ExeExt)</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath>$(MonoObjCrossDir)out\bin\mono-sgen$(ExeExt)</_MonoAotCrossFilePath>
     </PropertyGroup>
 
     <!-- Copy Mono runtime files to artifacts directory -->

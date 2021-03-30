@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Xml
 {
     // the stack of currently active NamespaceFrame contexts. this
     // object also maintains the inclusive prefix list in a tokenized form.
-    internal class C14NAncestralNamespaceContextManager : AncestralNamespaceContextManager
+    internal sealed class C14NAncestralNamespaceContextManager : AncestralNamespaceContextManager
     {
         internal C14NAncestralNamespaceContextManager() { }
 

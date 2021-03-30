@@ -282,13 +282,13 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: debug
+    buildConfig: release
     platforms:
     - Browser_wasm_win
     jobParameters:
       testGroup: innerloop
       nameSuffix: Browser_wasm_Windows
-      buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
+      buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono -c $(_BuildConfig)
 
 #
 # CoreCLR Build for running Apple Silicon libraries-innerloop
