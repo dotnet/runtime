@@ -119,7 +119,7 @@ jobs:
       displayName: Performance Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments)
+    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) --env-args="$[variables.EnvVars]"
       displayName: Run ci setup script
       # Run perf testing in helix
     - template: /eng/common/templates/steps/perf-send-to-helix.yml
