@@ -287,7 +287,6 @@ replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_R
 # subparser for asmdiffs
 asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
 
-# Add required arguments
 asm_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
 asm_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
 asm_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
@@ -295,8 +294,9 @@ asm_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the ba
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
 asm_diff_parser.add_argument("-temp_dir", help="Specify a temporary directory used for a previous ASM diffs run (for which --skip_cleanup was used) to view the results. The replay command is skipped.")
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
-asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baselne JIT. Format is key=value, where key is the option name without leading COMPlus_...")
+asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
+asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -1471,14 +1471,14 @@ def print_fail_mcl_file_method_numbers(fail_mcl_file):
             logging.debug(line)
 
 
-def save_repro_mc_files(temp_location, coreclr_args, repro_base_command_line):
+def save_repro_mc_files(temp_location, coreclr_args, artifacts_base_name, repro_base_command_line):
     """ For commands that use the superpmi "-r" option to create "repro" .mc files, copy these to a
         location where they are saved (and not in a "temp" directory) for easy use by the user.
     """
     # If there are any .mc files, drop them into artifacts/repro/<host_os>.<arch>.<build_type>/*.mc
     mc_files = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
     if len(mc_files) > 0:
-        repro_location = create_unique_directory_name(coreclr_args.spmi_location, "repro.{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+        repro_location = create_unique_directory_name(coreclr_args.spmi_location, "repro.{}".format(artifacts_base_name))
 
         repro_files = []
         for item in mc_files:
@@ -1623,7 +1623,13 @@ class SuperPMIReplay:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
                     print_fail_mcl_file_method_numbers(fail_mcl_file)
                     repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(repro_flags), self.jit_path)
-                    save_repro_mc_files(temp_location, self.coreclr_args, repro_base_command_line)
+
+                    # Use the MCH file base name as the main part of the directory for generated repro artifacts.
+                    # Remove the trailing ".mch", if any.
+                    artifacts_base_name = os.path.basename(mch_file)
+                    artifacts_base_name = artifacts_base_name[:-4] if artifacts_base_name.lower().endswith(".mch") else artifacts_base_name
+
+                    save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
                 if not self.coreclr_args.skip_cleanup:
                     if os.path.isfile(fail_mcl_file):
@@ -1824,13 +1830,19 @@ class SuperPMIReplayAsmDiffs:
                             files_with_replay_failures.append(mch_file)
                             result = False
 
+                # Use the MCH file base name as the main part of the directory for generated asm/jitdump/repro artifacts.
+                # Remove the trailing ".mch", and prepend the tag, if any.
+                artifacts_base_name = os.path.basename(mch_file)
+                artifacts_base_name = artifacts_base_name[:-4] if artifacts_base_name.lower().endswith(".mch") else artifacts_base_name
+                artifacts_base_name = "{}.{}".format(self.coreclr_args.tag, artifacts_base_name) if self.coreclr_args.tag is not None else artifacts_base_name
+
                 if is_nonzero_length_file(fail_mcl_file):
                     # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
                     if return_code == 0:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
                     print_fail_mcl_file_method_numbers(fail_mcl_file)
                     repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
-                    save_repro_mc_files(temp_location, self.coreclr_args, repro_base_command_line)
+                    save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
                 # There were diffs. Go through each method that created diffs and
                 # create a base/diff asm file with diffable asm. In addition, create
@@ -1850,7 +1862,7 @@ class SuperPMIReplayAsmDiffs:
                         mcl_lines = [item.strip() for item in mcl_lines]
                         self.diff_mcl_contents = mcl_lines
 
-                    asm_root_dir = create_unique_directory_name(self.coreclr_args.spmi_location, "asm.{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
+                    asm_root_dir = create_unique_directory_name(self.coreclr_args.spmi_location, "asm.{}".format(artifacts_base_name))
                     base_asm_location = os.path.join(asm_root_dir, "base")
                     diff_asm_location = os.path.join(asm_root_dir, "diff")
                     os.makedirs(base_asm_location)
@@ -1858,7 +1870,7 @@ class SuperPMIReplayAsmDiffs:
 
                     if self.coreclr_args.diff_jit_dump:
                         # If JIT dumps are requested, create a diff and baseline directory for JIT dumps
-                        jitdump_root_dir = create_unique_directory_name(self.coreclr_args.spmi_location, "jitdump.{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
+                        jitdump_root_dir = create_unique_directory_name(self.coreclr_args.spmi_location, "jitdump.{}".format(artifacts_base_name))
                         base_dump_location = os.path.join(jitdump_root_dir, "base")
                         diff_dump_location = os.path.join(jitdump_root_dir, "diff")
                         os.makedirs(base_dump_location)
@@ -1907,12 +1919,12 @@ class SuperPMIReplayAsmDiffs:
                     for item in self.diff_mcl_contents:
                         diff_items.append(item)
 
-                    logging.info("Creating dasm files")
+                    logging.info("Creating dasm files: %s %s", base_asm_location, diff_asm_location)
                     subproc_helper = AsyncSubprocessHelper(diff_items, verbose=True)
                     subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, asm_complus_vars_full_env, text_differences, base_asm_location, diff_asm_location, ".dasm")
 
                     if self.coreclr_args.diff_jit_dump:
-                        logging.info("Creating JitDump files")
+                        logging.info("Creating JitDump files: %s %s", base_dump_location, diff_dump_location)
                         subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, jit_dump_complus_vars_full_env, jit_dump_differences, base_dump_location, diff_dump_location, ".txt")
 
                     logging.info("Differences found. To replay SuperPMI use:")
@@ -3450,6 +3462,12 @@ def setup_args(args):
                             "diff_jit_option",
                             lambda unused: True,
                             "Unable to set diff_jit_option.")
+
+        coreclr_args.verify(args,
+                            "tag",
+                            lambda unused: True,
+                            "Unable to set tag.",
+                            modify_arg=lambda arg: make_safe_filename(arg) if arg is not None else arg)
 
         process_base_jit_path_arg(coreclr_args)
 
