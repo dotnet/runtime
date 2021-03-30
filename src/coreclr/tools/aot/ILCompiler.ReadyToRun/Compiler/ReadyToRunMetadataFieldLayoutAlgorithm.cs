@@ -20,13 +20,7 @@ namespace ILCompiler
     {
         public static LayoutInt FieldBaseOffset(this TypeDesc type)
         {
-            LayoutInt baseOffset = type.BaseType.InstanceByteCount;
-            if (type.RequiresAlign8())
-            {
-                baseOffset = LayoutInt.AlignUp(baseOffset, new LayoutInt(8), type.Context.Target);
-            }
-
-            return baseOffset;
+            return ((ReadyToRunCompilerContext)type.Context).CalculateFieldBaseOffset(type);
         }
     }
 
@@ -823,7 +817,7 @@ namespace ILCompiler
         /// This method decides whether the type needs aligned base offset in order to have layout resilient to 
         /// base class layout changes.
         /// </summary>
-        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8)
+        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset)
         {
             DefType baseType = type.BaseType;
             
@@ -833,12 +827,7 @@ namespace ILCompiler
                 return;
             }
 
-            LayoutInt alignment = new LayoutInt(type.Context.Target.PointerSize);
-
-            if (requiresAlign8 || type.Context.Target.Architecture == TargetArchitecture.ARM)
-            {
-                alignment = new LayoutInt(8);
-            }
+            LayoutInt alignment = new LayoutInt(type.Context.Target.Architecture == TargetArchitecture.ARM ? 8 : type.Context.Target.PointerSize);
             baseOffset = LayoutInt.AlignUp(baseOffset, alignment, type.Context.Target);
         }
 

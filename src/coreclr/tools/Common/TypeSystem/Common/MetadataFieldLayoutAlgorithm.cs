@@ -401,7 +401,7 @@ namespace Internal.TypeSystem
             var offsets = new FieldAndOffset[numInstanceFields];
 
             // For types inheriting from another type, field offsets continue on from where they left off
-            LayoutInt cumulativeInstanceFieldPos = CalculateFieldOffsetForType(type, requiresAlign8: false);
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type);
 
             var layoutMetadata = type.GetClassLayout();
 
@@ -445,7 +445,7 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8)
+        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset)
         {
         }
 
@@ -551,7 +551,7 @@ namespace Internal.TypeSystem
             bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && largestAlignmentRequired.AsInt > 4;
 
             // For types inheriting from another type, field offsets continue on from where they left off
-            LayoutInt cumulativeInstanceFieldPos = CalculateFieldOffsetForType(type, requiresAlign8);
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type);
 
             // We've finished placing the fields into their appropriate arrays
             // The next optimization may place non-GC Pointers, so repurpose our
@@ -762,14 +762,14 @@ namespace Internal.TypeSystem
             return type.IsValueType && !type.IsPrimitive && !type.IsEnum;
         }
 
-        private LayoutInt CalculateFieldOffsetForType(DefType type, bool requiresAlign8)
+        public LayoutInt CalculateFieldBaseOffset(TypeDesc type)
         {
             LayoutInt cumulativeInstanceFieldPos = LayoutInt.Zero;
 
             if (!type.IsValueType && type.HasBaseType)
             {
                 cumulativeInstanceFieldPos = type.BaseType.InstanceByteCountUnaligned;
-                AlignBaseOffsetIfNecessary((MetadataType)type, ref cumulativeInstanceFieldPos, requiresAlign8 || type.BaseType.RequiresAlign8());
+                AlignBaseOffsetIfNecessary((MetadataType)type, ref cumulativeInstanceFieldPos);
             }
 
             return cumulativeInstanceFieldPos;

@@ -68,6 +68,8 @@ namespace ILCompiler
             }
         }
 
+        public LayoutInt CalculateFieldBaseOffset(TypeDesc type) => _r2rFieldLayoutAlgorithm.CalculateFieldBaseOffset(type);
+
         public void SetCompilationGroup(ReadyToRunCompilationModuleGroupBase compilationModuleGroup)
         {
             _r2rFieldLayoutAlgorithm.SetCompilationGroup(compilationModuleGroup);
