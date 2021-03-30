@@ -139,10 +139,10 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Configures an existing instance of the <see cref="HostBuilder"/> class with pre-configured defaults.
+        /// Configures an existing <see cref="IHostBuilder"/> instance with pre-configured defaults.
         /// </summary>
         /// <remarks>
-        ///   The following defaults are applied to the returned <see cref="HostBuilder"/>:
+        ///   The following defaults are applied to the <see cref="IHostBuilder"/>:
         ///   <list type="bullet">
         ///     <item><description>set the <see cref="IHostEnvironment.ContentRootPath"/> to the result of <see cref="Directory.GetCurrentDirectory()"/></description></item>
         ///     <item><description>load host <see cref="IConfiguration"/> from "DOTNET_" prefixed environment variables</description></item>
