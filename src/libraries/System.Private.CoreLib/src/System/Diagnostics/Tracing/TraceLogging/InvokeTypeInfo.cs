@@ -77,8 +77,8 @@ namespace System.Diagnostics.Tracing
         {
             if (this.properties != null)
             {
-                var membersNames = new List<string>();
-                var membersValues = new List<object?>();
+                var membersNames = new List<string>(this.properties.Length);
+                var membersValues = new List<object?>(this.properties.Length);
                 for (int i = 0; i < this.properties.Length; i++)
                 {
                     object? propertyValue = properties[i].propertyInfo.GetValue(value);
