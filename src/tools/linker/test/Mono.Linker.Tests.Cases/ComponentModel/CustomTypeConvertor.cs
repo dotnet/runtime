@@ -10,6 +10,7 @@ namespace Mono.Linker.Tests.Cases.ComponentModel
 
 	[Kept]
 	[KeptAttributeAttribute (typeof (TypeConverterAttribute))]
+	[KeptMember (".ctor()")]
 	class CustomDataType
 	{
 		[Kept]
@@ -33,6 +34,7 @@ namespace Mono.Linker.Tests.Cases.ComponentModel
 
 	[Kept]
 	[KeptAttributeAttribute (typeof (TypeConverterAttribute))]
+	[KeptMember (".ctor()")]
 	class CustomDataType_2
 	{
 		[Kept]
@@ -53,6 +55,9 @@ namespace Mono.Linker.Tests.Cases.ComponentModel
 	}
 
 	[Reference ("System.dll")]
+	// System.dll referenced by a dynamically (for example in TypeConverterAttribute on IComponent)
+	// has unresolved references.
+	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	public class CustomTypeConvertor
 	{
 		public static void Main ()

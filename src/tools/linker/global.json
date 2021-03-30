@@ -1,6 +1,6 @@
 {
   "tools": {
-    "dotnet": "6.0.100-preview.2.21155.3",
+    "dotnet": "6.0.100-preview.4.21179.4",
     "runtimes": {
       "dotnet": [
         "5.0.0"
