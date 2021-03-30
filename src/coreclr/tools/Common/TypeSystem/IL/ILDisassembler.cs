@@ -164,7 +164,7 @@ namespace Internal.IL
 
         private void AppendToken(StringBuilder sb, int token)
         {
-            object obj = _methodIL.GetObject(token);
+            object obj = _methodIL.GetObject(token, NotFoundBehavior.Throw);
             if (obj is MethodDesc)
                 AppendMethodSignature(sb, (MethodDesc)obj);
             else if (obj is FieldDesc)

@@ -285,7 +285,7 @@ namespace Internal.IL
                     case ILOpcode.newobj:
                         {
                             int token = ReadILToken(ilbytes, currentOffset + 1);
-                            object obj = methodIL.GetObject(token);
+                            object obj = methodIL.GetObject(token, NotFoundBehavior.Throw);
                             MethodSignature sig = obj is MethodSignature ?
                                 (MethodSignature)obj :
                                 ((MethodDesc)obj).Signature;

@@ -1228,7 +1228,7 @@ namespace Internal.JitInterface
         {
             // Grab the generic definition of the method IL, resolve the token within the definition,
             // and instantiate it with the given context.
-            object result = methodIL.GetMethodILDefinition().GetObject((int)token);
+            object result = methodIL.GetMethodILDefinition().GetObject((int)token, NotFoundBehavior.Throw);
 
             if (result is MethodDesc methodResult)
             {
@@ -1290,7 +1290,7 @@ namespace Internal.JitInterface
             else
             {
                 // Not inlining - just resolve the token within the methodIL
-                result = methodIL.GetObject((int)token);
+                result = methodIL.GetObject((int)token, NotFoundBehavior.Throw);
             }
 
             return result;
@@ -1338,7 +1338,7 @@ namespace Internal.JitInterface
                         /* If the resolved type is not runtime determined there's a chance we went down this path
                            because there was a literal typeof(__Canon) in the compiled IL - check for that
                            by resolving the token in the definition. */
-                        ((TypeDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token)).IsCanonicalDefinitionType(CanonicalFormKind.Any));
+                        ((TypeDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token, NotFoundBehavior.Throw)).IsCanonicalDefinitionType(CanonicalFormKind.Any));
                 }
 
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
@@ -1455,7 +1455,7 @@ namespace Internal.JitInterface
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
             var methodIL = HandleToObject(module);
-            var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
+            var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK, NotFoundBehavior.Throw);
 
             Get_CORINFO_SIG_INFO(methodSig, sig);
 
@@ -1473,7 +1473,7 @@ namespace Internal.JitInterface
         private void findCallSiteSig(CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
             var methodIL = HandleToObject(module);
-            Get_CORINFO_SIG_INFO(((MethodDesc)methodIL.GetObject((int)methTOK)), sig: sig);
+            Get_CORINFO_SIG_INFO(((MethodDesc)methodIL.GetObject((int)methTOK, NotFoundBehavior.Throw)), sig: sig);
         }
 
         private CORINFO_CLASS_STRUCT_* getTokenTypeAsHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
@@ -1506,7 +1506,7 @@ namespace Internal.JitInterface
         private char* getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
         {
             MethodIL methodIL = HandleToObject(module);
-            string s = (string)methodIL.GetObject((int)metaTOK);
+            string s = (string)methodIL.GetObject((int)metaTOK, NotFoundBehavior.Throw);
             length = (int)s.Length;
             return (char*)GetPin(s);
         }

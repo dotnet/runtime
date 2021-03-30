@@ -41,7 +41,12 @@ namespace ILCompiler.IBC
                         // token type is 0, therefore it can't be a type
                         return new TypeSystemEntityOrUnknown((int)token);
                     }
-                    return new TypeSystemEntityOrUnknown((TypeDesc)_ilBody.GetObject((int)token));
+                    TypeDesc foundType = _ilBody.GetObject((int)token, NotFoundBehavior.ReturnNull) as TypeDesc;
+                    if (foundType == null)
+                    {
+                        return new TypeSystemEntityOrUnknown((int)token & 0x00FFFFFF);
+                    }
+                    return new TypeSystemEntityOrUnknown(foundType);
                 }
                 catch
                 {
@@ -144,7 +149,7 @@ namespace ILCompiler.IBC
                         Debug.Assert(mibcGroupName == "");
                         if (mibcGroupName == "")
                         {
-                            mibcGroupName = (string)ilBody.GetObject(userStringToken);
+                            mibcGroupName = (string)ilBody.GetObject(userStringToken, NotFoundBehavior.Throw);
                         }
                         break;
 
@@ -180,7 +185,7 @@ namespace ILCompiler.IBC
                                 break;
                         }
 
-                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject(token)));
+                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject(token, NotFoundBehavior.Throw)));
                         break;
                     case ILOpcode.pop:
                         mibcGroupName = "";
@@ -265,7 +270,9 @@ namespace ILCompiler.IBC
                                 metadataObject = null;
                                 try
                                 {
-                                    metadataObject = ilBody.GetObject(token);
+                                    metadataObject = ilBody.GetObject(token, NotFoundBehavior.ReturnNull);
+                                    if (metadataObject == null)
+                                        metadataObject = metadataNotResolvable;
                                 }
                                 catch (TypeSystemException)
                                 {
@@ -385,7 +392,7 @@ namespace ILCompiler.IBC
                     case ILOpcode.ldstr:
                         {
                             int userStringToken = ilReader.ReadILToken();
-                            string optionalDataName = (string)ilBody.GetObject(userStringToken);
+                            string optionalDataName = (string)ilBody.GetObject(userStringToken, NotFoundBehavior.Throw);
                             switch (optionalDataName)
                             {
                                 case "ExclusiveWeight":
@@ -509,7 +516,7 @@ namespace ILCompiler.IBC
                     throw new NotImplementedException();
                 }
 
-                public override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
+                public override MetadataType GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
                 {
                     TypeSystemContext context = Context;
 
@@ -519,9 +526,14 @@ namespace ILCompiler.IBC
                         return Context.UniversalCanonType;
                     else
                     {
-                        if (throwIfNotFound)
+                        if (notFoundBehavior != NotFoundBehavior.ReturnNull)
                         {
-                            throw new TypeLoadException($"{nameSpace}.{name}");
+                            var failure = ResolutionFailure.GetTypeLoadResolutionFailure(nameSpace, name, "System.Private.Canon");
+                            ModuleDesc.GetTypeResolutionFailure = failure;
+                            if (notFoundBehavior == NotFoundBehavior.Throw)
+                                failure.Throw();
+
+                            return null;
                         }
                         return null;
                     }
