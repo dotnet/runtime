@@ -1442,7 +1442,9 @@ void QCALLTYPE AssemblyNative::ApplyUpdate(
         {
             COMPlusThrow(kInvalidOperationException, W("InvalidOperation_AssemblyNotEditable"));
         }
+        ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
         HRESULT hr = ((EditAndContinueModule*)pModule)->ApplyEditAndContinue(metadataDeltaLength, metadataDelta, ilDeltaLength, ilDelta);
+        ThreadSuspend::RestartEE(FALSE, TRUE);
         if (FAILED(hr))
         {
             COMPlusThrow(kInvalidOperationException, W("InvalidOperation_EditFailed"));
