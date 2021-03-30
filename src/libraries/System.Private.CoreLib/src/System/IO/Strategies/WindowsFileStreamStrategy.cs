@@ -27,7 +27,7 @@ namespace System.IO.Strategies
         protected long _filePosition;
         private long _appendStart; // When appending, prevent overwriting file.
         private long _length = -1; // When the file is locked for writes (_share <= FileShare.Read) cache file length in-memory, negative means that hasn't been fetched.
-        private bool _exposed; // created from handle, or SafeFileHandle was used and the handle got exposed
+        private bool _exposedHandle; // created from handle, or SafeFileHandle was used and the handle got exposed
 
         internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
         {
@@ -37,7 +37,7 @@ namespace System.IO.Strategies
             // but we can't as they're readonly.
             _access = access;
             _share = share;
-            _exposed = true;
+            _exposedHandle = true;
 
             // As the handle was passed in, we must set the handle field at the very end to
             // avoid the finalizer closing the handle when we throw errors.
@@ -82,12 +82,17 @@ namespace System.IO.Strategies
         {
             get
             {
-                if (_share > FileShare.Read || _exposed)
+                if (_share > FileShare.Read || _exposedHandle)
                 {
                     return FileStreamHelpers.GetFileLength(_fileHandle, _path);
                 }
 
-                return _length = FileStreamHelpers.GetFileLength(_fileHandle, _path);
+                if (_length < 0)
+                {
+                    _length = FileStreamHelpers.GetFileLength(_fileHandle, _path);
+                }
+
+                return _length;
             }
         }
 
@@ -95,7 +100,7 @@ namespace System.IO.Strategies
         {
             // Do not update the cached length if the file is not locked
             // or if the length hasn't been fetched.
-            if (_share > FileShare.Read || _length < 0)
+            if (_share > FileShare.Read || _length < 0 || _exposedHandle)
             {
                 Debug.Assert(_length < 0);
                 return;
@@ -130,8 +135,10 @@ namespace System.IO.Strategies
                     // in memory position is out-of-sync with the actual file position.
                     FileStreamHelpers.Seek(_fileHandle, _path, _filePosition, SeekOrigin.Begin);
                 }
-                _exposed = true;
+
+                _exposedHandle = true;
                 _length = -1; // invalidate cached length
+
                 return _fileHandle;
             }
         }
