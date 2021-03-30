@@ -4811,16 +4811,13 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				exit_profiling |= PROFILING_FLAG;
 			if (exit_profiling) {
 				/* This does the return as well */
-				interp_add_ins (td, MINT_PROF_EXIT);
-				if (ult->type == MONO_TYPE_VOID) {
-					vt_size = -1;
-					interp_ins_set_sreg (td->last_ins, -1);
-				} else {
-					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-				}
-					
+				gboolean is_void = ult->type == MONO_TYPE_VOID;
+				interp_add_ins (td, is_void ? MINT_PROF_EXIT_VOID : MINT_PROF_EXIT);
 				td->last_ins->data [0] = exit_profiling;
-				WRITE32_INS (td->last_ins, 1, &vt_size);
+				if (!is_void) {
+					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
+					WRITE32_INS (td->last_ins, 1, &vt_size);
+				}
 			} else {
 				if (vt_size == 0) {
 					if (ult->type == MONO_TYPE_VOID) {
@@ -8160,9 +8157,6 @@ retry:
 				dump_interp_inst (ins);
 
 			for (int i = 0; i < num_sregs; i++) {
-				// FIXME MINT_PROF_EXIT when void
-				if (sregs [i] == -1)
-					continue;
 				if (sregs [i] == MINT_CALL_ARGS_SREG) {
 					int *call_args = ins->info.call_args;
 					if (call_args) {
