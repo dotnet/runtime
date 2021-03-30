@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
-using System.Runtime.CompilerServices;
 
 namespace System.IO.Strategies
 {
@@ -28,6 +27,7 @@ namespace System.IO.Strategies
         protected long _filePosition;
         private long _appendStart; // When appending, prevent overwriting file.
         private long _length = -1; // When the file is locked for writes (_share <= FileShare.Read) cache file length in-memory, negative means that hasn't been fetched.
+        private bool _exposed; // created from handle, or SafeFileHandle was used and the handle got exposed
 
         internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
         {
@@ -37,6 +37,7 @@ namespace System.IO.Strategies
             // but we can't as they're readonly.
             _access = access;
             _share = share;
+            _exposed = true;
 
             // As the handle was passed in, we must set the handle field at the very end to
             // avoid the finalizer closing the handle when we throw errors.
@@ -77,9 +78,18 @@ namespace System.IO.Strategies
 
         // When the file is locked for writes we can cache file length in memory
         // and avoid subsequent native calls which are expensive.
-        public unsafe sealed override long Length => _share > FileShare.Read ?
-            FileStreamHelpers.GetFileLength(_fileHandle, _path) :
-            _length < 0 ? _length = FileStreamHelpers.GetFileLength(_fileHandle, _path) : _length;
+        public unsafe sealed override long Length
+        {
+            get
+            {
+                if (_share > FileShare.Read || _exposed)
+                {
+                    return FileStreamHelpers.GetFileLength(_fileHandle, _path);
+                }
+
+                return _length = FileStreamHelpers.GetFileLength(_fileHandle, _path);
+            }
+        }
 
         protected void UpdateLengthOnChangePosition()
         {
@@ -120,6 +130,8 @@ namespace System.IO.Strategies
                     // in memory position is out-of-sync with the actual file position.
                     FileStreamHelpers.Seek(_fileHandle, _path, _filePosition, SeekOrigin.Begin);
                 }
+                _exposed = true;
+                _length = -1; // invalidate cached length
                 return _fileHandle;
             }
         }
