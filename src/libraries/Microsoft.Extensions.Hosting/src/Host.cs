@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Hosting
         ///   </list>
         /// </remarks>
         /// <param name="args">The command line args.</param>
-        /// <returns>The configured <see cref="IHostBuilder"/>.</returns>
+        /// <returns>The initialized <see cref="IHostBuilder"/>.</returns>
         public static IHostBuilder CreateDefaultBuilder(string[] args)
         {
             HostBuilder builder = new();
