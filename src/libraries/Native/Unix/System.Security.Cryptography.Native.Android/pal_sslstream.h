@@ -26,7 +26,9 @@ enum
 {
     SSLStreamStatus_OK = 0,
     SSLStreamStatus_NeedData = 1,
-    SSLStreamStatus_Error = 2
+    SSLStreamStatus_Error = 2,
+    SSLStreamStatus_Renegotiate = 3,
+    SSLStreamStatus_Closed = 4,
 };
 typedef int32_t PAL_SSLStreamStatus;
 
@@ -47,3 +49,5 @@ PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLStream *ssl
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream *sslStream, jobject** out, int* outLen);
 
 PALEXPORT bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream *sslStream, char* hostname);
+
+PALEXPORT bool AndroidCryptoNative_SSLStreamShutdown(SSLStream *sslStream);

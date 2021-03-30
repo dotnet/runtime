@@ -97,6 +97,8 @@ namespace System.Net.Security
                 {
                     PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
                     PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.ContinueNeeded,
+                    PAL_SSLStreamStatus.Renegotiate => SecurityStatusPalErrorCode.Renegotiate,
+                    PAL_SSLStreamStatus.Closed => SecurityStatusPalErrorCode.ContextExpired,
                     _ => SecurityStatusPalErrorCode.InternalError
                 };
 
@@ -145,6 +147,8 @@ namespace System.Net.Security
                         {
                             PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
                             PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.OK,
+                            PAL_SSLStreamStatus.Renegotiate => SecurityStatusPalErrorCode.Renegotiate,
+                            PAL_SSLStreamStatus.Closed => SecurityStatusPalErrorCode.ContextExpired,
                             _ => SecurityStatusPalErrorCode.InternalError
                         };
 
@@ -245,8 +249,7 @@ namespace System.Net.Security
             SafeSslHandle sslHandle = sslContext.SslContext;
 
 
-            // bool success = Interop.AndroidCrypto.SSLStreamShutdown(sslHandle);
-            bool success = false;
+            bool success = Interop.AndroidCrypto.SSLStreamShutdown(sslHandle);
             if (success)
             {
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);

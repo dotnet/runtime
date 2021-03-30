@@ -21,7 +21,9 @@ internal static partial class Interop
         {
             OK = 0,
             NeedData = 1,
-            Error = 2
+            Error = 2,
+            Renegotiate = 3,
+            Closed = 4,
         };
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreate")]
@@ -154,6 +156,10 @@ internal static partial class Interop
             Marshal.FreeHGlobal(cipherSuitePtr);
             return cipherSuite;
         }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamShutdown")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static extern bool SSLStreamShutdown(SafeSslHandle ssl);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamVerifyHostname")]
         [return: MarshalAs(UnmanagedType.U1)]

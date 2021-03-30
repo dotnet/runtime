@@ -56,6 +56,17 @@ namespace System.Net
             SslAuthenticationOptions authOptions)
         {
             bool isServer = authOptions.IsServer;
+
+            if (authOptions.ApplicationProtocols != null
+                || authOptions.CipherSuitesPolicy != null
+                || credential.Protocols != SslProtocols.None
+                || (isServer && authOptions.RemoteCertRequired)
+                || (credential.CertificateContext != null))
+            {
+                // TODO: [AndroidCrypto] Handle non-system-default options
+                throw new NotImplementedException();
+            }
+
             SafeSslHandle handle = Interop.AndroidCrypto.SSLStreamCreate(
                 isServer,
                 readCallback,
@@ -63,39 +74,9 @@ namespace System.Net
                 InitialBufferSize,
                 InitialBufferSize);
 
-            // Interop.AndroidCrypto.SSLStreamSetParameters
-            if (authOptions.ApplicationProtocols != null)
-            {
-                // SSLParameters.setApplicationProtocols
-                // SSLEngine.setSSLParameters
-            }
-
-            if (credential.Protocols != SslProtocols.None)
-            {
-                // new SSLParameters(cipherSuites, protocols)
-                // SSLEngine.setEnabledProtocols
-            }
-
-            if (authOptions.CipherSuitesPolicy != null)
-            {
-                // new SSLParameters(cipherSuites, protocols)
-                // SSLEngine.setEnabledCipherSuites
-            }
-
             if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
             {
                 Interop.AndroidCrypto.SSLStreamConfigureParameters(handle, authOptions.TargetHost);
-            }
-
-            if (isServer && authOptions.RemoteCertRequired)
-            {
-                // SSLParameters.setNeedClientAuth
-                // SSLEngine.setSSLParameters
-            }
-
-            if (credential.CertificateContext != null && credential.CertificateContext.IntermediateCertificates.Length > 0)
-            {
-                throw new NotImplementedException();
             }
 
             return handle;
