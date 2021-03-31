@@ -208,7 +208,7 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            propertyValue = GetPropertyValue(property, instance, config, options, null);
+            propertyValue = GetPropertyValue(property, instance, config, options);
 
             if (propertyValue != null && hasSetter)
             {
@@ -576,21 +576,14 @@ namespace Microsoft.Extensions.Configuration
             return allProperties;
         }
 
-        private static object GetPropertyValue(PropertyInfo property, object instance, IConfiguration config, BinderOptions options, object defaultValue)
+        private static object GetPropertyValue(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
         {
-            try
-            {
-                string propertyName = GetPropertyName(property);
-                return BindInstance(
-                    property.PropertyType,
-                    property.GetValue(instance),
-                    config.GetSection(propertyName),
-                    options) ?? defaultValue;
-            }
-            catch
-            {
-                return defaultValue;
-            }
+            string propertyName = GetPropertyName(property);
+            return BindInstance(
+                property.PropertyType,
+                property.GetValue(instance),
+                config.GetSection(propertyName),
+                options);
         }
 
         private static string GetPropertyName(MemberInfo property)
