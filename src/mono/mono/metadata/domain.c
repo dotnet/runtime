@@ -255,6 +255,7 @@ domain_id_alloc (MonoDomain *domain)
 		appdomains_list = new_list;
 		appdomain_list_size = new_size;
 	}
+
 	domain->domain_id = id;
 	appdomains_list [id] = domain;
 	appdomain_next++;
@@ -759,26 +760,9 @@ void
 mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 {
 	MONO_ENTER_GC_UNSAFE;
-	int i, size;
-	MonoDomain **copy;
 
-	/*
-	 * Create a copy of the data to avoid calling the user callback
-	 * inside the lock because that could lead to deadlocks.
-	 * We can do this because this function is not perf. critical.
-	 */
-	mono_appdomains_lock ();
-	size = appdomain_list_size;
-	copy = (MonoDomain **)gc_alloc_fixed_non_heap_list (appdomain_list_size * sizeof (void*));
-	memcpy (copy, appdomains_list, appdomain_list_size * sizeof (void*));
-	mono_appdomains_unlock ();
+	func (mono_get_root_domain (), user_data);
 
-	for (i = 0; i < size; ++i) {
-		if (copy [i])
-			func (copy [i], user_data);
-	}
-
-	gc_free_fixed_non_heap_list (copy);
 	MONO_EXIT_GC_UNSAFE;
 }
 

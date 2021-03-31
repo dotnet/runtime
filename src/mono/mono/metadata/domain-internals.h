@@ -38,14 +38,6 @@ struct _MonoAppContext {
 	gint32 context_id;
 };
 
-typedef struct _MonoThunkFreeList {
-	guint32 size;
-	int length;		/* only valid for the wait list */
-	struct _MonoThunkFreeList *next;
-} MonoThunkFreeList;
-
-typedef struct _MonoJitCodeHash MonoJitCodeHash;
-
 struct _MonoDomain {
 	/*
 	 * keep all the managed objects close to each other for the precise GC
@@ -123,9 +115,6 @@ mono_domain_unset (void);
 void
 mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exception);
 
-void
-mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash);
-
 MonoAssembly *
 mono_assembly_load_corlib (MonoImageOpenStatus *status);
 
@@ -155,15 +144,6 @@ mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname, Mono
 MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean postload, gpointer user_data, MonoError *error);
 
-MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, gpointer addr, gboolean try_aot, gboolean allow_trampolines);
-
-typedef void (*MonoJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
-
-void
-mono_jit_info_table_foreach_internal (MonoDomain *domain, MonoJitInfoFunc func, gpointer user_data);
-
-void mono_enable_debug_domain_unload (gboolean enable);
-
 void
 mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb, MonoError *error);
 
@@ -184,19 +164,6 @@ mono_runtime_install_appctx_properties (void);
 
 gboolean 
 mono_domain_set_fast (MonoDomain *domain, gboolean force);
-
-static inline MonoMemoryManager *
-mono_domain_memory_manager (MonoDomain *domain)
-{
-	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
-}
-
-static inline MonoMemoryManager*
-mono_mem_manager_get_ambient (void)
-{
-	// FIXME: All callers should get a MemoryManager from their callers or context
-	return mono_domain_memory_manager (mono_get_root_domain ());
-}
 
 G_END_DECLS
 
