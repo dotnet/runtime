@@ -13,22 +13,26 @@ namespace System.Net.WebSockets.Compression
     /// </summary>
     internal sealed class WebSocketDeflater : IDisposable
     {
+        private readonly ZLibStreamPool _streamPool;
         private ZLibStreamHandle? _stream;
-        private readonly int _windowBits;
         private readonly bool _persisted;
 
         private byte[]? _buffer;
 
         internal WebSocketDeflater(int windowBits, bool persisted)
         {
-            Debug.Assert(windowBits >= 9 && windowBits <= 15);
-
-            // We use negative window bits in order to produce raw deflate data
-            _windowBits = -windowBits;
+            _streamPool = ZLibStreamPool.GetOrCreate(windowBits);
             _persisted = persisted;
         }
 
-        public void Dispose() => _stream?.Dispose();
+        public void Dispose()
+        {
+            if (_stream is not null)
+            {
+                _streamPool.ReturnDeflater(_stream);
+                _stream = null;
+            }
+        }
 
         public void ReleaseBuffer()
         {
@@ -80,10 +84,7 @@ namespace System.Net.WebSockets.Compression
         private void DeflatePrivate(ReadOnlySpan<byte> payload, Span<byte> output, bool continuation, bool endOfMessage,
             out int consumed, out int written, out bool needsMoreOutput)
         {
-            if (_stream is null)
-            {
-                Initialize();
-            }
+            _stream ??= _streamPool.GetDeflater();
 
             if (payload.Length == 0)
             {
@@ -119,7 +120,7 @@ namespace System.Net.WebSockets.Compression
 
             if (endOfMessage && !_persisted)
             {
-                _stream.Dispose();
+                _streamPool.ReturnDeflater(_stream);
                 _stream = null;
             }
         }
@@ -190,33 +191,6 @@ namespace System.Net.WebSockets.Compression
                 ? SR.ZLibErrorInconsistentStream
                 : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
             throw new WebSocketException(message);
-        }
-
-        [MemberNotNull(nameof(_stream))]
-        private void Initialize()
-        {
-            Debug.Assert(_stream is null);
-            ErrorCode errorCode;
-            try
-            {
-                errorCode = CreateZLibStreamForDeflate(out _stream,
-                    level: CompressionLevel.DefaultCompression,
-                    windowBits: _windowBits,
-                    memLevel: Deflate_DefaultMemLevel,
-                    strategy: CompressionStrategy.DefaultStrategy);
-            }
-            catch (Exception cause)
-            {
-                throw new WebSocketException(SR.ZLibErrorDLLLoadError, cause);
-            }
-
-            if (errorCode != ErrorCode.Ok)
-            {
-                string message = errorCode == ErrorCode.MemError
-                    ? SR.ZLibErrorNotEnoughMemory
-                    : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
-                throw new WebSocketException(message);
-            }
         }
     }
 }

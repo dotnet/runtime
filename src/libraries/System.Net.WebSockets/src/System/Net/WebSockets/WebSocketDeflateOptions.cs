@@ -20,12 +20,12 @@ namespace System.Net.WebSockets
         /// We cannot use silently 9 instead of 8, because the websocket produces raw deflate stream
         /// and thus it needs to know the window bits in advance. Also take a look at https://github.com/madler/zlib/issues/171.
         /// </summary>
-        private const int MinWindowBits = 9;
+        internal const int MinWindowBits = 9;
 
         /// <summary>
         /// The maximum value for window bits that the websocket can support.
         /// </summary>
-        private const int MaxWindowBits = 15;
+        internal const int MaxWindowBits = 15;
 
         private int _clientMaxWindowBits = 15;
         private int _serverMaxWindowBits = 15;

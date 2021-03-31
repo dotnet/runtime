@@ -15,12 +15,12 @@ namespace System.Net.WebSockets.Compression
         internal const int FlushMarkerLength = 4;
         internal static ReadOnlySpan<byte> FlushMarker => new byte[] { 0x00, 0x00, 0xFF, 0xFF };
 
+        private readonly ZLibStreamPool _streamPool;
         private ZLibStreamHandle? _stream;
-        private readonly int _windowBits;
         private readonly bool _persisted;
 
         /// <summary>
-        /// There is no way of knowing, when decoding data, if the underlying deflater
+        /// There is no way of knowing, when decoding data, if the underlying inflater
         /// has flushed all outstanding data to consumer other than to provide a buffer
         /// and see whether any bytes are written. There are cases when the consumers
         /// provide a buffer exactly the size of the uncompressed data and in this case
@@ -48,10 +48,7 @@ namespace System.Net.WebSockets.Compression
 
         internal WebSocketInflater(int windowBits, bool persisted)
         {
-            Debug.Assert(windowBits >= 9 && windowBits <= 15);
-
-            // We use negative window bits to instruct deflater to expect raw deflate data
-            _windowBits = -windowBits;
+            _streamPool = ZLibStreamPool.GetOrCreate(windowBits);
             _persisted = persisted;
         }
 
@@ -66,7 +63,11 @@ namespace System.Net.WebSockets.Compression
 
         public void Dispose()
         {
-            _stream?.Dispose();
+            if (_stream is not null)
+            {
+                _streamPool.ReturnInflater(_stream);
+                _stream = null;
+            }
             ReleaseBuffer();
         }
 
@@ -104,7 +105,7 @@ namespace System.Net.WebSockets.Compression
                 _available += totalBytesReceived;
             }
 
-            _stream ??= Initialize(_windowBits);
+            _stream ??= _streamPool.GetInflater();
 
             if (_available > 0 && output.Length > 0)
             {
@@ -183,7 +184,7 @@ namespace System.Net.WebSockets.Compression
             {
                 if (!_persisted)
                 {
-                    _stream.Dispose();
+                    _streamPool.ReturnInflater(_stream);
                     _stream = null;
                 }
                 return true;
@@ -250,33 +251,6 @@ namespace System.Net.WebSockets.Compression
                 default:
                     throw new WebSocketException(string.Format(SR.ZLibErrorUnexpected, (int)errorCode));
             }
-        }
-
-        private static ZLibStreamHandle Initialize(int windowBits)
-        {
-            ZLibStreamHandle stream;
-            ErrorCode errorCode;
-
-            try
-            {
-                errorCode = CreateZLibStreamForInflate(out stream, windowBits);
-            }
-            catch (Exception exception)
-            {
-                throw new WebSocketException(SR.ZLibErrorDLLLoadError, exception);
-            }
-
-            if (errorCode == ErrorCode.Ok)
-            {
-                return stream;
-            }
-
-            stream.Dispose();
-
-            string message = errorCode == ErrorCode.MemError
-                ? SR.ZLibErrorNotEnoughMemory
-                : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
-            throw new WebSocketException(message);
         }
     }
 }
