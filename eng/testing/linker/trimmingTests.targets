@@ -66,6 +66,11 @@
       <_additionalProjectSourceFiles Include="%(TestConsoleApps.AdditionalSourceFiles)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_TrimmerRootAssemblies>%(TestConsoleApps.TrimmerRootAssemblies)</_TrimmerRootAssemblies>
+      <_TrimmerRootAssemblies Condition="'$(_TrimmerRootAssemblies)' != ''">&lt;TrimmerRootAssembly Include=&quot;$(_TrimmerRootAssemblies)&quot; /&gt;</_TrimmerRootAssemblies>
+    </PropertyGroup>
+
     <MakeDir Directories="$(_projectDir)" />
     <WriteLinesToFile File="$(_projectFile)"
                       Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
@@ -77,6 +82,7 @@
                                                  .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)')
                                                  .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
+                                                 .Replace('{TrimmerRootAssemblies}', '$(_TrimmerRootAssemblies)')
                                                  .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
                                                  .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
                                                  .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
