@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Extensions.DependencyModel
 {
-    internal class EnvironmentWrapper : IEnvironment
+    internal sealed class EnvironmentWrapper : IEnvironment
     {
         public static IEnvironment Default = new EnvironmentWrapper();
 

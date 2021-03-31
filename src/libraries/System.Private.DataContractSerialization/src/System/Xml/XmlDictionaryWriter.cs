@@ -642,7 +642,7 @@ namespace System.Xml
 
         public override void Close() { }
 
-        private class XmlWrappedWriter : XmlDictionaryWriter
+        private sealed class XmlWrappedWriter : XmlDictionaryWriter
         {
             private readonly XmlWriter _writer;
             private int _depth;

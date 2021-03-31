@@ -82,7 +82,7 @@ namespace Internal.TypeSystem.Ecma
             var metadataReader = MetadataReader;
             BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetMethodDefinition(_handle).Signature);
 
-            EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader);
+            EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader, NotFoundBehavior.Throw);
             var signature = parser.ParseMethodSignature();
             return (_signature = signature);
         }
@@ -573,7 +573,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 MetadataReader metadataReader = MetadataReader;
                 BlobReader marshalAsReader = metadataReader.GetBlobReader(parameter.GetMarshallingDescriptor());
-                EcmaSignatureParser parser = new EcmaSignatureParser(Module, marshalAsReader);
+                EcmaSignatureParser parser = new EcmaSignatureParser(Module, marshalAsReader, NotFoundBehavior.Throw);
                 MarshalAsDescriptor marshalAs = parser.ParseMarshalAsDescriptor();
                 Debug.Assert(marshalAs != null);
                 return marshalAs;

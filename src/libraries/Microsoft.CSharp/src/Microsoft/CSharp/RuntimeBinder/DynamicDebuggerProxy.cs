@@ -51,7 +51,7 @@ namespace Microsoft.CSharp.RuntimeBinder
     internal sealed class DynamicMetaObjectProviderDebugView
     {
         [System.Diagnostics.DebuggerDisplay("{value}", Name = "{name, nq}", Type = "{type, nq}")]
-        internal class DynamicProperty
+        internal sealed class DynamicProperty
         {
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
             private readonly string name;
@@ -452,13 +452,13 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [Serializable]
-        internal class DynamicDebugViewEmptyException : Exception
+        internal sealed class DynamicDebugViewEmptyException : Exception
         {
             public DynamicDebugViewEmptyException()
             {
             }
 
-            protected DynamicDebugViewEmptyException(SerializationInfo info, StreamingContext context)
+            private DynamicDebugViewEmptyException(SerializationInfo info, StreamingContext context)
                 : base(info, context)
             {
             }

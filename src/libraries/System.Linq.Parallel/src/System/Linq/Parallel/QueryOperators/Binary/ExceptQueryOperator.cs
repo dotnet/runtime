@@ -134,7 +134,7 @@ namespace System.Linq.Parallel
         // elements that have not yet been seen.
         //
 
-        private class ExceptQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, int>
+        private sealed class ExceptQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, int>
         {
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
@@ -186,7 +186,7 @@ namespace System.Linq.Parallel
                     while (_rightSource.MoveNext(ref rightElement, ref rightKeyUnused))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         _hashLookup.Add(rightElement.First);
                     }
@@ -200,7 +200,7 @@ namespace System.Linq.Parallel
                 while (_leftSource.MoveNext(ref leftElement, ref leftKeyUnused))
                 {
                     if ((_outputLoopCount.Value++ & CancellationState.POLL_INTERVAL) == 0)
-                        _cancellationToken.ThrowIfCancellationRequested();;
+                        _cancellationToken.ThrowIfCancellationRequested();
 
                     if (_hashLookup.Add(leftElement.First))
                     {
@@ -224,7 +224,7 @@ namespace System.Linq.Parallel
             }
         }
 
-        private class OrderedExceptQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, TLeftKey>
+        private sealed class OrderedExceptQueryOperatorEnumerator<TLeftKey> : QueryOperatorEnumerator<TInputOutput, TLeftKey>
         {
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
@@ -273,7 +273,7 @@ namespace System.Linq.Parallel
                     while (_rightSource.MoveNext(ref rightElement, ref rightKeyUnused))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         rightLookup.Add(rightElement.First);
                     }
@@ -287,7 +287,7 @@ namespace System.Linq.Parallel
                     while (_leftSource.MoveNext(ref leftElement, ref leftKey))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         if (rightLookup.Contains(leftElement.First))
                         {

@@ -1155,7 +1155,7 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
 
     // Set CORJIT_FLAG_MIN_OPT only if COMPlus_JitMinOpts == 1
     static ConfigDWORD g_jitMinOpts;
-    if (g_jitMinOpts.val_DontUse_(CLRConfig::UNSUPPORTED_JITMinOpts, 0) == 1)
+    if (g_jitMinOpts.val(CLRConfig::UNSUPPORTED_JITMinOpts) == 1)
     {
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT);
     }

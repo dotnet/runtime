@@ -8,7 +8,7 @@ namespace System.Drawing
     /// <summary>
     /// Contains information about the context of a Graphics object.
     /// </summary>
-    internal class GraphicsContext : IDisposable
+    internal sealed class GraphicsContext : IDisposable
     {
         /// <summary>
         /// The state that identifies the context.

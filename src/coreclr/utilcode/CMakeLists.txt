@@ -36,7 +36,6 @@ set(UTILCODE_COMMON_SOURCES
   corimage.cpp
   format1.cpp
   prettyprintsig.cpp
-  regutil.cpp
   sha1.cpp
   sigbuilder.cpp
   sigparser.cpp

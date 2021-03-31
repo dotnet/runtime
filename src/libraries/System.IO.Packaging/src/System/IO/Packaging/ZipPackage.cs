@@ -541,7 +541,7 @@ namespace System.IO.Packaging
         /// This is a helper class that maintains the Content Types File related to
         /// this ZipPackage.
         /// </summary>
-        private class ContentTypeHelper
+        private sealed class ContentTypeHelper
         {
             /// <summary>
             /// Initialize the object without uploading any information from the package.

@@ -36,6 +36,9 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
                 Command = $"bash -c 'source {envScriptPath} > /dev/null 2>&1 && {Command}'";
             }
+
+            var workingDir = string.IsNullOrEmpty(WorkingDirectory) ? Directory.GetCurrentDirectory() : WorkingDirectory;
+            Log.LogMessage(MessageImportance.Low, $"Working directory: {workingDir}");
             Log.LogMessage(MessageImportance.Low, $"Using Command: {Command}");
 
             return base.Execute() && !Log.HasLoggedErrors;

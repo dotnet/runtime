@@ -15,7 +15,7 @@ namespace System.Xml.Xsl.Xslt
 {
     using T = XmlQueryTypeFactory;
 
-    internal class XPathPatternBuilder : XPathPatternParser.IPatternBuilder
+    internal sealed class XPathPatternBuilder : XPathPatternParser.IPatternBuilder
     {
         private readonly XPathPredicateEnvironment _predicateEnvironment;
         private readonly XPathBuilder _predicateBuilder;
@@ -40,7 +40,7 @@ namespace System.Xml.Xsl.Xslt
             get { return _fixupNode; }
         }
 
-        public virtual void StartBuild()
+        public void StartBuild()
         {
             Debug.Assert(!_inTheBuild, "XPathBuilder is busy!");
             _inTheBuild = true;
@@ -63,7 +63,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         [return: NotNullIfNotNull("result")]
-        public virtual QilNode? EndBuild(QilNode? result)
+        public QilNode? EndBuild(QilNode? result)
         {
             Debug.Assert(_inTheBuild, "StartBuild() wasn't called");
             if (result == null)
@@ -337,7 +337,7 @@ namespace System.Xml.Xsl.Xslt
 
         // -------------------------------------- Priority / Parent ---------------------------------------
 
-        private class Annotation
+        private sealed class Annotation
         {
             public double Priority;
             public QilLoop? Parent;
@@ -383,7 +383,7 @@ namespace System.Xml.Xsl.Xslt
             return _predicateBuilder;
         }
 
-        private class XPathPredicateEnvironment : IXPathEnvironment
+        private sealed class XPathPredicateEnvironment : IXPathEnvironment
         {
             private readonly IXPathEnvironment _baseEnvironment;
             private readonly XPathQilFactory _f;
@@ -426,7 +426,7 @@ namespace System.Xml.Xsl.Xslt
             public QilNode GetLast() { numFixupLast++; return _fixupLast; }
         }
 
-        private class XsltFunctionFocus : IFocus
+        private sealed class XsltFunctionFocus : IFocus
         {
             private readonly QilIterator _current;
 

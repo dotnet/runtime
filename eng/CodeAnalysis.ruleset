@@ -40,7 +40,7 @@
     <Rule Id="CA1047" Action="Warning" />       <!-- Do not declare protected member in sealed type -->
     <Rule Id="CA1050" Action="Warning" />       <!-- Declare types in namespaces -->
     <Rule Id="CA1051" Action="None" />          <!-- Do not declare visible instance fields -->
-    <Rule Id="CA1052" Action="None" />          <!-- Static holder types should be Static or NotInheritable -->
+    <Rule Id="CA1052" Action="Warning" />       <!-- Static holder types should be Static or NotInheritable -->
     <Rule Id="CA1054" Action="None" />          <!-- Uri parameters should not be strings -->
     <Rule Id="CA1055" Action="None" />          <!-- Uri return values should not be strings -->
     <Rule Id="CA1056" Action="None" />          <!-- Uri properties should not be strings -->

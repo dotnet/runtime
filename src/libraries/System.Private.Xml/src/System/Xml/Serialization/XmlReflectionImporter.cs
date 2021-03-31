@@ -2247,7 +2247,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
     }
-    internal class ImportStructWorkItem
+    internal sealed class ImportStructWorkItem
     {
         private readonly StructModel _model;
         private readonly StructMapping _mapping;
@@ -2262,7 +2262,7 @@ namespace System.Xml.Serialization
         internal StructMapping Mapping { get { return _mapping; } }
     }
 
-    internal class WorkItems
+    internal sealed class WorkItems
     {
         private readonly ArrayList _list = new ArrayList();
 
@@ -2312,7 +2312,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class RecursionLimiter
+    internal sealed class RecursionLimiter
     {
         private readonly int _maxDepth;
         private int _depth;

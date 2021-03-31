@@ -804,7 +804,7 @@ namespace Microsoft.Extensions.DependencyModel
             return result;
         }
 
-        private class Target
+        private sealed class Target
         {
             public string Name;
 

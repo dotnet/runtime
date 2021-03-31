@@ -25,7 +25,7 @@ namespace System.Runtime.Serialization
 #if !FEATURE_SERIALIZATION
     public class CodeTypeReference : CodeObject
 #else
-    internal class CodeTypeReference : CodeObject
+    internal sealed class CodeTypeReference : CodeObject
 #endif
     {
         private string? _baseType;

@@ -252,7 +252,7 @@ namespace Tracing.Tests.Common
         {
             byte[] serializedData = null;
             // Verify things will fit in the size capacity
-            Header.Size = checked((UInt16)(IpcHeader.HeaderSizeInBytes + (Payload?.Length ?? 0))); ;
+            Header.Size = checked((UInt16)(IpcHeader.HeaderSizeInBytes + (Payload?.Length ?? 0)));
             byte[] headerBytes = Header.Serialize();
 
             using (var stream = new MemoryStream())

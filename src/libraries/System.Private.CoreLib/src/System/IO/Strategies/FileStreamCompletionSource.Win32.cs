@@ -10,7 +10,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Strategies
 {
-    // to avoid code duplicaiton of FileStreamCompletionSource for LegacyFileStreamStrategy and AsyncWindowsFileStreamStrategy
+    // to avoid code duplicaiton of FileStreamCompletionSource for Net5CompatFileStreamStrategy and AsyncWindowsFileStreamStrategy
     // we have created the following interface that is a common contract for both of them
     internal interface IFileStreamCompletionSourceStrategy
     {
@@ -237,7 +237,7 @@ namespace System.IO.Strategies
             // MemoryFileStreamCompletionSource, which Retains the memory, which will result in less pinning in the case
             // where the underlying memory is backed by pre-pinned buffers.
             return preallocatedOverlapped != null && MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer)
-                && preallocatedOverlapped.IsUserObject(buffer.Array) // preallocatedOverlapped is allocated when BufferedStream|LegacyFileStreamStrategy allocates the buffer
+                && preallocatedOverlapped.IsUserObject(buffer.Array) // preallocatedOverlapped is allocated when BufferedStream|Net5CompatFileStreamStrategy allocates the buffer
                 ? new FileStreamCompletionSource(strategy, preallocatedOverlapped, numBufferedBytesRead, buffer.Array)
                 : new MemoryFileStreamCompletionSource(strategy, numBufferedBytesRead, memory);
         }

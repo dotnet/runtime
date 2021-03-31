@@ -8,7 +8,7 @@ namespace System.Xml.Schema
     using System.Collections;
     using System.Collections.Generic;
 
-    internal class SchemaNamespaceManager : XmlNamespaceManager
+    internal sealed class SchemaNamespaceManager : XmlNamespaceManager
     {
         private readonly XmlSchemaObject _node;
 

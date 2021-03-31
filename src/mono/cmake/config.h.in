@@ -342,9 +342,6 @@
 /* Disable assertion messages. */
 #cmakedefine DISABLE_ASSERT_MESSAGES 1
 
-/* Disable runtime cleanup. */
-#cmakedefine DISABLE_CLEANUP 1
-
 /* Disable concurrent gc support in SGEN. */
 #cmakedefine DISABLE_SGEN_MAJOR_MARKSWEEP_CONC 1
 

@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     // Note: we only need to support the operations used by ComBinder
-    internal class ComMetaObject : DynamicMetaObject
+    internal sealed class ComMetaObject : DynamicMetaObject
     {
         internal ComMetaObject(Expression expression, BindingRestrictions restrictions, object arg)
             : base(expression, restrictions, arg)

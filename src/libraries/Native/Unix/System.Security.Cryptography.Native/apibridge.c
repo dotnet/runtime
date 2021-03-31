@@ -298,6 +298,23 @@ int32_t local_DSA_set0_key(DSA* dsa, BIGNUM* bnY, BIGNUM* bnX)
     return 1;
 }
 
+RSA* local_EVP_PKEY_get0_RSA(EVP_PKEY* pkey)
+{
+    if (pkey == NULL)
+    {
+        return NULL;
+    }
+
+    RSA* rsa = EVP_PKEY_get1_RSA(pkey);
+
+    if (rsa != NULL)
+    {
+        RSA_free(rsa);
+    }
+
+    return rsa;
+}
+
 int32_t local_EVP_PKEY_up_ref(EVP_PKEY* pkey)
 {
     if (!pkey)

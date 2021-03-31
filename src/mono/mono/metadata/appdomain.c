@@ -434,15 +434,6 @@ mono_context_init (MonoDomain *domain)
 void
 mono_runtime_cleanup (MonoDomain *domain)
 {
-	/* This ends up calling any pending pending (for at most 2 seconds) */
-	mono_gc_cleanup ();
-
-	mono_thread_cleanup ();
-	mono_marshal_cleanup ();
-
-	mono_type_initialization_cleanup ();
-
-	mono_monitor_cleanup ();
 }
 
 static MonoDomainFunc quit_function = NULL;
@@ -614,13 +605,7 @@ exit:
 gboolean
 mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 {
-	gboolean res;
-	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
-
-	mono_mem_manager_lock (memory_manager);
-	res = mono_mempool_contains_addr (memory_manager->mp, vtable_slot);
-	mono_mem_manager_unlock (memory_manager);
-	return res;
+	return mono_mem_manager_mp_contains_addr (mono_mem_manager_get_ambient (), vtable_slot);
 }
 
 gboolean

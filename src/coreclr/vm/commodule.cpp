@@ -44,7 +44,7 @@ static ISymUnmanagedWriter **CreateISymWriterForDynamicModule(ReflectionModule *
 
 
     static ConfigDWORD dbgForcePDBSymbols;
-    if(dbgForcePDBSymbols.val_DontUse_(W("DbgForcePDBSymbols"), 0) == 1)
+    if(dbgForcePDBSymbols.val(CLRConfig::INTERNAL_DbgForcePDBSymbols) == 1)
     {
         symFormatToUse = eSymbolFormatPDB;
     }
@@ -622,7 +622,7 @@ void QCALLTYPE COMModule::SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 
     RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter();
     _ASSERTE(pRCW);
 
-    ICeeGen * pGen = pRCW->GetCeeGen();
+    ICeeGenInternal * pGen = pRCW->GetCeeGen();
 
     ReflectionModule * pReflectionModule = pModule->GetReflectionModule();
 

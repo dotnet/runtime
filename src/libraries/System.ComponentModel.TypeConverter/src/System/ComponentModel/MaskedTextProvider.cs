@@ -65,7 +65,7 @@ namespace System.ComponentModel
         /// This structure describes some constraints and properties of a character in the test string, as specified
         /// in the mask.
         /// </summary>
-        private class CharDescriptor
+        private sealed class CharDescriptor
         {
             // The position the character holds in the mask string. Required for testing the character against the mask.
             public int MaskPosition;

@@ -26,7 +26,7 @@ namespace System
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
-        public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("Android"));
+        public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
@@ -85,6 +85,8 @@ namespace System
 
             }
         }
+        
+        public static bool IsLineNumbersSupported => true;
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime; // matches definitions in clr.featuredefines.props
@@ -235,9 +237,9 @@ namespace System
                               version & 0xFF);
         }
 
-        private static readonly Lazy<bool> _legacyFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.FileStreamHelpers", "UseLegacyStrategy"));
+        private static readonly Lazy<bool> _net5CompatFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.FileStreamHelpers", "UseNet5CompatStrategy"));
 
-        public static bool IsLegacyFileStreamEnabled => _legacyFileStream.Value;
+        public static bool IsNet5CompatFileStreamEnabled => _net5CompatFileStream.Value;
 
         private static bool GetIsInContainer()
         {

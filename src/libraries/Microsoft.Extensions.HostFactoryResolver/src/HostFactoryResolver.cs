@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace Microsoft.Extensions.Hosting
 {
-    internal class HostFactoryResolver
+    internal sealed class HostFactoryResolver
     {
         private const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 

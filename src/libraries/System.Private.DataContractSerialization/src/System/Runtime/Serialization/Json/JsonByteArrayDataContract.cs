@@ -9,7 +9,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonByteArrayDataContract : JsonDataContract
+    internal sealed class JsonByteArrayDataContract : JsonDataContract
     {
         public JsonByteArrayDataContract(ByteArrayDataContract traditionalByteArrayDataContract)
             : base(traditionalByteArrayDataContract)
