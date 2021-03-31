@@ -310,7 +310,7 @@ namespace Microsoft.NET.HostModel.Bundle
                             throw new ArgumentException($"Invalid input specification: Found entries '{fileSpec.SourcePath}' and '{existingFileSpec.SourcePath}' with the same BundleRelativePath '{fileSpec.BundleRelativePath}'");
                         }
 
-                        // Exact duplciate - intentionally skip and don't include a second copy in the bundle
+                        // Exact duplicate - intentionally skip and don't include a second copy in the bundle
                         continue;
                     }
                     else
