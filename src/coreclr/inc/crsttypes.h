@@ -149,7 +149,7 @@ int g_rgCrstLevelMap[] =
     14,         // CrstAppDomainHandleTable
     0,          // CrstArgBasedStubCache
     0,          // CrstAssemblyList
-    7,          // CrstAssemblyLoader
+    12,         // CrstAssemblyLoader
     3,          // CrstAvailableClass
     4,          // CrstAvailableParamTypes
     7,          // CrstBaseDomain
