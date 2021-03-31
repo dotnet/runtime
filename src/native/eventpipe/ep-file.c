@@ -317,7 +317,7 @@ ep_file_alloc (
 	instance->stream_writer = stream_writer;
 	instance->format = format;
 
-	instance->event_block = ep_event_block_alloc (100 * 1024, format);
+	instance->event_block = ep_event_block_alloc (1024 * 1024, format);
 	ep_raise_error_if_nok (instance->event_block != NULL);
 
 	instance->metadata_block = ep_metadata_block_alloc (100 * 1024);
