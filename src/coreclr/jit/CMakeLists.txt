@@ -466,7 +466,7 @@ endif (FEATURE_MERGE_JIT_AND_ENGINE)
 # Creates a static library "clrjit_static" to link into the VM.
 add_subdirectory(static)
 
-if (CLR_CMAKE_TARGET_OSX AND CLR_CMAKE_TARGET_ARCH_ARM64)
+if ((CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST) AND CLR_CMAKE_TARGET_ARCH_ARM64)
   set(TARGET_OS_NAME unix_osx) # Apple Arm64 has a special ABI, distinguish it.
 elseif (CLR_CMAKE_TARGET_UNIX)
   set(TARGET_OS_NAME unix)

@@ -20,6 +20,8 @@
     <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
 
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
+
+    <IsiOSLike Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsiOSLike>
   </PropertyGroup>
 
   <ItemGroup>
@@ -285,6 +287,12 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\ExpandoToDispatchExMarshaler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\TypeToTypeInfoMarshaler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Variant.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsiOSLike)' == 'true'">
+    <Compile Include="$(BclSourcesRoot)\System\Environment.iOS.cs"/>
+    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
+      <Link>Common\Interop\OSX\Interop.SearchPath.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />

@@ -15,6 +15,10 @@ list(APPEND CLR_SOURCES
     Native.rc
 )
 
+if(CLR_CMAKE_TARGET_MACCATALYST)
+  add_definitions(-DTARGET_MACCATALYST)
+endif(CLR_CMAKE_TARGET_MACCATALYST)
+
 set (DEF_SOURCES
   mscorwks_ntdef.src
 )

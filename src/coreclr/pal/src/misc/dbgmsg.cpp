@@ -821,6 +821,7 @@ void PAL_DisplayDialog(const char *szTitle, const char *szText)
         if (cfsText != NULL)
         {
             CFOptionFlags response;
+#if !defined(TARGET_MACCATALYST)
             CFUserNotificationDisplayAlert(0,               // Never time-out, wait for user to hit 'OK'
                                            0,               // No flags
                                            NULL,            // Default icon
@@ -832,6 +833,7 @@ void PAL_DisplayDialog(const char *szTitle, const char *szText)
                                            NULL,            // No alternate button
                                            NULL,            // No third button
                                            &response);      // User's response (discarded)
+#endif
             CFRelease(cfsText);
         }
         CFRelease(cfsTitle);

@@ -54,6 +54,7 @@ namespace
     // Check if given function belongs to one of statically linked libraries and return a pointer if found.
     const void* STDMETHODCALLTYPE pinvoke_override(const char* libraryName, const char* entrypointName)
     {
+#if !defined(TARGET_MACCATALYST)
 #if defined(_WIN32)
         if (strcmp(libraryName, "System.IO.Compression.Native") == 0)
         {
@@ -87,7 +88,7 @@ namespace
             return CryptoAppleResolveDllImport(entrypointName);
         }
 #endif
-
+#endif
         return nullptr;
     }
 #endif

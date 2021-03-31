@@ -311,7 +311,9 @@ MessageBoxA(
             cfsButton1 = CFSTR("Abort");
             cfsButton2 = CFSTR("Retry");
             cfsButton3 = CFSTR("Ignore");
+#if !defined(TARGET_MACCATALYST)
             alertFlags = kCFUserNotificationCautionAlertLevel;
+#endif
             break;
 
         case MB_YESNO:
@@ -330,6 +332,7 @@ MessageBoxA(
             break;
         }
 
+#if !defined(TARGET_MACCATALYST)
         CFUserNotificationDisplayAlert(0 /* no time out */, alertFlags, NULL /* iconURL */,
             NULL /* soundURL */, NULL /* localizationURL */, cfsTitle, cfsText, cfsButton1,
             cfsButton2, cfsButton3, &response);
@@ -390,8 +393,10 @@ MessageBoxA(
             }
             break;
         }
+#endif
     }
     else
+
     {
         // We're not in a login session, e.g., running via ssh, and so bringing
         // up a message box would be bad form.

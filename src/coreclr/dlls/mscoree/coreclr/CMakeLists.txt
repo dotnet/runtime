@@ -50,11 +50,11 @@ else(CLR_CMAKE_HOST_WIN32)
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
     endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
 
-    if(CLR_CMAKE_TARGET_OSX)
+    if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -force_load)
         set(END_WHOLE_ARCHIVE )
-    endif(CLR_CMAKE_TARGET_OSX)
+    endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
 
     set_exports_linker_option(${EXPORTS_FILE})
 
@@ -107,9 +107,14 @@ set(CORECLR_LIBRARIES
     ildbsymlib
     utilcode
     v3binder
-    System.Globalization.Native-Static
     interop
 )
+
+if(NOT CLR_CMAKE_TARGET_MACCATALYST)
+    list(APPEND CORECLR_LIBRARIES
+        System.Globalization.Native-Static
+    )
+endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES
