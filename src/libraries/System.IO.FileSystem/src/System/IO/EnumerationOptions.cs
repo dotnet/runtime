@@ -14,6 +14,8 @@ namespace System.IO
     {
         private int _maxRecursionDepth;
 
+        internal const int DefaultMaxRecursionDepth = int.MaxValue;
+
         /// <summary>
         /// For internal use. These are the options we want to use if calling the existing Directory/File APIs where you don't
         /// explicitly specify EnumerationOptions.
@@ -28,8 +30,6 @@ namespace System.IO
         /// Internal singleton for default options.
         /// </summary>
         internal static EnumerationOptions Default { get; } = new EnumerationOptions();
-
-        internal const int DefaultMaxRecursionDepth = int.MaxValue;
 
         /// <summary>
         /// Default constructor. Constructs the options class with recommended default options.

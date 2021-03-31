@@ -14,7 +14,7 @@ namespace System.IO.Enumeration
 {
     public unsafe abstract partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
     {
-        private int _remainingDepth;
+        private int _remainingRecursionDepth;
 
         /// <summary>
         /// Encapsulates a find operation.
@@ -39,8 +39,7 @@ namespace System.IO.Enumeration
             string path = isNormalized ? directory : Path.GetFullPath(directory);
             _rootDirectory = Path.TrimEndingDirectorySeparator(path);
             _options = options ?? EnumerationOptions.Default;
-
-            _remainingDepth = _options.MaxRecursionDepth;
+            _remainingRecursionDepth = _options.MaxRecursionDepth;
 
             Init();
         }

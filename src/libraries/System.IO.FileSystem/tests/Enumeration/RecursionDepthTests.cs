@@ -23,10 +23,9 @@ namespace System.IO.Tests.Enumeration
             InlineData(1, 4),
             InlineData(2, 5),
             InlineData(3, 5),
-            InlineData(-1, 5),
             InlineData(int.MaxValue, 5)
         ]
-        public void EnumerateDirectory_WithSpecifedDepth(int depth, int expectedCount)
+        public void EnumerateDirectory_WithSpecifedRecursionDepth(int depth, int expectedCount)
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
             DirectoryInfo testSubdirectory1 = Directory.CreateDirectory(Path.Combine(testDirectory.FullName, "Subdirectory1"));
@@ -39,16 +38,14 @@ namespace System.IO.Tests.Enumeration
             fileTwo.Create().Dispose();
             fileThree.Create().Dispose();
 
-            if (depth >= 0)
-            {
-                string[] results = GetEntryNames(testDirectory.FullName, depth).ToArray();
+            string[] results = GetEntryNames(testDirectory.FullName, depth).ToArray();
+            Assert.Equal(expectedCount, results.Length);
+        }
 
-                Assert.Equal(expectedCount, results.Length);
-            }
-            else
-            {
-                Assert.Throws<ArgumentOutOfRangeException>(() => GetEntryNames(testDirectory.FullName, depth));
-            }
+        [Fact]
+        public void NegativeRecursionDepth_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new EnumerationOptions() { MaxRecursionDepth = -1 });
         }
     }
 }

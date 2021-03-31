@@ -161,7 +161,7 @@ namespace System.IO.Enumeration
                             if (!_options.ReturnSpecialDirectories)
                                 continue;
                         }
-                        else if (_options.RecurseSubdirectories && _remainingDepth > 0 && ShouldRecurseIntoEntry(ref entry))
+                        else if (_options.RecurseSubdirectories && _remainingRecursionDepth > 0 && ShouldRecurseIntoEntry(ref entry))
                         {
                             // Recursion is on and the directory was accepted, Queue it
                             string subDirectory = Path.Join(_currentPath.AsSpan(), _entry->FileName);
@@ -172,7 +172,7 @@ namespace System.IO.Enumeration
                                 {
                                     if (_pending == null)
                                         _pending = new Queue<(IntPtr, string, int)>();
-                                    _pending.Enqueue((subDirectoryHandle, subDirectory, _remainingDepth - 1));
+                                    _pending.Enqueue((subDirectoryHandle, subDirectory, _remainingRecursionDepth - 1));
                                 }
                                 catch
                                 {
@@ -209,7 +209,7 @@ namespace System.IO.Enumeration
             if (_pending == null || _pending.Count == 0)
                 return false;
 
-            (_directoryHandle, _currentPath, _remainingDepth) = _pending.Dequeue();
+            (_directoryHandle, _currentPath, _remainingRecursionDepth) = _pending.Dequeue();
             return true;
         }
 
