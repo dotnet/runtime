@@ -49,39 +49,6 @@ namespace System.Net
             }
         }
 
-        private static SafeSslHandle CreateSslContext(
-            Interop.AndroidCrypto.SSLReadCallback readCallback,
-            Interop.AndroidCrypto.SSLWriteCallback writeCallback,
-            SafeFreeSslCredentials credential,
-            SslAuthenticationOptions authOptions)
-        {
-            bool isServer = authOptions.IsServer;
-
-            if (authOptions.ApplicationProtocols != null
-                || authOptions.CipherSuitesPolicy != null
-                || credential.Protocols != SslProtocols.None
-                || (isServer && authOptions.RemoteCertRequired)
-                || (credential.CertificateContext != null))
-            {
-                // TODO: [AndroidCrypto] Handle non-system-default options
-                throw new NotImplementedException();
-            }
-
-            SafeSslHandle handle = Interop.AndroidCrypto.SSLStreamCreate(
-                isServer,
-                readCallback,
-                writeCallback,
-                InitialBufferSize,
-                InitialBufferSize);
-
-            if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
-            {
-                Interop.AndroidCrypto.SSLStreamConfigureParameters(handle, authOptions.TargetHost);
-            }
-
-            return handle;
-        }
-
         public override bool IsInvalid => _sslContext?.IsInvalid ?? true;
 
         protected override void Dispose(bool disposing)
@@ -165,6 +132,38 @@ namespace System.Net
             _outputBuffer.Discard(limit);
 
             return limit;
+        }
+
+        private static SafeSslHandle CreateSslContext(
+            Interop.AndroidCrypto.SSLReadCallback readCallback,
+            Interop.AndroidCrypto.SSLWriteCallback writeCallback,
+            SafeFreeSslCredentials credential,
+            SslAuthenticationOptions authOptions)
+        {
+            bool isServer = authOptions.IsServer;
+
+            if (authOptions.ApplicationProtocols != null
+                || authOptions.CipherSuitesPolicy != null
+                || credential.Protocols != SslProtocols.None
+                || (isServer && authOptions.RemoteCertRequired)
+                || (credential.CertificateContext != null))
+            {
+                // TODO: [AndroidCrypto] Handle certificate context, non-system-default options
+                throw new NotImplementedException(nameof(SafeDeleteSslContext));
+            }
+
+            SafeSslHandle handle = Interop.AndroidCrypto.SSLStreamCreate(
+                isServer,
+                readCallback,
+                writeCallback,
+                InitialBufferSize);
+
+            if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
+            {
+                Interop.AndroidCrypto.SSLStreamConfigureParameters(handle, authOptions.TargetHost);
+            }
+
+            return handle;
         }
     }
 }

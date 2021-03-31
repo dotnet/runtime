@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 using Microsoft.Win32.SafeHandles;
@@ -31,24 +30,23 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.U1)] bool isServer,
             SSLReadCallback streamRead,
             SSLWriteCallback streamWrite,
-            int appOutBufferSize,
-            int appInBufferSize);
+            int appBufferSize);
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamConfigureParameters")]
-        internal static extern int SSLStreamConfigureParameters(
+        private static extern int SSLStreamConfigureParametersImpl(
             SafeSslHandle sslHandle,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string targetHost);
+        internal static void SSLStreamConfigureParameters(
+            SafeSslHandle sslHandle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string targetHost)
+        {
+            int ret = SSLStreamConfigureParametersImpl(sslHandle, targetHost);
+            if (ret != SUCCESS)
+                throw new SslException();
+        }
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamHandshake")]
         internal static extern PAL_SSLStreamStatus SSLStreamHandshake(SafeSslHandle sslHandle);
-
-        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateAndStartHandshake")]
-        private static extern SafeSslHandle SSLStreamCreateAndStartHandshake(
-            SSLReadCallback streamRead,
-            SSLWriteCallback streamWrite,
-            int tlsVersion,
-            int appOutBufferSize,
-            int appInBufferSize);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamGetApplicationProtocol")]
         private static extern int SSLStreamGetApplicationProtocol(SafeSslHandle ssl, [Out] byte[]? buf, ref int len);
@@ -102,7 +100,7 @@ internal static partial class Interop
             IntPtr protocolPtr;
             int ret = SSLStreamGetProtocol(ssl, out protocolPtr);
             if (ret != SUCCESS)
-                throw new CryptographicException();
+                throw new SslException();
 
             if (protocolPtr == IntPtr.Zero)
                 return string.Empty;
@@ -147,7 +145,7 @@ internal static partial class Interop
             IntPtr cipherSuitePtr;
             int ret = SSLStreamGetCipherSuite(ssl, out cipherSuitePtr);
             if (ret != SUCCESS)
-                throw new CryptographicException();
+                throw new SslException();
 
             if (cipherSuitePtr == IntPtr.Zero)
                 return string.Empty;

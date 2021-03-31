@@ -12,10 +12,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define INSUFFICIENT_BUFFER -1
-
-static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len);
-
 static void FindCertStart(const uint8_t** buffer, int32_t* len);
 
 // Handles both DER and PEM formats
@@ -268,19 +264,6 @@ void* AndroidCryptoNative_X509PublicKey(jobject /*X509Certificate*/ cert, PAL_Ke
 
     (*env)->DeleteLocalRef(env, key);
     return keyHandle;
-}
-
-static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len)
-{
-    jsize bytesLen = (*env)->GetArrayLength(env, source);
-
-    bool insufficientBuffer = *len < bytesLen;
-    *len = bytesLen;
-    if (insufficientBuffer)
-        return INSUFFICIENT_BUFFER;
-
-    (*env)->GetByteArrayRegion(env, source, 0, bytesLen, (jbyte*)dest);
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 static void FindCertStart(const uint8_t** buffer, int32_t* len)

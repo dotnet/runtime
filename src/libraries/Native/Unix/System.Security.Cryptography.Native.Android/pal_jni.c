@@ -77,10 +77,10 @@ jmethodID g_bitLengthMethod;
 jmethodID g_sigNumMethod;
 
 // javax/net/ssl/SSLParameters
-jclass    g_sslParamsClass;
-jmethodID g_sslParamsCtor;
-jmethodID g_sslParamsGetProtocolsMethod;
-jmethodID g_sslParamsSetServerNames;
+jclass    g_SSLParametersClass;
+jmethodID g_SSLParametersCtor;
+jmethodID g_SSLParametersGetProtocols;
+jmethodID g_SSLParametersSetServerNames;
 
 // javax/net/ssl/SSLContext
 jclass    g_sslCtxClass;
@@ -386,29 +386,27 @@ jmethodID g_SNIHostNameCtor;
 // javax/net/ssl/SSLEngine
 jclass    g_SSLEngine;
 jmethodID g_SSLEngineGetApplicationProtocol;
-jmethodID g_SSLEngineSetUseClientModeMethod;
-jmethodID g_SSLEngineGetSessionMethod;
-jmethodID g_SSLEngineBeginHandshakeMethod;
-jmethodID g_SSLEngineWrapMethod;
-jmethodID g_SSLEngineUnwrapMethod;
-jmethodID g_SSLEngineCloseInboundMethod;
-jmethodID g_SSLEngineCloseOutboundMethod;
-jmethodID g_SSLEngineGetHandshakeStatusMethod;
+jmethodID g_SSLEngineSetUseClientMode;
+jmethodID g_SSLEngineGetSession;
+jmethodID g_SSLEngineBeginHandshake;
+jmethodID g_SSLEngineWrap;
+jmethodID g_SSLEngineUnwrap;
+jmethodID g_SSLEngineCloseOutbound;
+jmethodID g_SSLEngineGetHandshakeStatus;
 jmethodID g_SSLEngineSetSSLParameters;
 
 // java/nio/ByteBuffer
 jclass    g_ByteBuffer;
-jmethodID g_ByteBufferAllocateMethod;
-jmethodID g_ByteBufferPutMethod;
-jmethodID g_ByteBufferPutWithByteArray;
-jmethodID g_ByteBufferPutWythByteArrayLength;
-jmethodID g_ByteBufferFlipMethod;
-jmethodID g_ByteBufferGetMethod;
-jmethodID g_ByteBufferPutBufferMethod;
-jmethodID g_ByteBufferLimitMethod;
-jmethodID g_ByteBufferRemainingMethod;
-jmethodID g_ByteBufferCompactMethod;
-jmethodID g_ByteBufferPositionMethod;
+jmethodID g_ByteBufferAllocate;
+jmethodID g_ByteBufferCompact;
+jmethodID g_ByteBufferFlip;
+jmethodID g_ByteBufferGet;
+jmethodID g_ByteBufferLimit;
+jmethodID g_ByteBufferPosition;
+jmethodID g_ByteBufferPutBuffer;
+jmethodID g_ByteBufferPutByteArray;
+jmethodID g_ByteBufferPutByteArrayWithLength;
+jmethodID g_ByteBufferRemaining;
 
 // javax/net/ssl/SSLContext
 jclass    g_SSLContext;
@@ -419,19 +417,16 @@ jmethodID g_SSLContextCreateSSLEngineMethod;
 
 // javax/net/ssl/SSLSession
 jclass    g_SSLSession;
-jmethodID g_SSLSessionGetApplicationBufferSizeMethod;
+jmethodID g_SSLSessionGetApplicationBufferSize;
 jmethodID g_SSLSessionGetCipherSuite;
-jmethodID g_SSLSessionGetPacketBufferSizeMethod;
+jmethodID g_SSLSessionGetPacketBufferSize;
 jmethodID g_SSLSessionGetPeerCertificates;
 jmethodID g_SSLSessionGetProtocol;
 
 // javax/net/ssl/SSLEngineResult
 jclass    g_SSLEngineResult;
-jmethodID g_SSLEngineResultGetStatusMethod;
-jmethodID g_SSLEngineResultGetHandshakeStatusMethod;
-
-// javax/net/ssl/TrustManager
-jclass    g_TrustManager;
+jmethodID g_SSLEngineResultGetStatus;
+jmethodID g_SSLEngineResultGetHandshakeStatus;
 
 // javax/crypto/KeyAgreement
 jclass    g_KeyAgreementClass;
@@ -542,11 +537,6 @@ bool TryGetJNIException(JNIEnv* env, jthrowable *ex, bool printException)
     return true;
 }
 
-void AssertOnJNIExceptions(JNIEnv* env)
-{
-    assert(!CheckJNIExceptions(env));
-}
-
 void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite)
 {
     assert(overwrite || !(*dst));
@@ -607,6 +597,19 @@ int GetEnumAsInt(JNIEnv *env, jobject enumObj)
     int value = (*env)->CallIntMethod(env, enumObj, g_EnumOrdinal);
     (*env)->DeleteLocalRef(env, enumObj);
     return value;
+}
+
+int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len)
+{
+    jsize bytesLen = (*env)->GetArrayLength(env, source);
+
+    bool insufficientBuffer = *len < bytesLen;
+    *len = bytesLen;
+    if (insufficientBuffer)
+        return INSUFFICIENT_BUFFER;
+
+    (*env)->GetByteArrayRegion(env, source, 0, bytesLen, (jbyte*)dest);
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 JNIEXPORT jint JNICALL
@@ -682,10 +685,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_bitLengthMethod =         GetMethod(env, false, g_bigNumClass, "bitLength", "()I");
     g_sigNumMethod =            GetMethod(env, false, g_bigNumClass, "signum", "()I");
 
-    g_sslParamsClass =              GetClassGRef(env, "javax/net/ssl/SSLParameters");
-    g_sslParamsCtor =               GetMethod(env, false,  g_sslParamsClass, "<init>", "()V");
-    g_sslParamsGetProtocolsMethod = GetMethod(env, false,  g_sslParamsClass, "getProtocols", "()[Ljava/lang/String;");
-    g_sslParamsSetServerNames =     GetMethod(env, false,  g_sslParamsClass, "setServerNames", "(Ljava/util/List;)V");
+    g_SSLParametersClass =          GetClassGRef(env, "javax/net/ssl/SSLParameters");
+    g_SSLParametersCtor =           GetMethod(env, false,  g_SSLParametersClass, "<init>", "()V");
+    g_SSLParametersGetProtocols =   GetMethod(env, false,  g_SSLParametersClass, "getProtocols", "()[Ljava/lang/String;");
+    g_SSLParametersSetServerNames = GetMethod(env, false,  g_SSLParametersClass, "setServerNames", "(Ljava/util/List;)V");
 
     g_sslCtxClass =                     GetClassGRef(env, "javax/net/ssl/SSLContext");
     g_sslCtxGetDefaultMethod =          GetMethod(env, true,  g_sslCtxClass, "getDefault", "()Ljavax/net/ssl/SSLContext;");
@@ -931,30 +934,28 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SNIHostName =     GetClassGRef(env, "javax/net/ssl/SNIHostName");
     g_SNIHostNameCtor = GetMethod(env, false, g_SNIHostName, "<init>", "(Ljava/lang/String;)V");
 
-    g_SSLEngine =                         GetClassGRef(env, "javax/net/ssl/SSLEngine");
-    g_SSLEngineGetApplicationProtocol =   GetMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
-    g_SSLEngineSetUseClientModeMethod =   GetMethod(env, false, g_SSLEngine, "setUseClientMode", "(Z)V");
-    g_SSLEngineGetSessionMethod =         GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
-    g_SSLEngineBeginHandshakeMethod =     GetMethod(env, false, g_SSLEngine, "beginHandshake", "()V");
-    g_SSLEngineWrapMethod =               GetMethod(env, false, g_SSLEngine, "wrap", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)Ljavax/net/ssl/SSLEngineResult;");
-    g_SSLEngineUnwrapMethod =             GetMethod(env, false, g_SSLEngine, "unwrap", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)Ljavax/net/ssl/SSLEngineResult;");
-    g_SSLEngineGetHandshakeStatusMethod = GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
-    g_SSLEngineCloseInboundMethod =       GetMethod(env, false, g_SSLEngine, "closeInbound", "()V");
-    g_SSLEngineCloseOutboundMethod =      GetMethod(env, false, g_SSLEngine, "closeOutbound", "()V");
-    g_SSLEngineSetSSLParameters =         GetMethod(env, false, g_SSLEngine, "setSSLParameters", "(Ljavax/net/ssl/SSLParameters;)V");
+    g_SSLEngine =                       GetClassGRef(env, "javax/net/ssl/SSLEngine");
+    g_SSLEngineGetApplicationProtocol = GetMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
+    g_SSLEngineSetUseClientMode =       GetMethod(env, false, g_SSLEngine, "setUseClientMode", "(Z)V");
+    g_SSLEngineGetSession =             GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
+    g_SSLEngineBeginHandshake =         GetMethod(env, false, g_SSLEngine, "beginHandshake", "()V");
+    g_SSLEngineWrap =                   GetMethod(env, false, g_SSLEngine, "wrap", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)Ljavax/net/ssl/SSLEngineResult;");
+    g_SSLEngineUnwrap =                 GetMethod(env, false, g_SSLEngine, "unwrap", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)Ljavax/net/ssl/SSLEngineResult;");
+    g_SSLEngineGetHandshakeStatus =     GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
+    g_SSLEngineCloseOutbound =          GetMethod(env, false, g_SSLEngine, "closeOutbound", "()V");
+    g_SSLEngineSetSSLParameters =       GetMethod(env, false, g_SSLEngine, "setSSLParameters", "(Ljavax/net/ssl/SSLParameters;)V");
 
-    g_ByteBuffer =                        GetClassGRef(env, "java/nio/ByteBuffer");
-    g_ByteBufferAllocateMethod =          GetMethod(env, true,  g_ByteBuffer, "allocate", "(I)Ljava/nio/ByteBuffer;");
-    g_ByteBufferPutMethod =               GetMethod(env, false, g_ByteBuffer, "put", "(Ljava/nio/ByteBuffer;)Ljava/nio/ByteBuffer;");
-    g_ByteBufferPutWithByteArray =        GetMethod(env, false, g_ByteBuffer, "put", "([B)Ljava/nio/ByteBuffer;");
-    g_ByteBufferPutWythByteArrayLength =  GetMethod(env, false, g_ByteBuffer, "put", "([BII)Ljava/nio/ByteBuffer;");
-    g_ByteBufferFlipMethod =              GetMethod(env, false, g_ByteBuffer, "flip", "()Ljava/nio/Buffer;");
-    g_ByteBufferLimitMethod =             GetMethod(env, false, g_ByteBuffer, "limit", "()I");
-    g_ByteBufferGetMethod =               GetMethod(env, false, g_ByteBuffer, "get", "([B)Ljava/nio/ByteBuffer;");
-    g_ByteBufferPutBufferMethod =         GetMethod(env, false, g_ByteBuffer, "put", "(Ljava/nio/ByteBuffer;)Ljava/nio/ByteBuffer;");
-    g_ByteBufferRemainingMethod =         GetMethod(env, false, g_ByteBuffer, "remaining", "()I");
-    g_ByteBufferCompactMethod =           GetMethod(env, false, g_ByteBuffer, "compact", "()Ljava/nio/ByteBuffer;");
-    g_ByteBufferPositionMethod =          GetMethod(env, false, g_ByteBuffer, "position", "()I");
+    g_ByteBuffer =                          GetClassGRef(env, "java/nio/ByteBuffer");
+    g_ByteBufferAllocate =                  GetMethod(env, true,  g_ByteBuffer, "allocate", "(I)Ljava/nio/ByteBuffer;");
+    g_ByteBufferCompact =                   GetMethod(env, false, g_ByteBuffer, "compact", "()Ljava/nio/ByteBuffer;");
+    g_ByteBufferFlip =                      GetMethod(env, false, g_ByteBuffer, "flip", "()Ljava/nio/Buffer;");
+    g_ByteBufferGet =                       GetMethod(env, false, g_ByteBuffer, "get", "([B)Ljava/nio/ByteBuffer;");
+    g_ByteBufferLimit =                     GetMethod(env, false, g_ByteBuffer, "limit", "()I");
+    g_ByteBufferPosition =                  GetMethod(env, false, g_ByteBuffer, "position", "()I");
+    g_ByteBufferPutBuffer =                 GetMethod(env, false, g_ByteBuffer, "put", "(Ljava/nio/ByteBuffer;)Ljava/nio/ByteBuffer;");
+    g_ByteBufferPutByteArray =              GetMethod(env, false, g_ByteBuffer, "put", "([B)Ljava/nio/ByteBuffer;");
+    g_ByteBufferPutByteArrayWithLength =    GetMethod(env, false, g_ByteBuffer, "put", "([BII)Ljava/nio/ByteBuffer;");
+    g_ByteBufferRemaining =                 GetMethod(env, false, g_ByteBuffer, "remaining", "()I");
 
     g_SSLContext =                        GetClassGRef(env, "javax/net/ssl/SSLContext");
     g_SSLContextGetDefault =              GetMethod(env, true,  g_SSLContext, "getDefault", "()Ljavax/net/ssl/SSLContext;");
@@ -962,18 +963,16 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLContextInitMethod =              GetMethod(env, false, g_SSLContext, "init", "([Ljavax/net/ssl/KeyManager;[Ljavax/net/ssl/TrustManager;Ljava/security/SecureRandom;)V");
     g_SSLContextCreateSSLEngineMethod =   GetMethod(env, false, g_SSLContext, "createSSLEngine", "()Ljavax/net/ssl/SSLEngine;");
 
-    g_SSLSession =                               GetClassGRef(env, "javax/net/ssl/SSLSession");
-    g_SSLSessionGetApplicationBufferSizeMethod = GetMethod(env, false, g_SSLSession, "getApplicationBufferSize", "()I");
-    g_SSLSessionGetCipherSuite =                 GetMethod(env, false, g_SSLSession, "getCipherSuite", "()Ljava/lang/String;");
-    g_SSLSessionGetPacketBufferSizeMethod =      GetMethod(env, false, g_SSLSession, "getPacketBufferSize", "()I");
-    g_SSLSessionGetPeerCertificates =            GetMethod(env, false, g_SSLSession, "getPeerCertificates", "()[Ljava/security/cert/Certificate;");
-    g_SSLSessionGetProtocol =                    GetMethod(env, false, g_SSLSession, "getProtocol", "()Ljava/lang/String;");
+    g_SSLSession =                          GetClassGRef(env, "javax/net/ssl/SSLSession");
+    g_SSLSessionGetApplicationBufferSize =  GetMethod(env, false, g_SSLSession, "getApplicationBufferSize", "()I");
+    g_SSLSessionGetCipherSuite =            GetMethod(env, false, g_SSLSession, "getCipherSuite", "()Ljava/lang/String;");
+    g_SSLSessionGetPacketBufferSize =       GetMethod(env, false, g_SSLSession, "getPacketBufferSize", "()I");
+    g_SSLSessionGetPeerCertificates =       GetMethod(env, false, g_SSLSession, "getPeerCertificates", "()[Ljava/security/cert/Certificate;");
+    g_SSLSessionGetProtocol =               GetMethod(env, false, g_SSLSession, "getProtocol", "()Ljava/lang/String;");
 
-    g_SSLEngineResult =                          GetClassGRef(env, "javax/net/ssl/SSLEngineResult");
-    g_SSLEngineResultGetStatusMethod =           GetMethod(env, false, g_SSLEngineResult, "getStatus", "()Ljavax/net/ssl/SSLEngineResult$Status;");
-    g_SSLEngineResultGetHandshakeStatusMethod =  GetMethod(env, false, g_SSLEngineResult, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
-
-    g_TrustManager =                             GetClassGRef(env, "javax/net/ssl/TrustManager");
+    g_SSLEngineResult =                     GetClassGRef(env, "javax/net/ssl/SSLEngineResult");
+    g_SSLEngineResultGetStatus =            GetMethod(env, false, g_SSLEngineResult, "getStatus", "()Ljavax/net/ssl/SSLEngineResult$Status;");
+    g_SSLEngineResultGetHandshakeStatus =   GetMethod(env, false, g_SSLEngineResult, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
 
     g_KeyAgreementClass          = GetClassGRef(env, "javax/crypto/KeyAgreement");
     g_KeyAgreementGetInstance    = GetMethod(env, true, g_KeyAgreementClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/KeyAgreement;");

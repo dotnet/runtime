@@ -11,6 +11,7 @@
 
 #define FAIL 0
 #define SUCCESS 1
+#define INSUFFICIENT_BUFFER -1
 
 extern JavaVM* gJvm;
 
@@ -86,10 +87,10 @@ extern jmethodID g_bitLengthMethod;
 extern jmethodID g_sigNumMethod;
 
 // javax/net/ssl/SSLParameters
-extern jclass    g_sslParamsClass;
-extern jmethodID g_sslParamsCtor;
-extern jmethodID g_sslParamsGetProtocolsMethod;
-extern jmethodID g_sslParamsSetServerNames;
+extern jclass    g_SSLParametersClass;
+extern jmethodID g_SSLParametersCtor;
+extern jmethodID g_SSLParametersGetProtocols;
+extern jmethodID g_SSLParametersSetServerNames;
 
 // javax/net/ssl/SSLContext
 extern jclass    g_sslCtxClass;
@@ -400,29 +401,27 @@ extern jmethodID g_SNIHostNameCtor;
 // javax/net/ssl/SSLEngine
 extern jclass    g_SSLEngine;
 extern jmethodID g_SSLEngineGetApplicationProtocol;
-extern jmethodID g_SSLEngineSetUseClientModeMethod;
-extern jmethodID g_SSLEngineGetSessionMethod;
-extern jmethodID g_SSLEngineBeginHandshakeMethod;
-extern jmethodID g_SSLEngineWrapMethod;
-extern jmethodID g_SSLEngineUnwrapMethod;
-extern jmethodID g_SSLEngineCloseInboundMethod;
-extern jmethodID g_SSLEngineCloseOutboundMethod;
-extern jmethodID g_SSLEngineGetHandshakeStatusMethod;
+extern jmethodID g_SSLEngineSetUseClientMode;
+extern jmethodID g_SSLEngineGetSession;
+extern jmethodID g_SSLEngineBeginHandshake;
+extern jmethodID g_SSLEngineWrap;
+extern jmethodID g_SSLEngineUnwrap;
+extern jmethodID g_SSLEngineCloseOutbound;
+extern jmethodID g_SSLEngineGetHandshakeStatus;
 extern jmethodID g_SSLEngineSetSSLParameters;
 
 // java/nio/ByteBuffer
 extern jclass    g_ByteBuffer;
-extern jmethodID g_ByteBufferAllocateMethod;
-extern jmethodID g_ByteBufferPutMethod;
-extern jmethodID g_ByteBufferPutWithByteArray;
-extern jmethodID g_ByteBufferPutWythByteArrayLength;
-extern jmethodID g_ByteBufferFlipMethod;
-extern jmethodID g_ByteBufferGetMethod;
-extern jmethodID g_ByteBufferLimitMethod;
-extern jmethodID g_ByteBufferRemainingMethod;
-extern jmethodID g_ByteBufferPutBufferMethod;
-extern jmethodID g_ByteBufferCompactMethod;
-extern jmethodID g_ByteBufferPositionMethod;
+extern jmethodID g_ByteBufferAllocate;
+extern jmethodID g_ByteBufferCompact;
+extern jmethodID g_ByteBufferFlip;
+extern jmethodID g_ByteBufferGet;
+extern jmethodID g_ByteBufferLimit;
+extern jmethodID g_ByteBufferPosition;
+extern jmethodID g_ByteBufferPutBuffer;
+extern jmethodID g_ByteBufferPutByteArray;
+extern jmethodID g_ByteBufferPutByteArrayWithLength;
+extern jmethodID g_ByteBufferRemaining;
 
 // javax/net/ssl/SSLContext
 extern jclass    g_SSLContext;
@@ -434,19 +433,16 @@ extern jmethodID g_SSLContextCreateSSLEngineWithPeer;
 
 // javax/net/ssl/SSLSession
 extern jclass    g_SSLSession;
-extern jmethodID g_SSLSessionGetApplicationBufferSizeMethod;
+extern jmethodID g_SSLSessionGetApplicationBufferSize;
 extern jmethodID g_SSLSessionGetCipherSuite;
-extern jmethodID g_SSLSessionGetPacketBufferSizeMethod;
+extern jmethodID g_SSLSessionGetPacketBufferSize;
 extern jmethodID g_SSLSessionGetPeerCertificates;
 extern jmethodID g_SSLSessionGetProtocol;
 
 // javax/net/ssl/SSLEngineResult
 extern jclass    g_SSLEngineResult;
-extern jmethodID g_SSLEngineResultGetStatusMethod;
-extern jmethodID g_SSLEngineResultGetHandshakeStatusMethod;
-
-// javax/net/ssl/TrustManager
-extern jclass    g_TrustManager;
+extern jmethodID g_SSLEngineResultGetStatus;
+extern jmethodID g_SSLEngineResultGetHandshakeStatus;
 
 // javax/crypto/KeyAgreement
 extern jclass    g_KeyAgreementClass;
@@ -500,11 +496,10 @@ bool TryClearJNIExceptions(JNIEnv* env);
 // Get any pending JNI exception. Returns true if there was an exception, false otherwise.
 bool TryGetJNIException(JNIEnv* env, jthrowable *ex, bool printException);
 
-// Assert on any JNI exceptions. Prints the exception before asserting.
-void AssertOnJNIExceptions(JNIEnv* env);
-
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 JNIEnv* GetJNIEnv(void);
 int GetEnumAsInt(JNIEnv *env, jobject enumObj);
+
+int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len);
