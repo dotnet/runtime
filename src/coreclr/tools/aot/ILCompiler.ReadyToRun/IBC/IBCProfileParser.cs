@@ -106,7 +106,7 @@ namespace ILCompiler.IBC
                         case CorTokenType.mdtMethodDef:
                         case CorTokenType.mdtMemberRef:
                         case CorTokenType.mdtMethodSpec:
-                            object metadataObject = ecmaModule.GetObject(System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle((int)entry.Token));
+                            object metadataObject = ecmaModule.GetObject(System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle((int)entry.Token), NotFoundBehavior.ReturnNull);
                             if (metadataObject is MethodDesc)
                             {
                                 associatedMethod = (MethodDesc)metadataObject;
@@ -346,7 +346,7 @@ namespace ILCompiler.IBC
                         if (!(m is EcmaModule))
                             continue;
 
-                        foundType = (EcmaType)m.GetType(typeNamespace, typeName, throwIfNotFound: false);
+                        foundType = (EcmaType)m.GetType(typeNamespace, typeName, NotFoundBehavior.ReturnNull);
                         if (foundType != null)
                         {
                             externalModule = foundType.EcmaModule;
@@ -356,7 +356,7 @@ namespace ILCompiler.IBC
                 }
                 else
                 {
-                    foundType = (EcmaType)externalModule.GetType(typeNamespace, typeName, throwIfNotFound: false);
+                    foundType = (EcmaType)externalModule.GetType(typeNamespace, typeName, NotFoundBehavior.ReturnNull);
                 }
 
                 if (foundType == null)
@@ -451,7 +451,7 @@ namespace ILCompiler.IBC
             {
                 if (EcmaModule.MetadataReader.GetTableRowCount(TableIndex.AssemblyRef) < index)
                     return null;
-                return EcmaModule.GetObject(MetadataTokens.EntityHandle(((int)CorTokenType.mdtAssemblyRef) | index)) as EcmaModule;
+                return EcmaModule.GetObject(MetadataTokens.EntityHandle(((int)CorTokenType.mdtAssemblyRef) | index), NotFoundBehavior.ReturnNull) as EcmaModule;
             }
         }
 
