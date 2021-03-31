@@ -1258,9 +1258,9 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageI
 {
     ExecutableWriterHolder<void> instrPtrWriterHolder((void*)instrPtr, 4);
 #ifdef TARGET_ARM
-        if (GetARMInstructionLength(savedInstrPtr) == 2)
+    if (GetARMInstructionLength(savedInstrPtr) == 2)
         *(WORD *)instrPtrWriterHolder.GetRW()  = *(WORD *)savedInstrPtr;
-        else
+    else
         *(DWORD *)instrPtrWriterHolder.GetRW() = *(DWORD *)savedInstrPtr;
 #elif defined(TARGET_ARM64)
     *(DWORD *)instrPtrWriterHolder.GetRW() = *(DWORD *)savedInstrPtr;

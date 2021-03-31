@@ -32,26 +32,14 @@ LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
         // See if this is in GCHeap
         PREPARE_EXTERNAL_VAR g_lowest_address, rax
         cmp     rdi, [rax]
-#ifdef FEATURE_WRITEBARRIER_COPY
         // jb      NotInHeap
         .byte 0x72, 0x12
-#else
-        // jb      NotInHeap
-        .byte 0x72, 0x0e
-#endif
         PREPARE_EXTERNAL_VAR g_highest_address, rax
         cmp     rdi, [rax]
 
-#ifdef FEATURE_WRITEBARRIER_COPY
         // jnb     NotInHeap
         .byte 0x73, 0x06
         jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
-#else
-        // jnb     NotInHeap
-        .byte 0x73, 0x02
-        // jmp C_FUNC(JIT_WriteBarrier)
-        .byte 0xeb, 0x05
-#endif
 
     NotInHeap:
         // See comment above about possible AV
@@ -398,11 +386,17 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         ret
 LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
 
-#ifdef FEATURE_WRITEBARRIER_COPY
         // When JIT_WriteBarrier is copied into an allocated page,
         // helpers use this global variable to jump to it. This variable is set in InitThreadManager.
-        .global _JIT_WriteBarrier_Loc
-        .zerofill __DATA,__common,_JIT_WriteBarrier_Loc,8,3
+        .global C_FUNC(JIT_WriteBarrier_Loc)
+#ifdef TARGET_OSX
+        .zerofill __DATA,__common,C_FUNC(JIT_WriteBarrier_Loc),8,3
+#else
+        .data
+    C_FUNC(JIT_WriteBarrier_Loc):
+        .quad 0
+        .text
+#endif
 
 // ------------------------------------------------------------------
 // __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
@@ -411,8 +405,6 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
     // JIT_WriteBarrier(Object** dst, Object* src)
     jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
-
-#endif // FEATURE_WRITEBARRIER_COPY
 
 
 // The following helper will access ("probe") a word on each page of the stack

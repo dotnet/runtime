@@ -411,6 +411,31 @@ ENDM
 ;*******************************************************************************
 ; Write barrier wrappers with fcall calling convention
 ;
+
+        .data
+        ALIGN 4
+        public  _JIT_WriteBarrierEAX_Loc
+_JIT_WriteBarrierEAX_Loc dd 0
+
+        .code
+
+; WriteBarrierStart and WriteBarrierEnd are used to determine bounds of
+; WriteBarrier functions so can determine if got AV in them.
+;
+PUBLIC _JIT_WriteBarrierGroup@0
+_JIT_WriteBarrierGroup@0 PROC
+ret
+_JIT_WriteBarrierGroup@0 ENDP
+
+        ALIGN 4
+PUBLIC @JIT_WriteBarrier_Callable@8
+@JIT_WriteBarrier_Callable@8 PROC
+        mov eax,edx
+        mov edx,ecx
+        jmp DWORD PTR [_JIT_WriteBarrierEAX_Loc]
+
+@JIT_WriteBarrier_Callable@8 ENDP
+
 UniversalWriteBarrierHelper MACRO name
         ALIGN 4
 PUBLIC @JIT_&name&@8
@@ -420,14 +445,6 @@ PUBLIC @JIT_&name&@8
         jmp _JIT_&name&EAX@0
 @JIT_&name&@8 ENDP
 ENDM
-
-; WriteBarrierStart and WriteBarrierEnd are used to determine bounds of
-; WriteBarrier functions so can determine if got AV in them.
-;
-PUBLIC _JIT_WriteBarrierGroup@0
-_JIT_WriteBarrierGroup@0 PROC
-ret
-_JIT_WriteBarrierGroup@0 ENDP
 
 ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
 ; Only define these if we're using the ASM GC write barriers; if this flag is not defined,
@@ -1232,6 +1249,8 @@ fremloopd:
 
 ; PatchedCodeStart and PatchedCodeEnd are used to determine bounds of patched code.
 ;
+
+            ALIGN 4
 
 _JIT_PatchedCodeStart@0 proc public
 ret

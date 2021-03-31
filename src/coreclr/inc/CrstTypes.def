@@ -201,6 +201,10 @@ End
 Crst Exception
 End
 
+Crst ExecutableAllocatorLock
+    Unordered
+End
+
 Crst ExecuteManRangeLock
 End
 

@@ -11875,7 +11875,7 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
     if (m_fAllowRel32)
     {
         // The JIT calls this method for data addresses only. It always uses REL32s for direct code targets.
-        if (IsPreferredExecutableRange(target))
+        if (ExecutableAllocator::IsPreferredExecutableRange(target))
             return IMAGE_REL_BASED_REL32;
     }
 #endif // TARGET_AMD64

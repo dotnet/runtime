@@ -4829,7 +4829,7 @@ COPY_VALUE_CLASS:
                     X86EmitOp(0x8d, kEDX, elemBaseReg, elemOfs, elemScaledReg, elemScale);
 
                     // call JIT_Writeable_Thunks_Buf.WriteBarrierReg[0] (== EAX)
-                    X86EmitCall(NewExternalCodeLabel((LPVOID) &JIT_WriteBarrierEAX), 0);
+                    X86EmitCall(NewExternalCodeLabel((LPVOID) GetWriteBarrierCodeLocation(&JIT_WriteBarrierEAX)), 0);
                 }
                 else
 #else // TARGET_AMD64

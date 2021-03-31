@@ -395,7 +395,7 @@ private:
 
         // Writes out the code element into memory following the
         // stub object.
-        bool EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap);
+        bool EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap* pHeap);
 
         CodeRun *GetLastCodeRunIfAny();
 

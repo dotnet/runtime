@@ -3183,12 +3183,11 @@ void ComMethodTable::Cleanup()
 
     if (m_pDispatchInfo)
         delete m_pDispatchInfo;
-    if (m_pMDescr)
-        DeleteExecutable(m_pMDescr);
     if (m_pITypeInfo && !g_fProcessDetach)
         SafeRelease(m_pITypeInfo);
 
-    DeleteExecutable(this);
+    // The m_pMDescr and the current instance is allocated from the related LoaderAllocator
+    // so no cleanup is needed here.
 }
 
 
@@ -3214,7 +3213,7 @@ void ComMethodTable::LayOutClassMethodTable()
     SLOT *pComVtable;
     unsigned cbPrevSlots = 0;
     unsigned cbAlloc = 0;
-    NewExecutableHolder<BYTE>  pMDMemoryPtr = NULL;
+    AllocMemHolder<BYTE> pMDMemoryPtr;
     BYTE*  pMethodDescMemory = NULL;
     size_t writeableOffset = 0;
     unsigned cbNumParentVirtualMethods = 0;
@@ -3321,7 +3320,7 @@ void ComMethodTable::LayOutClassMethodTable()
         cbAlloc = cbMethodDescs;
         if (cbAlloc > 0)
         {
-            pMDMemoryPtr = (BYTE*) new (executable) BYTE[cbAlloc + sizeof(UINT_PTR)];
+            pMDMemoryPtr = m_pMT->GetLoaderAllocator()->GetStubHeap()->AllocMem(S_SIZE_T(cbAlloc + sizeof(UINT_PTR)));
             pMethodDescMemory = pMDMemoryPtr;
 
             methodDescMemoryWriteableHolder = ExecutableWriterHolder<BYTE>(pMethodDescMemory, cbAlloc + sizeof(UINT_PTR));
@@ -3703,7 +3702,6 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         // Method descs are at the end of the vtable
         // m_cbSlots interfaces methods + IUnk methods
         pMethodDescMemory = (BYTE *)&pComVtable[m_cbSlots];
-
         for (i = 0; i < cbSlots; i++)
         {
             ComCallMethodDesc* pNewMD = (ComCallMethodDesc *) (pMethodDescMemory + COMMETHOD_PREPAD);
@@ -4495,13 +4493,12 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
     if (cbToAlloc.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
-    NewExecutableHolder<ComMethodTable> pComMT = (ComMethodTable*) new (executable) BYTE[cbToAlloc.Value()];
+    AllocMemHolder<ComMethodTable> pComMT(pClassMT->GetLoaderAllocator()->GetStubHeap()->AllocMem(S_SIZE_T(cbToAlloc.Value())));
 
     _ASSERTE(!cbNewSlots.IsOverflow() && !cbTotalSlots.IsOverflow() && !cbVtable.IsOverflow());
 
     ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(pComMT, cbToAlloc.Value());
     ComMethodTable* pComMTRW = comMTWriterHolder.GetRW();
-
     // set up the header
     pComMTRW->m_ptReserved = (SLOT)(size_t)0xDEADC0FF;          // reserved
     pComMTRW->m_pMT  = pClassMT; // pointer to the class method table
@@ -4573,7 +4570,7 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForInterface(MethodT
     if (cbToAlloc.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
-    NewExecutableHolder<ComMethodTable> pComMT = (ComMethodTable*) new (executable) BYTE[cbToAlloc.Value()];
+    AllocMemHolder<ComMethodTable> pComMT(pInterfaceMT->GetLoaderAllocator()->GetStubHeap()->AllocMem(S_SIZE_T(cbToAlloc.Value())));
 
     _ASSERTE(!cbVtable.IsOverflow() && !cbMethDescs.IsOverflow());
 
@@ -4639,7 +4636,8 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForBasic(MethodTable
     unsigned cbVtable    = cbExtraSlots * sizeof(SLOT);
     unsigned cbToAlloc   = sizeof(ComMethodTable) + cbVtable;
 
-    NewExecutableHolder<ComMethodTable> pComMT = (ComMethodTable*) new (executable) BYTE[cbToAlloc];
+    AllocMemHolder<ComMethodTable> pComMT(pMT->GetLoaderAllocator()->GetStubHeap()->AllocMem(S_SIZE_T(cbToAlloc)));
+
     ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(pComMT, cbToAlloc);
     ComMethodTable* pComMTRW = comMTWriterHolder.GetRW();
 

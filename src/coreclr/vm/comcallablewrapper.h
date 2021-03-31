@@ -499,6 +499,7 @@ struct ComMethodTable
     // Accessor for the IDispatch information.
     DispatchInfo* GetDispatchInfo();
 
+#ifndef DACCESS_COMPILE
     LONG AddRef()
     {
         LIMITED_METHOD_CONTRACT;
@@ -527,6 +528,7 @@ struct ComMethodTable
 
         return cbRef;
     }
+#endif // DACCESS_COMPILE
 
     CorIfaceAttr GetInterfaceType()
     {
@@ -746,6 +748,7 @@ struct ComMethodTable
     }
 
 
+#ifndef DACCESS_COMPILE
     inline REFIID GetIID()
     {
         // Cannot use a normal CONTRACT since the return type is ref type which
@@ -768,6 +771,7 @@ struct ComMethodTable
 
         return m_IID;
     }
+#endif // DACCESS_COMPILE
 
     void CheckParentComVisibility(BOOL fForIDispatch)
     {

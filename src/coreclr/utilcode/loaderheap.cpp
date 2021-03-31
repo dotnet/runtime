@@ -977,9 +977,7 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
 
         if (fReleaseMemory)
         {
-            BOOL fSuccess;
-            fSuccess = ClrVirtualFree(pVirtualAddress, 0, MEM_RELEASE);
-            _ASSERTE(fSuccess);
+            ExecutableAllocator::Instance()->Release(pVirtualAddress);
         }
 
         delete pSearch;
@@ -987,9 +985,7 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
 
     if (m_reservedBlock.m_fReleaseMemory)
     {
-        BOOL fSuccess;
-        fSuccess = ClrVirtualFree(m_reservedBlock.pVirtualAddress, 0, MEM_RELEASE);
-        _ASSERTE(fSuccess);
+        ExecutableAllocator::Instance()->Release(m_reservedBlock.pVirtualAddress);
     }
 
     INDEBUG(s_dwNumInstancesOfLoaderHeaps --;)
@@ -1058,7 +1054,7 @@ void ReleaseReservedMemory(BYTE* value)
 {
     if (value)
     {
-        ClrVirtualFree(value, 0, MEM_RELEASE);
+        ExecutableAllocator::Instance()->Release(value);
     }
 }
 
@@ -1114,7 +1110,9 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         // Reserve pages
         //
 
-        pData = ClrVirtualAllocExecutable(dwSizeToReserve, MEM_RESERVE, PAGE_NOACCESS);
+        // Reserve the memory for even non-executable stuff close to the executable code, as it has profound effect
+        // on e.g. a static variable access performance.
+        pData = (BYTE *)ExecutableAllocator::Instance()->Reserve(dwSizeToReserve);
         if (pData == NULL)
         {
             return FALSE;
@@ -1140,7 +1138,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     }
 
     // Commit first set of pages, since it will contain the LoaderHeapBlock
-    void *pTemp = ClrVirtualAlloc(pData, dwSizeToCommit, MEM_COMMIT, (m_Options & LHF_EXECUTABLE) ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+    void *pTemp = ExecutableAllocator::Instance()->Commit(pData, dwSizeToCommit, (m_Options & LHF_EXECUTABLE));
     if (pTemp == NULL)
     {
         //_ASSERTE(!"Unable to ClrVirtualAlloc commit in a loaderheap");
@@ -1213,7 +1211,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
 
         // Yes, so commit the desired number of reserved pages
-        void *pData = ClrVirtualAlloc(m_pPtrToEndOfCommittedRegion, dwSizeToCommit, MEM_COMMIT, (m_Options & LHF_EXECUTABLE) ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+        void *pData = ExecutableAllocator::Instance()->Commit(m_pPtrToEndOfCommittedRegion, dwSizeToCommit, (m_Options & LHF_EXECUTABLE));
         if (pData == NULL)
             return FALSE;
 

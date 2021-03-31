@@ -69,6 +69,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 set(UTILCODE_SOURCES
   ${UTILCODE_COMMON_SOURCES}
+  executableallocator.cpp
 )
 
 set(UTILCODE_DAC_SOURCES

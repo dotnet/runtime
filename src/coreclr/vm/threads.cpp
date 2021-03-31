@@ -1078,18 +1078,30 @@ DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
 
-#ifdef FEATURE_WRITEBARRIER_COPY
-
 static void* s_barrierCopy = NULL;
 
 BYTE* GetWriteBarrierCodeLocation(VOID* barrier)
 {
-    return (BYTE*)s_barrierCopy + ((BYTE*)barrier - (BYTE*)JIT_PatchedCodeStart);
+    if (IsWriteBarrierCopyEnabled())
+    {
+        return (BYTE*)PINSTRToPCODE((TADDR)s_barrierCopy + ((TADDR)barrier - (TADDR)JIT_PatchedCodeStart));
+    }
+    else
+    {
+        return (BYTE*)barrier;
+    }
 }
 
 BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc)
 {
-    return (s_barrierCopy <= (void*)controlPc && (void*)controlPc < ((BYTE*)s_barrierCopy + ((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart)));
+    if (IsWriteBarrierCopyEnabled())
+    {
+        return (s_barrierCopy <= (void*)controlPc && (void*)controlPc < ((BYTE*)s_barrierCopy + ((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart)));
+    }
+    else
+    {
+        return FALSE;
+    }
 }
 
 PCODE AdjustWriteBarrierIP(PCODE controlPc)
@@ -1100,14 +1112,21 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
     return (PCODE)JIT_PatchedCodeStart + (controlPc - (PCODE)s_barrierCopy);
 }
 
+#ifdef TARGET_X86
+extern "C" void *JIT_WriteBarrierEAX_Loc;
+#else
 extern "C" void *JIT_WriteBarrier_Loc;
+#endif
+
 #ifdef TARGET_ARM64
 extern "C" void (*JIT_WriteBarrier_Table)();
 extern "C" void *JIT_WriteBarrier_Loc = 0;
 extern "C" void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64
 
-#endif // FEATURE_WRITEBARRIER_COPY
+#ifdef TARGET_ARM
+extern "C" void *JIT_WriteBarrier_Loc = 0;
+#endif // TARGET_ARM
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -1138,50 +1157,74 @@ void InitThreadManager()
     _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
 
-#ifdef FEATURE_WRITEBARRIER_COPY
-    s_barrierCopy = ClrVirtualAlloc(NULL, g_SystemInfo.dwAllocationGranularity, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-    if (s_barrierCopy == NULL)
+    if (IsWriteBarrierCopyEnabled())
     {
-        _ASSERTE(!"ClrVirtualAlloc of GC barrier code page failed");
-        COMPlusThrowWin32();
-    }
+        s_barrierCopy = ExecutableAllocator::Instance()->Reserve(g_SystemInfo.dwAllocationGranularity);
+        ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true);
+        if (s_barrierCopy == NULL)
+        {
+            _ASSERTE(!"Allocation of GC barrier code page failed");
+            COMPlusThrowWin32();
+        }
 
-    {
-        size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
-        ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
-        memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
-    }
+        {
+            size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
+            ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
+            memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
+        }
 
-    // Store the JIT_WriteBarrier copy location to a global variable so that helpers
-    // can jump to it.
-    JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
-
-    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
+        // Store the JIT_WriteBarrier copy location to a global variable so that helpers
+        // can jump to it.
+#ifdef TARGET_X86
+        JIT_WriteBarrierEAX_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEAX);
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_EAX, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEAX));
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_ECX, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierECX));
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_EBX, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEBX));
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_ESI, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierESI));
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_EDI, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEDI));
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_EBP, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEBP));
+#else // TARGET_X86
+        JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
+#endif // TARGET_X86
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
 
 #ifdef TARGET_ARM64
-    // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
-    JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
-
-    SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
-    SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
+        // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
+        JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
 #endif // TARGET_ARM64
 
-#else // FEATURE_WRITEBARRIER_COPY
+#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+        SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
+#endif // TARGET_ARM64 || TARGET_ARM
 
-    // I am using virtual protect to cover the entire range that this code falls in.
-    //
-
-    // We could reset it to non-writeable inbetween GCs and such, but then we'd have to keep on re-writing back and forth,
-    // so instead we'll leave it writable from here forward.
-
-    DWORD oldProt;
-    if (!ClrVirtualProtect((void *)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart,
-                           PAGE_EXECUTE_READWRITE, &oldProt))
-    {
-        _ASSERTE(!"ClrVirtualProtect of code page failed");
-        COMPlusThrowWin32();
     }
-#endif // FEATURE_WRITEBARRIER_COPY
+    else
+    {
+        // I am using virtual protect to cover the entire range that this code falls in.
+        //
+
+        // We could reset it to non-writeable inbetween GCs and such, but then we'd have to keep on re-writing back and forth,
+        // so instead we'll leave it writable from here forward.
+
+        DWORD oldProt;
+        if (!ClrVirtualProtect((void *)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart,
+                            PAGE_EXECUTE_READWRITE, &oldProt))
+        {
+            _ASSERTE(!"ClrVirtualProtect of code page failed");
+            COMPlusThrowWin32();
+        }
+
+#ifdef TARGET_X86
+        JIT_WriteBarrierEAX_Loc = (void*)JIT_WriteBarrierEAX;
+#else
+        JIT_WriteBarrier_Loc = (void*)JIT_WriteBarrier;
+#endif
+#ifdef TARGET_ARM64
+        // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
+        JIT_WriteBarrier_Table_Loc = (void*)&JIT_WriteBarrier_Table;
+#endif // TARGET_ARM64
+    }
 
 #ifndef TARGET_UNIX
     _ASSERTE(GetThreadNULLOk() == NULL);
