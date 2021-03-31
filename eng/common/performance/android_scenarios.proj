@@ -30,5 +30,5 @@
         <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-  <ItemGroup>
+  </ItemGroup>
 </Project>
