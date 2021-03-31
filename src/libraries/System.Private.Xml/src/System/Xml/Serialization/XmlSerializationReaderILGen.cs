@@ -16,7 +16,7 @@ namespace System.Xml.Serialization
     using System.Xml.Schema;
     using System.Xml.Extensions;
 
-    internal class XmlSerializationReaderILGen : XmlSerializationILGen
+    internal sealed class XmlSerializationReaderILGen : XmlSerializationILGen
     {
         private readonly Dictionary<string, string> _idNames = new Dictionary<string, string>();
         // Mapping name->id_XXXNN field
@@ -36,7 +36,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private class Member
+        private sealed class Member
         {
             private readonly string _source;
             private readonly string _arrayName;
@@ -936,7 +936,7 @@ namespace System.Xml.Serialization
                 {
                     i++;
                     uniqueName = name + i.ToString(CultureInfo.InvariantCulture);
-                    m = Enums[uniqueName];
+                    Enums.TryGetValue(uniqueName, out m);
                 }
             }
             Enums.Add(uniqueName, mapping);

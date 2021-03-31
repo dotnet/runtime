@@ -346,6 +346,9 @@ void CodeGen::genCodeForBBlist()
         if ((block->bbPrev != nullptr) && (block->bbPrev->bbJumpKind == BBJ_COND) &&
             (block->bbWeight != block->bbPrev->bbWeight))
         {
+            JITDUMP("Adding label due to BB weight difference: BBJ_COND " FMT_BB " with weight " FMT_WT
+                    " different from " FMT_BB " with weight " FMT_WT "\n",
+                    block->bbPrev->bbNum, block->bbPrev->bbWeight, block->bbNum, block->bbWeight);
             needLabel = true;
         }
 
@@ -588,7 +591,7 @@ void CodeGen::genCodeForBBlist()
             {
                 if (!foundMismatchedRegVar)
                 {
-                    JITDUMP("Mismatched live reg vars after BB%02u:", block->bbNum);
+                    JITDUMP("Mismatched live reg vars after " FMT_BB ":", block->bbNum);
                     foundMismatchedRegVar = true;
                 }
                 JITDUMP(" V%02u", compiler->lvaTrackedIndexToLclNum(mismatchLiveVarIndex));

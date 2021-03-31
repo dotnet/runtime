@@ -622,10 +622,8 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
     }
     CONTRACTL_END;
 
-    Thread* pThread = GetThread();
-
     // Can't have a throwable without a Thread.
-    _ASSERTE(pThread != NULL);
+    Thread* pThread = GetThread();
 
     if (NULL == pException)
     {
@@ -814,7 +812,7 @@ void CLRException::HandlerState::CleanupTry()
 
     if (m_pThread != NULL)
     {
-        BEGIN_GETTHREAD_ALLOWED;
+        
         // If there is no frame to unwind, UnwindFrameChain call is just an expensive NOP
         // due to setting up and tear down of EH records. So we avoid it if we can.
         if (m_pThread->GetFrame() < m_pFrame)
@@ -827,7 +825,7 @@ void CLRException::HandlerState::CleanupTry()
             else
                 m_pThread->EnablePreemptiveGC();
         }
-        END_GETTHREAD_ALLOWED;
+        
     }
 
     // Make sure to call the base class's CleanupTry so it can do whatever it wants to do.
@@ -848,7 +846,7 @@ void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * sz
 
     if (g_fEEStarted)
     {
-        pThread = GetThread();
+        pThread = GetThreadNULLOk();
         exceptionCode = GetCurrentExceptionCode();
     }
 
@@ -1359,7 +1357,7 @@ OBJECTREF EEArgumentException::CreateThrowable()
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetThread() != NULL);
+    _ASSERTE(GetThreadNULLOk() != NULL);
 
     ProtectArgsStruct prot;
     memset(&prot, 0, sizeof(ProtectArgsStruct));
@@ -2237,7 +2235,7 @@ void GetLastThrownObjectExceptionFromThread(Exception **ppException)
     CONTRACTL_END;
 
     // If the Thread has been set up, then the LastThrownObject may make sense...
-    if (GetThread())
+    if (GetThreadNULLOk())
     {
         // give back an object that knows about Threads and their exceptions.
         *ppException = new CLRLastThrownObjectException();

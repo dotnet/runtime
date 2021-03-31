@@ -12,7 +12,7 @@ namespace System.Xml
     using System.Xml.Schema;
     using System.Globalization;
 
-    internal class XmlNodeReaderNavigator
+    internal sealed class XmlNodeReaderNavigator
     {
         private XmlNode _curNode;
         private XmlNode? _elemNode;
@@ -1771,7 +1771,7 @@ namespace System.Xml
         {
             if (!IsInReadingStates() || (_nodeType != XmlNodeType.EntityReference))
                 throw new InvalidOperationException(SR.Xnr_ResolveEntity);
-            _bResolveEntity = true; ;
+            _bResolveEntity = true;
         }
 
         // Parses the attribute value into one or more Text and/or

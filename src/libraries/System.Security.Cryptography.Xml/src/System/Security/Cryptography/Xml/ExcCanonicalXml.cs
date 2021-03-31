@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Security.Cryptography.Xml
 {
-    internal class ExcCanonicalXml
+    internal sealed class ExcCanonicalXml
     {
         private readonly CanonicalXmlDocument _c14nDoc;
         private readonly ExcAncestralNamespaceContextManager _ancMgr;

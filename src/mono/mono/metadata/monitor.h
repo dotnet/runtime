@@ -103,9 +103,6 @@ mono_locks_dump (gboolean include_untaken);
 void
 mono_monitor_init (void);
 
-void
-mono_monitor_cleanup (void);
-
 ICALL_EXTERN_C
 MonoBoolean
 mono_monitor_enter_internal (MonoObject *obj);

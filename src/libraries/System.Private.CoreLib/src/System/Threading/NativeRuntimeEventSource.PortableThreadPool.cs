@@ -14,7 +14,7 @@ namespace System.Diagnostics.Tracing
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         // On Mono|CoreRT, we don't have these keywords defined from the genRuntimeEventSources.py, so we need to manually define them here.
-        public class Keywords
+        public static class Keywords
         {
             public const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
             public const EventKeywords ThreadTransferKeyword = (EventKeywords)0x80000000;

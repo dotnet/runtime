@@ -20,7 +20,6 @@ typedef enum {
 } LLVMModuleFlags;
 
 void mono_llvm_init                     (gboolean enable_jit);
-void mono_llvm_cleanup                  (void);
 void mono_llvm_emit_method              (MonoCompile *cfg);
 void mono_llvm_emit_call                (MonoCompile *cfg, MonoCallInst *call);
 void mono_llvm_create_aot_module        (MonoAssembly *assembly, const char *global_prefix, int initial_got_size, LLVMModuleFlags flags);

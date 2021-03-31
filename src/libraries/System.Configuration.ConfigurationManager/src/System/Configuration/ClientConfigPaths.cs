@@ -10,7 +10,7 @@ using System.Security;
 
 namespace System.Configuration
 {
-    internal class ClientConfigPaths
+    internal sealed class ClientConfigPaths
     {
         internal const string UserConfigFilename = "user.config";
 

@@ -591,7 +591,7 @@ namespace System.Xml.Serialization
             return structMapping;
         }
 
-        private class TypeItems
+        private sealed class TypeItems
         {
             internal XmlSchemaObjectCollection Attributes = new XmlSchemaObjectCollection();
             internal XmlSchemaAnyAttribute? AnyAttribute;
@@ -1750,7 +1750,7 @@ namespace System.Xml.Serialization
             return enumMapping;
         }
 
-        internal class ElementComparer : IComparer
+        internal sealed class ElementComparer : IComparer
         {
             public int Compare(object? o1, object? o2)
             {

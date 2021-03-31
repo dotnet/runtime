@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.NET.HostModel.AppHost;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using Microsoft.NET.HostModel.AppHost;
 
 namespace Microsoft.NET.HostModel.Bundle
 {
@@ -18,6 +19,9 @@ namespace Microsoft.NET.HostModel.Bundle
     /// </summary>
     public class Bundler
     {
+        public const uint BundlerMajorVersion = 6;
+        public const uint BundlerMinorVersion = 0;
+
         private readonly string HostName;
         private readonly string OutputDir;
         private readonly string DepsJson;
@@ -44,22 +48,72 @@ namespace Microsoft.NET.HostModel.Bundle
             OutputDir = Path.GetFullPath(string.IsNullOrEmpty(outputDir) ? Environment.CurrentDirectory : outputDir);
             Target = new TargetInfo(targetOS, targetArch, targetFrameworkVersion);
 
+            if (Target.BundleMajorVersion < 6 &&
+                (options & BundleOptions.EnableCompression) != 0)
+            {
+                throw new ArgumentException("Compression requires framework version 6.0 or above", nameof(options));
+            }
+
             appAssemblyName ??= Target.GetAssemblyName(hostName);
             DepsJson = appAssemblyName + ".deps.json";
             RuntimeConfigJson = appAssemblyName + ".runtimeconfig.json";
             RuntimeConfigDevJson = appAssemblyName + ".runtimeconfig.dev.json";
 
-            BundleManifest = new Manifest(Target.BundleVersion, netcoreapp3CompatMode: options.HasFlag(BundleOptions.BundleAllContent));
+            BundleManifest = new Manifest(Target.BundleMajorVersion, netcoreapp3CompatMode: options.HasFlag(BundleOptions.BundleAllContent));
             Options = Target.DefaultOptions | options;
+        }
+
+        private bool ShouldCompress(FileType type)
+        {
+            if (!Options.HasFlag(BundleOptions.EnableCompression))
+            {
+                return false;
+            }
+
+            switch (type)
+            {
+                case FileType.Symbols:
+                case FileType.NativeBinary:
+                    return true;
+
+                default:
+                    return false;
+            }
         }
 
         /// <summary>
         /// Embed 'file' into 'bundle'
         /// </summary>
-        /// <returns>Returns the offset of the start 'file' within 'bundle'</returns>
-
-        private long AddToBundle(Stream bundle, Stream file, FileType type)
+        /// <returns>
+        /// startOffset: offset of the start 'file' within 'bundle'
+        /// compressedSize: size of the compressed data, if entry was compressed, otherwise 0
+        /// </returns>
+        private (long startOffset, long compressedSize) AddToBundle(Stream bundle, Stream file, FileType type)
         {
+            long startOffset = bundle.Position;
+            if (ShouldCompress(type))
+            {
+                long fileLength = file.Length;
+                file.Position = 0;
+
+                // We use DeflateStream here.
+                // It uses GZip algorithm, but with a trivial header that does not contain file info.
+                using (DeflateStream compressionStream = new DeflateStream(bundle, CompressionLevel.Optimal, leaveOpen: true))
+                {
+                    file.CopyTo(compressionStream);
+                }
+
+                long compressedSize = bundle.Position - startOffset;
+                if (compressedSize < fileLength * 0.75)
+                {
+                    return (startOffset, compressedSize);
+                }
+
+                // compression rate was not good enough
+                // roll back the bundle offset and let the uncompressed code path take care of the entry.
+                bundle.Seek(startOffset, SeekOrigin.Begin);
+            }
+
             if (type == FileType.Assembly)
             {
                 long misalignment = (bundle.Position % Target.AssemblyAlignment);
@@ -72,10 +126,10 @@ namespace Microsoft.NET.HostModel.Bundle
             }
 
             file.Position = 0;
-            long startOffset = bundle.Position;
+            startOffset = bundle.Position;
             file.CopyTo(bundle);
 
-            return startOffset;
+            return (startOffset, 0);
         }
 
         private bool IsHost(string fileRelativePath)
@@ -186,8 +240,8 @@ namespace Microsoft.NET.HostModel.Bundle
         /// </exceptions>
         public string GenerateBundle(IReadOnlyList<FileSpec> fileSpecs)
         {
-            Tracer.Log($"Bundler version: {Manifest.CurrentVersion}");
-            Tracer.Log($"Bundler Header: {BundleManifest.DesiredVersion}");
+            Tracer.Log($"Bundler Version: {BundlerMajorVersion}.{BundlerMinorVersion}");
+            Tracer.Log($"Bundle  Version: {BundleManifest.BundleVersion}");
             Tracer.Log($"Target Runtime: {Target}");
             Tracer.Log($"Bundler Options: {Options}");
 
@@ -254,8 +308,8 @@ namespace Microsoft.NET.HostModel.Bundle
                     using (FileStream file = File.OpenRead(fileSpec.SourcePath))
                     {
                         FileType targetType = Target.TargetSpecificFileType(type);
-                        long startOffset = AddToBundle(bundle, file, targetType);
-                        FileEntry entry = BundleManifest.AddEntry(targetType, relativePath, startOffset, file.Length);
+                        (long startOffset, long compressedSize) = AddToBundle(bundle, file, targetType);
+                        FileEntry entry = BundleManifest.AddEntry(targetType, relativePath, startOffset, file.Length, compressedSize, Target.BundleMajorVersion);
                         Tracer.Log($"Embed: {entry}");
                     }
                 }

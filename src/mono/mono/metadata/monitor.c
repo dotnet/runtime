@@ -257,47 +257,6 @@ mono_monitor_init (void)
 {
 	mono_os_mutex_init_recursive (&monitor_mutex);
 }
- 
-void
-mono_monitor_cleanup (void)
-{
-	MonoThreadsSync *mon;
-	/* MonitorArray *marray, *next = NULL; */
-
-	/*mono_os_mutex_destroy (&monitor_mutex);*/
-
-	/* The monitors on the freelist don't have weak links - mark them */
-	for (mon = monitor_freelist; mon; mon = (MonoThreadsSync *)mon->data)
-		mon->wait_list = (GSList *)-1;
-
-	/*
-	 * FIXME: This still crashes with sgen (async_read.exe)
-	 *
-	 * In mini_cleanup() we first call mono_runtime_cleanup(), which calls
-	 * mono_monitor_cleanup(), which is supposed to free all monitor memory.
-	 *
-	 * Later in mini_cleanup(), we call mono_domain_free(), which calls
-	 * mono_gc_clear_domain(), which frees all weak links associated with objects.
-	 * Those weak links reside in the monitor structures, which we've freed earlier.
-	 *
-	 * Unless we fix this dependency in the shutdown sequence this code has to remain
-	 * disabled, or at least the call to g_free().
-	 */
-	/*
-	for (marray = monitor_allocated; marray; marray = next) {
-		int i;
-
-		for (i = 0; i < marray->num_monitors; ++i) {
-			mon = &marray->monitors [i];
-			if (mon->wait_list != (gpointer)-1)
-				mono_gc_weak_link_remove (&mon->data);
-		}
-
-		next = marray->next;
-		g_free (marray);
-	}
-	*/
-}
 
 static int
 monitor_is_on_freelist (MonoThreadsSync *mon)

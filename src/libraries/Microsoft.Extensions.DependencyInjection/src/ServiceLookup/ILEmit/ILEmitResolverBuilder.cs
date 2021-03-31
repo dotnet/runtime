@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private static readonly ConstructorInfo CacheKeyCtor = typeof(ServiceCacheKey).GetConstructors()[0];
 
-        private class ILEmitResolverBuilderRuntimeContext
+        private sealed class ILEmitResolverBuilderRuntimeContext
         {
             public IServiceScopeFactory ScopeFactory;
             public object[] Constants;

@@ -125,12 +125,12 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         public void AddUserSecrets_With_SecretsId_Passed_Explicitly()
         {
             var userSecretsId = Guid.NewGuid().ToString();
-            SetSecret(userSecretsId, "Facebook:AppSecret", "value1");
+            SetSecret(userSecretsId, "Facebook:PLACEHOLDER", "value1");
 
             var builder = new ConfigurationBuilder().AddUserSecrets(userSecretsId);
             var configuration = builder.Build();
 
-            Assert.Equal("value1", configuration["Facebook:AppSecret"]);
+            Assert.Equal("value1", configuration["Facebook:PLACEHOLDER"]);
         }
 
         [Fact]
@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
             var builder = new ConfigurationBuilder().AddUserSecrets(userSecretsId);
 
             var configuration = builder.Build();
-            Assert.Null(configuration["Facebook:AppSecret"]);
+            Assert.Null(configuration["Facebook:PLACEHOLDER"]);
             Assert.False(File.Exists(secretFilePath));
         }
 

@@ -25,7 +25,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     ///
     /// VarEnumSelector implements option # 3
     /// </summary>
-    internal class VarEnumSelector
+    internal sealed class VarEnumSelector
     {
         private static readonly Dictionary<VarEnum, Type> s_comToManagedPrimitiveTypes = CreateComToManagedPrimitiveTypes();
         private static readonly IList<IList<VarEnum>> s_comPrimitiveTypeFamilies = CreateComPrimitiveTypeFamilies();

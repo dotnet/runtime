@@ -10,7 +10,7 @@ namespace System.DirectoryServices.ActiveDirectory
     /// Internal class that is used as a key in the hashtable
     /// of directory entries
     /// </summary>
-    internal class DistinguishedName
+    internal sealed class DistinguishedName
     {
         public DistinguishedName(string dn)
         {
@@ -81,7 +81,7 @@ namespace System.DirectoryServices.ActiveDirectory
     /// and creates a new directory entry (for a given dn) only if
     /// it doesn't already exist
     /// </summary>
-    internal class DirectoryEntryManager
+    internal sealed class DirectoryEntryManager
     {
         private readonly Hashtable _directoryEntries = new Hashtable();
         private string? _bindingPrefix;

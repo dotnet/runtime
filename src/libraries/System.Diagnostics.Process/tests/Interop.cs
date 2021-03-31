@@ -8,7 +8,7 @@ using System.Security.Principal;
 
 namespace System.Diagnostics.Tests
 {
-    internal partial class Interop
+    internal static partial class Interop
     {
         [StructLayout(LayoutKind.Sequential, Size = 40)]
         public struct PROCESS_MEMORY_COUNTERS

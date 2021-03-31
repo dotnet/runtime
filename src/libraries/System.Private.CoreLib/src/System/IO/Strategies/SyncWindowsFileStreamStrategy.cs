@@ -11,7 +11,7 @@ namespace System.IO.Strategies
 {
     internal sealed class SyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
-        internal SyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access) : base(handle, access)
+        internal SyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share) : base(handle, access, share)
         {
         }
 
@@ -104,10 +104,8 @@ namespace System.IO.Strategies
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
-            // Make sure we are reading from the right spot
-            VerifyOSHandlePosition();
-
-            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination, null, out int errorCode);
+            NativeOverlapped nativeOverlapped = GetNativeOverlappedForCurrentPosition();
+            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination, true, &nativeOverlapped, out int errorCode);
 
             if (r == -1)
             {
@@ -139,10 +137,8 @@ namespace System.IO.Strategies
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
-            // Make sure we are writing to the position that we think we are
-            VerifyOSHandlePosition();
-
-            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source, null, out int errorCode);
+            NativeOverlapped nativeOverlapped = GetNativeOverlappedForCurrentPosition();
+            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source, true, &nativeOverlapped, out int errorCode);
 
             if (r == -1)
             {
@@ -163,7 +159,17 @@ namespace System.IO.Strategies
             }
             Debug.Assert(r >= 0, "FileStream's WriteCore is likely broken.");
             _filePosition += r;
-            return;
+            UpdateLengthOnChangePosition();
+        }
+
+        private NativeOverlapped GetNativeOverlappedForCurrentPosition()
+        {
+            NativeOverlapped nativeOverlapped = default;
+            // For pipes the offsets are ignored by the OS
+            nativeOverlapped.OffsetLow = unchecked((int)_filePosition);
+            nativeOverlapped.OffsetHigh = (int)(_filePosition >> 32);
+
+            return nativeOverlapped;
         }
     }
 }

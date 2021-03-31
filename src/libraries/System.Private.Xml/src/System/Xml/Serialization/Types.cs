@@ -62,7 +62,7 @@ namespace System.Xml.Serialization
         Unsupported = 0x100000,
     }
 
-    internal class TypeDesc
+    internal sealed class TypeDesc
     {
         private readonly string _name;
         private readonly string _fullName;
@@ -456,7 +456,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class TypeScope
+    internal sealed class TypeScope
     {
         private readonly Hashtable _typeDescs = new Hashtable();
         private readonly Hashtable _arrayTypeDescs = new Hashtable();
@@ -1413,33 +1413,29 @@ namespace System.Xml.Serialization
         internal static Hashtable PrimtiveTypes { get { return s_primitiveTypes; } }
     }
 
-    internal class Soap
+    internal static class Soap
     {
-        private Soap() { }
         internal const string Encoding = "http://schemas.xmlsoap.org/soap/encoding/";
         internal const string UrType = "anyType";
         internal const string Array = "Array";
         internal const string ArrayType = "arrayType";
     }
 
-    internal class Soap12
+    internal static class Soap12
     {
-        private Soap12() { }
         internal const string Encoding = "http://www.w3.org/2003/05/soap-encoding";
         internal const string RpcNamespace = "http://www.w3.org/2003/05/soap-rpc";
         internal const string RpcResult = "result";
     }
 
-    internal class Wsdl
+    internal static class Wsdl
     {
-        private Wsdl() { }
         internal const string Namespace = "http://schemas.xmlsoap.org/wsdl/";
         internal const string ArrayType = "arrayType";
     }
 
-    internal class UrtTypes
+    internal static class UrtTypes
     {
-        private UrtTypes() { }
         internal const string Namespace = "http://microsoft.com/wsdl/types/";
     }
 }

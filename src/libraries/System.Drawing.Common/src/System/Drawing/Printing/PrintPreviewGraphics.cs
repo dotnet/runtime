@@ -10,7 +10,7 @@ namespace System.Drawing
     /// <summary>
     /// Retrieves the printer graphics during preview.
     /// </summary>
-    internal class PrintPreviewGraphics
+    internal sealed class PrintPreviewGraphics
     {
         private readonly PrintPageEventArgs _printPageEventArgs;
         private readonly PrintDocument _printDocument;

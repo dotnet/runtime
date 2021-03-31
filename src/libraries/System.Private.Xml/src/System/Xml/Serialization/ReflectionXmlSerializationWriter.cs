@@ -10,7 +10,7 @@ using System.Xml.Schema;
 
 namespace System.Xml.Serialization
 {
-    internal class ReflectionXmlSerializationWriter : XmlSerializationWriter
+    internal sealed class ReflectionXmlSerializationWriter : XmlSerializationWriter
     {
         private readonly XmlMapping _mapping;
 
@@ -1338,7 +1338,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ReflectionXmlSerializationHelper
+    internal static class ReflectionXmlSerializationHelper
     {
         public static MemberInfo GetMember(Type declaringType, string memberName)
         {

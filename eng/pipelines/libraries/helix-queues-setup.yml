@@ -52,7 +52,7 @@ jobs:
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
-      - ${{ if eq(parameters.jobParameters.interpreter, '') }}:
+      - ${{ if and(eq(parameters.jobParameters.interpreter, ''), ne(parameters.jobParameters.isSingleFile, true)) }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
           - RedHat.7.Amd64.Open
@@ -81,7 +81,7 @@ jobs:
             - Ubuntu.1804.Amd64.Open
             - SLES.15.Amd64.Open
             - (Fedora.30.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-20200512010621-4f8cef7
-      - ${{ if eq(parameters.jobParameters.interpreter, 'true') }}:
+      - ${{ if or(eq(parameters.jobParameters.interpreter, 'true'), eq(parameters.jobParameters.isSingleFile, true)) }}:
         # Limiting interp runs as we don't need as much coverage.
         - Debian.9.Amd64.Open
 
@@ -135,7 +135,7 @@ jobs:
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
         - Windows.10.Amd64.Client19H1.Open
-      
+
       # AllConfigurations
       - ${{ if eq(parameters.jobParameters.framework, 'allConfigurations') }}:
         - Windows.10.Amd64.Server19H1.Open

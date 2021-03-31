@@ -9,7 +9,7 @@ using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-internal class Utils
+internal static class Utils
 {
     private static readonly object s_SyncObj = new object();
 

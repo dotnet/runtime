@@ -65,7 +65,7 @@ namespace System.Runtime.Serialization
             get { return false; }
         }
 
-        private class EnumDataContractCriticalHelper : DataContract.DataContractCriticalHelper
+        private sealed class EnumDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private static readonly Dictionary<Type, XmlQualifiedName> s_typeToName = new Dictionary<Type, XmlQualifiedName>();
             private static readonly Dictionary<XmlQualifiedName, Type> s_nameToType = new Dictionary<XmlQualifiedName, Type>();
