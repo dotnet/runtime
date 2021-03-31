@@ -208,7 +208,7 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            propertyValue = GetPropertyValue(property, instance, config, options);
+            propertyValue = GetPropertyValue(property, instance, config, options, null);
 
             if (propertyValue != null && hasSetter)
             {
@@ -576,41 +576,53 @@ namespace Microsoft.Extensions.Configuration
             return allProperties;
         }
 
-        private static object GetPropertyValue(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
+        private static object GetPropertyValue(PropertyInfo property, object instance, IConfiguration config, BinderOptions options, object defaultValue)
         {
-            object propertyValue = property.GetValue(instance);
-            string propertyName = GetPropertyAttributeKeyName(property);
-
-            if (string.IsNullOrEmpty(propertyName))
+            try
             {
-                propertyName = property.Name;
+                string propertyName = GetPropertyName(property);
+                return BindInstance(
+                    property.PropertyType,
+                    property.GetValue(instance),
+                    config.GetSection(propertyName),
+                    options) ?? defaultValue;
             }
-
-            return BindInstance(property.PropertyType, propertyValue, config.GetSection(propertyName), options);
+            catch
+            {
+                return defaultValue;
+            }
         }
 
-        private static string GetPropertyAttributeKeyName(MemberInfo property)
+        private static string GetPropertyName(MemberInfo property)
         {
             if (property == null)
             {
-                return string.Empty;
+                throw new ArgumentNullException(nameof(property));
             }
 
             foreach (var attributeData in property.GetCustomAttributesData())
             {
-                if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute))
+                if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute) ||
+                    attributeData.ConstructorArguments.Count == 0)
                 {
                     continue;
                 }
 
-                var constructorArgument = attributeData.ConstructorArguments.FirstOrDefault();
-                if (constructorArgument.ArgumentType == typeof(string))
+                var constructorArgument = attributeData.ConstructorArguments.First();
+                if (constructorArgument.ArgumentType != typeof(string) ||
+                    constructorArgument.Value == null)
                 {
-                    return constructorArgument.Value?.ToString() ?? string.Empty;
+                    continue;
+                }
+
+                string value = constructorArgument.Value.ToString();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
                 }
             }
 
-            return string.Empty;
+            return property.Name;
         }
     }
 }
