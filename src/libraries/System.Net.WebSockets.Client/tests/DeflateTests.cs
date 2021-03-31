@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
@@ -37,7 +36,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using var client = new ClientWebSocket();
                 using var cancellation = new CancellationTokenSource(TimeOutMilliseconds);
 
-                client.Options.DeflateOptions = new WebSocketDeflateOptions
+                client.Options.DangerousDeflateOptions = new WebSocketDeflateOptions
                 {
                     ClientMaxWindowBits = clientWindowBits,
                     ClientContextTakeover = clientContextTakeover,
@@ -47,11 +46,12 @@ namespace System.Net.WebSockets.Client.Tests
 
                 await client.ConnectAsync(uri, cancellation.Token);
 
-                Assert.NotNull(client.Options.DeflateOptions);
-                Assert.Equal(clientWindowBits - 1, client.Options.DeflateOptions.ClientMaxWindowBits);
-                Assert.Equal(clientContextTakeover, client.Options.DeflateOptions.ClientContextTakeover);
-                Assert.Equal(serverWindowBits - 1, client.Options.DeflateOptions.ServerMaxWindowBits);
-                Assert.Equal(serverContextTakover, client.Options.DeflateOptions.ServerContextTakeover);
+                // Uncomment this if we expose DangerousDeflateOptions directly in the websocket to represent the
+                // negotiated settings. Otherise we can't verify if compression is negotiated successfully.
+                // Assert.Equal(clientWindowBits - 1, client.DangerousDeflateOptions.ClientMaxWindowBits);
+                // Assert.Equal(clientContextTakeover, client.DangerousDeflateOptions.ClientContextTakeover);
+                // Assert.Equal(serverWindowBits - 1, client.DangerousDeflateOptions.ServerMaxWindowBits);
+                // Assert.Equal(serverContextTakover, client.DangerousDeflateOptions.ServerContextTakeover);
             }, server => server.AcceptConnectionAsync(async connection =>
             {
                 var extensionsReply = CreateDeflateOptionsHeader(new WebSocketDeflateOptions

@@ -55,6 +55,6 @@ namespace System.Net.WebSockets
         /// <summary>
         /// The agreed upon options for per message deflate.
         /// </summary>
-        public WebSocketDeflateOptions? DeflateOptions { get; set; }
+        public WebSocketDeflateOptions? DangerousDeflateOptions { get; set; }
     }
 }

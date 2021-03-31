@@ -155,7 +155,7 @@ namespace System.Net.WebSockets
         /// will be created with compression enabled by default for all messages.
         /// </summary>
         [UnsupportedOSPlatform("browser")]
-        public WebSocketDeflateOptions? DeflateOptions { get; set; }
+        public WebSocketDeflateOptions? DangerousDeflateOptions { get; set; }
 
         internal int ReceiveBufferSize => _receiveBufferSize;
         internal ArraySegment<byte>? Buffer => _buffer;

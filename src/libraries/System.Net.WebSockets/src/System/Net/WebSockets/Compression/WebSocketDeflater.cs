@@ -80,8 +80,6 @@ namespace System.Net.WebSockets.Compression
         private void DeflatePrivate(ReadOnlySpan<byte> payload, Span<byte> output, bool continuation, bool endOfMessage,
             out int consumed, out int written, out bool needsMoreOutput)
         {
-            Debug.Assert(!continuation || _stream is not null, "Invalid state. The stream should not be null in continuations.");
-
             if (_stream is null)
             {
                 Initialize();

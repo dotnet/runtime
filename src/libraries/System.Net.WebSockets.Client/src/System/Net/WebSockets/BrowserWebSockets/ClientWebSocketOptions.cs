@@ -101,7 +101,7 @@ namespace System.Net.WebSockets
         }
 
         [UnsupportedOSPlatform("browser")]
-        public WebSocketDeflateOptions? DeflateOptions
+        public WebSocketDeflateOptions? DangerousDeflateOptions
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

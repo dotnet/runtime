@@ -126,6 +126,10 @@ namespace System.Net.WebSockets
         /// </summary>
         private bool _lastSendWasFragment;
         /// <summary>
+        /// Whether the last SendAsync had <seealso cref="WebSocketMessageFlags.DisableCompression" /> flag set.
+        /// </summary>
+        private bool _lastSendHadDisableCompression;
+        /// <summary>
         /// The task returned from the last ReceiveAsync(ArraySegment, ...) operation to not complete synchronously.
         /// If this is not null and not completed when a subsequent ReceiveAsync is issued, an exception occurs.
         /// </summary>
@@ -210,7 +214,7 @@ namespace System.Net.WebSockets
         internal ManagedWebSocket(Stream stream, WebSocketCreationOptions options)
             : this(stream, options.IsServer, options.SubProtocol, options.KeepAliveInterval)
         {
-            var deflateOptions = options.DeflateOptions;
+            var deflateOptions = options.DangerousDeflateOptions;
 
             if (deflateOptions is not null)
             {
@@ -270,10 +274,10 @@ namespace System.Net.WebSockets
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
-            return SendPrivateAsync(buffer, messageType, endOfMessage, cancellationToken).AsTask();
+            return SendPrivateAsync(buffer, messageType, endOfMessage ? WebSocketMessageFlags.EndOfMessage : default, cancellationToken).AsTask();
         }
 
-        private ValueTask SendPrivateAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        private ValueTask SendPrivateAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, WebSocketMessageFlags messageFlags, CancellationToken cancellationToken)
         {
             if (messageType != WebSocketMessageType.Text && messageType != WebSocketMessageType.Binary)
             {
@@ -292,13 +296,25 @@ namespace System.Net.WebSockets
                 return new ValueTask(Task.FromException(exc));
             }
 
-            MessageOpcode opcode =
-                _lastSendWasFragment ? MessageOpcode.Continuation :
-                messageType == WebSocketMessageType.Binary ? MessageOpcode.Binary :
-                MessageOpcode.Text;
+            bool endOfMessage = messageFlags.HasFlag(WebSocketMessageFlags.EndOfMessage);
+            bool disableCompression;
+            MessageOpcode opcode;
 
-            ValueTask t = SendFrameAsync(opcode, endOfMessage, buffer, cancellationToken);
+            if (_lastSendWasFragment)
+            {
+                disableCompression = _lastSendHadDisableCompression;
+                opcode = MessageOpcode.Continuation;
+            }
+            else
+            {
+                opcode = messageType == WebSocketMessageType.Binary ? MessageOpcode.Binary : MessageOpcode.Text;
+                disableCompression = messageFlags.HasFlag(WebSocketMessageFlags.DisableCompression);
+            }
+
+            ValueTask t = SendFrameAsync(opcode, endOfMessage, disableCompression, buffer, cancellationToken);
             _lastSendWasFragment = !endOfMessage;
+            _lastSendHadDisableCompression = disableCompression;
+
             return t;
         }
 
@@ -372,7 +388,12 @@ namespace System.Net.WebSockets
 
         public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
-            return SendPrivateAsync(buffer, messageType, endOfMessage, cancellationToken);
+            return SendPrivateAsync(buffer, messageType, endOfMessage ? WebSocketMessageFlags.EndOfMessage : default, cancellationToken);
+        }
+
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, WebSocketMessageFlags messageFlags, CancellationToken cancellationToken)
+        {
+            return SendPrivateAsync(buffer, messageType, messageFlags, cancellationToken);
         }
 
         public override ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
@@ -427,9 +448,10 @@ namespace System.Net.WebSockets
         /// <summary>Sends a websocket frame to the network.</summary>
         /// <param name="opcode">The opcode for the message.</param>
         /// <param name="endOfMessage">The value of the FIN bit for the message.</param>
-        /// <param name="payloadBuffer">The buffer containing the payload data fro the message.</param>
+        /// <param name="disableCompression">Disables compression for the message.</param>
+        /// <param name="payloadBuffer">The buffer containing the payload data from the message.</param>
         /// <param name="cancellationToken">The CancellationToken to use to cancel the websocket.</param>
-        private ValueTask SendFrameAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> payloadBuffer, CancellationToken cancellationToken)
+        private ValueTask SendFrameAsync(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlyMemory<byte> payloadBuffer, CancellationToken cancellationToken)
         {
             // If a cancelable cancellation token was provided, that would require registering with it, which means more state we have to
             // pass around (the CancellationTokenRegistration), so if it is cancelable, just immediately go to the fallback path.
@@ -438,15 +460,16 @@ namespace System.Net.WebSockets
 #pragma warning disable CA1416 // Validate platform compatibility, will not wait because timeout equals 0
             return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.Wait(0, default) ?
 #pragma warning restore CA1416
-                SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken) :
-                SendFrameLockAcquiredNonCancelableAsync(opcode, endOfMessage, payloadBuffer);
+                SendFrameFallbackAsync(opcode, endOfMessage, disableCompression, payloadBuffer, cancellationToken) :
+                SendFrameLockAcquiredNonCancelableAsync(opcode, endOfMessage, disableCompression, payloadBuffer);
         }
 
         /// <summary>Sends a websocket frame to the network. The caller must hold the sending lock.</summary>
         /// <param name="opcode">The opcode for the message.</param>
         /// <param name="endOfMessage">The value of the FIN bit for the message.</param>
+        /// <param name="disableCompression">Disables compression for the message.</param>
         /// <param name="payloadBuffer">The buffer containing the payload data fro the message.</param>
-        private ValueTask SendFrameLockAcquiredNonCancelableAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> payloadBuffer)
+        private ValueTask SendFrameLockAcquiredNonCancelableAsync(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlyMemory<byte> payloadBuffer)
         {
             Debug.Assert(_sendFrameAsyncLock.CurrentCount == 0, "Caller should hold the _sendFrameAsyncLock");
 
@@ -457,7 +480,7 @@ namespace System.Net.WebSockets
             try
             {
                 // Write the payload synchronously to the buffer, then write that buffer out to the network.
-                int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, payloadBuffer.Span);
+                int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, disableCompression, payloadBuffer.Span);
                 writeTask = _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes));
 
                 // If the operation happens to complete synchronously (or, more specifically, by
@@ -511,12 +534,12 @@ namespace System.Net.WebSockets
             }
         }
 
-        private async ValueTask SendFrameFallbackAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> payloadBuffer, CancellationToken cancellationToken)
+        private async ValueTask SendFrameFallbackAsync(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlyMemory<byte> payloadBuffer, CancellationToken cancellationToken)
         {
             await _sendFrameAsyncLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, payloadBuffer.Span);
+                int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, disableCompression, payloadBuffer.Span);
                 using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
                 {
                     await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
@@ -536,9 +559,9 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>Writes a frame into the send buffer, which can then be sent over the network.</summary>
-        private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, ReadOnlySpan<byte> payloadBuffer)
+        private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlySpan<byte> payloadBuffer)
         {
-            if (_deflater is not null && payloadBuffer.Length > 0)
+            if (_deflater is not null && payloadBuffer.Length > 0 && !disableCompression)
             {
                 payloadBuffer = _deflater.Deflate(payloadBuffer, opcode == MessageOpcode.Continuation, endOfMessage);
             }
@@ -555,13 +578,13 @@ namespace System.Net.WebSockets
             {
                 // The server doesn't send a mask, so the mask offset returned by WriteHeader
                 // is actually the end of the header.
-                headerLength = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: false, compressed: _deflater is not null);
+                headerLength = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: false, compressed: _deflater is not null && !disableCompression);
             }
             else
             {
                 // We need to know where the mask starts so that we can use the mask to manipulate the payload data,
                 // and we need to know the total length for sending it on the wire.
-                maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true, compressed: _deflater is not null);
+                maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true, compressed: _deflater is not null && !disableCompression);
                 headerLength = maskOffset.GetValueOrDefault() + MaskLength;
             }
 
@@ -595,7 +618,7 @@ namespace System.Net.WebSockets
                 // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
                 // The call will handle releasing the lock.  We send a pong rather than ping, since it's allowed by
                 // the RFC as a unidirectional heartbeat and we're not interested in waiting for a response.
-                ValueTask t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Pong, true, ReadOnlyMemory<byte>.Empty);
+                ValueTask t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Pong, endOfMessage: true, disableCompression: true, ReadOnlyMemory<byte>.Empty);
                 if (t.IsCompletedSuccessfully)
                 {
                     t.GetAwaiter().GetResult();
@@ -1025,6 +1048,7 @@ namespace System.Net.WebSockets
                 await SendFrameAsync(
                     MessageOpcode.Pong,
                     endOfMessage: true,
+                    disableCompression: true,
                     _receiveBuffer.Slice(_receiveBufferOffset, (int)header.PayloadLength),
                     cancellationToken).ConfigureAwait(false);
             }
@@ -1320,7 +1344,7 @@ namespace System.Net.WebSockets
                 buffer[0] = (byte)(closeStatusValue >> 8);
                 buffer[1] = (byte)(closeStatusValue & 0xFF);
 
-                await SendFrameAsync(MessageOpcode.Close, true, new Memory<byte>(buffer, 0, count), cancellationToken).ConfigureAwait(false);
+                await SendFrameAsync(MessageOpcode.Close, endOfMessage: true, disableCompression: true, new Memory<byte>(buffer, 0, count), cancellationToken).ConfigureAwait(false);
             }
             finally
             {

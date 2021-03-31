@@ -185,24 +185,19 @@ namespace System.Net.WebSockets
                 }
 
                 // Because deflate options are negotiated we need a new object
-                WebSocketDeflateOptions? deflateOptions = null;
+                WebSocketDeflateOptions? negotiatedDeflateOptions = null;
 
-                if (options.DeflateOptions is not null && response.Headers.TryGetValues(HttpKnownHeaderNames.SecWebSocketExtensions, out IEnumerable<string>? extensions))
+                if (options.DangerousDeflateOptions is not null && response.Headers.TryGetValues(HttpKnownHeaderNames.SecWebSocketExtensions, out IEnumerable<string>? extensions))
                 {
                     foreach (ReadOnlySpan<char> extension in extensions)
                     {
                         if (extension.TrimStart().StartsWith(ClientWebSocketDeflateConstants.Extension))
                         {
-                            deflateOptions = ParseDeflateOptions(extension, options.DeflateOptions);
+                            negotiatedDeflateOptions = ParseDeflateOptions(extension, options.DangerousDeflateOptions);
                             break;
                         }
                     }
                 }
-
-                // Store the negotiated deflate options in the original options, because
-                // otherwise there is no way of clients to actually check whether we are using
-                // per message deflate or not.
-                options.DeflateOptions = deflateOptions;
 
                 if (response.Content is null)
                 {
@@ -218,7 +213,7 @@ namespace System.Net.WebSockets
                     IsServer = false,
                     SubProtocol = subprotocol,
                     KeepAliveInterval = options.KeepAliveInterval,
-                    DeflateOptions = deflateOptions
+                    DangerousDeflateOptions = negotiatedDeflateOptions
                 });
             }
             catch (Exception exc)
@@ -329,21 +324,10 @@ namespace System.Net.WebSockets
             {
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketProtocol, string.Join(", ", options.RequestedSubProtocols));
             }
-            if (options.DeflateOptions is not null)
+            if (options.DangerousDeflateOptions is not null)
             {
-                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketExtensions, GetDeflateOptions(options.DeflateOptions));
+                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketExtensions, GetDeflateOptions(options.DangerousDeflateOptions));
 
-                static string GetWindowBitsString(int value) => value switch
-                {
-                    9 => "9",
-                    10 => "10",
-                    11 => "11",
-                    12 => "12",
-                    13 => "13",
-                    14 => "14",
-                    15 => "15",
-                    _ => value.ToString(CultureInfo.InvariantCulture)
-                };
                 static string GetDeflateOptions(WebSocketDeflateOptions options)
                 {
                     var builder = new StringBuilder(ClientWebSocketDeflateConstants.MaxExtensionLength);
@@ -352,7 +336,7 @@ namespace System.Net.WebSockets
                     if (options.ClientMaxWindowBits != 15)
                     {
                         builder.Append(ClientWebSocketDeflateConstants.ClientMaxWindowBits).Append('=')
-                               .Append(GetWindowBitsString(options.ClientMaxWindowBits));
+                               .Append(options.ClientMaxWindowBits.ToString(CultureInfo.InvariantCulture));
                     }
                     else
                     {
@@ -370,7 +354,7 @@ namespace System.Net.WebSockets
                     if (options.ServerMaxWindowBits != 15)
                     {
                         builder.Append(ClientWebSocketDeflateConstants.ServerMaxWindowBits).Append('=')
-                               .Append(GetWindowBitsString(options.ServerMaxWindowBits));
+                               .Append(options.ServerMaxWindowBits.ToString(CultureInfo.InvariantCulture));
                     }
                     else
                     {

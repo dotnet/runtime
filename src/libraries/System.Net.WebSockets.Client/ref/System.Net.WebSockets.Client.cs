@@ -36,7 +36,7 @@ namespace System.Net.WebSockets
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.TimeSpan KeepAliveInterval { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public System.Net.WebSockets.WebSocketDeflateOptions? DeflateOptions { get { throw null; } set { } }
+        public System.Net.WebSockets.WebSocketDeflateOptions? DangerousDeflateOptions { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.IWebProxy? Proxy { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]

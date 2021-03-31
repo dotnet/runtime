@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
@@ -16,6 +16,7 @@
     <Compile Include="System\Net\WebSockets\WebSocketError.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketException.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketMessageType.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketMessageFlags.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketReceiveResult.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketState.cs" />
     <Compile Include="System\Net\WebSockets\ManagedWebSocket.cs" />
