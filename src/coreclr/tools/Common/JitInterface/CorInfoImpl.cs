@@ -78,7 +78,7 @@ namespace Internal.JitInterface
         private extern static IntPtr getJit();
 
         [DllImport(JitLibrary)]
-        private extern static IntPtr getLikelyClass(PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset, out uint pLikelihood, out uint pNumberOfClasses, IntPtr* pTempArray, uint countTempArraySize);
+        private extern static IntPtr getLikelyClass(PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset, out uint pLikelihood, out uint pNumberOfClasses);
 
         [DllImport(JitSupportLibrary)]
         private extern static IntPtr GetJitHost(IntPtr configProvider);
@@ -150,7 +150,7 @@ namespace Internal.JitInterface
 
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
-        public static IEnumerable<PgoSchemaElem> ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(PgoSchemaElem[] pgoData)
+        public static IEnumerable<PgoSchemaElem> ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(PgoSchemaElem[] pgoData, CompilationModuleGroup compilationModuleGroup)
         {
             bool hasTypeHistogram = false;
             foreach (var elem in pgoData)
@@ -181,9 +181,11 @@ namespace Internal.JitInterface
                 {
                     if (pgoData[i].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramCount)
                     {
-                        PgoSchemaElem? newElem = ComputeLikelyClass(i, handleToObject, nativeSchema, instrumentationData);
+                        PgoSchemaElem? newElem = ComputeLikelyClass(i, handleToObject, nativeSchema, instrumentationData, compilationModuleGroup);
                         if (newElem.HasValue)
+                        {
                             yield return newElem.Value;
+                        }
                         i++; // The histogram is two entries long, so skip an extra entry
                         continue;
                     }
@@ -204,7 +206,7 @@ namespace Internal.JitInterface
             }
         }
 
-        static PgoSchemaElem? ComputeLikelyClass(int index, Dictionary<IntPtr, object> handleToObject, PgoInstrumentationSchema[] nativeSchema, byte[] instrumentationData)
+        private static PgoSchemaElem? ComputeLikelyClass(int index, Dictionary<IntPtr, object> handleToObject, PgoInstrumentationSchema[] nativeSchema, byte[] instrumentationData, CompilationModuleGroup compilationModuleGroup)
         {
             // getLikelyClass will use two entries from the native schema table. There must be at least two present to avoid ovberruning the buffer
             if (index > (nativeSchema.Length - 2))
@@ -214,19 +216,19 @@ namespace Internal.JitInterface
             {
                 fixed(byte* pInstrumentationData = &instrumentationData[0])
                 {
-                    IntPtr []tempArray = new IntPtr[nativeSchema.Length * 2];
-                    fixed (IntPtr *pTempArray = &tempArray[0])
-                    {
-                        IntPtr classType = getLikelyClass(pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset, out uint likelihood, out uint numberOfClasses, pTempArray, (uint)pSchema->Count);
+                    IntPtr classType = getLikelyClass(pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset, out uint likelihood, out uint numberOfClasses);
 
-                        if (classType != IntPtr.Zero)
+                    if (classType != IntPtr.Zero)
+                    {
+                        TypeDesc type = (TypeDesc)handleToObject[classType];
+                        if (compilationModuleGroup.VersionsWithType(type))
                         {
                             PgoSchemaElem likelyClassElem = new PgoSchemaElem();
                             likelyClassElem.InstrumentationKind = PgoInstrumentationKind.GetLikelyClass;
                             likelyClassElem.ILOffset = nativeSchema[index].ILOffset;
                             likelyClassElem.Count = 1;
                             likelyClassElem.Other = (int)(likelihood | (numberOfClasses << 8));
-                            likelyClassElem.DataObject = new TypeSystemEntityOrUnknown[] { new TypeSystemEntityOrUnknown((TypeDesc)handleToObject[classType]) };
+                            likelyClassElem.DataObject = new TypeSystemEntityOrUnknown[] { new TypeSystemEntityOrUnknown(type) };
                             return likelyClassElem;
                         }
                     }
@@ -1158,7 +1160,7 @@ namespace Internal.JitInterface
             MethodDesc decl = HandleToObject(info->virtualMethod);
             Debug.Assert(!decl.HasInstantiation);
 
-            if (info->context != null)
+            if ((info->context != null) && decl.OwningType.IsInterface)
             {
                 TypeDesc ownerTypeDesc = typeFromContext(info->context);
                 if (decl.OwningType != ownerTypeDesc)
@@ -2926,8 +2928,6 @@ namespace Internal.JitInterface
 
         private CORINFO_MODULE_STRUCT_* embedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException("embedModuleHandle"); }
-        private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
-        { throw new NotImplementedException("embedClassHandle"); }
 
         private CORINFO_FIELD_STRUCT_* embedFieldHandle(CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException("embedFieldHandle"); }

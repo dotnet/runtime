@@ -21285,14 +21285,14 @@ struct LikelyClassHistogramEntry
 //
 struct LikelyClassHistogram
 {
-    LikelyClassHistogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount, LikelyClassHistogramEntry*pTempArray, UINT32 countTempArraySize);
+    LikelyClassHistogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount);
 
     // Sum of counts from all entries in the histogram. This includes "unknown" entries which are not captured in m_histogram
     unsigned m_totalCount;
     // Rough guess at count of unknown types
     unsigned m_unknownTypes;
     // Histogram entries, in no particular order.
-    LikelyClassHistogramEntry *m_histogram;
+    LikelyClassHistogramEntry m_histogram[64];
     UINT32 countHistogramElements = 0;
 
     LikelyClassHistogramEntry HistogramEntryAt(unsigned index)
@@ -21301,9 +21301,8 @@ struct LikelyClassHistogram
     }
 };
 
-LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount, LikelyClassHistogramEntry*pTempArray, UINT32 countTempArraySize)
+LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigned entryCount)
 {
-    m_histogram = pTempArray;
     m_unknownTypes = 0;
     m_totalCount = 0;
     uint32_t unknownTypeHandleMask = 0;
@@ -21333,6 +21332,10 @@ LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* his
         
         if (!found)
         {
+            if (countHistogramElements >= _countof(m_histogram))
+            {
+                continue;
+            }
             LikelyClassHistogramEntry newEntry;
             newEntry.m_mt = currentEntry;
             newEntry.m_count = 1;
@@ -21341,7 +21344,8 @@ LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* his
     }
 }
 
-DLLEXPORT CORINFO_CLASS_HANDLE getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema, UINT32 countSchemaItems, BYTE*pInstrumentationData, int32_t ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses, LikelyClassHistogramEntry* pTempArray, UINT32 countTempArraySize)
+// This is used by the devirtualization logic below, and by crossgen2 when producing the R2R image (to reduce the size cost of carrying the type histogram)
+extern "C" CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema, UINT32 countSchemaItems, BYTE*pInstrumentationData, int32_t ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
 {
     *pLikelihood = 0;
     *pNumberOfClasses = 0;
@@ -21373,7 +21377,7 @@ DLLEXPORT CORINFO_CLASS_HANDLE getLikelyClass(ICorJitInfo::PgoInstrumentationSch
         {
             // Form a histogram
             //
-            LikelyClassHistogram h(*(uint32_t*)(pInstrumentationData + schema[i].Offset), (INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count, pTempArray, countTempArraySize);
+            LikelyClassHistogram h(*(uint32_t*)(pInstrumentationData + schema[i].Offset), (INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count);
 
             // Use histogram count as number of classes estimate
             //
@@ -21503,7 +21507,7 @@ void Compiler::considerGuardedDevirtualization(
     unsigned             likelihood          = 0;
     unsigned             numberOfClasses     = 0;
 
-    CORINFO_CLASS_HANDLE likelyClass = getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses, (LikelyClassHistogramEntry*)_alloca(fgPgoSchemaCount * sizeof(LikelyClassHistogramEntry)), fgPgoSchemaCount);
+    CORINFO_CLASS_HANDLE likelyClass = getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
 
     if (likelyClass == NO_CLASS_HANDLE)
     {
