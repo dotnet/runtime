@@ -313,23 +313,5 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.XmlSerializationWriterILGen.WriteText(System.Xml.Serialization.SourceInfo,System.Xml.Serialization.TextAccessor)</property>
     </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2067</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.Runtime.XmlExtensionFunction.#ctor(System.String,System.String,System.Int32,System.Type,System.Reflection.BindingFlags)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2067</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.Runtime.XmlExtensionFunctionTable.Bind(System.String,System.String,System.Int32,System.Type,System.Reflection.BindingFlags)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.XsltOld.XsltCompileContext.GetExtentionMethod(System.String,System.String,System.Xml.XPath.XPathResultType[],System.Object@)</property>
-    </attribute>
   </assembly>
 </linker>

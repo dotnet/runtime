@@ -48,7 +48,7 @@ namespace System.Resources.Extensions
         }
 
 
-        internal class UndoTruncatedTypeNameSerializationBinder : SerializationBinder
+        internal sealed class UndoTruncatedTypeNameSerializationBinder : SerializationBinder
         {
             public override Type? BindToType(string assemblyName, string typeName)
             {

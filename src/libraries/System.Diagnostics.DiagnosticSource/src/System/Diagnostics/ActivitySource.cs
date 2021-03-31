@@ -367,7 +367,7 @@ namespace System.Diagnostics
     // and allow enumerating the collection items and execute some action on the enumerated item and can detect any change in the collection
     // during the enumeration which force restarting the enumeration again.
     // Caution: We can have the action executed on the same item more than once which is ok in our scenarios.
-    internal class SynchronizedList<T>
+    internal sealed class SynchronizedList<T>
     {
         private readonly List<T> _list;
         private uint _version;

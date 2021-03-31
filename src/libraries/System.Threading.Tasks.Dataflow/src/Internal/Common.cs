@@ -662,7 +662,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
     /// <summary>Stated used only when bounding and when postponed messages and a task are stored.</summary>
     /// <typeparam name="TInput">Specifies the type of input messages.</typeparam>
-    internal class BoundingStateWithPostponedAndTask<TInput> : BoundingStateWithPostponed<TInput>
+    internal sealed class BoundingStateWithPostponedAndTask<TInput> : BoundingStateWithPostponed<TInput>
     {
         /// <summary>The task used to process messages.</summary>
         internal Task? TaskForInputProcessing;

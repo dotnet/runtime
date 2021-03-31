@@ -79,7 +79,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class SchemaObjectCache
+    internal sealed class SchemaObjectCache
     {
         private Hashtable? _graph;
         private Hashtable? _hash;
@@ -252,7 +252,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class SchemaGraph
+    internal sealed class SchemaGraph
     {
         private readonly ArrayList _empty = new ArrayList();
         private readonly XmlSchemas _schemas;

@@ -12,7 +12,7 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamRelease")]
         internal static extern void SSLStreamRelease(IntPtr ptr);
 
-        internal class SslException : Exception
+        internal sealed class SslException : Exception
         {
             internal SslException()
             {

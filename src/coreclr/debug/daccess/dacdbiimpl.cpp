@@ -4253,6 +4253,16 @@ HRESULT DacDbiInterfaceImpl::IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isMo
     return hr;
 }
 
+bool DacDbiInterfaceImpl::MetadataUpdatesApplied()
+{
+    DD_ENTER_MAY_THROW;
+#ifdef EnC_SUPPORTED
+    return g_metadataUpdatesApplied;
+#else
+    return false;
+#endif
+}
+
 // Helper to intialize a TargetBuffer from a MemoryRange
 //
 // Arguments:
@@ -4775,6 +4785,17 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetThreadObject(VMPTR_Thread vmThread)
         vmObjHandle.SetDacTargetPtr(pThread->GetExposedObjectHandleForDebugger());
         return vmObjHandle;
     }
+}
+
+void DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread        vmThread, 
+                                             DacThreadAllocInfo* threadAllocInfo)
+{
+    DD_ENTER_MAY_THROW;
+
+    Thread * pThread = vmThread.GetDacPtr();
+    gc_alloc_context* allocContext = pThread->GetAllocContext();
+    threadAllocInfo->m_allocBytesSOH = (ULONG)(allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr));
+    threadAllocInfo->m_allocBytesUOH = (ULONG)allocContext->alloc_bytes_uoh;
 }
 
 // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread

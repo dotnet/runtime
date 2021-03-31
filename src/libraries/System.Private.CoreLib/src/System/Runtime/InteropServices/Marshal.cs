@@ -635,7 +635,9 @@ namespace System.Runtime.InteropServices
                 case HResults.COR_E_EXCEPTION:
                     return new System.Exception();
                 case HResults.COR_E_EXECUTIONENGINE:
+#pragma warning disable CS0618 // ExecutionEngineException is obsolete
                     return new System.ExecutionEngineException();
+#pragma warning restore CS0618
                 case HResults.COR_E_FIELDACCESS:
                     return new System.FieldAccessException();
                 case HResults.COR_E_FILELOAD:
@@ -1097,7 +1099,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
 
-            // For backward compatibility, we allow lookup up of existing delegate to
+            // For backward compatibility, we allow lookup of existing delegate to
             // function pointer mappings using abstract MulticastDelegate type. We will check
             // for the non-abstract delegate type later if no existing mapping is found.
             if (t.BaseType != typeof(MulticastDelegate) && t != typeof(MulticastDelegate))

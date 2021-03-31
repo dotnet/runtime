@@ -856,7 +856,7 @@ namespace System.Reflection.Tests
         private static Assembly LoadSystemRuntimeAssembly()
         {
             // Load System.Runtime
-            return Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName)); ;
+            return Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName));
         }
 
         private static Assembly GetGetCallingAssembly()

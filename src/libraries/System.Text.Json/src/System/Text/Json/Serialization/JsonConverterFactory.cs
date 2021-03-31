@@ -51,6 +51,8 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
+        internal sealed override Type? KeyType => null;
+
         internal sealed override Type? ElementType => null;
 
         internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
@@ -61,6 +63,11 @@ namespace System.Text.Json.Serialization
             if (converter == null)
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializerConverterFactoryReturnsNull(GetType());
+            }
+
+            if (converter is JsonConverterFactory)
+            {
+                ThrowHelper.ThrowInvalidOperationException_SerializerConverterFactoryReturnsJsonConverterFactorty(GetType());
             }
 
             return converter!;

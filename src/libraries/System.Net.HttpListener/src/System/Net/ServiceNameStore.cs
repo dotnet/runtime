@@ -9,7 +9,7 @@ using System.Globalization;
 
 namespace System.Net
 {
-    internal class ServiceNameStore
+    internal sealed class ServiceNameStore
     {
         private readonly List<string> _serviceNames;
         private ServiceNameCollection? _serviceNameCollection;

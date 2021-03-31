@@ -277,7 +277,7 @@ namespace System.IO.Pipes
             }
         }
 
-        internal class ExecuteHelper
+        internal sealed class ExecuteHelper
         {
             internal PipeStreamImpersonationWorker _userCode;
             internal SafePipeHandle? _handle;

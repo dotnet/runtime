@@ -338,19 +338,6 @@ mono_global_loader_cache_init (void)
 	mono_coop_mutex_init (&native_library_module_lock);
 }
 
-void
-mono_global_loader_cache_cleanup (void)
-{
-	if (global_module_map != NULL) {
-		g_hash_table_foreach(global_module_map, remove_cached_module, NULL);
-
-		g_hash_table_destroy(global_module_map);
-		global_module_map = NULL;
-	}
-
-	// No need to clean up the native library hash tables since they're netcore-only, where this is never called
-}
-
 static gboolean
 is_absolute_path (const char *path)
 {

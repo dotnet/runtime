@@ -147,6 +147,7 @@ product_location_help = "Built Product directory location. Optional; it will be 
 spmi_location_help = """\
 Directory in which to put SuperPMI files, such as downloaded MCH files, asm diffs, and repro .MC files.
 Optional. Default is 'spmi' within the repo 'artifacts' directory.
+If 'SUPERPMI_CACHE_DIRECTORY' environment variable is set to a path, it will use that directory.
 """
 
 superpmi_collect_help = """\
@@ -286,7 +287,6 @@ replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_R
 # subparser for asmdiffs
 asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
 
-# Add required arguments
 asm_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
 asm_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
 asm_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
@@ -294,8 +294,9 @@ asm_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the ba
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
 asm_diff_parser.add_argument("-temp_dir", help="Specify a temporary directory used for a previous ASM diffs run (for which --skip_cleanup was used) to view the results. The replay command is skipped.")
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
-asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baselne JIT. Format is key=value, where key is the option name without leading COMPlus_...")
+asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
+asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -647,7 +648,7 @@ def run_and_log(command, log_level=logging.DEBUG):
         Process return code
     """
 
-    logging.debug("Invoking: %s", " ".join(command))
+    logging.log(log_level, "Invoking: %s", " ".join(command))
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout_output, _ = proc.communicate()
     for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
@@ -695,6 +696,32 @@ def check_target_arch(coreclr_args, target_arch):
 
 def check_mch_arch(coreclr_args, mch_arch):
     return (mch_arch is not None) and (mch_arch in coreclr_args.valid_arches)
+
+
+def create_artifacts_base_name(coreclr_args, mch_file):
+    """ Create an appropriate "base" name for use creating a directory name related to MCH file playback.
+        This will later be prepended by "asm." or "jitdump.", for example, and
+        create_unique_directory_name() should be called on the final name to ensure it is unique.
+
+        Use the MCH file base name as the main part of the directory name, removing
+        the trailing ".mch", if any.
+        
+        If there is a tag specified (for asm diffs), prepend the tag.
+
+    Args:
+        coreclr_args   : the parsed arguments
+        mch_file (str) : the MCH file name that is being replayed.
+
+    Returns:
+        A directory name to be used.
+    """
+    artifacts_base_name = os.path.basename(mch_file)
+    if artifacts_base_name.lower().endswith(".mch"):
+        artifacts_base_name = artifacts_base_name[:-4]
+    if hasattr(coreclr_args, "tag") and coreclr_args.tag is not None:
+        artifacts_base_name = "{}.{}".format(coreclr_args.tag, artifacts_base_name)
+    return artifacts_base_name
+
 
 ################################################################################
 # Helper classes
@@ -814,6 +841,7 @@ class AsyncSubprocessHelper:
         reset_env = os.environ.copy()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
+        os.environ.clear()
         os.environ.update(reset_env)
 
 ################################################################################
@@ -1110,7 +1138,7 @@ class SuperPMICollect:
                 helper = AsyncSubprocessHelper(assemblies, verbose=True)
                 helper.run_to_completion(run_pmi, self)
 
-                # Review: does this delete the items that weren't there before we updated with the PMI variables?
+                os.environ.clear()
                 os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.pmi is True"
 
@@ -1188,7 +1216,7 @@ class SuperPMICollect:
                 helper = AsyncSubprocessHelper(assemblies, verbose=True)
                 helper.run_to_completion(run_crossgen, self)
 
-                # Review: does this delete the items that weren't there before we updated with the crossgen variables?
+                os.environ.clear()
                 os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.crossgen is True"
 
@@ -1310,7 +1338,7 @@ class SuperPMICollect:
                 helper = AsyncSubprocessHelper(assemblies, verbose=True)
                 helper.run_to_completion(run_crossgen2, self)
 
-                # Review: does this delete the items that weren't there before we updated with the crossgen2 variables?
+                os.environ.clear()
                 os.environ.update(old_env)
             ################################################################################################ end of "self.coreclr_args.crossgen2 is True"
 
@@ -1469,14 +1497,14 @@ def print_fail_mcl_file_method_numbers(fail_mcl_file):
             logging.debug(line)
 
 
-def save_repro_mc_files(temp_location, coreclr_args, repro_base_command_line):
+def save_repro_mc_files(temp_location, coreclr_args, artifacts_base_name, repro_base_command_line):
     """ For commands that use the superpmi "-r" option to create "repro" .mc files, copy these to a
         location where they are saved (and not in a "temp" directory) for easy use by the user.
     """
     # If there are any .mc files, drop them into artifacts/repro/<host_os>.<arch>.<build_type>/*.mc
     mc_files = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
     if len(mc_files) > 0:
-        repro_location = create_unique_directory_name(coreclr_args.spmi_location, "repro.{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+        repro_location = create_unique_directory_name(coreclr_args.spmi_location, "repro.{}".format(artifacts_base_name))
 
         repro_files = []
         for item in mc_files:
@@ -1621,7 +1649,8 @@ class SuperPMIReplay:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
                     print_fail_mcl_file_method_numbers(fail_mcl_file)
                     repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(repro_flags), self.jit_path)
-                    save_repro_mc_files(temp_location, self.coreclr_args, repro_base_command_line)
+                    artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
+                    save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
                 if not self.coreclr_args.skip_cleanup:
                     if os.path.isfile(fail_mcl_file):
@@ -1715,6 +1744,12 @@ class SuperPMIReplayAsmDiffs:
         jit_dump_complus_vars.update({
             "COMPlus_JitDump": "*",
             "COMPlus_NgenDump": "*" })
+
+        asm_complus_vars_full_env = os.environ.copy()
+        asm_complus_vars_full_env.update(asm_complus_vars)
+
+        jit_dump_complus_vars_full_env = os.environ.copy()
+        jit_dump_complus_vars_full_env.update(jit_dump_complus_vars)
 
         target_flags = []
         if self.coreclr_args.arch != self.coreclr_args.target_arch:
@@ -1816,13 +1851,15 @@ class SuperPMIReplayAsmDiffs:
                             files_with_replay_failures.append(mch_file)
                             result = False
 
+                artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
+
                 if is_nonzero_length_file(fail_mcl_file):
                     # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
                     if return_code == 0:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
                     print_fail_mcl_file_method_numbers(fail_mcl_file)
                     repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
-                    save_repro_mc_files(temp_location, self.coreclr_args, repro_base_command_line)
+                    save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
                 # There were diffs. Go through each method that created diffs and
                 # create a base/diff asm file with diffable asm. In addition, create
@@ -1842,7 +1879,7 @@ class SuperPMIReplayAsmDiffs:
                         mcl_lines = [item.strip() for item in mcl_lines]
                         self.diff_mcl_contents = mcl_lines
 
-                    asm_root_dir = create_unique_directory_name(self.coreclr_args.spmi_location, "asm.{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
+                    asm_root_dir = create_unique_directory_name(self.coreclr_args.spmi_location, "asm.{}".format(artifacts_base_name))
                     base_asm_location = os.path.join(asm_root_dir, "base")
                     diff_asm_location = os.path.join(asm_root_dir, "diff")
                     os.makedirs(base_asm_location)
@@ -1850,7 +1887,7 @@ class SuperPMIReplayAsmDiffs:
 
                     if self.coreclr_args.diff_jit_dump:
                         # If JIT dumps are requested, create a diff and baseline directory for JIT dumps
-                        jitdump_root_dir = create_unique_directory_name(self.coreclr_args.spmi_location, "jitdump.{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
+                        jitdump_root_dir = create_unique_directory_name(self.coreclr_args.spmi_location, "jitdump.{}".format(artifacts_base_name))
                         base_dump_location = os.path.join(jitdump_root_dir, "base")
                         diff_dump_location = os.path.join(jitdump_root_dir, "diff")
                         os.makedirs(base_dump_location)
@@ -1859,7 +1896,7 @@ class SuperPMIReplayAsmDiffs:
                     text_differences = queue.Queue()
                     jit_dump_differences = queue.Queue()
 
-                    async def create_replay_artifacts(print_prefix, item, self, mch_file, env_vars, jit_differences_queue, base_location, diff_location, extension):
+                    async def create_replay_artifacts(print_prefix, item, self, mch_file, env, jit_differences_queue, base_location, diff_location, extension):
                         """ Run superpmi over an MC to create JIT asm or JIT dumps for the method.
                         """
                         # Setup flags to call SuperPMI for both the diff jit and the base jit
@@ -1869,9 +1906,6 @@ class SuperPMIReplayAsmDiffs:
                             "-v", "q"  # only log from the jit.
                         ]
                         flags += altjit_replay_flags
-
-                        # Add in all the COMPlus variables we need
-                        os.environ.update(env_vars)
 
                         # Change the working directory to the core root we will call SuperPMI from.
                         # This is done to allow libcoredistools to be loaded correctly on unix
@@ -1884,7 +1918,7 @@ class SuperPMIReplayAsmDiffs:
                                 with open(item_path, 'w') as file_handle:
                                     logging.debug("%sGenerating %s", print_prefix, item_path)
                                     logging.debug("%sInvoking: %s", print_prefix, " ".join(command))
-                                    proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=file_handle, stderr=asyncio.subprocess.PIPE)
+                                    proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=file_handle, stderr=asyncio.subprocess.PIPE, env=env)
                                     await proc.communicate()
                                 with open(item_path, 'r') as file_handle:
                                     generated_txt = file_handle.read()
@@ -1902,13 +1936,13 @@ class SuperPMIReplayAsmDiffs:
                     for item in self.diff_mcl_contents:
                         diff_items.append(item)
 
-                    logging.info("Creating dasm files")
+                    logging.info("Creating dasm files: %s %s", base_asm_location, diff_asm_location)
                     subproc_helper = AsyncSubprocessHelper(diff_items, verbose=True)
-                    subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, asm_complus_vars, text_differences, base_asm_location, diff_asm_location, ".dasm")
+                    subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, asm_complus_vars_full_env, text_differences, base_asm_location, diff_asm_location, ".dasm")
 
                     if self.coreclr_args.diff_jit_dump:
-                        logging.info("Creating JitDump files")
-                        subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, jit_dump_complus_vars, jit_dump_differences, base_dump_location, diff_dump_location, ".txt")
+                        logging.info("Creating JitDump files: %s %s", base_dump_location, diff_dump_location)
+                        subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, jit_dump_complus_vars_full_env, jit_dump_differences, base_dump_location, diff_dump_location, ".txt")
 
                     logging.info("Differences found. To replay SuperPMI use:")
                     logging.info("")
@@ -3022,7 +3056,13 @@ def setup_args(args):
                         "Unable to set log_file.")
 
     def setup_spmi_location_arg(spmi_location):
-        return os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi")) if spmi_location is None else spmi_location
+        if spmi_location is None:
+            if "SUPERPMI_CACHE_DIRECTORY" in os.environ:
+                spmi_location = os.environ["SUPERPMI_CACHE_DIRECTORY"]
+                spmi_location = os.path.abspath(spmi_location)
+            else:
+                spmi_location = os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi"))
+        return spmi_location
 
     coreclr_args.verify(args,
                         "spmi_location",
@@ -3439,6 +3479,12 @@ def setup_args(args):
                             "diff_jit_option",
                             lambda unused: True,
                             "Unable to set diff_jit_option.")
+
+        coreclr_args.verify(args,
+                            "tag",
+                            lambda unused: True,
+                            "Unable to set tag.",
+                            modify_arg=lambda arg: make_safe_filename(arg) if arg is not None else arg)
 
         process_base_jit_path_arg(coreclr_args)
 

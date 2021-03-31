@@ -4074,31 +4074,6 @@ bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
     return true;
 }
 
-/*****************************************************************************
- *
- * Find the loop termination test at the bottom of the loop
- */
-
-static Statement* optFindLoopTermTest(BasicBlock* bottom)
-{
-    Statement* testStmt = bottom->firstStmt();
-
-    assert(testStmt != nullptr);
-
-    Statement* result = testStmt->GetPrevStmt();
-
-#ifdef DEBUG
-    while (testStmt->GetNextStmt() != nullptr)
-    {
-        testStmt = testStmt->GetNextStmt();
-    }
-
-    assert(testStmt == result);
-#endif
-
-    return result;
-}
-
 //-----------------------------------------------------------------------------
 // optInvertWhileLoop: modify flow and duplicate code so that for/while loops are
 //   entered at top and tested at bottom (aka loop rotation or bottom testing).
@@ -4117,8 +4092,8 @@ static Statement* optFindLoopTermTest(BasicBlock* bottom)
 //
 void Compiler::optInvertWhileLoop(BasicBlock* block)
 {
-    noway_assert(opts.OptimizationEnabled());
-    noway_assert(compCodeOpt() != SMALL_CODE);
+    assert(opts.OptimizationEnabled());
+    assert(compCodeOpt() != SMALL_CODE);
 
     /*
         Optimize while loops into do { } while loop
@@ -4154,21 +4129,14 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     /* Does the BB end with an unconditional jump? */
 
     if (block->bbJumpKind != BBJ_ALWAYS || (block->bbFlags & BBF_KEEP_BBJ_ALWAYS))
-    { // It can't be one of the ones we use for our exception magic
+    {
+        // It can't be one of the ones we use for our exception magic
         return;
     }
 
     // block can't be the scratch bb, since we prefer to keep flow
     // out of the scratch bb as BBJ_ALWAYS or BBJ_NONE.
     if (fgBBisScratch(block))
-    {
-        return;
-    }
-
-    // It has to be a forward jump
-    //  TODO-CQ: Check if we can also optimize the backwards jump as well.
-    //
-    if (fgIsForwardBranch(block) == false)
     {
         return;
     }
@@ -4189,7 +4157,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 
     // Since test is a BBJ_COND it will have a bbNext
-    noway_assert(bTest->bbNext);
+    noway_assert(bTest->bbNext != nullptr);
 
     // 'block' must be in the same try region as the condition, since we're going to insert
     // a duplicated condition in 'block', and the condition might include exception throwing code.
@@ -4206,11 +4174,12 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         return;
     }
 
-    Statement* condStmt = optFindLoopTermTest(bTest);
+    // Find the loop termination test at the bottom of the loop.
+    Statement* condStmt = bTest->lastStmt();
 
     // bTest must only contain only a jtrue with no other stmts, we will only clone
     // the conditional, so any other statements will not get cloned
-    //  TODO-CQ: consider cloning the whole bTest block as inserting it after block.
+    //  TODO-CQ: consider cloning the whole bTest block and inserting it after block.
     //
     if (bTest->bbStmtList != condStmt)
     {
@@ -4232,6 +4201,15 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         return;
     }
 
+    // It has to be a forward jump. Defer this check until after all the cheap checks
+    // are done, since it iterates forward in the block list looking for bbJumpDest.
+    //  TODO-CQ: Check if we can also optimize the backwards jump as well.
+    //
+    if (fgIsForwardBranch(block) == false)
+    {
+        return;
+    }
+
     /* We call gtPrepareCost to measure the cost of duplicating this tree */
 
     gtPrepareCost(condTree);
@@ -4244,7 +4222,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     BasicBlock::weight_t const weightTest                = bTest->bbWeight;
     BasicBlock::weight_t const weightNext                = block->bbNext->bbWeight;
 
-    // If we have profile data then we calculate the number of time
+    // If we have profile data then we calculate the number of times
     // the loop will iterate into loopIterations
     if (fgIsUsingProfileWeights())
     {
@@ -4254,7 +4232,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         {
             // If this while loop never iterates then don't bother transforming
             //
-            if (weightNext == 0)
+            if (weightNext == BB_ZERO_WEIGHT)
             {
                 return;
             }
@@ -4265,8 +4243,8 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
             //
             if (!fgProfileWeightsConsistent(weightBlock + weightNext, weightTest))
             {
-                JITDUMP("Profile weights locally inconsistent: block %f, next %f, test %f\n", weightBlock, weightNext,
-                        weightTest);
+                JITDUMP("Profile weights locally inconsistent: block " FMT_WT ", next " FMT_WT ", test " FMT_WT "\n",
+                        weightBlock, weightNext, weightTest);
             }
             else
             {
@@ -4300,35 +4278,46 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     if (loopIterations >= 12.0)
     {
         maxDupCostSz *= 2;
-    }
-    if (loopIterations >= 96.0)
-    {
-        maxDupCostSz *= 2;
-    }
-
-    // If the loop condition has a shared static helper, we really want this loop converted
-    // as not converting the loop will disable loop hoisting, meaning the shared helper will
-    // be executed on every loop iteration.
-    int countOfHelpers = 0;
-    fgWalkTreePre(&condTree, CountSharedStaticHelper, &countOfHelpers);
-
-    if (countOfHelpers > 0 && compCodeOpt() != SMALL_CODE)
-    {
-        maxDupCostSz += 24 * min(countOfHelpers, (int)(loopIterations + 1.5));
+        if (loopIterations >= 96.0)
+        {
+            maxDupCostSz *= 2;
+        }
     }
 
     // If the compare has too high cost then we don't want to dup
 
     bool costIsTooHigh = (estDupCostSz > maxDupCostSz);
 
+    int countOfHelpers = 0;
+    if (costIsTooHigh)
+    {
+        // If we already know that the cost is acceptable, then don't waste time walking the tree
+        // counting shared static helpers.
+        //
+        // If the loop condition has a shared static helper, we really want this loop converted
+        // as not converting the loop will disable loop hoisting, meaning the shared helper will
+        // be executed on every loop iteration.
+        fgWalkTreePre(&condTree, CountSharedStaticHelper, &countOfHelpers);
+
+        if (countOfHelpers > 0)
+        {
+            maxDupCostSz += 24 * min(countOfHelpers, (int)(loopIterations + 1.5));
+
+            // Is the cost too high now?
+            costIsTooHigh = (estDupCostSz > maxDupCostSz);
+        }
+    }
+
 #ifdef DEBUG
     if (verbose)
     {
+        // Note that `countOfHelpers = 0` means either there were zero helpers, or the tree walk to count them was not
+        // done.
         printf("\nDuplication of loop condition [%06u] is %s, because the cost of duplication (%i) is %s than %i,"
                "\n   loopIterations = %7.3f, countOfHelpers = %d, validProfileWeights = %s\n",
-               condTree->gtTreeID, costIsTooHigh ? "not done" : "performed", estDupCostSz,
+               dspTreeID(condTree), costIsTooHigh ? "not done" : "performed", estDupCostSz,
                costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, loopIterations, countOfHelpers,
-               allProfileWeightsAreValid ? "true" : "false");
+               dspBool(allProfileWeightsAreValid));
     }
 #endif
 
@@ -4392,14 +4381,13 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nDuplicated loop condition in " FMT_BB " for loop (" FMT_BB " - " FMT_BB ")", block->bbNum,
+        printf("\nDuplicated loop condition in " FMT_BB " for loop (" FMT_BB " - " FMT_BB ")\n", block->bbNum,
                block->bbNext->bbNum, bTest->bbNum);
-        printf("\nEstimated code size expansion is %d\n ", estDupCostSz);
+        printf("Estimated code size expansion is %d\n", estDupCostSz);
 
         gtDispStmt(copyOfCondStmt);
     }
-
-#endif
+#endif // DEBUG
 
     // If we have profile data for all blocks and we know that we are cloning the
     // bTest block into block and thus changing the control flow from block so
@@ -4410,7 +4398,8 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     {
         // Update the weight for bTest
         //
-        JITDUMP("Reducing profile weight of " FMT_BB " from %f to %f\n", bTest->bbNum, weightTest, weightNext);
+        JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", bTest->bbNum, weightTest,
+                weightNext);
         bTest->bbWeight = weightNext;
 
         // Determine the new edge weights.
@@ -4432,17 +4421,17 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         flowList* const edgeTestToNext  = fgGetPredForBlock(bTest->bbJumpDest, bTest);
         flowList* const edgeTestToAfter = fgGetPredForBlock(bTest->bbNext, bTest);
 
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to %f (iterate loop)\n", bTest->bbNum,
+        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum,
                 bTest->bbJumpDest->bbNum, testToNextWeight);
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to %f (exit loop)\n", bTest->bbNum, bTest->bbNext->bbNum,
-                testToAfterWeight);
+        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (exit loop)\n", bTest->bbNum,
+                bTest->bbNext->bbNum, testToAfterWeight);
 
         edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight, bTest->bbJumpDest);
         edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight, bTest->bbNext);
 
         // Adjust edges out of block, using the same distribution.
         //
-        JITDUMP("Profile weight of " FMT_BB " remains unchanged at %f\n", block->bbNum, weightBlock);
+        JITDUMP("Profile weight of " FMT_BB " remains unchanged at " FMT_WT "\n", block->bbNum, weightBlock);
 
         BasicBlock::weight_t const blockToNextLikelihood  = testToNextLikelihood;
         BasicBlock::weight_t const blockToAfterLikelihood = testToAfterLikelihood;
@@ -4453,9 +4442,9 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         flowList* const edgeBlockToNext  = fgGetPredForBlock(block->bbNext, block);
         flowList* const edgeBlockToAfter = fgGetPredForBlock(block->bbJumpDest, block);
 
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to %f (enter loop)\n", block->bbNum, block->bbNext->bbNum,
-                blockToNextWeight);
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to %f (avoid loop)\n", block->bbNum,
+        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", block->bbNum,
+                block->bbNext->bbNum, blockToNextWeight);
+        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (avoid loop)\n", block->bbNum,
                 block->bbJumpDest->bbNum, blockToAfterWeight);
 
         edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, block->bbNext);
@@ -4466,7 +4455,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         //
         fgDebugCheckIncomingProfileData(block->bbNext);
         fgDebugCheckIncomingProfileData(block->bbJumpDest);
-#endif
+#endif // DEBUG
     }
 }
 
@@ -4481,6 +4470,11 @@ PhaseStatus Compiler::optInvertLoops()
     noway_assert(opts.OptimizationEnabled());
     noway_assert(fgModified == false);
 
+    if (compCodeOpt() == SMALL_CODE)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
         // Make sure the appropriate fields are initialized
@@ -4492,10 +4486,7 @@ PhaseStatus Compiler::optInvertLoops()
             continue;
         }
 
-        if (compCodeOpt() != SMALL_CODE)
-        {
-            optInvertWhileLoop(block);
-        }
+        optInvertWhileLoop(block);
     }
 
     bool madeChanges = fgModified;

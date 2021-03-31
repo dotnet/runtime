@@ -8,7 +8,7 @@ using System.Xml.Linq;
 
 namespace System.Xml.XPath
 {
-    internal class XNodeNavigator : XPathNavigator, IXmlLineInfo
+    internal sealed class XNodeNavigator : XPathNavigator, IXmlLineInfo
     {
         internal static readonly string xmlPrefixNamespace = XNamespace.Xml.NamespaceName;
         internal static readonly string xmlnsPrefixNamespace = XNamespace.Xmlns.NamespaceName;

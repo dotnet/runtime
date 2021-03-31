@@ -209,8 +209,13 @@ namespace System
             return outHandles;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter)
+        internal static object CreateInstanceForAnotherGenericParameter(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
+            RuntimeType genericParameter)
         {
+            Debug.Assert(type.GetConstructor(Type.EmptyTypes) is ConstructorInfo c && c.IsPublic,
+                $"CreateInstanceForAnotherGenericParameter requires {nameof(type)} to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.");
+
             object? instantiatedObject = null;
 
             IntPtr typeHandle = genericParameter.GetTypeHandleInternal().Value;
@@ -224,8 +229,14 @@ namespace System
             return instantiatedObject!;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter1, RuntimeType genericParameter2)
+        internal static object CreateInstanceForAnotherGenericParameter(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
+            RuntimeType genericParameter1,
+            RuntimeType genericParameter2)
         {
+            Debug.Assert(type.GetConstructor(Type.EmptyTypes) is ConstructorInfo c && c.IsPublic,
+                $"CreateInstanceForAnotherGenericParameter requires {nameof(type)} to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.");
+
             object? instantiatedObject = null;
 
             IntPtr* pTypeHandles = stackalloc IntPtr[]

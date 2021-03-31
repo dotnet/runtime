@@ -416,12 +416,12 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "ResetAllChangeStatus");
 
-            _givenNameChanged = (_givenNameChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet; ;
-            _middleNameChanged = (_middleNameChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet; ;
-            _surnameChanged = (_surnameChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet; ;
-            _emailAddressChanged = (_emailAddressChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet; ;
-            _voiceTelephoneNumberChanged = (_voiceTelephoneNumberChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet; ;
-            _employeeIDChanged = (_employeeIDChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet; ;
+            _givenNameChanged = (_givenNameChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
+            _middleNameChanged = (_middleNameChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
+            _surnameChanged = (_surnameChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
+            _emailAddressChanged = (_emailAddressChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
+            _voiceTelephoneNumberChanged = (_voiceTelephoneNumberChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
+            _employeeIDChanged = (_employeeIDChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
 
             base.ResetAllChangeStatus();
         }

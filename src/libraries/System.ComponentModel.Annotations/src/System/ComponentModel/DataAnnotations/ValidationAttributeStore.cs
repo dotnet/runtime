@@ -18,7 +18,7 @@ namespace System.ComponentModel.DataAnnotations
     ///     It exists both to help performance as well as to abstract away the differences between
     ///     Reflection and TypeDescriptor.
     /// </remarks>
-    internal class ValidationAttributeStore
+    internal sealed class ValidationAttributeStore
     {
         private readonly Dictionary<Type, TypeStoreItem> _typeStoreItems = new Dictionary<Type, TypeStoreItem>();
 

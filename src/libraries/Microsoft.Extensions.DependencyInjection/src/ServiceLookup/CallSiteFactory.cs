@@ -12,7 +12,7 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class CallSiteFactory
+    internal sealed class CallSiteFactory
     {
         private const int DefaultSlot = 0;
         private readonly ServiceDescriptor[] _descriptors;

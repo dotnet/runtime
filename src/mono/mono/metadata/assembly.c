@@ -1429,17 +1429,6 @@ mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data)
 	mono_install_assembly_load_hook_v1 (func, user_data);
 }
 
-static void
-free_assembly_load_hooks (void)
-{
-	AssemblyLoadHook *hook, *next;
-
-	for (hook = assembly_load_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
-}
-
 typedef struct AssemblySearchHook AssemblySearchHook;
 struct AssemblySearchHook {
 	AssemblySearchHook *next;
@@ -1534,17 +1523,6 @@ mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_da
 {
 	mono_install_assembly_search_hook_internal_v1 (func, user_data, FALSE);
 }	
-
-static void
-free_assembly_search_hooks (void)
-{
-	AssemblySearchHook *hook, *next;
-
-	for (hook = assembly_search_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
-}
 
 /**
  * mono_install_assembly_refonly_search_hook:
@@ -1689,17 +1667,6 @@ mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer 
 	}
 }
 
-static void
-free_assembly_preload_hooks (void)
-{
-	AssemblyPreLoadHook *hook, *next;
-
-	for (hook = assembly_preload_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
-}
-
 typedef struct AssemblyAsmCtxFromPathHook AssemblyAsmCtxFromPathHook;
 struct AssemblyAsmCtxFromPathHook {
 	AssemblyAsmCtxFromPathHook *next;
@@ -1758,18 +1725,6 @@ assembly_invoke_asmctx_from_path_hook (const char *absfname, MonoAssembly *reque
 			return TRUE;
 	}
 	return FALSE;
-}
-
-
-static void
-free_assembly_asmctx_from_path_hooks (void)
-{
-	AssemblyAsmCtxFromPathHook *hook, *next;
-
-	for (hook = assembly_asmctx_from_path_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
 }
 
 static gchar *
@@ -3460,12 +3415,6 @@ mono_assembly_foreach (GFunc func, gpointer user_data)
 void
 mono_assemblies_cleanup (void)
 {
-	mono_os_mutex_destroy (&assemblies_mutex);
-
-	free_assembly_asmctx_from_path_hooks ();
-	free_assembly_load_hooks ();
-	free_assembly_search_hooks ();
-	free_assembly_preload_hooks ();
 }
 
 /*

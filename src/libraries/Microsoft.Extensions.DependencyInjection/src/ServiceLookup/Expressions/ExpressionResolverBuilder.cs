@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class ExpressionResolverBuilder : CallSiteVisitor<object, Expression>
+    internal sealed class ExpressionResolverBuilder : CallSiteVisitor<object, Expression>
     {
         internal static readonly MethodInfo InvokeFactoryMethodInfo = GetMethodInfo<Action<Func<IServiceProvider, object>, IServiceProvider>>((a, b) => a.Invoke(b));
         internal static readonly MethodInfo CaptureDisposableMethodInfo = GetMethodInfo<Func<ServiceProviderEngineScope, object, object>>((a, b) => a.CaptureDisposable(b));

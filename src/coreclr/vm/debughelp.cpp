@@ -700,18 +700,6 @@ PCCOR_SIGNATURE RawSigForMethodDesc(MethodDesc* pMD)
     return(pMD->GetSig());
 }
 
-Thread * CurrentThreadInfo ()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    return GetThread ();
-}
-
 SyncBlock *GetSyncBlockForObject(UINT_PTR obj)
 {
     CONTRACTL

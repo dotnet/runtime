@@ -11,7 +11,8 @@
 MONO_BEGIN_DECLS
 
 MONO_API void          mono_assemblies_init     (void);
-MONO_API void          mono_assemblies_cleanup  (void);
+MONO_API MONO_RT_EXTERNAL_ONLY void
+mono_assemblies_cleanup  (void);
 MONO_API MONO_RT_EXTERNAL_ONLY
 MonoAssembly *mono_assembly_open       (const char *filename,
 				       	MonoImageOpenStatus *status);

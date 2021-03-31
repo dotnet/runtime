@@ -1196,7 +1196,6 @@ mono_profiler_init_coverage (const char *desc)
 
 	MonoProfilerHandle handle = coverage_profiler.handle = mono_profiler_create (&coverage_profiler);
 
-	mono_profiler_set_runtime_shutdown_end_callback (handle, cov_shutdown);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 	mono_profiler_set_assembly_loaded_callback (handle, assembly_loaded);
 

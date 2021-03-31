@@ -12,7 +12,7 @@ using System.Diagnostics;
 
 namespace System.Xml.Schema
 {
-    internal class XNodeValidator
+    internal sealed class XNodeValidator
     {
         private readonly XmlSchemaSet schemas;
         private readonly ValidationEventHandler? validationEventHandler;
@@ -379,7 +379,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class XmlSchemaInfoEqualityComparer : IEqualityComparer<XmlSchemaInfo>
+    internal sealed class XmlSchemaInfoEqualityComparer : IEqualityComparer<XmlSchemaInfo>
     {
         public bool Equals(XmlSchemaInfo? si1, XmlSchemaInfo? si2)
         {

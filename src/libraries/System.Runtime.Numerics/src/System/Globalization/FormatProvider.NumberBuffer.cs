@@ -6,7 +6,7 @@ using System.Security;
 
 namespace System.Globalization
 {
-    internal partial class FormatProvider
+    internal static partial class FormatProvider
     {
         private static partial class Number
         {

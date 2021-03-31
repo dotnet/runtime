@@ -3,7 +3,7 @@
 
 namespace System.Text
 {
-    internal partial class EncoderLatin1BestFitFallbackBuffer
+    internal sealed partial class EncoderLatin1BestFitFallbackBuffer
     {
         // Best fit for ASCII, and since it works for ASCII, we use it for latin1 as well.
         private static readonly char[] s_arrayCharBestFit =

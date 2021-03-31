@@ -35,9 +35,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type keyType)
+        public static void ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type keyType, JsonConverter converter)
         {
-            throw new NotSupportedException(SR.Format(SR.DictionaryKeyTypeNotSupported, keyType));
+            throw new NotSupportedException(SR.Format(SR.DictionaryKeyTypeNotSupported, keyType, converter.GetType()));
         }
 
         [DoesNotReturn]
@@ -186,6 +186,12 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_SerializerConverterFactoryReturnsNull(Type converterType)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializerConverterFactoryReturnsNull, converterType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_SerializerConverterFactoryReturnsJsonConverterFactorty(Type converterType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.SerializerConverterFactoryReturnsJsonConverterFactory, converterType));
         }
 
         [DoesNotReturn]

@@ -15,7 +15,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
-    internal class CodeGenerator
+    internal sealed class CodeGenerator
     {
         private static MethodInfo? s_getTypeFromHandle;
         private static MethodInfo GetTypeFromHandle
@@ -1496,7 +1496,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class ArgBuilder
+    internal sealed class ArgBuilder
     {
         internal int Index;
         internal Type ArgType;
@@ -1507,7 +1507,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-    internal class ForState
+    internal sealed class ForState
     {
         private readonly LocalBuilder? _indexVar;
         private readonly Label _beginLabel;
@@ -1591,7 +1591,7 @@ namespace System.Runtime.Serialization
         GreaterThanOrEqualTo
     }
 
-    internal class IfState
+    internal sealed class IfState
     {
         private Label _elseBegin;
         private Label _endIf;
@@ -1622,7 +1622,7 @@ namespace System.Runtime.Serialization
     }
 
 
-    internal class SwitchState
+    internal sealed class SwitchState
     {
         private readonly Label _defaultLabel;
         private readonly Label _endOfSwitchLabel;

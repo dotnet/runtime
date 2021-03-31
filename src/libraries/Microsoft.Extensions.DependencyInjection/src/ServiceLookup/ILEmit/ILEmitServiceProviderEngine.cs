@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class ILEmitServiceProviderEngine : ServiceProviderEngine
+    internal sealed class ILEmitServiceProviderEngine : ServiceProviderEngine
     {
         private readonly ILEmitResolverBuilder _expressionResolverBuilder;
         public ILEmitServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors) : base(serviceDescriptors)

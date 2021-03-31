@@ -1241,7 +1241,7 @@ HRESULT RCWCleanupList::ReleaseRCWListInCorrectCtx(LPVOID pData)
     // into cooperative GC mode. This "fix" will prevent us from doing so.
     if (g_fEEShutDown & ShutDown_Finalize2)
     {
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (pThread && !FinalizerThread::IsCurrentThreadFinalizer())
             pThread->SetThreadStateNC(Thread::TSNC_UnsafeSkipEnterCooperative);
     }
@@ -1254,7 +1254,7 @@ HRESULT RCWCleanupList::ReleaseRCWListInCorrectCtx(LPVOID pData)
     //  the MTA context), we will infinitely loop.  So, we short circuit this with ctxTried.
 
     Thread *pHeadThread = pHead->GetSTAThread();
-    BOOL fCorrectThread = (pHeadThread == NULL) ? TRUE : (pHeadThread == GetThread());
+    BOOL fCorrectThread = (pHeadThread == NULL) ? TRUE : (pHeadThread == GetThreadNULLOk());
     BOOL fCorrectCookie = (pCurrCtxCookie == NULL) ? TRUE : (pHead->GetWrapperCtxCookie() == pCurrCtxCookie);
 
     if ( pHead->IsFreeThreaded() || // Avoid context transition if the list is for free threaded RCW
@@ -1281,7 +1281,7 @@ HRESULT RCWCleanupList::ReleaseRCWListInCorrectCtx(LPVOID pData)
     // Reset the bit indicating we cannot transition into cooperative GC mode.
     if (g_fEEShutDown & ShutDown_Finalize2)
     {
-        Thread *pThread = GetThread();
+        Thread *pThread = GetThreadNULLOk();
         if (pThread && !FinalizerThread::IsCurrentThreadFinalizer())
             pThread->ResetThreadStateNC(Thread::TSNC_UnsafeSkipEnterCooperative);
     }
@@ -1433,7 +1433,6 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
     // if this thread is an STA thread, then when the STA dies
     // we need to cleanup this wrapper
     m_pCreatorThread  = GetThread();
-    _ASSERTE(m_pCreatorThread != NULL);
 
     m_pRCWCache = RCWCache::GetRCWCache();
 

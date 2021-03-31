@@ -15,7 +15,7 @@ namespace System.Linq.Parallel
     /// A simple enumerable type that implements the range algorithm. It also supports
     /// partitioning of the indices by implementing an interface that PLINQ recognizes.
     /// </summary>
-    internal class RangeEnumerable : ParallelQuery<int>, IParallelPartitionable<int>
+    internal sealed class RangeEnumerable : ParallelQuery<int>, IParallelPartitionable<int>
     {
         private readonly int _from; // Lowest index to include.
         private readonly int _count; // Number of indices to include.

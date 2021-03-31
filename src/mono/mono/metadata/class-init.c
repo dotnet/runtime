@@ -4020,20 +4020,3 @@ mono_classes_init (void)
 	mono_counters_register ("MonoClass size",
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &classes_size);
 }
-
-/**
- * mono_classes_cleanup:
- *
- * Free the resources used by this module.
- */
-void
-mono_classes_cleanup (void)
-{
-	mono_native_tls_free (setup_fields_tls_id);
-	mono_native_tls_free (init_pending_tls_id);
-
-	if (global_interface_bitset)
-		mono_bitset_free (global_interface_bitset);
-	global_interface_bitset = NULL;
-	mono_os_mutex_destroy (&classes_mutex);
-}

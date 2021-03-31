@@ -9,7 +9,7 @@ namespace System.Data.OleDb
     [System.ComponentModel.TypeConverterAttribute(typeof(OleDbParameter.OleDbParameterConverter))]
     public sealed partial class OleDbParameter : System.Data.Common.DbParameter, System.Data.IDataParameter, System.Data.IDbDataParameter, System.ICloneable
     {
-        internal class OleDbParameterConverter : System.ComponentModel.ExpandableObjectConverter
+        internal sealed class OleDbParameterConverter : System.ComponentModel.ExpandableObjectConverter
         {
         }
     }
@@ -25,15 +25,15 @@ namespace System.Data.OleDb
         [System.ComponentModel.TypeConverterAttribute(typeof(OleDbProviderConverter))]
         public string Provider { get { throw null; } set { } }
 
-        internal class OleDbConnectionStringBuilderConverter { }
-        internal class OleDbServicesConverter { }
-        internal class OleDbProviderConverter { }
+        internal sealed class OleDbConnectionStringBuilderConverter { }
+        internal sealed class OleDbServicesConverter { }
+        internal sealed class OleDbProviderConverter { }
     }
     public sealed partial class OleDbException
     {
         [System.ComponentModel.TypeConverterAttribute(typeof(ErrorCodeConverter))]
         public override int ErrorCode { get { throw null; } }
 
-        internal class ErrorCodeConverter { }
+        internal sealed class ErrorCodeConverter { }
     }
 }

@@ -14,7 +14,7 @@ namespace System.DirectoryServices.AccountManagement
     /// <summary>
     /// This is a class designed to cache DirectoryEntires instead of creating them every time.
     /// </summary>
-    internal class SDSCache
+    internal sealed class SDSCache
     {
         public static SDSCache Domain
         {
