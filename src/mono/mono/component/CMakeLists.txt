@@ -82,8 +82,8 @@ if (NOT STATIC_COMPONENTS)
       # FIXME: this is bad for things like the g_log_set_default_handler/g_logv
       # which use global state - we should move those functions into
       # monosgen-shared and get them via dynamic linking.
-      target_link_libraries("mono-component-${component}" eglib_objects)
-      target_link_libraries("mono-component-${component}" monosgen-shared)
+      target_link_libraries("mono-component-${component}" PRIVATE eglib_objects)
+      target_link_libraries("mono-component-${component}" PRIVATE monosgen-shared)
       # If we disable shared libs, but build dynamic components we would need
       # to enable allowing undefined symbols here (presumably to be resolved
       # from the mono-sgen executable.  But that's not a configuration we

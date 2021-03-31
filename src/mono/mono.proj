@@ -81,6 +81,7 @@
 
   <!-- How to build runtime components? Static or dynamic. -->
   <PropertyGroup>
+    <MonoComponentsStatic Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetsBrowser)' == 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
     <MonoComponentsStatic Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true' and '$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
@@ -569,6 +570,7 @@
       <MonoAOTCMakeArgs Include="-DENABLE_ICALL_SYMBOL_MAP=1" />
       <MonoAOTCMakeArgs Include="-DDISABLE_SHARED_LIBS=1" />
       <MonoAOTCMakeArgs Include="-DDISABLE_LIBS=1" />
+      <MonoAOTCMakeArgs Include="-DSTATIC_COMPONENTS=1" />
       <MonoAOTCMakeArgs Condition="'$(MonoAotOffsetsFile)' != ''" Include="-DAOT_OFFSETS_FILE=&quot;$(MonoAotOffsetsFile)&quot;" />
       <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoAOTLLVMDir.TrimEnd('\/'))" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCFLAGSOption)" />

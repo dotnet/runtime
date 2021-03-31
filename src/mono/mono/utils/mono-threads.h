@@ -767,7 +767,6 @@ void mono_threads_transition_begin_no_safepoints (THREAD_INFO_TYPE* info, const 
 void mono_threads_transition_end_no_safepoints (THREAD_INFO_TYPE* info, const char *func);
 
 MONO_COMPONENT_API
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
 MonoThreadUnwindState* mono_thread_info_get_suspend_state (THREAD_INFO_TYPE *info);
 
 gpointer
