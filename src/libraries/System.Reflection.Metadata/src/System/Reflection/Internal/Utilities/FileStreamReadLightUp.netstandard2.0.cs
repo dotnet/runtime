@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -9,12 +8,7 @@ namespace System.Reflection.Internal
 {
     internal static class FileStreamReadLightUp
     {
-        private static bool IsReadFileAvailable =>
-#if NETCOREAPP
-            OperatingSystem.IsWindows();
-#else
-            Path.DirectorySeparatorChar == '\\';
-#endif
+        private static bool IsReadFileAvailable => Path.DirectorySeparatorChar == '\\';
 
         internal static bool IsFileStream(Stream stream) => stream is FileStream;
 
@@ -42,32 +36,21 @@ namespace System.Reflection.Internal
             return handle;
         }
 
-        internal static unsafe bool TryReadFile(Stream stream, byte* buffer, long start, int size)
+        internal static unsafe int ReadFile(Stream stream, byte* buffer, int size)
         {
             if (!IsReadFileAvailable)
             {
-                return false;
+                return 0;
             }
 
             SafeHandle? handle = GetSafeFileHandle(stream);
             if (handle == null)
             {
-                return false;
+                return 0;
             }
 
             int result = Interop.Kernel32.ReadFile(handle, buffer, size, out int bytesRead, IntPtr.Zero);
-
-            if (result == 0 || bytesRead != size)
-            {
-                // We used to throw here, but this is where we land if the FileStream was
-                // opened with useAsync: true, which is currently the default on .NET Core.
-                // https://github.com/dotnet/corefx/pull/987 filed to look in to how best to
-                // handle this, but in the meantime, we'll fall back to the slower code path
-                // just as in the case where the native API is unavailable in the current platform.
-                return false;
-            }
-
-            return true;
+            return result == 0 ? 0 : bytesRead;
         }
     }
 }
