@@ -127,9 +127,6 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 gboolean
 mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error);
 
-GPtrArray*
-mono_domain_get_assemblies (MonoDomain *domain);
-
 void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values);
 

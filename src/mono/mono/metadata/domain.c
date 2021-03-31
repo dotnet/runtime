@@ -114,86 +114,6 @@ get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image);
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
 
-gboolean
-mono_string_equal_internal (MonoString *s1, MonoString *s2)
-{
-	int l1 = mono_string_length_internal (s1);
-	int l2 = mono_string_length_internal (s2);
-
-	if (s1 == s2)
-		return TRUE;
-	if (l1 != l2)
-		return FALSE;
-
-	return memcmp (mono_string_chars_internal (s1), mono_string_chars_internal (s2), l1 * 2) == 0;
-}
-
-/**
- * mono_string_equal:
- * \param s1 First string to compare
- * \param s2 Second string to compare
- *
- * Compares two \c MonoString* instances ordinally for equality.
- *
- * \returns FALSE if the strings differ.
- */
-gboolean
-mono_string_equal (MonoString *s1, MonoString *s2)
-{
-	MONO_EXTERNAL_ONLY (gboolean, mono_string_equal_internal (s1, s2));
-}
-
-guint
-mono_string_hash_internal (MonoString *s)
-{
-	const gunichar2 *p = mono_string_chars_internal (s);
-	int i, len = mono_string_length_internal (s);
-	guint h = 0;
-
-	for (i = 0; i < len; i++) {
-		h = (h << 5) - h + *p;
-		p++;
-	}
-
-	return h;	
-}
-
-/**
- * mono_string_hash:
- * \param s the string to hash
- *
- * Compute the hash for a \c MonoString*
- * \returns the hash for the string.
- */
-guint
-mono_string_hash (MonoString *s)
-{
-	MONO_EXTERNAL_ONLY (guint, mono_string_hash_internal (s));
-}
-
-static gboolean
-mono_ptrarray_equal (gpointer *s1, gpointer *s2)
-{
-	int len = GPOINTER_TO_INT (s1 [0]);
-	if (len != GPOINTER_TO_INT (s2 [0]))
-		return FALSE;
-
-	return memcmp (s1 + 1, s2 + 1, len * sizeof(gpointer)) == 0; 
-}
-
-static guint
-mono_ptrarray_hash (gpointer *s)
-{
-	int i;
-	int len = GPOINTER_TO_INT (s [0]);
-	guint hash = 0;
-	
-	for (i = 1; i < len; i++)
-		hash += GPOINTER_TO_UINT (s [i]);
-
-	return hash;	
-}
-
 //g_malloc on sgen and mono_gc_alloc_fixed on boehm
 static void*
 gc_alloc_fixed_non_heap_list (size_t size)
@@ -813,23 +733,6 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 }
 
 /**
- * mono_domain_free:
- * \param domain the domain to release
- * \param force if TRUE, it allows the root domain to be released (used at shutdown only).
- *
- * This releases the resources associated with the specific domain.
- * This is a low-level function that is invoked by the AppDomain infrastructure
- * when necessary.
- *
- * In theory, this is dead code on netcore and thus does not need to be ALC-aware.
- */
-void
-mono_domain_free (MonoDomain *domain, gboolean force)
-{
-	g_assert_not_reached ();
-}
-
-/**
  * mono_domain_get_by_id:
  * \param domainid the ID
  * \returns the domain for a specific domain id.
@@ -848,80 +751,6 @@ mono_domain_get_by_id (gint32 domainid)
 	mono_appdomains_unlock ();
 	MONO_EXIT_GC_UNSAFE;
 	return domain;
-}
-
-/**
- * mono_domain_get_id:
- *
- * A domain ID is guaranteed to be unique for as long as the domain
- * using it is alive. It may be reused later once the domain has been
- * unloaded.
- *
- * \returns The unique ID for \p domain.
- */
-gint32
-mono_domain_get_id (MonoDomain *domain)
-{
-	return domain->domain_id;
-}
-
-/**
- * mono_domain_get_friendly_name:
- *
- * The returned string's lifetime is the same as \p domain's. Consider
- * copying it if you need to store it somewhere.
- *
- * \returns The friendly name of \p domain. Can be NULL if not yet set.
- */
-const char *
-mono_domain_get_friendly_name (MonoDomain *domain)
-{
-	return domain->friendly_name;
-}
-
-/**
- * mono_context_set:
- */
-void 
-mono_context_set (MonoAppContext * new_context)
-{
-}
-
-/**
- * mono_context_get:
- *
- * Returns: the current Mono Application Context.
- */
-MonoAppContext * 
-mono_context_get (void)
-{
-	return NULL;
-}
-
-/**
- * mono_context_get_id:
- * \param context the context to operate on.
- *
- * Context IDs are guaranteed to be unique for the duration of a Mono
- * process; they are never reused.
- *
- * \returns The unique ID for \p context.
- */
-gint32
-mono_context_get_id (MonoAppContext *context)
-{
-	return context->context_id;
-}
-
-/**
- * mono_context_get_domain_id:
- * \param context the context to operate on.
- * \returns The ID of the domain that \p context was created in.
- */
-gint32
-mono_context_get_domain_id (MonoAppContext *context)
-{
-	return context->domain_id;
 }
 
 /**
@@ -1223,7 +1052,6 @@ get_runtimes_from_exe (const char *file, MonoImage **out_image)
 	return runtimes;
 }
 
-
 /**
  * mono_get_runtime_info:
  *
@@ -1233,11 +1061,4 @@ const MonoRuntimeInfo*
 mono_get_runtime_info (void)
 {
 	return current_runtime;
-}
-
-GPtrArray*
-mono_domain_get_assemblies (MonoDomain *domain)
-{
-	/* This already returns a new copy */
-	return mono_alc_get_all_loaded_assemblies ();
 }

@@ -794,15 +794,6 @@ leave:
 	mono_error_cleanup (error);
 }
 
-/**
- * mono_domain_from_appdomain:
- */
-MonoDomain *
-mono_domain_from_appdomain (MonoAppDomain *appdomain_raw)
-{
-	return mono_get_root_domain ();
-}
-
 static gboolean
 try_load_from (MonoAssembly **assembly,
 	       const gchar *path1, const gchar *path2,
@@ -1129,15 +1120,6 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 	mono_image_close (image);
 
 	return ass;
-}
-
-/**
- * mono_domain_is_unloading:
- */
-gboolean
-mono_domain_is_unloading (MonoDomain *domain)
-{
-	return FALSE;
 }
 
 /* Remember properties so they can be be installed in AppContext during runtime init */
