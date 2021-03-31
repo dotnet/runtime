@@ -42,14 +42,10 @@ int Socket::OpenSocketAcceptConnection(const char *address, const char *port) {
     socketId = -1;
 
 #ifdef WIN32
-	/*
-	* We depend on socket support in this profiler provider we need to
-	* make sure we keep a reference on WSA for the lifetime of this provider.
-	*/
 	WSADATA wsadata;
 	int err;
 
-	err = WSAStartup (2 /* 2.0 */, &wsadata);
+	err = WSAStartup (2, &wsadata);
 	if (err) {
         return -1;
 	}

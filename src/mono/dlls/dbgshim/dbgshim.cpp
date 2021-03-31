@@ -3,9 +3,8 @@
 //*****************************************************************************
 // DbgShim.cpp
 //
-// This contains the APIs for creating a telesto managed-debugging session. These APIs serve to locate an
-// mscordbi.dll for a given telesto dll and then instantiate the ICorDebug object.
-//
+// dbgshim is responsible to start the process with debug parameters and to
+// load the correct mscordbi that will connect with mono runtime.
 //*****************************************************************************
 
 #include <utilcode.h>
@@ -15,28 +14,6 @@
 #include "palclr.h"
 
 #include <libloaderapi.h>
-
-/*
-
-// Here's a High-level overview of the API usage
-
-From the debugger:
-A debugger calls GetStartupNotificationEvent(pid of debuggee) to get an event, which is signalled when
-that process loads a Telesto.  The debugger thus waits on that event, and when it's signalled, it can call
-EnumerateCLRs / CloseCLREnumeration to get an array of Telestos in the target process (including the one
-that was just loaded). It can then call CreateVersionStringFromModule, CreateDebuggingInterfaceFromVersion
-to attach to any or all Telestos of interest.
-
-From the debuggee:
-When a new Telesto spins up, it checks for the startup event (created via GetStartupNotificationEvent), and
-if it exists, it will:
-- signal it
-- wait on the "Continue" event, thus giving a debugger a chance to attach to the telesto
-
-Notes:
-- There is no CreateProcess (Launch) case. All Launching is really an "Early-attach case".
-
-*/
 
 #ifndef MAX_LONGPATH
 #define MAX_LONGPATH   1024
