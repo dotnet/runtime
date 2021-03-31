@@ -453,9 +453,6 @@ gboolean
 mono_thread_info_is_exiting (void);
 
 MONO_COMPONENT_API
-#ifdef HOST_WIN32
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
-#endif
 THREAD_INFO_TYPE *
 mono_thread_info_current (void);
 
@@ -775,7 +772,6 @@ mono_threads_enter_gc_unsafe_region_cookie (void);
 
 void mono_thread_info_wait_for_resume (THREAD_INFO_TYPE *info);
 /* Advanced suspend API, used for suspending multiple threads as once. */
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
 MONO_COMPONENT_API gboolean mono_thread_info_is_running (THREAD_INFO_TYPE *info);
 gboolean mono_thread_info_is_live (THREAD_INFO_TYPE *info);
 G_EXTERN_C // due to THREAD_INFO_TYPE varying
