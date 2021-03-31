@@ -18,6 +18,11 @@ namespace ILCompiler
 {
     public static class ReadyToRunTypeExtensions
     {
+        public static LayoutInt BaseTypeSize(this TypeDesc type)
+        {
+            return ((ReadyToRunCompilerContext)type.Context).CalculateBaseTypeSize(type);
+        }
+
         public static LayoutInt FieldBaseOffset(this TypeDesc type)
         {
             return ((ReadyToRunCompilerContext)type.Context).CalculateFieldBaseOffset(type);
@@ -820,7 +825,7 @@ namespace ILCompiler
         protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset)
         {
             DefType baseType = type.BaseType;
-            
+
             if (!_compilationGroup.NeedsAlignmentBetweenBaseTypeAndDerived(baseType: (MetadataType)baseType, derivedType: type))
             {
                 // The type is defined in the module that's currently being compiled and the type layout doesn't depend on other modules
