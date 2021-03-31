@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace System.IO.Strategies
 {
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
-    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
+    internal sealed partial class Net5CompatFileStreamStrategy : FileStreamStrategy
     {
         /// <summary>File mode.</summary>
         private FileMode _mode;
@@ -224,7 +224,7 @@ namespace System.IO.Strategies
             // override may already exist on a derived type.
             if (_useAsyncIO && _writePos > 0)
             {
-                return new ValueTask(Task.Factory.StartNew(static s => ((LegacyFileStreamStrategy)s!).Dispose(), this,
+                return new ValueTask(Task.Factory.StartNew(static s => ((Net5CompatFileStreamStrategy)s!).Dispose(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
             }
 
@@ -449,7 +449,7 @@ namespace System.IO.Strategies
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (LegacyFileStreamStrategy)s!;
+                var thisRef = (Net5CompatFileStreamStrategy)s!;
                 Debug.Assert(thisRef._asyncState != null);
                 try
                 {
@@ -610,7 +610,7 @@ namespace System.IO.Strategies
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (LegacyFileStreamStrategy)s!;
+                var thisRef = (Net5CompatFileStreamStrategy)s!;
                 Debug.Assert(thisRef._asyncState != null);
                 try
                 {

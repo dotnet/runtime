@@ -1010,134 +1010,6 @@ void    SplitPath(__in SString const &path,
                   __inout_opt SString *fname,
                   __inout_opt SString *ext);
 
-#if !defined(NO_CLRCONFIG)
-
-//*****************************************************************************
-//
-// **** REGUTIL - Static helper functions for reading/writing to Windows registry.
-//
-//*****************************************************************************
-
-
-class REGUTIL
-{
-public:
-//*****************************************************************************
-
-    enum CORConfigLevel
-    {
-        COR_CONFIG_ENV          = 0x01,
-        COR_CONFIG_USER         = 0x02,
-        COR_CONFIG_MACHINE      = 0x04,
-
-        COR_CONFIG_REGISTRY     = (COR_CONFIG_USER|COR_CONFIG_MACHINE),
-        COR_CONFIG_ALL          = (COR_CONFIG_ENV|COR_CONFIG_USER|COR_CONFIG_MACHINE),
-    };
-
-    //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead.
-    // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    //
-    static DWORD GetConfigDWORD_DontUse_(
-        LPCWSTR        name,
-        DWORD          defValue,
-        CORConfigLevel level = COR_CONFIG_ALL,
-        BOOL           fPrependCOMPLUS = TRUE);
-
-    //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead.
-    // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    //
-    static HRESULT GetConfigDWORD_DontUse_(
-        LPCWSTR name,
-        DWORD defValue,
-        __out DWORD * result,
-        CORConfigLevel level = COR_CONFIG_ALL,
-        BOOL fPrependCOMPLUS = TRUE);
-
-    static ULONGLONG GetConfigULONGLONG_DontUse_(
-        LPCWSTR        name,
-        ULONGLONG      defValue,
-        CORConfigLevel level = COR_CONFIG_ALL,
-        BOOL           fPrependCOMPLUS = TRUE);
-
-    //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead.
-    // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    //
-    static DWORD GetConfigFlag_DontUse_(
-        LPCWSTR        name,
-        DWORD          bitToSet,
-        BOOL           defValue = FALSE);
-
-    //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead.
-    // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    //
-    static LPWSTR GetConfigString_DontUse_(
-        LPCWSTR name,
-        BOOL fPrependCOMPLUS = TRUE,
-        CORConfigLevel level = COR_CONFIG_ALL,
-        BOOL fUsePerfCache = TRUE);
-
-    static void   FreeConfigString(__in __in_z LPWSTR name);
-
-private:
-    static LPWSTR EnvGetString(LPCWSTR name, BOOL fPrependCOMPLUS);
-
-private:
-//*****************************************************************************
-// Get either a DWORD or ULONGLONG. Always puts the result in a ULONGLONG that
-// you can safely cast to a DWORD if fGetDWORD is TRUE.
-//*****************************************************************************
-    static HRESULT GetConfigInteger(
-        LPCWSTR name,
-        ULONGLONG defValue,
-        __out ULONGLONG * result,
-        BOOL fGetDWORD = TRUE,
-        CORConfigLevel level = COR_CONFIG_ALL,
-        BOOL fPrependCOMPLUS = TRUE);
-public:
-
-
-//*****************************************************************************
-// (Optional) Initialize the config registry cache
-// (see ConfigCacheValueNameSeenPerhaps, below.)
-//*****************************************************************************
-    static void InitOptionalConfigCache();
-
-private:
-
-
-//*****************************************************************************
-// Return TRUE if the registry value name might have been seen in the registry
-// at startup;
-// return FALSE if the value was definitely not seen at startup.
-//
-// Perf Optimization for VSWhidbey:113373.
-//*****************************************************************************
-    static BOOL RegCacheValueNameSeenPerhaps(
-        LPCWSTR name);
-//*****************************************************************************
-// Return TRUE if the environment variable name might have been seen at startup;
-// return FALSE if the value was definitely not seen at startup.
-//*****************************************************************************
-    static BOOL EnvCacheValueNameSeenPerhaps(
-        LPCWSTR name);
-
-    static BOOL s_fUseRegCache; // Enable registry cache; if FALSE, CCVNSP
-                                 // always returns TRUE.
-    static BOOL s_fUseEnvCache; // Enable env cache.
-
-    // Open the .NetFramework keys once and cache the handles
-    static HKEY s_hMachineFrameworkKey;
-    static HKEY s_hUserFrameworkKey;
-};
-
-#include "clrconfig.h"
-
-#endif // defined(NO_CLRCONFIG)
-
 #include "ostype.h"
 
 #define CLRGetTickCount64() GetTickCount64()
@@ -3741,10 +3613,10 @@ public:
     }
 };
 
-#if !defined(NO_CLRCONFIG)
+#include "clrconfig.h"
 
 /**************************************************************************/
-/* simple wrappers around the REGUTIL and MethodNameList routines that make
+/* simple wrappers around the CLRConfig and MethodNameList routines that make
    the lookup lazy */
 
 /* to be used as static variable - no constructor/destructor, assumes zero
@@ -3834,8 +3706,6 @@ private:
 
     BYTE m_inited;
 };
-
-#endif // !defined(NO_CLRCONFIG)
 
 //*****************************************************************************
 // Convert a pointer to a string into a GUID.

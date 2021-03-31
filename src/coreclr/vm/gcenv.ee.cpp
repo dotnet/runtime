@@ -1125,7 +1125,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
     // otherwise, ask the config subsystem.
     if (CLRConfig::IsConfigOptionSpecified(configKey))
     {
-        CLRConfig::ConfigDWORDInfo info { configKey , 0, CLRConfig::EEConfig_default };
+        CLRConfig::ConfigDWORDInfo info { configKey , 0, CLRConfig::LookupOptions::Default };
         *value = CLRConfig::GetConfigValue(info) != 0;
         return true;
     }
@@ -1170,7 +1170,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     // so have to fake it with getting the string and converting to uint64_t
     if (CLRConfig::IsConfigOptionSpecified(configKey))
     {
-        CLRConfig::ConfigStringInfo info { configKey, CLRConfig::EEConfig_default };
+        CLRConfig::ConfigStringInfo info { configKey, CLRConfig::LookupOptions::Default };
         LPWSTR out = CLRConfig::GetConfigValue(info);
         if (!out)
         {
@@ -1226,7 +1226,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
         return false;
     }
 
-    CLRConfig::ConfigStringInfo info { configKey, CLRConfig::EEConfig_default };
+    CLRConfig::ConfigStringInfo info { configKey, CLRConfig::LookupOptions::Default };
     LPWSTR fromClrConfig = CLRConfig::GetConfigValue(info);
     LPCWSTR out = fromClrConfig;
     if (out == NULL)

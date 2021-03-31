@@ -1468,7 +1468,7 @@ static MonoImtBuilderEntry*
 get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_slot);
 
 /*
- * LOCKING: requires the loader and domain locks.
+ * LOCKING: assume the loader lock is held
  *
 */
 static void
@@ -1621,14 +1621,6 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 	vt->imt_collisions_bitmap |= imt_collisions_bitmap;
 }
 
-static void
-build_imt (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_interfaces)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	build_imt_slots (klass, vt, imt, extra_interfaces, -1);
-}
-
 /**
  * mono_vtable_build_imt_slot:
  * \param vtable virtual object table struct
@@ -1636,7 +1628,7 @@ build_imt (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_interf
  * Fill the given \p imt_slot in the IMT table of \p vtable with
  * a trampoline or a trampoline for the case of collisions.
  * This is part of the internal mono API.
- * LOCKING: Take the domain lock.
+ * LOCKING: Take the loader lock.
  */
 void
 mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
@@ -1652,12 +1644,10 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
 	 * Update and heck needs to ahppen inside the proper domain lock, as all
 	 * the changes made to a MonoVTable.
 	 */
-	mono_loader_lock (); /*FIXME build_imt_slots requires the loader lock.*/
-	mono_domain_lock (vtable->domain);
+	mono_loader_lock ();
 	/* we change the slot only if it wasn't changed from the generic imt trampoline already */
 	if (!callbacks.imt_entry_inited (vtable, imt_slot))
 		build_imt_slots (vtable->klass, vtable, imt, NULL, imt_slot);
-	mono_domain_unlock (vtable->domain);
 	mono_loader_unlock ();
 }
 
@@ -1684,9 +1674,8 @@ get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_sl
 
   	GenericVirtualCase *list;
  	MonoImtBuilderEntry *entries;
-	MonoDomain *domain = mono_get_root_domain ();
 
- 	mono_domain_lock (domain);
+	mono_mem_manager_lock (mem_manager);
  	if (!mem_manager->generic_virtual_cases)
  		mem_manager->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
  
@@ -1709,7 +1698,7 @@ get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_sl
  		entries = entry;
  	}
  
- 	mono_domain_unlock (domain);
+	mono_mem_manager_unlock (mem_manager);
  
  	/* FIXME: Leaking memory ? */
  	return entries;
@@ -1740,10 +1729,11 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 	GenericVirtualCase *gvc, *list;
 	MonoImtBuilderEntry *entries;
 	GPtrArray *sorted;
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 
-	mono_domain_lock (domain);
+	mono_loader_lock ();
+
+	mono_mem_manager_lock (mem_manager);
 	if (!mem_manager->generic_virtual_cases)
 		mem_manager->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
@@ -1774,6 +1764,8 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 
 		num_added++;
 	}
+
+	mono_mem_manager_unlock (mem_manager);
 
 	if (++gvc->count == THUNK_THRESHOLD) {
 		gpointer *old_thunk = (void **)*vtable_slot;
@@ -1812,7 +1804,7 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 		}
 	}
 
-	mono_domain_unlock (domain);
+	mono_loader_unlock ();
 }
 
 static MonoVTable *mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error);
@@ -2173,7 +2165,6 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
-			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			MONO_PROFILER_RAISE (vtable_failed, (vt));
 			goto return_null;

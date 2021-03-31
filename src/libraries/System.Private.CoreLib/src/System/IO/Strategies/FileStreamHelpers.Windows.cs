@@ -21,9 +21,9 @@ namespace System.IO.Strategies
 
         private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
         {
-            if (UseLegacyStrategy)
+            if (UseNet5CompatStrategy)
             {
-                return new LegacyFileStreamStrategy(handle, access, bufferSize, isAsync);
+                return new Net5CompatFileStreamStrategy(handle, access, bufferSize, isAsync);
             }
 
             WindowsFileStreamStrategy strategy = isAsync
@@ -35,9 +35,9 @@ namespace System.IO.Strategies
 
         private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
-            if (UseLegacyStrategy)
+            if (UseNet5CompatStrategy)
             {
-                return new LegacyFileStreamStrategy(path, mode, access, share, bufferSize, options);
+                return new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options);
             }
 
             WindowsFileStreamStrategy strategy = (options & FileOptions.Asynchronous) != 0
@@ -558,7 +558,7 @@ namespace System.IO.Strategies
             }
         }
 
-        /// <summary>Used by AsyncWindowsFileStreamStrategy and LegacyFileStreamStrategy CopyToAsync to enable awaiting the result of an overlapped I/O operation with minimal overhead.</summary>
+        /// <summary>Used by AsyncWindowsFileStreamStrategy and Net5CompatFileStreamStrategy CopyToAsync to enable awaiting the result of an overlapped I/O operation with minimal overhead.</summary>
         private sealed unsafe class AsyncCopyToAwaitable : ICriticalNotifyCompletion
         {
             /// <summary>Sentinel object used to indicate that the I/O operation has completed before being awaited.</summary>
