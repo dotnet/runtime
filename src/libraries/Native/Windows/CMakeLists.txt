@@ -124,3 +124,4 @@ if(STATIC_LIBS_ONLY)
 endif()
 
 add_subdirectory(System.IO.Compression.Native)
+add_subdirectory(System.DirectoryServices.Native)

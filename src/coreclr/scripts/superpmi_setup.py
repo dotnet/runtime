@@ -112,6 +112,7 @@ native_binaries_to_ignore = [
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
     "System.IO.Compression.Native.dll",
+    "System.DirectoryServices.Native.dll",
     "ucrtbase.dll",
 ]
 

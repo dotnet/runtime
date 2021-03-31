@@ -18,17 +18,17 @@ internal static partial class Interop
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_free", CharSet = CharSet.Ansi)]
         public static extern IntPtr ber_free([In] IntPtr berelement, int option);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ber_printf", CharSet = CharSet.Ansi)]
-        public static extern int ber_printf_emptyarg(SafeBerHandle berElement, string format);
+        [DllImport(Libraries.DirectoryServicesNative, EntryPoint = "ber_printf_proxy_emptyarg", CharSet = CharSet.Ansi)]
+        public static extern int ber_printf_proxy_emptyarg(SafeBerHandle berElement, string format);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ber_printf", CharSet = CharSet.Ansi)]
-        public static extern int ber_printf_int(SafeBerHandle berElement, string format, int value);
+        [DllImport(Libraries.DirectoryServicesNative, EntryPoint = "ber_printf_proxy_int", CharSet = CharSet.Ansi)]
+        public static extern int ber_printf_proxy_int(SafeBerHandle berElement, string format, int value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ber_printf", CharSet = CharSet.Ansi)]
-        public static extern int ber_printf_bytearray(SafeBerHandle berElement, string format, HGlobalMemHandle value, int length);
+        [DllImport(Libraries.DirectoryServicesNative, EntryPoint = "ber_printf_proxy_bytearray", CharSet = CharSet.Ansi)]
+        public static extern int ber_printf_proxy_bytearray(SafeBerHandle berElement, string format, HGlobalMemHandle value, int length);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ber_printf", CharSet = CharSet.Ansi)]
-        public static extern int ber_printf_berarray(SafeBerHandle berElement, string format, IntPtr value);
+        [DllImport(Libraries.DirectoryServicesNative, EntryPoint = "ber_printf_proxy_berarray", CharSet = CharSet.Ansi)]
+        public static extern int ber_printf_proxy_berarray(SafeBerHandle berElement, string format, IntPtr value);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_flatten", CharSet = CharSet.Ansi)]
         public static extern int ber_flatten(SafeBerHandle berElement, ref IntPtr value);
@@ -39,16 +39,16 @@ internal static partial class Interop
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_bvecfree", CharSet = CharSet.Ansi)]
         public static extern int ber_bvecfree(IntPtr value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ber_scanf", CharSet = CharSet.Ansi)]
-        public static extern int ber_scanf(SafeBerHandle berElement, string format);
+        [DllImport(Libraries.DirectoryServicesNative, EntryPoint = "ber_scanf_proxy", CharSet = CharSet.Ansi)]
+        public static extern int ber_scanf_proxy(SafeBerHandle berElement, string format);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ber_scanf", CharSet = CharSet.Ansi)]
-        public static extern int ber_scanf_int(SafeBerHandle berElement, string format, ref int value);
+        [DllImport(Libraries.DirectoryServicesNative, EntryPoint = "ber_scanf_proxy_int", CharSet = CharSet.Ansi)]
+        public static extern int ber_scanf_proxy_int(SafeBerHandle berElement, string format, ref int value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ber_scanf", CharSet = CharSet.Ansi)]
-        public static extern int ber_scanf_bitstring(SafeBerHandle berElement, string format, ref IntPtr value, ref int bitLength);
+        [DllImport(Libraries.DirectoryServicesNative, EntryPoint = "ber_scanf_proxy_bitstring", CharSet = CharSet.Ansi)]
+        public static extern int ber_scanf_proxy_bitstring(SafeBerHandle berElement, string format, ref IntPtr value, ref int bitLength);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ber_scanf", CharSet = CharSet.Ansi)]
-        public static extern int ber_scanf_ptr(SafeBerHandle berElement, string format, ref IntPtr value);
+        [DllImport(Libraries.DirectoryServicesNative, EntryPoint = "ber_scanf_proxy_ptr", CharSet = CharSet.Ansi)]
+        public static extern int ber_scanf_proxy_ptr(SafeBerHandle berElement, string format, ref IntPtr value);
     }
 }

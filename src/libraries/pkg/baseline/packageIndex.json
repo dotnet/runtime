@@ -7861,7 +7861,8 @@
   },
   "ModulesToPackages": {
     "libSystem.IO.Ports.Native": "runtime.native.System.IO.Ports",
-    "sni.dll": "runtime.native.System.Data.SqlClient.sni"
+    "sni.dll": "runtime.native.System.Data.SqlClient.sni",
+    "libSystem.DirectoryServices.Native": "runtime.native.System.DirectoryServices",
   },
   "MetaPackages": {
     "NETStandard.Library": [

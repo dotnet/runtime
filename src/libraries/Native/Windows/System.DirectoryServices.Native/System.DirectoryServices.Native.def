@@ -1,0 +1,11 @@
+LIBRARY System.DirectoryServices.Native.dll
+
+EXPORTS
+    ber_scanf_proxy
+    ber_scanf_proxy_int
+    ber_scanf_proxy_bitstring
+    ber_scanf_proxy_ptr
+    ber_printf_proxy_emptyarg
+    ber_printf_proxy_int
+    ber_printf_proxy_bytearray
+    ber_printf_proxy_berarray
