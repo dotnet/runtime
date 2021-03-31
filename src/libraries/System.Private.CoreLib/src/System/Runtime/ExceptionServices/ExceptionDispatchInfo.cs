@@ -84,17 +84,17 @@ namespace System.Runtime.ExceptionServices
         /// Stores the provided stack trace into the specified <see cref="Exception"/> instance.
         /// </summary>
         /// <param name="source">The unthrown <see cref="Exception"/> instance.</param>
-        /// <param name="stackTrace">The stack trace string to persist within <paramref name="source"/>.</param>
+        /// <param name="stackTrace">The stack trace string to persist within <paramref name="source"/>. This is normally acquired
+        /// from the <see cref="Exception.StackTrace"/> property from the remote exception instance.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="source"/> or <paramref name="stackTrace"/> argument was null.</exception>
         /// <exception cref="InvalidOperationException">The <paramref name="source"/> argument was previously thrown or previously had a stack trace stored into it.</exception>
         /// <returns>The <paramref name="source"/> exception instance.</returns>
         /// <remarks>
         /// This method populates the <see cref="Exception.StackTrace"/> property from an arbitrary string value.
-        /// The typical use case is the transmission of <see cref="Exception" /> objects across processes with high fidelity,
+        /// The typical use case is the transmission of <see cref="Exception"/> objects across processes with high fidelity,
         /// allowing preservation of the exception object's stack trace information. .NET does not attempt to parse the
         /// provided string value. The caller is responsible for normalizing line endings if required.
         /// </remarks>
-        [StackTraceHidden]
         public static Exception SetRemoteStackTrace(Exception source, string stackTrace)
         {
             if (source is null)

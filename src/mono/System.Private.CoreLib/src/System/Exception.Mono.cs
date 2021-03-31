@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Reflection;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace System
 {
@@ -102,39 +101,17 @@ namespace System
             _stackTraceString = null;
         }
 
-        [StackTraceHidden]
-        internal void SetCurrentStackTrace()
-        {
-            // Check to see if the exception already has a stack set in it.
-            ThrowIfStackTraceAlreadyExists();
-
-            // Store the current stack trace into the "remote" stack trace, which was originally introduced to support
-            // remoting of exceptions cross app-domain boundaries, and is thus concatenated into Exception.StackTrace
-            // when it's retrieved.
-            var sb = new StringBuilder(256);
-            new StackTrace(fNeedFileInfo: true).ToString(Diagnostics.StackTrace.TraceFormat.TrailingNewLine, sb);
-            sb.AppendLine(SR.Exception_EndStackTraceFromPreviousThrow);
-            _remoteStackTraceString = sb.ToString();
-        }
-
-        [StackTraceHidden]
-        internal void SetRemoteStackTrace(string stackTrace)
-        {
-            // Check to see if the exception already has a stack set in it.
-            ThrowIfStackTraceAlreadyExists();
-
-            // Store the provided text into the "remote" stack trace, following the same format SetCurrentStackTrace
-            // would have generated.
-            _remoteStackTraceString = stackTrace + Environment.NewLineConst + SR.Exception_EndStackTraceFromPreviousThrow + Environment.NewLineConst;
-        }
-
-        [StackTraceHidden]
-        private void ThrowIfStackTraceAlreadyExists()
+        // Returns true if setting the _remoteStackTraceString field is legal, false if not (immutable exception).
+        // A false return value means the caller should early-exit the operation.
+        // Can also throw InvalidOperationException if a stack trace is already set or if object has been thrown.
+        private bool CanSetRemoteStackTrace()
         {
             if (_traceIPs != null || _stackTraceString != null || _remoteStackTraceString != null)
             {
                 ThrowHelper.ThrowInvalidOperationException();
             }
+
+            return true; // mono runtime doesn't have immutable agile exceptions, always return true
         }
 
         private string? CreateSourceName()
