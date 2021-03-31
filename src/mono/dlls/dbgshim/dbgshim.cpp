@@ -3,7 +3,7 @@
 //*****************************************************************************
 // DbgShim.cpp
 //
-// dbgshim is responsible to start the process with debug parameters and to
+// dbgshim is responsible to start the debuggee process with debug parameters and to
 // load the correct mscordbi that will connect with mono runtime.
 //*****************************************************************************
 
