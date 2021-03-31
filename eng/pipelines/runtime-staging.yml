@@ -289,6 +289,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: Browser_wasm_Windows
       buildArgs: -subset mono+libs+host+packs+libs.tests /p:RuntimeFlavor=Mono -c $(_BuildConfig) /p:ArchiveTests=true
+      timeoutInMinutes: 120
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
