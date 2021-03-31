@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 if (hostedService is BackgroundService backgroundService)
                 {
-                    _ = HandleBackgroundException(backgroundService);
+                    _ = HandleBackgroundExceptionAsync(backgroundService);
                 }
             }
 
@@ -76,13 +76,14 @@ namespace Microsoft.Extensions.Hosting.Internal
             _logger.Started();
         }
 
-        private async Task HandleBackgroundException(BackgroundService backgroundService)
+        private async Task HandleBackgroundExceptionAsync(BackgroundService backgroundService)
         {
             try
             {
                 await backgroundService.ExecuteTask.ConfigureAwait(false);
             }
             catch (Exception ex)
+            when (_options.BackgroundServiceExceptionBehavior is BackgroundServiceExceptionBehavior.Ignore)
             {
                 _logger.BackgroundServiceFaulted(ex);
             }
