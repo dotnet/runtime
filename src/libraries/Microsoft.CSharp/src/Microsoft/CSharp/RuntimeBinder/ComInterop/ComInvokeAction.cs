@@ -50,18 +50,19 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// </summary>
     internal sealed class SplatInvokeBinder : CallSiteBinder
     {
-        internal static readonly SplatInvokeBinder s_instance = new SplatInvokeBinder();
+        private static readonly SplatInvokeBinder s_instance = new SplatInvokeBinder();
 
-        // The only callsite using this type is also marked as unsafe
-        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        static SplatInvokeBinder() { }
+        internal static SplatInvokeBinder Instance
+        {
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            get => s_instance;
+        }
 
-        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        internal SplatInvokeBinder() { }
+        private SplatInvokeBinder() { }
 
         // Just splat the args and dispatch through a nested site
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
+            Justification = "This whole class is unsafe. The only entry-point to this class is through Instance property which is marked as unsafe.")]
         public override Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel)
         {
             Debug.Assert(args.Length == 2);
