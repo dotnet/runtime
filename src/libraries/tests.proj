@@ -56,6 +56,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\System.Globalization.Calendars.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Extensions\tests\System.Globalization.Extensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NetworkInformation\tests\FunctionalTests\System.Net.NetworkInformation.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Ping\tests\FunctionalTests\System.Net.Ping.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives\tests\FunctionalTests\System.Net.Primitives.Functional.Tests.csproj" />
