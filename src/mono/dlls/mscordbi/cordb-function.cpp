@@ -9,6 +9,7 @@
 #include <cordb-function.h>
 #include <cordb-process.h>
 #include <cordb-breakpoint.h>
+#include <cordb-class.h>
 #include <cordb.h>
 
 using namespace std;
@@ -100,8 +101,26 @@ HRESULT CordbFunction::GetModule(ICorDebugModule** ppModule)
 
 HRESULT CordbFunction::GetClass(ICorDebugClass** ppClass)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetClass - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_GET_CLASS_TOKEN, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
+
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+        int m_type = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+        CordbClass* m_pClass = conn->GetProcess()->FindOrAddClass(m_type, m_pModule->GetDebuggerId());
+        hr = m_pClass->QueryInterface(IID_ICorDebugClass, (void**)ppClass);
+    }
+    EX_CATCH_HRESULT(hr);
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetClass - IMPLEMENTED\n"));
+    return hr;
 }
 
 HRESULT CordbFunction::GetToken(mdMethodDef* pMethodDef)

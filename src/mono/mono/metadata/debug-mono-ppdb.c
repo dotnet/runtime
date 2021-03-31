@@ -645,6 +645,7 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 		mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
 		if (cols [MONO_LOCALSCOPE_METHOD] != method_idx)
 			break;
+		printf("SEARCHING LAST SCOPE, IS IT ORDERED? - %d\n", cols [MONO_LOCALSCOPE_VARIABLELIST]);			
 		scope_idx ++;
 	}
 	// The number of scopes is the difference in the indices
@@ -655,10 +656,12 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 	// this happens if the above loop marched one past the end
 	// of the rows
 	if (scope_idx > tables [MONO_TABLE_LOCALSCOPE].rows) {
+		printf("tables [MONO_TABLE_LOCALVARIABLE].rows + 1\n");
 		locals_end_idx = tables [MONO_TABLE_LOCALVARIABLE].rows + 1;
 	} else {
 		// Ends with "the next run of LocalVariables,
 		// found by inspecting the VariableList of the next row in this LocalScope table."
+		printf("cols [MONO_LOCALSCOPE_VARIABLELIST] - %d - %d - %d\n", cols [MONO_LOCALSCOPE_VARIABLELIST], locals_idx, method->token);
 		locals_end_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
 	}
 

@@ -90,7 +90,7 @@ CreateProcessForLaunch(
 
     startupInfo.cb = sizeof(startupInfo);
 
-    putenv("MONO_ENV_OPTIONS='--debugger-agent=transport=dt_socket,address=127.0.0.1:55555,server=n,suspend=y,loglevel=10,timeout=100000'");
+    putenv("MONO_ENV_OPTIONS='--debugger-agent=transport=dt_socket,address=127.0.0.1:pid_based,server=n,suspend=y,loglevel=10,timeout=100000'");
 
     BOOL result = CreateProcessW(
         NULL,

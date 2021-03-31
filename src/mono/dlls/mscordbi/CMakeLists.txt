@@ -65,6 +65,8 @@ set(mscorbi_sources_base
     cordb-process.h
     cordb-register.cpp
     cordb-register.h
+    cordb-stackwalk.cpp
+    cordb-stackwalk.h
     cordb-stepper.cpp
     cordb-stepper.h
     cordb-thread.cpp
