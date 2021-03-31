@@ -51,9 +51,8 @@
   <!-- Add target platforms into MSBuild SupportedPlatform list -->
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true' and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Condition="'$(Targetsillumos)' == 'true'" Include="illumos"/>
-    <SupportedPlatform Condition="'$(TargetsMacCatalyst)' == 'true'" Include="MacCatalyst"/>
     <SupportedPlatform Condition="'$(TargetsSolaris)' == 'true'" Include="Solaris"/>
-    <SupportedPlatform Condition="'$(TargetstvOS)' == 'true'" Include="tvos"/>
+    <SupportedPlatform Condition="'$(TargetstvOS)' == 'true'" Include="tvOS"/>
     <SupportedPlatform Condition="'$(TargetsUnix)' == 'true'" Include="Unix"/>
   </ItemGroup>
 
