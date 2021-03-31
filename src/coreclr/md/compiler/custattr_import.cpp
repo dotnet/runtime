@@ -108,7 +108,7 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
     HENUMInternal   **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID             ridStart;
     RID             ridEnd;
-    HENUMInternal   *pEnum = *ppmdEnum;
+    HENUMInternal   *pEnumTmp = 0;
     CustomAttributeRec  *pRec;
     ULONG           index;
 
@@ -117,7 +117,7 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -126,7 +126,7 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
         // Does caller want all custom Values?
         if (IsNilToken(tk))
         {
-            IfFailGo( HENUMInternal::CreateSimpleEnum(mdtCustomAttribute, 1, pMiniMd->getCountCustomAttributes()+1, &pEnum) );
+            IfFailGo( HENUMInternal::CreateSimpleEnum(mdtCustomAttribute, 1, pMiniMd->getCountCustomAttributes()+1, &pEnumTmp) );
         }
         else
         {   // Scope by some object.
@@ -138,20 +138,20 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
                 if (IsNilToken(tkType))
                 {
                     // Simple enumerator for object's entire list.
-                    IfFailGo( HENUMInternal::CreateSimpleEnum( mdtCustomAttribute, ridStart, ridEnd, &pEnum) );
+                    IfFailGo( HENUMInternal::CreateSimpleEnum( mdtCustomAttribute, ridStart, ridEnd, &pEnumTmp) );
                 }
                 else
                 {
                     // Dynamic enumerator for subsetted list.
 
-                    IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtCustomAttribute, &pEnum) );
+                    IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtCustomAttribute, &pEnumTmp) );
 
                     for (index = ridStart; index < ridEnd; index ++ )
                     {
                         IfFailGo(pMiniMd->GetCustomAttributeRecord(index, &pRec));
                         if (tkType == pMiniMd->getTypeOfCustomAttribute(pRec))
                         {
-                            IfFailGo( HENUMInternal::AddElementToEnum(pEnum, TokenFromRid(index, mdtCustomAttribute) ) );
+                            IfFailGo( HENUMInternal::AddElementToEnum(pEnumTmp, TokenFromRid(index, mdtCustomAttribute) ) );
                         }
                     }
                 }
@@ -172,7 +172,7 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
                     // Hash the data.
                     iHash = pMiniMd->HashCustomAttribute(tk);
 
-                    IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtCustomAttribute, &pEnum) );
+                    IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtCustomAttribute, &pEnumTmp) );
 
                     // Go through every entry in the hash chain looking for ours.
                     for (p = pHashTable->FindFirst(iHash, pos);
@@ -189,7 +189,7 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
                             if (IsNilToken(tkType) || tkType == tkTypeTmp)
                             {
                                 // compare the blob value
-                                IfFailGo( HENUMInternal::AddElementToEnum(pEnum, TokenFromRid(p->tok, mdtCustomAttribute )) );
+                                IfFailGo( HENUMInternal::AddElementToEnum(pEnumTmp, TokenFromRid(p->tok, mdtCustomAttribute )) );
                             }
                         }
                     }
@@ -203,7 +203,7 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
                     ridStart = 1;
                     ridEnd = pMiniMd->getCountCustomAttributes() + 1;
 
-                    IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtCustomAttribute, &pEnum) );
+                    IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtCustomAttribute, &pEnumTmp) );
 
                     for (index = ridStart; index < ridEnd; index ++ )
                     {
@@ -211,7 +211,7 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
                         if ( tk == pMiniMd->getParentOfCustomAttribute(pRec) &&
                             (tkType == pMiniMd->getTypeOfCustomAttribute(pRec) || IsNilToken(tkType)))
                         {
-                            IfFailGo( HENUMInternal::AddElementToEnum(pEnum, TokenFromRid(index, mdtCustomAttribute) ) );
+                            IfFailGo( HENUMInternal::AddElementToEnum(pEnumTmp, TokenFromRid(index, mdtCustomAttribute) ) );
                         }
                     }
                 }
@@ -219,14 +219,16 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rCustomAttributes, pcCustomAttributes);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rCustomAttributes, pcCustomAttributes);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumCustomAttributes);
     END_ENTRYPOINT_NOTHROW;

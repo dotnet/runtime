@@ -44,7 +44,7 @@ STDMETHODIMP RegMeta::EnumMembers(            // S_OK, S_FALSE, or error.
     RID             index;
     RID             indexField;
     TypeDefRec      *pRec;
-    HENUMInternal   *pEnum = *ppmdEnum;
+    HENUMInternal   *pEnumTmp = 0;
 
     LOG((LOGMD, "MD RegMeta::EnumMembers(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, cl, rMembers, cMax, pcTokens));
@@ -52,7 +52,7 @@ STDMETHODIMP RegMeta::EnumMembers(            // S_OK, S_FALSE, or error.
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -71,7 +71,7 @@ STDMETHODIMP RegMeta::EnumMembers(            // S_OK, S_FALSE, or error.
         IfFailGo(m_pStgdb->m_MiniMd.getEndFieldListOfTypeDef(RidFromToken(cl), &ridEndField));
 
 
-        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMethodDef, &pEnum) );
+        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMethodDef, &pEnumTmp) );
 
         // add all methods to the dynamic array
         for (index = ridStartMethod; index < ridEndMethod; index++ )
@@ -79,7 +79,7 @@ STDMETHODIMP RegMeta::EnumMembers(            // S_OK, S_FALSE, or error.
             RID rid;
             IfFailGo(pMiniMd->GetMethodRid(index, &rid));
             IfFailGo(HENUMInternal::AddElementToEnum(
-                pEnum,
+                pEnumTmp,
                 TokenFromRid(rid, mdtMethodDef)));
         }
 
@@ -89,19 +89,21 @@ STDMETHODIMP RegMeta::EnumMembers(            // S_OK, S_FALSE, or error.
             RID rid;
             IfFailGo(pMiniMd->GetFieldRid(indexField, &rid));
             IfFailGo(HENUMInternal::AddElementToEnum(
-                pEnum,
+                pEnumTmp,
                 TokenFromRid(rid, mdtFieldDef)));
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMembers, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMembers, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumMembers);
 
@@ -132,7 +134,7 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
     TypeDefRec          *pRec;
     MethodRec           *pMethod;
     FieldRec            *pField;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnumTmp = 0;
     LPUTF8              szNameUtf8;
     UTF8STR(szName, szNameUtf8);
     LPCUTF8             szNameUtf8Tmp;
@@ -143,13 +145,13 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
 
         // create the enumerator
-        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMethodDef, &pEnum) );
+        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMethodDef, &pEnumTmp) );
 
         if ( IsGlobalMethodParentTk(cl) )
         {
@@ -168,7 +170,7 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
                 RID rid;
                 IfFailGo(pMiniMd->GetMethodRid(index, &rid));
                 IfFailGo(HENUMInternal::AddElementToEnum(
-                    pEnum,
+                    pEnumTmp,
                     TokenFromRid(rid, mdtMethodDef)));
             }
             else
@@ -180,7 +182,7 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
                 if ( strcmp(szNameUtf8Tmp, szNameUtf8) == 0 )
                 {
                     IfFailGo(pMiniMd->GetMethodRid(index, &rid));
-                    IfFailGo(HENUMInternal::AddElementToEnum(pEnum, TokenFromRid(rid, mdtMethodDef)));
+                    IfFailGo(HENUMInternal::AddElementToEnum(pEnumTmp, TokenFromRid(rid, mdtMethodDef)));
                 }
             }
         }
@@ -194,7 +196,7 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
             {
                 RID rid;
                 IfFailGo(pMiniMd->GetFieldRid(index, &rid));
-                IfFailGo(HENUMInternal::AddElementToEnum(pEnum, TokenFromRid(rid, mdtFieldDef)));
+                IfFailGo(HENUMInternal::AddElementToEnum(pEnumTmp, TokenFromRid(rid, mdtFieldDef)));
             }
             else
             {
@@ -206,21 +208,23 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
                 {
                     IfFailGo(pMiniMd->GetFieldRid(index, &rid));
                     IfFailGo(HENUMInternal::AddElementToEnum(
-                        pEnum,
+                        pEnumTmp,
                         TokenFromRid(rid, mdtFieldDef)));
                 }
             }
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMembers, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMembers, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumMembersWithName);
     END_ENTRYPOINT_NOTHROW;
@@ -246,7 +250,7 @@ STDMETHODIMP RegMeta::EnumMethods(
     RID                 ridStart;
     RID                 ridEnd;
     TypeDefRec          *pRec;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnumTmp = 0;
 
     LOG((LOGMD, "MD RegMeta::EnumMethods(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, td, rMethods, cMax, pcTokens));
@@ -256,7 +260,7 @@ STDMETHODIMP RegMeta::EnumMethods(
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -275,7 +279,7 @@ STDMETHODIMP RegMeta::EnumMethods(
 
         if (pMiniMd->HasIndirectTable(TBL_Method) || pMiniMd->HasDelete())
         {
-            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMethodDef, &pEnum) );
+            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMethodDef, &pEnumTmp) );
 
             // add all methods to the dynamic array
             for (ULONG index = ridStart; index < ridEnd; index++ )
@@ -297,24 +301,26 @@ STDMETHODIMP RegMeta::EnumMethods(
                 RID rid;
                 IfFailGo(pMiniMd->GetMethodRid(index, &rid));
                 IfFailGo(HENUMInternal::AddElementToEnum(
-                    pEnum,
+                    pEnumTmp,
                     TokenFromRid(rid, mdtMethodDef)));
             }
         }
         else
         {
-            IfFailGo( HENUMInternal::CreateSimpleEnum( mdtMethodDef, ridStart, ridEnd, &pEnum) );
+            IfFailGo( HENUMInternal::CreateSimpleEnum( mdtMethodDef, ridStart, ridEnd, &pEnumTmp) );
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMethods, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMethods, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumMethods);
     END_ENTRYPOINT_NOTHROW;
@@ -346,7 +352,7 @@ STDMETHODIMP RegMeta::EnumMethodsWithName(    // S_OK, S_FALSE, or error.
     RID                 index;
     TypeDefRec          *pRec;
     MethodRec           *pMethod;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnumTmp = 0;
     LPUTF8              szNameUtf8;
     UTF8STR(szName, szNameUtf8);
     LPCUTF8             szNameUtf8Tmp;
@@ -360,7 +366,7 @@ STDMETHODIMP RegMeta::EnumMethodsWithName(    // S_OK, S_FALSE, or error.
     LOCKREAD();
 
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -375,7 +381,7 @@ STDMETHODIMP RegMeta::EnumMethodsWithName(    // S_OK, S_FALSE, or error.
 
 
         // create the enumerator
-        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMethodDef, &pEnum) );
+        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMethodDef, &pEnumTmp) );
 
         // get the range of method rids given a typedef
         IfFailGo(pMiniMd->GetTypeDefRecord(RidFromToken(cl), &pRec));
@@ -389,7 +395,7 @@ STDMETHODIMP RegMeta::EnumMethodsWithName(    // S_OK, S_FALSE, or error.
                 RID rid;
                 IfFailGo(pMiniMd->GetMethodRid(index, &rid));
                 IfFailGo(HENUMInternal::AddElementToEnum(
-                    pEnum,
+                    pEnumTmp,
                     TokenFromRid(rid, mdtMethodDef)));
             }
             else
@@ -402,21 +408,23 @@ STDMETHODIMP RegMeta::EnumMethodsWithName(    // S_OK, S_FALSE, or error.
                 {
                     IfFailGo(pMiniMd->GetMethodRid(index, &rid));
                     IfFailGo(HENUMInternal::AddElementToEnum(
-                        pEnum,
+                        pEnumTmp,
                         TokenFromRid(rid, mdtMethodDef)));
                 }
             }
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMethods, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMethods, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumMethodsWithName);
     END_ENTRYPOINT_NOTHROW;
@@ -445,7 +453,7 @@ RegMeta::EnumFields(
     RID             ridStart;
     RID             ridEnd;
     TypeDefRec     *pRec;
-    HENUMInternal  *pEnum = *ppmdEnum;
+    HENUMInternal  *pEnumTmp = 0;
 
     LOG((LOGMD, "MD RegMeta::EnumFields(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, td, rFields, cMax, pcTokens));
@@ -453,7 +461,7 @@ RegMeta::EnumFields(
     START_MD_PERF();
     LOCKREAD();
 
-    if (pEnum == NULL)
+    if (*ppmdEnum == NULL)
     {
         // instantiating a new ENUM
         CMiniMdRW *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -472,7 +480,7 @@ RegMeta::EnumFields(
 
         if (pMiniMd->HasIndirectTable(TBL_Field) || pMiniMd->HasDelete())
         {
-            IfFailGo(HENUMInternal::CreateDynamicArrayEnum(mdtFieldDef, &pEnum));
+            IfFailGo(HENUMInternal::CreateDynamicArrayEnum(mdtFieldDef, &pEnumTmp));
 
             // add all methods to the dynamic array
             for (ULONG index = ridStart; index < ridEnd; index++)
@@ -494,24 +502,26 @@ RegMeta::EnumFields(
                 RID rid;
                 IfFailGo(pMiniMd->GetFieldRid(index, &rid));
                 IfFailGo(HENUMInternal::AddElementToEnum(
-                    pEnum,
+                    pEnumTmp,
                     TokenFromRid(rid, mdtFieldDef)));
             }
         }
         else
         {
-            IfFailGo(HENUMInternal::CreateSimpleEnum(mdtFieldDef, ridStart, ridEnd, &pEnum));
+            IfFailGo(HENUMInternal::CreateSimpleEnum(mdtFieldDef, ridStart, ridEnd, &pEnumTmp));
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rFields, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rFields, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumFields);
     END_ENTRYPOINT_NOTHROW;
@@ -542,7 +552,7 @@ STDMETHODIMP RegMeta::EnumFieldsWithName(     // S_OK, S_FALSE, or error.
     ULONG               index;
     TypeDefRec          *pRec;
     FieldRec            *pField;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnumTmp = 0;
     LPUTF8              szNameUtf8;
     UTF8STR(szName, szNameUtf8);
     LPCUTF8             szNameUtf8Tmp;
@@ -555,7 +565,7 @@ STDMETHODIMP RegMeta::EnumFieldsWithName(     // S_OK, S_FALSE, or error.
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -569,7 +579,7 @@ STDMETHODIMP RegMeta::EnumFieldsWithName(     // S_OK, S_FALSE, or error.
         }
 
         // create the enumerator
-        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMethodDef, &pEnum) );
+        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMethodDef, &pEnumTmp) );
 
         // get the range of field rids given a typedef
         IfFailGo(pMiniMd->GetTypeDefRecord(RidFromToken(cl), &pRec));
@@ -583,7 +593,7 @@ STDMETHODIMP RegMeta::EnumFieldsWithName(     // S_OK, S_FALSE, or error.
                 RID rid;
                 IfFailGo(pMiniMd->GetFieldRid(index, &rid));
                 IfFailGo(HENUMInternal::AddElementToEnum(
-                    pEnum,
+                    pEnumTmp,
                     TokenFromRid(rid, mdtFieldDef)));
             }
             else
@@ -596,21 +606,23 @@ STDMETHODIMP RegMeta::EnumFieldsWithName(     // S_OK, S_FALSE, or error.
                 {
                     IfFailGo(pMiniMd->GetFieldRid(index, &rid));
                     IfFailGo( HENUMInternal::AddElementToEnum(
-                        pEnum,
+                        pEnumTmp,
                         TokenFromRid(rid, mdtFieldDef) ) );
                 }
             }
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rFields, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rFields, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumFieldsWithName);
     END_ENTRYPOINT_NOTHROW;
@@ -637,7 +649,7 @@ STDMETHODIMP RegMeta::EnumParams(             // S_OK, S_FALSE, or error.
     RID                 ridStart;
     RID                 ridEnd;
     MethodRec           *pRec;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnumTmp = 0;
 
     LOG((LOGMD, "MD RegMeta::EnumParams(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, mb, rParams, cMax, pcTokens));
@@ -645,7 +657,7 @@ STDMETHODIMP RegMeta::EnumParams(             // S_OK, S_FALSE, or error.
     LOCKREAD();
 
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -655,7 +667,7 @@ STDMETHODIMP RegMeta::EnumParams(             // S_OK, S_FALSE, or error.
 
         if (pMiniMd->HasIndirectTable(TBL_Param))
         {
-            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtParamDef, &pEnum) );
+            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtParamDef, &pEnumTmp) );
 
             // add all methods to the dynamic array
             for (ULONG index = ridStart; index < ridEnd; index++ )
@@ -663,24 +675,26 @@ STDMETHODIMP RegMeta::EnumParams(             // S_OK, S_FALSE, or error.
                 RID rid;
                 IfFailGo(pMiniMd->GetParamRid(index, &rid));
                 IfFailGo(HENUMInternal::AddElementToEnum(
-                    pEnum,
+                    pEnumTmp,
                     TokenFromRid(rid, mdtParamDef)));
             }
         }
         else
         {
-            IfFailGo( HENUMInternal::CreateSimpleEnum( mdtParamDef, ridStart, ridEnd, &pEnum) );
+            IfFailGo( HENUMInternal::CreateSimpleEnum( mdtParamDef, ridStart, ridEnd, &pEnumTmp) );
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rParams, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rParams, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumParams);
     END_ENTRYPOINT_NOTHROW;
@@ -708,7 +722,7 @@ STDMETHODIMP RegMeta::EnumMemberRefs(         // S_OK, S_FALSE, or error.
     ULONG               ridEnd;
     ULONG               index;
     MemberRefRec        *pRec;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnumTmp = 0;
 
     LOG((LOGMD, "MD RegMeta::EnumMemberRefs(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, tkParent, rMemberRefs, cMax, pcTokens));
@@ -718,7 +732,7 @@ STDMETHODIMP RegMeta::EnumMemberRefs(         // S_OK, S_FALSE, or error.
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -730,7 +744,7 @@ STDMETHODIMP RegMeta::EnumMemberRefs(         // S_OK, S_FALSE, or error.
         IsGlobalMethodParent(&tkParent);
 
         // create the enumerator
-        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMemberRef, &pEnum) );
+        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtMemberRef, &pEnumTmp) );
 
         // get the range of field rids given a typedef
         ridEnd = pMiniMd->getCountMemberRefs();
@@ -742,19 +756,21 @@ STDMETHODIMP RegMeta::EnumMemberRefs(         // S_OK, S_FALSE, or error.
             if ( tk == tkParent )
             {
                 // add the matched ones to the enumerator
-                IfFailGo( HENUMInternal::AddElementToEnum(pEnum, TokenFromRid(index, mdtMemberRef) ) );
+                IfFailGo( HENUMInternal::AddElementToEnum(pEnumTmp, TokenFromRid(index, mdtMemberRef) ) );
             }
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        *ppmdEnum = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMemberRefs, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMemberRefs, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumMemberRefs);
 
@@ -781,7 +797,7 @@ STDMETHODIMP RegMeta::EnumMethodImpls(        // S_OK, S_FALSE, or error
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     MethodImplRec       *pRec;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnumTmp = 0;
     HENUMInternal hEnum;
 
 
@@ -795,7 +811,7 @@ STDMETHODIMP RegMeta::EnumMethodImpls(        // S_OK, S_FALSE, or error
 
     HENUMInternal::ZeroEnum(&hEnum);
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -807,7 +823,7 @@ STDMETHODIMP RegMeta::EnumMethodImpls(        // S_OK, S_FALSE, or error
         IfFailGo( pMiniMd->FindMethodImplHelper(td, &hEnum) );
 
         // Create the enumerator, DynamicArrayEnum does not use the token type.
-        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( (TBL_MethodImpl << 24), &pEnum) );
+        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( (TBL_MethodImpl << 24), &pEnumTmp) );
 
         while (HENUMInternal::EnumNext(&hEnum, (mdToken *)&ridCur))
         {
@@ -818,19 +834,21 @@ STDMETHODIMP RegMeta::EnumMethodImpls(        // S_OK, S_FALSE, or error
             tkMethodDecl = pMiniMd->getMethodDeclarationOfMethodImpl(pRec);
 
             // Add the Method body/declaration pairs to the Enum
-            IfFailGo( HENUMInternal::AddElementToEnum(pEnum, tkMethodBody ) );
-            IfFailGo( HENUMInternal::AddElementToEnum(pEnum, tkMethodDecl ) );
+            IfFailGo( HENUMInternal::AddElementToEnum(pEnumTmp, tkMethodBody ) );
+            IfFailGo( HENUMInternal::AddElementToEnum(pEnumTmp, tkMethodDecl ) );
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMethodBody, rMethodDecl, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMethodBody, rMethodDecl, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
     HENUMInternal::ClearEnum(&hEnum);
 
     STOP_MD_PERF(EnumMethodImpls);
@@ -861,7 +879,7 @@ STDMETHODIMP RegMeta::EnumPermissionSets(     // S_OK, S_FALSE, or error.
     RID                 ridEnd;
     RID                 index;
     DeclSecurityRec     *pRec;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnumTmp = 0;
     bool                fCompareParent = false;
     mdToken             typ = TypeFromToken(tk);
     mdToken             tkParent;
@@ -872,7 +890,7 @@ STDMETHODIMP RegMeta::EnumPermissionSets(     // S_OK, S_FALSE, or error.
     START_MD_PERF();
     LOCKREAD();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // Does this token type even have security?
         if (tk != 0 &&
@@ -911,12 +929,12 @@ STDMETHODIMP RegMeta::EnumPermissionSets(     // S_OK, S_FALSE, or error.
         if (IsDclActionNil(dwActions) && !fCompareParent && !m_pStgdb->m_MiniMd.HasDelete())
         {
             // create simple enumerator
-            IfFailGo( HENUMInternal::CreateSimpleEnum( mdtPermission, ridStart, ridEnd, &pEnum) );
+            IfFailGo( HENUMInternal::CreateSimpleEnum( mdtPermission, ridStart, ridEnd, &pEnumTmp) );
         }
         else
         {
             // create the dynamic enumerator
-            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtPermission, &pEnum) );
+            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtPermission, &pEnumTmp) );
 
             for (index = ridStart; index < ridEnd; index++ )
             {
@@ -936,20 +954,22 @@ STDMETHODIMP RegMeta::EnumPermissionSets(     // S_OK, S_FALSE, or error.
                     // If we don't need to compare the action, just add to the enum.
                     // Or we need to compare the action and the action values are equal, add to enum as well.
                     //
-                    IfFailGo( HENUMInternal::AddElementToEnum(pEnum, TokenFromRid(index, mdtPermission) ) );
+                    IfFailGo( HENUMInternal::AddElementToEnum(pEnumTmp, TokenFromRid(index, mdtPermission) ) );
                 }
             }
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rPermission, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rPermission, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumPermissionSets);
     END_ENTRYPOINT_NOTHROW;
@@ -1317,7 +1337,7 @@ STDMETHODIMP RegMeta::EnumProperties(         // S_OK, S_FALSE, or error.
     RID                 ridStart = 0;
     RID                 ridEnd = 0;
     RID                 ridMax = 0;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnumTmp = 0;
 
     LOG((LOGMD, "MD RegMeta::EnumProperties(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, td, rProperties, cMax, pcProperties));
@@ -1336,7 +1356,7 @@ STDMETHODIMP RegMeta::EnumProperties(         // S_OK, S_FALSE, or error.
     _ASSERTE(TypeFromToken(td) == mdtTypeDef);
 
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -1358,7 +1378,7 @@ STDMETHODIMP RegMeta::EnumProperties(         // S_OK, S_FALSE, or error.
 
         if (pMiniMd->HasIndirectTable(TBL_Property) || pMiniMd->HasDelete())
         {
-            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtProperty, &pEnum) );
+            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtProperty, &pEnumTmp) );
 
             // add all methods to the dynamic array
             for (ULONG index = ridStart; index < ridEnd; index++ )
@@ -1380,24 +1400,26 @@ STDMETHODIMP RegMeta::EnumProperties(         // S_OK, S_FALSE, or error.
                 RID rid;
                 IfFailGo(pMiniMd->GetPropertyRid(index, &rid));
                 IfFailGo(HENUMInternal::AddElementToEnum(
-                    pEnum,
+                    pEnumTmp,
                     TokenFromRid(rid, mdtProperty)));
             }
         }
         else
         {
-            IfFailGo( HENUMInternal::CreateSimpleEnum( mdtProperty, ridStart, ridEnd, &pEnum) );
+            IfFailGo( HENUMInternal::CreateSimpleEnum( mdtProperty, ridStart, ridEnd, &pEnumTmp) );
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rProperties, pcProperties);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rProperties, pcProperties);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
 
     STOP_MD_PERF(EnumProperties);
@@ -1426,7 +1448,7 @@ STDMETHODIMP RegMeta::EnumEvents(              // S_OK, S_FALSE, or error.
     RID             ridStart = 0;
     RID             ridEnd = 0;
     RID             ridMax = 0;
-    HENUMInternal   *pEnum = *ppmdEnum;
+    HENUMInternal   *pEnumTmp = 0;
 
     LOG((LOGMD, "MD RegMeta::EnumEvents(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, td, rEvents,  cMax, pcEvents));
@@ -1437,7 +1459,7 @@ STDMETHODIMP RegMeta::EnumEvents(              // S_OK, S_FALSE, or error.
     _ASSERTE(TypeFromToken(td) == mdtTypeDef);
 
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -1459,7 +1481,7 @@ STDMETHODIMP RegMeta::EnumEvents(              // S_OK, S_FALSE, or error.
 
         if (pMiniMd->HasIndirectTable(TBL_Event) || pMiniMd->HasDelete())
         {
-            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtEvent, &pEnum) );
+            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtEvent, &pEnumTmp) );
 
             // add all methods to the dynamic array
             for (ULONG index = ridStart; index < ridEnd; index++ )
@@ -1481,25 +1503,26 @@ STDMETHODIMP RegMeta::EnumEvents(              // S_OK, S_FALSE, or error.
                 RID rid;
                 IfFailGo(pMiniMd->GetEventRid(index, &rid));
                 IfFailGo(HENUMInternal::AddElementToEnum(
-                    pEnum,
+                    pEnumTmp,
                     TokenFromRid(rid, mdtEvent)));
             }
         }
         else
         {
-            IfFailGo( HENUMInternal::CreateSimpleEnum( mdtEvent, ridStart, ridEnd, &pEnum) );
+            IfFailGo( HENUMInternal::CreateSimpleEnum( mdtEvent, ridStart, ridEnd, &pEnumTmp) );
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rEvents, pcEvents);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rEvents, pcEvents);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
-
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumEvents);
     END_ENTRYPOINT_NOTHROW;
@@ -1638,7 +1661,7 @@ STDMETHODIMP RegMeta::EnumMethodSemantics(    // S_OK, S_FALSE, or error.
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     ULONG               ridEnd;
     ULONG               index;
-    HENUMInternal       *pEnum = *ppmdEnum;
+    HENUMInternal       *pEnumTmp = 0;
     MethodSemanticsRec  *pRec;
 
     LOG((LOGMD, "MD RegMeta::EnumMethodSemantics(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
@@ -1648,13 +1671,13 @@ STDMETHODIMP RegMeta::EnumMethodSemantics(    // S_OK, S_FALSE, or error.
     LOCKREAD();
 
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
 
         // create the enumerator
-        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( (DWORD) -1, &pEnum) );
+        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( (DWORD) -1, &pEnumTmp) );
 
         // get the range of method rids given a typedef
         ridEnd = pMiniMd->getCountMethodSemantics();
@@ -1664,20 +1687,21 @@ STDMETHODIMP RegMeta::EnumMethodSemantics(    // S_OK, S_FALSE, or error.
             IfFailGo(pMiniMd->GetMethodSemanticsRecord(index, &pRec));
             if ( pMiniMd->getMethodOfMethodSemantics(pRec) ==  mb )
             {
-                IfFailGo( HENUMInternal::AddElementToEnum(pEnum, pMiniMd->getAssociationOfMethodSemantics(pRec) ) );
+                IfFailGo( HENUMInternal::AddElementToEnum(pEnumTmp, pMiniMd->getAssociationOfMethodSemantics(pRec) ) );
             }
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rEventProp, pcEventProp);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rEventProp, pcEventProp);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
-
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumMethodSemantics);
     END_ENTRYPOINT_NOTHROW;
@@ -2298,7 +2322,7 @@ STDMETHODIMP RegMeta::EnumUnresolvedMethods(  // S_OK or error.
     uint32_t         index;              // For counting methods on a TypeDef.
     uint32_t         indexTypeDef;       // For counting TypeDefs.
     bool             bIsInterface;       // Is a given TypeDef an interface?
-    HENUMInternal *  pEnum = *ppmdEnum; // Enum we're working with.
+    HENUMInternal *  pEnumTmp = 0; // Enum we're working with.
     CMiniMdRW *      pMiniMd = &(m_pStgdb->m_MiniMd);
 
     LOG((LOGMD, "MD RegMeta::EnumUnresolvedMethods(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
@@ -2310,7 +2334,7 @@ STDMETHODIMP RegMeta::EnumUnresolvedMethods(  // S_OK or error.
     // same time. Ref to Def map may be calculated incorrectly.
     LOCKWRITE();
 
-    if ( pEnum == 0 )
+    if ( *ppmdEnum == 0 )
     {
         // instantiating a new ENUM
         MethodRec       *pMethodRec;
@@ -2318,7 +2342,7 @@ STDMETHODIMP RegMeta::EnumUnresolvedMethods(  // S_OK or error.
 
         // make sure our ref to def optimization is up to date
         IfFailGo( RefToDefOptimization() );
-        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( (DWORD) -1, &pEnum) );
+        IfFailGo( HENUMInternal::CreateDynamicArrayEnum( (DWORD) -1, &pEnumTmp) );
 
         // Loop through all of the methoddef except global functions.
         // If methoddef has RVA 0 and not miRuntime, mdAbstract, mdVirtual, mdNative,
@@ -2367,7 +2391,7 @@ STDMETHODIMP RegMeta::EnumUnresolvedMethods(  // S_OK or error.
                     //
                     IfFailGo(pMiniMd->GetMethodRid(index, &methodRid));
                     IfFailGo(HENUMInternal::AddElementToEnum(
-                        pEnum,
+                        pEnumTmp,
                         TokenFromRid(methodRid, mdtMethodDef)));
 
                     LOG((LOGMD, "MD   adding unresolved MethodDef:  token=%08x, flags=%08x, impl flags=%08x\n",
@@ -2394,7 +2418,7 @@ STDMETHODIMP RegMeta::EnumUnresolvedMethods(  // S_OK or error.
                 // unresovled externals reference if parent token is not resolved and this ref token does not
                 // map to any def token (can be MethodDef or FieldDef).
                 //
-                IfFailGo( HENUMInternal::AddElementToEnum(pEnum, refToken) );
+                IfFailGo( HENUMInternal::AddElementToEnum(pEnumTmp, refToken) );
 
                 LOG((LOGMD, "MD   adding unresolved MemberRef:  token=%08x, doesn't have a proper parent\n",
                     refToken ));
@@ -2402,14 +2426,16 @@ STDMETHODIMP RegMeta::EnumUnresolvedMethods(  // S_OK or error.
         }
 
         // set the output parameter
-        *ppmdEnum = pEnum;
+        *ppmdEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer
-    hr = HENUMInternal::EnumWithCount(pEnum, cMax, rMethods, pcTokens);
+    hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rMethods, pcTokens);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumUnresolvedMethods);
     END_ENTRYPOINT_NOTHROW;
@@ -2664,7 +2690,7 @@ STDMETHODIMP RegMeta::EnumUserStrings(        // S_OK or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal **ppEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    HENUMInternal  *pEnum = *ppEnum;
+    HENUMInternal  *pEnumTmp = 0;
 
     LOG((LOGMD, "MD RegMeta::EnumUserStrings(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         phEnum, rStrings, cmax, pcStrings));
@@ -2672,11 +2698,11 @@ STDMETHODIMP RegMeta::EnumUserStrings(        // S_OK or error.
     START_MD_PERF();
     LOCKREAD();
 
-    if (pEnum == NULL)
+    if (*ppEnum == NULL)
     {
         // instantiating a new ENUM.
         CMiniMdRW *pMiniMd = &(m_pStgdb->m_MiniMd);
-        IfFailGo(HENUMInternal::CreateDynamicArrayEnum(mdtString, &pEnum));
+        IfFailGo(HENUMInternal::CreateDynamicArrayEnum(mdtString, &pEnumTmp));
 
         // Add all strings to the dynamic array
         for (UINT32 nIndex = 0; ;)
@@ -2703,7 +2729,7 @@ STDMETHODIMP RegMeta::EnumUserStrings(        // S_OK or error.
             }
             // Add the user string into dynamic array
             IfFailGo(HENUMInternal::AddElementToEnum(
-                pEnum,
+                pEnumTmp,
                 TokenFromRid(nIndex, mdtString)));
 
             // Process next user string in the heap
@@ -2711,15 +2737,16 @@ STDMETHODIMP RegMeta::EnumUserStrings(        // S_OK or error.
         }
 
         // set the output parameter.
-        *ppEnum = pEnum;
+        *ppEnum = pEnumTmp;
+        pEnumTmp = 0;
     }
 
     // fill the output token buffer.
-    hr = HENUMInternal::EnumWithCount(pEnum, cmax, rStrings, pcStrings);
+    hr = HENUMInternal::EnumWithCount(*ppEnum, cmax, rStrings, pcStrings);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppEnum);
-
+    HENUMInternal::DestroyEnum(pEnumTmp);
 
     STOP_MD_PERF(EnumUserStrings);
     END_ENTRYPOINT_NOTHROW;
