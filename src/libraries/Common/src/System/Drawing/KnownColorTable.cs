@@ -246,10 +246,11 @@ namespace System.Drawing
         internal static Color ArgbToKnownColor(uint argb)
         {
             Debug.Assert((argb & Color.ARGBAlphaMask) == Color.ARGBAlphaMask);
+            uint webCategory = (uint)KnownColorCategory.Web;
 
             for (int index = 1; index < knownColorCount; ++index)
             {
-                if (s_colorTable[index, 1] == argb)
+                if (s_colorTable[index, 0] == webCategory && s_colorTable[index, 1] == argb)
                 {
                     return Color.FromKnownColor((KnownColor)index);
                 }
