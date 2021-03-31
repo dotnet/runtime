@@ -30,7 +30,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 base.BindInvoke(binder, args);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         private DynamicMetaObject BindGetOrInvoke(DynamicMetaObject[] args, CallInfo callInfo)
         {
@@ -47,7 +47,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return null;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value)
         {
@@ -73,7 +73,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return base.BindSetIndex(binder, indexes, value);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         private DynamicMetaObject BindComInvoke(ComMethodDesc method, DynamicMetaObject[] indexes, CallInfo callInfo, bool[] isByRef)
         {

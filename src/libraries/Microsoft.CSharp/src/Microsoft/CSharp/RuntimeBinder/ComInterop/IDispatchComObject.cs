@@ -316,7 +316,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return members.ToArray();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter)
         {
@@ -339,7 +339,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             funcDescHandle = pFuncDesc;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         private void EnsureScanDefinedEvents()
         {
@@ -477,7 +477,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         private static ComTypes.ITypeInfo GetCoClassTypeInfo(object rcw, ComTypes.ITypeInfo typeInfo)
         {
@@ -521,7 +521,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return typeInfoCoClass;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         private void EnsureScanDefinedMethods()
         {

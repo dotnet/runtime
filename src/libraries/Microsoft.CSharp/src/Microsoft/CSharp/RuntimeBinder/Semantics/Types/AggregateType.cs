@@ -137,13 +137,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private AggregateType BaseClassWithSuppressedMessage
         {
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                Justification = "Workarounds mono/linker#1906. All usages are marked as unsafe.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Workarounds https://github.com/mono/linker/issues/1906. All usages are marked as unsafe.")]
             get => BaseClass;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                Justification = "Workarounds mono/linker#1906. All usages are marked as unsafe.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Workarounds https://github.com/mono/linker/issues/1906. All usages are marked as unsafe.")]
         private static AggregateType GetPredefinedAggregateGetThisTypeWithSuppressedMessage()
         {
             return PredefinedTypes.GetPredefinedAggregate(PredefinedType.PT_OBJECT).getThisType();

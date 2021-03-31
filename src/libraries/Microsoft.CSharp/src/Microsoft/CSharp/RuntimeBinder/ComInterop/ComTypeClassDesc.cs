@@ -77,7 +77,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         #region IDynamicMetaObjectProvider Members
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public DynamicMetaObject GetMetaObject(Expression parameter)
         {

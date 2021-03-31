@@ -327,13 +327,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return ExprFactory.CreateArrayIndex(elementType, pOp1, transformedIndices);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "Workarounds mono/linker#1416. All usages are marked as unsafe.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Workarounds https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
         private Expr MustConvertWithSuppressedMessage(Expr x, CType pDestType)
             => mustConvert(x, pDestType);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "Workarounds mono/linker#1416. All usages are marked as unsafe.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Workarounds https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
         private static ExprCast ExprFactoryCreateCastWithSuppressedMessage(EXPRFLAG flags, CType type, Expr argument)
             => ExprFactory.CreateCast(flags, type, argument);
 

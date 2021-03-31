@@ -30,7 +30,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// <param name="handler">The handler for the operation.</param>
         /// <param name="result">The result of the operation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override bool TryBinaryOperation(BinaryOperationBinder binder, object handler, out object result)
         {
