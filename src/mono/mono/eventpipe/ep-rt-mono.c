@@ -409,6 +409,79 @@ profiler_eventpipe_thread_exited (
 	MonoProfiler *prof,
 	uintptr_t tid);
 
+/*
+ * Forward declares of all private functions (accessed using extern in ep-rt-mono.h).
+ */
+
+void
+ep_rt_mono_init (void);
+
+void
+ep_rt_mono_fini (void);
+
+bool
+ep_rt_mono_rand_try_get_bytes (
+	uint8_t *buffer,
+	size_t buffer_size);
+
+EventPipeThread *
+ep_rt_mono_thread_get_or_create (void);
+
+void *
+ep_rt_mono_thread_attach (bool background_thread);
+
+void
+ep_rt_mono_thread_detach (void);
+
+void
+ep_rt_mono_thread_exited (void);
+
+int64_t
+ep_rt_mono_perf_counter_query (void);
+
+int64_t
+ep_rt_mono_perf_frequency_query (void);
+
+void
+ep_rt_mono_system_time_get (EventPipeSystemTime *system_time);
+
+int64_t
+ep_rt_mono_system_timestamp_get (void);
+
+void
+ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
+
+void
+ep_rt_mono_init_providers_and_events (void);
+
+void
+ep_rt_mono_fini_providers_and_events (void);
+
+bool
+ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
+	ep_rt_thread_handle_t sampling_thread,
+	EventPipeEvent *sampling_event);
+
+void
+ep_rt_mono_execute_rundown (void);
+
+bool
+ep_rt_mono_walk_managed_stack_for_thread (
+	ep_rt_thread_handle_t thread,
+	EventPipeStackContents *stack_contents);
+
+bool
+ep_rt_mono_method_get_simple_assembly_name (
+	ep_rt_method_desc_t *method,
+	ep_char8_t *name,
+	size_t name_len);
+
+bool
+ep_rt_mono_method_get_full_name (
+	ep_rt_method_desc_t *method,
+	ep_char8_t *name,
+	size_t name_len);
+
 static
 inline
 uint16_t
@@ -1953,7 +2026,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	// Fire sample event for threads. Must be done after runtime is resumed since it's not async safe.
 	// Since we can't keep thread info around after runtime as been suspended, use an empty
 	// adapter instance and only set recorded tid as parameter inside adapter.
-	THREAD_INFO_TYPE adapter = { 0 };
+	THREAD_INFO_TYPE adapter = { { 0 } };
 	for (uint32_t i = 0; i < sampled_thread_count; ++i) {
 		EventPipeSampleProfileData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileData, i);
 		if (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length(&data->stack_contents) > 0) {

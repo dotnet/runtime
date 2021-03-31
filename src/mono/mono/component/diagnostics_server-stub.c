@@ -15,10 +15,10 @@
 static void
 diagnostics_server_stub_cleanup (MonoComponent *self);
 
-static void
+static bool
 diagnostics_server_stub_init (void);
 
-static void
+static bool
 diagnostics_server_stub_shutdown (void);
 
 static void
@@ -40,14 +40,16 @@ diagnostics_server_stub_cleanup (MonoComponent *self)
 {
 }
 
-static void
+static bool
 diagnostics_server_stub_init (void)
 {
+	return true;
 }
 
-static void
+static bool
 diagnostics_server_stub_shutdown (void)
 {
+	return true;
 }
 
 static void

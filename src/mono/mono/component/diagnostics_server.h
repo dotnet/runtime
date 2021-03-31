@@ -9,10 +9,13 @@
 #include "mono/component/component.h"
 #include "mono/utils/mono-compiler.h"
 
+#include <eventpipe/ep-ipc-pal-types-forward.h>
+#include <eventpipe/ep-types-forward.h>
+
 typedef struct _MonoComponentDiagnosticsServer {
 	MonoComponent component;
-	void (*init) (void);
-	void (*shutdown) (void);
+	bool (*init) (void);
+	bool (*shutdown) (void);
 	void (*pause_for_diagnostics_monitor) (void);
 	void (*disable) (void);
 } MonoComponentDiagnosticsServer;
