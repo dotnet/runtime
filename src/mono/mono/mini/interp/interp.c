@@ -632,25 +632,6 @@ typedef struct {
 	InterpMethod *target_imethod;
 } InterpVTableEntry;
 
-static inline GSList*
-g_slist_append_node (GSList *list, GSList *new_list, gpointer data)
-{
-	GSList *last;
-
-	new_list->data = data;
-	new_list->next = NULL;
-
-	if (list) {
-		last = list;
-		while (last->next)
-			last = last->next;
-		last->next = new_list;
-
-		return list;
-	} else
-		return new_list;
-}
-
 /* memory manager lock must be held */
 static GSList*
 append_imethod (MonoMemoryManager *memory_manager, GSList *list, InterpMethod *imethod, InterpMethod *target_imethod)
@@ -662,7 +643,8 @@ append_imethod (MonoMemoryManager *memory_manager, GSList *list, InterpMethod *i
 	entry->imethod = imethod;
 	entry->target_imethod = target_imethod;
 	ret = mono_mem_manager_alloc0 (memory_manager, sizeof (GSList));
-	ret = g_slist_append_node (list, ret, entry);
+	ret->data = entry;
+	ret = g_slist_concat (list, ret);
 
 	return ret;
 }

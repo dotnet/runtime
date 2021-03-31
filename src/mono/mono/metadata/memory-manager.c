@@ -217,13 +217,13 @@ mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gbo
 void
 mono_mem_manager_lock (MonoMemoryManager *memory_manager)
 {
-	mono_coop_mutex_lock (&memory_manager->lock);
+	mono_locks_coop_acquire (&memory_manager->lock, MemoryManagerLock);
 }
 
 void
 mono_mem_manager_unlock (MonoMemoryManager *memory_manager)
 {
-	mono_coop_mutex_unlock (&memory_manager->lock);
+	mono_locks_coop_release (&memory_manager->lock, MemoryManagerLock);
 }
 
 static inline void
