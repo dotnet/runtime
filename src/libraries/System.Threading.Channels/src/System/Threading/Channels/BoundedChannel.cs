@@ -15,7 +15,7 @@ namespace System.Threading.Channels
     {
         /// <summary>The mode used when the channel hits its bound.</summary>
         private readonly BoundedChannelFullMode _mode;
-        /// <summary>The delegate that will be called when channel hits its bound and item is being dropped from channel.</summary>
+        /// <summary>The delegate that will be invoked when the channel hits its bound and an item is dropped from the channel.</summary>
         private readonly Action<T>? _itemDropped;
         /// <summary>Task signaled when the channel has completed.</summary>
         private readonly TaskCompletionSource _completion;
@@ -42,7 +42,7 @@ namespace System.Threading.Channels
         /// <param name="bufferedCapacity">The positive bounded capacity for the channel.</param>
         /// <param name="mode">The mode used when writing to a full channel.</param>
         /// <param name="runContinuationsAsynchronously">Whether to force continuations to be executed asynchronously.</param>
-        /// <param name="itemDropped">Delegate that will be called when item is being dropped from channel. See <see cref="BoundedChannelFullMode"/>.</param>
+        /// <param name="itemDropped">Delegate that will be invoked when an item is dropped from the channel. See <see cref="BoundedChannelFullMode"/>.</param>
         internal BoundedChannel(int bufferedCapacity, BoundedChannelFullMode mode, bool runContinuationsAsynchronously, Action<T>? itemDropped)
         {
             Debug.Assert(bufferedCapacity > 0);
@@ -338,7 +338,6 @@ namespace System.Threading.Channels
                 BoundedChannel<T> parent = _parent;
 
                 bool releaseLock = false;
-
                 try
                 {
                     Monitor.Enter(parent.SyncObj, ref releaseLock);
@@ -514,7 +513,6 @@ namespace System.Threading.Channels
                 BoundedChannel<T> parent = _parent;
 
                 bool releaseLock = false;
-
                 try
                 {
                     Monitor.Enter(parent.SyncObj, ref releaseLock);

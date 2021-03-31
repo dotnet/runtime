@@ -297,7 +297,7 @@ namespace System.Threading.Channels.Tests
             var secondWriteTask = c.Writer.WriteAsync(2);
             Assert.False(secondWriteTask.IsCompleted);
 
-            // Read from chanell to free up space
+            // Read from channel to free up space
             var readItem = await c.Reader.ReadAsync();
             // Second write should complete
             await secondWriteTask;
@@ -380,7 +380,7 @@ namespace System.Threading.Channels.Tests
 
                 dropDelegateCalled = true;
 
-                // Dropped delegate should not be called while holding the channel synchronisation lock.
+                // Dropped delegate should not be called while holding the channel lock.
                 // Verify this by trying to write into the channel from different thread.
                 // If lock is held during callback, this should effecitvely cause deadlock.
                 var mres = new ManualResetEventSlim();
