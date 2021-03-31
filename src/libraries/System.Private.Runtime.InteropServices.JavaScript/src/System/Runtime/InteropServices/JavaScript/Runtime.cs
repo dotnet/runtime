@@ -440,10 +440,13 @@ namespace System.Runtime.InteropServices.JavaScript
                     throw new Exception("CustomJavaScriptMarshalerAttribute must accept one argument");
 
                 var arg = args[0];
-                if (arg.ArgumentType == typeof(Type))
-                    marshalerType = (Type?)arg.Value;
+                object? v = arg.Value;
+                if (v == null)
+                    throw new Exception($"CustomJavaScriptMarshalerAttribute's argument must be either a Type or the name of a type, but was null");
+                else if (arg.ArgumentType == typeof(Type))
+                    marshalerType = (Type)v;
                 else if (arg.ArgumentType == typeof(string))
-                    marshalerType = Type.GetType((string)arg.Value);
+                    marshalerType = Type.GetType((string)v);
                 else
                     throw new Exception($"CustomJavaScriptMarshalerAttribute's argument {arg.Value} must be either a Type or the name of a type");
 
@@ -462,10 +465,21 @@ namespace System.Runtime.InteropServices.JavaScript
             var inputPtr = GetMarshalMethodPointer(marshalerType, "FromJavaScript", out Type? fromReturnType, out Type? fromParameterType);
             var outputPtr = GetMarshalMethodPointer(marshalerType, "ToJavaScript", out Type? toReturnType, out Type? toParameterType);
 
+            if (inputPtr == IntPtr.Zero)
+                throw new Exception($"{marshalerType.Name} must have a static FromJavaScript method");
+            if (outputPtr == IntPtr.Zero)
+                throw new Exception($"{marshalerType.Name} must have a static ToJavaScript method");
+
             if (fromReturnType != type)
                 throw new Exception($"{marshalerType.Name}.FromJavaScript's return type must be {type.Name} but was {fromReturnType}");
-            if (toParameterType != type)
-                throw new Exception($"{marshalerType.Name}.ToJavaScript's parameter must be of type {type.Name} but was {toParameterType}");
+
+            if (type.IsValueType) {
+                if ((toParameterType == null) || !toParameterType.IsByRef || (toParameterType.GetElementType() != type))
+                    throw new Exception($"{marshalerType.Name}.ToJavaScript's parameter must be 'ref {type.Name}' but was {toParameterType}");
+            } else {
+                if (toParameterType != type)
+                    throw new Exception($"{marshalerType.Name}.ToJavaScript's parameter must be of type {type.Name} but was {toParameterType}");
+            }
 
             return ("{\n" + $"'typePtr': {typePtr}, \n" +
                 $"'preFilter': {preFilter}, 'postFilter': {postFilter}, \n" +
