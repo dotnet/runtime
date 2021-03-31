@@ -44,7 +44,7 @@ jobs:
     logicalmachine: ${{ parameters.logicalmachine }}
     # Test job depends on the corresponding build job
     dependsOn:
-    - ${{ if eq(parameters.runtimeType, 'coreclr')}}:
+    - ${{ if ne(parameters.runtimeType, 'AndroidMono')}}:
       - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
@@ -94,7 +94,7 @@ jobs:
           displayName: 'live-built libraries'
 
     # Download coreclr
-    - ${{ if eq(parameters.runtimeType, 'coreclr') }}:
+    - ${{ if ne(parameters.runtimeType, 'AndroidMono') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(buildProductRootFolderPath)
