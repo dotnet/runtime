@@ -71,4 +71,8 @@
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Assemblies that should be excluded from the bundle -->
+    <__ExcludeFromBundle Include="TestAssembly.dll" />
+  </ItemGroup>
 </Project>
