@@ -16,7 +16,7 @@ namespace ILLink.RoslynAnalyzer
 	{
 		public const string DiagnosticId = "IL2026";
 		const string RequiresUnreferencedCodeAttribute = nameof (RequiresUnreferencedCodeAttribute);
-		const string FullyQualifiedRequiresUnreferencedCodeAttribute = "System.Diagnostics.CodeAnalysis." + RequiresUnreferencedCodeAttribute;
+		public const string FullyQualifiedRequiresUnreferencedCodeAttribute = "System.Diagnostics.CodeAnalysis." + RequiresUnreferencedCodeAttribute;
 
 		static readonly DiagnosticDescriptor s_requiresUnreferencedCodeRule = new DiagnosticDescriptor (
 			DiagnosticId,
@@ -93,9 +93,26 @@ namespace ILLink.RoslynAnalyzer
 					OperationAnalysisContext operationContext,
 					IMethodSymbol method)
 				{
+					// Find containing symbol
+					ISymbol? containingSymbol = null;
+					for (var current = operationContext.Operation;
+						 current is not null;
+						 current = current.Parent) {
+						if (current is ILocalFunctionOperation local) {
+							containingSymbol = local.Symbol;
+							break;
+						} else if (current is IAnonymousFunctionOperation lambda) {
+							containingSymbol = lambda.Symbol;
+							break;
+						} else if (current is IMethodBodyBaseOperation) {
+							break;
+						}
+					}
+					containingSymbol ??= operationContext.ContainingSymbol;
+
 					// If parent method contains RequiresUnreferencedCodeAttribute then we shouldn't report diagnostics for this method
-					if (operationContext.ContainingSymbol is IMethodSymbol &&
-						operationContext.ContainingSymbol.HasAttribute (RequiresUnreferencedCodeAttribute))
+					if (containingSymbol is IMethodSymbol &&
+						containingSymbol.HasAttribute (RequiresUnreferencedCodeAttribute))
 						return;
 
 					// If calling an instance constructor, check first for any static constructor since it will be called implicitly

@@ -9,6 +9,7 @@
     <ProjectToBuild Condition="'$(DotNetBuildFromSource)' != 'true'" Include="$(RepoRoot)src\analyzer\analyzer.csproj" />
     <ProjectToBuild Condition="'$(DotNetBuildFromSource)' != 'true'" Include="$(RepoRoot)test\ILLink.Tasks.Tests\ILLink.Tasks.Tests.csproj" />
     <ProjectToBuild Include="$(RepoRoot)src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" />
+    <ProjectToBuild Include="$(RepoRoot)src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" />
     <ProjectToBuild Include="$(RepoRoot)test\ILLink.RoslynAnalyzer.Tests\ILLink.RoslynAnalyzer.Tests.csproj" />
     <ProjectToBuild Include="$(RepoRoot)src\linker\ref\Mono.Linker.csproj" />
     <ProjectToBuild Include="$(RepoRoot)src\tlens\tlens.csproj" />
