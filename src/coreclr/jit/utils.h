@@ -18,7 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "iallocator.h"
 #include "hostallocator.h"
 #include "cycletimer.h"
-#include "vartype.h"
+#include "vartypesdef.h"
 
 // Needed for unreached()
 #include "error.h"
