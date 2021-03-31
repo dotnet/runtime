@@ -2,6 +2,7 @@
 #include "mono/utils/mono-compiler.h"
 
 #include "mono/metadata/assembly.h"
+#include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/exception-internals.h"
 #include "mono/metadata/icall-decl.h"
@@ -16,6 +17,8 @@ GENERATE_GET_CLASS_WITH_CACHE (assembly_load_context, "System.Runtime.Loader", "
 static GSList *alcs;
 static MonoAssemblyLoadContext *default_alc;
 static MonoCoopMutex alc_list_lock; /* Used when accessing 'alcs' */
+/* Protected by alc_list_lock */
+static GSList *loaded_assemblies;
 
 static inline void
 alcs_lock (void)
@@ -92,17 +95,18 @@ mono_alc_cleanup_assemblies (MonoAssemblyLoadContext *alc)
 	// The minimum refcount on assemblies is 2: one for the domain and one for the ALC. 
 	// The domain refcount might be less than optimal on netcore, but its removal is too likely to cause issues for now.
 	GSList *tmp;
-	MonoDomain *domain = mono_get_root_domain ();
 
-	// Remove the assemblies from domain_assemblies
-	mono_domain_assemblies_lock (domain);
+	// Remove the assemblies from loaded_assemblies
 	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *assembly = (MonoAssembly *)tmp->data;
-		domain->domain_assemblies = g_slist_remove (domain->domain_assemblies, assembly);
+
+		alcs_lock ();
+		loaded_assemblies = g_slist_remove (loaded_assemblies, assembly);
+		alcs_unlock ();
+
 		mono_assembly_decref (assembly);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], removing assembly %s[%p] from domain_assemblies, ref_count=%d\n", alc, assembly->aname.name, assembly, assembly->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], removing assembly %s[%p] from loaded_assemblies, ref_count=%d\n", alc, assembly->aname.name, assembly, assembly->ref_count);
 	}
-	mono_domain_assemblies_unlock (domain);
 
 	// Release the GC roots
 	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
@@ -419,4 +423,78 @@ mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext 
 	mono_error_cleanup (error);
 
 	return result;
+}
+
+void
+mono_alc_add_assembly (MonoAssemblyLoadContext *alc, MonoAssembly *ass)
+{
+	GSList *tmp;
+
+	g_assert (ass);
+
+	if (!ass->aname.name)
+		return;
+
+	mono_alc_assemblies_lock (alc);
+	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
+		if (tmp->data == ass) {
+			mono_alc_assemblies_unlock (alc);
+			return;
+		}
+	}
+
+	mono_assembly_addref (ass);
+	// Prepending here will break the test suite with frequent InvalidCastExceptions, so we have to append
+	alc->loaded_assemblies = g_slist_append (alc->loaded_assemblies, ass);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to ALC (%p), ref_count=%d", ass->aname.name, ass, (gpointer)alc, ass->ref_count);
+	mono_alc_assemblies_unlock (alc);
+
+	alcs_lock ();
+	loaded_assemblies = g_slist_append (loaded_assemblies, ass);
+	alcs_unlock ();
+}
+
+MonoAssembly*
+mono_alc_find_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname)
+{
+	GSList *tmp;
+	MonoAssembly *ass;
+
+	const MonoAssemblyNameEqFlags eq_flags = MONO_ANAME_EQ_IGNORE_PUBKEY | MONO_ANAME_EQ_IGNORE_VERSION | MONO_ANAME_EQ_IGNORE_CASE;
+
+	mono_alc_assemblies_lock (alc);
+	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
+		ass = (MonoAssembly *)tmp->data;
+		g_assert (ass != NULL);
+		// FIXME: Can dynamic assemblies match here for netcore?
+		if (assembly_is_dynamic (ass) || !mono_assembly_names_equal_flags (aname, &ass->aname, eq_flags))
+			continue;
+
+		mono_alc_assemblies_unlock (alc);
+		return ass;
+	}
+	mono_alc_assemblies_unlock (alc);
+	return NULL;
+}
+
+/*
+ * mono_alc_get_all_loaded_assemblies:
+ *
+ *   Return a list of loaded assemblies in all appdomains.
+ */
+GPtrArray*
+mono_alc_get_all_loaded_assemblies (void)
+{
+	GSList *tmp;
+	GPtrArray *assemblies;
+	MonoAssembly *ass;
+
+	assemblies = g_ptr_array_new ();
+	alcs_lock ();
+	for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
+		ass = (MonoAssembly *)tmp->data;
+		g_ptr_array_add (assemblies, ass);
+	}
+	alcs_unlock ();
+	return assemblies;
 }

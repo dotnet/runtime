@@ -120,12 +120,6 @@ mono_domain_assembly_search (MonoAssemblyLoadContext *alc, MonoAssembly *request
 static void
 mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error_out);
 
-static void
-add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht);
-
-static void
-add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass);
-
 static const char *
 runtimeconfig_json_get_buffer (MonovmRuntimeConfigArguments *arg, MonoFileMap **file_map, gpointer *buf_handle);
 
@@ -635,7 +629,7 @@ get_assembly_array_from_domain (MonoDomain *domain, MonoError *error)
 	int i;
 	GPtrArray *assemblies;
 
-	assemblies = mono_domain_get_assemblies (domain);
+	assemblies = mono_alc_get_all_loaded_assemblies ();
 
 	MonoArrayHandle res = mono_array_new_handle (mono_class_get_assembly_class (), assemblies->len, error);
 	goto_if_nok (error, leave);
@@ -740,65 +734,6 @@ mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly
 
 	return assembly;
 }
-	
-/*
- * LOCKING: assumes assemblies_lock in the domain is already locked.
- */
-static void
-add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
-{
-	GSList *tmp;
-	gboolean destroy_ht = FALSE;
-
-	g_assert (ass != NULL);
-
-	if (!ass->aname.name)
-		return;
-
-	if (!ht) {
-		ht = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		destroy_ht = TRUE;
-		for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-			g_hash_table_add (ht, tmp->data);
-		}
-	}
-
-	if (!g_hash_table_lookup (ht, ass)) {
-		mono_assembly_addref (ass);
-		g_hash_table_add (ht, ass);
-		domain->domain_assemblies = g_slist_append (domain->domain_assemblies, ass);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to domain %s, ref_count=%d", ass->aname.name, ass, domain->friendly_name, ass->ref_count);
-	}
-
-	if (destroy_ht)
-		g_hash_table_destroy (ht);
-}
-
-/*
- * LOCKING: assumes the ALC's assemblies lock is taken
- */
-static void
-add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass)
-{
-	GSList *tmp;
-
-	g_assert (ass != NULL);
-
-	if (!ass->aname.name)
-		return;
-
-	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
-		if (tmp->data == ass) {
-			return;
-		}
-	}
-
-	mono_assembly_addref (ass);
-	// Prepending here will break the test suite with frequent InvalidCastExceptions, so we have to append
-	alc->loaded_assemblies = g_slist_append (alc->loaded_assemblies, ass);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to ALC (%p), ref_count=%d", ass->aname.name, ass, (gpointer)alc, ass->ref_count);
-
-}
 
 static void
 mono_domain_fire_assembly_load_event (MonoDomain *domain, MonoAssembly *assembly, MonoError *error)
@@ -847,14 +782,7 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading assembly %s (%p) into domain %s (%p) and ALC %p", assembly->aname.name, assembly, domain->friendly_name, domain, alc);
 
-	mono_domain_assemblies_lock (domain);
-	mono_alc_assemblies_lock (alc);
-
-	add_assemblies_to_domain (domain, assembly, NULL);
-	add_assembly_to_alc (alc, assembly);
-
-	mono_alc_assemblies_unlock (alc);
-	mono_domain_assemblies_unlock (domain);
+	mono_alc_add_assembly (alc, assembly);
 
 	if (!MONO_BOOL (domain->domain))
 		goto leave; // This can happen during startup
@@ -1034,25 +962,8 @@ mono_domain_assembly_search (MonoAssemblyLoadContext *alc, MonoAssembly *request
 			     MonoError *error)
 {
 	g_assert (aname != NULL);
-	GSList *tmp;
-	MonoAssembly *ass;
 
-	const MonoAssemblyNameEqFlags eq_flags = MONO_ANAME_EQ_IGNORE_PUBKEY | MONO_ANAME_EQ_IGNORE_VERSION | MONO_ANAME_EQ_IGNORE_CASE;
-
-	mono_alc_assemblies_lock (alc);
-	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
-		ass = (MonoAssembly *)tmp->data;
-		g_assert (ass != NULL);
-		// FIXME: Can dynamic assemblies match here for netcore?
-		if (assembly_is_dynamic (ass) || !mono_assembly_names_equal_flags (aname, &ass->aname, eq_flags))
-			continue;
-
-		mono_alc_assemblies_unlock (alc);
-		return ass;
-	}
-	mono_alc_assemblies_unlock (alc);
-
-	return NULL;
+	return mono_alc_find_assembly (alc, aname);
 }
 
 MonoReflectionAssemblyHandle

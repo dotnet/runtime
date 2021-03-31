@@ -58,18 +58,7 @@ struct _MonoDomain {
 #define MONO_DOMAIN_LAST_OBJECT empty_string
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
-	/*
-	 * For framework Mono, this is every assembly loaded in this
-	 * domain. For netcore, this is every assembly loaded in every ALC in
-	 * this domain.  In netcore, the thread that adds an assembly to its
-	 * MonoAssemblyLoadContext:loaded_assemblies should also add it to this
-	 * list.
-	 */
-	GSList             *domain_assemblies;
 	char               *friendly_name;
-
-	/* Used when accessing 'domain_assemblies' */
-	MonoCoopMutex  assemblies_lock;
 };
 
 typedef struct  {
@@ -82,18 +71,6 @@ typedef struct  {
 	char framework_version [4];
 	AssemblyVersionSet version_sets [5];
 } MonoRuntimeInfo;
-
-static inline void
-mono_domain_assemblies_lock (MonoDomain *domain)
-{
-	mono_locks_coop_acquire (&domain->assemblies_lock, DomainAssembliesLock);
-}
-
-static inline void
-mono_domain_assemblies_unlock (MonoDomain *domain)
-{
-	mono_locks_coop_release (&domain->assemblies_lock, DomainAssembliesLock);
-}
 
 typedef MonoDomain* (*MonoLoadFunc) (const char *filename, const char *runtime_version);
 

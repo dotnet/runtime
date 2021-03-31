@@ -1268,13 +1268,7 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	assembly->assembly.aname.name = image->image.name;
 	assembly->assembly.image = &image->image;
 
-	mono_domain_assemblies_lock (domain);
-	domain->domain_assemblies = g_slist_append (domain->domain_assemblies, assembly);
-	// TODO: potentially relax the locking here?
-	mono_alc_assemblies_lock (alc);
-	alc->loaded_assemblies = g_slist_append (alc->loaded_assemblies, assembly);
-	mono_alc_assemblies_unlock (alc);
-	mono_domain_assemblies_unlock (domain);
+	mono_alc_add_assembly (alc, (MonoAssembly*)assembly);
 
 	register_assembly (mono_object_domain (assemblyb), &assemblyb->assembly, &assembly->assembly);
 	

@@ -315,10 +315,6 @@ mono_domain_create (void)
 
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
-	domain->domain_assemblies = NULL;
-
-	mono_coop_mutex_init_recursive (&domain->assemblies_lock);
-
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);
 	mono_appdomains_unlock ();
@@ -1242,16 +1238,6 @@ mono_get_runtime_info (void)
 GPtrArray*
 mono_domain_get_assemblies (MonoDomain *domain)
 {
-	GSList *tmp;
-	GPtrArray *assemblies;
-	MonoAssembly *ass;
-
-	assemblies = g_ptr_array_new ();
-	mono_domain_assemblies_lock (domain);
-	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		ass = (MonoAssembly *)tmp->data;
-		g_ptr_array_add (assemblies, ass);
-	}
-	mono_domain_assemblies_unlock (domain);
-	return assemblies;
+	/* This already returns a new copy */
+	return mono_alc_get_all_loaded_assemblies ();
 }
