@@ -16,6 +16,7 @@
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.Emitter.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.Parser.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\ManifestBuilder.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventDataBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 </Project>

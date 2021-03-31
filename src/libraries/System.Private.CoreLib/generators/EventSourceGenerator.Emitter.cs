@@ -37,9 +37,10 @@ namespace Generators
                     }
 
                     _builder.AppendLine("using System;");
+                    _builder.AppendLine("using System.Diagnostics.Tracing;");
                     //GenType(ec, stringTypeSymbol);
                     GenerateEventMetadata(ec, stringTypeSymbol);
-                    GenType(ec);
+                    GenType(ec, stringTypeSymbol);
                     _context.AddSource($"{ec.ClassName}.Generated", SourceText.From(_builder.ToString(), Encoding.UTF8));//, Encoding.UTF8));
 
                     _builder.Clear();
@@ -52,7 +53,7 @@ namespace Generators
             }
 
 
-            private void GenType(EventSourceClass ec)
+            private void GenType(EventSourceClass ec, ITypeSymbol stringTypeSymbol)
             {
                 if (!string.IsNullOrWhiteSpace(ec.Namespace))
                 {
@@ -62,12 +63,12 @@ namespace {ec.Namespace}
                 }
 
                 _builder.AppendLine($@"
-    partiall class {ec.ClassName}
+    partial class {ec.ClassName}
     {{");
-                GenerateConstructor(ec);
+                GenerateConstructor(ec, stringTypeSymbol);
 
                 GenerateProviderMetadata(ec.SourceName);
-
+                
                 _builder.AppendLine($@"
     }}");
 
@@ -76,6 +77,7 @@ namespace {ec.Namespace}
                     _builder.AppendLine($@"
 }}");
                 }
+                
             }
 
             private void GenerateEventMetadata(EventSourceClass ec, ITypeSymbol stringTypeSymbol)
@@ -88,10 +90,29 @@ namespace {ec.Namespace}
                 }
             }
 
-            private void GenerateConstructor(EventSourceClass ec)
+            private void GenerateConstructor(EventSourceClass ec, ITypeSymbol stringTypeSymbol)
             {
                 _builder.AppendLine($@"
-        private {ec.ClassName}() : base(new Guid({ec.Guid.ToString("x").Replace("{", "").Replace("}", "")}), ""{ec.SourceName}"") {{ }}");
+        private {ec.ClassName}() : base(new Guid({ec.Guid.ToString("x").Replace("{", "").Replace("}", "")}), ""{ec.SourceName}"") {{");
+                EventDataBuilder.BuildEventDescriptor(_builder, ec.Events);
+                _builder.AppendLine("        m_EventMetadataInitializer = () => new byte[] {");
+                byte[] metadataBytes = Encoding.UTF8.GetBytes(MetadataForProvider(ec, stringTypeSymbol));
+
+                int byteCnt = 1;
+                foreach (byte b in metadataBytes)
+                {
+                    _builder.Append($"0x{b:x}, ");
+                    if (byteCnt++ % 100 == 0)
+                    {
+                        _builder.AppendLine("");
+                        _builder.Append("            ");
+                    }
+                }
+                _builder.AppendLine("");
+                _builder.AppendLine(@"        };");
+ 
+
+                _builder.AppendLine("        }");
             }
 
             private void GenerateProviderMetadata(string sourceName)
@@ -147,7 +168,14 @@ namespace {ec.Namespace}
                     try
                     {
                         eventAttribute.Level = (EventLevel)(Int32.Parse(evt.Level));
-                        eventAttribute.Keywords = (EventKeywords)(Int64.Parse(evt.Keywords));
+                        if (evt.Keywords == "")
+                        {
+                            eventAttribute.Keywords = EventKeywords.None;
+                        }
+                        else
+                        {
+                            eventAttribute.Keywords = (EventKeywords)(Int64.Parse(evt.Keywords));
+                        }
                         eventAttribute.Version = (byte)(Int32.Parse(evt.Version));
                     }
                     catch (Exception)

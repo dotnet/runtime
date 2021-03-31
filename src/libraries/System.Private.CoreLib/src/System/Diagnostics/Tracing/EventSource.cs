@@ -2761,7 +2761,18 @@ namespace System.Diagnostics.Tracing
 #if !ES_BUILD_STANDALONE
             Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
 #endif
-            if (m_eventData == null)
+
+            if (m_EventDataInitializer != null)
+            {
+                m_eventData = m_EventDataInitializer();
+            }
+
+            if (m_EventMetadataInitializer != null)
+            {
+                m_rawManifest = m_EventMetadataInitializer();
+            }
+
+            if (m_eventData == null && m_rawManifest == null)
             {
                 // get the metadata via reflection.
                 Debug.Assert(m_rawManifest == null);
@@ -3783,6 +3794,10 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW_CHANNELS
         internal volatile ulong[]? m_channelData;
 #endif
+
+        internal Func<EventMetadata[]>? m_EventDataInitializer;
+
+        internal Func<byte[]>? m_EventMetadataInitializer;
 
         // We use a single instance of ActivityTracker for all EventSources instances to allow correlation between multiple event providers.
         // We have m_activityTracker field simply because instance field is more efficient than static field fetch.
