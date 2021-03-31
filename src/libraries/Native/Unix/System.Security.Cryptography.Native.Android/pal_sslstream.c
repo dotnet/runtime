@@ -270,15 +270,9 @@ static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
     free(sslStream);
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreate(bool isServer,
-                                               STREAM_READER streamReader,
-                                               STREAM_WRITER streamWriter,
-                                               int appBufferSize)
+SSLStream* AndroidCryptoNative_SSLStreamCreate(void)
 {
     JNIEnv* env = GetJNIEnv();
-
-    SSLStream* sslStream = malloc(sizeof(SSLStream));
-    memset(sslStream, 0, sizeof(SSLStream));
 
     // TODO: [AndroidCrypto] If we have certificates, get an SSLContext instance with the highest available
     // protocol - TLSv1.2 (API level 16+) or TLSv1.3 (API level 29+), use KeyManagerFactory to create key
@@ -286,16 +280,155 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(bool isServer,
 
     // SSLContext sslContext = SSLContext.getDefault();
     jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetDefault);
-    ON_EXCEPTION_PRINT_AND_GOTO(fail);
+    if (CheckJNIExceptions(env))
+        return NULL;
+
+    SSLStream* sslStream = malloc(sizeof(SSLStream));
+    memset(sslStream, 0, sizeof(SSLStream));
     sslStream->sslContext = ToGRef(env, sslContext);
+    return sslStream;
+}
+
+static int32_t AddCertChainToStore(
+    JNIEnv* env,
+    jobject store,
+    uint8_t* pkcs8PrivateKey,
+    int32_t pkcs8PrivateKeyLen,
+    PAL_KeyAlgorithm algorithm,
+    jobject* /*X509Certificate[]*/ certs,
+    int32_t certsLen)
+{
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, keyBytes, keySpec, algorithmName, keyFactory, privateKey, certArray, alias);
+
+    // byte[] keyBytes = new byte[] { <pkcs8PrivateKey> };
+    // PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
+    loc[keyBytes] = (*env)->NewByteArray(env, pkcs8PrivateKeyLen);
+    (*env)->SetByteArrayRegion(env, loc[keyBytes], 0, pkcs8PrivateKeyLen, (jbyte*)pkcs8PrivateKey);
+    loc[keySpec] = (*env)->NewObject(env, g_PKCS8EncodedKeySpec, g_PKCS8EncodedKeySpecCtor, loc[keyBytes]);
+
+    switch (algorithm)
+    {
+        case PAL_DSA:
+            loc[algorithmName] = JSTRING("DSA");
+            break;
+        case PAL_EC:
+            loc[algorithmName] = JSTRING("EC");
+            break;
+        case PAL_RSA:
+            loc[algorithmName] = JSTRING("RSA");
+            break;
+        default:
+            LOG_ERROR("Unknown key algorithm: %d", algorithm);
+            goto cleanup;
+    }
+
+    // KeyFactory keyFactory = KeyFactory.getInstance(algorithmName);
+    // PrivateKey privateKey = keyFactory.generatePrivate(spec);
+    loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algorithmName]);
+    loc[privateKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPrivateMethod, loc[keySpec]);
+
+    // X509Certificate[] certArray = new X509Certificate[certsLen];
+    loc[certArray] = (*env)->NewObjectArray(env, certsLen, g_X509CertClass, NULL);
+    for (int i = 0; i < certsLen; ++i)
+    {
+        (*env)->SetObjectArrayElement(env, loc[certArray], i, certs[i]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    }
+
+    // store.setKeyEntry("SSLCertificateContext", privateKey, null, certArray);
+    loc[alias] = JSTRING("SSLCertificateContext");
+    (*env)->CallVoidMethod(env, store, g_KeyStoreSetKeyEntry, loc[alias], loc[privateKey], NULL, loc[certArray]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
+}
+
+SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8PrivateKey, int32_t pkcs8PrivateKeyLen, PAL_KeyAlgorithm algorithm, jobject* /*X509Certificate[]*/ certs, int32_t certsLen)
+{
+    SSLStream* sslStream = NULL;
+    JNIEnv* env = GetJNIEnv();
+
+    INIT_LOCALS(loc, tls13, sslContext, ksType, keyStore, kmfType, kmf, keyManagers);
+
+    // SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
+    loc[tls13] = JSTRING("TLSv1.3");
+    loc[sslContext] = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, loc[tls13]);
+    if (TryClearJNIExceptions(env))
+    {
+        // TLSv1.3 is only supported on API level 29+ - fall back to TLSv1.2 (which is supported on API level 16+)
+        // sslContext = SSLContext.getInstance("TLSv1.2");
+        jobject tls12 = JSTRING("TLSv1.2");
+        loc[sslContext] = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, tls12);
+        ReleaseLRef(env, tls12);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    }
+
+    // String ksType = KeyStore.getDefaultType();
+    // KeyStore keyStore = KeyStore.getInstance(ksType);
+    // keyStore.load(null, null);
+    loc[ksType] = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetDefaultType);
+    loc[keyStore] = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, loc[ksType]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, loc[keyStore], g_KeyStoreLoad, NULL, NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    int32_t status = AddCertChainToStore(env, loc[keyStore], pkcs8PrivateKey, pkcs8PrivateKeyLen, algorithm, certs, certsLen);
+    if (status != SUCCESS)
+        goto cleanup;
+
+    // String kmfType = "PKIX";
+    // KeyManagerFactory kmf = KeyManagerFactory.getInstance(kmfType);
+    loc[kmfType] = JSTRING("PKIX");
+    loc[kmf] = (*env)->CallStaticObjectMethod(env, g_KeyManagerFactory, g_KeyManagerFactoryGetInstance, loc[kmfType]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // kmf.init(keyStore, null);
+    (*env)->CallVoidMethod(env, loc[kmf], g_KeyManagerFactoryInit, loc[keyStore], NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // KeyManager[] keyManagers = kmf.getKeyManagers();
+    // sslContext.init(keyManagers, null, null);
+    loc[keyManagers] = (*env)->CallObjectMethod(env, loc[kmf], g_KeyManagerFactoryGetKeyManagers);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, loc[sslContext], g_SSLContextInitMethod, loc[keyManagers], NULL, NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    sslStream = malloc(sizeof(SSLStream));
+    memset(sslStream, 0, sizeof(SSLStream));
+    sslStream->sslContext = ToGRef(env, loc[sslContext]);
+    loc[sslContext] = NULL;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return sslStream;
+}
+
+int32_t AndroidCryptoNative_SSLStreamInitialize(SSLStream* sslStream,
+                                                   bool isServer,
+                                                   STREAM_READER streamReader,
+                                                   STREAM_WRITER streamWriter,
+                                                   int appBufferSize)
+{
+    assert(sslStream != NULL);
+    assert(sslStream->sslContext != NULL);
+    assert(sslStream->sslEngine == NULL);
+    assert(sslStream->sslSession == NULL);
+
+    int32_t ret = FAIL;
+    JNIEnv* env = GetJNIEnv();
 
     // SSLEngine sslEngine = sslContext.createSSLEngine();
     // sslEngine.setUseClientMode(!isServer);
     jobject sslEngine = (*env)->CallObjectMethod(env, sslStream->sslContext, g_SSLContextCreateSSLEngineMethod);
-    ON_EXCEPTION_PRINT_AND_GOTO(fail);
+    ON_EXCEPTION_PRINT_AND_GOTO(exit);
     sslStream->sslEngine = ToGRef(env, sslEngine);
     (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetUseClientMode, !isServer);
-    ON_EXCEPTION_PRINT_AND_GOTO(fail);
+    ON_EXCEPTION_PRINT_AND_GOTO(exit);
 
     // SSLSession sslSession = sslEngine.getSession();
     sslStream->sslSession = ToGRef(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSession));
@@ -322,13 +455,10 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(bool isServer,
     sslStream->streamReader = streamReader;
     sslStream->streamWriter = streamWriter;
 
-    return sslStream;
+    ret = SUCCESS;
 
-fail:
-    if (sslStream != NULL)
-        FreeSSLStream(env, sslStream);
-
-    return NULL;
+exit:
+    return ret;
 }
 
 int32_t AndroidCryptoNative_SSLStreamConfigureParameters(SSLStream* sslStream, char* targetHost)

@@ -6,9 +6,11 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Security;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
+using PAL_KeyAlgorithm = Interop.AndroidCrypto.PAL_KeyAlgorithm;
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
 
 namespace System.Net
@@ -39,7 +41,8 @@ namespace System.Net
                     _writeCallback = WriteToConnection;
                 }
 
-                _sslContext = CreateSslContext(_readCallback, _writeCallback, credential, authOptions);
+                _sslContext = CreateSslContext(credential);
+                InitializeSslContext(_sslContext, _readCallback, _writeCallback, credential, authOptions);
             }
             catch (Exception ex)
             {
@@ -134,7 +137,58 @@ namespace System.Net
             return limit;
         }
 
-        private static SafeSslHandle CreateSslContext(
+        private static SafeSslHandle CreateSslContext(SafeFreeSslCredentials credential)
+        {
+            if (credential.CertificateContext == null)
+            {
+                return Interop.AndroidCrypto.SSLStreamCreate();
+            }
+
+            SslStreamCertificateContext context = credential.CertificateContext;
+            X509Certificate2 cert = context.Certificate;
+            Debug.Assert(context.Certificate.HasPrivateKey);
+
+            PAL_KeyAlgorithm algorithm;
+            byte[] keyBytes;
+            using (AsymmetricAlgorithm key = GetPrivateKeyAlgorithm(cert, out algorithm))
+            {
+                keyBytes = key.ExportPkcs8PrivateKey();
+            }
+            IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Length + 1];
+            ptrs[0] = cert.Handle;
+            for (int i = 0; i < context.IntermediateCertificates.Length; i++)
+            {
+                ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
+            }
+
+            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(keyBytes, algorithm, ptrs);
+        }
+
+        private static AsymmetricAlgorithm GetPrivateKeyAlgorithm(X509Certificate2 cert, out PAL_KeyAlgorithm algorithm)
+        {
+            AsymmetricAlgorithm? key = cert.GetRSAPrivateKey();
+            if (key != null)
+            {
+                algorithm = PAL_KeyAlgorithm.RSA;
+                return key;
+            }
+            key = cert.GetECDsaPrivateKey();
+            if (key != null)
+            {
+                algorithm = PAL_KeyAlgorithm.EC;
+                return key;
+            }
+            key = cert.GetDSAPrivateKey();
+            if (key != null)
+            {
+                algorithm = PAL_KeyAlgorithm.DSA;
+                return key;
+            }
+            throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
+        }
+
+        private static void InitializeSslContext(
+            SafeSslHandle handle,
             Interop.AndroidCrypto.SSLReadCallback readCallback,
             Interop.AndroidCrypto.SSLWriteCallback writeCallback,
             SafeFreeSslCredentials credential,
@@ -145,25 +199,18 @@ namespace System.Net
             if (authOptions.ApplicationProtocols != null
                 || authOptions.CipherSuitesPolicy != null
                 || credential.Protocols != SslProtocols.None
-                || (isServer && authOptions.RemoteCertRequired)
-                || (credential.CertificateContext != null))
+                || (isServer && authOptions.RemoteCertRequired))
             {
-                // TODO: [AndroidCrypto] Handle certificate context, non-system-default options
+                // TODO: [AndroidCrypto] Handle non-system-default options
                 throw new NotImplementedException(nameof(SafeDeleteSslContext));
             }
 
-            SafeSslHandle handle = Interop.AndroidCrypto.SSLStreamCreate(
-                isServer,
-                readCallback,
-                writeCallback,
-                InitialBufferSize);
+            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, readCallback, writeCallback, InitialBufferSize);
 
             if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
             {
                 Interop.AndroidCrypto.SSLStreamConfigureParameters(handle, authOptions.TargetHost);
             }
-
-            return handle;
         }
     }
 }

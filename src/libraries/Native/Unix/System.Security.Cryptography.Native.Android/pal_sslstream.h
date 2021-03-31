@@ -4,6 +4,7 @@
 #pragma once
 
 #include "pal_jni.h"
+#include "pal_x509.h"
 
 typedef void (*STREAM_WRITER)(uint8_t*, int32_t);
 typedef int (*STREAM_READER)(uint8_t*, int32_t*);
@@ -34,17 +35,32 @@ typedef int32_t PAL_SSLStreamStatus;
 
 /*
 Create an SSL context
+
+Returns NULL on failure
+*/
+PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreate(void);
+
+/*
+Create an SSL context with the specified certificates
+
+Returns NULL on failure
+*/
+PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8PrivateKey, int32_t pkcs8PrivateKeyLen, PAL_KeyAlgorithm algorithm, jobject* /*X509Certificate[]*/ certs, int32_t certsLen);
+
+/*
+Initialize an SSL context
   - isServer      : true if the context should be created in server mode
   - streamReader  : callback for reading data from the connection
   - streamWriter  : callback for writing data to the connection
   - appBufferSize : initial buffer size for applicaiton data
 
-Returns NULL on failure
+Returns 1 on success, 0 otherwise
 */
-PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreate(bool isServer,
-                                                         STREAM_READER streamReader,
-                                                         STREAM_WRITER streamWriter,
-                                                         int appBufferSize);
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamInitialize(SSLStream* sslStream,
+                                                             bool isServer,
+                                                             STREAM_READER streamReader,
+                                                             STREAM_WRITER streamWriter,
+                                                             int appBufferSize);
 
 /*
 Set configuration parameters

@@ -211,6 +211,7 @@ extern jmethodID g_keyPairGenGenKeyPairMethod;
 
 // java/security/KeyStore
 extern jclass    g_KeyStoreClass;
+extern jmethodID g_KeyStoreGetDefaultType;
 extern jmethodID g_KeyStoreGetInstance;
 extern jmethodID g_KeyStoreAliases;
 extern jmethodID g_KeyStoreContainsAlias;
@@ -338,6 +339,10 @@ extern jmethodID g_EllipticCurveGetB;
 extern jmethodID g_EllipticCurveGetField;
 extern jmethodID g_EllipticCurveGetSeed;
 
+// java/security/spec/PKCS8EncodedKeySpec
+extern jclass    g_PKCS8EncodedKeySpec;
+extern jmethodID g_PKCS8EncodedKeySpecCtor;
+
 // java/security/spec/X509EncodedKeySpec
 extern jclass    g_X509EncodedKeySpecClass;
 extern jmethodID g_X509EncodedKeySpecCtor;
@@ -393,6 +398,12 @@ extern jmethodID g_HostnameVerifierVerify;
 // javax/net/ssl/HttpsURLConnection
 extern jclass    g_HttpsURLConnection;
 extern jmethodID g_HttpsURLConnectionGetDefaultHostnameVerifier;
+
+// javax/net/ssl/KeyManagerFactory
+extern jclass    g_KeyManagerFactory;
+extern jmethodID g_KeyManagerFactoryGetInstance;
+extern jmethodID g_KeyManagerFactoryInit;
+extern jmethodID g_KeyManagerFactoryGetKeyManagers;
 
 // javax/net/ssl/SNIHostName
 extern jclass    g_SNIHostName;

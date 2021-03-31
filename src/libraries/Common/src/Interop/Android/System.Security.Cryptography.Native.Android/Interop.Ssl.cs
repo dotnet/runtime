@@ -26,11 +26,43 @@ internal static partial class Interop
         };
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreate")]
-        internal static extern SafeSslHandle SSLStreamCreate(
+        internal static extern SafeSslHandle SSLStreamCreate();
+
+        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateWithCertificates")]
+        private static extern SafeSslHandle SSLStreamCreateWithCertificates(
+            ref byte pkcs8PrivateKey,
+            int pkcs8PrivateKeyLen,
+            PAL_KeyAlgorithm algorithm,
+            IntPtr[] certs,
+            int certsLen);
+        internal static SafeSslHandle SSLStreamCreateWithCertificates(ReadOnlySpan<byte> pkcs8PrivateKey, PAL_KeyAlgorithm algorithm, IntPtr[] certificates)
+        {
+            return SSLStreamCreateWithCertificates(
+                ref MemoryMarshal.GetReference(pkcs8PrivateKey),
+                pkcs8PrivateKey.Length,
+                algorithm,
+                certificates,
+                certificates.Length);
+        }
+
+        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamInitialize")]
+        private static extern int SSLStreamInitializeImpl(
+            SafeSslHandle sslHandle,
             [MarshalAs(UnmanagedType.U1)] bool isServer,
             SSLReadCallback streamRead,
             SSLWriteCallback streamWrite,
             int appBufferSize);
+        internal static void SSLStreamInitialize(
+            SafeSslHandle sslHandle,
+            [MarshalAs(UnmanagedType.U1)] bool isServer,
+            SSLReadCallback streamRead,
+            SSLWriteCallback streamWrite,
+            int appBufferSize)
+        {
+            int ret = SSLStreamInitializeImpl(sslHandle, isServer, streamRead, streamWrite, appBufferSize);
+            if (ret != SUCCESS)
+                throw new SslException();
+        }
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamConfigureParameters")]
         private static extern int SSLStreamConfigureParametersImpl(

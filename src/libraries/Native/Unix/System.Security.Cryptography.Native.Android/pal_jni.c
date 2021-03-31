@@ -120,6 +120,7 @@ jmethodID g_keyPairGenGenKeyPairMethod;
 
 // java/security/KeyStore
 jclass    g_KeyStoreClass;
+jmethodID g_KeyStoreGetDefaultType;
 jmethodID g_KeyStoreGetInstance;
 jmethodID g_KeyStoreAliases;
 jmethodID g_KeyStoreContainsAlias;
@@ -328,6 +329,10 @@ jmethodID g_EllipticCurveGetB;
 jmethodID g_EllipticCurveGetField;
 jmethodID g_EllipticCurveGetSeed;
 
+// java/security/spec/PKCS8EncodedKeySpec
+jclass    g_PKCS8EncodedKeySpec;
+jmethodID g_PKCS8EncodedKeySpecCtor;
+
 // java/security/spec/X509EncodedKeySpec
 jclass    g_X509EncodedKeySpecClass;
 jmethodID g_X509EncodedKeySpecCtor;
@@ -378,6 +383,12 @@ jmethodID g_HostnameVerifierVerify;
 // javax/net/ssl/HttpsURLConnection
 jclass    g_HttpsURLConnection;
 jmethodID g_HttpsURLConnectionGetDefaultHostnameVerifier;
+
+// javax/net/ssl/KeyManagerFactory
+jclass    g_KeyManagerFactory;
+jmethodID g_KeyManagerFactoryGetInstance;
+jmethodID g_KeyManagerFactoryInit;
+jmethodID g_KeyManagerFactoryGetKeyManagers;
 
 // javax/net/ssl/SNIHostName
 jclass    g_SNIHostName;
@@ -784,6 +795,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_keyPairGenGenKeyPairMethod =           GetMethod(env, false, g_keyPairGenClass, "genKeyPair", "()Ljava/security/KeyPair;");
 
     g_KeyStoreClass =               GetClassGRef(env, "java/security/KeyStore");
+    g_KeyStoreGetDefaultType =      GetMethod(env, true, g_KeyStoreClass, "getDefaultType", "()Ljava/lang/String;");
     g_KeyStoreGetInstance =         GetMethod(env, true, g_KeyStoreClass, "getInstance", "(Ljava/lang/String;)Ljava/security/KeyStore;");
     g_KeyStoreAliases =             GetMethod(env, false, g_KeyStoreClass, "aliases", "()Ljava/util/Enumeration;");
     g_KeyStoreContainsAlias =       GetMethod(env, false, g_KeyStoreClass, "containsAlias", "(Ljava/lang/String;)Z");
@@ -891,6 +903,9 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_EllipticCurveGetField =          GetMethod(env, false, g_EllipticCurveClass, "getField", "()Ljava/security/spec/ECField;");
     g_EllipticCurveGetSeed =           GetMethod(env, false, g_EllipticCurveClass, "getSeed", "()[B");
 
+    g_PKCS8EncodedKeySpec =     GetClassGRef(env, "java/security/spec/PKCS8EncodedKeySpec");
+    g_PKCS8EncodedKeySpecCtor = GetMethod(env, false, g_PKCS8EncodedKeySpec, "<init>", "([B)V");
+
     g_X509EncodedKeySpecClass =        GetClassGRef(env, "java/security/spec/X509EncodedKeySpec");
     g_X509EncodedKeySpecCtor =         GetMethod(env, false, g_X509EncodedKeySpecClass, "<init>", "([B)V");
 
@@ -930,6 +945,11 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_HttpsURLConnection =                              GetClassGRef(env, "javax/net/ssl/HttpsURLConnection");
     g_HttpsURLConnectionGetDefaultHostnameVerifier =    GetMethod(env, true, g_HttpsURLConnection, "getDefaultHostnameVerifier", "()Ljavax/net/ssl/HostnameVerifier;");
+
+    g_KeyManagerFactory =               GetClassGRef(env, "javax/net/ssl/KeyManagerFactory");
+    g_KeyManagerFactoryGetInstance =    GetMethod(env, true, g_KeyManagerFactory, "getInstance", "(Ljava/lang/String;)Ljavax/net/ssl/KeyManagerFactory;");
+    g_KeyManagerFactoryInit =           GetMethod(env, false, g_KeyManagerFactory, "init", "(Ljava/security/KeyStore;[C)V");
+    g_KeyManagerFactoryGetKeyManagers = GetMethod(env, false, g_KeyManagerFactory, "getKeyManagers", "()[Ljavax/net/ssl/KeyManager;");
 
     g_SNIHostName =     GetClassGRef(env, "javax/net/ssl/SNIHostName");
     g_SNIHostNameCtor = GetMethod(env, false, g_SNIHostName, "<init>", "(Ljava/lang/String;)V");
