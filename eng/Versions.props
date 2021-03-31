@@ -45,7 +45,7 @@
     <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="0" />
   </ItemGroup>
   <PropertyGroup>
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-preview3.21158.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-preview3.21168.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.9.0-5.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpVersion>3.9.0-5.final</MicrosoftCodeAnalysisCSharpVersion>
     <!-- Arcade dependencies -->
@@ -159,7 +159,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20201009.2</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.2.21177.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.2.21180.1</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-preview.4.21172.5</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- Mono LLVM -->

@@ -3,7 +3,7 @@
 
 namespace System.IO.Strategies
 {
-    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
+    internal sealed partial class Net5CompatFileStreamStrategy : FileStreamStrategy
     {
         internal override void Lock(long position, long length)
         {

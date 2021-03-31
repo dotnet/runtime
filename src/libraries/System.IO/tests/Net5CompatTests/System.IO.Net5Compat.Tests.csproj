@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <!-- currently we have non Legacy strategy only for Windows, so we run the tests only on Windows -->
+    <!-- Windows is currently the only OS for which we provide a new strategy, so we test the Net5Compat only for Windows -->
     <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>

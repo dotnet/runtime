@@ -17,6 +17,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <mono/metadata/jit-info.h>
 #include <mono/metadata/gc-internals.h>
 
 #include <mono/utils/atomic.h>

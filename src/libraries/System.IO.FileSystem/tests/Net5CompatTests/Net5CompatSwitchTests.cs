@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class LegacySwitchTests
+    public class Net5CompatSwitchTests
     {
         [Fact]
         public static void LegacySwitchIsHonored()
@@ -20,7 +20,7 @@ namespace System.IO.Tests
                     .GetField("_strategy", BindingFlags.NonPublic | BindingFlags.Instance)
                     .GetValue(fileStream);
 
-                Assert.DoesNotContain(strategy.GetType().FullName, "Legacy");
+                Assert.DoesNotContain("Net5Compat", strategy.GetType().FullName);
             }
 
             File.Delete(filePath);
