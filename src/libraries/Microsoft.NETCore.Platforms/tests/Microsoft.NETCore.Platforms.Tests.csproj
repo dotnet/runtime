@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net472</TargetFrameworks>
+    <!-- MSBuild won't work everywhere -->
+    <SkipTestsOnPlatform Condition="'$(TargetsMobile)' == 'true' or '$(TargetArchitecture)' == 'wasm'">true</SkipTestsOnPlatform>
   </PropertyGroup>
 
   <ItemGroup>
