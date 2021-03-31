@@ -1,7 +1,8 @@
 // © Microsoft Corporation. All rights reserved.
 
+//#define LOGGER_MESSAGE_DEFINE
+
 using System.Collections.Generic;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -14,17 +15,19 @@ namespace Microsoft.Extensions.Logging.Generators
             // The maximum arity of the LogValues-family of types. Beyond this number, parameters are just kepts in an array (which implies an allocation
             // for the array and boxing of all logging method arguments.
             private const int MaxLogValuesArity = 6;
+#if !LOGGER_MESSAGE_DEFINE
             private const int MinLogValuesWithNameArray = 2;
+#endif
             private const string InternalNamespace = "Microsoft.Extensions.Logging.Internal";
 
             private readonly string _generatedCodeAttribute =
                 $"global::System.CodeDom.Compiler.GeneratedCodeAttribute(" +
-                $"\"{typeof(Emitter).Assembly.GetName().Name}\"," +
+                $"\"{typeof(Emitter).Assembly.GetName().Name}\", " +
                 $"\"{typeof(Emitter).Assembly.GetName().Version}\")";
             private readonly Stack<StringBuilder> _builders = new ();
             private readonly bool _pascalCaseArguments;
             private readonly bool _emitDefaultMessage;
-
+            
             public Emitter(bool pascalCaseArguments, bool emitDefaultMessage = true)
             {
                 _pascalCaseArguments = pascalCaseArguments;
@@ -71,6 +74,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         AutoGenerateMessage(lm);
                     }
 
+#if !LOGGER_MESSAGE_DEFINE
                     foreach (var lm in lc.Methods)
                     {
                         _ = sb.Append(GenNameArray(lm));
@@ -80,7 +84,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     {
                         _ = sb.Append(GenFormatFunc(lm));
                     }
-
+#endif
                     foreach (var lm in lc.Methods)
                     {
                         _ = sb.Append(GenLogMethod(lm));
@@ -112,6 +116,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
             }
 
+#if !LOGGER_MESSAGE_DEFINE
             private string GenFormatFunc(LoggerMethod lm)
             {
                 if (lm.Templates.Count == 0)
@@ -248,6 +253,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     ReturnStringBuilder(sb);
                 }
             }
+#endif
 
             private string GenLogMethod(LoggerMethod lm)
             {
@@ -255,6 +261,9 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 if (lm.Level == null)
                 {
+#if LOGGER_MESSAGE_DEFINE
+                    level = "global::Microsoft.Extensions.Logging.LogLevel.Debug";
+#else
                     foreach (var p in lm.AllParameters)
                     {
                         if (p.IsLogLevel)
@@ -263,6 +272,7 @@ namespace Microsoft.Extensions.Logging.Generators
                             break;
                         }
                     }
+#endif
                 }
                 else
                 {
@@ -321,6 +331,24 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                 }
 
+#if LOGGER_MESSAGE_DEFINE
+                return $@"
+                        [{_generatedCodeAttribute}]
+                        private static readonly global::System.Action<global::Microsoft.Extensions.Logging.ILogger, {GenDefineTypes(lm, false)}global::System.Exception?> _{lm.Name}Callback =
+                            global::Microsoft.Extensions.Logging.LoggerMessage.Define{GenDefineTypes(lm, true)}({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), ""{EscapeMessageString(lm.Message!)}""); 
+
+                        [{_generatedCodeAttribute}]
+                        {lm.Modifiers} void {lm.Name}({(lm.IsExtensionMethod ? "this " : string.Empty)}{GenParameters(lm)})
+                        {{
+                            if ({logger}.IsEnabled({level}))
+                            {{
+                                _{lm.Name}Callback({logger}, {GenCallbackArguments(lm)}{exceptionArg});
+                            }}
+                        }}
+                    ";
+
+#else
+
                 return $@"
                             [{_generatedCodeAttribute}]
                             {lm.Modifiers} void {lm.Name}({(lm.IsExtensionMethod ? "this " : string.Empty)}{GenParameters(lm)})
@@ -336,6 +364,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                 }}
                             }}
                         ";
+#endif
             }
 
             private void AutoGenerateMessage(LoggerMethod lm)
@@ -381,6 +410,82 @@ namespace Microsoft.Extensions.Logging.Generators
                     ReturnStringBuilder(sb);
                 }
             }
+
+#if LOGGER_MESSAGE_DEFINE
+            private string GenCallbackArguments(LoggerMethod lm)
+            {
+                var sb = GetStringBuilder();
+                try
+                {
+                    int count = 0;
+                    foreach (var p in lm.AllParameters)
+                    {
+                        if (p.IsRegular)
+                        {
+                            _ = sb.Append($"{p.Name}, ");
+
+                            count++;
+                            if (count == 6)
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+                    return sb.ToString();
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
+
+            private string GenDefineTypes(LoggerMethod lm, bool brackets)
+            {
+                var sb = GetStringBuilder();
+                try
+                {
+                    int count = 0;
+                    foreach (var p in lm.AllParameters)
+                    {
+                        if (p.IsRegular)
+                        {
+                            if (count > 0)
+                            {
+                                _ = sb.Append(", ");
+                            }
+
+                            _ = sb.Append($"{p.Type}");
+
+                            count++;
+                            if (count == 6)
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+                    var result = sb.ToString();
+                    if (!string.IsNullOrEmpty(result))
+                    {
+                        if (brackets)
+                        {
+                            result = "<" + result + ">";
+                        }
+                        else
+                        {
+                            result += ", ";
+                        }
+                    }
+
+                    return result;
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
+#endif
 
             private string GenParameters(LoggerMethod lm)
             {
