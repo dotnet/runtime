@@ -285,7 +285,7 @@ void NativeImage::CheckAssemblyMvid(Assembly *assembly) const
     StringFromGUID2(*componentMvid, componentMvidText, MVID_TEXT_LENGTH);
 
     SString message;
-    message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)"),
+    message.Printf(W("MVID mismatch between loaded assembly '%S' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)"),
         assembly->GetSimpleName(),
         assemblyMvidText,
         SString(SString::Utf8, GetFileName()).GetUnicode(),
