@@ -625,12 +625,11 @@ void CLRConfig::Initialize()
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableConfigCache) != 0)
         return;
 
-#ifdef TARGET_WINDOWS
     const WCHAR prefixC = towlower(COMPLUS_PREFIX[0]);
     const WCHAR prefixD = towlower(DOTNET_PREFIX[0]);
 
     // Create a cache of environment variables
-    WCHAR* wszStrings = WszGetEnvironmentStrings();
+    WCHAR* wszStrings = GetEnvironmentStringsW();
     if (wszStrings != NULL)
     {
         // GetEnvironmentStrings returns pointer to a null terminated block containing
@@ -674,8 +673,7 @@ void CLRConfig::Initialize()
                 wszCurr++;
         }
 
-        WszFreeEnvironmentStrings(wszStrings);
+        FreeEnvironmentStringsW(wszStrings);
         s_fUseEnvCache = true;
     }
-#endif // TARGET_WINDOWS
 }

@@ -102,6 +102,7 @@ elseif(CLR_CMAKE_HOST_UNIX)
     list(APPEND COREDBI_LIBRARIES
         mdhotdata_full
         palrt
+        coreclrpal
         # share the PAL in the dac module
         mscordaccore
     )
