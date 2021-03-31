@@ -176,11 +176,22 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private void ClearState()
         {
-            // Dispose the state, which will end up attempting to return the state pool.
-            // This will return false if the pool is full or if this state object is the root scope
-            if (_state.Return())
+            // Root scope doesn't need to lock anything
+            if (_scopeLock == null)
             {
-                _state = null;
+                return;
+            }
+
+            // We lock here since ResolvedServices is always accessed in the scope lock, this means we'll never
+            // try to return to the pool while somebody is trying to access ResolvedServices.
+            lock (_scopeLock)
+            {
+                // Dispose the state, which will end up attempting to return the state pool.
+                // This will return false if the pool is full or if this state object is the root scope
+                if (_state.Return())
+                {
+                    _state = null;
+                }
             }
         }
 
