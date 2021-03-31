@@ -3053,6 +3053,7 @@ def process_base_jit_path_arg(coreclr_args):
     if coreclr_args.base_jit_path is not None:
         if not os.path.isfile(coreclr_args.base_jit_path):
             raise RuntimeError("Specified -base_jit_path does not point to a file")
+        coreclr_args.base_jit_path = os.path.abspath(coreclr_args.base_jit_path)
         return
 
     # We cache baseline jits under the following directory. Note that we can't create the full directory path
