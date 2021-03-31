@@ -442,7 +442,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 return results;
             }
 
-            private (string? loggerField, bool multipleLoggerFields) FindLoggerField(SemanticModel sm, ClassDeclarationSyntax classDec, ITypeSymbol loggerSymbol)
+            private (string? loggerField, bool multipleLoggerFields) FindLoggerField(SemanticModel sm, TypeDeclarationSyntax classDec, ITypeSymbol loggerSymbol)
             {
                 string? loggerField = null;
 
