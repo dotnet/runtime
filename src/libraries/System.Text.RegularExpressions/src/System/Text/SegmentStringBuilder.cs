@@ -74,7 +74,7 @@ namespace System.Text
                 length += span[i].Length;
             }
 
-            string result = string.Create(length, this, (dest, builder) =>
+            string result = string.Create(length, this, static (dest, builder) =>
             {
                 Span<ReadOnlyMemory<char>> localSpan = builder.AsSpan();
                 for (int i = 0; i < localSpan.Length; i++)

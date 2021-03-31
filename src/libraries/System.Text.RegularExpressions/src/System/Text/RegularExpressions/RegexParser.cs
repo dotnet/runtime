@@ -2134,7 +2134,7 @@ namespace System.Text.RegularExpressions
             if (cch > 1)
             {
                 string str = UseOptionI() && !isReplacement ?
-                    string.Create(cch, (_pattern, _culture, pos, cch), (span, state) => state._pattern.AsSpan(state.pos, state.cch).ToLower(span, state._culture)) :
+                    string.Create(cch, (_pattern, _culture, pos, cch), static (span, state) => state._pattern.AsSpan(state.pos, state.cch).ToLower(span, state._culture)) :
                     _pattern.Substring(pos, cch);
 
                 node = new RegexNode(RegexNode.Multi, _options, str);
