@@ -399,7 +399,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Ldloc(context.Generator, lockTakenLocal.LocalIndex);
                 // return if not
                 context.Generator.Emit(OpCodes.Brfalse, returnLabel);
-                // Load resolvedServices
+                // Load syncLocal
                 Ldloc(context.Generator, syncLocal.LocalIndex);
                 // Monitor.Exit
                 context.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.MonitorExitMethodInfo);

@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyInjection
     internal class ScopePool
     {
         // Modest number to re-use. We only really care about reuse for short lived scopes
-        private static readonly int s_maxQueueSize = Environment.ProcessorCount * 2;
+        private const int s_maxQueueSize = 128;
 
         private int _count;
         private readonly ConcurrentQueue<State> _queue = new();
@@ -50,6 +50,8 @@ namespace Microsoft.Extensions.DependencyInjection
             public State(ScopePool pool = null)
             {
                 _pool = pool;
+                // When pool is null, we're in the global scope which doesn't need pooling.
+                // To reduce lock contention for singletons upon resolve we use a concurrent dictionary.
                 ResolvedServices = pool == null ? new ConcurrentDictionary<ServiceCacheKey, object>() : new Dictionary<ServiceCacheKey, object>();
             }
 

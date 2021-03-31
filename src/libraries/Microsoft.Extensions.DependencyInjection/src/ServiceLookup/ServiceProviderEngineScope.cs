@@ -16,10 +16,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private bool _disposed;
         private ScopePool.State _state;
 
-        // This protects the disposed state
-        private readonly object _disposeLock = new object();
-
-        // This protects resolved services, this is only used if isRoot is false
+        // This lock protects state on the scope, in particular, for the root scope, it protects
+        // the list of disposable entries only as ResolvedServices is a concurrent dictionary
+        // For other scopes, it protects ResolvedServices and the list of disposables
         private readonly object _scopeLock = new object();
 
         public ServiceProviderEngineScope(ServiceProviderEngine engine, bool isRoot = false)
@@ -55,7 +54,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return service;
             }
 
-            lock (_disposeLock)
+            lock (_scopeLock)
             {
                 if (_disposed)
                 {
@@ -74,7 +73,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     return service;
                 }
 
-                _state.Disposables ??= new();
+                _state.Disposables ??= new List<object>();
 
                 _state.Disposables.Add(service);
             }
@@ -120,7 +119,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                             ValueTask vt = asyncDisposable.DisposeAsync();
                             if (!vt.IsCompletedSuccessfully)
                             {
-                                return Await(i, vt, toDispose);
+                                return Await(this, i, vt, toDispose);
                             }
 
                             // If its a IValueTaskSource backed ValueTask,
@@ -143,7 +142,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             return default;
 
-            async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
+            static async ValueTask Await(ServiceProviderEngineScope scope, int i, ValueTask vt, List<object> toDispose)
             {
                 await vt.ConfigureAwait(false);
                 // vt is acting on the disposable at index i,
@@ -163,7 +162,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                 }
 
-                ClearState();
+                scope.ClearState();
             }
         }
 
@@ -175,12 +174,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private void ClearState()
         {
-            // Root scope doesn't need to lock anything
-            if (_scopeLock == null)
-            {
-                return;
-            }
-
             // We lock here since ResolvedServices is always accessed in the scope lock, this means we'll never
             // try to return to the pool while somebody is trying to access ResolvedServices.
             lock (_scopeLock)
@@ -196,7 +189,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private List<object> BeginDispose()
         {
-            lock (_disposeLock)
+            lock (_scopeLock)
             {
                 if (_disposed)
                 {
