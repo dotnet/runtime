@@ -36,7 +36,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Strategies
 {
-    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy, IFileStreamCompletionSourceStrategy
+    internal sealed partial class Net5CompatFileStreamStrategy : FileStreamStrategy, IFileStreamCompletionSourceStrategy
     {
         private bool _canSeek;
         private bool _isPipe;      // Whether to disable async buffering code.
