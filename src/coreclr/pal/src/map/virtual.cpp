@@ -1777,7 +1777,7 @@ PAL_JITWriteEnableHolder::JITWriteEnable(bool writeEnable)
 }
 #endif
 
-#if defined(TARGET_MACCATALYST)
+#if defined(HOST_ARM64) && defined(TARGET_MACCATALYST)
 bool
 PAL_JITWriteEnableHolder::JITWriteEnable(bool writeEnable)
 {
