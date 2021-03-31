@@ -34,7 +34,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             internal string InternalProperty { get; set; }
             protected string ProtectedProperty { get; set; }
 
-
             [ConfigurationKeyName("Named_Property")]
             public string NamedProperty { get; set; }
 
@@ -206,33 +205,19 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void CanBindAttributesIConfigurationSection()
+        public void CanBindConfigurationKeyNameAttributes()
         {
             var dic = new Dictionary<string, string>
             {
-                {"Section:Integer", "-2"},
-                {"Section:Boolean", "TRUe"},
-                {"Section:Nested:Integer", "11"},
-                {"Section:Virtual", "Sup"},
-                {"Section:Named_Property", "Yo"},
+                {"Named_Property", "Yo"},
             };
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            var options = config.Get<ConfigurationInterfaceOptions>();
-
-            var childOptions = options.Section.Get<DerivedOptions>();
-
-            Assert.True(childOptions.Boolean);
-            Assert.Equal(-2, childOptions.Integer);
-            Assert.Equal(11, childOptions.Nested.Integer);
-            Assert.Equal("Derived:Sup", childOptions.Virtual);
-            Assert.Equal("Yo", childOptions.NamedProperty);
-
-            Assert.Equal("Section", options.Section.Key);
-            Assert.Equal("Section", options.Section.Path);
-            Assert.Null(options.Section.Value);
+            var options = config.Get<ComplexOptions>();
+            
+            Assert.Equal("Yo", options.NamedProperty);
         }
 
         [Fact]

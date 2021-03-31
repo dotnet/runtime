@@ -4,17 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System;
-
 namespace Microsoft.Extensions.Configuration
 {
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public sealed class ConfigurationKeyNameAttribute : Attribute
-    {
-        public ConfigurationKeyNameAttribute(string name) => Name = name;
-
-        public string Name { get; }
-    }
     public static partial class ConfigurationExtensions
     {
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder Add<TSource>(this Microsoft.Extensions.Configuration.IConfigurationBuilder builder, System.Action<TSource> configureSource) where TSource : Microsoft.Extensions.Configuration.IConfigurationSource, new() { throw null; }
@@ -23,6 +14,12 @@ namespace Microsoft.Extensions.Configuration
         public static bool Exists(this Microsoft.Extensions.Configuration.IConfigurationSection section) { throw null; }
         public static string GetConnectionString(this Microsoft.Extensions.Configuration.IConfiguration configuration, string name) { throw null; }
         public static Microsoft.Extensions.Configuration.IConfigurationSection GetRequiredSection(this Microsoft.Extensions.Configuration.IConfiguration configuration, string key) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property)]
+    public sealed partial class ConfigurationKeyNameAttribute : System.Attribute
+    {
+        public ConfigurationKeyNameAttribute(string name) { }
+        public string Name { get { throw null; } }
     }
     public static partial class ConfigurationPath
     {
