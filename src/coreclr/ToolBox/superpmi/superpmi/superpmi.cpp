@@ -534,6 +534,11 @@ int __cdecl main(int argc, char* argv[])
                 errorCount++;
                 LogError("main method %d of size %d failed to load and compile correctly.",
                          reader->GetMethodContextIndex(), mc->methodSize);
+                if (errorCount == 100)
+                {
+                    LogError("More than 100 methods failed. Skip compiling remaining methods.");
+                    break;
+                }
                 if ((o.reproName != nullptr) && (o.indexCount == -1))
                 {
                     char buff[500];
