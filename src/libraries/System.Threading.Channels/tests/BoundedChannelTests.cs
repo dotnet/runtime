@@ -360,8 +360,8 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(10, droppedItems.Count);
         }
 
-        [Theory]
-        [MemberData(nameof(ChannelDropModes))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(ChannelDropModes))]        
         public void DroppedDelegateCalledAfterLockReleased_SyncWrites(BoundedChannelFullMode boundedChannelFullMode)
         {
             Channel<int> c = null;
@@ -399,8 +399,8 @@ namespace System.Threading.Channels.Tests
             Assert.True(dropDelegateCalled);
         }
 
-        [Theory]
-        [MemberData(nameof(ChannelDropModes))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(ChannelDropModes))]        
         public async Task DroppedDelegateCalledAfterLockReleased_AsyncWrites(BoundedChannelFullMode boundedChannelFullMode)
         {
             Channel<int> c = null;
