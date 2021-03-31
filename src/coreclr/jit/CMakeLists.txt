@@ -255,6 +255,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     valuenumtype.h
     varset.h
     vartype.h
+    vartypesdef.h
   )
 
   # Append clrjit.natvis file
