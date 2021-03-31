@@ -356,7 +356,7 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
     if (*read == (size_t)-1)
     {
         int readErrno = errno;
-        TRACE("ReadProcessMemory FAILED, addr: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", address, size, readErrno, strerror(readErrno));
+        TRACE_VERBOSE("ReadProcessMemory FAILED, addr: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", address, size, readErrno, strerror(readErrno));
         return false;
     }
     return true;
