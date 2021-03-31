@@ -138,7 +138,7 @@ var BindingSupportLib = {
 			//  the process of binding other methods relies on it.
 			this.make_marshal_signature_info = bind_runtime_method ("MakeMarshalSignatureInfo", "iiii");
 
-			this.get_custom_marshaler_info = bind_runtime_method ("GetCustomMarshalerInfoForType", "im");
+			this.get_custom_marshaler_info = bind_runtime_method ("GetCustomMarshalerInfoForType", "i");
 
 			// NOTE: The bound methods have a _ prefix on their names to ensure
 			//  that any code relying on the old get_method/call_method pattern will
@@ -1094,15 +1094,8 @@ var BindingSupportLib = {
 			
 			var result;
 			if (!this._custom_marshaler_info_cache.has (typePtr)) {
-				var root = MONO.mono_wasm_new_root ();
-				var json = this.get_custom_marshaler_info (typePtr, root.get_address());
-				// console.log(json);
+				var json = this.get_custom_marshaler_info (typePtr);
 				result = JSON.parse(json);
-				// console.log("instancePtr=", root.value);
-				if (result) {
-					result.instanceRoot = root;
-					result.instancePtr = root.value;
-				}
 				this._custom_marshaler_info_cache.set (typePtr, result);
 			} else {
 				result = this._custom_marshaler_info_cache.get (typePtr);
@@ -1145,7 +1138,7 @@ var BindingSupportLib = {
 				} else {
 					var signature = "m";
 					var boundConverter = this.bind_method (
-						convMethod, info.instancePtr, signature, "ToJavaScript_class" + classPtr
+						convMethod, 0, signature, "ToJavaScript_class" + classPtr
 					);
 
 					this._struct_unboxer_cache.set (classPtr, this._compile_post_filter (classPtr, boundConverter, postFilter));
@@ -1240,7 +1233,7 @@ var BindingSupportLib = {
 				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
 				// console.log("jstm signature", signature);
 				var boundConverter = this.bind_method (
-					convMethod,info.instancePtr, signature, "FromJavaScript_type" + typePtr
+					convMethod, 0, signature, "FromJavaScript_type" + typePtr
 				);
 
 				var result = this._compile_pre_filter (classPtr, boundConverter, preFilter);

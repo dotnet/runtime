@@ -350,14 +350,14 @@ namespace System.Runtime.InteropServices.JavaScript
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
-        private static unsafe string GetAndEscapeStringProperty (object? instance, Type type, string name) {
+        private static unsafe string GetAndEscapeStringProperty (Type type, string name) {
             var info = type.GetProperty(
-                name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+                name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
             );
             if (info == null)
                 return "null";
 
-            var value = info.GetValue(instance) as string;
+            var value = info.GetValue(null) as string;
             if (value == null)
                 return "null";
 
@@ -394,15 +394,21 @@ namespace System.Runtime.InteropServices.JavaScript
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
-        private static unsafe IntPtr GetMarshalMethodPointer (Type type, string name, out Type? returnType) {
+        private static unsafe IntPtr GetMarshalMethodPointer (Type type, string name, out Type? returnType, out Type? parameterType) {
             var info = type.GetMethod(
-                name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+                name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
             );
             if (info == null) {
+                parameterType = null;
                 returnType = null;
                 return IntPtr.Zero;
             }
 
+            var p = info.GetParameters();
+            if (p.Length != 1)
+                throw new Exception($"Method {type.Name}.{name} must accept exactly one parameter");
+
+            parameterType = p[0].ParameterType;
             returnType = info.ReturnType;
 
             var tmp = default(IntPtrAndHandle);
@@ -414,8 +420,7 @@ namespace System.Runtime.InteropServices.JavaScript
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
-        public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr, out object? instance) {
-            instance = null;
+        public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr) {
             if (typePtr == IntPtr.Zero)
                 return "null";
 
@@ -431,32 +436,36 @@ namespace System.Runtime.InteropServices.JavaScript
                     continue;
 
                 var args = cad.ConstructorArguments;
-                if (args.Count < 1)
-                    continue;
+                if (args.Count != 1)
+                    throw new Exception("CustomJavaScriptMarshalerAttribute must accept one argument");
 
                 var arg = args[0];
-                if (arg.ArgumentType != typeof(Type))
-                    continue;
+                if (arg.ArgumentType == typeof(Type))
+                    marshalerType = (Type?)arg.Value;
+                else if (arg.ArgumentType == typeof(string))
+                    marshalerType = Type.GetType((string)arg.Value);
+                else
+                    throw new Exception($"CustomJavaScriptMarshalerAttribute's argument {arg.Value} must be either a Type or the name of a type");
 
-                marshalerType = (Type?)arg.Value;
+                if (marshalerType == null)
+                    throw new Exception($"No marshaler type could be located based on the CustomJavaScriptMarshalerAttribute argument {arg.Value}");
+
                 break;
             }
 
             if (marshalerType == null)
                 return "null";
 
-            var createMethod = marshalerType.GetMethod("GetInstance");
-            if (createMethod == null)
-                return "{ \"error\": \"CustomJavaScriptMarshaler has no GetInstance method\" }";
-            instance = createMethod.Invoke(null, new object[] { type });
-            if (instance == null)
-                return "{ \"error\": \"CustomJavaScriptMarshaler.GetInstance returned null\" }";
+            var preFilter = GetAndEscapeStringProperty(marshalerType, "FromJavaScriptPreFilter");
+            var postFilter = GetAndEscapeStringProperty(marshalerType, "ToJavaScriptPostFilter");
 
-            var preFilter = GetAndEscapeStringProperty(instance, marshalerType, "FromJavaScriptPreFilter");
-            var postFilter = GetAndEscapeStringProperty(instance, marshalerType, "ToJavaScriptPostFilter");
+            var inputPtr = GetMarshalMethodPointer(marshalerType, "FromJavaScript", out Type? fromReturnType, out Type? fromParameterType);
+            var outputPtr = GetMarshalMethodPointer(marshalerType, "ToJavaScript", out Type? toReturnType, out Type? toParameterType);
 
-            var inputPtr = GetMarshalMethodPointer(marshalerType, "FromJavaScript", out Type? temp);
-            var outputPtr = GetMarshalMethodPointer(marshalerType, "ToJavaScript", out Type? outputReturnType);
+            if (fromReturnType != type)
+                throw new Exception($"{marshalerType.Name}.FromJavaScript's return type must be {type.Name} but was {fromReturnType}");
+            if (toParameterType != type)
+                throw new Exception($"{marshalerType.Name}.ToJavaScript's parameter must be of type {type.Name} but was {toParameterType}");
 
             return ("{\n" + $"'typePtr': {typePtr}, \n" +
                 $"'preFilter': {preFilter}, 'postFilter': {postFilter}, \n" +
