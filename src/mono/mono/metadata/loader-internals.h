@@ -94,7 +94,6 @@ struct _MonoMemoryManager {
 	gboolean freeing;
 
 	// If taking this with the loader lock, always take this second
-	// Currently unused, we take the domain lock instead
 	MonoCoopMutex lock;
 
 	// Private, don't access directly
@@ -182,6 +181,11 @@ mono_alc_assemblies_lock (MonoAssemblyLoadContext *alc);
 void
 mono_alc_assemblies_unlock (MonoAssemblyLoadContext *alc);
 
+/*
+ * This is below the loader lock in the locking hierarcy,
+ * so when taking this with the loader lock, always take
+ * this second.
+ */
 void
 mono_alc_memory_managers_lock (MonoAssemblyLoadContext *alc);
 

@@ -1621,16 +1621,6 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 	vt->imt_collisions_bitmap |= imt_collisions_bitmap;
 }
 
-static void
-build_imt (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_interfaces)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	mono_loader_lock ();
-	build_imt_slots (klass, vt, imt, extra_interfaces, -1);
-	mono_loader_unlock ();
-}
-
 /**
  * mono_vtable_build_imt_slot:
  * \param vtable virtual object table struct
