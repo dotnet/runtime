@@ -924,6 +924,9 @@ namespace System.Net.WebSockets
         {
             if (typeof(TResult) == typeof(ValueWebSocketReceiveResult))
             {
+                // Although it might seem that this will incur boxing of the struct,
+                // the JIT is smart enough to figure out it is unncessessary and will emit
+                // bytecode that returns the ValueWebSocketReceiveResult directly.
                 return (TResult)(object)new ValueWebSocketReceiveResult(count, messageType, endOfMessage);
             }
 
