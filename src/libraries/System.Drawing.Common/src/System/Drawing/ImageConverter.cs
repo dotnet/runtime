@@ -120,7 +120,7 @@ namespace System.Drawing
                     return null;
                 }
 
-                // The data is in the form of OBJECTHEADER. It's an encoded format that Access uses to push imagesinto the DB.
+                // The data is in the form of OBJECTHEADER. It's an encoded format that Access uses to push images into the DB.
                 //
                 // The layout of OBJECTHEADER is as follows - we only need the signature
                 // and headersize fields, which need to be read as little-endian data:
