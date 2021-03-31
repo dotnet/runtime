@@ -559,10 +559,23 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Same(appServicesFromHostBuilder, host.Services);
         }
 
+        [Fact]
+        public void HostBuilderConfigureDefaultsInterleavesMissingConfigValues()
+        {
+            IHostBuilder hostBuilder = new HostBuilder();
+            hostBuilder.ConfigureDefaults(args: null);
+
+            using var host = hostBuilder.Build();
+            var env = host.Services.GetRequiredService<IHostEnvironment>();
+
+            var expectedContentRootPath = Directory.GetCurrentDirectory();
+            Assert.Equal(expectedContentRootPath, env.ContentRootPath);
+        }
+
         private class FakeFileProvider : IFileProvider, IDisposable
         {
-            public bool Disposed { get; set; }
-            public void Dispose() { Disposed = true; }
+            public bool Disposed { get; private set; }
+            public void Dispose() => Disposed = true;
             public IDirectoryContents GetDirectoryContents(string subpath) => throw new NotImplementedException();
             public IFileInfo GetFileInfo(string subpath) => throw new NotImplementedException();
             public IChangeToken Watch(string filter) => throw new NotImplementedException();

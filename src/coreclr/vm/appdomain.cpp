@@ -1291,7 +1291,7 @@ void SystemDomain::Init()
     }
 
 #ifdef _DEBUG
-    BOOL fPause = EEConfig::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_PauseOnLoad, FALSE);
+    BOOL fPause = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PauseOnLoad);
 
     while (fPause)
     {

@@ -65,6 +65,11 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowInvalidOperationException_SerializerConverterFactoryReturnsNull(GetType());
             }
 
+            if (converter is JsonConverterFactory)
+            {
+                ThrowHelper.ThrowInvalidOperationException_SerializerConverterFactoryReturnsJsonConverterFactorty(GetType());
+            }
+
             return converter!;
         }
 

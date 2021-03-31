@@ -118,10 +118,12 @@ typedef unsigned int ULONG, *PULONG;
 #define __stdcall __attribute__((stdcall))
 #define _cdecl __attribute__((cdecl))
 #define __cdecl __attribute__((cdecl))
+#define __thiscall __attribute__((thiscall))
 #else
 #define __stdcall
 #define _cdecl
 #define __cdecl
+#define __thiscall
 #endif
 #endif
 
@@ -156,7 +158,7 @@ typedef int error_t;
 typedef void* LPVOID;
 typedef unsigned char BYTE;
 typedef WCHAR OLECHAR;
-typedef double DATE;          
+typedef double DATE;
 typedef DWORD LCID;
 #endif
 
