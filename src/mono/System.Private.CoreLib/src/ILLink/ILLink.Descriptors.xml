@@ -23,7 +23,7 @@
 		<!-- exception.c (mono_get_exception_argument_null) -->
 		<type fullname="System.ArgumentNullException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 			<!-- create_exception_two_strings -->
 			<method signature="System.Void .ctor(System.String,System.String)" />
 		</type>
@@ -61,7 +61,7 @@
 		<!-- exception.c / mono-error.c -->
 		<type fullname="System.BadImageFormatException">
 			<!-- mono_get_exception_bad_image_format / mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 			<!-- mono_get_exception_bad_image_format2 / mono_exception_from_name_two_strings -->
 			<method signature="System.Void .ctor(System.String,System.String)" />
 		</type>
@@ -125,7 +125,7 @@
 		<!-- loader.c: returned (as a string) from mono_lookup_pinvoke_call and used in … -->
 		<type fullname="System.EntryPointNotFoundException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<type fullname="System.Environment">
@@ -156,13 +156,13 @@
 
 		<type fullname="System.FormatException">
 			<!-- icall.c (base64_to_byte_array) mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- exception.c: mono_get_exception_index_out_of_range - used by many in icall.c and in socket-io.c -->
 		<type fullname="System.IndexOutOfRangeException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- domain.c: mono_defaults.int16_class -->
@@ -195,13 +195,12 @@
 		<!-- exception.c (mono_get_exception_invalid_operation) -->
 		<type fullname="System.InvalidOperationException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- mini.c: mono_jit_compile_method_inner (looks like one case is JITted, AOT too) -->
 		<type fullname="System.InvalidProgramException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
 			<!-- mono_runtime_object_init_handle -->
 			<method signature="System.Void .ctor()" />
 		</type>
@@ -214,15 +213,12 @@
 		<type fullname="System.MethodAccessException">
 			<!-- exception.c: mono_get_exception_method_access / mono_exception_from_name -->
 			<method signature="System.Void .ctor()" />
-			<!-- exception.c: mono_get_exception_method_access_msg / mono_exception_from_name_msg -->
-			<!-- mini.c (mono_jit_compiler_method_inner) mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
 		</type>
 
 		<!-- mini.c (mono_jit_compiler_method_inner) / mono-error.c -->
 		<type fullname="System.MissingFieldException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<type fullname="System.MissingMethodException">
@@ -386,7 +382,7 @@
 		<!-- exception.c (mono_get_exception_type_load) -->
 		<type fullname="System.TypeLoadException">
 			<!-- mini.c (mono_jit_compiler_method_inner) mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 			<!-- mono_exception_from_name_two_strings -->
 			<method signature="System.Void .ctor(System.String,System.String)" />
 		</type>
@@ -448,7 +444,7 @@
 
 		<type fullname="System.IO.FileNotFoundException">
 			<!-- mini.c (mono_jit_compiler_method_inner) mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 			<!-- exception.c (mono_get_exception_file_not_found and mono_get_exception_file_not_found) -->
 			<!-- mono_exception_from_name_two_strings -->
 			<method signature="System.Void .ctor(System.String,System.String)" />
@@ -457,7 +453,7 @@
 		<!-- exception.c (mono_get_exception_io) -->
 		<type fullname="System.IO.IOException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- appdomain.c (ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalGetLoadedAssemblies) -->
@@ -537,13 +533,13 @@
 		<!-- icall.c: ves_icall_InternalInvoke -->
 		<type fullname="System.Reflection.TargetException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- icall.c: ves_icall_InternalInvoke -->
 		<type fullname="System.Reflection.TargetParameterCountException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- exception.c: mono_get_exception_runtime_wrapped () -->
@@ -566,7 +562,8 @@
 
 		<!-- marshal.c: mono_mb_emit_exception_marshal_directive -->
 		<type fullname="System.Runtime.InteropServices.MarshalDirectiveException">
-			<method signature="System.Void .ctor(System.String)" />
+			<!-- mono_mb_emit_exception_marshal_directive -->
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- native-library.c: mono_class_get_native_library_class -->
@@ -585,7 +582,7 @@
 		<!-- exception.c (mono_get_exception_synchronization_lock) -->
 		<type fullname="System.Threading.SynchronizationLockException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- domain.c: mono_defaults.thread_class -->
@@ -608,7 +605,7 @@
 		<!-- exception.c (mono_get_exception_thread_abort) -->
 		<type fullname="System.Threading.ThreadStateException">
 			<!-- mono_exception_from_name_msg -->
-			<method signature="System.Void .ctor(System.String)" />
+			<method signature="System.Void .ctor()" />
 		</type>
 
 		<!-- mini-generic-sharing.c -->
@@ -651,5 +648,9 @@
 			<method name="ApplyUpdateSdb" />
 		</type>
 
+		<type fullname="System.ValueType">
+			<!-- https://github.com/dotnet/runtime/issues/47909 -->
+			<method signature="System.Void .ctor()" />
+		</type>
 	</assembly>
 </linker>

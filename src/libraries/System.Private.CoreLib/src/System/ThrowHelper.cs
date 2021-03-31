@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-// This file defines an internal class used to throw exceptions in BCL code.
+// This file defines an internal static class used to throw exceptions in BCL code.
 // The main purpose is to reduce code size.
 //
 // The old way to throw an exception generates quite a lot IL code and assembly code.
@@ -911,6 +911,8 @@ namespace System
                     return SR.Argument_SpansMustHaveSameLength;
                 case ExceptionResource.Argument_InvalidFlag:
                     return SR.Argument_InvalidFlag;
+                case ExceptionResource.CancellationTokenSource_Disposed:
+                    return SR.CancellationTokenSource_Disposed;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1090,5 +1092,6 @@ namespace System
         Arg_TypeNotSupported,
         Argument_SpansMustHaveSameLength,
         Argument_InvalidFlag,
+        CancellationTokenSource_Disposed,
     }
 }

@@ -572,7 +572,7 @@ namespace System.Drawing.Printing
         internal DeviceContext CreateDeviceContext(IntPtr hdevmode)
         {
             IntPtr modePointer = Interop.Kernel32.GlobalLock(hdevmode);
-            DeviceContext dc = DeviceContext.CreateDC(DriverName, PrinterNameInternal, fileName:null, modePointer); ;
+            DeviceContext dc = DeviceContext.CreateDC(DriverName, PrinterNameInternal, fileName:null, modePointer);
             Interop.Kernel32.GlobalUnlock(hdevmode);
             return dc;
         }
@@ -1650,7 +1650,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        private class ArrayEnumerator : IEnumerator
+        private sealed class ArrayEnumerator : IEnumerator
         {
             private readonly object[] _array;
             private readonly int _endIndex;

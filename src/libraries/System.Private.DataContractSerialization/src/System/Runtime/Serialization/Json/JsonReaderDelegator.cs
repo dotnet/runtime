@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonReaderDelegator : XmlReaderDelegator
+    internal sealed class JsonReaderDelegator : XmlReaderDelegator
     {
         private readonly DateTimeFormat? _dateTimeFormat;
         private DateTimeArrayJsonHelperWithString? _dateTimeArrayHelper;
@@ -259,7 +259,7 @@ namespace System.Runtime.Serialization.Json
             return true;
         }
 
-        private class DateTimeArrayJsonHelperWithString : ArrayHelper<string, DateTime>
+        private sealed class DateTimeArrayJsonHelperWithString : ArrayHelper<string, DateTime>
         {
             private readonly DateTimeFormat? _dateTimeFormat;
 

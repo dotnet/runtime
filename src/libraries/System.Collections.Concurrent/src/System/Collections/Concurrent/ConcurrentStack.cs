@@ -41,7 +41,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// A simple (internal) node type used to store elements of concurrent stacks and queues.
         /// </summary>
-        private class Node
+        private sealed class Node
         {
             internal readonly T _value; // Value of the node.
             internal Node? _next; // Next pointer.

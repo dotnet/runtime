@@ -9,7 +9,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonQNameDataContract : JsonDataContract
+    internal sealed class JsonQNameDataContract : JsonDataContract
     {
         public JsonQNameDataContract(QNameDataContract traditionalQNameDataContract)
             : base(traditionalQNameDataContract)

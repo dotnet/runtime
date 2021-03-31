@@ -248,5 +248,9 @@ DEFINE_DACVAR(ULONG, TADDR, dac__g_MiniMetaDataBuffAddress, ::g_MiniMetaDataBuff
 
 DEFINE_DACVAR(ULONG, SIZE_T, dac__g_clrNotificationArguments, ::g_clrNotificationArguments)
 
+#ifdef EnC_SUPPORTED
+DEFINE_DACVAR(ULONG, bool, dac__g_metadataUpdatesApplied, ::g_metadataUpdatesApplied)
+#endif
+
 #undef DEFINE_DACVAR
 #undef DEFINE_DACVAR_NO_DUMP

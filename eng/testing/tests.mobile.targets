@@ -8,9 +8,12 @@
     <JSEngineArgs Condition="'$(JSEngine)' == 'V8'">$(JSEngineArgs) --engine-arg=--stack-trace-limit=1000</JSEngineArgs>
 
     <PublishingTestsRun>true</PublishingTestsRun>
+    <UseDefaultBlazorWASMFeatureSwitches Condition="'$(UseDefaultBlazorWASMFeatureSwitches)' == ''">true</UseDefaultBlazorWASMFeatureSwitches>
+    <UseDefaultAndroidFeatureSwitches Condition="'$(UseDefaultAndroidFeatureSwitches)' == ''">true</UseDefaultAndroidFeatureSwitches>
+    <UseDefaultiOSFeatureSwitches Condition="'$(UseDefaultiOSFeatureSwitches)' == ''">true</UseDefaultiOSFeatureSwitches>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' And '$(UseDefaultBlazorWASMFeatureSwitches)' != 'false'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' And '$(UseDefaultBlazorWASMFeatureSwitches)' == 'true'">
     <ShouldBuildWasmLocally
       Condition="'$(ContinuousIntegrationBuild)' != 'true' or ('$(RunAOTCompilation)' != 'true' and '$(ContinuousIntegrationBuild)' == 'true')">true</ShouldBuildWasmLocally>
 
@@ -26,7 +29,7 @@
     <DebuggerSupport>true</DebuggerSupport>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Android' and '$(UseDefaultAndroidFeatureSwitches)' != 'false'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Android' and '$(UseDefaultAndroidFeatureSwitches)' == 'true'">
     <DebuggerSupport>false</DebuggerSupport>
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
@@ -38,8 +41,28 @@
     <UseNativeHttpHandler>true</UseNativeHttpHandler>
   </PropertyGroup>
 
+  <PropertyGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator') and '$(UseDefaultiOSFeatureSwitches)' == 'true'">
+    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <EventSourceSupport>false</EventSourceSupport>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <StartupHookSupport>false</StartupHookSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <UseNativeHttpHandler>true</UseNativeHttpHandler>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">--expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
+    <!-- The -arg flag for xharness passes the arguments along to the instrumentation app -->
+    <AdditionalXHarnessArguments Condition="'$(XUnitMethodName)' != ''">$(AdditionalXHarnessArguments) --arg=-m=$(XUnitMethodName)</AdditionalXHarnessArguments>
+    <AdditionalXHarnessArguments Condition="'$(XUnitClassName)' != ''">$(AdditionalXHarnessArguments) --arg=-c=$(XUnitClassName)</AdditionalXHarnessArguments>
   </PropertyGroup>
 
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true'" TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
@@ -57,7 +80,6 @@
   <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
 
-    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables.-->
     <PropertyGroup>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
@@ -73,16 +95,9 @@
       </AotInputAssemblies>
     </ItemGroup>
 
-    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
-          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
-          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
-    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
-          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
-          DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
+    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
 
-    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" />
-    
-    <MakeDir Directories="$(_MobileIntermediateOutputPath)" 
+    <MakeDir Directories="$(_MobileIntermediateOutputPath)"
              Condition="'$(RunAOTCompilation)' == 'true'"/>
     <RemoveDir Directories="$(BundleDir)" />
 
@@ -138,7 +153,7 @@
            Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account." />
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
-    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" />
+    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
 
     <PropertyGroup>
       <Optimized>true</Optimized>

@@ -661,7 +661,7 @@ namespace System.Text
             /// <summary>
             /// Used to hold all the chunks indexes when you have many chunks.
             /// </summary>
-            private class ManyChunkInfo
+            private sealed class ManyChunkInfo
             {
                 private readonly StringBuilder[] _chunks;    // These are in normal order (first chunk first)
                 private int _chunkPos;

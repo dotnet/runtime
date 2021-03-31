@@ -946,7 +946,7 @@ StackWalkAction Thread::StackWalkFrames(PSTACKWALKFRAMESCALLBACK pCallback,
     bool fUseInitRegDisplay;
 
 #ifndef DACCESS_COMPILE
-    _ASSERTE(GetThread() == this || (flags & ALLOW_ASYNC_STACK_WALK));
+    _ASSERTE(GetThreadNULLOk() == this || (flags & ALLOW_ASYNC_STACK_WALK));
     BOOL fDebuggerHasInitialContext = (GetFilterContext() != NULL);
     BOOL fProfilerHasInitialContext = (GetProfilerFilterContext() != NULL);
 

@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdIcmpV6Statistics : IcmpV6Statistics
+    internal sealed class BsdIcmpV6Statistics : IcmpV6Statistics
     {
         private readonly long _destinationUnreachableMessagesReceived;
         private readonly long _destinationUnreachableMessagesSent;

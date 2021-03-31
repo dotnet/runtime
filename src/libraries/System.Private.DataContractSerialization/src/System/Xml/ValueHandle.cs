@@ -65,7 +65,7 @@ namespace System.Xml
         ConstString
     }
 
-    internal class ValueHandle
+    internal sealed class ValueHandle
     {
         private readonly XmlBufferReader _bufferReader;
         private ValueHandleType _type;

@@ -74,66 +74,6 @@ namespace System.Text.Json
                 converters.Add(converter.TypeToConvert, converter);
         }
 
-        internal JsonConverter GetDictionaryKeyConverter(Type keyType)
-        {
-            _dictionaryKeyConverters ??= GetDictionaryKeyConverters();
-
-            if (!_dictionaryKeyConverters.TryGetValue(keyType, out JsonConverter? converter))
-            {
-                if (keyType.IsEnum)
-                {
-                    converter = GetEnumConverter();
-                    _dictionaryKeyConverters[keyType] = converter;
-                }
-                else
-                {
-                    ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(keyType);
-                }
-            }
-
-            return converter!;
-
-            // Use factory pattern to generate an EnumConverter with AllowStrings and AllowNumbers options for dictionary keys.
-            // There will be one converter created for each enum type.
-            JsonConverter GetEnumConverter()
-                => EnumConverterFactory.Create(keyType, EnumConverterOptions.AllowStrings | EnumConverterOptions.AllowNumbers, this);
-        }
-
-        private ConcurrentDictionary<Type, JsonConverter>? _dictionaryKeyConverters;
-
-        private static ConcurrentDictionary<Type, JsonConverter> GetDictionaryKeyConverters()
-        {
-            const int NumberOfConverters = 18;
-            var converters = new ConcurrentDictionary<Type, JsonConverter>(Environment.ProcessorCount, NumberOfConverters);
-
-            // When adding to this, update NumberOfConverters above.
-            Add(s_defaultSimpleConverters[typeof(bool)]);
-            Add(s_defaultSimpleConverters[typeof(byte)]);
-            Add(s_defaultSimpleConverters[typeof(char)]);
-            Add(s_defaultSimpleConverters[typeof(DateTime)]);
-            Add(s_defaultSimpleConverters[typeof(DateTimeOffset)]);
-            Add(s_defaultSimpleConverters[typeof(double)]);
-            Add(s_defaultSimpleConverters[typeof(decimal)]);
-            Add(s_defaultSimpleConverters[typeof(Guid)]);
-            Add(s_defaultSimpleConverters[typeof(short)]);
-            Add(s_defaultSimpleConverters[typeof(int)]);
-            Add(s_defaultSimpleConverters[typeof(long)]);
-            Add(s_defaultSimpleConverters[typeof(object)]);
-            Add(s_defaultSimpleConverters[typeof(sbyte)]);
-            Add(s_defaultSimpleConverters[typeof(float)]);
-            Add(s_defaultSimpleConverters[typeof(string)]);
-            Add(s_defaultSimpleConverters[typeof(ushort)]);
-            Add(s_defaultSimpleConverters[typeof(uint)]);
-            Add(s_defaultSimpleConverters[typeof(ulong)]);
-
-            Debug.Assert(NumberOfConverters == converters.Count);
-
-            return converters;
-
-            void Add(JsonConverter converter) =>
-                converters[converter.TypeToConvert] = converter;
-        }
-
         /// <summary>
         /// The list of custom converters.
         /// </summary>
@@ -360,6 +300,5 @@ namespace System.Text.Json
             ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(attributeType, classType, memberInfo);
             return default;
         }
-
     }
 }

@@ -894,6 +894,8 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     {
         // This should really never happen, but fail gracefully if it does anyway.
         assert(false);
+        delete app;
+        app = nullptr;
         trace::error(_X("Failed to initialize empty runtime config for the component."));
         return StatusCode::InvalidConfigFile;
     }

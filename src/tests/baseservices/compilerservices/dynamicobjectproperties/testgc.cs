@@ -148,7 +148,7 @@ public class TestGC
         for (int i = 0; i < length; i++)
         {
             String key = "OtherKeyTestString" + i.ToString();
-            String value = "OtherValueTestString" + i.ToString();;
+            String value = "OtherValueTestString" + i.ToString();
             tbl.Add(key, value);
 
 

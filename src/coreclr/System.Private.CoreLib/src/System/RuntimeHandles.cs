@@ -209,8 +209,13 @@ namespace System
             return outHandles;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter)
+        internal static object CreateInstanceForAnotherGenericParameter(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
+            RuntimeType genericParameter)
         {
+            Debug.Assert(type.GetConstructor(Type.EmptyTypes) is ConstructorInfo c && c.IsPublic,
+                $"CreateInstanceForAnotherGenericParameter requires {nameof(type)} to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.");
+
             object? instantiatedObject = null;
 
             IntPtr typeHandle = genericParameter.GetTypeHandleInternal().Value;
@@ -224,8 +229,14 @@ namespace System
             return instantiatedObject!;
         }
 
-        internal static object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter1, RuntimeType genericParameter2)
+        internal static object CreateInstanceForAnotherGenericParameter(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
+            RuntimeType genericParameter1,
+            RuntimeType genericParameter2)
         {
+            Debug.Assert(type.GetConstructor(Type.EmptyTypes) is ConstructorInfo c && c.IsPublic,
+                $"CreateInstanceForAnotherGenericParameter requires {nameof(type)} to have a public parameterless constructor so it can be annotated for trimming without preserving private constructors.");
+
             object? instantiatedObject = null;
 
             IntPtr* pTypeHandles = stackalloc IntPtr[]
@@ -746,7 +757,7 @@ namespace System
         internal IntPtr m_handle;
     }
 
-    internal class RuntimeMethodInfoStub : IRuntimeMethodInfo
+    internal sealed class RuntimeMethodInfoStub : IRuntimeMethodInfo
     {
         public RuntimeMethodInfoStub(RuntimeMethodHandleInternal methodHandleValue, object keepalive)
         {
@@ -1095,7 +1106,7 @@ namespace System
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal class RuntimeFieldInfoStub : IRuntimeFieldInfo
+    internal sealed class RuntimeFieldInfoStub : IRuntimeFieldInfo
     {
         // These unused variables are used to ensure that this class has the same layout as RuntimeFieldInfo
 #pragma warning disable 414, 169

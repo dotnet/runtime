@@ -9,7 +9,7 @@ using System.Xml;
 
 namespace System.Xml.Xsl
 {
-    internal class QueryReaderSettings
+    internal sealed class QueryReaderSettings
     {
         private readonly bool _validatingReader;
         private readonly XmlReaderSettings? _xmlReaderSettings;

@@ -12,7 +12,7 @@ using OpenSsl = Interop.OpenSsl;
 
 namespace System.Net.Security
 {
-    internal class CipherSuitesPolicyPal
+    internal sealed class CipherSuitesPolicyPal
     {
         private static readonly byte[] AllowNoEncryptionDefault =
             Encoding.ASCII.GetBytes("ALL:eNULL\0");
@@ -184,7 +184,7 @@ namespace System.Net.Security
             }
         }
 
-        private class OpenSslStringBuilder : StreamWriter
+        private sealed class OpenSslStringBuilder : StreamWriter
         {
             private const string SSL_TXT_Separator = ":";
             private static readonly byte[] EmptyString = new byte[1] { 0 };

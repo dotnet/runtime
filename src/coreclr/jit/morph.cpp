@@ -6520,7 +6520,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 if (isStaticReadOnlyInited)
                 {
                     JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
-                    tree->gtFlags |= GTF_IND_INVARIANT;
+
+                    // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
+                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
                     tree->gtFlags &= ~GTF_ICON_INITCLASS;
                     addr->gtFlags = GTF_ICON_CONST_PTR;
                 }
@@ -9588,7 +9590,19 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
     // guarantee slow performance for that block. Instead cache the return value
     // of CORINFO_HELP_STRCNS and go to cache first giving reasonable perf.
 
+    bool useLazyStrCns = false;
     if (compCurBB->bbJumpKind == BBJ_THROW)
+    {
+        useLazyStrCns = true;
+    }
+    else if (fgGlobalMorph && compCurStmt->GetRootNode()->IsCall())
+    {
+        // Quick check: if the root node of the current statement happens to be a noreturn call.
+        GenTreeCall* call = compCurStmt->GetRootNode()->AsCall();
+        useLazyStrCns     = call->IsNoReturn() || fgIsThrow(call);
+    }
+
+    if (useLazyStrCns)
     {
         CorInfoHelpFunc helper = info.compCompHnd->getLazyStringLiteralHelper(tree->AsStrCon()->gtScpHnd);
         if (helper != CORINFO_HELP_UNDEF)
@@ -14397,8 +14411,12 @@ DONE_MORPHING_CHILDREN:
 
         case GT_NOT:
         case GT_NEG:
-            // Remove double negation/not
-            if (op1->OperIs(oper) && opts.OptimizationEnabled())
+            // Remove double negation/not.
+            // Note: this is not a safe tranformation if "tree" is a CSE candidate.
+            // Consider for example the following expression: NEG(NEG(OP)), where the top-level
+            // NEG is a CSE candidate. Were we to morph this to just OP, CSE would fail to find
+            // the original NEG in the statement.
+            if (op1->OperIs(oper) && opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree))
             {
                 GenTree* child = op1->AsOp()->gtGetOp1();
                 return child;
@@ -16643,7 +16661,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 #ifdef DEBUG
                         if (verbose)
                         {
-                            printf("Removing loop L%02u (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
+                            printf("Removing loop " FMT_LP " (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
                                    optLoopTable[loopNum].lpFirst->bbNum, optLoopTable[loopNum].lpBottom->bbNum);
                         }
 #endif

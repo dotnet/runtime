@@ -14,7 +14,7 @@ namespace System.Collections.Immutable
         /// Compares equality between two <see cref="HashBucket"/> instances
         /// by reference.
         /// </summary>
-        private class HashBucketByRefEqualityComparer : IEqualityComparer<HashBucket>
+        private sealed class HashBucketByRefEqualityComparer : IEqualityComparer<HashBucket>
         {
             /// <summary>
             /// The singleton instance.

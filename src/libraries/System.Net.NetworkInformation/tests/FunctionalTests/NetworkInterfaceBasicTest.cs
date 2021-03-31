@@ -108,7 +108,7 @@ namespace System.Net.NetworkInformation.Tests
                 string id = nic.Id;
                 Assert.False(string.IsNullOrEmpty(id), "NetworkInterface.Id should not be null or empty.");
                 _log.WriteLine("ID: " + id);
-                Assert.Throws<PlatformNotSupportedException>(() => nic.IsReceiveOnly);
+                Assert.False(nic.IsReceiveOnly);
                 _log.WriteLine("Type: " + nic.NetworkInterfaceType);
                 _log.WriteLine("Status: " + nic.OperationalStatus);
                 _log.WriteLine("Speed: " + nic.Speed);
