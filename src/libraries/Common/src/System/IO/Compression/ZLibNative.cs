@@ -281,6 +281,14 @@ namespace System.IO.Compression
             }
 
 
+            public ErrorCode DeflateReset()
+            {
+                EnsureNotDisposed();
+                EnsureState(State.InitializedForDeflate);
+                return Interop.zlib.DeflateReset(ref _zStream);
+            }
+
+
             public ErrorCode DeflateEnd()
             {
                 EnsureNotDisposed();
@@ -310,6 +318,14 @@ namespace System.IO.Compression
                 EnsureNotDisposed();
                 EnsureState(State.InitializedForInflate);
                 return Interop.zlib.Inflate(ref _zStream, flush);
+            }
+
+
+            public ErrorCode InflateReset()
+            {
+                EnsureNotDisposed();
+                EnsureState(State.InitializedForInflate);
+                return Interop.zlib.InflateReset(ref _zStream);
             }
 
 
