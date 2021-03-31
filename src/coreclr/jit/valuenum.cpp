@@ -9407,28 +9407,41 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     else
     {
         NamedIntrinsic ni = gtGetNamedIntrinsicForCall(call);
-        if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
+        if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
+            (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
         {
-            call->gtVNPair.SetBoth(vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultEqualityComparer));
+            bool                 isExact   = false;
+            bool                 isNotNull = false;
+            CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(call, &isExact, &isNotNull);
+            if ((cls != nullptr) && isExact && isNotNull)
+            {
+                ValueNum clsVN = vnStore->VNForHandle(ssize_t(cls), GTF_ICON_CLASS_HDL);
+                ValueNum funcVN;
+                if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
+                {
+                    funcVN = vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultEqualityComparer, clsVN);
+                }
+                else
+                {
+                    assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
+                    funcVN = vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultComparer, clsVN);
+                }
+                call->gtVNPair.SetBoth(funcVN);
+                return;
+            }
         }
-        else if (ni == NI_System_Collections_Generic_Comparer_get_Default)
+
+        if (call->TypeGet() == TYP_VOID)
         {
-            call->gtVNPair.SetBoth(vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultComparer));
+            call->gtVNPair.SetBoth(ValueNumStore::VNForVoid());
         }
         else
         {
-            if (call->TypeGet() == TYP_VOID)
-            {
-                call->gtVNPair.SetBoth(ValueNumStore::VNForVoid());
-            }
-            else
-            {
-                call->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
-            }
-
-            // For now, arbitrary side effect on GcHeap/ByrefExposed.
-            fgMutateGcHeap(call DEBUGARG("CALL"));
+            call->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
         }
+
+        // For now, arbitrary side effect on GcHeap/ByrefExposed.
+        fgMutateGcHeap(call DEBUGARG("CALL"));
     }
 }
 
