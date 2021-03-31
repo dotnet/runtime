@@ -957,7 +957,7 @@ namespace Internal.JitInterface
             bool isFauxMethodIL = !(methodILDef is EcmaMethodIL);
             if (isFauxMethodIL)
             {
-                object resultDef = methodILDef.GetObject((int)pResolvedToken.token, NotFoundBehavior.Throw);
+                object resultDef = methodILDef.GetObject((int)pResolvedToken.token);
 
                 if (resultDef is MethodDesc resultMethod)
                 {
@@ -1522,7 +1522,7 @@ namespace Internal.JitInterface
                     exactType == MethodBeingCompiled.OwningType)
                 {
                     var methodIL = HandleToObject(pResolvedToken.tokenScope);
-                    var rawMethod = (MethodDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token, NotFoundBehavior.Throw);
+                    var rawMethod = (MethodDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token);
                     if (IsTypeSpecForTypicalInstantiation(rawMethod.OwningType))
                     {
                         pResult->contextHandle = contextFromMethodBeingCompiled();

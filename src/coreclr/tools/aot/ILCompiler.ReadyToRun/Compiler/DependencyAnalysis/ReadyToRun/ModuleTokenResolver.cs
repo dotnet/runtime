@@ -323,7 +323,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public DummyTypeInfo GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
             {
-                _resolver.AddModuleTokenForType((TypeDesc)_contextModule.GetObject(handle, NotFoundBehavior.Throw), new ModuleToken(_contextModule, handle));
+                _resolver.AddModuleTokenForType((TypeDesc)_contextModule.GetObject(handle), new ModuleToken(_contextModule, handle));
                 return DummyTypeInfo.Instance;
             }
 

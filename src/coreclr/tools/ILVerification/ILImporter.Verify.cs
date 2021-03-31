@@ -1186,7 +1186,7 @@ again:
             Object tokenObj = null;
             try
             {
-                tokenObj = _methodIL.GetObject(token, NotFoundBehavior.Throw);
+                tokenObj = _methodIL.GetObject(token);
             }
             catch (BadImageFormatException)
             {
@@ -2233,7 +2233,7 @@ again:
 
         void ImportLoadString(int token)
         {
-            object tokenObj = _methodIL.GetObject(token, NotFoundBehavior.Throw);
+            object tokenObj = _methodIL.GetObject(token);
             Check(tokenObj is String, VerifierError.StringOperand);
 
             Push(StackValue.CreateObjRef(_typeSystemContext.GetWellKnownType(WellKnownType.String)));

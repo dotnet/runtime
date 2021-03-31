@@ -131,7 +131,7 @@ namespace Internal.IL
             return _ilExceptionRegions;
         }
 
-        public override object GetObject(int token, NotFoundBehavior notFoundBehavior)
+        public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw)
         {
             // UserStrings cannot be wrapped in EntityHandle
             if ((token & 0xFF000000) == 0x70000000)

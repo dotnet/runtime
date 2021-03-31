@@ -64,8 +64,8 @@ namespace Internal.TypeSystem.Ecma
                 if (foundRecord)
                 {
                     MethodImplRecord newRecord = new MethodImplRecord(
-                        (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration, NotFoundBehavior.Throw),
-                        (MethodDesc)_module.GetObject(methodImpl.MethodBody, NotFoundBehavior.Throw));
+                        (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration),
+                        (MethodDesc)_module.GetObject(methodImpl.MethodBody));
 
                     foundRecords.Add(newRecord);
                 }
@@ -103,12 +103,12 @@ namespace Internal.TypeSystem.Ecma
                 switch (methodDeclHandleKind)
                 {
                     case HandleKind.MethodDefinition:
-                        owningType = ((MethodDesc)_module.GetObject(methodDeclCheckHandle, NotFoundBehavior.Throw)).OwningType as MetadataType;
+                        owningType = ((MethodDesc)_module.GetObject(methodDeclCheckHandle)).OwningType as MetadataType;
                         break;
 
                     case HandleKind.MemberReference:
                         EntityHandle owningTypeHandle = metadataReader.GetMemberReference((MemberReferenceHandle)methodDeclCheckHandle).Parent;
-                        owningType = _module.GetObject(owningTypeHandle, NotFoundBehavior.Throw) as MetadataType;
+                        owningType = _module.GetObject(owningTypeHandle) as MetadataType;
                         break;
 
                     default:
@@ -119,8 +119,8 @@ namespace Internal.TypeSystem.Ecma
                 if (!owningType.IsInterface)
                 {
                     MethodImplRecord newRecord = new MethodImplRecord(
-                        (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration, NotFoundBehavior.Throw),
-                        (MethodDesc)_module.GetObject(methodImpl.MethodBody, NotFoundBehavior.Throw));
+                        (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration),
+                        (MethodDesc)_module.GetObject(methodImpl.MethodBody));
                     records.Add(newRecord);
                 }
             }

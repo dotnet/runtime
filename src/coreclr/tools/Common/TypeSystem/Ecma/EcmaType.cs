@@ -306,7 +306,7 @@ namespace Internal.TypeSystem.Ecma
         {
             foreach (var handle in _typeDefinition.GetMethods())
             {
-                yield return (MethodDesc)_module.GetObject(handle, NotFoundBehavior.Throw);
+                yield return (MethodDesc)_module.GetObject(handle);
             }
         }
 
@@ -319,7 +319,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 if (stringComparer.Equals(metadataReader.GetMethodDefinition(handle).Name, name))
                 {
-                    MethodDesc method = (MethodDesc)_module.GetObject(handle, NotFoundBehavior.ReturnNull);
+                    MethodDesc method = (MethodDesc)_module.GetObject(handle);
                     if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
                         return method;
                 }
@@ -339,7 +339,7 @@ namespace Internal.TypeSystem.Ecma
                 if (methodDefinition.Attributes.IsRuntimeSpecialName() &&
                     stringComparer.Equals(methodDefinition.Name, ".cctor"))
                 {
-                    MethodDesc method = (MethodDesc)_module.GetObject(handle, NotFoundBehavior.Throw);
+                    MethodDesc method = (MethodDesc)_module.GetObject(handle);
                     return method;
                 }
             }
@@ -362,7 +362,7 @@ namespace Internal.TypeSystem.Ecma
                 if (attributes.IsRuntimeSpecialName() && attributes.IsPublic()
                     && stringComparer.Equals(methodDefinition.Name, ".ctor"))
                 {
-                    MethodDesc method = (MethodDesc)_module.GetObject(handle, NotFoundBehavior.Throw);
+                    MethodDesc method = (MethodDesc)_module.GetObject(handle);
                     if (method.Signature.Length != 0)
                         continue;
 
@@ -409,7 +409,7 @@ namespace Internal.TypeSystem.Ecma
         {
             foreach (var handle in _typeDefinition.GetFields())
             {
-                var field = (EcmaField)_module.GetObject(handle, NotFoundBehavior.Throw);
+                var field = (EcmaField)_module.GetObject(handle);
                 yield return field;
             }
         }
@@ -423,7 +423,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 if (stringComparer.Equals(metadataReader.GetFieldDefinition(handle).Name, name))
                 {
-                    var field = (EcmaField)_module.GetObject(handle, NotFoundBehavior.ReturnNull);
+                    var field = (EcmaField)_module.GetObject(handle);
                     return field;
                 }
             }
@@ -435,7 +435,7 @@ namespace Internal.TypeSystem.Ecma
         {
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
-                yield return (MetadataType)_module.GetObject(handle, NotFoundBehavior.Throw);
+                yield return (MetadataType)_module.GetObject(handle);
             }
         }
 
@@ -460,7 +460,7 @@ namespace Internal.TypeSystem.Ecma
                 }
 
                 if (nameMatched)
-                    return (MetadataType)_module.GetObject(handle, NotFoundBehavior.ReturnNull);
+                    return (MetadataType)_module.GetObject(handle);
             }
 
             return null;
@@ -527,7 +527,7 @@ namespace Internal.TypeSystem.Ecma
                     // Note: GetOffset() returns -1 when offset was not set in the metadata
                     int specifiedOffset = fieldDefinition.GetOffset();
                     result.Offsets[index] =
-                        new FieldAndOffset((FieldDesc)_module.GetObject(handle, NotFoundBehavior.Throw), specifiedOffset == -1 ? FieldAndOffset.InvalidOffset : new LayoutInt(specifiedOffset));
+                        new FieldAndOffset((FieldDesc)_module.GetObject(handle), specifiedOffset == -1 ? FieldAndOffset.InvalidOffset : new LayoutInt(specifiedOffset));
 
                     index++;
                 }

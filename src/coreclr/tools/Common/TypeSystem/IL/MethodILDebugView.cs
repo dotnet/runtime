@@ -106,7 +106,7 @@ namespace Internal.IL
                     {
                         case ILExceptionRegionKind.Catch:
                             sb.Append(" catch ");
-                            disasm.AppendType(sb, (TypeDesc)_methodIL.GetObject(region.ClassToken, NotFoundBehavior.Throw));
+                            disasm.AppendType(sb, (TypeDesc)_methodIL.GetObject(region.ClassToken));
                             break;
                         case ILExceptionRegionKind.Fault:
                             sb.Append(" fault");

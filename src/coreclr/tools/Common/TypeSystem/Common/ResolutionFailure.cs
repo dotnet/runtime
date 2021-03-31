@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    public class ResolutionFailure
+    public sealed class ResolutionFailure
     {
         private enum FailureType
         {

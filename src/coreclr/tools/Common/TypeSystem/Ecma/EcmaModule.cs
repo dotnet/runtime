@@ -149,7 +149,9 @@ namespace Internal.TypeSystem.Ecma
                         break;
 
                     default:
-                        throw new BadImageFormatException("Unknown metadata token type: " + handle.Kind);
+                        ThrowHelper.ThrowBadImageFormatException("unknown metadata token type: " + handle.Kind);
+                        item = null;
+                        break;
                 }
 
                 switch (handle.Kind)
@@ -261,7 +263,8 @@ namespace Internal.TypeSystem.Ecma
                 }
 
                 // Bad metadata
-                throw new BadImageFormatException();
+                ThrowHelper.ThrowBadImageFormatException();
+                return null;
             }
         }
 
@@ -340,7 +343,7 @@ namespace Internal.TypeSystem.Ecma
         {
             TypeDesc type = GetObject(handle, NotFoundBehavior.Throw) as TypeDesc;
             if (type == null)
-                throw new BadImageFormatException("Type expected");
+                ThrowHelper.ThrowBadImageFormatException($"type expected for handle {handle.ToString()}");
             return type;
         }
 
@@ -348,7 +351,7 @@ namespace Internal.TypeSystem.Ecma
         {
             MethodDesc method = GetObject(handle, NotFoundBehavior.Throw) as MethodDesc;
             if (method == null)
-                throw new BadImageFormatException("Method expected");
+                ThrowHelper.ThrowBadImageFormatException($"method expected for handle {handle.ToString()}");
             return method;
         }
 
@@ -356,11 +359,11 @@ namespace Internal.TypeSystem.Ecma
         {
             FieldDesc field = GetObject(handle, NotFoundBehavior.Throw) as FieldDesc;
             if (field == null)
-                throw new BadImageFormatException("Field expected");
+                ThrowHelper.ThrowBadImageFormatException($"field expected for handle {handle.ToString()}");
             return field;
         }
 
-        public Object GetObject(EntityHandle handle, NotFoundBehavior notFoundBehavior)
+        public Object GetObject(EntityHandle handle, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw)
         {
             IEntityHandleObject obj = _resolvedTokens.GetOrCreateValue(handle);
             if (obj is EcmaObjectLookupWrapper)
@@ -391,7 +394,7 @@ namespace Internal.TypeSystem.Ecma
 
             MethodDesc methodDef = resolvedMethod as MethodDesc;
             if (methodDef == null)
-                throw new BadImageFormatException("Method expected");
+                ThrowHelper.ThrowBadImageFormatException($"method expected for handle {handle.ToString()}");
 
             BlobReader signatureReader = _metadataReader.GetBlobReader(methodSpecification.Signature);
             EcmaSignatureParser parser = new EcmaSignatureParser(this, signatureReader, NotFoundBehavior.ReturnResolutionFailure);
@@ -516,7 +519,8 @@ namespace Internal.TypeSystem.Ecma
                 throw new NotImplementedException("MemberRef to a global function or variable.");
             }
 
-            throw new BadImageFormatException();
+            ThrowHelper.ThrowBadImageFormatException();
+            return null;
         }
 
         private Object ResolveTypeReference(TypeReferenceHandle handle)
@@ -609,7 +613,8 @@ namespace Internal.TypeSystem.Ecma
             }
             else
             {
-                throw new BadImageFormatException("Unknown metadata token type for exported type");
+                ThrowHelper.ThrowBadImageFormatException();
+                return null;
             }
         }
 

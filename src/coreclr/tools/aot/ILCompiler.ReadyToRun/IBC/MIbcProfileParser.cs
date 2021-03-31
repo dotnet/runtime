@@ -149,7 +149,7 @@ namespace ILCompiler.IBC
                         Debug.Assert(mibcGroupName == "");
                         if (mibcGroupName == "")
                         {
-                            mibcGroupName = (string)ilBody.GetObject(userStringToken, NotFoundBehavior.Throw);
+                            mibcGroupName = (string)ilBody.GetObject(userStringToken);
                         }
                         break;
 
@@ -185,7 +185,7 @@ namespace ILCompiler.IBC
                                 break;
                         }
 
-                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject(token, NotFoundBehavior.Throw)));
+                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject(token)));
                         break;
                     case ILOpcode.pop:
                         mibcGroupName = "";
@@ -392,7 +392,7 @@ namespace ILCompiler.IBC
                     case ILOpcode.ldstr:
                         {
                             int userStringToken = ilReader.ReadILToken();
-                            string optionalDataName = (string)ilBody.GetObject(userStringToken, NotFoundBehavior.Throw);
+                            string optionalDataName = (string)ilBody.GetObject(userStringToken);
                             switch (optionalDataName)
                             {
                                 case "ExclusiveWeight":
