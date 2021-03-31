@@ -20,13 +20,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private readonly object _disposeLock = new object();
 
         // This protects resolved services, this is only used if isRoot is false
-        private readonly object _scopeLock;
+        private readonly object _scopeLock = new object();
 
         public ServiceProviderEngineScope(ServiceProviderEngine engine, bool isRoot = false)
         {
             Engine = engine;
             _state = isRoot ? new ScopePool.State() : engine.ScopePool.Rent();
-            _scopeLock = isRoot ? null : new object();
         }
 
         internal IDictionary<ServiceCacheKey, object> ResolvedServices => _state?.ResolvedServices ?? ScopeDisposed();

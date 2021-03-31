@@ -123,7 +123,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // For scoped: takes a dictionary as both a resolution lock and a dictionary access lock.
             Debug.Assert(
                 (lockType == RuntimeResolverLock.Root && resolvedServices is ConcurrentDictionary<ServiceCacheKey, object>) ||
-                (lockType == RuntimeResolverLock.Scope && Monitor.IsEntered(resolvedServices)));
+                (lockType == RuntimeResolverLock.Scope && Monitor.IsEntered(serviceProviderEngine.Sync)));
 
             if (resolvedServices.TryGetValue(callSite.Cache.Key, out object resolved))
             {
