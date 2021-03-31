@@ -9,8 +9,8 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Strategies
 {
-    // This type is partial so we can avoid code duplication between Windows and Unix Legacy implementations
-    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
+    // This type is partial so we can avoid code duplication between Windows and Unix Net5Compat implementations
+    internal sealed partial class Net5CompatFileStreamStrategy : FileStreamStrategy
     {
         private byte[]? _buffer;
         private readonly int _bufferLength;
@@ -61,7 +61,7 @@ namespace System.IO.Strategies
         /// <summary>Whether the file stream's handle has been exposed.</summary>
         private bool _exposedHandle;
 
-        internal LegacyFileStreamStrategy(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        internal Net5CompatFileStreamStrategy(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             _exposedHandle = true;
             _bufferLength = bufferSize;
@@ -78,7 +78,7 @@ namespace System.IO.Strategies
             _fileHandle = handle;
         }
 
-        internal LegacyFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        internal Net5CompatFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
             string fullPath = Path.GetFullPath(path);
 
@@ -105,7 +105,7 @@ namespace System.IO.Strategies
             }
         }
 
-        ~LegacyFileStreamStrategy() => Dispose(false); // mandatory to Flush the write buffer
+        ~Net5CompatFileStreamStrategy() => Dispose(false); // mandatory to Flush the write buffer
 
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
