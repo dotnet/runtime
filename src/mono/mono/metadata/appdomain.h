@@ -100,7 +100,7 @@ mono_domain_is_unloading   (MonoDomain *domain);
 MONO_API MONO_RT_EXTERNAL_ONLY MonoDomain *
 mono_domain_from_appdomain (MonoAppDomain *appdomain);
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_domain_foreach        (MonoDomainFunc func, void* user_data);
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoAssembly *

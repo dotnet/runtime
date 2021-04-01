@@ -568,26 +568,6 @@ mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exce
 	}
 }
 
-/**
- * mono_domain_foreach:
- * \param func function to invoke with the domain data
- * \param user_data user-defined pointer that is passed to the supplied \p func fo reach domain
- *
- * Use this method to safely iterate over all the loaded application
- * domains in the current runtime.   The provided \p func is invoked with a
- * pointer to the \c MonoDomain and is given the value of the \p user_data
- * parameter which can be used to pass state to your called routine.
- */
-void
-mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
-{
-	MONO_ENTER_GC_UNSAFE;
-
-	func (mono_get_root_domain (), user_data);
-
-	MONO_EXIT_GC_UNSAFE;
-}
-
 // Intended only for loading the main assembly
 MonoAssembly *
 mono_domain_assembly_open_internal (MonoAssemblyLoadContext *alc, const char *name)

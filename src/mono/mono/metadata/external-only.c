@@ -578,3 +578,23 @@ mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
 {
 	mono_runtime_ensure_entry_assembly (assembly);
 }
+
+/**
+ * mono_domain_foreach:
+ * \param func function to invoke with the domain data
+ * \param user_data user-defined pointer that is passed to the supplied \p func fo reach domain
+ *
+ * Use this method to safely iterate over all the loaded application
+ * domains in the current runtime.   The provided \p func is invoked with a
+ * pointer to the \c MonoDomain and is given the value of the \p user_data
+ * parameter which can be used to pass state to your called routine.
+ */
+void
+mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
+{
+	MONO_ENTER_GC_UNSAFE;
+
+	func (mono_get_root_domain (), user_data);
+
+	MONO_EXIT_GC_UNSAFE;
+}

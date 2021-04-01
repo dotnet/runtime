@@ -7095,7 +7095,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			case EVENT_KIND_ASSEMBLY_LOAD:
 				/* Emit load events for currently loaded assemblies */
-				mono_domain_foreach (send_assemblies_for_domain, NULL);
+				send_assemblies_for_domain (mono_get_root_domain (), NULL);
 				break;
 			case EVENT_KIND_THREAD_START:
 				/* Emit start events for currently started threads */
@@ -7103,7 +7103,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			case EVENT_KIND_TYPE_LOAD:
 				/* Emit type load events for currently loaded types */
-				mono_domain_foreach (send_types_for_domain, NULL);
+				send_types_for_domain (mono_get_root_domain (), NULL);
 				break;
 			default:
 				break;
