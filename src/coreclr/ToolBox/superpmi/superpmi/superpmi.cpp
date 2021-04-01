@@ -244,6 +244,7 @@ int __cdecl main(int argc, char* argv[])
     int matchCount        = 0;
     int failToReplayCount = 0;
     int errorCount        = 0;
+    int errorCount2       = 0;
     int missingCount      = 0;
     int index             = 0;
     int excludedCount     = 0;
@@ -384,8 +385,14 @@ int __cdecl main(int argc, char* argv[])
 
             if (res2 == JitInstance::RESULT_ERROR)
             {
+                errorCount2++;
                 LogError("JIT2 main method %d of size %d failed to load and compile correctly.",
                          reader->GetMethodContextIndex(), mc->methodSize);
+                if (errorCount2 == 100)
+                {
+                    LogError("More than 100 JIT2 methods failed. Skip compiling remaining JIT2 methods.");
+                    break;
+                }
             }
 
             // Methods that don't compile due to missing JIT-EE information
@@ -608,7 +615,7 @@ int __cdecl main(int argc, char* argv[])
 
     SpmiResult result = SpmiResult::Success;
 
-    if (errorCount > 0)
+    if ((errorCount > 0) || (errorCount2 > 0))
     {
         result = SpmiResult::Error;
     }
