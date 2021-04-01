@@ -657,25 +657,45 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
     assert(tree->OperIsDereference());
 
     GenTree* addr;
-    if (tree->OperIs(GT_ARR_LENGTH))
-    {
-        addr = tree->AsArrLen()->ArrRef();
-    }
-    else if (tree->OperIsIndir())
+    if (tree->OperIsIndir())
     {
         addr = tree->AsIndir()->Addr();
     }
-    else if (tree->OperIs(GT_XORR, GT_XAND, GT_XADD, GT_XCHG))
-    {
-        const bool commaOnly = true;
-        addr                 = tree->AsOp()->gtGetOp1()->gtEffectiveVal(commaOnly);
-    }
     else
     {
-        // TODO-CQ: Support other implicit indir cases.
-        assert(tree->OperIsImplicitIndir());
-        return nullptr;
+        switch (tree->OperGet())
+        {
+            case GT_ARR_LENGTH:
+                addr = tree->AsArrLen()->ArrRef();
+                break;
+
+            case GT_XORR:
+            case GT_XAND:
+            case GT_XADD:
+            case GT_XCHG:
+            case GT_LOCKADD:
+            case GT_ARR_INDEX:
+            {
+                const bool commaOnly = true;
+
+                addr = tree->AsOp()->gtGetOp1()->gtEffectiveVal(commaOnly);
+                break;
+            }
+
+            case GT_CMPXCHG:
+                addr = tree->AsCmpXchg()->gtOpLocation;
+                break;
+
+            case GT_BOX:
+                addr = tree->AsBox()->BoxOp();
+                break;
+
+            default:
+                assert(tree->OperIsImplicitIndir());
+                return nullptr;
+        }
     }
+
     assert(addr != nullptr);
 
     ssize_t offsetValue = 0;

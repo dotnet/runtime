@@ -16090,6 +16090,11 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             tree->gtFlags |= tree->AsCmpXchg()->gtOpLocation->gtFlags & GTF_ALL_EFFECT;
             tree->gtFlags |= tree->AsCmpXchg()->gtOpValue->gtFlags & GTF_ALL_EFFECT;
             tree->gtFlags |= tree->AsCmpXchg()->gtOpComparand->gtFlags & GTF_ALL_EFFECT;
+
+            if (fgAddrCouldBeNull(tree->AsCmpXchg()->gtOpLocation))
+            {
+                tree->gtFlags |= GTF_EXCEPT;
+            }
             break;
 
         case GT_STORE_DYN_BLK:

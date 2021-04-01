@@ -3870,6 +3870,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             GenTree* node = new (this, GT_CMPXCHG) GenTreeCmpXchg(genActualType(callType), op1, op2, op3);
 
             node->AsCmpXchg()->gtOpLocation->gtFlags |= GTF_DONT_CSE;
+            if (fgAddrCouldBeNull(op1))
+            {
+                node->gtFlags |= GTF_EXCEPT;
+            }
             retNode = node;
             break;
         }

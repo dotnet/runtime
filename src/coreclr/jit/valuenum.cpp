@@ -10297,8 +10297,18 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
             case GT_XORR:
             case GT_XADD:
             case GT_XCHG:
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtGetOp1());
+            case GT_LOCKADD:
+            {
+                GenTree* addr = tree->AsOp()->gtGetOp1();
+                fgValueNumberAddExceptionSetForIndirection(tree, addr);
                 break;
+            }
+
+            case GT_CMPXCHG:
+            {
+                GenTree* addr = tree->AsCmpXchg()->gtOpLocation;
+                fgValueNumberAddExceptionSetForIndirection(tree, addr);
+            }
 
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:

@@ -5761,8 +5761,15 @@ bool GenTree::OperMayThrow(Compiler* comp)
         case GT_XORR:
         case GT_XADD:
         case GT_XCHG:
+        case GT_LOCKADD:
         {
             GenTree* addr = this->AsOp()->gtGetOp1();
+            return comp->fgAddrCouldBeNull(addr);
+        }
+
+        case GT_CMPXCHG:
+        {
+            GenTree* addr = this->AsCmpXchg()->gtOpLocation;
             return comp->fgAddrCouldBeNull(addr);
         }
 
