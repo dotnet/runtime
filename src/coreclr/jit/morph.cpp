@@ -17697,8 +17697,8 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 
     assert(qmark->gtFlags & GTF_QMARK_CAST_INSTOF);
 
-    float currBbWeight = block->bbWeight;
-    float nextBbWeight = (block->bbNext != nullptr) ? block->bbNext->bbWeight : currBbWeight;
+    const BasicBlock::weight_t currBbWeight = block->bbWeight;
+    const BasicBlock::weight_t nextBbWeight = (block->bbNext != nullptr) ? block->bbNext->bbWeight : currBbWeight;
 
     // Get cond, true, false exprs for the qmark.
     GenTree* condExpr  = qmark->gtGetOp1();
@@ -17787,16 +17787,27 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 
     // Currently, we don't instrument internal blocks, so the only way we can set weights to these blocks
     // is to analyze successors and take a guess.
-    float cond2BlockWeight = 0;
-    if (currBbWeight > 0)
+    UINT32 cond2BlockLikelihood  = BB_ZERO_WEIGHT;
+    UINT32 helperBlockLikelihood = BB_ZERO_WEIGHT;
+
+    // We don't expand casts inside rarely executed blocks, but currently we skip only blocks
+    // with BBF_RUN_RARELY flag and still can hit zero weight here (in that cases all internal blocks
+    // will also have zero weight).
+    if (currBbWeight > BB_ZERO_WEIGHT)
     {
-        cond2BlockWeight = min(max(50.0f * nextBbWeight / currBbWeight + 50.0f, 50.0f), 100.0f);
+        const BasicBlock::weight_t castSuccessLikelihood = clamp(nextBbWeight / currBbWeight, 0.0f, 1.0f);
+
+        // cond2Block is always taken if the cast always succeeds (helperBlock will be cold in this case)
+        // If it always fails the only guess we can make that it's either object is null or of a
+        // wrong type (50/50).
+        cond2BlockLikelihood  = (UINT32)(castSuccessLikelihood * 50.0f) + 50;
+        helperBlockLikelihood = 100 - cond2BlockLikelihood;
     }
 
     asgBlock->inheritWeight(block);
     cond1Block->inheritWeight(block);
-    cond2Block->inheritWeightPercentage(block, (UINT32)cond2BlockWeight);
-    helperBlock->inheritWeightPercentage(block, 100 - (UINT32)cond2BlockWeight);
+    cond2Block->inheritWeightPercentage(block, cond2BlockLikelihood);
+    helperBlock->inheritWeightPercentage(block, helperBlockLikelihood);
 
     // Append cond1 as JTRUE to cond1Block
     GenTree*   jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condExpr);

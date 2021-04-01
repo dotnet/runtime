@@ -41,6 +41,13 @@ inline bool isPow2(T i)
     return (i > 0 && ((i - 1) & i) == 0);
 }
 
+// Clamps the given value between the given lower and upper values
+template <typename T>
+inline bool clamp(T value, T lower, T upper)
+{
+    return max(lower, min(value, upper));
+}
+
 // Adapter for iterators to a type that is compatible with C++11
 // range-based for loops.
 template <typename TIterator>
