@@ -102,17 +102,7 @@ elseif(CLR_CMAKE_HOST_UNIX)
     list(APPEND COREDBI_LIBRARIES
         mdhotdata_full
         palrt
-    )
-
-    # Due to the pal_redefines_file adding redirects
-    # on Linux, the coreclrpal must be used only on OSX.
-    if(CLR_CMAKE_HOST_OSX)
-        list(APPEND COREDBI_LIBRARIES
-            coreclrpal
-        )
-    endif(CLR_CMAKE_HOST_OSX)
-
-    list(APPEND COREDBI_LIBRARIES
+        # share the PAL in the dac module
         mscordaccore
     )
 
