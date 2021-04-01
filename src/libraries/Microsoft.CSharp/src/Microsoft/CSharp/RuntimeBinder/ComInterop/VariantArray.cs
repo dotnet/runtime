@@ -62,7 +62,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
-            Justification = "MakeGenericType is called on a dynamically created or have dynamic dependency.")]
+            Justification = "MakeGenericType is called on a dynamically created type that doesn't contain trimming annotations.")]
         internal static Type GetStructType(int args)
         {
             Debug.Assert(args >= 0);

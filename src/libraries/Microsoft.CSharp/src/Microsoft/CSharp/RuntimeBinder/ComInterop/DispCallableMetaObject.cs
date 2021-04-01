@@ -73,8 +73,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return base.BindSetIndex(binder, indexes, value);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private DynamicMetaObject BindComInvoke(ComMethodDesc method, DynamicMetaObject[] indexes, CallInfo callInfo, bool[] isByRef)
         {
             Expression callable = Expression;
@@ -94,6 +93,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             ).Invoke();
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private BindingRestrictions DispCallableRestrictions()
         {
             Expression callable = Expression;

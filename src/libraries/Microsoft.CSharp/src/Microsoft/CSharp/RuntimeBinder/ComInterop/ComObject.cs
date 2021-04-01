@@ -94,11 +94,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return new ComObject(rcw);
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal virtual IList<string> GetMemberNames(bool dataOnly)
         {
             return Array.Empty<string>();
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal virtual IList<KeyValuePair<string, object>> GetMembers(IEnumerable<string> names)
         {
             return Array.Empty<KeyValuePair<string, object>>();
