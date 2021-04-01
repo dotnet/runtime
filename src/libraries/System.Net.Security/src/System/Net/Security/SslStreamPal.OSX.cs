@@ -139,23 +139,23 @@ namespace System.Net.Security
 
         public static SecurityStatusPal DecryptMessage(
             SafeDeleteContext securityContext,
-            byte[] buffer,
-            ref int offset,
-            ref int count)
+            ReadOnlySpan<byte> input,
+            Span<byte> output,
+            ref int outputOffset,
+            ref int outputCount)
         {
             try
             {
                 SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
                 SafeSslHandle sslHandle = sslContext.SslContext;
 
-                sslContext.Write(buffer.AsSpan(offset, count));
+                sslContext.Write(input);
 
                 unsafe
                 {
-                    fixed (byte* offsetInput = &buffer[offset])
+                    fixed (byte* ptr = output)
                     {
-                        PAL_TlsIo status = Interop.AppleCrypto.SslRead(sslHandle, offsetInput, count, out int written);
-
+                        PAL_TlsIo status = Interop.AppleCrypto.SslRead(sslHandle, ptr, output.Length, out int written);
                         if (status < 0)
                         {
                             return new SecurityStatusPal(
@@ -163,7 +163,8 @@ namespace System.Net.Security
                                 Interop.AppleCrypto.CreateExceptionForOSStatus((int)status));
                         }
 
-                        count = written;
+                        outputCount = written;
+                        outputOffset = 0;
 
                         switch (status)
                         {

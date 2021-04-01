@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
-using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
@@ -44,16 +43,18 @@ namespace System.Net.Security
 
         public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
         {
-            return EncryptDecryptHelper(securityContext, input, offset: 0, size: 0, encrypt: true, output: ref output, resultSize: out resultSize);
+            return EncryptDecryptHelper(securityContext, input.Span, Span<byte>.Empty, encrypt: true, newBuffer: ref output, resultSize: out resultSize);
         }
 
-        public static SecurityStatusPal DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count)
+        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext? securityContext, ReadOnlySpan<byte> input, Span<byte> output, ref int outputOffset, ref int outputCount)
         {
-            SecurityStatusPal retVal = EncryptDecryptHelper(securityContext, buffer, offset, count, false, ref buffer, out int resultSize);
+            byte[] buffer = Array.Empty<byte>();
+            SecurityStatusPal retVal = EncryptDecryptHelper(securityContext!, input, output, encrypt: false, out int resultSize, ref buffer);
             if (retVal.ErrorCode == SecurityStatusPalErrorCode.OK ||
                 retVal.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
             {
-                count = resultSize;
+                outputOffset = 0;
+                outputCount = resultSize;
             }
             return retVal;
         }
@@ -150,7 +151,7 @@ namespace System.Net.Security
             return Interop.Ssl.SslGetAlpnSelected(((SafeDeleteSslContext)context).SslContext);
         }
 
-        private static SecurityStatusPal EncryptDecryptHelper(SafeDeleteContext securityContext, ReadOnlyMemory<byte> input, int offset, int size, bool encrypt, ref byte[] output, out int resultSize)
+        private static SecurityStatusPal EncryptDecryptHelper(SafeDeleteContext securityContext, ReadOnlySpan<byte> input, Span<byte> output, bool encrypt, out int resultSize, ref byte[] newBuffer)
         {
             resultSize = 0;
             try
@@ -160,11 +161,11 @@ namespace System.Net.Security
 
                 if (encrypt)
                 {
-                    resultSize = Interop.OpenSsl.Encrypt(scHandle, input.Span, ref output, out errorCode);
+                    resultSize = Interop.OpenSsl.Encrypt(scHandle, input, ref newBuffer, out errorCode);
                 }
                 else
                 {
-                    resultSize = Interop.OpenSsl.Decrypt(scHandle, output, offset, size, out errorCode);
+                    resultSize = Interop.OpenSsl.Decrypt(scHandle, input, output, out errorCode);
                 }
 
                 switch (errorCode)
