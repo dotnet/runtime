@@ -264,7 +264,7 @@ namespace Mono.Linker.Steps
 				if (!typeref.IsTypeOf ("System", "Type"))
 					goto default;
 
-				TypeReference type = _context.TypeNameResolver.ResolveTypeName (svalue, out _);
+				TypeReference type = _context.TypeNameResolver.ResolveTypeName (svalue);
 				if (type == null) {
 					_context.LogError ($"Could not resolve custom attribute type value '{svalue}'", 1044, _xmlDocumentLocation);
 					return null;
@@ -284,7 +284,7 @@ namespace Mono.Linker.Steps
 				if (string.IsNullOrEmpty (typeName))
 					typeName = "System.String";
 
-				TypeReference typeref = _context.TypeNameResolver.ResolveTypeName (typeName, out _);
+				TypeReference typeref = _context.TypeNameResolver.ResolveTypeName (typeName);
 				if (typeref == null) {
 					_context.LogError ($"The type '{typeName}' used with attribute value '{iterator.Current.Value}' could not be found", 1041, _xmlDocumentLocation);
 					return null;

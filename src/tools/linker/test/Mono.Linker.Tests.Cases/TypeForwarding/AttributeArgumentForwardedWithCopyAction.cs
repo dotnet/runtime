@@ -23,7 +23,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[SetupCompileAfter ("Implementation.dll", new[] { "Dependencies/ImplementationLibrary.cs" })]
 	[SetupCompileAfter ("Forwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 
-	[KeptMemberInAssembly ("Forwarder.dll", typeof (ImplementationLibrary))]
+	[RemovedAssembly ("Forwarder.dll")]
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary))]
 	static class AttributeArgumentForwardedWithCopyAction
 	{

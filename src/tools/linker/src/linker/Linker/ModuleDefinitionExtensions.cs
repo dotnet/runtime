@@ -11,21 +11,6 @@ namespace Mono.Linker
 				(module.Attributes & ModuleAttributes.ILLibrary) != 0;
 		}
 
-		public static bool GetMatchingExportedType (this ModuleDefinition module, TypeDefinition typeDefinition, out ExportedType exportedType)
-		{
-			exportedType = null;
-			if (!module.HasExportedTypes || typeDefinition == null)
-				return false;
-
-			foreach (var et in module.ExportedTypes)
-				if (et.Resolve () == typeDefinition) {
-					exportedType = et;
-					return true;
-				}
-
-			return false;
-		}
-
 		public static TypeDefinition ResolveType (this ModuleDefinition module, string typeFullName)
 		{
 			if (typeFullName == null)

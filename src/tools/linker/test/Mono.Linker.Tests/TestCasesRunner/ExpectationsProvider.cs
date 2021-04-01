@@ -1,6 +1,5 @@
 ﻿using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -9,10 +8,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public static bool IsAssemblyAssertion (CustomAttribute attr)
 		{
-			return attr.AttributeType.Name == nameof (KeptAssemblyAttribute) ||
-				attr.AttributeType.Name == nameof (RemovedAssemblyAttribute) ||
-				attr.AttributeType.Name == nameof (SetupLinkerActionAttribute) ||
-				attr.AttributeType.Name == nameof (SetupLinkerTrimModeAttribute);
+			return attr.AttributeType.Name == nameof (KeptAssemblyAttribute) || attr.AttributeType.Name == nameof (RemovedAssemblyAttribute);
 		}
 
 		public static bool IsSymbolAssertion (CustomAttribute attr)
