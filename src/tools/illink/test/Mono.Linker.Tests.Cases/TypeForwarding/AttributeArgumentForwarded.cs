@@ -5,6 +5,10 @@ using Mono.Linker.Tests.Cases.TypeForwarding.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
+	// On .NET FW the built in compiler will drop the reference to the forwarder assembly when compiling the test assembly.
+	// Use roslyn to give consistent behavior across platforms
+	[SetupCSharpCompilerToUse ("csc")]
+
 	// Actions:
 	// link - This assembly, Forwarder.dll and Implementation.dll
 	[SetupLinkerDefaultAction ("link")]

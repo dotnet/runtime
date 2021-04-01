@@ -1,5 +1,4 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.References.Dependencies;
 
@@ -23,7 +22,11 @@ namespace Mono.Linker.Tests.Cases.References
 
 	// We library should be gone.  The `using` statement leaves no traces in the IL so nothing in `library` will be marked
 	[RemovedAssembly ("library.dll")]
-	[KeptReferencesInAssembly ("copied.dll", new[] { PlatformAssemblies.CoreLib, "library" })]
+#if NETCOREAPP
+	[KeptReferencesInAssembly ("copied.dll", new[] { "System.Private.CoreLib" })]
+#else
+	[KeptReferencesInAssembly ("copied.dll", new[] { "mscorlib" })]
+#endif
 	public class AssemblyOnlyUsedByUsingWithCscWithKeepFacades
 	{
 		public static void Main ()

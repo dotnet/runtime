@@ -16,14 +16,13 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[SetupLinkerArgument ("--strip-security", "false")]
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
 	[KeepTypeForwarderOnlyAssemblies ("false")]
-	[SetupLinkerAction ("copy", "Library")]
+	[SetupLinkerAction ("copy", "Library.dll")]
 	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/SecurityAttributeForwarderLibrary.cs" })]
 	[SetupCompileBefore ("Library.dll", new[] { "Dependencies/LibraryWithSecurityAttributes.il" }, new[] { "Forwarder.dll" })]
 
 	// Sanity checks to verify the test was setup correctly
 	[KeptTypeInAssembly ("Library.dll", "LibraryWithSecurityAttributes")]
-	// There's a reference to `Forwarder` in the copy assembly `Library`.
-	[KeptAssembly ("Forwarder.dll")]
+	[RemovedAssembly ("Forwarder.dll")]
 	public class SecurityAttributeScope
 	{
 		public static void Main ()

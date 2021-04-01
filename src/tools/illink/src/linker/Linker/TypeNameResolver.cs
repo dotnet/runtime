@@ -13,9 +13,8 @@ namespace Mono.Linker
 			_context = context;
 		}
 
-		public TypeReference ResolveTypeName (string typeNameString, out AssemblyDefinition typeAssembly)
+		public TypeReference ResolveTypeName (string typeNameString)
 		{
-			typeAssembly = null;
 			if (string.IsNullOrEmpty (typeNameString))
 				return null;
 
@@ -29,19 +28,13 @@ namespace Mono.Linker
 			}
 
 			if (parsedTypeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
-				typeAssembly = _context.TryResolve (assemblyQualifiedTypeName.AssemblyName.Name);
-				if (typeAssembly == null)
-					return null;
-
-				return ResolveTypeName (typeAssembly, assemblyQualifiedTypeName.TypeName);
+				return ResolveTypeName (null, assemblyQualifiedTypeName);
 			}
 
 			foreach (var assemblyDefinition in _context.GetReferencedAssemblies ()) {
 				var foundType = ResolveTypeName (assemblyDefinition, parsedTypeName);
-				if (foundType != null) {
-					typeAssembly = assemblyDefinition;
+				if (foundType != null)
 					return foundType;
-				}
 			}
 
 			return null;

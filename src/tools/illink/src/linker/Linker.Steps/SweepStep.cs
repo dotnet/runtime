@@ -97,13 +97,13 @@ namespace Mono.Linker.Steps
 		{
 			var action = Annotations.GetAction (assembly);
 			switch (action) {
-			case AssemblyAction.Copy:
+			case AssemblyAction.Skip:
 			case AssemblyAction.Delete:
 			case AssemblyAction.Link:
 			case AssemblyAction.Save:
-			case AssemblyAction.Skip:
 				return;
 
+			case AssemblyAction.Copy:
 			case AssemblyAction.CopyUsed:
 			case AssemblyAction.AddBypassNGen:
 			case AssemblyAction.AddBypassNGenUsed:
@@ -121,6 +121,7 @@ namespace Mono.Linker.Steps
 
 					switch (action) {
 					case AssemblyAction.CopyUsed:
+					case AssemblyAction.Copy:
 						//
 						// Assembly has a reference to another assembly which has been fully removed. This can
 						// happen when for example the reference assembly is 'copy-used' and it's not needed.
@@ -171,14 +172,22 @@ namespace Mono.Linker.Steps
 				break;
 
 			case AssemblyAction.CopyUsed:
-				AssemblyAction assemblyAction = AssemblyAction.Copy;
-				if (!Context.KeepTypeForwarderOnlyAssemblies && SweepTypeForwarders (assembly))
-					assemblyAction = AssemblyAction.Save;
-
-				Annotations.SetAction (assembly, assemblyAction);
-				break;
+				Annotations.SetAction (assembly, AssemblyAction.Copy);
+				goto case AssemblyAction.Copy;
 
 			case AssemblyAction.Copy:
+				//
+				// Facade assemblies can have unused forwarders pointing to
+				// removed type (when facades are kept)
+				//
+				//		main.exe -> facade.dll -> lib.dll
+				//		link     |  copy       |  link
+				//
+				// when main.exe has unused reference to type in lib.dll
+				//
+				if (SweepTypeForwarders (assembly))
+					Annotations.SetAction (assembly, AssemblyAction.Save);
+
 				break;
 
 			case AssemblyAction.Link:

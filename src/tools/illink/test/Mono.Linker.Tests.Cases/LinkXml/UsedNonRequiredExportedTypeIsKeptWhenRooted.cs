@@ -4,16 +4,16 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
 	[SetupLinkerDescriptorFile ("UsedNonRequiredExportedTypeIsKeptWhenRooted.xml")]
-	[SetupLinkerArgument ("-a", "libfwd.dll", "visible")]
+	[SetupLinkerArgument ("-a", "lib.dll", "visible")]
 
-	[SetupCompileBefore ("libfwd.dll", new[] { "Dependencies/UsedNonRequiredExportedTypeIsKeptWhenRooted_lib.cs" })]
-	[SetupCompileAfter ("lib.dll", new[] { "Dependencies/UsedNonRequiredExportedTypeIsKeptWhenRooted_lib.cs" })]
-	[SetupCompileAfter ("libfwd.dll", new[] { "Dependencies/UsedNonRequiredExportedTypeIsKeptWhenRooted_fwd.cs" }, references: new[] { "lib.dll" })]
+	[SetupCompileBefore ("lib.dll", new[] { "Dependencies/UsedNonRequiredExportedTypeIsKeptWhenRooted_lib.cs" })]
+	[SetupCompileAfter ("libfwd.dll", new[] { "Dependencies/UsedNonRequiredExportedTypeIsKeptWhenRooted_lib.cs" })]
+	[SetupCompileAfter ("lib.dll", new[] { "Dependencies/UsedNonRequiredExportedTypeIsKeptWhenRooted_fwd.cs" }, references: new[] { "libfwd.dll" })]
 
-	[KeptAssembly ("lib.dll")]
 	[KeptAssembly ("libfwd.dll")]
-	[KeptMemberInAssembly ("lib.dll", typeof (UsedNonRequiredExportedTypeIsKeptWhenRooted_Used), "field", ExpectationAssemblyName = "libfwd.dll")]
-	[KeptMemberInAssembly ("lib.dll", typeof (UsedNonRequiredExportedTypeIsKeptWhenRooted_Used), "Method()", ExpectationAssemblyName = "libfwd.dll")]
+	[KeptAssembly ("lib.dll")]
+	[KeptMemberInAssembly ("libfwd.dll", typeof (UsedNonRequiredExportedTypeIsKeptWhenRooted_Used), "field", ExpectationAssemblyName = "lib.dll")]
+	[KeptMemberInAssembly ("libfwd.dll", typeof (UsedNonRequiredExportedTypeIsKeptWhenRooted_Used), "Method()", ExpectationAssemblyName = "lib.dll")]
 	public class UsedNonRequiredExportedTypeIsKeptWhenRooted
 	{
 		public static void Main ()

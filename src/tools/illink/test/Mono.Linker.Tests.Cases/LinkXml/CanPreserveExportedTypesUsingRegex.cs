@@ -10,9 +10,9 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 	// Add another assembly in that uses the forwarder just to make things a little more complex
 	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/CanPreserveAnExportedType_Forwarder.cs" }, references: new[] { "Library.dll" })]
 
+	[RemovedAssembly ("Forwarder.dll")]
 	[KeptMemberInAssembly ("Library.dll", typeof (CanPreserveAnExportedType_Library), "Field1", "Method()", ".ctor()")]
 	[SetupLinkerDescriptorFile ("CanPreserveExportedTypesUsingRegex.xml")]
-	[KeptTypeInAssembly ("Forwarder.dll", typeof (CanPreserveAnExportedType_Library))]
 	class CanPreserveExportedTypesUsingRegex
 	{
 		public static void Main ()
