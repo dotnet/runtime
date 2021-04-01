@@ -652,6 +652,14 @@ endif()
 ### End of debug build checks
 
 ######################################
+# COMPONENT BUILD CHECKS
+######################################
+if(DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
+  set(STATIC_COMPONENTS 1)
+endif()
+### End of component build checks
+
+######################################
 # OTHER CHECKS
 ######################################
 if(HOST_WIN32)
