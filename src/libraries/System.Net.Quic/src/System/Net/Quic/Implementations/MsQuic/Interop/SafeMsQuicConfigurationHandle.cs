@@ -59,6 +59,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 throw new Exception("MaxBidirectionalStreams overflow.");
             }
 
+            if ((flags & QUIC_CREDENTIAL_FLAGS.CLIENT) == 0)
+            {
+                if (certificate == null)
+                {
+                    throw new Exception("Server must provide certificate");
+                }
+            }
+            else
+            {
+                flags |= QUIC_CREDENTIAL_FLAGS.INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAGS.NO_CERTIFICATE_VALIDATION;
+            }
+
             Debug.Assert(!MsQuicApi.Api.Registration.IsInvalid);
 
             var settings = new QuicSettings
@@ -103,19 +115,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 // MsQuic has a private copy of OpenSSL so the SSL_CTX will be incompatible.
 
                 CredentialConfig config = default;
-
                 config.Flags = flags; // TODO: consider using LOAD_ASYNCHRONOUS with a callback.
 
                 if (certificate != null)
                 {
-#if true
-                    // If using stub TLS.
-                    config.Type = QUIC_CREDENTIAL_TYPE.STUB_NULL;
-#else
-					// TODO: doesn't work on non-Windows
+                    // TODO: doesn't work on non-Windows
                     config.Type = QUIC_CREDENTIAL_TYPE.CONTEXT;
                     config.Certificate = certificate.Handle;
-#endif
                 }
                 else
                 {

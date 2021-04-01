@@ -407,6 +407,14 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal ushort UniDirectionalCount;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ConnectionEventPeerCertificateReceived
+        {
+            internal IntPtr PlatformCertificateHandle;
+            internal uint DeferredErrorFlags;
+            internal int DeferredStatus;
+        }
+
         [StructLayout(LayoutKind.Explicit)]
         internal struct ConnectionEventDataUnion
         {
@@ -434,7 +442,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             [FieldOffset(0)]
             internal ConnectionEventDataStreamsAvailable StreamsAvailable;
 
-            // TODO: missing IDEAL_PROCESSOR_CHANGED, ..., PEER_CERTIFICATE_RECEIVED (7 total)
+            [FieldOffset(0)]
+            internal ConnectionEventPeerCertificateReceived PeerCertificate;
+
+            // TODO: missing IDEAL_PROCESSOR_CHANGED, ...,  (7 total)
         }
 
         [StructLayout(LayoutKind.Sequential)]

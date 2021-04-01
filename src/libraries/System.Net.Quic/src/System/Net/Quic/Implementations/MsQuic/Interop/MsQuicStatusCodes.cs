@@ -8,6 +8,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal static uint Success => OperatingSystem.IsWindows() ? Windows.Success : Linux.Success;
         internal static uint Pending => OperatingSystem.IsWindows() ? Windows.Pending : Linux.Pending;
         internal static uint InternalError => OperatingSystem.IsWindows() ? Windows.InternalError : Linux.InternalError;
+        internal static uint InvalidState => OperatingSystem.IsWindows() ? Windows.InvalidState : Linux.InvalidState;
+        internal static uint HandshakeFailure => OperatingSystem.IsWindows() ? Windows.HandshakeFailure : Linux.HandshakeFailure;
 
         // TODO return better error messages here.
         public static string GetError(uint status) => OperatingSystem.IsWindows() ? Windows.GetError(status) : Linux.GetError(status);
