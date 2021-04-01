@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Net.Security;
 using System.Threading.Tasks;
 using System.Net.Quic.Implementations;
+using Xunit;
 
 namespace System.Net.Quic.Tests
 {
@@ -90,6 +91,41 @@ namespace System.Net.Quic.Tests
             }
 
             return bytesRead;
+        }
+
+        internal void AssertArrayEqual(byte[] expected, byte[] actual)
+        {
+            for (int i = 0; i < expected.Length; ++i)
+            {
+                if (expected[i] == actual[i])
+                {
+                    continue;
+                }
+
+                Console.WriteLine($"Wrong data starting from pos={i}");
+
+                Console.Write("Expected: ");
+                PrintAroundIndex(expected, i);
+                Console.Write("Actual:   ");
+                PrintAroundIndex(actual, i);
+
+                Assert.False(true);
+            }
+        }
+
+        private void PrintAroundIndex(byte[] arr, int idx, int dl = 3, int dr = 7)
+        {
+            Console.Write(idx - (dl+1) >= 0 ? "[..., " : "[");
+
+            for (int i = idx - dl; i <= idx + dr; ++i)
+            {
+                if (i >= 0 && i < arr.Length)
+                {
+                    Console.Write($"{arr[i]}, ");
+                }
+            }
+
+            Console.WriteLine(idx + (dr+1) < arr.Length ? "...]" : "]");
         }
     }
 
