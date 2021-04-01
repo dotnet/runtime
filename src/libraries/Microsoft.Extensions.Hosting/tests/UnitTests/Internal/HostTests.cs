@@ -664,21 +664,31 @@ namespace Microsoft.Extensions.Hosting.Internal
             RemoteExecutor.Invoke(async () =>
             {
                 using IHost host = CreateBuilder()
-                .ConfigureServices(
-                    services =>
-                    {
-                        services.AddHostedService<AsyncThrowingService>();
-                        services.Configure<HostOptions>(
-                          options =>
-                            options.BackgroundServiceExceptionBehavior =
-                                BackgroundServiceExceptionBehavior.StopHost);
-                    })
-                .Build();
+                    .ConfigureServices(
+                        services =>
+                        {
+                            services.AddHostedService<AsyncThrowingService>();
+                            services.Configure<HostOptions>(
+                              options =>
+                                options.BackgroundServiceExceptionBehavior =
+                                    BackgroundServiceExceptionBehavior.StopHost);
+                        })
+                    .Build();
 
                 await host.StartAsync();
 
-                // The following line should not be called, if it is - the test should fail.
-                Assert.True(false, $"The {nameof(AsyncThrowingService)} should have thrown, stopping the Host.");
+                var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+                var wasStoppingCalled = false;
+                lifetime.ApplicationStopping.Register(() => wasStoppingCalled = true);
+                var wasStoppedCalled = false;
+                lifetime.ApplicationStopped.Register(() => wasStoppedCalled = true);
+
+                Assert.True(
+                    wasStoppingCalled,
+                    $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, gracefully stopping the host.");
+                Assert.True(
+                    wasStoppedCalled,
+                    $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, gracefully stopping the host.");
             }).Dispose();
         }
 
@@ -703,6 +713,12 @@ namespace Microsoft.Extensions.Hosting.Internal
                         })
                     .Build();
 
+                var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+                var wasStoppingCalled = false;
+                lifetime.ApplicationStopping.Register(() => wasStoppingCalled = true);
+                var wasStoppedCalled = false;
+                lifetime.ApplicationStopped.Register(() => wasStoppedCalled = true);
+
                 await Task.WhenAll(host.StartAsync(), DelayThenSignalContinueAsync());
 
                 async Task DelayThenSignalContinueAsync()
@@ -714,8 +730,12 @@ namespace Microsoft.Extensions.Hosting.Internal
                     backgroundDelayTaskSource.SetResult(true);
                 };
 
-                // The following line should not be called, if it is - the test should fail.
-                Assert.True(false, $"The {nameof(AsyncThrowingService)} should have thrown, stopping the Host.");
+                Assert.True(
+                    wasStoppingCalled,
+                    $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, gracefully stopping the host.");
+                Assert.True(
+                    wasStoppedCalled,
+                    $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, gracefully stopping the host.");
             }).Dispose();
         }
 
@@ -738,9 +758,18 @@ namespace Microsoft.Extensions.Hosting.Internal
                     })
                 .Build();
 
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            var wasStoppingCalled = false;
+            lifetime.ApplicationStopping.Register(() => wasStoppingCalled = true);
+            var wasStoppedCalled = false;
+            lifetime.ApplicationStopped.Register(() => wasStoppedCalled = true);
+
             host.Start();
 
             backgroundDelayTaskSource.SetResult(true);
+
+            Assert.False(wasStoppingCalled);
+            Assert.False(wasStoppedCalled);
         }
 
         [Fact]
@@ -1461,6 +1490,8 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             private readonly Task? _executeDelayTask;
 
+            internal bool Disposed { get; private set; }
+
             public AsyncThrowingService() { }
 
             public AsyncThrowingService(Task executeDelayTask)
@@ -1474,6 +1505,13 @@ namespace Microsoft.Extensions.Hosting.Internal
                     await _executeDelayTask;
 
                 throw new Exception("Background Exception");
+            }
+
+            public override void Dispose()
+            {
+                Disposed = true;
+
+                base.Dispose();
             }
         }
     }

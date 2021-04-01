@@ -93,8 +93,9 @@ namespace Microsoft.Extensions.Hosting.Internal
                 _logger.BackgroundServiceFaulted(ex);
                 if (_options is { BackgroundServiceExceptionBehavior: BackgroundServiceExceptionBehavior.StopHost })
                 {
-                    Environment.FailFast(
-                      SR.Format(SR.BackgroundServiceExceptionStoppedHost, ex));
+                    _logger.LogCritical(SR.Format(SR.BackgroundServiceExceptionStoppedHost, ex));
+
+                    await StopAsync(CancellationToken.None).ConfigureAwait(false);
                 }
             }
         }
