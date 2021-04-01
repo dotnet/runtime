@@ -487,12 +487,42 @@ namespace System.Drawing
             b = (int)(value & ARGBBlueMask) >> ARGBBlueShift;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void MinMaxRgb(out int min, out int max, int r, int g, int b)
+        {
+            if (b < g) {
+                if (b < r) {
+                    min = b;
+                    if (r < g) {
+                        max = g;
+                    } else {
+                        max = r;
+                    }
+                } else {
+                    min = r;
+                    max = g;
+                }
+            } else {
+                if (r < b) {
+                    max = b;
+                    if (g < r) {
+                        min = g;
+                    } else {
+                        min = r;
+                    }
+                } else {
+                    max = r;
+                    min = g;
+                }
+            }
+        }
+
         public float GetBrightness()
         {
             GetRgbValues(out int r, out int g, out int b);
 
-            int min = Math.Min(Math.Min(r, g), b);
-            int max = Math.Max(Math.Max(r, g), b);
+            int min, max;
+            MinMaxRgb(out min, out max, r, g, b);
 
             return (max + min) / (byte.MaxValue * 2f);
         }
@@ -504,8 +534,8 @@ namespace System.Drawing
             if (r == g && g == b)
                 return 0f;
 
-            int min = Math.Min(Math.Min(r, g), b);
-            int max = Math.Max(Math.Max(r, g), b);
+            int min, max;
+            MinMaxRgb(out min, out max, r, g, b);
 
             float delta = max - min;
             float hue;
@@ -531,8 +561,8 @@ namespace System.Drawing
             if (r == g && g == b)
                 return 0f;
 
-            int min = Math.Min(Math.Min(r, g), b);
-            int max = Math.Max(Math.Max(r, g), b);
+            int min, max;
+            MinMaxRgb(out min, out max, r, g, b);
 
             int div = max + min;
             if (div > byte.MaxValue)
