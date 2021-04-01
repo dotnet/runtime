@@ -444,7 +444,7 @@ STDMETHODIMP RegMeta::EnumExportedTypes(           // S_OK or error
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    HENUMInternal       *pEnumTmp = 0;
+    HENUMInternal       *pEnum = NULL;
 
     LOG((LOGMD, "MD RegMeta::EnumExportedTypes(%#08x, %#08x, %#08x, %#08x)\n",
         phEnum, rExportedTypes, cMax, pcTokens));
@@ -460,7 +460,7 @@ STDMETHODIMP RegMeta::EnumExportedTypes(           // S_OK or error
         if (pMiniMd->HasDelete() &&
             ((m_OptionValue.m_ImportOption & MDImportOptionAllExportedTypes) == 0))
         {
-            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtExportedType, &pEnumTmp) );
+            IfFailGo( HENUMInternal::CreateDynamicArrayEnum( mdtExportedType, &pEnum) );
 
             // add all Types to the dynamic array if name is not _Delete
             for (ULONG index = 1; index <= pMiniMd->getCountExportedTypes(); index ++ )
@@ -473,7 +473,7 @@ STDMETHODIMP RegMeta::EnumExportedTypes(           // S_OK or error
                 {
                     continue;
                 }
-                IfFailGo( HENUMInternal::AddElementToEnum(pEnumTmp, TokenFromRid(index, mdtExportedType) ) );
+                IfFailGo( HENUMInternal::AddElementToEnum(pEnum, TokenFromRid(index, mdtExportedType) ) );
             }
         }
         else
@@ -483,19 +483,19 @@ STDMETHODIMP RegMeta::EnumExportedTypes(           // S_OK or error
                 mdtExportedType,
                 1,
                 pMiniMd->getCountExportedTypes() + 1,
-                &pEnumTmp) );
+                &pEnum) );
         }
 
         // set the output parameter.
-        *ppmdEnum = pEnumTmp;
-        pEnumTmp = 0;
+        *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
 
     // we can only fill the minimum of what the caller asked for or what we have left.
     IfFailGo(HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rExportedTypes, pcTokens));
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
-    HENUMInternal::DestroyEnum(pEnumTmp);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumExportedTypes);
     END_ENTRYPOINT_NOTHROW;
