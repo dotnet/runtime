@@ -735,17 +735,20 @@ namespace System.Net.Sockets
             {
                 if (AddressFamily != AddressFamily.InterNetworkV6)
                 {
-                    throw new NotSupportedException(SR.net_invalidversion);
+                    return false;
                 }
                 return ((int)GetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only)! == 0);
             }
             set
             {
-                if (AddressFamily != AddressFamily.InterNetworkV6)
+                if (AddressFamily == AddressFamily.InterNetworkV6)
+                {
+                    SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, value ? 0 : 1);
+                }
+                else if (value)
                 {
                     throw new NotSupportedException(SR.net_invalidversion);
                 }
-                SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, value ? 0 : 1);
             }
         }
 

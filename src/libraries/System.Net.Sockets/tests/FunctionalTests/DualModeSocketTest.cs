@@ -52,15 +52,21 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void IPv4Constructor_DualModeThrows()
+        public void IPv4Constructor_DualMode_GetterReturnsFalse()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                Assert.Throws<NotSupportedException>(() =>
-                {
-                    Assert.False(socket.DualMode);
-                });
+                Assert.False(socket.DualMode);
+            }
+        }
 
+        [Fact]
+        public void IPv4Constructor_DualMode_Setter()
+        {
+            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                socket.DualMode = false;
+                Assert.False(socket.DualMode);
                 Assert.Throws<NotSupportedException>(() =>
                 {
                     socket.DualMode = true;
