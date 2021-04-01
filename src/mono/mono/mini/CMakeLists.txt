@@ -314,7 +314,7 @@ set(monosgen-sources "${metadata_sources};${utils_sources};${sgen_sources};${icu
 
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
-set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME monosgen-2.0)
+set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
 target_link_libraries(monosgen-static eglib_objects)
 
 if(NOT DISABLE_LIBS)
@@ -335,9 +335,9 @@ if(NOT DISABLE_SHARED_LIBS)
     target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
   endif()
   target_link_libraries(monosgen-shared PRIVATE eglib_objects)
-  set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME monosgen-2.0)
+  set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
   if(TARGET_WIN32)
-    # on Windows the import library for the shared monosgen-2.0 library will have the same name as the static library (monosgen-2.0.lib),
+    # on Windows the import library for the shared mono library will have the same name as the static library,
     # to avoid a conflict we rename the import library with the .import.lib suffix
     set_target_properties(monosgen-shared PROPERTIES IMPORT_SUFFIX ".import.lib")
   endif()
@@ -362,7 +362,7 @@ if(NOT DISABLE_SHARED_LIBS)
   install(TARGETS monosgen-shared LIBRARY)
   if(HOST_WIN32)
     add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
-    set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME monosgen-2.0-dac)
+    set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME}-dac)
     install(TARGETS monosgen-shared-dac LIBRARY)
   endif()
 endif()
