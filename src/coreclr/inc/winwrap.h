@@ -134,8 +134,6 @@
 //
 
 // winbase.h
-#define WszGetEnvironmentStrings   GetEnvironmentStringsW
-#define WszFreeEnvironmentStrings   FreeEnvironmentStringsW
 #define WszFormatMessage   FormatMessageW
 #define Wszlstrcmp   lstrcmpW
 #define Wszlstrcmpi   lstrcmpiW
