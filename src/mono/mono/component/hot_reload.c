@@ -29,10 +29,7 @@ static MonoComponentHotReload fn_table = {
 MonoComponentHotReload *
 mono_component_hot_reload_init (void)
 {
-	/* TODO: initialize things */
-
-	fprintf (stderr, "hot reload initialized\n");
-	
+	/* TODO: implement me */
 	return &fn_table;
 }
 
@@ -44,13 +41,11 @@ hot_reload_cleanup (MonoComponent *self)
 		return;
 
 	/* TODO: implement me */
-	fprintf (stderr, "hot reload cleaned up\n");
-
 	cleaned = TRUE;
 }
 
 static void
 hot_reload_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error)
 {
-	fprintf (stderr, "it worked!\n");
+	/* TODO: implement me */
 }
