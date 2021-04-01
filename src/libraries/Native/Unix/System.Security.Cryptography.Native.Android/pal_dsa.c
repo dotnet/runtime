@@ -44,21 +44,22 @@ static jobject GetQParameter(JNIEnv* env, jobject dsa)
 {
     assert(dsa);
 
+    jobject ret = NULL;
+
     INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec);
     loc[algName] = JSTRING("DSA");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
     loc[publicKey] = (*env)->CallObjectMethod(env, dsa, g_keyPairGetPublicMethod);
     loc[publicKeySpec] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGetKeySpecMethod, loc[publicKey], g_DSAPublicKeySpecClass);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     jobject q = (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetQ);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = q;
 
-    return q;
-
-error:
+cleanup:
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
-    return FAIL;
+    return ret;
 }
 
 int32_t AndroidCryptoNative_DsaSizeSignature(jobject dsa)
