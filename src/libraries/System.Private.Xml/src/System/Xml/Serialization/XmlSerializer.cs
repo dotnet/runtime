@@ -152,7 +152,7 @@ namespace System.Xml.Serialization
 
         // Trimmer warning messages
         internal const string TrimSerializationWarning = "Members from serialized types may be trimmed if not referenced directly";
-        private const string s_trimDeserializationWarning = "Members from deserialized types may be trimmed if not referenced directly";
+        private const string TrimDeserializationWarning = "Members from deserialized types may be trimmed if not referenced directly";
 
         private static readonly Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>> s_xmlSerializerTable = new Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>>();
 
@@ -418,7 +418,7 @@ namespace System.Xml.Serialization
             return _mapping;
         }
 
-        [RequiresUnreferencedCode(s_trimDeserializationWarning)]
+        [RequiresUnreferencedCode(TrimDeserializationWarning)]
         public object? Deserialize(Stream stream)
         {
             XmlTextReader xmlReader = new XmlTextReader(stream);
@@ -428,7 +428,7 @@ namespace System.Xml.Serialization
             return Deserialize(xmlReader, null);
         }
 
-        [RequiresUnreferencedCode(s_trimDeserializationWarning)]
+        [RequiresUnreferencedCode(TrimDeserializationWarning)]
         public object? Deserialize(TextReader textReader)
         {
             XmlTextReader xmlReader = new XmlTextReader(textReader);
@@ -438,25 +438,25 @@ namespace System.Xml.Serialization
             return Deserialize(xmlReader, null);
         }
 
-        [RequiresUnreferencedCode(s_trimDeserializationWarning)]
+        [RequiresUnreferencedCode(TrimDeserializationWarning)]
         public object? Deserialize(XmlReader xmlReader)
         {
             return Deserialize(xmlReader, null);
         }
 
-        [RequiresUnreferencedCode(s_trimDeserializationWarning)]
+        [RequiresUnreferencedCode(TrimDeserializationWarning)]
         public object? Deserialize(XmlReader xmlReader, XmlDeserializationEvents events)
         {
             return Deserialize(xmlReader, null, events);
         }
 
-        [RequiresUnreferencedCode(s_trimDeserializationWarning)]
+        [RequiresUnreferencedCode(TrimDeserializationWarning)]
         public object? Deserialize(XmlReader xmlReader, string? encodingStyle)
         {
             return Deserialize(xmlReader, encodingStyle, _events);
         }
 
-        [RequiresUnreferencedCode(s_trimDeserializationWarning)]
+        [RequiresUnreferencedCode(TrimDeserializationWarning)]
         public object? Deserialize(XmlReader xmlReader, string? encodingStyle, XmlDeserializationEvents events)
         {
             events.sender = this;

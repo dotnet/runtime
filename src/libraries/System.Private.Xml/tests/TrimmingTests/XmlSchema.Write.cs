@@ -13,7 +13,7 @@ class XMLSchemaExamples
     {
 
         XmlSchema schema = new XmlSchema();
-        string expectedSchema = @"???<?xml version=""1.0"" encoding=""utf-8""?><xs:schema xmlns:xs=""http://www.w3.org/2001/XMLSchema""><xs:element name=""cat"" type=""xs:string"" /><xs:element name=""dog"" type=""xs:string"" /><xs:element name=""redDog"" substitutionGroup=""dog"" /><xs:element name=""brownDog"" substitutionGroup=""dog"" /><xs:element name=""pets"" /></xs:schema>";
+        string expectedSchema = @"﻿<?xml version=""1.0"" encoding=""utf-8""?><xs:schema xmlns:xs=""http://www.w3.org/2001/XMLSchema""><xs:element name=""cat"" type=""xs:string"" /><xs:element name=""dog"" type=""xs:string"" /><xs:element name=""redDog"" substitutionGroup=""dog"" /><xs:element name=""brownDog"" substitutionGroup=""dog"" /><xs:element name=""pets"" /></xs:schema>";
 
         // <xs:element name="cat" type="xs:string"/>
         XmlSchemaElement elementCat = new XmlSchemaElement();
@@ -48,10 +48,10 @@ class XMLSchemaExamples
         {
             using (var writer = XmlWriter.Create(stream))
             {
-                schema.Write(writer);
+                schema.Write(writer, null);
             }
 
-            var str = Encoding.ASCII.GetString(stream.ToArray());
+            var str = Encoding.UTF8.GetString(stream.ToArray());
             if (str.Equals(expectedSchema, StringComparison.OrdinalIgnoreCase))
             {
                 return 100;
