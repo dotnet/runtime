@@ -116,7 +116,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureAppConfigurationFromFile()
         {
             var hostBuilder = new HostBuilder()
@@ -547,7 +547,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void HostServicesSameServiceProviderAsInHostBuilder()
         {
             var hostBuilder = Host.CreateDefaultBuilder();
