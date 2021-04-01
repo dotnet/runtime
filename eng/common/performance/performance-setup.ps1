@@ -19,8 +19,7 @@ Param(
     [switch] $Compare,
     [string] $MonoDotnet="",
     [string] $Configurations="CompilationMode=$CompilationMode RunKind=$Kind",
-    [string] $LogicalMachine="",
-    [switch] $AndroidMono
+    [string] $LogicalMachine=""
 )
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
@@ -101,15 +100,6 @@ if ($UseCoreRun) {
 if ($UseBaselineCoreRun) {
     $NewBaselineCoreRoot = (Join-Path $PayloadDirectory "Baseline_Core_Root")
     Move-Item -Path $BaselineCoreRootDirectory -Destination $NewBaselineCoreRoot
-}
-
-if ($AndroidMono) {
-    if(!(Test-Path $WorkItemDirectory))
-    {
-        mkdir $WorkItemDirectory
-    }
-    Copy-Item -path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
-    $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
 $DocsDir = (Join-Path $PerformanceDirectory "docs")
