@@ -3614,27 +3614,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-// are we compiling for fast code, or are we compiling for blended code and
-// inside a loop?
-// We return true for BLENDED_CODE if the Block executes more than BB_LOOP_WEIGHT_SCALE/2
-inline bool Compiler::optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight)
-{
-    return (compCodeOpt() == FAST_CODE) ||
-           ((compCodeOpt() == BLENDED_CODE) && (bbWeight > ((BB_LOOP_WEIGHT_SCALE / 2) * BB_UNITY_WEIGHT)));
-}
-
-// are we running on a Intel Pentium 4?
-inline bool Compiler::optPentium4(void)
-{
-    return (info.genCPU == CPU_X86_PENTIUM_4);
-}
-
-// should we use add/sub instead of inc/dec? (faster on P4, but increases size)
-inline bool Compiler::optAvoidIncDec(BasicBlock::weight_t bbWeight)
-{
-    return optPentium4() && optFastCodeOrBlendedLoop(bbWeight);
-}
-
 // should we try to replace integer multiplication with lea/add/shift sequences?
 inline bool Compiler::optAvoidIntMult(void)
 {
