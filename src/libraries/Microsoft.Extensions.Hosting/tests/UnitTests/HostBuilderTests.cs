@@ -572,6 +572,25 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(expectedContentRootPath, env.ContentRootPath);
         }
 
+        [Fact]
+        public void HostBuilderCanConfigureBackgroundServiceExceptionBehavior()
+        {
+            using IHost host = new HostBuilder()
+                .ConfigureServices(
+                    services =>
+                        services.Configure<HostOptions>(
+                            options =>
+                            options.BackgroundServiceExceptionBehavior =
+                                BackgroundServiceExceptionBehavior.StopHost))
+                .Build();
+
+            var options = host.Services.GetRequiredService<IOptions<HostOptions>>();
+
+            Assert.Equal(
+                BackgroundServiceExceptionBehavior.StopHost,
+                options.Value.BackgroundServiceExceptionBehavior);
+        }
+
         private class FakeFileProvider : IFileProvider, IDisposable
         {
             public bool Disposed { get; private set; }
