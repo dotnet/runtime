@@ -388,9 +388,9 @@ int __cdecl main(int argc, char* argv[])
                 errorCount2++;
                 LogError("Method %d of size %d failed to load and compile correctly by JIT2.",
                          reader->GetMethodContextIndex(), mc->methodSize);
-                if (errorCount2 == 100)
+                if (errorCount2 == o.failureLimit)
                 {
-                    LogError("More than 100 methods compilation failed by JIT2. Skip compiling remaining methods.");
+                    LogError("More than %d methods compilation failed by JIT2. Skip compiling remaining methods.", o.failureLimit);
                     break;
                 }
             }
@@ -541,9 +541,9 @@ int __cdecl main(int argc, char* argv[])
                 errorCount++;
                 LogError("main method %d of size %d failed to load and compile correctly.",
                          reader->GetMethodContextIndex(), mc->methodSize);
-                if (errorCount == 100)
+                if (errorCount == o.failureLimit)
                 {
-                    LogError("More than 100 methods failed. Skip compiling remaining methods.");
+                    LogError("More than %d methods failed. Skip compiling remaining methods.", o.failureLimit);
                     break;
                 }
                 if ((o.reproName != nullptr) && (o.indexCount == -1))
