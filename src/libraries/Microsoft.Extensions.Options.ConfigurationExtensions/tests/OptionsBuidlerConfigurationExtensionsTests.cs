@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
 using Xunit;
 
 namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
@@ -101,6 +104,41 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
             var options = serviceProvider.GetRequiredService<IOptions<FakeOptions>>().Value;
 
             Assert.Equal(messageValue, options.Message);
+        }
+
+        [Fact]
+        public static void BindConfiguration_UpdatesOptionOnConfigurationUpdate()
+        {
+            const string messageValue1 = "This is a test";
+            const string messageValue2 = "This is the message after update";
+
+            FakeConfigurationSource configSource = new()
+            {
+                InitialData = new Dictionary<string, string>
+                {
+                    [nameof(FakeOptions.Message)] = messageValue1,
+                }
+            };
+
+            var services = new ServiceCollection();
+            services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
+                    .Add(configSource)
+                    .Build());
+            var optionsBuilder = services.AddOptions<FakeOptions>();
+            _ = optionsBuilder.BindConfiguration(configSectionPath: "");
+            using ServiceProvider serviceProvider = services.BuildServiceProvider();
+            var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+            bool updateHasRun = false;
+            optionsMonitor.OnChange((opts, name) =>
+            {
+                updateHasRun = true;
+            });
+            var optionsValue1 = optionsMonitor.CurrentValue;
+            Assert.Equal(messageValue1, optionsValue1.Message);
+            configSource.Provider.Set(nameof(FakeOptions.Message), messageValue2);
+            var optionsValue2 = optionsMonitor.CurrentValue;
+            Assert.True(updateHasRun);
+            Assert.Equal(messageValue2, optionsValue2.Message);
         }
     }
 }
