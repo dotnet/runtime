@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
 
@@ -108,6 +109,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		void PerformOutputAssemblyChecks (AssemblyDefinition original, NPath outputDirectory)
 		{
 			var assembliesToCheck = original.MainModule.Types.SelectMany (t => t.CustomAttributes).Where (attr => ExpectationsProvider.IsAssemblyAssertion (attr));
+			var actionAssemblies = new HashSet<string> ();
+			bool trimModeIsCopy = false;
 
 			foreach (var assemblyAttr in assembliesToCheck) {
 				var name = (string) assemblyAttr.ConstructorArguments.First ().Value;
@@ -117,8 +120,28 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					Assert.IsFalse (expectedPath.FileExists (), $"Expected the assembly {name} to not exist in {outputDirectory}, but it did");
 				else if (assemblyAttr.AttributeType.Name == nameof (KeptAssemblyAttribute))
 					Assert.IsTrue (expectedPath.FileExists (), $"Expected the assembly {name} to exist in {outputDirectory}, but it did not");
-				else
+				else if (assemblyAttr.AttributeType.Name == nameof (SetupLinkerActionAttribute)) {
+					string assemblyName = (string) assemblyAttr.ConstructorArguments[1].Value;
+					if ((string) assemblyAttr.ConstructorArguments[0].Value == "copy") {
+						VerifyCopyAssemblyIsKeptUnmodified (outputDirectory, assemblyName + (assemblyName == "test" ? ".exe" : ".dll"));
+					}
+
+					actionAssemblies.Add (assemblyName);
+				} else if (assemblyAttr.AttributeType.Name == nameof (SetupLinkerTrimModeAttribute)) {
+					// We delay checking that everything was copied after processing all assemblies
+					// with a specific action, since assembly action wins over trim mode.
+					if ((string) assemblyAttr.ConstructorArguments[0].Value == "copy")
+						trimModeIsCopy = true;
+				} else
 					throw new NotImplementedException ($"Unknown assembly assertion of type {assemblyAttr.AttributeType}");
+			}
+
+			if (trimModeIsCopy) {
+				foreach (string assemblyName in Directory.GetFiles (Directory.GetParent (outputDirectory).ToString (), "input")) {
+					var fileInfo = new FileInfo (assemblyName);
+					if (fileInfo.Extension == ".dll" && !actionAssemblies.Contains (assemblyName))
+						VerifyCopyAssemblyIsKeptUnmodified (outputDirectory, assemblyName + (assemblyName == "test" ? ".exe" : ".dll"));
+				}
 			}
 		}
 
@@ -212,12 +235,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							}
 
 							var expectedTypeName = checkAttrInAssembly.ConstructorArguments[1].Value.ToString ();
-							var linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
+							TypeDefinition linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
 
 							if (linkedType == null && linkedAssembly.MainModule.HasExportedTypes) {
-								linkedType = linkedAssembly.MainModule.ExportedTypes
-									.FirstOrDefault (exported => exported.FullName == expectedTypeName)
-									?.Resolve ();
+								ExportedType exportedType = linkedAssembly.MainModule.ExportedTypes
+										.FirstOrDefault (exported => exported.FullName == expectedTypeName);
+
+								// Note that copied assemblies could have dangling references.
+								if (exportedType != null && original.EntryPoint.DeclaringType.CustomAttributes.FirstOrDefault (
+									ca => ca.AttributeType.Name == nameof (RemovedAssemblyAttribute)
+									&& ca.ConstructorArguments[0].Value.ToString () == exportedType.Scope.Name + ".dll") != null)
+									continue;
+
+								linkedType = exportedType?.Resolve ();
 							}
 
 							switch (attributeTypeName) {
@@ -372,6 +402,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
+		}
+
+		void VerifyCopyAssemblyIsKeptUnmodified (NPath outputDirectory, string assemblyName)
+		{
+			string inputAssemblyPath = Path.Combine (Directory.GetParent (outputDirectory).ToString (), "input", assemblyName);
+			string outputAssemblyPath = Path.Combine (outputDirectory, assemblyName);
+			Assert.IsTrue (File.ReadAllBytes (inputAssemblyPath).SequenceEqual (File.ReadAllBytes (outputAssemblyPath)),
+				$"Expected assemblies\n" +
+				$"\t{inputAssemblyPath}\n" +
+				$"\t{outputAssemblyPath}\n" +
+				$"binaries to be equal, since the input assembly has copy action.");
 		}
 
 		void VerifyCustomAttributeKept (ICustomAttributeProvider provider, string expectedAttributeTypeName)
@@ -567,7 +608,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		void VerifyKeptReferencesInAssembly (CustomAttribute inAssemblyAttribute)
 		{
 			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ());
-			var expectedReferenceNames = ((CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[1].Value).Select (attr => (string) attr.Value);
+			var expectedReferenceNames = ((CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[1].Value).Select (attr => (string) attr.Value).ToList ();
+			for (int i = 0; i < expectedReferenceNames.Count (); i++)
+				if (expectedReferenceNames[i].EndsWith (".dll"))
+					expectedReferenceNames[i] = expectedReferenceNames[i].Substring (0, expectedReferenceNames[i].LastIndexOf ("."));
+
 			Assert.That (assembly.MainModule.AssemblyReferences.Select (asm => asm.Name), Is.EquivalentTo (expectedReferenceNames));
 		}
 
