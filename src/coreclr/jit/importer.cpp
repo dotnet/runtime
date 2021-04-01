@@ -18407,6 +18407,15 @@ void Compiler::impWalkSpillCliqueFromPred(BasicBlock* block, SpillCliqueWalker* 
     assert(impSpillCliqueGetMember(SpillCliquePred, block) != 0);
 }
 
+//------------------------------------------------------------------------
+// impStringLiteralLength: create GenTreeIntCon node for the given string literal to store its length.
+//
+// Arguments:
+//    node  - string literal node.
+//
+// Return Value:
+//    GenTreeIntCon node with string's length as a value or null. 
+//
 GenTreeIntCon* Compiler::impStringLiteralLength(GenTreeStrCon* node)
 {
     int             length = -1;
