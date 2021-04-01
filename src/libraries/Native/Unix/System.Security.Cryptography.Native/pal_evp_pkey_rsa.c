@@ -119,7 +119,6 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
                                  int32_t destinationLen)
 {
     assert(pkey != NULL);
-    assert(hash != NULL);
     assert(destination != NULL);
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
