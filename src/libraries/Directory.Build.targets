@@ -50,7 +50,6 @@
 
     <PackageOutputPath Condition="'$(IsShippingPackage)' == 'true'">$(ArtifactsShippingPackagesDir)</PackageOutputPath>
     <PackageOutputPath Condition="'$(IsShippingPackage)' != 'true'">$(ArtifactsNonShippingPackagesDir)</PackageOutputPath>
-    <PkgProjPath>$(MSBuildProjectDirectory)\..\pkg\$(MSBuildProjectName).pkgproj</PkgProjPath>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
@@ -307,9 +306,8 @@
     <AssemblyInAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</AssemblyInAspNetCoreApp>
     <AssemblyInWindowsDesktop Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</AssemblyInWindowsDesktop>
     <AssemblyInRefPack  Condition="'$(AssemblyInNetCoreApp)' == 'true' or '$(AssemblyInAspNetCoreApp)' == 'true' or '$(AssemblyInWindowsDesktop)' == 'true'">true</AssemblyInRefPack>
-    <!-- Assembly version donot get updated in non-netfx ref pack assemblies. -->
-    <AssemblyVersion  Condition="'$(AssemblyInRefPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
-    <AssemblyVersion Condition="$(TargetFramework.StartsWith('net4')) and '$(AssemblyInRefPack)' == 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
+    <!-- Assembly version do not get updated in non-netfx ref pack assemblies. -->
+    <AssemblyVersion  Condition="'$(AssemblyInRefPack)' != 'true' or $(TargetFramework.StartsWith('net4'))">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup>
