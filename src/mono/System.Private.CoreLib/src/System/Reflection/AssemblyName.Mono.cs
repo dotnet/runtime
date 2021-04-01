@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
-    [StructLayout(LayoutKind.Sequential)]
     public partial class AssemblyName
     {
         public AssemblyName(string assemblyName)
