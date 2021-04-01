@@ -128,8 +128,8 @@ ValueNumFuncDef(GetsharedNongcthreadstaticBaseNoctor, 2, false, true, true)
 ValueNumFuncDef(GetsharedGcthreadstaticBaseDynamicclass, 2, false, true, true)
 ValueNumFuncDef(GetsharedNongcthreadstaticBaseDynamicclass, 2, false, true, true)
 
-ValueNumFuncDef(GetDefaultComparer, 1, false, true, false)
-ValueNumFuncDef(GetDefaultEqualityComparer, 1, false, true, false)
+ValueNumFuncDef(GetDefaultComparer, 1, false, true, true)
+ValueNumFuncDef(GetDefaultEqualityComparer, 1, false, true, true)
 
 ValueNumFuncDef(ClassinitSharedDynamicclass, 2, false, false, false)
 ValueNumFuncDef(RuntimeHandleMethod, 2, false, true, false)
