@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CreateDefaultBuilder_ConfigJsonDoesNotReload()
         {
-            var reloadFlagConfig = new Dictionary<string, string>() {{ "hostbuilder:reloadConfigOnChange", "false" }};
+            var reloadFlagConfig = new Dictionary<string, string>() { { "hostbuilder:reloadConfigOnChange", "false" } };
             var appSettingsPath = Path.Combine(Path.GetTempPath(), "appsettings.json");
 
             string SaveRandomConfig()

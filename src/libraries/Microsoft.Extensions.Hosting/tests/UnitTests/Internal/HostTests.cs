@@ -8,6 +8,7 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Fakes;
@@ -655,6 +656,91 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 Assert.Equal(task, await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(10))));
             }
+        }
+
+        [Fact]
+        public void HostPropagatesExceptionsThrownWithBackgroundServiceExceptionBehaviorOfStopHost()
+        {
+            RemoteExecutor.Invoke(async () =>
+            {
+                using IHost host = CreateBuilder()
+                .ConfigureServices(
+                    services =>
+                    {
+                        services.AddHostedService<AsyncThrowingService>();
+                        services.Configure<HostOptions>(
+                          options =>
+                            options.BackgroundServiceExceptionBehavior =
+                                BackgroundServiceExceptionBehavior.StopHost);
+                    })
+                .Build();
+
+                await host.StartAsync();
+
+                // The following line should not be called, if it is - the test should fail.
+                Assert.True(false, $"The {nameof(AsyncThrowingService)} should have thrown, stopping the Host.");
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void HostPropagatesExceptionsThrownWithBackgroundServiceExceptionBehaviorOfStopHostAfterSometime()
+        {
+            RemoteExecutor.Invoke(async () =>
+            {
+                var backgroundDelayTaskSource = new TaskCompletionSource<bool>();
+
+                using IHost host = CreateBuilder()
+                    .ConfigureServices(
+                        services =>
+                        {
+                            services.AddHostedService(
+                                _ => new AsyncThrowingService(backgroundDelayTaskSource.Task));
+
+                            services.Configure<HostOptions>(
+                              options =>
+                                options.BackgroundServiceExceptionBehavior =
+                                    BackgroundServiceExceptionBehavior.StopHost);
+                        })
+                    .Build();
+
+                await Task.WhenAll(host.StartAsync(), DelayThenSignalContinueAsync());
+
+                async Task DelayThenSignalContinueAsync()
+                {
+                    // Emulate the background service doing some work successfully
+                    // for 5 seconds before throwing exception.
+                    await Task.Delay(5000);
+
+                    backgroundDelayTaskSource.SetResult(true);
+                };
+
+                // The following line should not be called, if it is - the test should fail.
+                Assert.True(false, $"The {nameof(AsyncThrowingService)} should have thrown, stopping the Host.");
+            }).Dispose();
+        }
+
+        [Fact]
+        public void HostHandlesExceptionsThrownWithBackgroundServiceExceptionBehaviorOfIgnore()
+        {
+            var backgroundDelayTaskSource = new TaskCompletionSource<bool>();
+
+            using IHost host = CreateBuilder()
+                .ConfigureServices(
+                    services =>
+                    {
+                        services.AddHostedService(
+                            _ => new AsyncThrowingService(backgroundDelayTaskSource.Task));
+
+                        services.PostConfigure<HostOptions>(
+                          options =>
+                            options.BackgroundServiceExceptionBehavior =
+                                BackgroundServiceExceptionBehavior.Ignore);
+                    })
+                .Build();
+
+            host.Start();
+
+            backgroundDelayTaskSource.SetResult(true);
         }
 
         [Fact]
@@ -1373,7 +1459,9 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         private class AsyncThrowingService : BackgroundService
         {
-            private readonly Task _executeDelayTask;
+            private readonly Task? _executeDelayTask;
+
+            public AsyncThrowingService() { }
 
             public AsyncThrowingService(Task executeDelayTask)
             {
@@ -1382,7 +1470,8 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             {
-                await _executeDelayTask;
+                if (_executeDelayTask is { })
+                    await _executeDelayTask;
 
                 throw new Exception("Background Exception");
             }
