@@ -2535,7 +2535,7 @@ namespace System
 
             if (insertLineBreaks)
             {
-                long newLines = Math.DivRem(outlen, base64LineBreakPosition, out long remainder);
+                (long newLines, long remainder) = Math.DivRem(outlen, base64LineBreakPosition);
                 if (remainder == 0)
                 {
                     --newLines;
