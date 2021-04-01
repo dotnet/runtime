@@ -9,6 +9,7 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
@@ -130,8 +131,26 @@ namespace System.Net.Security
             Console.WriteLine("AcquireCredentialsHandleSchannelCred  called!!!!");
 
             IntPtr storeHandle = (IntPtr)0;
-            //X509Store store = new X509Store("Enterprise Trust", StoreLocation.CurrentUser);
-            X509Store store = new X509Store("teststore", StoreLocation.CurrentUser);
+            //string storeName = "Enterprise Trust";
+            string storeName = "TestSignRoot";
+
+            string storeName2 = "TestFurt2";
+
+            //X509Store store = new X509Store("Enterprise Trust", StoreLocation.);
+            fixed (char* name2 = storeName2)
+            {
+                SafeCertStoreHandle certStore = Interop.Crypt32.CertOpenStore(
+                    (IntPtr)Internal.Cryptography.Pal.Native.CertStoreProvider.CERT_STORE_PROV_SYSTEM_W,
+                    (uint)Internal.Cryptography.Pal.Native.CertEncodingType.All,
+                    IntPtr.Zero,
+                    (uint)(Internal.Cryptography.Pal.Native.CertStoreFlags.CERT_STORE_CREATE_NEW_FLAG | Internal.Cryptography.Pal.Native.CertStoreFlags.CERT_SYSTEM_STORE_LOCAL_MACHINE),
+                    storeName2);
+                Console.WriteLine("Got handle {0} inavled? {1} error {2}", certStore, certStore.IsInvalid, Marshal.GetLastWin32Error());
+            }
+
+
+
+            X509Store store = new X509Store(storeName, StoreLocation.LocalMachine);
             store.Open(OpenFlags.ReadOnly);
             storeHandle = store.StoreHandle;
             Console.WriteLine("Enterprise Trust opened {0} {1} ({2}) count={3}", store, store.Name, storeHandle, store.Certificates.Count);
@@ -176,31 +195,108 @@ namespace System.Net.Security
                 certificateHandle = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
                 secureCredential.paCred = &certificateHandle;
             }
-            secureCredential.hRootStore = storeHandle;
-            Console.WriteLine("ALL API with {0}", secureCredential.hRootStore);
+           // secureCredential.hRootStore = storeHandle;
+            //Console.WriteLine("ALL API with {0}", secureCredential.hRootStore);
 
 
             SafeFreeCredentials cred =  AcquireCredentialsHandle(direction, &secureCredential);
             //Console.WriteLine("Got creed = {0} {1}", cred, cred.DangerousGetHandle());
-            if (isServer&& cred != null)
+            unsafe
             {
+                if (isServer && cred != null)
+                {
+                    var guid = Guid.NewGuid().ToByteArray();
 
-                Interop.SspiCli.SecPkgCred_ClientCertPolicy clientCertPolicy;
-                clientCertPolicy.dwFlags = 0;
-                clientCertPolicy.dwCertFlags = 0;
-                clientCertPolicy.fCheckRevocationFreshnessTime = false;
-                clientCertPolicy.fOmitUsageCheck = false;
-                clientCertPolicy.pwszSslCtlIdentifier = null;
-                clientCertPolicy.pwszSslCtlStoreName = null;
-                clientCertPolicy.dwRevocationFreshnessTime = 0;
-                clientCertPolicy.dwUrlRetrievalTimeout = 0;
-                clientCertPolicy.guid[0] = 11;
-                clientCertPolicy.guid[1] = 22;
+                    int ssize = sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy2);
+                    Span<byte> buffer = stackalloc byte[sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy2) + ((storeName.Length + 1) * 2)];
+                    buffer.Clear();
+                    Encoding.Unicode.GetBytes(storeName, buffer.Slice(ssize));
 
-                Interop.SspiCli.CredHandle credentialHandle = cred._handle;
-                Interop.SECURITY_STATUS status = Interop.SspiCli.SetCredentialsAttributesW(ref credentialHandle, (long)Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_CERT_POLICY, ref clientCertPolicy, 48); // sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy));
-                Console.WriteLine("SetCredentialsAttributesW finished with {0} {1} {1:x}", status, (int)status);
 
+                    Span<Interop.SspiCli.SecPkgCred_ClientCertPolicy2> policy_s = MemoryMarshal.Cast<byte, Interop.SspiCli.SecPkgCred_ClientCertPolicy2>(buffer);
+
+                    byte[] bytes = Encoding.Unicode.GetBytes(storeName);
+                    bytes.CopyTo(buffer.Slice(ssize));
+
+
+
+                    //   guid.CopyTo(buffer.Slice(4, 16));
+                    Console.WriteLine("Buffer is {0} and struct is {1} giud len = {2}", buffer.Length, ssize, guid.Length);
+                    //policy_s[0].pwszSslCtlStoreName =
+
+
+                    byte[] bytes2 = new byte[bytes.Length + 2];
+
+                    Span<byte> name = new Span<byte>(bytes2);
+                    name.Clear();
+                    bytes.CopyTo(name);
+
+                    //Console.WriteLine("Nove jemno je {0} old name is {1} ({2})", name.Length, storeName.Length, storeName);
+                    //Span<Interop.SspiCli.SecPkgCred_ClientCertPolicy> boo2 = stackalloc Interop.SspiCli.SecPkgCred_ClientCertPolicy[1];
+                    Interop.SspiCli.SecPkgCred_ClientCertPolicy clientCertPolicy = default;
+                    clientCertPolicy.dwFlags = 0;
+                    clientCertPolicy.dwCertFlags = 0;
+                    clientCertPolicy.fCheckRevocationFreshnessTime = false;
+                    clientCertPolicy.fOmitUsageCheck = false;
+                    clientCertPolicy.pwszSslCtlIdentifier = null;
+                    //clientCertPolicy.pwszSslCtlIdentifier = IntPtr.Zero;
+                    //clientCertPolicy.pwszSslCtlStoreName = "Test Roots";
+                    //clientCertPolicy.pwszSslCtlStoreName = null;
+                    clientCertPolicy.pwszSslCtlStoreName = storeName;
+                    clientCertPolicy.dwRevocationFreshnessTime = 0;
+                    clientCertPolicy.dwUrlRetrievalTimeout = 0;
+               //     clientCertPolicy.guid[0] = 11;
+               //     clientCertPolicy.guid[1] = 22;
+               //     clientCertPolicy.guid[5] = 66;
+               //     clientCertPolicy.guid[10] = 11;
+
+                    Interop.SspiCli.CredHandle credentialHandle = cred._handle;
+                    //Console.WriteLine(" cred is {0} {1} {2}", cred._handle, cred, Marshal.SizeOf(clientCertPolicy));
+                    //Interop.SspiCli.CredHandle credentialHandle = cred._handle;
+                    Interop.SECURITY_STATUS status = Interop.SECURITY_STATUS.OK;
+                    unsafe
+                    {
+                        fixed (void* ptr1 = buffer)
+                        {
+                            //        var s1 = Interop.SspiCli.QueryCredentialsAttributesW(ref credentialHandle, (long)Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_CERT_POLICY, ptr1);
+                            //       Span<Interop.SspiCli.SecPkgCred_ClientCertPolicy2> attr = MemoryMarshal.Cast<byte, Interop.SspiCli.SecPkgCred_ClientCertPolicy2>(buffer);
+                            //        Console.WriteLine("query done with {0}", s1);
+                        }
+                    }
+                    unsafe
+                    {
+                        fixed (char* name2 = storeName)
+                        {
+                            fixed (void* ptr3 = buffer)
+                            {
+                                policy_s[0].pwszSslCtlStoreName = (System.IntPtr)name2;
+                                //policy_s[0].pwszSslCtlStoreName = (IntPtr)ptr3 + ssize;
+                                //    fixed (void* ptr2 = &credentialHandle)
+                                {
+                                    //Console.WriteLine("client policy is et {0} pwszSslCtlStoreName={1} ", (IntPtr)ptr3, policy_s[0].pwszSslCtlStoreName);
+                                    //fixed (vo)
+                                    fixed (void* ptr = name)
+                                    {
+                                        //  clientCertPolicy.pwszSslCtlStoreName = ptr;
+                                        //clientCertPolicy.pwszSslCtlStoreName = (IntPtr)ptr;
+                                        // status = Interop.SspiCli.SetCredentialsAttributesW(ref credentialHandle, (long)Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_CERT_POLICY, ref clientCertPolicy, 56); // sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy));
+                                        //  Console.WriteLine("Nove volanio {0}", status);
+                                        //status = Interop.SspiCli.SetCredentialsAttributesW(ref credentialHandle, (long)Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_CERT_POLICY, ref clientCertPolicy, 56); // sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy));
+                                        status = Interop.SspiCli.SetCredentialsAttributesW(ref credentialHandle, (long)Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_CERT_POLICY, ptr3, buffer.Length); // sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy));
+
+
+
+
+                                        // Console.WriteLine("size is {0}", sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy));
+                                        //status = Interop.SspiCli.SetCredentialsAttributesW(&credentialHandle, (long)Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_CERT_POLICY, ptr3, 56);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Console.WriteLine("SetCredentialsAttributesW finished with {0} {1} {1:x}", status, (int)status);
+
+                }
             }
             return cred!;
         }
