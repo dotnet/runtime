@@ -51,6 +51,7 @@ public class RuntimeConfigParserTask : Task
         var blobBuilder = new BlobBuilder();
         ConvertDictionaryToBlob(configProperties, blobBuilder);
 
+        Directory.CreateDirectory(Path.GetDirectoryName(OutputFile!)!);
         using var stream = File.OpenWrite(OutputFile);
         blobBuilder.WriteContentTo(stream);
 

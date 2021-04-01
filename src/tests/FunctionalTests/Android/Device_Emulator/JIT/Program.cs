@@ -8,6 +8,7 @@ public class Program
     public static int Main(string[] args)
     {
         Console.WriteLine("Hello, Android!"); // logcat
-        return 42;
+        int result = ((string)AppContext.GetData("System.Threading.ThreadPool.MinThreads")).Equals("4") ? 42 : 1;
+        return result;
     }
 }
