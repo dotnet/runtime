@@ -386,11 +386,11 @@ int __cdecl main(int argc, char* argv[])
             if (res2 == JitInstance::RESULT_ERROR)
             {
                 errorCount2++;
-                LogError("JIT2 main method %d of size %d failed to load and compile correctly.",
+                LogError("Method %d of size %d failed to load and compile correctly by JIT2.",
                          reader->GetMethodContextIndex(), mc->methodSize);
                 if (errorCount2 == 100)
                 {
-                    LogError("More than 100 JIT2 methods failed. Skip compiling remaining JIT2 methods.");
+                    LogError("More than 100 methods compilation failed by JIT2. Skip compiling remaining methods.");
                     break;
                 }
             }
