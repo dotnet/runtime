@@ -17796,7 +17796,7 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     asgBlock->inheritWeight(block);
     cond1Block->inheritWeight(block);
     cond2Block->inheritWeightPercentage(block, (UINT32)cond2BlockWeight);
-    helperBlock->inheritWeight(cond2Block);
+    helperBlock->inheritWeightPercentage(block, 100 - (UINT32)cond2BlockWeight);
 
     // Append cond1 as JTRUE to cond1Block
     GenTree*   jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condExpr);
