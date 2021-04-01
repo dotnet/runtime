@@ -438,7 +438,7 @@ CONFIG_DWORD_INFO(INTERNAL_MD_MiniMDBreak, W("MD_MiniMDBreak"), 0, "ASSERT when 
 CONFIG_DWORD_INFO(INTERNAL_MD_PreSaveBreak, W("MD_PreSaveBreak"), 0, "ASSERT when calling CMiniMdRw::PreSave")
 CONFIG_DWORD_INFO(INTERNAL_MD_RegMetaBreak, W("MD_RegMetaBreak"), 0, "ASSERT when creating RegMeta class")
 CONFIG_DWORD_INFO(INTERNAL_MD_RegMetaDump, W("MD_RegMetaDump"), 0, "Dump MD in 4 functions (?)")
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, W("DOTNET_MODIFIABLE_ASSEMBLIES"), "Enables hot reload on debug built assemblies with the 'debug' keyword", CLRConfig::LookupOptions::DontPrependPrefix | CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue);
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, W("MODIFIABLE_ASSEMBLIES"), "Enables hot reload on debug built assemblies with the 'debug' keyword", CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue);
 
 // Metadata - mscordbi only - this flag is only intended to mitigate potential issues in bug fix 458597.
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_MD_PreserveDebuggerMetadataMemory, W("MD_PreserveDebuggerMetadataMemory"), 0, "Save all versions of metadata memory in the debugger when debuggee metadata is updated")
@@ -718,8 +718,8 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_GCGenAnalysisCmd, W("GCGenAnalysisCmd"), "An 
 //
 // Diagnostics Ports
 //
-RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_DOTNET_DefaultDiagnosticPortSuspend, W("DOTNET_DefaultDiagnosticPortSuspend"), 0, "This sets the deafult diagnostic port to suspend causing the runtime to pause during startup before major subsystems are started.  Resume using the Diagnostics IPC ResumeStartup command on the default diagnostic port.", CLRConfig::LookupOptions::DontPrependPrefix);
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_DiagnosticPorts, W("DOTNET_DiagnosticPorts"), "A semicolon delimited list of additional Diagnostic Ports, where a Diagnostic Port is a NamedPipe path without '\\\\.\\pipe\\' on Windows or the full path of Unix Domain Socket on Linux/Unix followed by optional tags, e.g., '<path>,connect,nosuspend;<path>'", CLRConfig::LookupOptions::DontPrependPrefix);
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DOTNET_DefaultDiagnosticPortSuspend, W("DefaultDiagnosticPortSuspend"), 0, "This sets the deafult diagnostic port to suspend causing the runtime to pause during startup before major subsystems are started.  Resume using the Diagnostics IPC ResumeStartup command on the default diagnostic port.");
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_DOTNET_DiagnosticPorts, W("DiagnosticPorts"), "A semicolon delimited list of additional Diagnostic Ports, where a Diagnostic Port is a NamedPipe path without '\\\\.\\pipe\\' on Windows or the full path of Unix Domain Socket on Linux/Unix followed by optional tags, e.g., '<path>,connect,nosuspend;<path>'");
 
 //
 // LTTng
