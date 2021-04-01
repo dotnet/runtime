@@ -198,7 +198,7 @@ jobs:
         projectFile: android_scenarios.proj
         runKind: android_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perftiger'
+        logicalmachine: 'perfpixel4a'
 
   # run mono microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
