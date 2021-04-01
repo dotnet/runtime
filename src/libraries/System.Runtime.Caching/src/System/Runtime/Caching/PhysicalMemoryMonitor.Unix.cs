@@ -9,9 +9,9 @@ namespace System.Runtime.Caching
 {
     internal sealed partial class PhysicalMemoryMonitor : MemoryMonitor
     {
-        /* There are sysconf and /proc/meminfo ways to get this information before .Net 3,
+        /* There are sysconf and /proc/meminfo ways to get this information before .Net Core 3,
          * but it is very complicated to do it correctly, especially when accounting for
-         * container scenarios. The GC does this for us in .Net 3.
+         * container scenarios. The GC does this for us in .Net Core 3.
          *
          * Note: This is still a little bit off in some restrited memory scenarios, as
          * 'TotalAvailableMemoryBytes' does not exactly report all of the available bytes.
