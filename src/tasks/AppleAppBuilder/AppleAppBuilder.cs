@@ -12,11 +12,44 @@ using Microsoft.Build.Utilities;
 
 public class AppleAppBuilderTask : Task
 {
+    private string targetOS = TargetNames.iOS;
+
     /// <summary>
     /// The Apple OS we are targeting (iOS or tvOS)
     /// </summary>
     [Required]
-    public string TargetOS { get; set; } = TargetNames.iOS;
+    public string TargetOS
+    {
+        get
+        {
+            return targetOS;
+        }
+
+        set
+        {
+            switch (value.ToLower())
+            {
+                case TargetNames.iOS:
+                    targetOS = TargetNames.iOS;
+                    break;
+                case TargetNames.iOSsim:
+                    targetOS = TargetNames.iOSsim;
+                    break;
+                case TargetNames.tvOS:
+                    targetOS = TargetNames.tvOS;
+                    break;
+                case TargetNames.tvOSsim:
+                    targetOS = TargetNames.tvOSsim;
+                    break;
+                case TargetNames.MacCatalyst:
+                    targetOS = TargetNames.MacCatalyst;
+                    break;
+                default:
+                    targetOS = value;
+                    break;
+            }
+        }
+    }
 
     /// <summary>
     /// ProjectName is used as an app name, bundleId and xcode project name
