@@ -22,9 +22,29 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class Http1RawResponseStreamConformanceTests : ResponseConnectedStreamConformanceTests
+    public sealed class Http1UpgradeResponseStreamConformanceTests : ResponseConnectedStreamConformanceTests
     {
         protected override string GetResponseHeaders() => "HTTP/1.1 101 Switching Protocols\r\n\r\n";
+
+        protected override async Task<StreamPair> CreateConnectedStreamsAsync()
+        {
+            StreamPair pair = await base.CreateConnectedStreamsAsync();
+            Assert.True(pair.Stream2.CanWrite);
+            Assert.True(pair.Stream2.CanRead);
+            return pair;
+        }
+    }
+
+    public sealed class Http1ConnectResponseStreamConformanceTests : ResponseConnectedStreamConformanceTests
+    {
+        protected override string GetResponseHeaders() => "HTTP/1.1 200 OK\r\n\r\n";
+
+        protected override HttpRequestMessage GetHttpRequestMessage()
+        {
+            var request = new HttpRequestMessage(new HttpMethod("CONNECT"), $"http://doesntmatter:12345/");
+            request.Headers.Host = "doesntmatter:12345";
+            return request;
+        }
 
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
@@ -83,12 +103,15 @@ namespace System.Net.Http.Functional.Tests
 
         protected abstract string GetResponseHeaders();
 
+        protected virtual HttpRequestMessage GetHttpRequestMessage() =>
+            new HttpRequestMessage(HttpMethod.Get, $"http://doesntmatter:12345/");
+
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
             (Stream httpConnection, Stream server) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
 
             using var hc = new HttpClient(new SocketsHttpHandler() { ConnectCallback = delegate { return ValueTask.FromResult(httpConnection); } });
-            Task<HttpResponseMessage> clientTask = hc.SendAsync(new HttpRequestMessage(HttpMethod.Get, $"http://doesntmatter:12345/"), HttpCompletionOption.ResponseHeadersRead);
+            Task<HttpResponseMessage> clientTask = hc.SendAsync(GetHttpRequestMessage(), HttpCompletionOption.ResponseHeadersRead);
 
             await ReadHeadersAsync(server);
 
