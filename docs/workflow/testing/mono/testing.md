@@ -12,13 +12,13 @@ To build the runtime tests for Mono JIT or interpreter, build CoreCLR and execut
 
 Run individual test:
 ```
-cd ../mono/netcore
+cd src/mono
 make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
 ```
 
 Run all tests:
 ```
-cd ../mono/netcore
+cd src/mono
 make run-tests-coreclr-all
 ```
 
