@@ -49,11 +49,21 @@ namespace System
         }
 
         private static int s_showILOffset;
+        private static bool GetDefaultShowILOffsetSetting()
+        {
+            if (s_showILOffset < 0) return false;
+            if (s_showILOffset > 0) return true;
+
+            bool isSwitchEnabled = AppContextConfigHelper.GetBooleanConfig("Switch.System.Diagnostics.StackTrace.ShowILOffsets", "DOTNET_ILOffsetToStackTrace");
+            s_showILOffset = isSwitchEnabled ? 1 : -1;
+
+            return isSwitchEnabled;
+        }
+
         public static bool ShowILOffsets
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetCachedSwitchValue("Switch.System.Diagnostics.StackTrace.ShowILOffsets", ref s_showILOffset);
+            get => GetDefaultShowILOffsetSetting();
         }
-
     }
 }

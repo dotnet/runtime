@@ -56,16 +56,6 @@ namespace System
                 return true;
             }
 
-            if (switchName == "Switch.System.Diagnostics.StackTrace.ShowILOffsets")
-            {
-                if (!AppContext.TryGetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", out bool ret))
-                {
-                    ret = Environment.GetEnvironmentVariable("DOTNET_ILOffsetToStackTrace") == "1" ? true : false;
-                }
-
-                return ret;
-            }
-
             return false;
         }
     }
