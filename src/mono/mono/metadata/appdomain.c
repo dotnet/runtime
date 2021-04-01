@@ -50,7 +50,6 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/marshal-internals.h>
 #include <mono/metadata/monitor.h>
-#include <mono/metadata/mono-debug.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/lock-tracer.h>
 #include <mono/metadata/threads-types.h>
@@ -80,14 +79,6 @@
 #endif
 #include "object-internals.h"
 #include "icall-decl.h"
-
-typedef struct
-{
-	int runtime_count;
-	int assemblybinding_count;
-	MonoDomain *domain;
-	gchar *filename;
-} RuntimeConfig;
 
 static gboolean no_exec = FALSE;
 
@@ -129,7 +120,6 @@ runtimeconfig_json_read_props (const char *ptr, const char **endp, int nprops, g
 static MonoLoadFunc load_function = NULL;
 
 /* Lazy class loading functions */
-static GENERATE_GET_CLASS_WITH_CACHE (assembly, "System.Reflection", "Assembly");
 static GENERATE_GET_CLASS_WITH_CACHE (app_context, "System", "AppContext");
 
 MonoClass*
@@ -182,14 +172,9 @@ create_domain_objects (MonoDomain *domain)
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
 
-	MonoDomain *old_domain = mono_domain_get ();
 	MonoStringHandle arg;
 	MonoVTable *string_vt;
 	MonoClassField *string_empty_fld;
-
-	if (domain != old_domain) {
-		mono_domain_set_internal_with_options (domain, FALSE);
-	}
 
 	/*
 	 * Initialize String.Empty. This enables the removal of
@@ -227,12 +212,9 @@ create_domain_objects (MonoDomain *domain)
 	domain->stack_overflow_ex = MONO_HANDLE_RAW (mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "StackOverflowException", arg, NULL_HANDLE_STRING, error));
 	mono_error_assert_ok (error);
 
-	/*The ephemeron tombstone i*/
+	/* The ephemeron tombstone */
 	domain->ephemeron_tombstone = MONO_HANDLE_RAW (mono_object_new_handle (mono_defaults.object_class, error));
 	mono_error_assert_ok (error);
-
-	if (domain != old_domain)
-		mono_domain_set_internal_with_options (old_domain, FALSE);
 
 	/* 
 	 * This class is used during exception handling, so initialize it here, to prevent
@@ -407,16 +389,6 @@ exit:
 }
 
 /**
- * mono_context_init:
- * \param domain The domain where the \c System.Runtime.Remoting.Context.Context is initialized
- * Initializes the \p domain's default \c System.Runtime.Remoting 's Context.
- */
-void
-mono_context_init (MonoDomain *domain)
-{
-}
-
-/**
  * mono_runtime_cleanup:
  * \param domain unused.
  *
@@ -470,24 +442,6 @@ mono_runtime_quit_internal (void)
 }
 
 /**
- * mono_domain_set_config:
- * \param domain \c MonoDomain initialized with the appdomain we want to change
- * \param base_dir new base directory for the appdomain
- * \param config_file_name path to the new configuration for the app domain
- *
- * Used to set the system configuration for an appdomain
- *
- * Without using this, embedded builds will get 'System.Configuration.ConfigurationErrorsException: 
- * Error Initializing the configuration system. ---> System.ArgumentException: 
- * The 'ExeConfigFilename' argument cannot be null.' for some managed calls.
- */
-void
-mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *config_file_name)
-{
-	g_assert_not_reached ();
-}
-
-/**
  * mono_domain_has_type_resolve:
  * \param domain application domain being looked up
  *
@@ -503,46 +457,8 @@ mono_domain_has_type_resolve (MonoDomain *domain)
 	return TRUE;
 }
 
-/**
- * mono_domain_try_type_resolve:
- * \param domain application domain in which to resolve the type
- * \param name the name of the type to resolve or NULL.
- * \param typebuilder A \c System.Reflection.Emit.TypeBuilder, used if name is NULL.
- *
- * This routine invokes the internal \c System.AppDomain.DoTypeResolve and returns
- * the assembly that matches name, or ((TypeBuilder)typebuilder).FullName.
- *
- * \returns A \c MonoReflectionAssembly or NULL if not found
- */
-MonoReflectionAssembly *
-mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *typebuilder_raw)
-{
-	HANDLE_FUNCTION_ENTER ();
-
-	g_assert (domain);
-	g_assert (name || typebuilder_raw);
-
-	ERROR_DECL (error);
-
-	MonoReflectionAssemblyHandle ret = NULL_HANDLE_INIT;
-
-	// This will not work correctly on netcore
-	if (name) {
-		MonoStringHandle name_handle = mono_string_new_handle (name, error);
-		goto_if_nok (error, exit);
-		ret = mono_domain_try_type_resolve_name (domain, NULL, name_handle, error);
-	} else {
-		// TODO: make this work on netcore when working on SRE.TypeBuilder
-		g_assert_not_reached ();
-	}
-
-exit:
-	mono_error_cleanup (error);
-	HANDLE_FUNCTION_RETURN_OBJ (ret);
-}
-
 MonoReflectionAssemblyHandle
-mono_domain_try_type_resolve_name (MonoDomain *domain, MonoAssembly *assembly, MonoStringHandle name, MonoError *error)
+mono_domain_try_type_resolve_name (MonoAssembly *assembly, MonoStringHandle name, MonoError *error)
 {
 	MonoObjectHandle ret;
 	MonoReflectionAssemblyHandle assembly_handle;
@@ -567,7 +483,6 @@ mono_domain_try_type_resolve_name (MonoDomain *domain, MonoAssembly *assembly, M
 	if (!method)
 		goto return_null;
 
-	g_assert (domain);
 	g_assert (MONO_HANDLE_BOOL (name));
 
 	if (mono_runtime_get_no_exec ())
@@ -600,54 +515,6 @@ gboolean
 mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 {
 	return mono_mem_manager_mp_contains_addr (mono_mem_manager_get_ambient (), vtable_slot);
-}
-
-gboolean
-mono_domain_set_fast (MonoDomain *domain, gboolean force)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	mono_domain_set_internal_with_options (domain, TRUE);
-	return TRUE;
-}
-
-static gboolean
-add_assembly_to_array (MonoArrayHandle dest, int dest_idx, MonoAssembly* assm, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER ();
-	error_init (error);
-	MonoReflectionAssemblyHandle assm_obj = mono_assembly_get_object_handle (assm, error);
-	goto_if_nok (error, leave);
-	MONO_HANDLE_ARRAY_SETREF (dest, dest_idx, assm_obj);
-leave:
-	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
-}
-
-static MonoArrayHandle
-get_assembly_array_from_domain (MonoDomain *domain, MonoError *error)
-{
-	int i;
-	GPtrArray *assemblies;
-
-	assemblies = mono_alc_get_all_loaded_assemblies ();
-
-	MonoArrayHandle res = mono_array_new_handle (mono_class_get_assembly_class (), assemblies->len, error);
-	goto_if_nok (error, leave);
-	for (i = 0; i < assemblies->len; ++i) {
-		if (!add_assembly_to_array (res, i, (MonoAssembly *)g_ptr_array_index (assemblies, i), error))
-			goto leave;
-	}
-
-leave:
-	g_ptr_array_free (assemblies, TRUE);
-	return res;
-}
-
-MonoArrayHandle
-ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalGetLoadedAssemblies (MonoError *error)
-{
-	MonoDomain *domain = mono_domain_get ();
-	return get_assembly_array_from_domain (domain, error);
 }
 
 MonoAssembly*
@@ -1017,109 +884,6 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 
 fail:
 	return MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
-}
-
-static
-MonoAssembly *
-mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *executing_assembly, MonoAssemblyContextKind asmctx, MonoError *error)
-{
-	MonoAssembly *ass = NULL;
-	HANDLE_FUNCTION_ENTER ();
-	char *filename = NULL;
-	if (MONO_HANDLE_IS_NULL (fname)) {
-		mono_error_set_argument_null (error, "assemblyFile", "");
-		goto leave;
-	}
-
-	filename = mono_string_handle_to_utf8 (fname, error);
-	goto_if_nok (error, leave);
-
-	if (!g_path_is_absolute (filename)) {
-		mono_error_set_argument (error, "assemblyFile", "Absolute path information is required.");
-		goto leave;
-	}
-
-	MonoImageOpenStatus status;
-	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, asmctx, alc);
-	req.requesting_assembly = executing_assembly;
-	ass = mono_assembly_request_open (filename, &req, &status);
-	if (!ass) {
-		if (status == MONO_IMAGE_IMAGE_INVALID)
-			mono_error_set_bad_image_by_name (error, filename, "Invalid Image: %s", filename);
-		else
-			mono_error_set_simple_file_not_found (error, filename);
-	}
-
-leave:
-	g_free (filename);
-	HANDLE_FUNCTION_RETURN_VAL (ass);
-}
-
-MonoReflectionAssemblyHandle
-ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadFile (gpointer alc_ptr, MonoStringHandle fname, MonoStackCrawlMark *stack_mark, MonoError *error)
-{
-	MonoReflectionAssemblyHandle result = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
-	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)alc_ptr;
-
-	MonoAssembly *executing_assembly;
-	executing_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
-	MonoAssembly *ass = mono_alc_load_file (alc, fname, executing_assembly, mono_alc_is_default (alc) ? MONO_ASMCTX_LOADFROM : MONO_ASMCTX_INDIVIDUAL, error);
-	goto_if_nok (error, leave);
-
-	result = mono_assembly_get_object_handle (ass, error);
-
-leave:
-	return result;
-}
-
-static MonoAssembly*
-mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *raw_assembly, guint32 raw_assembly_len, guint8 *raw_symbol_data, guint32 raw_symbol_len, MonoError *error);
-
-MonoReflectionAssemblyHandle
-ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadFromStream (gpointer native_alc, gpointer raw_assembly_ptr, gint32 raw_assembly_len, gpointer raw_symbols_ptr, gint32 raw_symbols_len, MonoError *error)
-{
-	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)native_alc;
-	MonoReflectionAssemblyHandle result = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
-	MonoAssembly *assm = NULL;
-	assm = mono_alc_load_raw_bytes (alc, (guint8 *)raw_assembly_ptr, raw_assembly_len, (guint8 *)raw_symbols_ptr, raw_symbols_len, error);
-	goto_if_nok (error, leave);
-
-	result = mono_assembly_get_object_handle (assm, error);
-
-leave:
-	return result;
-}
-
-static MonoAssembly*
-mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, guint32 raw_assembly_len, guint8 *raw_symbol_data, guint32 raw_symbol_len, MonoError *error)
-{
-	MonoAssembly *ass = NULL;
-	MonoImageOpenStatus status;
-	MonoImage *image = mono_image_open_from_data_internal (alc, (char*)assembly_data, raw_assembly_len, TRUE, NULL, FALSE, NULL, NULL);
-
-	if (!image) {
-		mono_error_set_bad_image_by_name (error, "In memory assembly", "0x%p", assembly_data);
-		return ass;
-	}
-
-	if (raw_symbol_data)
-		mono_debug_open_image_from_memory (image, raw_symbol_data, raw_symbol_len);
-
-	MonoAssemblyLoadRequest req;
-	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_INDIVIDUAL, alc);
-	ass = mono_assembly_request_load_from (image, "", &req, &status);
-
-	if (!ass) {
-		mono_image_close (image);
-		mono_error_set_bad_image_by_name (error, "In Memory assembly", "0x%p", assembly_data);
-		return ass;
-	}
-
-	/* Clear the reference added by mono_image_open_from_data_internal above */
-	mono_image_close (image);
-
-	return ass;
 }
 
 /* Remember properties so they can be be installed in AppContext during runtime init */

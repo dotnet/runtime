@@ -598,3 +598,69 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 
 	MONO_EXIT_GC_UNSAFE;
 }
+
+/**
+ * mono_context_init:
+ * \param domain The domain where the \c System.Runtime.Remoting.Context.Context is initialized
+ * Initializes the \p domain's default \c System.Runtime.Remoting 's Context.
+ */
+void
+mono_context_init (MonoDomain *domain)
+{
+}
+
+/**
+ * mono_domain_set_config:
+ * \param domain \c MonoDomain initialized with the appdomain we want to change
+ * \param base_dir new base directory for the appdomain
+ * \param config_file_name path to the new configuration for the app domain
+ *
+ * Used to set the system configuration for an appdomain
+ *
+ * Without using this, embedded builds will get 'System.Configuration.ConfigurationErrorsException: 
+ * Error Initializing the configuration system. ---> System.ArgumentException: 
+ * The 'ExeConfigFilename' argument cannot be null.' for some managed calls.
+ */
+void
+mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *config_file_name)
+{
+	g_assert_not_reached ();
+}
+
+/**
+ * mono_domain_try_type_resolve:
+ * \param domain application domain in which to resolve the type
+ * \param name the name of the type to resolve or NULL.
+ * \param typebuilder A \c System.Reflection.Emit.TypeBuilder, used if name is NULL.
+ *
+ * This routine invokes the internal \c System.AppDomain.DoTypeResolve and returns
+ * the assembly that matches name, or ((TypeBuilder)typebuilder).FullName.
+ *
+ * \returns A \c MonoReflectionAssembly or NULL if not found
+ */
+MonoReflectionAssembly *
+mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *typebuilder_raw)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	g_assert (domain);
+	g_assert (name || typebuilder_raw);
+
+	ERROR_DECL (error);
+
+	MonoReflectionAssemblyHandle ret = NULL_HANDLE_INIT;
+
+	// This will not work correctly on netcore
+	if (name) {
+		MonoStringHandle name_handle = mono_string_new_handle (name, error);
+		goto_if_nok (error, exit);
+		ret = mono_domain_try_type_resolve_name (NULL, name_handle, error);
+	} else {
+		// TODO: make this work on netcore when working on SRE.TypeBuilder
+		g_assert_not_reached ();
+	}
+
+exit:
+	mono_error_cleanup (error);
+	HANDLE_FUNCTION_RETURN_OBJ (ret);
+}
