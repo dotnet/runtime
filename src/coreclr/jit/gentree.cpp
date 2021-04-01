@@ -5678,6 +5678,20 @@ bool GenTree::OperIsImplicitIndir() const
 }
 
 //------------------------------------------------------------------------------
+// OperIsDereference : Check whether the operation contains dereference.
+//
+// Arguments:
+//    this      -  a GenTree node
+//
+// Return Value:
+//    True if the given node contains an dereference.
+//
+bool GenTree::OperIsDereference() const
+{
+    return OperIsIndirOrArrLength() || OperIsImplicitIndir();
+}
+
+//------------------------------------------------------------------------------
 // OperMayThrow : Check whether the operation may throw.
 //
 //

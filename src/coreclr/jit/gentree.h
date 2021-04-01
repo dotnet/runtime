@@ -1517,6 +1517,8 @@ public:
 
     bool OperIsImplicitIndir() const;
 
+    bool OperIsDereference() const;
+
     static bool OperIsAtomicOp(genTreeOps gtOper)
     {
         switch (gtOper)

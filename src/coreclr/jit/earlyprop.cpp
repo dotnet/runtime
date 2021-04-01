@@ -315,7 +315,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     GenTree*    objectRefPtr = nullptr;
     optPropKind propKind     = optPropKind::OPK_INVALID;
 
-    if (tree->OperIsIndirOrArrLength() || tree->OperIsImplicitIndir())
+    if (tree->OperIsDereference())
     {
         // optFoldNullCheck takes care of updating statement info if a null check is removed.
         optFoldNullCheck(tree, nullCheckMap);
@@ -654,7 +654,7 @@ void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 //
 GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-    assert(tree->OperIsIndirOrArrLength() || tree->OperIsImplicitIndir());
+    assert(tree->OperIsDereference());
 
     GenTree* addr;
     if (tree->OperIs(GT_ARR_LENGTH))
