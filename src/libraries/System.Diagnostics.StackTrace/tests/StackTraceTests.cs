@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.IO;
 using Xunit;
 
 namespace System.Diagnostics
@@ -31,6 +33,17 @@ namespace System.Diagnostics.Tests
 {
     public class StackTraceTests
     {
+        private const string s_sourceTestAssemblyName = "ExceptionTestAssembly.dll";
+        private const string s_sourceTestAssembly2Name = "ExceptionTestAssembly2.dll";
+        private string SourceTestAssemblyPath { get; } = Path.Combine(Environment.CurrentDirectory, s_sourceTestAssemblyName);
+        private string SourceTestAssembly2Path { get; } = Path.Combine(Environment.CurrentDirectory, s_sourceTestAssembly2Name);
+
+        static StackTraceTests()
+        {
+            // enable Switch.System.Diagnostics.StackTrace.ShowILOffsets for ToString_ShowILOffset TC
+            AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
+        }
+
         [Fact]
         public void MethodsToSkip_Get_ReturnsZero()
         {
@@ -298,6 +311,52 @@ namespace System.Diagnostics.Tests
         {
             var stackTrace = new StackTrace((StackFrame)null);
             Assert.Equal(Environment.NewLine, stackTrace.ToString());
+        }
+
+        [Fact]
+        public void ToString_ShowILOffset()
+        {
+            // Normal loading case
+            var asm = Assembly.LoadFrom(SourceTestAssemblyPath);
+            try
+            {
+                asm.GetType("Program").GetMethod("Foo").Invoke(null, null);
+            }
+            catch (Exception e)
+            {
+                Assert.Contains(":token ", e.InnerException.StackTrace);
+            }
+
+            // Assembly.Load(Byte[]) case
+            var inMemBlob = File.ReadAllBytes(SourceTestAssembly2Path);
+            var asm2 = Assembly.Load(inMemBlob);
+            try
+            {
+                asm2.GetType("Program2").GetMethod("Foo").Invoke(null, null);
+            }
+            catch (Exception e)
+            {
+                Assert.Contains(":token ", e.InnerException.StackTrace);
+            }
+
+            // AssmblyBuilder.DefineDynamicAssembly() case
+            AssemblyName asmName = new AssemblyName("ExceptionTestAssembly3");
+            AssemblyBuilder asmBldr = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
+            ModuleBuilder modBldr = asmBldr.DefineDynamicModule(asmName.Name);
+            TypeBuilder tBldr = modBldr.DefineType("Program3");
+            MethodBuilder mBldr = tBldr.DefineMethod("Foo", MethodAttributes.Public | MethodAttributes.Static, null, null);
+            ILGenerator ilGen = mBldr.GetILGenerator();
+            ilGen.ThrowException(typeof(NullReferenceException));
+            ilGen.Emit(OpCodes.Ret);
+            Type t = tBldr.CreateType();
+            try
+            {
+                t.InvokeMember("Foo", BindingFlags.InvokeMethod, null, null, null);
+            }
+            catch (Exception e)
+            {
+                Assert.Contains(":token ", e.InnerException.StackTrace);
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

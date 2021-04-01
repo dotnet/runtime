@@ -17,4 +17,8 @@
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="ExceptionTestAssembly\ExceptionTestAssembly.csproj" />
+    <ProjectReference Include="ExceptionTestAssembly2\ExceptionTestAssembly2.csproj" />
+  </ItemGroup>
 </Project>
