@@ -381,7 +381,19 @@ namespace Internal.TypeSystem
 
         private static LayoutInt AlignUpInstanceFieldOffset(TypeDesc typeWithField, LayoutInt cumulativeInstanceFieldPos, LayoutInt alignment, TargetDetails target, bool armAlignFromStartOfFields = false)
         {
-            return LayoutInt.AlignUp(cumulativeInstanceFieldPos, alignment, target);
+            if (!typeWithField.IsValueType && (target.Architecture == TargetArchitecture.X86 || (armAlignFromStartOfFields && target.Architecture == TargetArchitecture.ARM)) && cumulativeInstanceFieldPos != new LayoutInt(0))
+            {
+                // Alignment of fields is relative to the start of the field list, not the start of the object
+                //
+                // The code in the VM is written as if this is the rule for all architectures, but for ARM 32bit platforms
+                // there is an additional adjustment via dwOffsetBias that aligns fields based on the start of the object
+                cumulativeInstanceFieldPos = cumulativeInstanceFieldPos - new LayoutInt(target.PointerSize);
+                return LayoutInt.AlignUp(cumulativeInstanceFieldPos, alignment, target) + new LayoutInt(target.PointerSize);
+            }
+            else
+            {
+                return LayoutInt.AlignUp(cumulativeInstanceFieldPos, alignment, target);
+            }
         }
 
         protected ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
@@ -409,7 +421,10 @@ namespace Internal.TypeSystem
 
                 largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
 
-                cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, type.Context.Target);
+                cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, type.Context.Target,
+                                                                        armAlignFromStartOfFields: true // In what appears to have been a bug in the design of the arm32 type layout code
+                                                                                                        // this portion of the layout algorithm does not layout from the start of the object
+                                                                        );
                 offsets[fieldOrdinal] = new FieldAndOffset(field, cumulativeInstanceFieldPos);
                 cumulativeInstanceFieldPos = checked(cumulativeInstanceFieldPos + fieldSizeAndAlignment.Size);
 
@@ -535,8 +550,7 @@ namespace Internal.TypeSystem
             bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && largestAlignmentRequired.AsInt > 4;
 
             // For types inheriting from another type, field offsets continue on from where they left off
-            LayoutInt offsetBias = OffsetBias(type);
-            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type) + offsetBias;
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type);
 
             // We've finished placing the fields into their appropriate arrays
             // The next optimization may place non-GC Pointers, so repurpose our
@@ -610,7 +624,7 @@ namespace Internal.TypeSystem
                         // Place the field
                         j = instanceNonGCPointerFieldsCount[i];
                         FieldDesc field = instanceNonGCPointerFieldsArr[i][j];
-                        PlaceInstanceField(field, packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal, offsetBias);
+                        PlaceInstanceField(field, packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
 
                         instanceNonGCPointerFieldsCount[i]++;
                     }
@@ -627,14 +641,14 @@ namespace Internal.TypeSystem
                 {
                     for (int j = 0; j < instanceGCPointerFieldsArr.Length; j++)
                     {
-                        PlaceInstanceField(instanceGCPointerFieldsArr[j], packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal, offsetBias);
+                        PlaceInstanceField(instanceGCPointerFieldsArr[j], packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
                     }
                 }
 
                 // The start index will be the index that may have been increased in the previous optimization
                 for (int j = instanceNonGCPointerFieldsCount[i]; j < instanceNonGCPointerFieldsArr[i].Length; j++)
                 {
-                    PlaceInstanceField(instanceNonGCPointerFieldsArr[i][j], packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal, offsetBias);
+                    PlaceInstanceField(instanceNonGCPointerFieldsArr[i][j], packingSize, offsets, ref cumulativeInstanceFieldPos, ref fieldOrdinal);
                 }
             }
 
@@ -657,7 +671,7 @@ namespace Internal.TypeSystem
                     LayoutInt AlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, context.Target.LayoutPointerSize);
                     cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, AlignmentRequired, context.Target);
                 }
-                offsets[fieldOrdinal] = new FieldAndOffset(instanceValueClassFieldsArr[i], cumulativeInstanceFieldPos - offsetBias);
+                offsets[fieldOrdinal] = new FieldAndOffset(instanceValueClassFieldsArr[i], cumulativeInstanceFieldPos);
 
                 // If the field has an indeterminate size, align the cumulative field offset to the indeterminate value
                 // Otherwise, align the cumulative field offset to the aligned-instance field size
@@ -692,7 +706,7 @@ namespace Internal.TypeSystem
             }
 
             SizeAndAlignment instanceByteSizeAndAlignment;
-            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos - offsetBias, minAlign, 0/* specified field size unused */, out instanceByteSizeAndAlignment);
+            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, minAlign, 0/* specified field size unused */, out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
@@ -705,12 +719,12 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        private static void PlaceInstanceField(FieldDesc field, int packingSize, FieldAndOffset[] offsets, ref LayoutInt instanceFieldPos, ref int fieldOrdinal, LayoutInt offsetBias)
+        private static void PlaceInstanceField(FieldDesc field, int packingSize, FieldAndOffset[] offsets, ref LayoutInt instanceFieldPos, ref int fieldOrdinal)
         {
             var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize, out bool _);
 
             instanceFieldPos = AlignUpInstanceFieldOffset(field.OwningType, instanceFieldPos, fieldSizeAndAlignment.Alignment, field.Context.Target);
-            offsets[fieldOrdinal] = new FieldAndOffset(field, instanceFieldPos - offsetBias);
+            offsets[fieldOrdinal] = new FieldAndOffset(field, instanceFieldPos);
             instanceFieldPos = checked(instanceFieldPos + fieldSizeAndAlignment.Size);
 
             fieldOrdinal++;
