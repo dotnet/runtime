@@ -110,11 +110,6 @@
 // * W("Security_LegacyHMACMode") <---------------------- (No EXTERNAL prefix)
 
 ///
-/// Configuration
-///
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableDOTNETPrefix, W("EnableDOTNETPrefix"), TRUE, "Set if the runtime should check for the DOTNET_ prefix or only use COMPlus_.")
-
-///
 /// AppDomain
 ///
 CONFIG_DWORD_INFO(INTERNAL_EnableFullDebug, W("EnableFullDebug"), 0, "Heavy-weight checking for AD boundary violations (AD leaks)")

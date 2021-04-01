@@ -101,7 +101,6 @@ namespace
         }
     };
 
-    bool s_enableDotnetPrefix = true;
     bool s_fUseEnvCache = false;
     ProbabilisticNameSet s_EnvNames; // set of environment value names seen
 
@@ -176,18 +175,9 @@ namespace
             if (!EnvCacheValueNameSeenPerhaps(name))
                 return NULL;
 
-            // Priority order is DOTNET_ and then COMPlus_. Users can request
-            // skipping of DOTNET_ if desired.
-            if (s_enableDotnetPrefix)
-            {
-                wcscpy_s(buff, _countof(buff), DOTNET_PREFIX);
-                fallbackPrefix = COMPLUS_PREFIX;
-            }
-            else
-            {
-                wcscpy_s(buff, _countof(buff), COMPLUS_PREFIX);
-                fallbackPrefix = NULL;
-            }
+            // Priority order is DOTNET_ and then COMPlus_.
+            wcscpy_s(buff, _countof(buff), DOTNET_PREFIX);
+            fallbackPrefix = COMPLUS_PREFIX;
         }
 
         wcscat_s(buff, _countof(buff), name);
@@ -618,9 +608,6 @@ void CLRConfig::Initialize()
     }
     CONTRACTL_END;
 
-    // Check if the environment has been configured to disable lookup using the DOTNET_ prefix.
-    s_enableDotnetPrefix = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDOTNETPrefix) != 0;
-
     // Check if caching is disabled.
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableConfigCache) != 0)
         return;
@@ -658,8 +645,7 @@ void CLRConfig::Initialize()
                         wszName += LEN_OF_COMPLUS_PREFIX;
                         s_EnvNames.Add(wszName, (DWORD) (wszCurr - wszName));
                     }
-                    else if (s_enableDotnetPrefix
-                        && matchD
+                    else if (matchD
                         && SString::_wcsnicmp(wszName, DOTNET_PREFIX, LEN_OF_DOTNET_PREFIX) == 0)
                     {
                         wszName += LEN_OF_DOTNET_PREFIX;
