@@ -68,9 +68,9 @@ namespace ILCompiler
             }
         }
 
-        public LayoutInt CalculateBaseTypeSize(TypeDesc type) => _r2rFieldLayoutAlgorithm.CalculateBaseTypeSize(type);
+        public LayoutInt CalculateBaseTypeSize(MetadataType type) => _r2rFieldLayoutAlgorithm.CalculateBaseTypeSize(type);
 
-        public LayoutInt CalculateFieldBaseOffset(TypeDesc type) => _r2rFieldLayoutAlgorithm.CalculateFieldBaseOffset(type);
+        public LayoutInt CalculateFieldBaseOffset(MetadataType type) => _r2rFieldLayoutAlgorithm.CalculateFieldBaseOffset(type);
 
         public void SetCompilationGroup(ReadyToRunCompilationModuleGroupBase compilationModuleGroup)
         {

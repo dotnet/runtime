@@ -18,12 +18,12 @@ namespace ILCompiler
 {
     public static class ReadyToRunTypeExtensions
     {
-        public static LayoutInt BaseTypeSize(this TypeDesc type)
+        public static LayoutInt BaseTypeSize(this MetadataType type)
         {
             return ((ReadyToRunCompilerContext)type.Context).CalculateBaseTypeSize(type);
         }
 
-        public static LayoutInt FieldBaseOffset(this TypeDesc type)
+        public static LayoutInt FieldBaseOffset(this MetadataType type)
         {
             return ((ReadyToRunCompilerContext)type.Context).CalculateFieldBaseOffset(type);
         }

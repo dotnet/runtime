@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         && !_fieldDesc.IsStatic
                         && !_fieldDesc.OwningType.IsValueType)
                     {
-                        baseOffset = (uint)_fieldDesc.OwningType.BaseTypeSize().AsInt;
+                        baseOffset = (uint)((MetadataType)_fieldDesc.OwningType).BaseTypeSize().AsInt;
                         if (!factory.CompilationModuleGroup.VersionsWithType(_fieldDesc.OwningType.BaseType))
                         {
                             fieldOffset -= baseOffset;

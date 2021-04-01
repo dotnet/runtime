@@ -761,7 +761,7 @@ namespace Internal.TypeSystem
             return type.IsValueType && !type.IsPrimitive && !type.IsEnum;
         }
 
-        public LayoutInt CalculateBaseTypeSize(TypeDesc type)
+        public LayoutInt CalculateBaseTypeSize(MetadataType type)
         {
             LayoutInt baseTypeSize = LayoutInt.Zero;
 
@@ -769,14 +769,14 @@ namespace Internal.TypeSystem
             {
                 LayoutInt offsetBias = OffsetBias(type);
                 baseTypeSize = type.BaseType.InstanceByteCount + offsetBias;
-                AlignBaseOffsetIfNecessary((MetadataType)type, ref baseTypeSize);
+                AlignBaseOffsetIfNecessary(type, ref baseTypeSize);
                 baseTypeSize -= offsetBias;
             }
 
             return baseTypeSize;
         }
 
-        public LayoutInt CalculateFieldBaseOffset(TypeDesc type)
+        public LayoutInt CalculateFieldBaseOffset(MetadataType type)
         {
             LayoutInt cumulativeInstanceFieldPos = LayoutInt.Zero;
 
@@ -784,7 +784,7 @@ namespace Internal.TypeSystem
             {
                 LayoutInt offsetBias = OffsetBias(type);
                 cumulativeInstanceFieldPos = type.BaseType.InstanceByteCountUnaligned + offsetBias;
-                AlignBaseOffsetIfNecessary((MetadataType)type, ref cumulativeInstanceFieldPos);
+                AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos);
                 cumulativeInstanceFieldPos -= offsetBias;
             }
 
