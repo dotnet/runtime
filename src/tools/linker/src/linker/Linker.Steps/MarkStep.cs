@@ -189,6 +189,7 @@ namespace Mono.Linker.Steps
 		}
 
 		public AnnotationStore Annotations => _context.Annotations;
+		public MarkingHelpers MarkingHelpers => _context.MarkingHelpers;
 		public Tracer Tracer => _context.Tracer;
 
 		public virtual void Process (LinkContext context)
@@ -365,40 +366,12 @@ namespace Mono.Linker.Steps
 
 		void Process ()
 		{
-			while (ProcessPrimaryQueue () || ProcessMarkedPending () || ProcessLazyAttributes () || ProcessLateMarkedAttributes () || MarkFullyPreservedAssemblies () || ProcessInternalsVisibleAttributes ()) {
-
-				// deal with [TypeForwardedTo] pseudo-attributes
-
-				// This marks all exported types that resolve to a marked type. Note that it
-				// may mark unused exported types that happen to resolve to a type which was
-				// marked from a different reference. This seems incorrect.
-				// Note also that we may still remove type forwarder assemblies with marked exports in SweepStep,
-				// if they don't contain other used code.
-				// https://github.com/mono/linker/issues/1740
-				foreach (AssemblyDefinition assembly in _context.GetAssemblies ()) {
-					if (!assembly.MainModule.HasExportedTypes)
-						continue;
-
-					foreach (var exported in assembly.MainModule.ExportedTypes) {
-						bool isForwarder = exported.IsForwarder;
-						var declaringType = exported.DeclaringType;
-						while (!isForwarder && (declaringType != null)) {
-							isForwarder = declaringType.IsForwarder;
-							declaringType = declaringType.DeclaringType;
-						}
-
-						if (!isForwarder)
-							continue;
-						TypeDefinition type = exported.Resolve ();
-						if (type == null)
-							continue;
-						if (!Annotations.IsMarked (type))
-							continue;
-						var di = new DependencyInfo (DependencyKind.ExportedType, type);
-						_context.MarkingHelpers.MarkExportedType (exported, assembly.MainModule, di);
-					}
-				}
-			}
+			while (ProcessPrimaryQueue () ||
+				ProcessMarkedPending () ||
+				ProcessLazyAttributes () ||
+				ProcessLateMarkedAttributes () ||
+				MarkFullyPreservedAssemblies () ||
+				ProcessInternalsVisibleAttributes ()) ;
 
 			ProcessPendingTypeChecks ();
 		}
@@ -858,6 +831,8 @@ namespace Mono.Linker.Steps
 					_context.LogWarning ($"Unresolved type '{typeName}' in DynamicDependencyAttribute", 2036, context);
 					return;
 				}
+
+				MarkingHelpers.MarkMatchingExportedType (type, assembly, new DependencyInfo (DependencyKind.DynamicDependency, type));
 			} else if (dynamicDependency.Type is TypeReference typeReference) {
 				type = typeReference.Resolve ();
 				if (type == null) {
@@ -947,14 +922,20 @@ namespace Mono.Linker.Steps
 				assembly = null;
 			}
 
-			TypeDefinition td;
+			TypeDefinition td = null;
 			if (args.Count >= 2 && args[1].Value is string typeName) {
-				td = _context.TypeNameResolver.ResolveTypeName (assembly ?? (context as MemberReference).Module.Assembly, typeName)?.Resolve ();
+				AssemblyDefinition assemblyDef = assembly ?? (context as MemberReference).Module.Assembly;
+				TypeReference tr = _context.TypeNameResolver.ResolveTypeName (assemblyDef, typeName);
+				if (tr != null)
+					td = tr.Resolve ();
+
 				if (td == null) {
 					_context.LogWarning (
 						$"Could not resolve dependency type '{typeName}' specified in a `PreserveDependency` attribute", 2004, context);
 					return;
 				}
+
+				MarkingHelpers.MarkMatchingExportedType (td, assemblyDef, new DependencyInfo (DependencyKind.PreservedDependency, ca));
 			} else {
 				td = context.DeclaringType.Resolve ();
 			}
@@ -1357,15 +1338,20 @@ namespace Mono.Linker.Steps
 		{
 			Debug.Assert (Annotations.IsProcessed (assembly));
 
+			ModuleDefinition module = assembly.MainModule;
 			MarkCustomAttributes (assembly, new DependencyInfo (DependencyKind.AssemblyOrModuleAttribute, assembly), null);
-			MarkCustomAttributes (assembly.MainModule, new DependencyInfo (DependencyKind.AssemblyOrModuleAttribute, assembly.MainModule), null);
+			MarkCustomAttributes (module, new DependencyInfo (DependencyKind.AssemblyOrModuleAttribute, module), null);
 
-			if (assembly.MainModule.HasExportedTypes) {
-				// TODO: This needs more work accross all steps
+			foreach (TypeDefinition type in module.Types)
+				MarkEntireType (type, includeBaseTypes: false, includeInterfaceTypes: false, new DependencyInfo (DependencyKind.TypeInAssembly, assembly), null);
+
+			foreach (ExportedType exportedType in module.ExportedTypes) {
+				MarkingHelpers.MarkExportedType (exportedType, module, new DependencyInfo (DependencyKind.ExportedType, assembly));
+				MarkingHelpers.MarkForwardedScope (new TypeReference (exportedType.Namespace, exportedType.Name, module, exportedType.Scope));
 			}
 
-			foreach (TypeDefinition type in assembly.MainModule.Types)
-				MarkEntireType (type, includeBaseTypes: false, includeInterfaceTypes: false, new DependencyInfo (DependencyKind.TypeInAssembly, assembly), null);
+			foreach (TypeReference typeReference in module.GetTypeReferences ())
+				MarkingHelpers.MarkForwardedScope (typeReference);
 		}
 
 		void ProcessModuleType (AssemblyDefinition assembly)
@@ -1867,21 +1853,24 @@ namespace Mono.Linker.Steps
 			if (args.Count < 1)
 				return;
 
-			TypeDefinition tdef = null;
+			TypeDefinition typeDefinition = null;
 			switch (attribute.ConstructorArguments[0].Value) {
 			case string s:
-				tdef = _context.TypeNameResolver.ResolveTypeName (s)?.Resolve ();
+				typeDefinition = _context.TypeNameResolver.ResolveTypeName (s, out AssemblyDefinition assemblyDefinition)?.Resolve ();
+				if (typeDefinition != null)
+					MarkingHelpers.MarkMatchingExportedType (typeDefinition, assemblyDefinition, new DependencyInfo (DependencyKind.CustomAttribute, provider));
+
 				break;
 			case TypeReference type:
-				tdef = type.Resolve ();
+				typeDefinition = type.Resolve ();
 				break;
 			}
 
-			if (tdef == null)
+			if (typeDefinition == null)
 				return;
 
 			Tracer.AddDirectDependency (attribute, new DependencyInfo (DependencyKind.CustomAttribute, provider), marked: false);
-			MarkMethodsIf (tdef.Methods, predicate, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), sourceLocationMember);
+			MarkMethodsIf (typeDefinition.Methods, predicate, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), sourceLocationMember);
 		}
 
 		void MarkTypeWithDebuggerDisplayAttribute (TypeDefinition type, CustomAttribute attribute)

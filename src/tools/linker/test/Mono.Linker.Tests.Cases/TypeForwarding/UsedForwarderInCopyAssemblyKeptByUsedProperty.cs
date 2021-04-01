@@ -1,4 +1,4 @@
-using System;
+﻿using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.TypeForwarding.Dependencies;
@@ -6,13 +6,9 @@ using Mono.Linker.Tests.Cases.TypeForwarding.Dependencies;
 namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
 	// Actions:
+	// copy - This assembly
 	// link - Forwarder.dll and Implementation.dll
-	// copy - this (test.dll) assembly
-
-	[SetupLinkerDefaultAction ("link")]
 	[SetupLinkerAction ("copy", "test")]
-	[KeepTypeForwarderOnlyAssemblies ("false")]
-
 	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
 
 	// After compiling the test case we then replace the reference impl with implementation + type forwarder
@@ -20,37 +16,17 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[SetupCompileAfter ("Forwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 
 	[KeptMemberInAssembly ("Forwarder.dll", typeof (ImplementationLibrary))]
+	[KeptMemberInAssembly ("Forwarder.dll", typeof (ImplementationLibrary.ImplementationLibraryNestedType))]
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary))]
-	static class AttributesScopeUpdated
+	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary.ImplementationLibraryNestedType))]
+
+	[Kept]
+	[KeptMember (".ctor()")]
+	public class UsedForwarderInCopyAssemblyKeptByUsedProperty
 	{
-		static void Main ()
+		public static void Main ()
 		{
-		}
-
-		[Kept]
-		public static void Test_1 ([KeptAttributeAttribute (typeof (TestType3Attribute))][TestType3 (typeof (ImplementationLibrary))] int arg)
-		{
-		}
-
-		[Kept]
-		public static void Test_2<[KeptAttributeAttribute (typeof (TestType3Attribute))] [TestType3 (typeof (ImplementationLibrary))] T> ()
-		{
-		}
-
-		[Kept]
-		[return: KeptAttributeAttribute (typeof (TestType3Attribute))]
-		[return: TestType3 (typeof (ImplementationLibrary))]
-		public static void Test_3 ()
-		{
-		}
-	}
-
-	[KeptBaseType (typeof (Attribute))]
-	public class TestType3Attribute : Attribute
-	{
-		[Kept]
-		public TestType3Attribute (Type type)
-		{
+			var accessPropertyOnNestedType = ImplementationLibrary.ImplementationLibraryNestedType.PropertyOnNestedType;
 		}
 	}
 }
