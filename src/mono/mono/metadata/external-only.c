@@ -514,3 +514,46 @@ mono_string_hash (MonoString *s)
 {
 	MONO_EXTERNAL_ONLY (guint, mono_string_hash_internal (s));
 }
+
+/**
+ * mono_domain_create:
+ *
+ * Creates a new application domain, the unmanaged representation
+ * of the actual domain.
+ *
+ * Application domains provide an isolation facilty for assemblies.   You
+ * can load assemblies and execute code in them that will not be visible
+ * to other application domains. This is a runtime-based virtualization
+ * technology.
+ *
+ * It is possible to unload domains, which unloads the assemblies and
+ * data that was allocated in that domain.
+ *
+ * When a domain is created a mempool is allocated for domain-specific
+ * structures, along a dedicated code manager to hold code that is
+ * associated with the domain.
+ *
+ * \returns New initialized \c MonoDomain, with no configuration or assemblies
+ * loaded into it.
+ */
+MonoDomain *
+mono_domain_create (void)
+{
+	g_assert_not_reached ();
+}
+
+/**
+ * mono_domain_get_by_id:
+ * \param domainid the ID
+ * \returns the domain for a specific domain id.
+ */
+MonoDomain *
+mono_domain_get_by_id (gint32 domainid)
+{
+	MonoDomain * domain = mono_get_root_domain ();
+
+	if (domain->domain_id == domainid)
+		return domain;
+	else
+		return NULL;
+}

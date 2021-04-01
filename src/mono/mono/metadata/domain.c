@@ -53,6 +53,11 @@
 #include "external-only.h"
 #include "mono/utils/mono-tls-inline.h"
 
+/*
+ * There is only one domain, but some code uses the domain TLS
+ * variable to check whenever a thread is attached to the runtime etc.,
+ * so keep this for now.
+ */
 #define GET_APPDOMAIN    mono_tls_get_domain
 #define SET_APPDOMAIN(x) do { \
 	MonoThreadInfo *info; \
@@ -62,23 +67,11 @@
 		mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
 } while (FALSE)
 
-static guint16 appdomain_list_size = 0;
-static guint16 appdomain_next = 0;
-static MonoDomain **appdomains_list = NULL;
+static MonoDomain **appdomains_list;
 static MonoImage *exe_image;
+static MonoDomain *mono_root_domain;
 
 gboolean mono_dont_free_domains;
-
-#define mono_appdomains_lock() mono_coop_mutex_lock (&appdomains_mutex)
-#define mono_appdomains_unlock() mono_coop_mutex_unlock (&appdomains_mutex)
-static MonoCoopMutex appdomains_mutex;
-
-static MonoDomain *mono_root_domain = NULL;
-
-/* some statistics */
-static int max_domain_code_size = 0;
-static int max_domain_code_alloc = 0;
-static int total_domain_code_alloc = 0;
 
 /* AppConfigInfo: Information about runtime versions supported by an 
  * aplication.
@@ -132,112 +125,31 @@ gc_free_fixed_non_heap_list (void *ptr)
 	else
 		mono_gc_free_fixed (ptr);
 }
-/*
- * Allocate an id for domain and set domain->domain_id.
- * LOCKING: must be called while holding appdomains_mutex.
- * We try to assign low numbers to the domain, so it can be used
- * as an index in data tables to lookup domain-specific info
- * with minimal memory overhead. We also try not to reuse the
- * same id too quickly (to help debugging).
- */
-static int
-domain_id_alloc (MonoDomain *domain)
-{
-	int id = -1, i;
-	if (!appdomains_list) {
-		appdomain_list_size = 2;
-		appdomains_list = (MonoDomain **)gc_alloc_fixed_non_heap_list (appdomain_list_size * sizeof (void*));
 
-	}
-	for (i = appdomain_next; i < appdomain_list_size; ++i) {
-		if (!appdomains_list [i]) {
-			id = i;
-			break;
-		}
-	}
-	if (id == -1) {
-		for (i = 0; i < appdomain_next; ++i) {
-			if (!appdomains_list [i]) {
-				id = i;
-				break;
-			}
-		}
-	}
-	if (id == -1) {
-		MonoDomain **new_list;
-		int new_size = appdomain_list_size * 2;
-		if (new_size >= (1 << 16))
-			g_assert_not_reached ();
-		id = appdomain_list_size;
-		new_list = (MonoDomain **)gc_alloc_fixed_non_heap_list (new_size * sizeof (void*));
-		memcpy (new_list, appdomains_list, appdomain_list_size * sizeof (void*));
-		gc_free_fixed_non_heap_list (appdomains_list);
-		appdomains_list = new_list;
-		appdomain_list_size = new_size;
-	}
-
-	domain->domain_id = id;
-	appdomains_list [id] = domain;
-	appdomain_next++;
-	if (appdomain_next > appdomain_list_size)
-		appdomain_next = 0;
-	return id;
-}
-
-static gsize domain_gc_bitmap [sizeof(MonoDomain)/4/32 + 1];
-static MonoGCDescriptor domain_gc_desc = MONO_GC_DESCRIPTOR_NULL;
-
-/**
- * mono_domain_create:
- *
- * Creates a new application domain, the unmanaged representation
- * of the actual domain.
- *
- * Application domains provide an isolation facilty for assemblies.   You
- * can load assemblies and execute code in them that will not be visible
- * to other application domains. This is a runtime-based virtualization
- * technology.
- *
- * It is possible to unload domains, which unloads the assemblies and
- * data that was allocated in that domain.
- *
- * When a domain is created a mempool is allocated for domain-specific
- * structures, along a dedicated code manager to hold code that is
- * associated with the domain.
- *
- * \returns New initialized \c MonoDomain, with no configuration or assemblies
- * loaded into it.
- */
-MonoDomain *
-mono_domain_create (void)
+static MonoDomain *
+create_root_domain (void)
 {
 	MonoDomain *domain;
-  
-	mono_appdomains_lock ();
-  
-	if (!domain_gc_desc) {
-		unsigned int i, bit = 0;
-		for (i = G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_OBJECT); i <= G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_LAST_OBJECT); i += sizeof (gpointer)) {
-			bit = i / sizeof (gpointer);
-			domain_gc_bitmap [bit / 32] |= (gsize) 1 << (bit % 32);
-		}
-		domain_gc_desc = mono_gc_make_descr_from_bitmap ((gsize*)domain_gc_bitmap, bit + 1);
+	gsize domain_gc_bitmap [sizeof(MonoDomain)/4/32 + 1];
+	MonoGCDescriptor domain_gc_desc;
+
+	unsigned int i, bit = 0;
+	for (i = G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_OBJECT); i <= G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_LAST_OBJECT); i += sizeof (gpointer)) {
+		bit = i / sizeof (gpointer);
+		domain_gc_bitmap [bit / 32] |= (gsize) 1 << (bit % 32);
 	}
-	mono_appdomains_unlock ();
+	domain_gc_desc = mono_gc_make_descr_from_bitmap ((gsize*)domain_gc_bitmap, bit + 1);
 
 	if (!mono_gc_is_moving ())
 		domain = (MonoDomain *)mono_gc_alloc_fixed (sizeof (MonoDomain), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_DOMAIN, NULL, "Domain Structure");
 	else
 		domain = (MonoDomain *)mono_gc_alloc_fixed (sizeof (MonoDomain), domain_gc_desc, MONO_ROOT_SOURCE_DOMAIN, NULL, "Domain Structure");
 
-	domain->domain = NULL;
-	domain->friendly_name = NULL;
-
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
-	mono_appdomains_lock ();
-	domain_id_alloc (domain);
-	mono_appdomains_unlock ();
+	// FIXME: why is this needed ?
+	appdomains_list = (MonoDomain **)gc_alloc_fixed_non_heap_list (sizeof (void*));
+	appdomains_list [0] = domain;
 
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_inc_i32 (&mono_perfcounters->loader_appdomains);
@@ -290,16 +202,10 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 #endif
 	mono_counters_init ();
 
-	mono_counters_register ("Max native code in a domain", MONO_COUNTER_INT|MONO_COUNTER_JIT, &max_domain_code_size);
-	mono_counters_register ("Max code space allocated in a domain", MONO_COUNTER_INT|MONO_COUNTER_JIT, &max_domain_code_alloc);
-	mono_counters_register ("Total code space allocated", MONO_COUNTER_INT|MONO_COUNTER_JIT, &total_domain_code_alloc);
-
 	mono_counters_register ("Max HashTable Chain Length", MONO_COUNTER_INT|MONO_COUNTER_METADATA, &mono_g_hash_table_max_chain_length);
 
 	mono_gc_base_init ();
 	mono_thread_info_attach ();
-
-	mono_coop_mutex_init_recursive (&appdomains_mutex);
 
 	mono_metadata_init ();
 	mono_images_init ();
@@ -310,7 +216,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_runtime_init_tls ();
 	mono_icall_init ();
 
-	domain = mono_domain_create ();
+	domain = create_root_domain ();
 	mono_root_domain = domain;
 
 	mono_alcs_init ();
@@ -333,7 +239,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		runtimes = get_runtimes_from_exe (exe_filename, &exe_image);
 #ifdef HOST_WIN32
 		if (!exe_image) {
-			exe_image = mono_assembly_open_from_bundle (mono_alc_get_default (domain), exe_filename, NULL, NULL);
+			exe_image = mono_assembly_open_from_bundle (mono_alc_get_default (), exe_filename, NULL, NULL);
 			if (!exe_image)
 				exe_image = mono_image_open (exe_filename, NULL);
 		}
@@ -730,27 +636,6 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 	mono_runtime_ensure_entry_assembly (ass);
 
 	return ass;
-}
-
-/**
- * mono_domain_get_by_id:
- * \param domainid the ID
- * \returns the domain for a specific domain id.
- */
-MonoDomain * 
-mono_domain_get_by_id (gint32 domainid) 
-{
-	MonoDomain * domain;
-
-	MONO_ENTER_GC_UNSAFE;
-	mono_appdomains_lock ();
-	if (domainid < appdomain_list_size)
-		domain = appdomains_list [domainid];
-	else
-		domain = NULL;
-	mono_appdomains_unlock ();
-	MONO_EXIT_GC_UNSAFE;
-	return domain;
 }
 
 /**
