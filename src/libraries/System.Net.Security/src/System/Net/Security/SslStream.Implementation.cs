@@ -41,6 +41,7 @@ namespace System.Net.Security
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
         private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
         private ArrayBuffer _handshakeBuffer;
+        private bool receivedEOF;
 
         // Used by Telemetry to ensure we log connection close exactly once
         // 0 = no handshake
@@ -179,17 +180,6 @@ namespace System.Net.Security
 
                 return _context!.Encrypt(buffer, ref outBuffer, out outSize);
             }
-        }
-
-        private SecurityStatusPal DecryptData()
-        {
-            ThrowIfExceptionalOrNotAuthenticated();
-            return PrivateDecryptData(_internalBuffer, ref _decryptedBytesOffset, ref _decryptedBytesCount);
-        }
-
-        private SecurityStatusPal PrivateDecryptData(byte[]? buffer, ref int offset, ref int count)
-        {
-            return _context!.Decrypt(buffer, ref offset, ref count);
         }
 
         //
@@ -749,6 +739,10 @@ namespace System.Net.Security
                 _decryptedBytesCount = 0;
                 _decryptedBytesOffset = 0;
             }
+            else if (_decryptedBytesCount == 0)
+            {
+                _decryptedBytesOffset = 0;
+            }
         }
 
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer)
@@ -759,17 +753,32 @@ namespace System.Net.Security
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
             }
 
+            ThrowIfExceptionalOrNotAuthenticated();
+
             Debug.Assert(_internalBuffer is null || _internalBufferCount > 0 || _decryptedBytesCount > 0, "_internalBuffer allocated when no data is buffered.");
 
             try
             {
+
+                if (_decryptedBytesCount != 0)
+                {
+                    int length = CopyDecryptedData(buffer);
+                    ReturnReadBufferIfEmpty();
+                    return length;
+                }
+
+                if (receivedEOF)
+                {
+                    // We received EOF during previous read but had buffered data to return.
+                    return 0;
+                }
+
+                Debug.Assert(_decryptedBytesOffset == 0);
+                Debug.Assert(_decryptedBytesCount == 0);
+
+                int processedLength = 0;
                 while (true)
                 {
-                    if (_decryptedBytesCount != 0)
-                    {
-                        return CopyDecryptedData(buffer);
-                    }
-
                     if (buffer.Length == 0 && _internalBuffer is null)
                     {
                         // User requested a zero-byte read, and we have no data available in the buffer for processing.
@@ -782,11 +791,25 @@ namespace System.Net.Security
                         await adapter.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
                     }
 
-                    ResetReadBuffer();
-
                     // Read the next frame header.
-                    if (_internalBufferCount < SecureChannel.ReadHeaderSize)
+                    int payloadBytes = int.MaxValue;
+                    if (_internalBufferCount >= SecureChannel.ReadHeaderSize)
                     {
+                        //GetFrameSizepayloadBytes = GetFrameSize(_internalBuffer.Span.Slice(_internalOffset));
+                        payloadBytes = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
+                        if (payloadBytes < 0)
+                        {
+                            throw new IOException(SR.net_frame_read_size);
+                        }
+                    }
+
+                    if (_internalBufferCount < payloadBytes)
+                    {
+                        // We may have enough space to complete frame, but we may still do extra IO if the frame is small.
+                        // So we will attempt larger read - that is trade of with extra copy.
+                        // This may be updated at some point based on size of existing chunk, rented buffer and size of 'buffer'.
+                        ResetReadBuffer();
+
                         // We don't have enough bytes buffered, so issue an initial read to try to get enough.  This is
                         // done in this method both to better consolidate error handling logic (the first read is the special
                         // case that needs to differentiate reading 0 from > 0, and everything else needs to throw if it
@@ -795,7 +818,8 @@ namespace System.Net.Security
                         int readBytes = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
                         if (readBytes == 0)
                         {
-                            return 0;
+                            receivedEOF = true;
+                            break;
                         }
 
                         _internalBufferCount += readBytes;
@@ -803,31 +827,44 @@ namespace System.Net.Security
                         {
                             await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
                         }
-                    }
-                    Debug.Assert(_internalBufferCount >= SecureChannel.ReadHeaderSize);
 
-                    // Parse the frame header to determine the payload size (which includes the header size).
-                    int payloadBytes = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
-                    if (payloadBytes < 0)
-                    {
-                        throw new IOException(SR.net_frame_read_size);
+                        if (payloadBytes == int.MaxValue)
+                        {
+                            // Parse the frame header to determine the payload size unless already done above.
+//                            payloadBytes = GetFrameSize(_internalBuffer.Span.Slice(_internalOffset));
+                            payloadBytes = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
+                            if (payloadBytes < 0)
+                            {
+                                throw new IOException(SR.net_frame_read_size);
+                            }
+                        }
+
+                        // Read in the rest of the payload if we don't have it.
+                        if (_internalBufferCount < payloadBytes)
+                        {
+                            await FillBufferAsync(adapter, payloadBytes).ConfigureAwait(false);
+                        }
                     }
 
-                    // Read in the rest of the payload if we don't have it.
-                    if (_internalBufferCount < payloadBytes)
-                    {
-                        await FillBufferAsync(adapter, payloadBytes).ConfigureAwait(false);
-                    }
-
+                haveFullTlsFrame:
                     // Set _decrytpedBytesOffset/Count to the current frame we have (including header)
                     // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
                     _decryptedBytesOffset = _internalOffset;
                     _decryptedBytesCount = payloadBytes;
+                    int decryptedCount = 0;
+                    int decryptedOffset = 0;
 
                     SecurityStatusPal status;
                     lock (_handshakeLock)
                     {
-                        status = DecryptData();
+                        ThrowIfExceptionalOrNotAuthenticated();
+                        status = _context!.Decrypt(new ReadOnlySpan<byte>(_internalBuffer, _internalOffset, payloadBytes), _internalBuffer.AsSpan(_decryptedBytesOffset), ref decryptedOffset, ref decryptedCount);
+                        _decryptedBytesCount = decryptedCount;
+                        if (decryptedCount > 0)
+                        {
+                            _decryptedBytesOffset = _internalOffset + decryptedOffset;
+                        }
+
                         if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                         {
                             // The status indicates that peer wants to renegotiate. (Windows only)
@@ -886,12 +923,54 @@ namespace System.Net.Security
 
                         if (status.ErrorCode == SecurityStatusPalErrorCode.ContextExpired)
                         {
-                            return 0;
+                            receivedEOF = true;
+                            break;
                         }
 
                         throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
                     }
+
+                    if (_decryptedBytesCount == 0)
+                    {
+                        // This may be service frame to update keys or renegotiation.
+                        // Keep waiting for real data.
+                        if (processedLength > 0)
+                        {
+                            // We have some data. Hand them to caller before going for another iteration.
+                            break;
+                        }
+
+                        continue;
+                    }
+
+                    // This will either copy data from rented buffer or adjust final buffer as needed.
+                    // In both cases _decryptedBytesOffset and _decryptedBytesCount will be updated as needed.
+                    processedLength += CopyDecryptedData(buffer);
+
+                    if (_decryptedBytesCount > 0)
+                    {
+                        // We have more than enough to fill provided buffer.
+                        break;
+                    }
+
+                    // Check if we have enough data to process next TLS frame
+                    if (_internalBufferCount > SecureChannel.ReadHeaderSize && _framing == Framing.SinceSSL3)
+                    {
+                        TlsFrameHelper.TryGetFrameHeader(_internalBuffer.AsSpan(_internalOffset), ref _lastFrame.Header);
+                        payloadBytes = _lastFrame.Header.GetFrameSize();
+                        if (payloadBytes <= _internalBufferCount && _lastFrame.Header.Type == TlsContentType.AppData)
+                        {
+                            // skip over the already written decrypted data.
+                            buffer = buffer.Slice(decryptedCount);
+                            Debug.Assert(_decryptedBytesOffset <= _internalOffset);
+                            goto haveFullTlsFrame;
+                        }
+                    }
+
+                    break;
                 }
+
+                return processedLength;
             }
             catch (Exception e)
             {
@@ -1025,6 +1104,10 @@ namespace System.Net.Security
 
             _internalOffset += byteCount;
             _internalBufferCount -= byteCount;
+            if (_internalBufferCount == 0)
+            {
+                _internalOffset = 0;
+            }
         }
 
         private int CopyDecryptedData(Memory<byte> buffer)
