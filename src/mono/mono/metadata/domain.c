@@ -588,48 +588,17 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 	MONO_EXIT_GC_UNSAFE;
 }
 
-void
-mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
-{
-	mono_runtime_ensure_entry_assembly (assembly);
-}
-
-/**
- * mono_domain_assembly_open:
- * \param domain the application domain
- * \param name file name of the assembly
- */
-MonoAssembly *
-mono_domain_assembly_open (MonoDomain *domain, const char *name)
-{
-	MonoAssembly *result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_domain_assembly_open_internal (domain, mono_alc_get_default (), name);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-// Uses the domain on legacy mono and the ALC on current
 // Intended only for loading the main assembly
 MonoAssembly *
-mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext *alc, const char *name)
+mono_domain_assembly_open_internal (MonoAssemblyLoadContext *alc, const char *name)
 {
-	MonoDomain *current;
 	MonoAssembly *ass;
 
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoAssemblyOpenRequest req;
 	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
-	if (domain != mono_domain_get ()) {
-		current = mono_domain_get ();
-
-		mono_domain_set_fast (domain, FALSE);
-		ass = mono_assembly_request_open (name, &req, NULL);
-		mono_domain_set_fast (current, FALSE);
-	} else {
-		ass = mono_assembly_request_open (name, &req, NULL);
-	}
+	ass = mono_assembly_request_open (name, &req, NULL);
 
 	// On netcore, this is necessary because we check the AppContext.BaseDirectory property as part of the assembly lookup algorithm
 	// AppContext.BaseDirectory can sometimes fall back to checking the location of the entry_assembly, which should be non-null

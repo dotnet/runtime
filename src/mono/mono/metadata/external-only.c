@@ -557,3 +557,24 @@ mono_domain_get_by_id (gint32 domainid)
 	else
 		return NULL;
 }
+
+/**
+ * mono_domain_assembly_open:
+ * \param domain the application domain
+ * \param name file name of the assembly
+ */
+MonoAssembly *
+mono_domain_assembly_open (MonoDomain *domain, const char *name)
+{
+	MonoAssembly *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_domain_assembly_open_internal (mono_alc_get_default (), name);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+void
+mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
+{
+	mono_runtime_ensure_entry_assembly (assembly);
+}

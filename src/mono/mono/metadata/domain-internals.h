@@ -108,7 +108,7 @@ gboolean
 mono_assembly_name_parse (const char *name, MonoAssemblyName *aname);
 
 MonoAssembly *
-mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext *alc, const char *name);
+mono_domain_assembly_open_internal (MonoAssemblyLoadContext *alc, const char *name);
 
 MonoImage *mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc,
 					   const char *filename,

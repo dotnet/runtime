@@ -1414,7 +1414,7 @@ static void main_thread_handler (gpointer user_data)
 
 		/* Treat the other arguments as assemblies to compile too */
 		for (i = 0; i < main_args->argc; ++i) {
-			assembly = mono_domain_assembly_open_internal (main_args->domain, mono_alc_get_default (), main_args->argv [i]);
+			assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->argv [i]);
 			if (!assembly) {
 				fprintf (stderr, "Can not open image %s\n", main_args->argv [i]);
 				exit (1);
@@ -1444,7 +1444,7 @@ static void main_thread_handler (gpointer user_data)
 			}
 		}
 	} else {
-		assembly = mono_domain_assembly_open_internal (main_args->domain, mono_alc_get_default (), main_args->file);
+		assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->file);
 		if (!assembly){
 			fprintf (stderr, "Can not open image %s\n", main_args->file);
 			exit (1);
