@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
@@ -12,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
     internal class ScopePool
     {
         // Modest number to re-use. We only really care about reuse for short lived scopes
-        private const int s_maxQueueSize = 128;
+        private const int MaxQueueSize = 128;
 
         private int _count;
         private readonly ConcurrentQueue<State> _queue = new();
@@ -29,7 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public bool Return(State state)
         {
-            if (Interlocked.Increment(ref _count) > s_maxQueueSize)
+            if (Interlocked.Increment(ref _count) > MaxQueueSize)
             {
                 Interlocked.Decrement(ref _count);
                 return false;
@@ -57,6 +58,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             internal void Clear()
             {
+                // This should only get called from the pool
+                Debug.Assert(_pool != null);
                 // REVIEW: Should we trim excess here as well?
                 ResolvedServices.Clear();
                 Disposables?.Clear();

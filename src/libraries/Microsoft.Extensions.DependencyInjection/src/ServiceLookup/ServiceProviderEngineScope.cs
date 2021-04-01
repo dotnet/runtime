@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private ScopePool.State _state;
 
         // This lock protects state on the scope, in particular, for the root scope, it protects
-        // the list of disposable entries only as ResolvedServices is a concurrent dictionary
+        // the list of disposable entries only, since ResolvedServices is a concurrent dictionary.
         // For other scopes, it protects ResolvedServices and the list of disposables
         private readonly object _scopeLock = new object();
 
@@ -69,8 +69,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
 
                     ThrowHelper.ThrowObjectDisposedException();
-
-                    return service;
                 }
 
                 _state.Disposables ??= new List<object>();
@@ -178,6 +176,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // try to return to the pool while somebody is trying to access ResolvedServices.
             lock (_scopeLock)
             {
+                // ResolvedServices is never cleared for singletons because there might be a compilation running in background
+                // trying to get a cached singleton service. If it doesn't find it
+                // it will try to create a new one which will result in an ObjectDisposedException.
+
                 // Dispose the state, which will end up attempting to return the state pool.
                 // This will return false if the pool is full or if this state object is the root scope
                 if (_state.Return())
@@ -202,11 +204,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 _disposed = true;
 
                 return _state.Disposables;
-
-                // Not clearing ResolvedServices here because there might be a compilation running in background
-                // trying to get a cached singleton service instance and if it won't find
-                // it it will try to create a new one tripping the Debug.Assert in CaptureDisposable
-                // and leaking a Disposable object in Release mode
             }
         }
     }
