@@ -2,7 +2,8 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>	
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <!-- This should be replaced with servicing version property in next iteration.-->
+    <!-- Replace <PackageVersion>5.0.1</PackageVersion> with
+      <ServicingVersion>2</ServicingVersion> when servicing this assembly. -->
     <PackageVersion>5.0.1</PackageVersion>
   </PropertyGroup>
 </Project>

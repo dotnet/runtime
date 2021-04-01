@@ -301,7 +301,7 @@
     <PackageVersion>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</PackageVersion>
   </PropertyGroup>
   
-  <PropertyGroup Condition="Exists('$(PkgProjPath)') and '$(AssemblyVersion)' == '$(MajorVersion).$(MinorVersion).0.0'">       
+  <PropertyGroup Condition="Exists('$(PkgProjPath)') and $(AssemblyVersion.StartsWith('$(MajorVersion).$(MinorVersion)'))">       
     <AssemblyInNetCoreApp Condition="$(NetCoreAppLibrary.Contains('$(AssemblyName);')) or $(NetCoreAppLibraryNoReference.Contains('$(AssemblyName);'))">true</AssemblyInNetCoreApp>
     <AssemblyInAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</AssemblyInAspNetCoreApp>
     <AssemblyInWindowsDesktop Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</AssemblyInWindowsDesktop>
