@@ -9,6 +9,7 @@ namespace System.Runtime.Serialization.Json
     using System;
     using System.Collections;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Reflection.Emit;
     using System.Security;
@@ -26,11 +27,13 @@ namespace System.Runtime.Serialization.Json
             _helper = new CriticalHelper();
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal JsonFormatClassWriterDelegate GenerateClassWriter(ClassDataContract classContract)
         {
             return _helper.GenerateClassWriter(classContract);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal JsonFormatCollectionWriterDelegate GenerateCollectionWriter(CollectionDataContract collectionContract)
         {
             return _helper.GenerateCollectionWriter(collectionContract);
@@ -49,6 +52,7 @@ namespace System.Runtime.Serialization.Json
             private int _typeIndex = 1;
             private int _childElementIndex;
 
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             internal JsonFormatClassWriterDelegate GenerateClassWriter(ClassDataContract classContract)
             {
                 _ilg = new CodeGenerator();
@@ -74,6 +78,7 @@ namespace System.Runtime.Serialization.Json
                 return (JsonFormatClassWriterDelegate)_ilg.EndMethod();
             }
 
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             internal JsonFormatCollectionWriterDelegate GenerateCollectionWriter(CollectionDataContract collectionContract)
             {
                 _ilg = new CodeGenerator();
@@ -98,9 +103,11 @@ namespace System.Runtime.Serialization.Json
                 return (JsonFormatCollectionWriterDelegate)_ilg.EndMethod();
             }
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The trimmer will never remove the Invoke method from delegates.")]
             private void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
             {
-
+                Debug.Assert(typeof(Delegate).IsAssignableFrom(delegateType));
                 MethodInfo signature = delegateType.GetMethod("Invoke")!;
                 ParameterInfo[] parameters = signature.GetParameters();
                 Type[] paramTypes = new Type[parameters.Length];
@@ -111,6 +118,7 @@ namespace System.Runtime.Serialization.Json
                 ilg.BeginMethod(dynamicMethod, delegateType, methodName, paramTypes, allowPrivateMemberAccess);
             }
 
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             private void InitArgs(Type objType)
             {
                 _xmlWriterArg = _ilg.GetArg(0);
@@ -272,6 +280,7 @@ namespace System.Runtime.Serialization.Json
                 return memberValue;
             }
 
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             private void WriteCollection(CollectionDataContract collectionContract)
             {
                 LocalBuilder itemName = _ilg.DeclareLocal(typeof(XmlDictionaryString), "itemName");
