@@ -18408,7 +18408,8 @@ void Compiler::impWalkSpillCliqueFromPred(BasicBlock* block, SpillCliqueWalker* 
 }
 
 //------------------------------------------------------------------------
-// impStringLiteralLength: create GenTreeIntCon node for the given string literal to store its length.
+// impStringLiteralLength: create GenTreeIntCon node for the given string 
+//    literal to store its length.
 //
 // Arguments:
 //    node  - string literal node.
