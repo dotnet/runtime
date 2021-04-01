@@ -134,6 +134,7 @@ create_root_domain (void)
 	MonoGCDescriptor domain_gc_desc;
 
 	unsigned int i, bit = 0;
+	memset (domain_gc_bitmap, 0, sizeof (domain_gc_bitmap));
 	for (i = G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_OBJECT); i <= G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_LAST_OBJECT); i += sizeof (gpointer)) {
 		bit = i / sizeof (gpointer);
 		domain_gc_bitmap [bit / 32] |= (gsize) 1 << (bit % 32);
