@@ -6,6 +6,8 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Tests
@@ -386,6 +388,47 @@ namespace System.Tests
             Random r = Create(derived, seeded);
             r.NextBytes(new byte[0]);
             r.NextBytes(Span<byte>.Empty);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void Shared_IsSingleton()
+        {
+            Assert.NotNull(Random.Shared);
+            Assert.Same(Random.Shared, Random.Shared);
+            Assert.Same(Random.Shared, Task.Run(() => Random.Shared).Result);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void Shared_ParallelUsage()
+        {
+            using var barrier = new Barrier(2);
+            Parallel.For(0, 2, _ =>
+            {
+                byte[] buffer = new byte[1000];
+
+                barrier.SignalAndWait();
+                for (int i = 0; i < 1_000; i++)
+                {
+                    Assert.InRange(Random.Shared.Next(), 0, int.MaxValue - 1);
+                    Assert.InRange(Random.Shared.Next(5), 0, 4);
+                    Assert.InRange(Random.Shared.Next(42, 50), 42, 49);
+
+                    Assert.InRange(Random.Shared.NextInt64(), 0, long.MaxValue - 1);
+                    Assert.InRange(Random.Shared.NextInt64(5), 0L, 5L);
+                    Assert.InRange(Random.Shared.NextInt64(42L, 50L), 42L, 49L);
+
+                    Assert.InRange(Random.Shared.NextSingle(), 0.0f, 1.0f);
+                    Assert.InRange(Random.Shared.NextDouble(), 0.0, 1.0);
+
+                    Array.Clear(buffer, 0, buffer.Length);
+                    Random.Shared.NextBytes(buffer);
+                    Assert.Contains(buffer, b => b != 0);
+
+                    Array.Clear(buffer, 0, buffer.Length);
+                    Random.Shared.NextBytes((Span<byte>)buffer);
+                    Assert.Contains(buffer, b => b != 0);
+                }
+            });
         }
 
         [ConditionalFact(typeof(BitConverter), nameof(BitConverter.IsLittleEndian))] // test makes little-endian assumptions

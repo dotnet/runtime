@@ -3800,10 +3800,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	}
 
 	if (!cfg->compile_aot && !(flags & JIT_FLAG_DISCARD_RESULTS)) {
-		MonoDomain *domain = mono_get_root_domain ();
-		mono_domain_lock (domain);
 		mono_jit_info_table_add (cfg->jit_info);
-		mono_domain_unlock (domain);
 
 		if (cfg->method->dynamic) {
 			MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)cfg->jit_mm;
@@ -3963,7 +3960,6 @@ mono_jit_compile_method_inner (MonoMethod *method, int opt, MonoError *error)
 	MonoException *ex = NULL;
 	gint64 start;
 	MonoMethod *prof_method, *shared;
-	MonoDomain *target_domain = mono_get_root_domain ();
 
 	error_init (error);
 
@@ -4034,7 +4030,7 @@ mono_jit_compile_method_inner (MonoMethod *method, int opt, MonoError *error)
 		shared = NULL;
 	}
 
-	mono_domain_lock (target_domain);
+	mono_loader_lock ();
 
 	if (mono_stats_method_desc && mono_method_desc_full_match (mono_stats_method_desc, method)) {
 		g_printf ("Printing runtime stats at method: %s\n", mono_method_get_full_name (method));
@@ -4081,7 +4077,7 @@ mono_jit_compile_method_inner (MonoMethod *method, int opt, MonoError *error)
 	mono_emit_jit_map (jinfo);
 	mono_emit_jit_dump (jinfo, code);
 #endif
-	mono_domain_unlock (target_domain);
+	mono_loader_unlock ();
 
 	if (!is_ok (error))
 		return NULL;

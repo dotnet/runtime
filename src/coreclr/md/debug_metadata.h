@@ -33,7 +33,7 @@
 
 #pragma once
 
-// Include for REGUTIL class used in Debug_ReportError
+// Include for CLRConfig class used in Debug_ReportError
 #include <utilcode.h>
 
 // --------------------------------------------------------------------------------------

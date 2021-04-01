@@ -639,10 +639,12 @@ append_imethod (MonoMemoryManager *memory_manager, GSList *list, InterpMethod *i
 	GSList *ret;
 	InterpVTableEntry *entry;
 
-	entry = (InterpVTableEntry*) mono_mem_manager_alloc_nolock (memory_manager, sizeof (InterpVTableEntry));
+	entry = (InterpVTableEntry*) mono_mem_manager_alloc0 (memory_manager, sizeof (InterpVTableEntry));
 	entry->imethod = imethod;
 	entry->target_imethod = target_imethod;
-	ret = g_slist_append_mempool (memory_manager->mp, list, entry);
+	ret = mono_mem_manager_alloc0 (memory_manager, sizeof (GSList));
+	ret->data = entry;
+	ret = g_slist_concat (list, ret);
 
 	return ret;
 }
@@ -6457,15 +6459,17 @@ call:
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_PROF_EXIT) {
-			guint16 flag = ip [2];
+		MINT_IN_CASE(MINT_PROF_EXIT)
+		MINT_IN_CASE(MINT_PROF_EXIT_VOID) {
+			gboolean is_void = ip [0] == MINT_PROF_EXIT_VOID;
+			guint16 flag = is_void ? ip [1] : ip [2];
 			// Set retval
-			int i32 = READ32 (ip + 3);
-			if (i32 == -1) {
-			} else if (i32) {
-				memmove (frame->retval, locals + ip [1], i32);
-			} else {
-				frame->retval [0] = LOCAL_VAR (ip [1], stackval);
+			if (!is_void) {
+				int i32 = READ32 (ip + 3);
+				if (i32)
+					memmove (frame->retval, locals + ip [1], i32);
+				else
+					frame->retval [0] = LOCAL_VAR (ip [1], stackval);
 			}
 
 			if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_leave) &&
@@ -6473,7 +6477,7 @@ call:
 				MonoProfilerCallContext *prof_ctx = g_new0 (MonoProfilerCallContext, 1);
 				prof_ctx->interp_frame = frame;
 				prof_ctx->method = frame->imethod->method;
-				if (i32 != -1)
+				if (!is_void)
 					prof_ctx->return_value = frame->retval;
 				if (flag & TRACING_FLAG)
 					mono_trace_leave_method (frame->imethod->method, frame->imethod->jinfo, prof_ctx);
