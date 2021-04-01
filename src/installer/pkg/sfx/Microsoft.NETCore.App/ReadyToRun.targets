@@ -1,15 +1,15 @@
 <Project>
   <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
-      <OptimizationMibcFiles Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc" />
+      <OptimizationMibcFiles Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc" Condition="'$(DotNetBuildFromSource)' != 'true'" />
     </ItemGroup>
 
     <ItemGroup>
       <PublishReadyToRunCrossgen2ExtraArgsList Include="--targetarch:$(TargetArchitecture)"/>
 
       <!-- Only use mibc files if UsingToolIbcOptimization is false. Allows enabling/disabling using ibc instead of mibc data -->
-      <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(Configuration)' == 'Release'" Include="@(OptimizationMibcFiles->'-m:%(Identity)')"/>
-      <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(Configuration)' == 'Release'" Include="--embed-pgo-data"/>
+      <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'" Include="@(OptimizationMibcFiles->'-m:%(Identity)')"/>
+      <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'" Include="--embed-pgo-data"/>
     </ItemGroup>
 
     <!-- The following property group can be simplified once runtime repo switches over to SDK 6.0 drop -->
