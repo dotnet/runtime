@@ -11,6 +11,11 @@
     <UseDefaultBlazorWASMFeatureSwitches Condition="'$(UseDefaultBlazorWASMFeatureSwitches)' == ''">true</UseDefaultBlazorWASMFeatureSwitches>
     <UseDefaultAndroidFeatureSwitches Condition="'$(UseDefaultAndroidFeatureSwitches)' == ''">true</UseDefaultAndroidFeatureSwitches>
     <UseDefaultiOSFeatureSwitches Condition="'$(UseDefaultiOSFeatureSwitches)' == ''">true</UseDefaultiOSFeatureSwitches>
+    <TargetOS Condition="'$(TargetOS.ToLower())' == 'ios'">iOS</TargetOS>
+    <TargetOS Condition="'$(TargetOS.ToLower())' == 'iossimulator'">iOSSimulator</TargetOS>
+    <TargetOS Condition="'$(TargetOS.ToLower())' == 'tvos'">tvOS</TargetOS>
+    <TargetOS Condition="'$(TargetOS.ToLower())' == 'tvossimulator'">tvOSSimulator</TargetOS>
+    <TargetOS Condition="'$(TargetOS.ToLower())' == 'maccatalyst'">MacCatalyst</TargetOS>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' And '$(UseDefaultBlazorWASMFeatureSwitches)' == 'true'">
