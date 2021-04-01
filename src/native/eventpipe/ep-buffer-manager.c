@@ -897,6 +897,9 @@ ep_buffer_manager_write_event (
 	// Before we pick a buffer, make sure the event is enabled.
 	ep_return_false_if_nok (ep_event_is_enabled (ep_event));
 
+	// Check that the payload size is less than 64 KB (max size for ETW events)
+	ep_return_false_if_nok (ep_event_payload_get_size (payload) <= 64 * 1024);
+
 	// Check to see an event thread was specified. If not, then use the current thread.
 	if (event_thread == NULL)
 		event_thread = thread;
