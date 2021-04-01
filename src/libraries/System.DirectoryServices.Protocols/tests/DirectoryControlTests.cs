@@ -5,7 +5,6 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49105", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class DirectoryControlTests
     {
         [Theory]
