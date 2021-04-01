@@ -208,7 +208,6 @@ namespace System.Diagnostics
             // We also want to pass in a default for inFileLineNumber.
             string inFileLineNum = SR.GetResourceString(nameof(SR.StackTrace_InFileLineNumber), defaultString: "in {0}:line {1}");
             string inFileILOffset = SR.GetResourceString(nameof(SR.StackTrace_InFileILOffset), defaultString: "in {0}:token 0x{1:x}+0x{2:x}");
-            Span<byte> bytes = stackalloc byte[4];
             bool fFirstFrame = true;
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
             {
