@@ -35,13 +35,13 @@ set(HARDENED_RUNTIME
 %HardenedRuntime%
 )
 
-set(HARDENED_RUNTIME_USE_JIT
-%HardenedRuntimeUseJit%
+set(HARDENED_RUNTIME_USE_ENTITLEMENTS_FILE
+%HardenedRuntimeUseEntitlementsFile%
 )
 
 if("${HARDENED_RUNTIME}")
   set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_HARDENED_RUNTIME "YES")
-  if("${HARDENED_RUNTIME_USE_JIT}")
+  if("${HARDENED_RUNTIME_USE_ENTITLEMENTS_FILE}")
     set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "app.entitlements")
   endif()
 endif()
