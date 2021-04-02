@@ -25,6 +25,17 @@
     <Compile Include="JsonElementWriteTests.cs" />
     <Compile Include="JsonEncodedTextTests.cs" />
     <Compile Include="JsonGuidTestData.cs" />
+    <Compile Include="JsonNode\Common.cs" />
+    <Compile Include="JsonNode\DynamicTests.cs" />
+    <Compile Include="JsonNode\JsonArrayTests.cs" />
+    <Compile Include="JsonNode\JsonNodeTests.cs" />
+    <Compile Include="JsonNode\JsonNodeOperatorTests.cs" />
+    <Compile Include="JsonNode\JsonObjectTests.cs" />
+    <Compile Include="JsonNode\JsonValueTests.cs" />
+    <Compile Include="JsonNode\ParseTests.cs" />
+    <Compile Include="JsonNode\ParentPathRootTests.cs" />
+    <Compile Include="JsonNode\SerializerInteropTests.cs" />
+    <Compile Include="JsonNode\ToStringTests.cs" />
     <Compile Include="JsonNumberTestData.cs" />
     <Compile Include="JsonPropertyTests.cs" />
     <Compile Include="JsonReaderStateAndOptionsTests.cs" />
