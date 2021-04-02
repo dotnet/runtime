@@ -35,24 +35,6 @@ enum ti_types
 #define TI_I_IMPL TI_INT
 #endif
 
-#ifdef DEBUG
-#if VERBOSE_VERIFY
-#define TI_DUMP_PADDING "                                          "
-#ifdef _MSC_VER
-namespace
-{
-#endif // _MSC_VER
-const char* g_ti_type_names_map[] = {
-#define DEF_TI(ti, nm) nm,
-#include "titypes.h"
-#undef DEF_TI
-};
-#ifdef _MSC_VER
-}
-#endif // _MSC_VER
-#endif // VERBOSE_VERIFY
-#endif // DEBUG
-
 #ifdef _MSC_VER
 namespace
 {
@@ -65,15 +47,6 @@ const ti_types g_jit_types_map[] = {
 #ifdef _MSC_VER
 }
 #endif // _MSC_VER
-
-#ifdef DEBUG
-#if VERBOSE_VERIFY
-inline const char* tiType2Str(ti_types type)
-{
-    return g_ti_type_names_map[type];
-}
-#endif // VERBOSE_VERIFY
-#endif // DEBUG
 
 // typeInfo does not care about distinction between signed/unsigned
 // This routine converts all unsigned types to signed ones
@@ -191,12 +164,6 @@ inline ti_types JITtype2tiType(CorInfoType type)
 #define TI_FLAG_DATA_BITS 6
 #define TI_FLAG_DATA_MASK ((1 << TI_FLAG_DATA_BITS) - 1)
 
-// Flag indicating this item is uninitialized
-// Note that if UNINIT and BYREF are both set,
-// it means byref (uninit x) - i.e. we are pointing to an uninit <something>
-
-#define TI_FLAG_UNINIT_OBJREF 0x00000040
-
 // Flag indicating this item is a byref <something>
 
 #define TI_FLAG_BYREF 0x00000080
@@ -228,22 +195,6 @@ inline ti_types JITtype2tiType(CorInfoType type)
 
 #define TI_FLAG_THIS_PTR 0x00001000
 
-// This item is a byref to something which has a permanent home
-// (e.g. a static field, or instance field of an object in GC heap, as
-// opposed to the stack or a local variable).  TI_FLAG_BYREF must also be
-// set. This information is useful for tail calls and return byrefs.
-//
-// Instructions that generate a permanent home byref:
-//
-//  ldelema
-//  ldflda of a ref object or another permanent home byref
-//  array element address Get() helper
-//  call or calli to a method that returns a byref and is verifiable or SkipVerify
-//  dup
-//  unbox
-
-#define TI_FLAG_BYREF_PERMANENT_HOME 0x00002000
-
 // This is for use when verifying generic code.
 // This indicates that the type handle is really an unboxed
 // generic type variable (e.g. the result of loading an argument
@@ -262,7 +213,7 @@ inline ti_types JITtype2tiType(CorInfoType type)
 #define TI_FLAG_FIELD_SHIFT TI_FLAG_LOCAL_VAR_SHIFT
 #define TI_FLAG_FIELD_MASK TI_FLAG_LOCAL_VAR_MASK
 
-#define TI_ALL_BYREF_FLAGS (TI_FLAG_BYREF | TI_FLAG_BYREF_READONLY | TI_FLAG_BYREF_PERMANENT_HOME)
+#define TI_ALL_BYREF_FLAGS (TI_FLAG_BYREF | TI_FLAG_BYREF_READONLY)
 
 /*****************************************************************************
  * A typeInfo can be one of several types:
@@ -379,12 +330,6 @@ public:
         m_token = token;
     }
 
-#ifdef DEBUG
-#if VERBOSE_VERIFY
-    void Dump() const;
-#endif // VERBOSE_VERIFY
-#endif // DEBUG
-
 public:
     // Note that we specifically ignore the permanent byref here. The rationale is that
     // the type system doesn't know about this (it's jit only), ie, signatures don't specify if
@@ -393,8 +338,7 @@ public:
     // the bit
     static bool AreEquivalent(const typeInfo& li, const typeInfo& ti)
     {
-        DWORD allFlags = TI_FLAG_DATA_MASK | TI_FLAG_BYREF | TI_FLAG_BYREF_READONLY | TI_FLAG_GENERIC_TYPE_VAR |
-                         TI_FLAG_UNINIT_OBJREF;
+        DWORD allFlags = TI_FLAG_DATA_MASK | TI_FLAG_BYREF | TI_FLAG_BYREF_READONLY | TI_FLAG_GENERIC_TYPE_VAR;
 #ifdef TARGET_64BIT
         allFlags |= TI_FLAG_NATIVE_INT;
 #endif // TARGET_64BIT
@@ -443,16 +387,10 @@ public:
     }
 #endif // DEBUG
 
-    static BOOL tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const typeInfo* pSrc, bool* changed);
     static BOOL tiCompatibleWith(COMP_HANDLE     CompHnd,
                                  const typeInfo& child,
                                  const typeInfo& parent,
                                  bool            normalisedForStack);
-
-    static BOOL tiMergeCompatibleWith(COMP_HANDLE     CompHnd,
-                                      const typeInfo& child,
-                                      const typeInfo& parent,
-                                      bool            normalisedForStack);
 
     /////////////////////////////////////////////////////////////////////////
     // Operations
@@ -475,35 +413,10 @@ public:
         m_flags &= ~(TI_FLAG_THIS_PTR);
     }
 
-    void SetIsPermanentHomeByRef()
-    {
-        assert(IsByRef());
-        m_flags |= TI_FLAG_BYREF_PERMANENT_HOME;
-    }
-
     void SetIsReadonlyByRef()
     {
         assert(IsByRef());
         m_flags |= TI_FLAG_BYREF_READONLY;
-    }
-
-    // Set that this item is uninitialized.
-    void SetUninitialisedObjRef()
-    {
-        assert((IsObjRef() && IsThisPtr()));
-        // For now, this is used only  to track uninit this ptrs in ctors
-
-        m_flags |= TI_FLAG_UNINIT_OBJREF;
-        assert(m_bits.uninitobj);
-    }
-
-    // Set that this item is initialised.
-    void SetInitialisedObjRef()
-    {
-        assert((IsObjRef() && IsThisPtr()));
-        // For now, this is used only  to track uninit this ptrs in ctors
-
-        m_flags &= ~TI_FLAG_UNINIT_OBJREF;
     }
 
     typeInfo& DereferenceByRef()
@@ -606,8 +519,8 @@ public:
     BOOL IsType(ti_types type) const
     {
         assert(type != TI_ERROR);
-        return (m_flags & (TI_FLAG_DATA_MASK | TI_FLAG_BYREF | TI_FLAG_BYREF_READONLY | TI_FLAG_BYREF_PERMANENT_HOME |
-                           TI_FLAG_GENERIC_TYPE_VAR)) == DWORD(type);
+        return (m_flags & (TI_FLAG_DATA_MASK | TI_FLAG_BYREF | TI_FLAG_BYREF_READONLY | TI_FLAG_GENERIC_TYPE_VAR)) ==
+               DWORD(type);
     }
 
     // Returns whether this is an objref
@@ -636,11 +549,6 @@ public:
     BOOL IsReadonlyByRef() const
     {
         return IsByRef() && (m_flags & TI_FLAG_BYREF_READONLY);
-    }
-
-    BOOL IsPermanentHomeByRef() const
-    {
-        return IsByRef() && (m_flags & TI_FLAG_BYREF_PERMANENT_HOME);
     }
 
     // Returns whether this is a method desc
@@ -743,11 +651,6 @@ public:
     BOOL IsDead() const
     {
         return (m_flags & (TI_FLAG_DATA_MASK)) == TI_ERROR;
-    }
-
-    BOOL IsUninitialisedObjRef() const
-    {
-        return (m_flags & TI_FLAG_UNINIT_OBJREF);
     }
 
     BOOL IsToken() const
