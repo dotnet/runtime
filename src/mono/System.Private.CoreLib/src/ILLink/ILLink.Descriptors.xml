@@ -589,7 +589,10 @@
 
 		<!-- domain.c: mono_defaults.thread_class -->
 		<!-- FIXME: -->
-		<type fullname="System.Threading.Thread" preserve="fields" />
+		<type fullname="System.Threading.Thread" preserve="fields">
+			<!-- threads.c: call_thread_exiting -->
+			<method name="OnThreadExiting" />
+		</type>
 
 		<!-- domain.c: mono_defaults.threadabortexception_class -->
 		<!-- exception.c (mono_get_exception_thread_abort) -->
@@ -608,11 +611,6 @@
 		<type fullname="System.Threading.ThreadStateException">
 			<!-- mono_exception_from_name_msg -->
 			<method signature="System.Void .ctor()" />
-		</type>
-
-		<!-- threads.c (call_thread_exiting) -->
-		<type fullname="System.Threading.WaitSubsystem">
-			<method name="OnThreadExiting" />
 		</type>
 
 		<!-- mini-generic-sharing.c -->

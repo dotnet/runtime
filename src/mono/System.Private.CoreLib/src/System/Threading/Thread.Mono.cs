@@ -299,6 +299,11 @@ namespace System.Threading
             ClrState(this, ThreadState.WaitSleepJoin);
         }
 
+        public static void OnThreadExiting(Thread thread)
+        {
+            thread.WaitInfo.OnThreadExiting();
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern ulong GetCurrentOSThreadId();
 

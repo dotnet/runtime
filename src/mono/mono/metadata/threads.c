@@ -867,8 +867,6 @@ fail:
 }
 
 #ifndef HOST_WIN32
-static GENERATE_GET_CLASS_WITH_CACHE (wait_subsystem, "System.Threading", "WaitSubsystem");
-
 static void
 call_thread_exiting (void *val, void *user_data)
 {
@@ -879,9 +877,7 @@ call_thread_exiting (void *val, void *user_data)
 
 	MONO_STATIC_POINTER_INIT (MonoMethod, thread_exiting)
 
-		MonoClass *wait_subsystem_class = mono_class_get_wait_subsystem_class ();
-		g_assert (wait_subsystem_class);
-		thread_exiting = mono_class_get_method_from_name_checked (wait_subsystem_class, "OnThreadExiting", -1, 0, error);
+		thread_exiting = mono_class_get_method_from_name_checked (mono_defaults.thread_class, "OnThreadExiting", -1, 0, error);
 		mono_error_assert_ok (error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, thread_exiting)

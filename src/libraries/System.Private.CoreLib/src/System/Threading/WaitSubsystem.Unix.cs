@@ -424,10 +424,5 @@ namespace System.Threading
                 s_lock.Release();
             }
         }
-
-        public static void OnThreadExiting(Thread thread)
-        {
-            thread.WaitInfo.OnThreadExiting();
-        }
     }
 }
