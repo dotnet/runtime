@@ -38,54 +38,52 @@ public class CBoolTest
         return (x == 0 && y == 0 && z == 0 && w == 0);
     }
 
-    // Cases that skip optimization
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool AreOne(int x, int y)
-    {
-        return (x == 1 && y == 1);
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool IsEitherZero(int x, int y)
-    {
-        return (x == 0 || y == 0);
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool IsEitherOne(int x, int y)
-    {
-        return (x == 1 || y == 1);
-    }
-
     public static int Main()
     {
-        try
+        // Optimize boolean
+
+        if (!AreZero(0, 0))
         {
-            // Optimize boolean
-
-            AreZero(0, 0);
-            AreNull(null, null);
-            AreNull(new Object(), new Object());
-            AreZero(1, 1);
-            AreZero2(0, 0);
-            AreZero3(0, 0, 0);
-            AreZero4(0, 0, 0, 0);
-
-            // Skip optimization
-
-            // Test if ANDing or GT_NE requires both operands to be boolean
-            AreOne(1, 1);
-            // Test if ANDing requires both operands to be boolean
-            IsEitherZero(0, 1);
-            // Test if GT_NE requires both operands to be boolean
-            IsEitherOne(0, 1);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.Message);
+            Console.WriteLine("CBoolTest:AreZero failed");
             return 101;
         }
-        Console.WriteLine("PASSED");
+
+        if (!AreNull(null, null))
+        {
+            Console.WriteLine("CBoolTest:AreNull(null, null) failed");
+            return 101;
+        }
+
+        if (AreNull(new Object(), new Object()))
+        {
+            Console.WriteLine("CBoolTest:AreNull(obj, obj) failed");
+            return 101;
+        }
+
+        if (AreZero(1, 1))
+        {
+            Console.WriteLine("CBoolTest:AreZero(1, 1) failed");
+            return 101;
+        }
+
+        if (!AreZero2(0, 0))
+        {
+            Console.WriteLine("CBoolTest:AreZero2 failed");
+            return 101;
+        }
+
+        if (!AreZero3(0, 0, 0))
+        {
+            Console.WriteLine("CBoolTest:AreZero3 failed");
+            return 101;
+        }
+
+        if (!AreZero4(0, 0, 0, 0))
+        {
+            Console.WriteLine("CBoolTest:AreZero4 failed");
+            return 101;
+        }
+
         return 100;
     }
 }
