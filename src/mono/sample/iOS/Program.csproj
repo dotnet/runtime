@@ -12,13 +12,12 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- FIXME: for some reason trimming is throwing errors errors. -->
+    <!-- FIXME: for some reason trimming is throwing errors about something in System.Diagnostics. -->
     <!-- <PublishTrimmed>true</PublishTrimmed> -->
     <!-- <TrimMode>Link</TrimMode> -->
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
-    <!-- MonoForceInterpreter>true</MonoForceInterpreter> -->
     <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
   </PropertyGroup>
 
