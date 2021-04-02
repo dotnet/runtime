@@ -1365,15 +1365,16 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             continue;
         }
 
-        if (inheritWeight)
+        // If we were unable to compute a scale for some reason, then
+        // try to do something plausible. Entry/exit blocks match call
+        // site, internal blocks scaled by half; all rare blocks left alone.
+        //
+        if (!block->isRunRarely())
         {
-            block->inheritWeight(iciBlock);
-            inheritWeight = false;
+            block->inheritWeightPercentage(iciBlock, inheritWeight ? 100 : 50);
         }
-        else
-        {
-            block->inheritWeightPercentage(iciBlock, 50);
-        }
+
+        inheritWeight = false;
     }
 
     // Insert inlinee's blocks into inliner's block list.

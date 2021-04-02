@@ -1674,6 +1674,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
 
 //------------------------------------------------------------------------
 // fgIncorporateProfileData: add block/edge profile data to the flowgraph
+//   and compute profile scale for inlinees
 //
 // Returns:
 //   appropriate phase status
@@ -1686,6 +1687,12 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         JITDUMP("JitStress -- incorporating random profile data\n");
         fgIncorporateBlockCounts();
+
+        if (compIsForInlining())
+        {
+            fgComputeProfileScale();
+        }
+
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
@@ -1701,6 +1708,12 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         {
             JITDUMP("BBOPT not set\n");
         }
+
+        if (compIsForInlining())
+        {
+            fgComputeProfileScale();
+        }
+
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
