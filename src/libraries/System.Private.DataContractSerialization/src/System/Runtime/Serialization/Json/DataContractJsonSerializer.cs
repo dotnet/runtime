@@ -42,22 +42,19 @@ namespace System.Runtime.Serialization.Json
         private readonly DataContractJsonSerializerImpl _serializer;
         private readonly bool _ignoreExtensionDataObject;
 
+        [RequiresUnreferencedCode(SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type)
         {
             _serializer = new DataContractJsonSerializerImpl(type);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This constructor is passing in null as the knownTypes argument to the constructor that is unsafe, which " +
-            "will make it so that this constructor is safe.")]
+        [RequiresUnreferencedCode(SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type, string? rootName)
             : this(type, rootName, null)
         {
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This constructor is passing in null as the knownTypes argument to the constructor that is unsafe, which " +
-            "will make it so that this constructor is safe.")]
+        [RequiresUnreferencedCode(SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type, XmlDictionaryString? rootName)
             : this(type, rootName, null)
         {
@@ -511,9 +508,7 @@ namespace System.Runtime.Serialization.Json
         private DateTimeFormat? _dateTimeFormat;
         private bool _useSimpleDictionaryFormat;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This constructor is passing in null as the knownTypes argument to the constructor that is unsafe, which " +
-            "will make it so that this constructor is safe.")]
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public DataContractJsonSerializerImpl(Type type)
             : this(type, (IEnumerable<Type>?)null)
         {

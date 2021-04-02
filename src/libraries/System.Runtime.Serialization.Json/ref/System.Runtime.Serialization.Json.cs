@@ -25,14 +25,17 @@ namespace System.Runtime.Serialization.Json
 {
     public sealed partial class DataContractJsonSerializer : System.Runtime.Serialization.XmlObjectSerializer
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Json Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Json Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type, System.Collections.Generic.IEnumerable<System.Type>? knownTypes) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Json Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type, System.Runtime.Serialization.Json.DataContractJsonSerializerSettings? settings) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Json Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type, string? rootName) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Json Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type, string? rootName, System.Collections.Generic.IEnumerable<System.Type>? knownTypes) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Json Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type, System.Xml.XmlDictionaryString? rootName) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Json Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractJsonSerializer(System.Type type, System.Xml.XmlDictionaryString? rootName, System.Collections.Generic.IEnumerable<System.Type>? knownTypes) { }
