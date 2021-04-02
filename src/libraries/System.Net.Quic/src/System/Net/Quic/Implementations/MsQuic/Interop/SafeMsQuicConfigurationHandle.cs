@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
@@ -120,16 +121,37 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 if (certificate != null)
                 {
                     // TODO: doesn't work on non-Windows
-                    config.Type = QUIC_CREDENTIAL_TYPE.CONTEXT;
-                    config.Certificate = certificate.Handle;
+                    if (OperatingSystem.IsWindows())
+                    {
+                        config.Type = QUIC_CREDENTIAL_TYPE.CONTEXT;
+                        config.Certificate = certificate.Handle;
+                        status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
+                    }
+                    else
+                    {
+                        CredentialConfigCertificatePkcs12 pkcs12Config;
+                        byte[] asn1 = certificate.Export(X509ContentType.Pkcs12);
+                        unsafe
+                        {
+                            fixed (void* ptr = asn1)
+                            {
+                                pkcs12Config.Asn1Blob = (IntPtr)ptr;
+                                pkcs12Config.Asn1BlobLength = asn1.Length;
+                                pkcs12Config.PrivateKeyPassword = IntPtr.Zero;
+
+                                config.Type = QUIC_CREDENTIAL_TYPE.PKCS12;
+                                config.Certificate = (IntPtr)(&pkcs12Config);
+                                status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
+                            }
+                        }
+                    }
                 }
                 else
                 {
-                    // TODO: not allowed for OpenSSL and server
                     config.Type = QUIC_CREDENTIAL_TYPE.NONE;
+                    status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
                 }
 
-                status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
                 QuicExceptionHelpers.ThrowIfFailed(status, "ConfigurationLoadCredential failed.");
             }
             catch

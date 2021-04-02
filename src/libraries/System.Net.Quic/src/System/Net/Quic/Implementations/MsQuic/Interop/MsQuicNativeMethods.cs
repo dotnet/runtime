@@ -215,30 +215,33 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal struct CredentialConfigCertificateUnion
         {
             [FieldOffset(0)]
-            internal CredentialConfigCertificateCertificateHash CertificateHash;
+            internal CredentialConfigCertificateHash CertificateHash;
 
             [FieldOffset(0)]
-            internal CredentialConfigCertificateCertificateHashStore CertificateHashStore;
+            internal CredentialConfigCertificateHashStore CertificateHashStore;
 
             [FieldOffset(0)]
             internal IntPtr CertificateContext;
 
             [FieldOffset(0)]
-            internal CredentialConfigCertificateCertificateFile CertificateFile;
+            internal CredentialConfigCertificateFile CertificateFile;
 
             [FieldOffset(0)]
-            internal CredentialConfigCertificateCertificateFileProtected CertificateFileProtected;
+            internal CredentialConfigCertificateFileProtected CertificateFileProtected;
+
+            [FieldOffset(0)]
+            internal CredentialConfigCertificatePkcs12 CertificatePkcs12;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct CredentialConfigCertificateCertificateHash
+        internal struct CredentialConfigCertificateHash
         {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20)]
             internal byte[] ShaHash;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal struct CredentialConfigCertificateCertificateHashStore
+        internal struct CredentialConfigCertificateHashStore
         {
             internal QUIC_CERTIFICATE_HASH_STORE_FLAGS Flags;
 
@@ -250,7 +253,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct CredentialConfigCertificateCertificateFile
+        internal struct CredentialConfigCertificateFile
         {
             [MarshalAs(UnmanagedType.LPUTF8Str)]
             internal string PrivateKeyFile;
@@ -260,7 +263,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct CredentialConfigCertificateCertificateFileProtected
+        internal struct CredentialConfigCertificateFileProtected
         {
             [MarshalAs(UnmanagedType.LPUTF8Str)]
             internal string PrivateKeyFile;
@@ -270,6 +273,17 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             [MarshalAs(UnmanagedType.LPUTF8Str)]
             internal string PrivateKeyPassword;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct CredentialConfigCertificatePkcs12
+        {
+            internal IntPtr Asn1Blob;
+
+            internal int Asn1BlobLength;
+
+            //[MarshalAs(UnmanagedType.LPUTF8Str)]
+            internal IntPtr PrivateKeyPassword;
         }
 
         [StructLayout(LayoutKind.Sequential)]
