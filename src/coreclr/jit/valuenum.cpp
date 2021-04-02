@@ -8918,16 +8918,16 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     assert(hwIntrinsicNode != nullptr);
 
     // For safety/correctness we must mutate the global heap valuenumber
-    //  for any HW intrinsic that performs a memory store operation
+    // for any HW intrinsic that performs a memory store operation
     if (hwIntrinsicNode->OperIsMemoryStore())
     {
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
 
-    // Check for any intrintics that have variable number of args or more than 2 args
-    // For now we will generate a unique value number for these cases.
-    //
-    if ((HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId) == -1) ||
+    const bool isVariableArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId) == -1;
+
+    // In case of functions with variable number of args we only support single-arg ones.
+    if ((isVariableArgs && (tree->AsOp()->gtOp2 != nullptr)) ||
         ((tree->AsOp()->gtOp1 != nullptr) && (tree->AsOp()->gtOp1->OperIs(GT_LIST))))
     {
         // We have a HWINTRINSIC node in the GT_LIST form with 3 or more args
@@ -9018,12 +9018,12 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
             if (encodeResultType)
             {
                 normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, resvnp);
-                assert(vnStore->VNFuncArity(func) == 2);
+                assert((vnStore->VNFuncArity(func) == 2) || isVariableArgs);
             }
             else
             {
                 normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp);
-                assert(vnStore->VNFuncArity(func) == 1);
+                assert((vnStore->VNFuncArity(func) == 1) || isVariableArgs);
             }
         }
         else
