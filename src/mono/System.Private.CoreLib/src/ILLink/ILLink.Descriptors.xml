@@ -459,8 +459,6 @@
 		<!-- appdomain.c (ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalGetLoadedAssemblies) -->
 		<type fullname="System.Reflection.Assembly" preserve="fields"/>
 
-		<type fullname="System.Reflection.AssemblyName" preserve="fields" />
-
 		<!-- reflection.c: mono_method_body_get_object -->
 		<type fullname="System.Reflection.RuntimeExceptionHandlingClause" preserve="fields" >
 			<!-- reflection.c mono_object_new_checked in add_exception_handling_clause_to_array -->
