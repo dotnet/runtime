@@ -196,7 +196,7 @@ void register_aot_modules (void);
 void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 {
-	free (args);
+    free (args);
     free (user_data);
 }
 
@@ -224,10 +224,11 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     appctx_values[1] = bundle_path;
 
     char* file_name = "output.pefile";
-    char file_path [1024];
-    int res1 = snprintf (file_path, sizeof (file_path) - 1, "%s/%s", bundle_path, file_name);
+    int str_len = strlen (bundle_path) + strlen (file_name) + 1;
+    char* file_path = (char *) malloc (sizeof (char) * (str_len + 1));;
+    int res1 = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
     struct stat buffer;
-    
+
     LOG_INFO ("file_path: %s\n", file_path);
     assert (res1 > 0);
 
@@ -235,7 +236,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
         MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *) malloc (sizeof (MonovmRuntimeConfigArguments));
         arg->kind = 0;
         arg->runtimeconfig.name.path = file_path;
-        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
+        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
     }
 
     monovm_initialize(2, appctx_keys, appctx_values);
