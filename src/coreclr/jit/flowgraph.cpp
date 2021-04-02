@@ -981,6 +981,12 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         {
             return false;
         }
+
+        if (addr->TypeIs(TYP_BYREF) && varDsc->lvVerTypeInfo.IsThisPtr() && !varDsc->lvHasLdAddrOp &&
+            !varDsc->lvAddrExposed)
+        {
+            return false;
+        }
     }
     else if (addr->gtOper == GT_ADDR)
     {
