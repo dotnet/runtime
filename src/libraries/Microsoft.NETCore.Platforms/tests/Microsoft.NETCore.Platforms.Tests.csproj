@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net472</TargetFrameworks>
-    <!-- MSBuild won't work everywhere -->
-    <SkipTestsOnPlatform Condition="'$(TargetsMobile)' == 'true' or '$(TargetsBrowser)' == 'true'">true</SkipTestsOnPlatform>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +11,7 @@
   </ItemGroup>
   
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="GenerateRuntimeGraphTests.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="TestBuildEngine.cs" />
