@@ -793,10 +793,13 @@ namespace System.Runtime.InteropServices
     }
     public static partial class RuntimeEnvironment
     {
+        [System.ObsoleteAttribute("This property is no longer supported.")]
         public static string SystemConfigurationFile { get { throw null; } }
         public static bool FromGlobalAccessCache(System.Reflection.Assembly a) { throw null; }
         public static string GetRuntimeDirectory() { throw null; }
+        [System.ObsoleteAttribute("GetRuntimeInterfaceAsIntPtr(Guid, Guid) is no longer supported.")]
         public static System.IntPtr GetRuntimeInterfaceAsIntPtr(System.Guid clsid, System.Guid riid) { throw null; }
+        [System.ObsoleteAttribute("GetRuntimeInterfaceAsObject(Guid, Guid) is no longer supported.")]
         public static object GetRuntimeInterfaceAsObject(System.Guid clsid, System.Guid riid) { throw null; }
         public static string GetSystemVersion() { throw null; }
     }
