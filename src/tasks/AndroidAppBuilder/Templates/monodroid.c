@@ -41,6 +41,8 @@ static char *executable;
 #error Unknown architecture
 #endif
 
+#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
+
 static MonoAssembly*
 mono_droid_load_assembly (const char *name, const char *culture)
 {
@@ -223,9 +225,9 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;
     appctx_values[1] = bundle_path;
 
-    char* file_name = "output.pefile";
+    char* file_name = RUNTIMECONFIG_BIN_FILE;
     int str_len = strlen (bundle_path) + strlen (file_name) + 1;
-    char* file_path = (char *) malloc (sizeof (char) * (str_len + 1));;
+    char* file_path = (char *) malloc (sizeof (char) * (str_len + 1));
     int res1 = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
     struct stat buffer;
 

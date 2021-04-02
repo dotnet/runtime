@@ -27,7 +27,7 @@ public class RuntimeConfigParserTask : Task
     /// <summary>
     /// List of properties reserved for the host.
     /// </summary>
-    public ITaskItem[] ReservedProperties { get; set; } = Array.Empty<ITaskItem>();
+    public ITaskItem[] RuntimeConfigReservedProperties { get; set; } = Array.Empty<ITaskItem>();
 
     public override bool Execute()
     {
@@ -43,9 +43,9 @@ public class RuntimeConfigParserTask : Task
 
         Dictionary<string, string> configProperties = ConvertInputToDictionary(RuntimeConfigFile);
 
-        if (ReservedProperties.Length != 0)
+        if (RuntimeConfigReservedProperties.Length != 0)
         {
-            CheckDuplicateProperties(configProperties, ReservedProperties);
+            CheckDuplicateProperties(configProperties, RuntimeConfigReservedProperties);
         }
 
         var blobBuilder = new BlobBuilder();

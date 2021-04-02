@@ -86,15 +86,15 @@
 
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
       <RuntimeConfigFilePath>$(PublishDir)$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
-      <OutputFilePath>$(PublishDir)output.pefile</OutputFilePath>
+      <ParsedRuntimeConfigFilePath>$(PublishDir)runtimeconfig.bin</ParsedRuntimeConfigFilePath>
     </PropertyGroup>
     <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
       <AotInputAssemblies Include="$(PublishDir)\*.dll">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </AotInputAssemblies>
-      <ReservedProperties Include="RUNTIME_IDENTIFIER"/>
-      <ReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
+      <RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
+      <RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
     </ItemGroup>
 
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
@@ -106,8 +106,8 @@
     <!-- Parse runtimeconfig.template.json file -->
     <RuntimeConfigParserTask
         RuntimeConfigFile="$(RuntimeConfigFilePath)"
-        OutputFile="$(OutputFilePath)"
-        ReservedProperties="@(ReservedProperties)">
+        OutputFile="$(ParsedRuntimeConfigFilePath)"
+        RuntimeConfigReservedProperties="@(RuntimeConfigReservedProperties)">
     </RuntimeConfigParserTask>
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
