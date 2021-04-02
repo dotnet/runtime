@@ -299,9 +299,11 @@ namespace System.Threading
             ClrState(this, ThreadState.WaitSleepJoin);
         }
 
-        public static void OnThreadExiting(Thread thread)
+        private static void OnThreadExiting(Thread thread)
         {
+#if TARGET_UNIX || TARGET_BROWSER
             thread.WaitInfo.OnThreadExiting();
+#endif
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
