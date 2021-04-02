@@ -1,0 +1,56 @@
+<Project DefaultTargets="BundleTestWasmApp">
+  <PropertyGroup>
+    <!--<HELIX_WORKITEM_ROOT>/Users/steve/dev/helix-out/</HELIX_WORKITEM_ROOT>
+    <HELIX_CORRELATION_PAYLOAD>/Users/steve/dev/helix-out</HELIX_CORRELATION_PAYLOAD>-->
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <TestName>System.Buffers.Tests</TestName>
+    <TestRootDir>$(HELIX_WORKITEM_ROOT)</TestRootDir>
+    <BundleDir>$(TestRootDir)</BundleDir>
+    <WasmSrcPath>$(HELIX_CORRELATION_PAYLOAD)/build/microsoft.netcore.app.runtime.browser-wasm/</WasmSrcPath>
+    <WasmNativeLibPath>$(TestRootDir)/publish/</WasmNativeLibPath>
+    <IntermediateOutputPath>$(HELIX_WORKITEM_ROOT)\obj</IntermediateOutputPath>
+    <WasmAppBuilderTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)/build/WasmAppBuilder/WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+    <MonoAOTCompilerTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)/build/MonoAOTCompiler/MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(HELIX_CORRELATION_PAYLOAD)/build/microsoft.netcore.app.runtime.browser-wasm/runtimes/browser-wasm/</MicrosoftNetCoreAppRuntimePackRidDir>
+    <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
+    <SkipEmccVersionCheck>true</SkipEmccVersionCheck>
+    <MonoAotCrossCompilerPath>$(MicrosoftNETCoreAppRuntimePackRidDir)native/cross/browser-wasm/mono-aot-cross</MonoAotCrossCompilerPath>
+  </PropertyGroup>
+
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+
+  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\build\wasm\WasmApp.props" />
+  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\build\wasm\WasmApp.targets" />
+  <PropertyGroup>
+      <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
+
+  <Target Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
+
+  <Target Name="PrepareForWasmBuildApp">
+
+    <!--<MakeDir Directories="$(IntermediateOutputPath)" /> -->
+    <PropertyGroup>
+      <WasmAppDir>$(BundleDir)</WasmAppDir>
+      <WasmMainAssemblyFileName>$(TestRootDir)\publish\WasmTestRunner.dll</WasmMainAssemblyFileName>
+      <WasmMainJSPath>$(TestRootDir)\publish\runtime-test.js</WasmMainJSPath>
+      <WasmInvariantGlobalization>true</WasmInvariantGlobalization>
+      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmSatelliteAssemblies Include="$(TestRootDir)\publish\*.resources.dll" />
+      <WasmSatelliteAssemblies>
+        <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
+      </WasmSatelliteAssemblies>
+
+      <WasmAssembliesToBundle Include="$(TestRootDir)\publish\*.dll"/>
+
+      <!--<WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
+      <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />-->
+      <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
+      <!-- Include files specified by test projects from publish dir -->
+      <WasmFilesToIncludeInFileSystem Include="@(WasmFilesToIncludeFromPublishDir -> '$(TestRootDir)\publish\%(Identity)')" />
+    </ItemGroup>
+  </Target>
+</Project>
