@@ -610,7 +610,7 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
-		<!-- threads.c (abandon_mutexes) -->
+		<!-- threads.c (call_thread_exiting) -->
 		<type fullname="System.Threading.WaitSubsystem">
 			<method name="OnThreadExiting" />
 		</type>

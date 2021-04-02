@@ -462,7 +462,7 @@ gboolean
 mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx);
 
 void
-mono_threads_abandon_mutexes (void);
+mono_threads_exiting (void);
 
 #if SIZEOF_VOID_P == 4
 /* Spin lock for unaligned InterlockedXXX 64 bit functions on 32bit platforms. */

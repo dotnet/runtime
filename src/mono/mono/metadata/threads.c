@@ -146,17 +146,17 @@ static MonoCoopMutex threads_mutex;
 #define joinable_threads_unlock() mono_coop_mutex_unlock (&joinable_threads_mutex)
 static MonoCoopMutex joinable_threads_mutex;
 
-static GSList *abandoned_threads;
-static MonoCoopMutex abandoned_threads_mutex;
+static GSList *exiting_threads;
+static MonoCoopMutex exiting_threads_mutex;
 static inline void
-abandoned_threads_lock ()
+exiting_threads_lock ()
 {
-	mono_coop_mutex_lock (&abandoned_threads_mutex);
+	mono_coop_mutex_lock (&exiting_threads_mutex);
 }
 static inline void
-abandoned_threads_unlock ()
+exiting_threads_unlock ()
 {
-	mono_coop_mutex_unlock (&abandoned_threads_mutex);
+	mono_coop_mutex_unlock (&exiting_threads_mutex);
 }
 
 /* Holds current status of static data heap */
@@ -870,7 +870,7 @@ fail:
 static GENERATE_GET_CLASS_WITH_CACHE (wait_subsystem, "System.Threading", "WaitSubsystem");
 
 static void
-abandon_mutexes (void *val, void *user_data)
+call_thread_exiting (void *val, void *user_data)
 {
 	MonoGCHandle gchandle = (MonoGCHandle)val;
 	MonoInternalThread *internal = (MonoInternalThread *)mono_gchandle_get_target_internal (gchandle);
@@ -905,22 +905,27 @@ abandon_mutexes (void *val, void *user_data)
 }
 
 void
-mono_threads_abandon_mutexes (void)
+mono_threads_exiting (void)
 {
-	abandoned_threads_lock ();
-	g_slist_foreach (abandoned_threads, abandon_mutexes, NULL);
-	g_slist_free (abandoned_threads);
-	abandoned_threads = NULL;
-	abandoned_threads_unlock ();
+	exiting_threads_lock ();
+	g_slist_foreach (exiting_threads, call_thread_exiting, NULL);
+	g_slist_free (exiting_threads);
+	exiting_threads = NULL;
+	exiting_threads_unlock ();
 }
 
 static void
-add_abandoned_thread (MonoInternalThread *thread)
+add_exiting_thread (MonoInternalThread *thread)
 {
 	MonoGCHandle gchandle = mono_gchandle_new_internal ((MonoObject *)thread, FALSE);
-	abandoned_threads_lock ();
-	abandoned_threads = g_slist_prepend (abandoned_threads, gchandle);
-	abandoned_threads_unlock ();
+	exiting_threads_lock ();
+	exiting_threads = g_slist_prepend (exiting_threads, gchandle);
+	exiting_threads_unlock ();
+}
+#else
+void
+mono_threads_process_exiting (void)
+{
 }
 #endif
 
@@ -956,7 +961,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	threads_add_pending_joinable_runtime_thread (info);
 
 #ifndef HOST_WIN32
-	add_abandoned_thread (thread);
+	add_exiting_thread (thread);
 	mono_gc_finalize_notify ();
 #endif
 
@@ -2574,7 +2579,7 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 #endif
 	mono_coop_mutex_init_recursive(&joinable_threads_mutex);
 
-	mono_coop_mutex_init (&abandoned_threads_mutex);
+	mono_coop_mutex_init (&exiting_threads_mutex);
 
 	mono_os_event_init (&background_change_event, FALSE);
 	

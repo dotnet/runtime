@@ -830,7 +830,7 @@ mono_runtime_do_background_work (void)
 {
 	mono_threads_perform_thread_dump ();
 
-	mono_threads_abandon_mutexes ();
+	mono_threads_exiting ();
 
 	finalize_domain_objects ();
 
