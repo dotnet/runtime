@@ -328,7 +328,7 @@ gboolean
 mono_pe_file_time_date_stamp (const gunichar2 *filename, guint32 *out);
 
 gpointer
-mono_pe_file_map (const gunichar2 *filename, gint32 *map_size, void **handle);
+mono_pe_file_map (const gunichar2 *filename, guint32 *map_size, void **handle);
 
 void
 mono_pe_file_unmap (gpointer file_map, void *handle);
