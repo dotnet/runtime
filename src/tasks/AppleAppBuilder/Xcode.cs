@@ -83,11 +83,20 @@ internal class Xcode
             }
         }
 
+        bool hardenedRuntime = false;
+        bool hardenedRuntimeUseJit = false;
+        if (Target == TargetNames.MacCatalyst && !(forceInterpreter || forceAOT)) {
+            hardenedRuntime = true;
+            hardenedRuntimeUseJit = true;
+        }
+
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
             .Replace("%ProjectName%", projectName)
             .Replace("%AppResources%", string.Join(Environment.NewLine, resources.Select(r => "    " + r)))
             .Replace("%MainSource%", nativeMainSource)
-            .Replace("%MonoInclude%", monoInclude);
+            .Replace("%MonoInclude%", monoInclude)
+            .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE")
+            .Replace("%HardenedRuntimeUseJit%", hardenedRuntimeUseJit ? "TRUE" : "FALSE");
 
 
         string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
@@ -153,6 +162,12 @@ internal class Xcode
 
         File.WriteAllText(Path.Combine(binDir, "Info.plist"), plist);
         File.WriteAllText(Path.Combine(binDir, "CMakeLists.txt"), cmakeLists);
+
+        if (hardenedRuntimeUseJit) {
+            /* FIXME: right now the entitlements template just hardcodes the JIT entitlement. */
+            string entitlements = Utils.GetEmbeddedResource("app.entitlements.template");
+            File.WriteAllText(Path.Combine(binDir, "app.entitlements"), entitlements);
+        }
 
         string targetName;
         switch (Target)
