@@ -2001,6 +2001,11 @@ namespace System.Diagnostics.Tracing
         private void LogEventArgsMismatches(int eventId, object?[] args)
         {
             Debug.Assert(m_eventData != null);
+            // TODO: Figure out what to do with this paramterinfo
+            if (m_eventData[eventId].Parameters == null)
+            {
+                return;
+            }
             ParameterInfo[] infos = m_eventData[eventId].Parameters;
 
             if (args.Length != infos.Length)
@@ -2762,12 +2767,13 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
 #endif
 
-            if (m_EventDataInitializer != null)
+            if (m_EventDataInitializer != null && m_eventData == null)
             {
                 m_eventData = m_EventDataInitializer();
+                DefineEventPipeEvents();
             }
 
-            if (m_EventMetadataInitializer != null)
+            if (m_EventMetadataInitializer != null && m_rawManifest == null)
             {
                 m_rawManifest = m_EventMetadataInitializer();
             }

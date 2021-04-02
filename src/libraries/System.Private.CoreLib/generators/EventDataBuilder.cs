@@ -71,7 +71,6 @@ namespace Generators
                     _builder.Append("            eventData[").Append(esEvent.Id).Append("].EventHandle").AppendLine(" = IntPtr.Zero;");
                     _builder.AppendLine("");
                 }
-                _builder.AppendLine("            DefineEventPipeEvents();");
                 _builder.AppendLine("            return eventData;");
                 _builder.AppendLine("        };");
             }
