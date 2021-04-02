@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net472</TargetFrameworks>
     <!-- MSBuild won't work everywhere -->
-    <SkipTestsOnPlatform Condition="'$(TargetsMobile)' == 'true' or '$(TargetArchitecture)' == 'wasm'">true</SkipTestsOnPlatform>
+    <SkipTestsOnPlatform Condition="'$(TargetsMobile)' == 'true' or '$(TargetsBrowser)' == 'true'">true</SkipTestsOnPlatform>
   </PropertyGroup>
 
   <ItemGroup>
