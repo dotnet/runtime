@@ -1134,7 +1134,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
     m_pMT                           = NULL;
     m_pMD                           = pMD;
     // [Compat] For backward compatibility reasons, some marshalers imply [In, Out] behavior when marked as [In], [Out], or not marked with either.
-    BOOL alwaysInOut                = FALSE;
+    BOOL byValAlwaysInOut           = FALSE;
 
 #ifdef FEATURE_COMINTEROP
     m_fDispItf                      = FALSE;
@@ -1879,7 +1879,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     }
                     m_type = IsFieldScenario() ? MARSHAL_TYPE_BLITTABLE_LAYOUTCLASS : MARSHAL_TYPE_BLITTABLEPTR;
                     m_args.m_pMT = m_pMT;
-                    alwaysInOut = TRUE;
+                    byValAlwaysInOut = TRUE;
                 }
                 else if (m_pMT->HasLayout())
                 {
@@ -2372,7 +2372,7 @@ lExit:
             }
         }
 
-        if (alwaysInOut)
+        if (!m_byref && byValAlwaysInOut)
         {
             // Some marshalers expect [In, Out] behavior with [In], [Out], or no directional attributes.
             m_in = TRUE;
