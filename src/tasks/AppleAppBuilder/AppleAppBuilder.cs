@@ -27,27 +27,7 @@ public class AppleAppBuilderTask : Task
 
         set
         {
-            switch (value.ToLower())
-            {
-                case TargetNames.iOS:
-                    targetOS = TargetNames.iOS;
-                    break;
-                case TargetNames.iOSsim:
-                    targetOS = TargetNames.iOSsim;
-                    break;
-                case TargetNames.tvOS:
-                    targetOS = TargetNames.tvOS;
-                    break;
-                case TargetNames.tvOSsim:
-                    targetOS = TargetNames.tvOSsim;
-                    break;
-                case TargetNames.MacCatalyst:
-                    targetOS = TargetNames.MacCatalyst;
-                    break;
-                default:
-                    targetOS = value;
-                    break;
-            }
+            targetOS = value.ToLower();
         }
     }
 
