@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
 
@@ -15,20 +13,23 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         // For testing only
         internal Action<object> _captureDisposableCallback;
 
-        private List<object> _disposables;
-
         private bool _disposed;
-        private readonly object _disposelock = new object();
+        private ScopePool.State _state;
+
+        // This lock protects state on the scope, in particular, for the root scope, it protects
+        // the list of disposable entries only, since ResolvedServices is a concurrent dictionary.
+        // For other scopes, it protects ResolvedServices and the list of disposables
+        private readonly object _scopeLock = new object();
 
         public ServiceProviderEngineScope(ServiceProviderEngine engine, bool isRoot = false)
         {
             Engine = engine;
-
-            // To reduce lock contention for singletons upon resolve we use a concurrent dictionary.
-            ResolvedServices = isRoot ? new ConcurrentDictionary<ServiceCacheKey, object>() : new Dictionary<ServiceCacheKey, object>();
+            _state = isRoot ? new ScopePool.State() : engine.ScopePool.Rent();
         }
 
-        internal IDictionary<ServiceCacheKey, object> ResolvedServices { get; }
+        internal IDictionary<ServiceCacheKey, object> ResolvedServices => _state?.ResolvedServices ?? ScopeDisposed();
+
+        internal object Sync => _scopeLock;
 
         public ServiceProviderEngine Engine { get; }
 
@@ -53,7 +54,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return service;
             }
 
-            lock (_disposelock)
+            lock (_scopeLock)
             {
                 if (_disposed)
                 {
@@ -66,16 +67,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         // sync over async, for the rare case that an object only implements IAsyncDisposable and may end up starving the thread pool.
                         Task.Run(() => ((IAsyncDisposable)service).DisposeAsync().AsTask()).GetAwaiter().GetResult();
                     }
+
                     ThrowHelper.ThrowObjectDisposedException();
                 }
 
-                if (_disposables == null)
-                {
-                    _disposables = new List<object>();
-                }
+                _state.Disposables ??= new List<object>();
 
-                _disposables.Add(service);
+                _state.Disposables.Add(service);
             }
+
             return service;
         }
 
@@ -97,6 +97,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                 }
             }
+
+            ClearState();
         }
 
         public ValueTask DisposeAsync()
@@ -115,7 +117,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                             ValueTask vt = asyncDisposable.DisposeAsync();
                             if (!vt.IsCompletedSuccessfully)
                             {
-                                return Await(i, vt, toDispose);
+                                return Await(this, i, vt, toDispose);
                             }
 
                             // If its a IValueTaskSource backed ValueTask,
@@ -134,9 +136,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
             }
 
+            ClearState();
+
             return default;
 
-            static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
+            static async ValueTask Await(ServiceProviderEngineScope scope, int i, ValueTask vt, List<object> toDispose)
             {
                 await vt.ConfigureAwait(false);
                 // vt is acting on the disposable at index i,
@@ -155,30 +159,52 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         ((IDisposable)disposable).Dispose();
                     }
                 }
+
+                scope.ClearState();
+            }
+        }
+
+        private IDictionary<ServiceCacheKey, object> ScopeDisposed()
+        {
+            ThrowHelper.ThrowObjectDisposedException();
+            return null;
+        }
+
+        private void ClearState()
+        {
+            // We lock here since ResolvedServices is always accessed in the scope lock, this means we'll never
+            // try to return to the pool while somebody is trying to access ResolvedServices.
+            lock (_scopeLock)
+            {
+                // ResolvedServices is never cleared for singletons because there might be a compilation running in background
+                // trying to get a cached singleton service. If it doesn't find it
+                // it will try to create a new one which will result in an ObjectDisposedException.
+
+                // Dispose the state, which will end up attempting to return the state pool.
+                // This will return false if the pool is full or if this state object is the root scope
+                if (_state.Return())
+                {
+                    _state = null;
+                }
             }
         }
 
         private List<object> BeginDispose()
         {
-            List<object> toDispose;
-            lock (_disposelock)
+            lock (_scopeLock)
             {
                 if (_disposed)
                 {
                     return null;
                 }
 
+                // We've transitioned to the disposed state, so future calls to
+                // CaptureDisposable will immediately dispose the object.
+                // No further changes to _state.Disposables, are allowed.
                 _disposed = true;
-                toDispose = _disposables;
-                _disposables = null;
 
-                // Not clearing ResolvedServices here because there might be a compilation running in background
-                // trying to get a cached singleton service instance and if it won't find
-                // it it will try to create a new one tripping the Debug.Assert in CaptureDisposable
-                // and leaking a Disposable object in Release mode
+                return _state.Disposables;
             }
-
-            return toDispose;
         }
     }
 }
