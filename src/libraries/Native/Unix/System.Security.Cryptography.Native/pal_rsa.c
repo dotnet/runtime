@@ -32,44 +32,9 @@ RSA* CryptoNative_DecodeRsaPublicKey(const uint8_t* buf, int32_t len)
     return d2i_RSAPublicKey(NULL, &buf, len);
 }
 
-static int GetOpenSslPadding(RsaPadding padding)
-{
-    assert(padding == Pkcs1 || padding == OaepSHA1 || padding == NoPadding);
-
-    switch (padding)
-    {
-        case Pkcs1:
-            return RSA_PKCS1_PADDING;
-        case OaepSHA1:
-            return RSA_PKCS1_OAEP_PADDING;
-        case NoPadding:
-            return RSA_NO_PADDING;
-    }
-
-    return RSA_NO_PADDING;
-}
-
-int32_t
-CryptoNative_RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
-{
-    int openSslPadding = GetOpenSslPadding(padding);
-    return RSA_public_encrypt(flen, from, to, rsa, openSslPadding);
-}
-
-int32_t CryptoNative_RsaVerificationPrimitive(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa)
-{
-    return RSA_public_decrypt(flen, from, to, rsa, RSA_NO_PADDING);
-}
-
 int32_t CryptoNative_RsaSize(RSA* rsa)
 {
     return RSA_size(rsa);
-}
-
-int32_t
-CryptoNative_RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa)
-{
-    return RSA_verify(type, m, Int32ToUint32(mlen), sigbuf, Int32ToUint32(siglen), rsa);
 }
 
 int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
