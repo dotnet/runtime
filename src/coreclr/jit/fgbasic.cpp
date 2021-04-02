@@ -976,6 +976,34 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 if ((methodFlags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_JIT_INTRINSIC)) != 0)
                 {
                     intrinsicCalls++;
+
+                    if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
+                    {
+                        intrinsicID = info.compCompHnd->getIntrinsicID(methodHnd, &mustExpand);
+                    }
+
+                    if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
+                    {
+                        if (intrinsicID == CORINFO_INTRINSIC_Illegal)
+                        {
+                            ni = lookupNamedIntrinsic(methodHnd);
+
+                            switch (ni)
+                            {
+                                case NI_IsSupported_True:
+                                case NI_IsSupported_False:
+                                {
+                                    pushedStack.PushConstant();
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if ((OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
@@ -1403,6 +1431,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 // the list of other opcodes (for all platforms).
 
                 FALLTHROUGH;
+
             case CEE_MKREFANY:
             case CEE_RETHROW:
                 if (makeInlineObservations)
@@ -1492,10 +1521,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         // Clear any prefix flags that may have been set
         prefixFlags = 0;
 
-OBSERVE_OPCODE:
-
         // Increment the number of observed instructions
         opts.instrCount++;
+
+OBSERVE_OPCODE:
 
         // Note the opcode we just saw
         if (makeInlineObservations)
