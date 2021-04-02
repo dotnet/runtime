@@ -253,8 +253,10 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowKeyNullException();
             }
 
-            TValue value;
-            return this.TryGetValue(key, out value);
+            object oldValObj = _table.TryGetValue(key);
+            Debug.Assert(!(oldValObj is Prime));
+
+            return oldValObj != null;
         }
 
         /// <summary>
