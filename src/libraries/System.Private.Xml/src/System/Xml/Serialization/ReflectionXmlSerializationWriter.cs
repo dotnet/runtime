@@ -13,19 +13,6 @@ namespace System.Xml.Serialization
 {
     internal sealed class ReflectionXmlSerializationWriter : XmlSerializationWriter
     {
-        internal static readonly TypeDesc StringTypeDesc;
-        internal static readonly TypeDesc QnameTypeDesc;
-
-        [RequiresUnreferencedCode("class GetTypeDesc")]
-        // Initialize in static constructor to suppress RequiresUnreferencedCode warning
-#pragma warning disable CA1810
-        static ReflectionXmlSerializationWriter()
-        {
-            StringTypeDesc = (new TypeScope()).GetTypeDesc(typeof(string));
-            QnameTypeDesc = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
-        }
-#pragma warning restore CA1810
-
         private readonly XmlMapping _mapping;
 
         public ReflectionXmlSerializationWriter(XmlMapping xmlMapping, XmlWriter xmlWriter, XmlSerializerNamespaces namespaces, string? encodingStyle, string? id)
@@ -406,7 +393,7 @@ namespace System.Xml.Serialization
             else if (element.Mapping is PrimitiveMapping)
             {
                 var mapping = element.Mapping as PrimitiveMapping;
-                if (mapping!.TypeDesc == QnameTypeDesc)
+                if (mapping!.TypeDesc == ReflectionXmlSerializationReader.QnameTypeDesc)
                 {
                     WriteQualifiedNameElement(name, ns!, element.Default, (XmlQualifiedName)o!, element.IsNullable, mapping.IsSoap, mapping);
                 }
@@ -902,7 +889,7 @@ namespace System.Xml.Serialization
             // check to see if we can write values of the attribute sequentially
             // currently we have only one data type (XmlQualifiedName) that we can not write "inline",
             // because we need to output xmlns:qx="..." for each of the qnames
-            return (listElementTypeDesc != null && listElementTypeDesc != QnameTypeDesc);
+            return (listElementTypeDesc != null && listElementTypeDesc != ReflectionXmlSerializationReader.QnameTypeDesc);
         }
 
         private void WriteAttribute(object memberValue, AttributeAccessor attribute, object? container)
@@ -1102,7 +1089,7 @@ namespace System.Xml.Serialization
 
         private bool WritePrimitiveValue(TypeDesc typeDesc, object? o, bool isElement, out string? stringValue)
         {
-            if (typeDesc == StringTypeDesc || typeDesc.FormatterName == "String")
+            if (typeDesc == ReflectionXmlSerializationReader.StringTypeDesc || typeDesc.FormatterName == "String")
             {
                 stringValue = (string?)o;
                 return true;
@@ -1141,7 +1128,7 @@ namespace System.Xml.Serialization
                         throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Invalid DateTime"));
                     }
                 }
-                else if (typeDesc == QnameTypeDesc)
+                else if (typeDesc == ReflectionXmlSerializationReader.QnameTypeDesc)
                 {
                     stringValue = FromXmlQualifiedName((XmlQualifiedName?)o);
                     return true;
