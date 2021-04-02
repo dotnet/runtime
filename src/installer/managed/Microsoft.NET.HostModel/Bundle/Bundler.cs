@@ -260,13 +260,6 @@ namespace Microsoft.NET.HostModel.Bundle
                 throw new ArgumentException("Invalid input specification: Must specify the host binary");
             }
 
-            var bundleRelativePathCollision = fileSpecs.GroupBy(file => file.BundleRelativePath).FirstOrDefault(g => g.Count() > 1);
-            if (bundleRelativePathCollision != null)
-            {
-                string fileSpecPaths = string.Join(", ", bundleRelativePathCollision.Select(file => "'" + file.SourcePath + "'"));
-                throw new ArgumentException($"Invalid input specification: Found entries {fileSpecPaths} with the same BundleRelativePath '{bundleRelativePathCollision.Key}'");
-            }
-
             string bundlePath = Path.Combine(OutputDir, HostName);
             if (File.Exists(bundlePath))
             {
@@ -274,6 +267,11 @@ namespace Microsoft.NET.HostModel.Bundle
             }
 
             BinaryUtils.CopyFile(hostSource, bundlePath);
+
+            // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
+            // We can't really make assumptions about the file systems (even on Linux there can be case insensitive file systems
+            // and vice versa for Windows). So it's safer to do case sensitive comparison everywhere.
+            var relativePathToSpec = new Dictionary<string, FileSpec>(StringComparer.Ordinal);
 
             long headerOffset = 0;
             using (BinaryWriter writer = new BinaryWriter(File.OpenWrite(bundlePath)))
@@ -303,6 +301,21 @@ namespace Microsoft.NET.HostModel.Bundle
                         Tracer.Log($"Exclude [{type}]: {relativePath}");
                         fileSpec.Excluded = true;
                         continue;
+                    }
+
+                    if (relativePathToSpec.TryGetValue(fileSpec.BundleRelativePath, out var existingFileSpec))
+                    {
+                        if (!string.Equals(fileSpec.SourcePath, existingFileSpec.SourcePath, StringComparison.Ordinal))
+                        {
+                            throw new ArgumentException($"Invalid input specification: Found entries '{fileSpec.SourcePath}' and '{existingFileSpec.SourcePath}' with the same BundleRelativePath '{fileSpec.BundleRelativePath}'");
+                        }
+
+                        // Exact duplicate - intentionally skip and don't include a second copy in the bundle
+                        continue;
+                    }
+                    else
+                    {
+                        relativePathToSpec.Add(fileSpec.BundleRelativePath, fileSpec);
                     }
 
                     using (FileStream file = File.OpenRead(fileSpec.SourcePath))
