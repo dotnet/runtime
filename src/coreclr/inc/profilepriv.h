@@ -16,8 +16,15 @@
 
 // Forward declarations
 class EEToProfInterfaceImpl;
+class ProfToEEInterfaceImpl;
 class Object;
 struct ScanContext;
+enum EtwGCRootFlags: int32_t;
+enum EtwGCRootKind: int32_t;
+struct IAssemblyBindingClosure;
+struct AssemblyReferenceClosureWalkContextForProfAPI;
+
+#include "eventpipeadaptertypes.h"
 
 #if defined (PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPORTED)
 #ifndef PROFILING_SUPPORTED_DATA
@@ -55,33 +62,109 @@ public:
     void Set(ProfilerStatus profStatus);
 };
 
+class EventMask
+{
+    friend class ProfControlBlock;
+private:
+    const UINT64 EventMaskLowMask           = 0x00000000FFFFFFFF;
+    const UINT64 EventMaskHighShiftAmount   = 32;
+    const UINT64 EventMaskHighMask          = 0xFFFFFFFF00000000;
+
+    Volatile<UINT64> m_eventMask;
+
+public:
+    EventMask() :
+        m_eventMask(0)
+    {
+
+    }
+
+    EventMask& operator=(const EventMask& other);
+
+    BOOL IsEventMaskSet(DWORD eventMask);
+    DWORD GetEventMask();
+    void SetEventMask(DWORD eventMask);
+    BOOL IsEventMaskHighSet(DWORD eventMaskHigh);
+    DWORD GetEventMaskHigh();
+    void SetEventMaskHigh(DWORD eventMaskHigh);
+};
+
+class ProfilerInfo
+{
+public:
+    // **** IMPORTANT!! ****
+    // All uses of pProfInterface must be properly synchronized to avoid the profiler
+    // from detaching while the EE attempts to call into it.  The recommended way to do
+    // this is to use the (lockless) BEGIN_PROFILER_CALLBACK / END_PROFILER_CALLBACK macros.  See
+    // code:BEGIN_PROFILER_CALLBACK for instructions.  For full details on how the
+    // synchronization works, see
+    // code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization
+    VolatilePtr<EEToProfInterfaceImpl> pProfInterface;
+    // **** IMPORTANT!! ****
+
+    CurrentProfilerStatus curProfStatus;
+    
+    EventMask eventMask;
+
+    //---------------------------------------------------------------
+    // m_dwProfilerEvacuationCounter keeps track of how many profiler
+    // callback calls remain on the stack
+    //---------------------------------------------------------------
+    // Why volatile?
+    // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization.
+    Volatile<DWORD> dwProfilerEvacuationCounter;
+    
+    // Reset those variables that is only for the current attach session
+    void ResetPerSessionStatus();
+    void Init();
+};
+
+// We need a way to track which profilers are in active calls, to synchronize with detach.
+// If we detached a profiler while it was actively in a callback there would be issues.
+// However, we don't want to pin all profilers, because then a chatty profiler could
+// cause another profiler to not be able to detach. We can't just check the event masks
+// before and after the call because it is legal for a profiler to change its event mask,
+// and then it would be possible for a profiler to permanently prevent itself from detaching.
+class EvacuationCounterHolder
+{
+private:
+    ProfilerInfo *m_pProfilerInfo;
+
+public:
+    EvacuationCounterHolder(ProfilerInfo *pProfilerInfo) :
+        m_pProfilerInfo(pProfilerInfo)
+    {
+        _ASSERTE(m_pProfilerInfo != NULL);
+        InterlockedIncrement((LONG *)(m_pProfilerInfo->dwProfilerEvacuationCounter.GetPointer()));
+    }
+
+    ~EvacuationCounterHolder()
+    {
+        InterlockedDecrement((LONG *)(m_pProfilerInfo->dwProfilerEvacuationCounter.GetPointer()));
+    }
+};
+
 // ---------------------------------------------------------------------------------------
 // Global struct that lets the EE see the load status of the profiler, and provides a
 // pointer (pProfInterface) through which profiler calls can be made
 //
 // When you are adding new session, please refer to
 // code:ProfControlBlock::ResetPerSessionStatus#ProfileResetSessionStatus for more details.
-struct ProfControlBlock
+class ProfControlBlock
 {
-    // **** IMPORTANT!! ****
-    // All uses of pProfInterface must be properly synchronized to avoid the profiler
-    // from detaching while the EE attempts to call into it.  The recommended way to do
-    // this is to use the (lockless) BEGIN_PIN_PROFILER / END_PIN_PROFILER macros.  See
-    // code:BEGIN_PIN_PROFILER for instructions.  For full details on how the
-    // synchronization works, see
-    // code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization
-    VolatilePtr<EEToProfInterfaceImpl> pProfInterface;
-    // **** IMPORTANT!! ****
-
-    DWORD dwEventMask;          // Original low event mask bits
-    DWORD dwEventMaskHigh;      // New high event mask bits
-    CurrentProfilerStatus curProfStatus;
+public:
     BOOL fGCInProgress;
     BOOL fBaseSystemClassesLoaded;
 
     BOOL fIsStoredProfilerRegistered;
     CLSID clsStoredProfilerGuid;
     SString sStoredProfilerPath;
+
+    ProfilerInfo mainProfilerInfo;
+
+    InlineSArray<ProfilerInfo *, 4> notificationOnlyProfilers;
+
+    EventMask globalEventMask;
 
 #ifdef PROF_TEST_ONLY_FORCE_ELT_DATA
     // #TestOnlyELT This implements a test-only (and debug-only) hook that allows a test
@@ -118,14 +201,186 @@ struct ProfControlBlock
 #endif // _DEBUG
 
     // Whether we've turned off concurrent GC during attach
-    BOOL fConcurrentGCDisabledForAttach;
+    Volatile<DWORD> dwConcurrentGCDisabledForAttach;
 
     Volatile<BOOL> fProfControlBlockInitialized;
 
     Volatile<BOOL> fProfilerRequestedRuntimeSuspend;
 
     void Init();
-    void ResetPerSessionStatus();
+    BOOL IsMainProfiler(EEToProfInterfaceImpl *pEEToProf);
+    BOOL IsMainProfiler(ProfToEEInterfaceImpl *pProfToEE);
+    ProfilerInfo *GetProfilerInfo(ProfToEEInterfaceImpl *pProfToEE);
+    ProfilerInfo *GetNextFreeProfilerInfo();
+
+    template<typename Func, typename... Args>
+    inline VOID IterateProfilers(Func callback, Args... args)
+    {
+        EX_TRY
+        {
+            if (mainProfilerInfo.pProfInterface.Load() != NULL)
+            {
+                callback(&mainProfilerInfo, args...);
+            }
+
+            for (auto it = notificationOnlyProfilers.Begin(); it != notificationOnlyProfilers.End(); ++it)
+            {
+                ProfilerInfo *current = *it;
+                _ASSERTE(current->pProfInterface.Load() != NULL);
+                callback(current, args...);
+            }
+        }
+        EX_CATCH
+        {
+            _ASSERTE(FALSE);
+        }
+        EX_END_CATCH(RethrowTerminalExceptions)
+    }
+
+    template<typename ConditionFunc, typename CallbackFunc, typename Data = void, typename... Args>
+    inline HRESULT DoOneProfilerCallback(ProfilerInfo *pProfilerInfo, ConditionFunc condition, Data *additionalData, CallbackFunc callback, Args... args)
+    {
+        HRESULT hr = S_OK;
+#ifdef FEATURE_PROFAPI_ATTACH_DETACH
+        EvacuationCounterHolder evacuationCounter(pProfilerInfo);
+#endif // FEATURE_PROFAPI_ATTACH_DETACH
+        if (condition(pProfilerInfo))
+        {
+            HRESULT innerHR = callback(additionalData, pProfilerInfo->pProfInterface, args...);
+            if (FAILED(innerHR))
+            {
+                hr = innerHR;
+            }
+        }
+
+        return hr;
+    }
+
+    template<typename ConditionFunc, typename CallbackFunc, typename Data = void, typename... Args>
+    inline HRESULT DoProfilerCallback(ConditionFunc condition, Data *additionalData, CallbackFunc callback, Args... args)
+    {
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            HRESULT innerHR = DoOneProfilerCallback(&mainProfilerInfo, condition, additionalData, callback, args...);
+            if (FAILED(innerHR))
+            {
+                hr = innerHR;
+            }
+
+            for (auto it = notificationOnlyProfilers.Begin(); it != notificationOnlyProfilers.End(); ++it)
+            {
+                ProfilerInfo *current = *it;
+                HRESULT innerHR = DoOneProfilerCallback(current, condition, additionalData, callback, args...);
+                if (FAILED(innerHR))
+                {
+                    hr = innerHR;
+                }
+            }
+        }
+        EX_CATCH
+        {
+            _ASSERTE(FALSE);
+            hr = E_FAIL;
+        }
+        EX_END_CATCH(RethrowTerminalExceptions)
+
+        return hr;
+    }
+
+    void AddProfilerInfo(ProfilerInfo *pProfilerInfo);
+    void RemoveProfilerInfo(ProfilerInfo *pProfilerInfo);
+
+#ifndef DACCESS_COMPILE
+    void UpdateGlobalEventMask();
+#endif // DACCESS_COMPILE
+    void CheckGlobalEventMask();
+
+    BOOL IsCallback3Supported();
+    BOOL IsCallback5Supported();
+    BOOL IsDisableTransparencySet();
+    BOOL RequiresGenericsContextForEnterLeave();
+    UINT_PTR EEFunctionIDMapper(FunctionID funcId, BOOL * pbHookFunction);
+    
+    void ThreadCreated(ThreadID threadID);
+    void ThreadDestroyed(ThreadID threadID);
+    void ThreadAssignedToOSThread(ThreadID managedThreadId, DWORD osThreadId);
+    void ThreadNameChanged(ThreadID managedThreadId, ULONG cchName, WCHAR name[]);
+    void Shutdown();
+    void FunctionUnloadStarted(FunctionID functionId);
+    void JITCompilationFinished(FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock);
+    void JITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock);
+    void DynamicMethodJITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock, LPCBYTE pILHeader, ULONG cbILHeader);
+    void DynamicMethodJITCompilationFinished(FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock);
+    void DynamicMethodUnloaded(FunctionID functionId);
+    void JITCachedFunctionSearchStarted(FunctionID functionId, BOOL *pbUseCachedFunction);
+    void JITCachedFunctionSearchFinished(FunctionID functionId, COR_PRF_JIT_CACHE result);
+    HRESULT JITInlining(FunctionID callerId, FunctionID calleeId, BOOL *pfShouldInline);
+    void ReJITCompilationStarted(FunctionID functionId, ReJITID reJitId, BOOL fIsSafeToBlock);
+    HRESULT GetReJITParameters(ModuleID moduleId, mdMethodDef methodId, ICorProfilerFunctionControl *pFunctionControl);
+    void ReJITCompilationFinished(FunctionID functionId, ReJITID reJitId, HRESULT hrStatus, BOOL fIsSafeToBlock);
+    void ReJITError(ModuleID moduleId, mdMethodDef methodId, FunctionID functionId, HRESULT hrStatus);
+    void ModuleLoadStarted(ModuleID moduleId);
+    void ModuleLoadFinished(ModuleID moduleId, HRESULT hrStatus);
+    void ModuleUnloadStarted(ModuleID moduleId);
+    void ModuleUnloadFinished(ModuleID moduleId, HRESULT hrStatus);
+    void ModuleAttachedToAssembly(ModuleID moduleId, AssemblyID AssemblyId);
+    void ModuleInMemorySymbolsUpdated(ModuleID moduleId);
+    void ClassLoadStarted(ClassID classId);
+    void ClassLoadFinished(ClassID classId, HRESULT hrStatus);
+    void ClassUnloadStarted(ClassID classId);
+    void ClassUnloadFinished(ClassID classId, HRESULT hrStatus);
+    void AppDomainCreationStarted(AppDomainID appDomainId);
+    void AppDomainCreationFinished(AppDomainID appDomainId, HRESULT hrStatus);
+    void AppDomainShutdownStarted(AppDomainID appDomainId);
+    void AppDomainShutdownFinished(AppDomainID appDomainId, HRESULT hrStatus);
+    void AssemblyLoadStarted(AssemblyID assemblyId);
+    void AssemblyLoadFinished(AssemblyID assemblyId, HRESULT hrStatus);
+    void AssemblyUnloadStarted(AssemblyID assemblyId);
+    void AssemblyUnloadFinished(AssemblyID assemblyId, HRESULT hrStatus);
+    void UnmanagedToManagedTransition(FunctionID functionId, COR_PRF_TRANSITION_REASON reason);
+    void ManagedToUnmanagedTransition(FunctionID functionId, COR_PRF_TRANSITION_REASON reason);
+    void ExceptionThrown(ObjectID thrownObjectId);
+    void ExceptionSearchFunctionEnter(FunctionID functionId);
+    void ExceptionSearchFunctionLeave();
+    void ExceptionSearchFilterEnter(FunctionID funcId);
+    void ExceptionSearchFilterLeave();
+    void ExceptionSearchCatcherFound(FunctionID functionId);
+    void ExceptionOSHandlerEnter(FunctionID funcId);
+    void ExceptionOSHandlerLeave(FunctionID funcId);
+    void ExceptionUnwindFunctionEnter(FunctionID functionId);
+    void ExceptionUnwindFunctionLeave();
+    void ExceptionUnwindFinallyEnter(FunctionID functionId);
+    void ExceptionUnwindFinallyLeave();
+    void ExceptionCatcherEnter(FunctionID functionId, ObjectID objectId);
+    void ExceptionCatcherLeave();
+    void COMClassicVTableCreated(ClassID wrappedClassId, REFGUID implementedIID, void *pVTable, ULONG cSlots);
+    void RuntimeSuspendStarted(COR_PRF_SUSPEND_REASON suspendReason);
+    void RuntimeSuspendFinished();
+    void RuntimeSuspendAborted();
+    void RuntimeResumeStarted();
+    void RuntimeResumeFinished();
+    void RuntimeThreadSuspended(ThreadID suspendedThreadId);
+    void RuntimeThreadResumed(ThreadID resumedThreadId);
+    void ObjectAllocated(ObjectID objectId, ClassID classId);
+    void FinalizeableObjectQueued(BOOL isCritical, ObjectID objectID);
+    void MovedReference(BYTE *pbMemBlockStart, BYTE *pbMemBlockEnd, ptrdiff_t cbRelocDistance, void *pHeapId, BOOL fCompacting);
+    void EndMovedReferences(void *pHeapId);
+    void RootReference2(BYTE *objectId, EtwGCRootKind dwEtwRootKind, EtwGCRootFlags dwEtwRootFlags, void *rootID, void *pHeapId);
+    void EndRootReferences2(void *pHeapId);
+    void ConditionalWeakTableElementReference(BYTE *primaryObjectId, BYTE *secondaryObjectId, void *rootID, void *pHeapId);
+    void EndConditionalWeakTableElementReferences(void *pHeapId);
+    void AllocByClass(ObjectID objId, ClassID classId, void *pHeapId);
+    void EndAllocByClass(void *pHeapId);
+    HRESULT ObjectReference(ObjectID objId, ClassID classId, ULONG cNumRefs, ObjectID *arrObjRef);
+    void HandleCreated(UINT_PTR handleId, ObjectID initialObjectId);
+    void HandleDestroyed(UINT_PTR handleId);
+    void GarbageCollectionStarted(int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason);
+    void GarbageCollectionFinished();
+    void GetAssemblyReferences(LPCWSTR wszAssemblyPath, IAssemblyBindingClosure *pClosure, AssemblyReferenceClosureWalkContextForProfAPI *pContext);
+    void EventPipeEventDelivered(EventPipeProvider *provider, DWORD eventId, DWORD eventVersion, ULONG cbMetadataBlob, LPCBYTE metadataBlob, ULONG cbEventData, 
+                                 LPCBYTE eventData, LPCGUID pActivityId, LPCGUID pRelatedActivityId, Thread *pEventThread, ULONG numStackFrames, UINT_PTR stackFrames[]);
+    void EventPipeProviderCreated(EventPipeProvider *provider);
 };
 
 

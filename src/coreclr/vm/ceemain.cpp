@@ -1414,10 +1414,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             // Don't call back in to the profiler if we are being torn down, it might be unloaded
             if (!fIsDllUnloading)
             {
-                BEGIN_PIN_PROFILER(CORProfilerPresent());
+                BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->Shutdown();
-                END_PIN_PROFILER();
+                (&g_profControlBlock)->Shutdown();
+                END_PROFILER_CALLBACK();
             }
 
             g_fEEShutDown |= ShutDown_Profiler;

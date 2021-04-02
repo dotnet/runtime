@@ -541,9 +541,9 @@ PCODE MethodDesc::GetPrecompiledNgenCode(PrepareCodeConfig* pConfig)
     {
         BOOL fShouldSearchCache = TRUE;
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackCacheSearches());
-            g_profControlBlock.pProfInterface->JITCachedFunctionSearchStarted((FunctionID)this, &fShouldSearchCache);
-            END_PIN_PROFILER();
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackCacheSearches());
+            (&g_profControlBlock)->JITCachedFunctionSearchStarted((FunctionID)this, &fShouldSearchCache);
+            END_PROFILER_CALLBACK();
         }
 
         if (!fShouldSearchCache)
@@ -589,10 +589,10 @@ PCODE MethodDesc::GetPrecompiledNgenCode(PrepareCodeConfig* pConfig)
         * cached jitted function has been made.
         */
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackCacheSearches());
-            g_profControlBlock.pProfInterface->
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackCacheSearches());
+            (&g_profControlBlock)->
                 JITCachedFunctionSearchFinished((FunctionID)this, COR_PRF_CACHED_FUNCTION_FOUND);
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
 #endif // PROFILING_SUPPORTED
 
@@ -870,7 +870,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackJITInfo());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackJITInfo());
         // For methods with non-zero rejit id we send ReJITCompilationStarted, otherwise
         // JITCompilationStarted. It isn't clear if this is the ideal policy for these
         // notifications yet.
@@ -879,7 +879,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         if (rejitId != 0)
         {
             _ASSERTE(!nativeCodeVersion.IsDefaultVersion());
-            g_profControlBlock.pProfInterface->ReJITCompilationStarted((FunctionID)this,
+            (&g_profControlBlock)->ReJITCompilationStarted((FunctionID)this,
                 rejitId,
                 TRUE);
         }
@@ -890,7 +890,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         {
             if (!IsNoMetadata())
             {
-                g_profControlBlock.pProfInterface->JITCompilationStarted((FunctionID)this, TRUE);
+                (&g_profControlBlock)->JITCompilationStarted((FunctionID)this, TRUE);
 
             }
             else
@@ -899,7 +899,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 CorInfoOptions corOptions;
                 LPCBYTE ilHeaderPointer = this->AsDynamicMethodDesc()->GetResolver()->GetCodeInfo(&ilSize, &unused, &corOptions, &unused);
 
-                g_profControlBlock.pProfInterface->DynamicMethodJITCompilationStarted((FunctionID)this, TRUE, ilHeaderPointer, ilSize);
+                (&g_profControlBlock)->DynamicMethodJITCompilationStarted((FunctionID)this, TRUE, ilHeaderPointer, ilSize);
             }
 
             if (nativeCodeVersion.IsDefaultVersion())
@@ -907,7 +907,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 pConfig->SetProfilerMayHaveActivatedNonDefaultCodeVersion();
             }
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -959,7 +959,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackJITInfo());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackJITInfo());
         // For methods with non-zero rejit id we send ReJITCompilationFinished, otherwise
         // JITCompilationFinished. It isn't clear if this is the ideal policy for these
         // notifications yet.
@@ -968,7 +968,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         if (rejitId != 0)
         {
             _ASSERTE(!nativeCodeVersion.IsDefaultVersion());
-            g_profControlBlock.pProfInterface->ReJITCompilationFinished((FunctionID)this,
+            (&g_profControlBlock)->ReJITCompilationFinished((FunctionID)this,
                 rejitId,
                 S_OK,
                 TRUE);
@@ -980,14 +980,14 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         {
             if (!IsNoMetadata())
             {
-                g_profControlBlock.pProfInterface->
+                (&g_profControlBlock)->
                     JITCompilationFinished((FunctionID)this,
                         pEntry->m_hrResultCode,
                         TRUE);
             }
             else
             {
-                g_profControlBlock.pProfInterface->DynamicMethodJITCompilationFinished((FunctionID)this, pEntry->m_hrResultCode, TRUE);
+                (&g_profControlBlock)->DynamicMethodJITCompilationFinished((FunctionID)this, pEntry->m_hrResultCode, TRUE);
             }
 
             if (nativeCodeVersion.IsDefaultVersion())
@@ -995,7 +995,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 pConfig->SetProfilerMayHaveActivatedNonDefaultCodeVersion();
             }
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 

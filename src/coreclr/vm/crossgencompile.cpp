@@ -123,7 +123,7 @@ DWORD GetCurrentExceptionCode()
 // disable PROFILING_SUPPORTED for crossgen because of it affects data layout and FCall tables.
 //
 
-UINT_PTR EEToProfInterfaceImpl::EEFunctionIDMapper(FunctionID funcId, BOOL * pbHookFunction)
+UINT_PTR EEToProfInterfaceImpl::EEFunctionIDMapper(FunctionID funcId, BOOL *pbHookFunction)
 {
     UNREACHABLE();
 }
