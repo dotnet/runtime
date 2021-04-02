@@ -664,7 +664,21 @@ void MulticoreJitProfilePlayer::JITMethod(Module * pModule, unsigned methodIndex
         else if (pMethod->IsNDirect())
         {
             // NDirect Stub
-            if (GetStubForInteropMethod(pMethod))
+            bool fSuccess = false;
+
+            EX_TRY
+            {
+                if ( !((NDirectMethodDesc *)pMethod)->IsClassConstructorTriggeredAtLinkTime() && GetStubForInteropMethod(pMethod) )
+                {
+                    fSuccess = true;
+                }
+            }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH(SwallowAllExceptions);
+
+            if (fSuccess)
             {
                 return;
             }
