@@ -80,7 +80,12 @@ namespace RuntimeEventCounterTests
             {
                 if (!observedRuntimeCounters[counterName])
                 {
+                    Console.WriteLine($"Did not see {counterName}");
                     return false;
+                }
+                else
+                {
+                    Console.WriteLine($"Saw {counterName}");
                 }
             }
             return true;
@@ -95,7 +100,7 @@ namespace RuntimeEventCounterTests
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())
             {
                 Thread.Sleep(3000); 
-                if (!myListener.Verify())
+                if (myListener.Verify())
                 {
                     Console.WriteLine("Test passed");
                     return 100;
