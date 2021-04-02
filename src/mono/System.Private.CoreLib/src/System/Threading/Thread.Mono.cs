@@ -81,9 +81,6 @@ namespace System.Threading
 
         ~Thread()
         {
-#if TARGET_UNIX || TARGET_BROWSER
-            _waitInfo?.OnThreadExiting();
-#endif
             FreeInternal();
         }
 

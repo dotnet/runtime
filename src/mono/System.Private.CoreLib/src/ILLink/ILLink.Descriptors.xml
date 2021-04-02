@@ -610,6 +610,11 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
+		<!-- threads.c (abandon_mutexes) -->
+		<type fullname="System.Threading.WaitSubsystem">
+			<method name="OnThreadExiting" />
+		</type>
+
 		<!-- mini-generic-sharing.c -->
 		<type fullname="Mono.ValueTuple" required="true"/>
 		<type fullname="Mono.ValueTuple`1" preserve="fields"/>
