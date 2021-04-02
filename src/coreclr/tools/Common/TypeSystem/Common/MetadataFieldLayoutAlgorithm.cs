@@ -363,7 +363,7 @@ namespace Internal.TypeSystem
             }
 
             SizeAndAlignment instanceByteSizeAndAlignment;
-            var instanceSizeAndAlignment = ComputeInstanceSize(type, instanceSize, largestAlignmentRequired, layoutMetadata.Size, out instanceByteSizeAndAlignment);
+            var instanceSizeAndAlignment = ComputeExplicitInstanceSize(type, instanceSize, largestAlignmentRequired, layoutMetadata.Size, out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
@@ -432,7 +432,7 @@ namespace Internal.TypeSystem
             }
 
             SizeAndAlignment instanceByteSizeAndAlignment;
-            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, largestAlignmentRequirement, layoutMetadata.Size, out instanceByteSizeAndAlignment);
+            var instanceSizeAndAlignment = ComputeExplicitInstanceSize(type, cumulativeInstanceFieldPos, largestAlignmentRequirement, layoutMetadata.Size, out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
@@ -845,15 +845,19 @@ namespace Internal.TypeSystem
                 return layoutMetadata.PackingSize;
         }
 
+        private static SizeAndAlignment ComputeExplicitInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, int classLayoutSize, out SizeAndAlignment byteCount)
+        {
+            SizeAndAlignment result = ComputeInstanceSize(type, instanceSize, alignment, classLayoutSize, out byteCount);
+            if (!type.IsValueType && type.HasBaseType && byteCount.Size == type.BaseType.InstanceByteCount)
+            {
+                byteCount.Size += LayoutInt.One;
+            }
+            return result;
+        }
+
         private static SizeAndAlignment ComputeInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, int classLayoutSize, out SizeAndAlignment byteCount)
         {
             SizeAndAlignment result;
-
-            // Pad the length of structs to be 1 if they are empty so we have no zero-length structures
-            if (type.IsValueType && instanceSize == LayoutInt.Zero)
-            {
-                instanceSize = LayoutInt.One;
-            }
 
             TargetDetails target = type.Context.Target;
 
