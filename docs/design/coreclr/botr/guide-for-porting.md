@@ -218,7 +218,7 @@ be done.
 Notable components
 
 1.  The JIT. The jit maintains the largest concentration of architecture
-    specific logic in the stack. This is not surprising. See [Porting RyuJit](porting-ryujit.md)
+    specific logic in the stack. This is not surprising. See [Porting RyuJit](../jit/porting-ryujit.md)
     for guidance.
 
 2.  The CLR PAL. When porting to a non-Windows OS, the PAL will be the first component
