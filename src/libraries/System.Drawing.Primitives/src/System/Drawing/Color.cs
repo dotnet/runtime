@@ -495,10 +495,7 @@ namespace System.Drawing
                 if (b < r)
                 {
                     min = b;
-                    if (r < g)
-                        max = g;
-                    else
-                        max = r;
+                    max = r < g ? g : r;
                 }
                 else
                 {
@@ -511,10 +508,7 @@ namespace System.Drawing
                 if (r < b)
                 {
                     max = b;
-                    if (g < r)
-                        min = g;
-                    else
-                        min = r;
+                    min = g < r ? g : r;
                 }
                 else
                 {
@@ -528,8 +522,7 @@ namespace System.Drawing
         {
             GetRgbValues(out int r, out int g, out int b);
 
-            int min, max;
-            MinMaxRgb(out min, out max, r, g, b);
+            MinMaxRgb(out int min, out int max, r, g, b);
 
             return (max + min) / (byte.MaxValue * 2f);
         }
@@ -541,8 +534,7 @@ namespace System.Drawing
             if (r == g && g == b)
                 return 0f;
 
-            int min, max;
-            MinMaxRgb(out min, out max, r, g, b);
+            MinMaxRgb(out int min, out int max, r, g, b);
 
             float delta = max - min;
             float hue;
@@ -568,8 +560,7 @@ namespace System.Drawing
             if (r == g && g == b)
                 return 0f;
 
-            int min, max;
-            MinMaxRgb(out min, out max, r, g, b);
+            MinMaxRgb(out int min, out int max, r, g, b);
 
             int div = max + min;
             if (div > byte.MaxValue)
