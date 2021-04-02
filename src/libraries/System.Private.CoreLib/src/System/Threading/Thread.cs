@@ -334,20 +334,13 @@ namespace System.Threading
             }
         }
 
-        private static int VerifyTimeoutMilliseconds(int millisecondsTimeout)
-        {
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(millisecondsTimeout),
-                    millisecondsTimeout,
-                    SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
-            return millisecondsTimeout;
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
-        public static void Sleep(int millisecondsTimeout) => SleepInternal(VerifyTimeoutMilliseconds(millisecondsTimeout));
+        public static void Sleep(int millisecondsTimeout)
+        {
+            if (millisecondsTimeout < Timeout.Infinite)
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            SleepInternal(millisecondsTimeout);
+        }
 
         /// <summary>Returns the operating system identifier for the current thread.</summary>
         internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();

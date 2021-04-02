@@ -196,7 +196,8 @@ namespace System.Threading
 
         public bool Join(int millisecondsTimeout)
         {
-            VerifyTimeoutMilliseconds(millisecondsTimeout);
+            if (millisecondsTimeout < Timeout.Infinite)
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return JoinInternal(this, millisecondsTimeout);
         }
 
