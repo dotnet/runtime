@@ -10308,6 +10308,7 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
             {
                 GenTree* addr = tree->AsCmpXchg()->gtOpLocation;
                 fgValueNumberAddExceptionSetForIndirection(tree, addr);
+                break;
             }
 
 #ifdef FEATURE_HW_INTRINSICS
