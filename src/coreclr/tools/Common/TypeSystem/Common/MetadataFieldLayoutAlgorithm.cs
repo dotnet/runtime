@@ -859,6 +859,12 @@ namespace Internal.TypeSystem
         {
             SizeAndAlignment result;
 
+            // Pad the length of structs to be 1 if they are empty so we have no zero-length structures
+            if (type.IsValueType && instanceSize == LayoutInt.Zero)
+            {
+                instanceSize = LayoutInt.One;
+            }
+
             TargetDetails target = type.Context.Target;
 
             if (classLayoutSize != 0)
