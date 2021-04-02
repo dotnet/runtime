@@ -1,7 +1,7 @@
 # Documentation for the superpmi.py tool
 
 SuperPMI is a tool for developing and testing the JIT compiler.
-General information on SuperPMI can be found [here](../ToolBox/superpmi/readme.md)
+General information on SuperPMI can be found [here](../ToolBox/superpmi/readme.md).
 
 ## Overview
 
