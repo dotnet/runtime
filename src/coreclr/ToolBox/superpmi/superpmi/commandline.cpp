@@ -100,8 +100,8 @@ void CommandLine::DumpHelp(const char* program)
     printf("     If 'workerCount' is not specified, the number of workers used is\n");
     printf("     the number of processors on the machine.\n");
     printf("\n");
-    printf(" -failureLimit [limit]\n");
-    printf("     If specified, replay and asm diffs will exit if it sees more than 'limit' failures.\n");
+    printf(" -failureLimit <limit>\n");
+    printf("     For a positive 'limit' number, replay and asm diffs will exit if it sees more than 'limit' failures.\n");
     printf("     Otherwise, all methods will be compiled.\n");
     printf("\n");
     printf(" -skipCleanup\n");
@@ -477,8 +477,21 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             }
             else if ((_strnicmp(&argv[i][1], "failureLimit", argLen) == 0))
             {
-                ++i;
+                if (++i >= argc)
+                {
+                    DumpHelp(argv[0]);
+                    return false;
+                }
+
                 o->failureLimit = atoi(argv[i]);
+
+                if (o->failureLimit < 1)
+                {
+                    LogError(
+                        "Incorrect limit specified for -failureLimit. Limit must be > 0.");
+                    DumpHelp(argv[0]);
+                    return false;
+                }
             }
             else if ((_stricmp(&argv[i][1], "skipCleanup") == 0))
             {
