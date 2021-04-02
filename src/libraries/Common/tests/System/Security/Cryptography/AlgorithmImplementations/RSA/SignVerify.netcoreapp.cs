@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
+
 namespace System.Security.Cryptography.Rsa.Tests
 {
     public sealed class SignVerify_Span : SignVerify
@@ -28,6 +30,55 @@ namespace System.Security.Cryptography.Rsa.Tests
                     Array.Resize(ref result, bytesWritten);
                     return result;
                 }
+            }
+        }
+
+        [Fact]
+        public static void SignDefaultSpanHash()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                byte[] signature = new byte[2048 / 8];
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => rsa.TrySignHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1, out _));
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => rsa.TrySignHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss, out _));
+            }
+        }
+
+        [Fact]
+        public static void VerifyDefaultSpanHash()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                byte[] signature = new byte[2048 / 8];
+
+                Assert.False(
+                    rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+
+                Assert.False(
+                    rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
+            }
+        }
+
+        [Fact]
+        public static void EncryptDefaultSpan()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                byte[] dest = new byte[2048 / 8];
+
+                Assert.True(
+                    rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.Pkcs1, out int written));
+
+                Assert.Equal(dest.Length, written);
+
+                Assert.True(
+                    rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.OaepSHA256, out written));
+
+                Assert.Equal(dest.Length, written);
             }
         }
     }
