@@ -5,9 +5,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 [assembly: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-        Target = "M:System.Security.Cryptography.CryptoConfigForwarder.#cctor",
-        Scope = "member",
-        Justification = "The cctor caches the RequiresUnreferencedCode call in a delegate, and usage of that delegate is marked with RequiresUnreferencedCode.")]
+    Target = "M:System.Security.Cryptography.CryptoConfigForwarder.#cctor",
+    Scope = "member",
+    Justification = "The cctor caches the RequiresUnreferencedCode call in a delegate, and usage of that delegate is marked with RequiresUnreferencedCode.")]
 
 namespace System.Security.Cryptography
 {
