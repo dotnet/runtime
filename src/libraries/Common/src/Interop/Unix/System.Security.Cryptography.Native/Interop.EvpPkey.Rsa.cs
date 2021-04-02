@@ -178,5 +178,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetRsa")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, SafeRsaHandle rsa);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetRsa")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, IntPtr rsa);
     }
 }

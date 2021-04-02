@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
         public RSAOpenSsl(RSAParameters parameters)
         {
             // Make _key be non-null before calling ImportParameters
-            _key = new Lazy<SafeRsaHandle>();
+            _key = new Lazy<SafeEvpPKeyHandle>();
             ImportParameters(parameters);
         }
 
@@ -29,12 +29,18 @@ namespace System.Security.Cryptography
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
 
-            SafeRsaHandle rsaHandle = SafeRsaHandle.DuplicateHandle(handle);
+            SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPkeyCreate();
+
+            if (!Interop.Crypto.EvpPkeySetRsa(pkey, handle))
+            {
+                pkey.Dispose();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
-            ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(rsaHandle));
-            _key = new Lazy<SafeRsaHandle>(() => rsaHandle, isThreadSafe: true);
+            ForceSetKeySize(BitsPerByte * Interop.Crypto.EvpPKeySize(pkey));
+            _key = new Lazy<SafeEvpPKeyHandle>(pkey);
         }
 
         /// <summary>
@@ -54,19 +60,21 @@ namespace System.Security.Cryptography
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
-            // If rsa is valid it has already been up-ref'd, so we can just use this handle as-is.
-            SafeRsaHandle rsa = Interop.Crypto.EvpPkeyGetRsa(pkeyHandle);
+            SafeEvpPKeyHandle newKey = Interop.Crypto.EvpPkeyCreate();
 
-            if (rsa.IsInvalid)
+            using (SafeRsaHandle rsa = Interop.Crypto.EvpPkeyGetRsa(pkeyHandle))
             {
-                rsa.Dispose();
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                if (rsa.IsInvalid || !Interop.Crypto.EvpPkeySetRsa(newKey, rsa))
+                {
+                    newKey.Dispose();
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                }
             }
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
-            ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(rsa));
-            _key = new Lazy<SafeRsaHandle>(() => rsa, isThreadSafe: true);
+            ForceSetKeySize(BitsPerByte * Interop.Crypto.EvpPKeySize(newKey));
+            _key = new Lazy<SafeEvpPKeyHandle>(newKey);
         }
 
         /// <summary>
@@ -76,26 +84,18 @@ namespace System.Security.Cryptography
         /// <returns>A SafeHandle for the RSA key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
-            SafeRsaHandle currentKey = _key.Value;
             SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
 
-            try
+            using (SafeRsaHandle rsa = Interop.Crypto.EvpPkeyGetRsa(GetKey()))
             {
-                // Wrapping our key in an EVP_PKEY will up_ref our key.
-                // When the EVP_PKEY is Disposed it will down_ref the key.
-                // So everything should be copacetic.
-                if (!Interop.Crypto.EvpPkeySetRsa(pkeyHandle, currentKey))
+                if (rsa.IsInvalid || !Interop.Crypto.EvpPkeySetRsa(pkeyHandle, rsa))
                 {
+                    pkeyHandle.Dispose();
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
+            }
 
-                return pkeyHandle;
-            }
-            catch
-            {
-                pkeyHandle.Dispose();
-                throw;
-            }
+            return pkeyHandle;
         }
     }
 }
