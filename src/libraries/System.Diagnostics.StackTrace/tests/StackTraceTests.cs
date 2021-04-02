@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.IO;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics
@@ -33,17 +34,6 @@ namespace System.Diagnostics.Tests
 {
     public class StackTraceTests
     {
-        private const string s_sourceTestAssemblyName = "ExceptionTestAssembly.dll";
-        private const string s_sourceTestAssembly2Name = "ExceptionTestAssembly2.dll";
-        private string SourceTestAssemblyPath { get; } = Path.Combine(Environment.CurrentDirectory, s_sourceTestAssemblyName);
-        private string SourceTestAssembly2Path { get; } = Path.Combine(Environment.CurrentDirectory, s_sourceTestAssembly2Name);
-
-        static StackTraceTests()
-        {
-            // enable Switch.System.Diagnostics.StackTrace.ShowILOffsets for ToString_ShowILOffset TC
-            AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
-        }
-
         [Fact]
         public void MethodsToSkip_Get_ReturnsZero()
         {
@@ -313,50 +303,64 @@ namespace System.Diagnostics.Tests
             Assert.Equal(Environment.NewLine, stackTrace.ToString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ToString_ShowILOffset()
         {
+            string SourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "ExceptionTestAssembly.dll");
+
             // Normal loading case
-            var asm = Assembly.LoadFrom(SourceTestAssemblyPath);
-            try
+            RemoteExecutor.Invoke((asmPath) =>
             {
-                asm.GetType("Program").GetMethod("Foo").Invoke(null, null);
-            }
-            catch (Exception e)
-            {
-                Assert.Contains(":token ", e.InnerException.StackTrace);
-            }
+                AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
+                var asm = Assembly.LoadFrom(asmPath);
+                try
+                {
+                    asm.GetType("Program").GetMethod("Foo").Invoke(null, null);
+                }
+                catch (Exception e)
+                {
+                    Assert.Contains(":token ", e.InnerException.StackTrace);
+                }
+            }, SourceTestAssemblyPath).Dispose();
 
             // Assembly.Load(Byte[]) case
-            var inMemBlob = File.ReadAllBytes(SourceTestAssembly2Path);
-            var asm2 = Assembly.Load(inMemBlob);
-            try
+            RemoteExecutor.Invoke((asmPath) =>
             {
-                asm2.GetType("Program2").GetMethod("Foo").Invoke(null, null);
-            }
-            catch (Exception e)
-            {
-                Assert.Contains(":token ", e.InnerException.StackTrace);
-            }
+                AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
+                var inMemBlob = File.ReadAllBytes(asmPath);
+                var asm2 = Assembly.Load(inMemBlob);
+                try
+                {
+                    asm2.GetType("Program").GetMethod("Foo").Invoke(null, null);
+                }
+                catch (Exception e)
+                {
+                    Assert.Contains(":token ", e.InnerException.StackTrace);
+                }
+            }, SourceTestAssemblyPath).Dispose();
 
             // AssmblyBuilder.DefineDynamicAssembly() case
-            AssemblyName asmName = new AssemblyName("ExceptionTestAssembly3");
-            AssemblyBuilder asmBldr = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder modBldr = asmBldr.DefineDynamicModule(asmName.Name);
-            TypeBuilder tBldr = modBldr.DefineType("Program3");
-            MethodBuilder mBldr = tBldr.DefineMethod("Foo", MethodAttributes.Public | MethodAttributes.Static, null, null);
-            ILGenerator ilGen = mBldr.GetILGenerator();
-            ilGen.ThrowException(typeof(NullReferenceException));
-            ilGen.Emit(OpCodes.Ret);
-            Type t = tBldr.CreateType();
-            try
+            RemoteExecutor.Invoke(() =>
             {
-                t.InvokeMember("Foo", BindingFlags.InvokeMethod, null, null, null);
-            }
-            catch (Exception e)
-            {
-                Assert.Contains(":token ", e.InnerException.StackTrace);
-            }
+                AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
+                AssemblyName asmName = new AssemblyName("ExceptionTestAssembly");
+                AssemblyBuilder asmBldr = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
+                ModuleBuilder modBldr = asmBldr.DefineDynamicModule(asmName.Name);
+                TypeBuilder tBldr = modBldr.DefineType("Program");
+                MethodBuilder mBldr = tBldr.DefineMethod("Foo", MethodAttributes.Public | MethodAttributes.Static, null, null);
+                ILGenerator ilGen = mBldr.GetILGenerator();
+                ilGen.ThrowException(typeof(NullReferenceException));
+                ilGen.Emit(OpCodes.Ret);
+                Type t = tBldr.CreateType();
+                try
+                {
+                    t.InvokeMember("Foo", BindingFlags.InvokeMethod, null, null, null);
+                }
+                catch (Exception e)
+                {
+                    Assert.Contains(":token ", e.InnerException.StackTrace);
+                }
+            }).Dispose();
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="StackFrameExtensionsTests.cs" />
@@ -19,6 +20,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="ExceptionTestAssembly\ExceptionTestAssembly.csproj" />
-    <ProjectReference Include="ExceptionTestAssembly2\ExceptionTestAssembly2.csproj" />
   </ItemGroup>
 </Project>
