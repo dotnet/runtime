@@ -78,21 +78,13 @@ DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleExpLayoutClassByRef(ExpClass* p)
 }
 
 extern "C"
-DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleBlittableSeqLayoutClassByRef(BlittableClass* p)
+DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleBlittableSeqLayoutClass_UpdateField(BlittableClass* p)
 {
     if(p->a != 10)
     {
         printf("FAIL: p->a=%d\n", p->a);
         return FALSE;
     }
-    return TRUE;
-}
-
-extern "C"
-DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleBlittableSeqLayoutClassByOutAttr(BlittableClass* p)
-{
-    if(!SimpleBlittableSeqLayoutClassByRef(p))
-        return FALSE;
 
     p->a++;
     return TRUE;
