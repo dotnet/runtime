@@ -27,7 +27,7 @@ namespace Generators
                 {
                     if (Int32.Parse(esEvent.Id) > eventDataSize)
                     {
-                        eventDataSize = Int32.Parse(esEvent.Id);
+                        eventDataSize = Int32.Parse(esEvent.Id) + 1;
                     }
                 }
 
