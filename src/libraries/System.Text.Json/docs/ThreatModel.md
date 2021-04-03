@@ -55,11 +55,11 @@ Algorithmic complexity attacks have been considered as part of the design of `Js
 
 #### Mitigations
 
-There are no known mechanisms by where crafting JSON can cause runtime complexities such the deserializer doing more work than the adversary had to do. That is, given a payload of length _n_ bytes, the total amount of work performed and memory allocated by `Utf8JsonReader` and `JsonSerializer.Deserialize` will be bounded by `O(n)`. There are no unmitigated `O(n^2)` or higher complexity algorithms in the deserialization routines.
+There is no known way to craft JSON that can cause the deserializer to do more work than the adversary had to do. That is, given a payload of length _n_ bytes, the total amount of work performed and memory allocated by `Utf8JsonReader` and `JsonSerializer.Deserialize` will be bounded by `O(n)`. There are no unmitigated `O(n^2)` or higher complexity algorithms in the deserialization routines.
 
 ### Threat: Loading `System.Type`s based on untrusted user data
 
-Loading unintended types may have significant consequences, whether the type is malicious or just has security-sensitive side effects. A type may contain exploitable security vulnerability, perform security-sensitive actions in its instance or `static` constructor, have a large memory footprint that facilitates DoS attacks, or may throw non-recoverable exceptions. Types may have `static` constructors that run as soon as the type is loaded and before any instances are created. For these reasons, it is important to control the set of types that the deserializer may load.
+Loading unintended types may have significant consequences, whether the type is malicious or just has security-sensitive side effects. A type may contain an exploitable security vulnerability, perform security-sensitive actions in its instance or `static` constructor, have a large memory footprint that facilitates DoS attacks, or may throw non-recoverable exceptions. Types may have `static` constructors that run as soon as the type is loaded and before any instances are created. For these reasons, it is important to control the set of types that the deserializer may load.
 
 From the perspective of the serializer, this means that deserializing `System.Type` instances from JSON input is dangerous. Similarly, unrestricted polymorphic deserialization via type metadata in JSON, where a string representing the specific type to create is passed to an API such as `Type.GetType(string)`, is dangerous.
 
@@ -81,7 +81,7 @@ This situation can be avoided by being aware of the following points:
 
 - If necessitated by your deserialization scenario, use callbacks to ensure that the object is in a valid state. This is not yet a first-class feature in the serializer, but a workaround is described in the [How to migrate from Newtonsoft.Json to System.Text.Json document](https://docs.microsoft.com/dotnet/standard/serialization/system-text-json-migrate-from-newtonsoft-how-to#callbacks). Be aware that this workaround potentially degrades performance.
 
-- Where applicable, consider validating objects graphs deserialized from untrusted data sources before processing it. Each individual object may be in a consistent state, but the object graph as a whole may not be.
+- Where applicable, consider validating object graphs deserialized from untrusted data sources before processing them. Each individual object may be in a consistent state, but an object graph as a whole may not be.
 
 ### Threat: Hash collision vulnerability with dictionaries whose keys are not strings
 
@@ -133,9 +133,13 @@ By default, the `JsonSerializer` and `Utf8JsonReader` strictly honor the [RFC 82
 
 - The `Utf8JsonReader`, `Utf8JsonWriter`, and `JsonSerializer` types adhere to the [RFC 8259 specification](https://tools.ietf.org/html/rfc8259) by default, requiring the input and output payloads follow the standard formatting for strings, numbers, lists, and objects. Payloads that don't conform will cause a clear `JsonException` to be thrown when reading.
 
-- Avoid writing custom converters incorrectly, particularly for serialization.
-
 - Understand how different JSON processing routines across a distributed system handle inputs for both serialization and deserialization, and how any differences may affect the security of the entire system.
+
+- Avoid writing serialization converters that produce non-standard output and thus require the receiver to opt in to potentially dangerous behaviors.
+
+- When advancing through JSON payloads, the `Utf8JsonReader` validates that the next token does not violate RFC 8529. However, a deserialization converter may decide to validate that the next token is compatible with the target type they wish to obtain. For instance, if you are expecting a `JsonTokenType.Number` the reader will not validate that the next token is not a `JsonTokenType.StartObject`. For such cases, the converter could check the payload and throw a `JsonException` if it is invalid, similar to what the serializer would do. Otherwise, the reader will throw an `InvalidOperationException`.
+
+    If a `JsonException` or `NotSupportedException` is thrown from a custom converter without a message, the serializer will append a message that includes the path to the part of the JSON that caused the error. For more information on error handling in converters, see [How to write custom converters for JSON serialization (marshalling) in .NET](https://docs.microsoft.com/dotnet/standard/serialization/system-text-json-converters-how-to?pivots=dotnet-5-0#error-handling).
 
 ## `JsonSerializerOptions`
 
@@ -161,7 +165,7 @@ Be sure to maintain an upper bound to the number of types being passed to `JsonS
 
 ### Threat: Elevation of privilege
 
-`JsonSerializer` makes no trust decisions, so there's no potential risk due to accident elevation of privilege. Systems built on top of JSON serialization such as ASP.NET Core's type serialization and custom user libraries need to determine security considerations for input and output data processed by the `JsonSerializer`.
+`JsonSerializer` makes no trust decisions, so there's no potential risk due to accidental elevation of privilege. Systems built on top of JSON serialization such as ASP.NET Core's type serialization and custom user libraries need to determine security considerations for input and output data processed by the `JsonSerializer`.
 
 ## Implementation considerations
 
@@ -197,10 +201,10 @@ Be sure to maintain an upper bound to the number of types being passed to `JsonS
 
 - Various UTF-8 and UTF-16 encode and decode APIs in `System.Text.Encoding`, as well as APIs in `System.Text.Web.Encodings` are used extensively to handle transcoding and JSON escaping logic. These APIs are safe for untrusted input. No JSON values are passed to other APIs as input (for example obtaining a `System.Type` instance from the string). No other transformations are applied on the input or output payloads of the serializer.
 
-- When deserializing, `JsonSerializer` creates a `JsonElement` for JSON that is applied to a member type of `System.Object`. This has potential usability and performance issues in cases such as when a non-generic IList property will create a JsonElement for each member even if the JSON array only contains primitive values such a `string`s or `bool`s. This is the default behavior since there is no universal, consistent algorithm to map arbitrary JSON data to primitives like `string`, `double` etc. Treating the data as a property bag with `JsonElement` works for all cases and is consistent since it is based upon the CLR type and not the JSON contents. An alternative implementation which creates boxed primitives rather than `JsonElement`s is ambiguous, such as sometimes treating a JSON string as a `DateTime` (detected by parsing), or by creating a `double` for a JSON number if a decimal point is present (which can cause accuracy issues if `decimal` is expected) or creating a `long` for a JSON number if there is no decimal point (which can cause range issues if a `ulong` or `BigInteger` is expected). Thus the default is consistent and safe instead of convenient. It is possible, however, to change the `System.Object` behavior by using a custom converter.
+- When deserializing, `JsonSerializer` creates a `JsonElement` for JSON that is applied to a member type of `System.Object`. This has potential usability and performance issues in cases such as when a non-generic `IList` property will create a `JsonElement` for each member even if the JSON array only contains primitive values such a `string`s or `bool`s. This is the default behavior since there is no universal, consistent algorithm to map arbitrary JSON data to primitives like `string`, `double` etc. Treating the data as a property bag with `JsonElement` works for all cases and is consistent since it is based upon the CLR type and not the JSON contents. An alternative implementation which creates boxed primitives rather than `JsonElement`s is ambiguous, such as sometimes treating a JSON string as a `DateTime` (detected by parsing), or by creating a `double` for a JSON number if a decimal point is present (which can cause accuracy issues if `decimal` is expected) or creating a `long` for a JSON number if there is no decimal point (which can cause range issues if a `ulong` or `BigInteger` is expected). Thus the default is consistent and safe instead of convenient. It is possible, however, to change the `System.Object` behavior by using a custom converter.
 
  - When writing, `JsonSerializer` and `Utf8JsonWriter` escape all non-ASCII characters by default to provide defense-in-depth protections against cross-site scripting (XSS) or information-disclosure attacks. HTML-sensitive characters, such as `<`, `>`, `&`, and `'` are escaped as well. We provide an option to override the default behavior by specifying a custom `System.Text.Encodings.Web.JavaScriptEncoder`.
 
      `JavaScriptEncoder.UnsafeRelaxedJsonEscaping`, a built-in, more permissive encoder is provided. It doesn't escape HTML-sensitive characters or offer additional defense-in-depth protections against XSS or information-disclosure attacks. It should only be used when it is known that the client will be interpreting the resulting payload as UTF-8 encoded JSON. Never allow the output of `UnsafeRelaxedJsonEscaping` to be emitted into an HTML page or a `<script>` element.
 
-- When deserializing, properties are processed in the order specified by the input payload. When serializing, properties are written according to the non-deterministic order returned when fetching the properties of a POCO with reflection. Do not rely on a specific property ordering of JSON when deserialzing, or on a specific order when serializing. If a feature to specify serialization order is implemented in the serializer, assumptions based on ordering may then be utilized safely.
+- When deserializing, properties are processed in the order specified by the input payload. When serializing, properties are written according to the non-deterministic order returned when fetching the properties of a POCO with reflection. Do not rely on a specific property ordering of JSON when deserializing, or on a specific order when serializing. If a feature to specify serialization order is implemented in the serializer, assumptions based on ordering may then be utilized safely.
