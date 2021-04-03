@@ -325,7 +325,7 @@ error:
     }
 
 cleanup:
-    RELEASE_LOCALS_ENV(bn, ReleaseGRef);
+    RELEASE_LOCALS_ENV(bn, ReleaseLRef);
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
     return keyPair;
 }
@@ -546,7 +546,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
     keyInfo = AndroidCryptoNative_NewEcKey(AddGRef(env, loc[paramSpec]), keyPair);
 
 error:
-    RELEASE_LOCALS_ENV(bn, ReleaseGRef);
+    RELEASE_LOCALS_ENV(bn, ReleaseLRef);
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
     return keyInfo;
 }
