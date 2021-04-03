@@ -40345,7 +40345,7 @@ HRESULT GCHeap::Initialize()
     gc_heap::soh_segment_size /= 4;
 #endif //MULTIPLE_HEAPS
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionsSize();
-    if (!power_of_two_p(gc_region_size) || gc_region_size * nhp * 10 > gc_heap::regions_range)
+    if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
     {
         return E_INVALIDARG;
     }
