@@ -198,27 +198,28 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Theory]
-        [InlineData(typeof(string))]
-        [InlineData(typeof(int))]
-        public void TypeActivatorCreateFactoryDoesNotAllowForAmbiguousConstructorMatches(Type paramType)
+        [InlineData("string", "")]
+        [InlineData("IFakeService, int", 5)]
+        [InlineData("IFakeService, string, string", 5, "")]
+        public void TypeActivatorCreateFactoryUsesConstructorWithSimilarParameters(string ctor, params object[] values)
         {
             // Arrange
+            var serviceCollection = new TestServiceCollection();
+            serviceCollection.AddSingleton<IFakeService, FakeService>();
+            var serviceProvider = CreateServiceProvider(serviceCollection);
             var type = typeof(ClassWithAmbiguousCtors);
-            var expectedMessage = $"Multiple constructors accepting all given argument types have been found in type '{type}'. " +
-                "There should only be one applicable constructor.";
 
             // Act
-            var ex = Assert.Throws<InvalidOperationException>(() =>
-                ActivatorUtilities.CreateFactory(type, new[] { paramType }));
+            var instance = CreateInstanceFromFactory(serviceProvider, type, values);
 
             // Assert
-            Assert.Equal(expectedMessage, ex.Message);
+            Assert.Equal(ctor, ((ClassWithAmbiguousCtors)instance).CtorUsed);
         }
 
         [Theory]
-        [InlineData("", "string")]
-        [InlineData(5, "IFakeService, int")]
-        [InlineData(5, "", "IFakeService, string, string")]
+        [InlineData("string", "")]
+        [InlineData("IFakeService, int", 5)]
+        [InlineData("IFakeService, string, string", 5, "")]
         public void TypeActivatorCreateInstanceUsesConstructorWithSimilarParameters(string ctor, params object[] values)
         {
             // Arrange
