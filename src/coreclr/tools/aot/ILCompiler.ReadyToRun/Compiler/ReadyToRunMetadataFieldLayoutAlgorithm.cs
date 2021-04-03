@@ -18,11 +18,6 @@ namespace ILCompiler
 {
     public static class ReadyToRunTypeExtensions
     {
-        public static LayoutInt BaseTypeSize(this MetadataType type)
-        {
-            return ((ReadyToRunCompilerContext)type.Context).CalculateBaseTypeSize(type);
-        }
-
         public static LayoutInt FieldBaseOffset(this MetadataType type)
         {
             return ((ReadyToRunCompilerContext)type.Context).CalculateFieldBaseOffset(type);
@@ -822,7 +817,7 @@ namespace ILCompiler
         /// This method decides whether the type needs aligned base offset in order to have layout resilient to 
         /// base class layout changes.
         /// </summary>
-        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset)
+        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8)
         {
             DefType baseType = type.BaseType;
 
@@ -832,7 +827,7 @@ namespace ILCompiler
                 return;
             }
 
-            LayoutInt alignment = new LayoutInt(type.Context.Target.Architecture == TargetArchitecture.ARM ? 8 : type.Context.Target.PointerSize);
+            LayoutInt alignment = new LayoutInt(requiresAlign8 ? 8 : type.Context.Target.PointerSize);
             baseOffset = LayoutInt.AlignUp(baseOffset, alignment, type.Context.Target);
         }
 

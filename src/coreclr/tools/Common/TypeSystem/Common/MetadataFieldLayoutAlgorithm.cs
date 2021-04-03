@@ -363,7 +363,7 @@ namespace Internal.TypeSystem
             }
 
             SizeAndAlignment instanceByteSizeAndAlignment;
-            var instanceSizeAndAlignment = ComputeExplicitInstanceSize(type, instanceSize, largestAlignmentRequired, layoutMetadata.Size, out instanceByteSizeAndAlignment);
+            var instanceSizeAndAlignment = ComputeInstanceSize(type, instanceSize, largestAlignmentRequired, layoutMetadata.Size, out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
@@ -393,7 +393,7 @@ namespace Internal.TypeSystem
             // For types inheriting from another type, field offsets continue on from where they left off
             // For reference types, we calculate field alignment as if the address after the method table pointer
             // has offset 0 (on 32-bit platforms, this location is guaranteed to be 8-aligned).
-            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type) - offsetBias;
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false) - offsetBias;
 
             var layoutMetadata = type.GetClassLayout();
 
@@ -421,7 +421,7 @@ namespace Internal.TypeSystem
             }
 
             SizeAndAlignment instanceByteSizeAndAlignment;
-            var instanceSizeAndAlignment = ComputeExplicitInstanceSize(type, cumulativeInstanceFieldPos + offsetBias, largestAlignmentRequirement, layoutMetadata.Size, out instanceByteSizeAndAlignment);
+            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos + offsetBias, largestAlignmentRequirement, layoutMetadata.Size, out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
@@ -434,7 +434,7 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset)
+        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8)
         {
         }
 
@@ -541,7 +541,7 @@ namespace Internal.TypeSystem
             LayoutInt offsetBias = OffsetBias(type);
 
             // For types inheriting from another type, field offsets continue on from where they left off
-            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type);
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8);
             if (!cumulativeInstanceFieldPos.IsIndeterminate)
             {
                 cumulativeInstanceFieldPos -= offsetBias;
@@ -756,22 +756,7 @@ namespace Internal.TypeSystem
             return type.IsValueType && !type.IsPrimitive && !type.IsEnum;
         }
 
-        public LayoutInt CalculateBaseTypeSize(MetadataType type)
-        {
-            LayoutInt baseTypeSize = LayoutInt.Zero;
-
-            if (!type.IsValueType && type.HasBaseType)
-            {
-                LayoutInt offsetBias = OffsetBias(type);
-                baseTypeSize = type.BaseType.InstanceByteCount + offsetBias;
-                AlignBaseOffsetIfNecessary(type, ref baseTypeSize);
-                baseTypeSize -= offsetBias;
-            }
-
-            return baseTypeSize;
-        }
-
-        public LayoutInt CalculateFieldBaseOffset(MetadataType type)
+        public LayoutInt CalculateFieldBaseOffset(MetadataType type, bool requiresAlign8)
         {
             LayoutInt cumulativeInstanceFieldPos = LayoutInt.Zero;
 
@@ -781,7 +766,11 @@ namespace Internal.TypeSystem
                 if (type.HasBaseType)
                 {
                     cumulativeInstanceFieldPos = type.BaseType.InstanceByteCountUnaligned - offsetBias;
-                    AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos);
+                    if (!type.BaseType.IsObject && type.BaseType.IsZeroSizedReferenceType)
+                    {
+                        cumulativeInstanceFieldPos += LayoutInt.One;
+                    }
+                    AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8);
                 }
                 cumulativeInstanceFieldPos += offsetBias;
             }
@@ -841,16 +830,6 @@ namespace Internal.TypeSystem
                 return type.Context.Target.DefaultPackingSize;
             else
                 return layoutMetadata.PackingSize;
-        }
-
-        private static SizeAndAlignment ComputeExplicitInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, int classLayoutSize, out SizeAndAlignment byteCount)
-        {
-            SizeAndAlignment result = ComputeInstanceSize(type, instanceSize, alignment, classLayoutSize, out byteCount);
-            if (!type.IsValueType && type.HasBaseType && byteCount.Size == type.BaseType.InstanceByteCount)
-            {
-                byteCount.Size += LayoutInt.One;
-            }
-            return result;
         }
 
         private static SizeAndAlignment ComputeInstanceSize(MetadataType type, LayoutInt instanceSize, LayoutInt alignment, int classLayoutSize, out SizeAndAlignment byteCount)
