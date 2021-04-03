@@ -200,6 +200,7 @@ namespace System.Threading
 
 #if TARGET_UNIX || TARGET_BROWSER
         [MemberNotNull(nameof(_waitInfo))]
+        [DynamicDependency(nameof(OnThreadExiting))]
 #endif
         private void Initialize()
         {
