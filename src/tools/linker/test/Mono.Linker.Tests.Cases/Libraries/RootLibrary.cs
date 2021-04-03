@@ -83,6 +83,34 @@ namespace Mono.Linker.Tests.Cases.Libraries
 			public void NotUsed ()
 			{
 			}
+
+			[Kept]
+			[OnSerializing]
+			[KeptAttributeAttribute (typeof (OnSerializingAttribute))]
+			private void OnSerializingMethod (StreamingContext context)
+			{
+			}
+
+			[Kept]
+			[OnSerialized]
+			[KeptAttributeAttribute (typeof (OnSerializedAttribute))]
+			private void OnSerializedMethod (StreamingContext context)
+			{
+			}
+
+			[Kept]
+			[OnDeserializing]
+			[KeptAttributeAttribute (typeof (OnDeserializingAttribute))]
+			private void OnDeserializingMethod (StreamingContext context)
+			{
+			}
+
+			[Kept]
+			[OnDeserialized]
+			[KeptAttributeAttribute (typeof (OnDeserializedAttribute))]
+			private void OnDeserializedMethod (StreamingContext context)
+			{
+			}
 		}
 
 		[Kept]

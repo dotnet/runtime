@@ -1566,12 +1566,18 @@ namespace Mono.Linker.Steps
 
 		protected virtual void MarkSerializable (TypeDefinition type)
 		{
+			if (!type.HasMethods)
+				return;
+
 			if (_context.GetTargetRuntimeVersion () > TargetRuntimeVersion.NET5)
 				return;
 
-			MarkDefaultConstructor (type, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
+			if (type.IsSerializable ()) {
+				MarkDefaultConstructor (type, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
+				MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
+			}
 
-			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
+			MarkMethodsIf (type.Methods, HasOnSerializeOrDeserializeAttribute, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 		}
 
 		protected internal virtual TypeDefinition MarkTypeVisibleToReflection (TypeReference reference, DependencyInfo reason, IMemberDefinition sourceLocationMember)
@@ -1669,8 +1675,7 @@ namespace Mono.Linker.Steps
 			if (type.IsClass && type.BaseType == null && type.Name == "Object" && ShouldMarkSystemObjectFinalize)
 				MarkMethodIf (type.Methods, m => m.Name == "Finalize", new DependencyInfo (DependencyKind.MethodForSpecialType, type), type);
 
-			if (type.IsSerializable ())
-				MarkSerializable (type);
+			MarkSerializable (type);
 
 			// TODO: This needs work to ensure we handle EventSource appropriately.
 			// This marks static fields of KeyWords/OpCodes/Tasks subclasses of an EventSource type.
@@ -1716,8 +1721,6 @@ namespace Mono.Linker.Steps
 				MarkMethodsIf (type.Methods, IsVirtualNeededByTypeDueToPreservedScope, new DependencyInfo (DependencyKind.VirtualNeededDueToPreservedScope, type), type);
 				if (ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod)
 					MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), sourceLocationMember);
-
-				MarkMethodsIf (type.Methods, HasOnSerializeOrDeserializeAttribute, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 			}
 
 			DoAdditionalTypeProcessing (type);
@@ -2411,7 +2414,7 @@ namespace Mono.Linker.Steps
 						}
 
 						if ((members & TypePreserveMembers.Library) != 0) {
-							if (IsSpecialSerializationConstructor (m)) {
+							if (IsSpecialSerializationConstructor (m) || HasOnSerializeOrDeserializeAttribute (m)) {
 								MarkMethod (m, di, mo);
 								continue;
 							}
