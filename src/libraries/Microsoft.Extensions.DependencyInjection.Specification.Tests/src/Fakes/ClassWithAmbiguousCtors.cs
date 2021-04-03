@@ -5,21 +5,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification.Fakes
 {
     public class ClassWithAmbiguousCtors
     {
-        public ClassWithAmbiguousCtors(string data)
-        {
-            CtorUsed = "string";
-        }
-
-        public ClassWithAmbiguousCtors(IFakeService service, string data)
-        {
-            CtorUsed = "IFakeService, string";
-        }
-
-        public ClassWithAmbiguousCtors(IFakeService service, int data)
-        {
-            CtorUsed = "IFakeService, int";
-        }
-
         public ClassWithAmbiguousCtors(IFakeService service, string data1, int data2)
         {
             FakeService = service;
@@ -27,6 +12,21 @@ namespace Microsoft.Extensions.DependencyInjection.Specification.Fakes
             Data2 = data2;
 
             CtorUsed = "IFakeService, string, string";
+        }
+
+        public ClassWithAmbiguousCtors(IFakeService service, int data)
+        {
+            CtorUsed = "IFakeService, int";
+        }
+
+        public ClassWithAmbiguousCtors(IFakeService service, string data)
+        {
+            CtorUsed = "IFakeService, string";
+        }
+
+        public ClassWithAmbiguousCtors(string data)
+        {
+            CtorUsed = "string";
         }
 
         public IFakeService FakeService { get; }

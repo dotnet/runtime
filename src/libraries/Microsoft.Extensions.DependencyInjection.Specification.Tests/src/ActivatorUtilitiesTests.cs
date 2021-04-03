@@ -218,7 +218,8 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         [Theory]
         [InlineData("", "string")]
         [InlineData(5, "IFakeService, int")]
-        public void TypeActivatorCreateInstanceUsesFirstMathchedConstructor(object value, string ctor)
+        [InlineData(5, "", "IFakeService, string, string")]
+        public void TypeActivatorCreateInstanceUsesConstructorWithSimilarParameters(string ctor, params object[] values)
         {
             // Arrange
             var serviceCollection = new TestServiceCollection();
@@ -227,7 +228,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             var type = typeof(ClassWithAmbiguousCtors);
 
             // Act
-            var instance = ActivatorUtilities.CreateInstance(serviceProvider, type, value);
+            var instance = ActivatorUtilities.CreateInstance(serviceProvider, type, values);
 
             // Assert
             Assert.Equal(ctor, ((ClassWithAmbiguousCtors)instance).CtorUsed);
