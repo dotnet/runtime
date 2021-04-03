@@ -9243,7 +9243,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // Morph Type.op_Equality, Type.op_Inequality, and Enum.HasFlag
     //
     // We need to do these before the arguments are morphed
-    if (call->IsSpecialIntrinsic())
+    if (call->IsSpecialIntrinsic() || call->IsHelperCall())
     {
         // See if this is foldable
         GenTree* optTree = gtFoldExprCall(call);

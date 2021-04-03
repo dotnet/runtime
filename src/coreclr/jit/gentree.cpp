@@ -12713,63 +12713,132 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 //
 // Notes:
 //    Checks for calls to Type.op_Equality, Type.op_Inequality, and
-//    Enum.HasFlag, and if the call is to one of these,
-//    attempts to optimize.
+//    Enum.HasFlag, as well as the helpers for casts,
+//    and if the call is to one of these, attempts to optimize.
 
 GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
 {
-    // Can only fold calls to special intrinsics.
-    if (!call->IsSpecialIntrinsic())
-    {
-        return call;
-    }
-
     // Defer folding if not optimizing.
     if (opts.OptimizationDisabled())
     {
         return call;
     }
 
-    // Fetch id of the intrinsic.
-    const CorInfoIntrinsics methodID = info.compCompHnd->getIntrinsicID(call->gtCallMethHnd);
-
-    switch (methodID)
+    // Is this an intrinsic we can fold?
+    if (call->IsSpecialIntrinsic())
     {
-        case CORINFO_INTRINSIC_TypeEQ:
-        case CORINFO_INTRINSIC_TypeNEQ:
+        // Fetch id of the intrinsic.
+        const CorInfoIntrinsics methodID = info.compCompHnd->getIntrinsicID(call->gtCallMethHnd);
+        switch (methodID)
         {
-            noway_assert(call->TypeGet() == TYP_INT);
-            GenTree* op1 = call->gtCallArgs->GetNode();
-            GenTree* op2 = call->gtCallArgs->GetNext()->GetNode();
+            case CORINFO_INTRINSIC_TypeEQ:
+            case CORINFO_INTRINSIC_TypeNEQ:
+            {
+                noway_assert(call->TypeGet() == TYP_INT);
+                GenTree* op1 = call->gtCallArgs->GetNode();
+                GenTree* op2 = call->gtCallArgs->GetNext()->GetNode();
 
-            // If either operand is known to be a RuntimeType, this can be folded
-            GenTree* result = gtFoldTypeEqualityCall(methodID, op1, op2);
+                // If either operand is known to be a RuntimeType, this can be folded
+                GenTree* result = gtFoldTypeEqualityCall(methodID, op1, op2);
+                if (result != nullptr)
+                {
+                    return result;
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+
+        // Check for a new-style jit intrinsic.
+        const NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
+
+        if (ni == NI_System_Enum_HasFlag)
+        {
+            GenTree* thisOp = call->gtCallThisArg->GetNode();
+            GenTree* flagOp = call->gtCallArgs->GetNode();
+            GenTree* result = gtOptimizeEnumHasFlag(thisOp, flagOp);
+
             if (result != nullptr)
             {
                 return result;
             }
-            break;
         }
-
-        default:
-            break;
     }
 
-    // Check for a new-style jit intrinsic.
-    const NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
+    // There was no intrinsic to fold, try the helper path.
+    // At present, we only fold the helpers for casts.
+    const CorInfoHelpFunc helper       = eeGetHelperNum(call->gtCallMethHnd);
+    bool                  overflowCast = false;
+    bool                  fromUnsigned = false;
+    var_types             castToType   = call->TypeGet();
 
-    if (ni == NI_System_Enum_HasFlag)
+    assert(castToType == genActualType(castToType));
+
+    switch (helper)
     {
-        GenTree* thisOp = call->gtCallThisArg->GetNode();
-        GenTree* flagOp = call->gtCallArgs->GetNode();
-        GenTree* result = gtOptimizeEnumHasFlag(thisOp, flagOp);
-
-        if (result != nullptr)
-        {
-            return result;
-        }
+        case CORINFO_HELP_ULNG2DBL:
+            fromUnsigned = true;
+            break;
+        case CORINFO_HELP_LNG2DBL:
+        case CORINFO_HELP_DBL2INT:
+        case CORINFO_HELP_DBL2LNG:
+            break;
+        case CORINFO_HELP_DBL2UINT:
+            castToType = TYP_UINT;
+            break;
+        case CORINFO_HELP_DBL2ULNG:
+            castToType = TYP_ULONG;
+            break;
+        case CORINFO_HELP_DBL2INT_OVF:
+        case CORINFO_HELP_DBL2LNG_OVF:
+            overflowCast = true;
+            break;
+        case CORINFO_HELP_DBL2UINT_OVF:
+            overflowCast = true;
+            castToType   = TYP_UINT;
+            break;
+        case CORINFO_HELP_DBL2ULNG_OVF:
+            overflowCast = true;
+            castToType   = TYP_ULONG;
+            break;
+        default:
+            // We cannot fold this call.
+            return call;
     }
 
+    assert(call->fgArgInfo->ArgCount() == 1);
+    GenTree* arg = call->gtCallArgs->GetNode();
+
+    // We have a placeholder, find the real argument.
+    if (arg->OperIs(GT_ARGPLACE))
+    {
+        arg = call->fgArgInfo->GetArgNode(0);
+    }
+
+    if (!arg->OperIsConst() || gtIsActiveCSE_Candidate(arg))
+    {
+        // We can only fold casts from constants.
+        // Also, we cannot fold if the argument can be CSEd.
+        return call;
+    }
+
+    GenTree* cast = gtNewCastNode(call->TypeGet(), arg, fromUnsigned, castToType);
+    if (overflowCast)
+    {
+        cast->gtFlags |= GTF_OVERFLOW;
+    }
+
+    // Try and fold this cast.
+    GenTree* constVal = gtFoldExprConst(cast);
+    if (constVal->OperIsConst())
+    {
+        // Success!
+        return constVal;
+    }
+
+    // We failed, return the original tree.
     return call;
 }
 
