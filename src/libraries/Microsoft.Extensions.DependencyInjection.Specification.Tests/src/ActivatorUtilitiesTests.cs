@@ -250,6 +250,22 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.Equal(ctor, ((ClassWithAmbiguousCtorsAndAttributeFirst)instance).CtorUsed);
         }
 
+        [Fact]
+        public void TypeActivatorCreateInstanceUsesParameterlessConstructor()
+        {
+            // Arrange
+            var serviceCollection = new TestServiceCollection();
+            serviceCollection.AddSingleton<IFakeService, FakeService>();
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var type = typeof(ClassWithParameterlessCtor);
+
+            // Act
+            var instance = ActivatorUtilities.CreateInstance(serviceProvider, type);
+
+            // Assert
+            Assert.Equal("Parameterless", ((ClassWithParameterlessCtor)instance).CtorUsed);
+        }
+
         [Theory]
         [MemberData(nameof(CreateInstanceFuncs))]
         public void TypeActivatorUsesMarkedConstructor(CreateInstanceFunc createFunc)
