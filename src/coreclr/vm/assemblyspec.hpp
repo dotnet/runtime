@@ -207,8 +207,7 @@ class AssemblySpec  : public BaseAssemblySpec
     DomainAssembly *LoadDomainAssembly(FileLoadLevel targetLevel,
                                        BOOL fThrowOnFileNotFound = TRUE);
 
-    //****************************************************************************************
-    //
+  public: // static
     // Creates and loads an assembly based on the name and context.
     static Assembly *LoadAssembly(LPCSTR pSimpleName,
                                   AssemblyMetaDataInternal* pContext,
@@ -216,9 +215,11 @@ class AssemblySpec  : public BaseAssemblySpec
                                   DWORD cbPublicKeyOrToken,
                                   DWORD dwFlags);
 
-
     // Load an assembly based on an explicit path
     static Assembly *LoadAssembly(LPCWSTR pFilePath);
+
+    // Initialize an AssemblyName managed object based on the specified assemblyName
+    static void InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* assemblyName, _Out_ ASSEMBLYNAMEREF* assemblyNameRef);
 
   public:
     void MatchPublicKeys(Assembly *pAssembly);

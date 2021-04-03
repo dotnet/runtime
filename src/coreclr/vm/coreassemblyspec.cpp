@@ -139,12 +139,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     {
         // For name based binding these arguments shouldn't have been changed from default
         _ASSERTE(!fNgenExplicitBind && !fExplicitBindToNativeImage);
-        SafeComHolder<IAssemblyName> pName;
-        hr = CreateAssemblyNameObject(&pName, assemblyDisplayName);
-        if (SUCCEEDED(hr))
-        {
-            hr = pBinder->BindAssemblyByName(pName, &pPrivAsm);
-        }
+        hr = pBinder->BindAssemblyByName(assemblyDisplayName, &pPrivAsm);
     }
     else
     {
@@ -187,7 +182,6 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
     {
         PEImageHolder pImage = NULL;
         PEImageHolder pNativeImage = NULL;
-        AppDomain* pDomain = ::GetAppDomain(); // DEAD ? ? 
 
 #ifdef FEATURE_PREJIT
         // fExplicitBindToNativeImage is set on Phone when we bind to a list of native images and have no IL on device for an assembly
@@ -342,97 +336,116 @@ HRESULT BaseAssemblySpec::ParseName()
             IfFailThrow(hr);
         }
 
+        // Name - does not copy the data
         SetName(pAssemblyIdentity->GetSimpleNameUTF8());
 
-        if (pAssemblyIdentity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_VERSION))
-        {
-            m_context.usMajorVersion = (USHORT)pAssemblyIdentity->m_version.GetMajor();
-            m_context.usMinorVersion = (USHORT)pAssemblyIdentity->m_version.GetMinor();
-            m_context.usBuildNumber = (USHORT)pAssemblyIdentity->m_version.GetBuild();
-            m_context.usRevisionNumber = (USHORT)pAssemblyIdentity->m_version.GetRevision();
-        }
-
+        // Culture - does not copy the data
         if (pAssemblyIdentity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
         {
             if (!pAssemblyIdentity->m_cultureOrLanguage.IsEmpty())
+            {
                 SetCulture(pAssemblyIdentity->GetCultureOrLanguageUTF8());
+            }
             else
+            {
                 SetCulture("");
-        }
-
-        if (pAssemblyIdentity->
-            Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN) ||
-            pAssemblyIdentity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY))
-        {
-            m_pbPublicKeyOrToken = const_cast<BYTE *>(pAssemblyIdentity->GetPublicKeyOrTokenArray());
-            m_cbPublicKeyOrToken = pAssemblyIdentity->m_publicKeyOrTokenBLOB.GetSize();
-
-            if (pAssemblyIdentity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY))
-            {
-                m_dwFlags |= afPublicKey;
-            }
-        }
-        else if (pAssemblyIdentity->
-                 Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL))
-        {
-            m_pbPublicKeyOrToken = const_cast<BYTE *>(pAssemblyIdentity->GetPublicKeyOrTokenArray());
-            m_cbPublicKeyOrToken = 0;
-        }
-        else
-        {
-            m_pbPublicKeyOrToken = NULL;
-            m_cbPublicKeyOrToken = 0;
-        }
-
-        if (pAssemblyIdentity->
-            Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PROCESSOR_ARCHITECTURE))
-        {
-            switch (pAssemblyIdentity->m_kProcessorArchitecture)
-            {
-            case peI386:
-                m_dwFlags |= afPA_x86;
-                break;
-            case peIA64:
-                m_dwFlags |= afPA_IA64;
-                break;
-            case peAMD64:
-                m_dwFlags |= afPA_AMD64;
-                break;
-            case peARM:
-                m_dwFlags |= afPA_ARM;
-                break;
-            case peMSIL:
-                m_dwFlags |= afPA_MSIL;
-                break;
-            default:
-                IfFailThrow(FUSION_E_INVALID_NAME);
             }
         }
 
+        InitializeWithAssemblyIdentity(pAssemblyIdentity);
 
-        if (pAssemblyIdentity->
-            Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE))
-        {
-            m_dwFlags |= afRetargetable;
-        }
-
-        if (pAssemblyIdentity->
-            Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE))
-        {
-            DWORD dwContentType = pAssemblyIdentity->m_kContentType;
-
-            _ASSERTE((dwContentType == AssemblyContentType_Default) || (dwContentType == AssemblyContentType_WindowsRuntime));
-            if (dwContentType == AssemblyContentType_WindowsRuntime)
-            {
-                m_dwFlags |= afContentType_WindowsRuntime;
-            }
-        }
-
+        // Copy and own any fields we do not already own
         CloneFields();
     }
     EX_CATCH_HRESULT(hr);
 
     return hr;
+}
+
+void BaseAssemblySpec::InitializeWithAssemblyIdentity(BINDER_SPACE::AssemblyIdentity *identity)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        GC_NOTRIGGER;
+        NOTHROW;
+    }
+    CONTRACTL_END;
+
+    // Version
+    if (identity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_VERSION))
+    {
+        m_context.usMajorVersion = (USHORT)identity->m_version.GetMajor();
+        m_context.usMinorVersion = (USHORT)identity->m_version.GetMinor();
+        m_context.usBuildNumber = (USHORT)identity->m_version.GetBuild();
+        m_context.usRevisionNumber = (USHORT)identity->m_version.GetRevision();
+    }
+
+    // Public key or token - does not copy the data
+    if (identity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN)
+        || identity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY))
+    {
+        m_pbPublicKeyOrToken = const_cast<BYTE *>(static_cast<const BYTE*>(identity->m_publicKeyOrTokenBLOB));
+        m_cbPublicKeyOrToken = identity->m_publicKeyOrTokenBLOB.GetSize();
+
+        if (identity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY))
+        {
+            m_dwFlags |= afPublicKey;
+        }
+    }
+    else if (identity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL))
+    {
+        m_pbPublicKeyOrToken = const_cast<BYTE *>(static_cast<const BYTE*>(identity->m_publicKeyOrTokenBLOB));
+        m_cbPublicKeyOrToken = 0;
+    }
+    else
+    {
+        m_pbPublicKeyOrToken = NULL;
+        m_cbPublicKeyOrToken = 0;
+    }
+
+    // Architecture
+    if (identity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PROCESSOR_ARCHITECTURE))
+    {
+        switch (identity->m_kProcessorArchitecture)
+        {
+        case peI386:
+            m_dwFlags |= afPA_x86;
+            break;
+        case peIA64:
+            m_dwFlags |= afPA_IA64;
+            break;
+        case peAMD64:
+            m_dwFlags |= afPA_AMD64;
+            break;
+        case peARM:
+            m_dwFlags |= afPA_ARM;
+            break;
+        case peMSIL:
+            m_dwFlags |= afPA_MSIL;
+            break;
+        default:
+            IfFailThrow(FUSION_E_INVALID_NAME);
+        }
+    }
+
+    // Retargetable
+    if (identity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE))
+    {
+        m_dwFlags |= afRetargetable;
+    }
+
+    // Content type
+    if (identity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE))
+    {
+        DWORD dwContentType = identity->m_kContentType;
+
+        _ASSERTE((dwContentType == AssemblyContentType_Default) || (dwContentType == AssemblyContentType_WindowsRuntime));
+        if (dwContentType == AssemblyContentType_WindowsRuntime)
+        {
+            m_dwFlags |= afContentType_WindowsRuntime;
+        }
+    }
 }
 
 #endif // DACCESS_COMPILE

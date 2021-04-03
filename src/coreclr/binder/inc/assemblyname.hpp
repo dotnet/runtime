@@ -19,18 +19,23 @@
 
 namespace BINDER_SPACE
 {
-    class AssemblyName : protected AssemblyIdentity
+    class AssemblyName final : public AssemblyIdentity
     {
     public:
         typedef enum
         {
-            INCLUDE_DEFAULT                     = 0x00,
-            INCLUDE_VERSION                     = 0x01,
-            INCLUDE_ARCHITECTURE                = 0x02,
-            INCLUDE_RETARGETABLE                = 0x04,
-            INCLUDE_CONTENT_TYPE                = 0x08,
-            INCLUDE_PUBLIC_KEY_TOKEN            = 0x10,
-            EXCLUDE_CULTURE                     = 0x20
+            INCLUDE_DEFAULT             = 0x00,
+            INCLUDE_VERSION             = 0x01,
+            INCLUDE_ARCHITECTURE        = 0x02,
+            INCLUDE_RETARGETABLE        = 0x04,
+            INCLUDE_CONTENT_TYPE        = 0x08,
+            INCLUDE_PUBLIC_KEY_TOKEN    = 0x10,
+            EXCLUDE_CULTURE             = 0x20,
+            INCLUDE_ALL                 = INCLUDE_VERSION
+                                            | INCLUDE_ARCHITECTURE
+                                            | INCLUDE_RETARGETABLE
+                                            | INCLUDE_CONTENT_TYPE
+                                            | INCLUDE_PUBLIC_KEY_TOKEN,
         } INCLUDE_FLAGS;
 
         AssemblyName();
@@ -66,6 +71,7 @@ namespace BINDER_SPACE
         inline void SetHave(DWORD dwIdentityFlags);
 
         BOOL IsCoreLib();
+        bool IsNeutralCulture();
 
         ULONG Hash(/* in */ DWORD dwIncludeFlags);
         BOOL Equals(/* in */ AssemblyName *pAssemblyName,

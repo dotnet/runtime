@@ -43,19 +43,33 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 // ============================================================================
 // CLRPrivBinderCoreCLR implementation
 // ============================================================================
-HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyName,
+HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(const WCHAR *pAssemblyFullName,
                                                  ICLRPrivAssembly **ppAssembly)
 {
     HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(pIAssemblyName != nullptr && ppAssembly != nullptr);
+    VALIDATE_ARG_RET(pAssemblyFullName != nullptr && ppAssembly != nullptr);
+
+    *ppAssembly = nullptr;
+
+    ReleaseHolder<AssemblyName> pAssemblyName;
+    SAFE_NEW(pAssemblyName, AssemblyName);
+    IF_FAIL_GO(pAssemblyName->Init(SString(pAssemblyFullName)));
+
+    hr = BindUsingAssemblyName(pAssemblyName, ppAssembly);
+
+Exit:
+    return hr;
+}
+
+HRESULT CLRPrivBinderCoreCLR::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
+                                                    ICLRPrivAssembly **ppAssembly)
+{
+    HRESULT hr = S_OK;
+    VALIDATE_ARG_RET(pAssemblyName != nullptr && ppAssembly != nullptr);
 
     *ppAssembly = nullptr;
 
     ReleaseHolder<BINDER_SPACE::Assembly> pCoreCLRFoundAssembly;
-    ReleaseHolder<AssemblyName> pAssemblyName;
-
-    SAFE_NEW(pAssemblyName, AssemblyName);
-    IF_FAIL_GO(pAssemblyName->Init(pIAssemblyName));
 
     hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, false /* excludeAppPaths */);
 
@@ -78,8 +92,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyNa
             // should be run even if the managed default ALC has not yet been used. (For non-satellite assemblies, any
             // additional logic comes through a user-defined event handler which would have initialized the managed ALC,
             // so if the managed ALC is not set yet, there is no additional logic to run)
-            SString &culture = pAssemblyName->GetCulture();
-            if (!culture.IsEmpty() && !culture.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral))
+            if (!pAssemblyName->IsNeutralCulture())
             {
                 // Make sure the managed default ALC is initialized.
                 GCX_COOP();
@@ -94,7 +107,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyNa
 
         if (pManagedAssemblyLoadContext != NULL)
         {
-            hr = AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName, pIAssemblyName,
+            hr = AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName,
                                                                 NULL, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {

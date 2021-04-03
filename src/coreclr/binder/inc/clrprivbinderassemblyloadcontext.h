@@ -29,8 +29,8 @@ public:
     //=========================================================================
     // ICLRPrivBinder functions
     //-------------------------------------------------------------------------
-    STDMETHOD(BindAssemblyByName)(
-            /* [in] */ IAssemblyName *pIAssemblyName,
+    STDMETHOD(BindAssemblyByName)( 
+            /* [string][in] */ const WCHAR *pAssemblyFullName,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
 
     STDMETHOD(GetLoaderAllocator)(

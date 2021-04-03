@@ -22,7 +22,7 @@ public:
     // ICLRPrivBinder functions
     //-------------------------------------------------------------------------
     STDMETHOD(BindAssemblyByName)(
-            /* [in] */ IAssemblyName *pIAssemblyName,
+            /* [string][in] */ const WCHAR *pAssemblyFullName,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
 
     STDMETHOD(GetLoaderAllocator)(
@@ -46,6 +46,9 @@ public:
                  BOOL         fNgenExplicitBind,
                  BOOL         fExplicitBindToNativeImage,
                  ICLRPrivAssembly **ppAssembly);
+
+    HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
+                                  ICLRPrivAssembly **ppAssembly);
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,

@@ -321,6 +321,11 @@ Exit:
         return EqualsCaseInsensitive(GetSimpleName(), g_BinderVariables->corelib);
     }
 
+    bool AssemblyName::IsNeutralCulture()
+    {
+        return m_cultureOrLanguage.IsEmpty() || m_cultureOrLanguage.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral);
+    }
+
     ULONG AssemblyName::Hash(DWORD dwIncludeFlags)
     {
         DWORD dwHash = 0;

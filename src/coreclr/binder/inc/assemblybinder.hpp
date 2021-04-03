@@ -60,7 +60,6 @@ namespace BINDER_SPACE
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
-                                                      /* in */ IAssemblyName      *pIAssemblyName,
                                                       /* in */ CLRPrivBinderCoreCLR *pTPABinder,
                                                       /* out */ Assembly           **ppAssembly);
 

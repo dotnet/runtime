@@ -38,8 +38,9 @@ BOOL IsCompilationProcess();
 #include "clrprivbinderassemblyloadcontext.h"
 // Helper function in the VM, invoked by the Binder, to invoke the host assembly resolver
 extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin,
-                                                IAssemblyName *pIAssemblyName, CLRPrivBinderCoreCLR *pTPABinder,
-                                                BINDER_SPACE::AssemblyName *pAssemblyName, ICLRPrivAssembly **ppLoadedAssembly);
+                                                 BINDER_SPACE::AssemblyName *pAssemblyName,
+                                                 CLRPrivBinderCoreCLR *pTPABinder,
+                                                 ICLRPrivAssembly **ppLoadedAssembly);
 
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
@@ -1436,7 +1437,6 @@ namespace BINDER_SPACE
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 HRESULT AssemblyBinder::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
-                                                      /* in */ IAssemblyName      *pIAssemblyName,
                                                       /* in */ CLRPrivBinderCoreCLR *pTPABinder,
                                                       /* out */ Assembly           **ppAssembly)
 {
@@ -1446,8 +1446,8 @@ HRESULT AssemblyBinder::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedA
 
     // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName.
     ICLRPrivAssembly *pLoadedAssembly = NULL;
-    hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin, pIAssemblyName,
-                                           pTPABinder, pAssemblyName, &pLoadedAssembly);
+    hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin,
+                                           pAssemblyName, pTPABinder, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pLoadedAssembly != NULL);

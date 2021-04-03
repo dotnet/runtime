@@ -580,6 +580,35 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     GCPROTECT_END();
 }
 
+/* static */
+void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* assemblyName, _Out_ ASSEMBLYNAMEREF* assemblyNameRef)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_COOPERATIVE;
+        GC_TRIGGERS;
+        PRECONDITION(assemblyName != NULL);
+        PRECONDITION(IsProtectedByGCFrame(assemblyNameRef));
+    }
+    CONTRACTL_END;
+
+    AssemblySpec spec;
+    spec.InitializeWithAssemblyIdentity(assemblyName);
+
+    StackScratchBuffer nameBuffer;
+    spec.SetName(assemblyName->GetSimpleName().GetUTF8(nameBuffer));
+
+    StackScratchBuffer cultureBuffer;
+    if (assemblyName->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
+    {
+        LPCSTR culture = assemblyName->IsNeutralCulture() ? "" : assemblyName->GetCulture().GetUTF8(cultureBuffer);
+        spec.SetCulture(culture);
+    }
+
+    spec.AssemblyNameInit(assemblyNameRef, NULL);
+}
+
 #endif // CROSSGEN_COMPILE
 
 // Check if the supplied assembly's public key matches up with the one in the Spec, if any
@@ -938,11 +967,6 @@ HRESULT AssemblySpec::EmitToken(
 
     return hr;
 }
-
-//===========================================================================================
-// Constructs an AssemblySpec for the given IAssemblyName. Recognizes IAssemblyName objects
-// that were built from WinRT AssemblySpec objects, extracts the encoded type name, and sets
-// the type namespace and class name properties appropriately.
 
 AssemblySpecBindingCache::AssemblySpecBindingCache()
 {

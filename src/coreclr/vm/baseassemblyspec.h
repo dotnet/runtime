@@ -56,8 +56,6 @@ public:
     HRESULT Init(mdAssembly tkAssemblyRef, IMetaDataAssemblyImport* pImport);
     HRESULT Init(LPCSTR pAssemblyDisplayName);
 
-    HRESULT Init(IAssemblyName *pName);
-
     // Note that this method does not clone the fields!
     VOID CopyFrom(const BaseAssemblySpec *pSpec);
 
@@ -129,8 +127,11 @@ public:
     void GetFileOrDisplayName(DWORD flags, SString &result) const;
     void GetDisplayName(DWORD flags, SString &result) const;
 
-protected:
+protected: // static
     static BOOL CompareRefToDef(const BaseAssemblySpec *pRef, const BaseAssemblySpec *pDef);
+
+protected:
+    void InitializeWithAssemblyIdentity(BINDER_SPACE::AssemblyIdentity *identity);
 
 private:
     void GetDisplayNameInternal(DWORD flags, SString &result) const;
