@@ -1525,7 +1525,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         // Increment the number of observed instructions
         opts.instrCount++;
 
-OBSERVE_OPCODE:
+    OBSERVE_OPCODE:
 
         // Note the opcode we just saw
         if (makeInlineObservations)
