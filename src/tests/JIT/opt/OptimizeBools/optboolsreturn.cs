@@ -38,6 +38,25 @@ public class CBoolTest
         return (x == 0 && y == 0 && z == 0 && w == 0);
     }
 
+    // Cases that skip optimization
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool AreOne(int x, int y)
+    {
+        return (x == 1 && y == 1);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsEitherZero(int x, int y)
+    {
+        return (x == 0 || y == 0);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsEitherOne(int x, int y)
+    {
+        return (x == 1 || y == 1);
+    }
+
     public static int Main()
     {
         // Optimize boolean
@@ -81,6 +100,29 @@ public class CBoolTest
         if (!AreZero4(0, 0, 0, 0))
         {
             Console.WriteLine("CBoolTest:AreZero4 failed");
+            return 101;
+        }
+
+        // Skip optimization
+
+        // Test if ANDing or GT_NE requires both operands to be boolean
+        if (!AreOne(1, 1))
+        {
+            Console.WriteLine("CBoolTest:AreOne failed");
+            return 101;
+        }
+
+        // Test if ANDing requires both operands to be boolean
+        if (!IsEitherZero(0, 1))
+        {
+            Console.WriteLine("CBoolTest:IsEitherZero failed");
+            return 101;
+        }
+
+        // Test if GT_NE requires both operands to be boolean
+        if (!IsEitherOne(0, 1))
+        {
+            Console.WriteLine("CBoolTest:IsEitherOne failed");
             return 101;
         }
 
