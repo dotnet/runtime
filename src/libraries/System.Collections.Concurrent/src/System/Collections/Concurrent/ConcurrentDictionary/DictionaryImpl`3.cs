@@ -33,7 +33,6 @@ namespace System.Collections.Concurrent
         private Counter32 _size;
 
         internal static readonly bool valueIsAtomic = IsValueAtomicPrimitive();
-        internal readonly bool valueIsValueType = typeof(TValue).GetTypeInfo().IsValueType;
 
         // Sometimes many threads race to create a new very large table.  Only 1
         // wins the race, but the losers all allocate a junk large table with
@@ -100,9 +99,10 @@ namespace System.Collections.Concurrent
             this._size = new Counter32();
             this._topDict = topDict;
 
-            if (!typeof(TKeyStore).GetTypeInfo().IsValueType)
+            if (!typeof(TKeyStore).IsValueType)
             {
-                topDict._sweeperInstance = new Sweeper();
+                // do not create a real sweeper just yet. Often it is not needed.
+                topDict._sweeperInstance = NULLVALUE;
             }
 
             _ = valueIsAtomic;
@@ -931,7 +931,7 @@ namespace System.Collections.Concurrent
             }
 
             // ref type
-            if (!valueIsValueType)
+            if (!typeof(TValue).IsValueType)
             {
                 return Unsafe.As<object, TValue>(ref obj);
             }
@@ -1388,11 +1388,12 @@ namespace System.Collections.Concurrent
             public static void TryRearm(DictionaryImpl<TKey, TKeyStore, TValue> dict)
             {
                 ref var sweeperLocation = ref dict._topDict._sweeperInstance;
-                var sweeperInst = sweeperLocation as Sweeper;
-                if (sweeperInst != null && Interlocked.CompareExchange(ref sweeperLocation, null, sweeperInst) == sweeperInst)
+                var obj = sweeperLocation;
+                if (obj != null && Interlocked.CompareExchange(ref sweeperLocation, null, obj) == obj)
                 {
-                    sweeperInst._dict = dict;
-                    GC.ReRegisterForFinalize(sweeperInst);
+                    Sweeper sweeper = obj as Sweeper ?? new Sweeper();
+                    sweeper._dict = dict;
+                    GC.ReRegisterForFinalize(sweeper);
                 }
             }
 
