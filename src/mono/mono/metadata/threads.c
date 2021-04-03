@@ -920,7 +920,7 @@ add_exiting_thread (MonoInternalThread *thread)
 }
 #else
 void
-mono_threads_process_exiting (void)
+mono_threads_exiting (void)
 {
 }
 #endif
