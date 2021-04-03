@@ -36,11 +36,19 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public void WaitHandleWait_Invalid()
+        public void WaitHandleWaitAll_Invalid()
         {
             Assert.Throws<ArgumentNullException>(() => WaitHandle.WaitAll(null));
             Assert.Throws<ArgumentNullException>(() => WaitHandle.WaitAll(null, 100));
             Assert.Throws<ArgumentNullException>(() => WaitHandle.WaitAll(null, TimeSpan.Zero));
+        }
+
+        [Fact]
+        public void WaitHandleWaitAny_Invalid()
+        {
+            Assert.Throws<ArgumentNullException>(() => WaitHandle.WaitAny(null));
+            Assert.Throws<ArgumentNullException>(() => WaitHandle.WaitAny(null, 100));
+            Assert.Throws<ArgumentNullException>(() => WaitHandle.WaitAny(null, TimeSpan.Zero));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
