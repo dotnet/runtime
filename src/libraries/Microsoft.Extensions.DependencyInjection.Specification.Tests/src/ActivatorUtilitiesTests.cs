@@ -234,6 +234,23 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Theory]
+        [InlineData(0, "", "int, IFakeService, string")]
+        public void TypeActivatorCreateInstanceUsesMarkedConstructor(int argument1, string argument2, string ctor)
+        {
+            // Arrange
+            var serviceCollection = new TestServiceCollection();
+            serviceCollection.AddSingleton<IFakeService, FakeService>();
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var type = typeof(ClassWithAmbiguousCtorsAndAttributeFirst);
+
+            // Act
+            var instance = ActivatorUtilities.CreateInstance(serviceProvider, type, argument1, argument2);
+
+            // Assert
+            Assert.Equal(ctor, ((ClassWithAmbiguousCtorsAndAttributeFirst)instance).CtorUsed);
+        }
+
+        [Theory]
         [MemberData(nameof(CreateInstanceFuncs))]
         public void TypeActivatorUsesMarkedConstructor(CreateInstanceFunc createFunc)
         {
