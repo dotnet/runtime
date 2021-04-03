@@ -5,14 +5,8 @@
 #ifndef __CLR_PRIV_BINDER_CORECLR_H__
 #define __CLR_PRIV_BINDER_CORECLR_H__
 
-#include "coreclrbindercommon.h"
 #include "applicationcontext.hpp"
 #include "assemblyloadcontext.h"
-
-namespace BINDER_SPACE
-{
-    class AssemblyIdentityUTF8;
-};
 
 class CLRPrivBinderCoreCLR : public AssemblyLoadContext
 {

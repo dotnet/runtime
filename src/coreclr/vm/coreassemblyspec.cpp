@@ -17,7 +17,6 @@
 #include "peimagelayout.inl"
 #include "domainfile.h"
 #include "holder.h"
-#include "../binder/inc/assemblybinder.hpp"
 #include "bundle.h"
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
@@ -26,12 +25,10 @@
 #include "compile.h"
 #endif
 
-
 #include "../binder/inc/textualidentityparser.hpp"
 #include "../binder/inc/assemblyidentity.hpp"
 #include "../binder/inc/assembly.hpp"
 #include "../binder/inc/assemblyname.hpp"
-#include "../binder/inc/fusionassemblyname.hpp"
 
 #include "../binder/inc/coreclrbindercommon.h"
 #include "../binder/inc/applicationcontext.hpp"

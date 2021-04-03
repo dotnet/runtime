@@ -67,6 +67,7 @@
 
 #include "../binder/inc/bindertracing.h"
 #include "../binder/inc/clrprivbindercoreclr.h"
+#include "../binder/inc/coreclrbindercommon.h"
 
 // this file handles string conversion errors for itself
 #undef  MAKE_TRANSLATIONFAILED

@@ -13,8 +13,6 @@
 #include "common.h"
 #include "thekey.h"
 
-#include "../binder/inc/fusionassemblyname.hpp"
-
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
 

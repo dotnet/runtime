@@ -12,11 +12,8 @@
 // ============================================================
 
 #include "assemblyname.hpp"
-#include "assembly.hpp"
 #include "utils.hpp"
 #include "variables.hpp"
-
-#include "fusionassemblyname.hpp"
 
 #include "textualidentityparser.hpp"
 
@@ -169,135 +166,6 @@ namespace BINDER_SPACE
     HRESULT AssemblyName::Init(SString &assemblyDisplayName)
     {
         return TextualIdentityParser::Parse(assemblyDisplayName, this);
-    }
-
-    HRESULT AssemblyName::Init(IAssemblyName *pIAssemblyName)
-    {
-        HRESULT hr = S_OK;
-
-        _ASSERTE(pIAssemblyName != NULL);
-
-        EX_TRY
-        {
-            {
-                // Set the simpleName
-                StackSString simpleName;
-                hr = fusion::util::GetSimpleName(pIAssemblyName, simpleName);
-                IF_FAIL_GO(hr);
-                SetSimpleName(simpleName);
-                SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_SIMPLE_NAME);
-            }
-
-            // Display version
-            DWORD dwVersionParts[4] = {0,0,0,0};
-            DWORD cbVersionSize = sizeof(dwVersionParts[0]);
-            hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_MAJOR_VERSION, static_cast<PVOID>(&dwVersionParts[0]), &cbVersionSize);
-            IF_FAIL_GO(hr);
-            if ((hr == S_OK) && (cbVersionSize != 0))
-            {
-                // Property is present - loop to get the individual version details
-                for(DWORD i = 0; i < 4; i++)
-                {
-                    cbVersionSize = sizeof(dwVersionParts[i]);
-                    hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_MAJOR_VERSION+i, static_cast<PVOID>(&dwVersionParts[i]), &cbVersionSize);
-                    IF_FAIL_GO(hr);
-                }
-
-                m_version.SetFeatureVersion(dwVersionParts[0], dwVersionParts[1]);
-                m_version.SetServiceVersion(dwVersionParts[2], dwVersionParts[3]);
-                SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_VERSION);
-            }
-
-            {
-                // Display culture
-                StackSString culture;
-                hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_CULTURE, culture);
-                IF_FAIL_GO(hr);
-                if (hr == S_OK)
-                {
-                    SetCulture(culture);
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE);
-                }
-            }
-
-            {
-                // Display public key token
-                NewArrayHolder<BYTE> pPublicKeyToken;
-                DWORD cbPublicKeyToken = 0;
-                hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_PUBLIC_KEY_TOKEN, static_cast<PBYTE*>(&pPublicKeyToken), &cbPublicKeyToken);
-                IF_FAIL_GO(hr);
-                if ((hr == S_OK) && (cbPublicKeyToken != 0))
-                {
-                    m_publicKeyOrTokenBLOB.Set(pPublicKeyToken, cbPublicKeyToken);
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN);
-                }
-                else
-                {
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL);
-                }
-            }
-
-            // Display processor architecture
-            DWORD peKind = 0;
-            DWORD cbPeKind = sizeof(peKind);
-            hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_ARCHITECTURE, static_cast<PVOID>(&peKind), &cbPeKind);
-            IF_FAIL_GO(hr);
-            if ((hr == S_OK) && (cbPeKind != 0))
-            {
-                PEKIND PeKind = (PEKIND)peKind;
-                if (PeKind != peNone)
-                {
-                    SetArchitecture(PeKind);
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PROCESSOR_ARCHITECTURE);
-                }
-            }
-
-            // Display retarget flag
-            BOOL fRetarget = FALSE;
-            DWORD cbRetarget = sizeof(fRetarget);
-            hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_RETARGET, static_cast<PVOID>(&fRetarget), &cbRetarget);
-            IF_FAIL_GO(hr);
-            if ((hr == S_OK) && (cbRetarget != 0))
-            {
-                if (fRetarget)
-                {
-                    SetIsRetargetable(fRetarget);
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE);
-                }
-            }
-
-            // Display content type
-            DWORD dwContentType = AssemblyContentType_Default;
-            DWORD cbContentType = sizeof(dwContentType);
-            hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_CONTENT_TYPE, static_cast<PVOID>(&dwContentType), &cbContentType);
-            IF_FAIL_GO(hr);
-            if ((hr == S_OK) && (cbContentType != 0))
-            {
-                if (dwContentType != AssemblyContentType_Default)
-                {
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE);
-                    SetContentType((AssemblyContentType)dwContentType);
-                }
-            }
-
-            {
-                // Display custom flag. Dont set it if it is not present since that will end up adding the "Custom=null" attribute
-                // in the displayname of the assembly that maybe generated using this AssemblyName instance. This could create conflict when
-                // the displayname is generated from the assembly directly as that will not have a "Custom" field set.
-                NewArrayHolder<BYTE> pCustomBLOB;
-                DWORD cbCustomBLOB = 0;
-                hr = fusion::util::GetProperty(pIAssemblyName, ASM_NAME_CUSTOM, static_cast<PBYTE*>(&pCustomBLOB), &cbCustomBLOB);
-                IF_FAIL_GO(hr);
-                if ((hr == S_OK) && (cbCustomBLOB != 0))
-                {
-                    m_customBLOB.Set(pCustomBLOB, cbCustomBLOB);
-                    SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CUSTOM);
-                }
-            }
-        }
-        EX_CATCH_HRESULT(hr);
-Exit:
-        return hr;
     }
 
     ULONG AssemblyName::AddRef()
