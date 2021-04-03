@@ -14,7 +14,7 @@ namespace System.IO.Strategies
     {
         private byte[]? _buffer;
         private readonly int _bufferLength;
-        private readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
+        internal readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
 
         /// <summary>Whether the file is opened for reading, writing, or both.</summary>
         private readonly FileAccess _access;

@@ -10,17 +10,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Strategies
 {
-    // to avoid code duplicaiton of FileStreamCompletionSource for Net5CompatFileStreamStrategy and AsyncWindowsFileStreamStrategy
-    // we have created the following interface that is a common contract for both of them
-    internal interface IFileStreamCompletionSourceStrategy
-    {
-        SafeFileHandle FileHandle { get; }
-
-        FileStreamCompletionSource? CurrentOverlappedOwner { get; }
-
-        FileStreamCompletionSource? CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource? newSource, FileStreamCompletionSource? existingSource);
-    }
-
     // This is an internal object extending TaskCompletionSource with fields
     // for all of the relevant data necessary to complete the IO operation.
     // This is used by IOCallback and all of the async methods.
@@ -39,7 +28,7 @@ namespace System.IO.Strategies
 
         private static Action<object?>? s_cancelCallback;
 
-        private readonly IFileStreamCompletionSourceStrategy _strategy;
+        private readonly Net5CompatFileStreamStrategy _strategy;
         private readonly int _numBufferedBytes;
         private CancellationTokenRegistration _cancellationRegistration;
 #if DEBUG
@@ -49,7 +38,7 @@ namespace System.IO.Strategies
         private long _result; // Using long since this needs to be used in Interlocked APIs
 
         // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
-        internal FileStreamCompletionSource(IFileStreamCompletionSourceStrategy strategy, PreAllocatedOverlapped? preallocatedOverlapped,
+        internal FileStreamCompletionSource(Net5CompatFileStreamStrategy strategy, PreAllocatedOverlapped? preallocatedOverlapped,
             int numBufferedBytes, byte[]? bytes) : base(TaskCreationOptions.RunContinuationsAsynchronously)
         {
             _numBufferedBytes = numBufferedBytes;
@@ -59,8 +48,8 @@ namespace System.IO.Strategies
             // The _preallocatedOverlapped is null if the internal buffer was never created, so we check for
             // a non-null bytes before using the stream's _preallocatedOverlapped
             _overlapped = bytes != null && strategy.CompareExchangeCurrentOverlappedOwner(this, null) == null ?
-                strategy.FileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(preallocatedOverlapped!) : // allocated when buffer was created, and buffer is non-null
-                strategy.FileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(s_ioCallback, this, bytes);
+                strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(preallocatedOverlapped!) : // allocated when buffer was created, and buffer is non-null
+                strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(s_ioCallback, this, bytes);
             Debug.Assert(_overlapped != null, "AllocateNativeOverlapped returned null");
         }
 
@@ -119,7 +108,7 @@ namespace System.IO.Strategies
             // (this is why we disposed the registration above).
             if (_overlapped != null)
             {
-                _strategy.FileHandle.ThreadPoolBinding!.FreeNativeOverlapped(_overlapped);
+                _strategy._fileHandle.ThreadPoolBinding!.FreeNativeOverlapped(_overlapped);
                 _overlapped = null;
             }
 
@@ -139,10 +128,10 @@ namespace System.IO.Strategies
             // be directly the FileStreamCompletionSource that's completing (in the case where the preallocated
             // overlapped was already in use by another operation).
             object? state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
-            Debug.Assert(state is IFileStreamCompletionSourceStrategy || state is FileStreamCompletionSource);
+            Debug.Assert(state is Net5CompatFileStreamStrategy || state is FileStreamCompletionSource);
             FileStreamCompletionSource completionSource = state switch
             {
-                IFileStreamCompletionSourceStrategy strategy => strategy.CurrentOverlappedOwner!, // must be owned
+                Net5CompatFileStreamStrategy strategy => strategy._currentOverlappedOwner!, // must be owned
                 _ => (FileStreamCompletionSource)state
             };
             Debug.Assert(completionSource != null);
@@ -215,8 +204,8 @@ namespace System.IO.Strategies
             Debug.Assert(completionSource._overlapped != null && !completionSource.Task.IsCompleted, "IO should not have completed yet");
 
             // If the handle is still valid, attempt to cancel the IO
-            if (!completionSource._strategy.FileHandle.IsInvalid &&
-                !Interop.Kernel32.CancelIoEx(completionSource._strategy.FileHandle, completionSource._overlapped))
+            if (!completionSource._strategy._fileHandle.IsInvalid &&
+                !Interop.Kernel32.CancelIoEx(completionSource._strategy._fileHandle, completionSource._overlapped))
             {
                 int errorCode = Marshal.GetLastWin32Error();
 
@@ -229,7 +218,7 @@ namespace System.IO.Strategies
             }
         }
 
-        public static FileStreamCompletionSource Create(IFileStreamCompletionSourceStrategy strategy, PreAllocatedOverlapped? preallocatedOverlapped,
+        public static FileStreamCompletionSource Create(Net5CompatFileStreamStrategy strategy, PreAllocatedOverlapped? preallocatedOverlapped,
             int numBufferedBytesRead, ReadOnlyMemory<byte> memory)
         {
             // If the memory passed in is the strategy's internal buffer, we can use the base FileStreamCompletionSource,
@@ -252,7 +241,7 @@ namespace System.IO.Strategies
     {
         private MemoryHandle _handle; // mutable struct; do not make this readonly
 
-        internal MemoryFileStreamCompletionSource(IFileStreamCompletionSourceStrategy strategy, int numBufferedBytes, ReadOnlyMemory<byte> memory)
+        internal MemoryFileStreamCompletionSource(Net5CompatFileStreamStrategy strategy, int numBufferedBytes, ReadOnlyMemory<byte> memory)
             : base(strategy, null, numBufferedBytes, null) // this type handles the pinning, so null is passed for bytes
         {
             _handle = memory.Pin();
