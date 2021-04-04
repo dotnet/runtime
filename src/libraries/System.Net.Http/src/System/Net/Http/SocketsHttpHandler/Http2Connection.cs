@@ -1594,7 +1594,7 @@ namespace System.Net.Http
 
             if (LifetimeExpired(nowTicks, connectionLifetime))
             {
-                if (NetEventSource.Log.IsEnabled()) Trace($"HTTP2 Connection no longer usable. Lifetime {TimeSpan.FromMilliseconds(nowTicks - CreationTickCount)} > {connectionLifetime}.");
+                if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/2 connection no longer usable. Lifetime {TimeSpan.FromMilliseconds(nowTicks - CreationTickCount)} > {connectionLifetime}.");
 
                 return true;
             }
