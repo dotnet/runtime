@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices
 {
     public static class RuntimeEnvironment
     {
-        [Obsolete("This property is no longer supported.")]
+        [Obsolete("SystemConfigurationFile is no longer supported.")]
         public static string SystemConfigurationFile => throw new PlatformNotSupportedException();
 
         public static bool FromGlobalAccessCache(Assembly a) => false;
