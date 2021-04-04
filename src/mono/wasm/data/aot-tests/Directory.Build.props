@@ -1,5 +1,7 @@
 <Project>
   <PropertyGroup>
+    <WasmBuildSupportDir Condition="'$(WasmBuildSupportDir)' == ''">$(HELIX_CORRELATION_PAYLOAD)\build\</WasmBuildSupportDir>
+
     <_WasmTargetsDir Condition="'$(RuntimeSrcDir)' != ''">$(RuntimeSrcDir)\src\mono\wasm\build\</_WasmTargetsDir>
     <_WasmTargetsDir Condition="'$(WasmBuildSupportDir)' != ''">$(WasmBuildSupportDir)\wasm\</_WasmTargetsDir>
     <EMSDK_PATH Condition="'$(WasmBuildSupportDir)' != ''">$(WasmBuildSupportDir)\emsdk\</EMSDK_PATH>
