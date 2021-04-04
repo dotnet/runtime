@@ -1296,13 +1296,13 @@ namespace System.Collections.Concurrent
                                             sz << REPROBE_LIMIT_SHIFT :
                                             sz;
 
+            var resizeSpan = CurrentTickMillis() - _topDict._lastResizeTickMillis;
+
             // if new table would shrink or hold steady,
             // we must be resizing because of churn.
             // target churn based resize rate to be about 1 per RESIZE_TICKS_TARGET
             if (newsz <= oldlen)
             {
-                var resizeSpan = CurrentTickMillis() - _topDict._lastResizeTickMillis;
-
                 // note that CurrentTicks() will wrap around every 50 days.
                 // For our purposes that is tolerable since it just
                 // adds a possibility that in some rare cases a churning resize will not be
@@ -1317,6 +1317,11 @@ namespace System.Collections.Concurrent
                     // do not allow shrink too fast
                     newsz = Math.Max(newsz, (int)((long)oldlen * RESIZE_MILLIS_TARGET / resizeSpan));
                 }
+            }
+            else if (resizeSpan < RESIZE_MILLIS_TARGET)
+            {
+                // last resize too recent, expand more.
+                newsz = Math.Min(MAX_SIZE, newsz << 1);
             }
 
             // Align up to a power of 2

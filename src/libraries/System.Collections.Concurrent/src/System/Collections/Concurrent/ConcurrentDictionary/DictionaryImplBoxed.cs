@@ -65,7 +65,12 @@ namespace System.Collections.Concurrent
             //NOTE: slots are claimed in two stages - claim a hash, then set a key
             //      it is possible to observe a slot with a null key, but with hash already set
             //      that is not a match since the key is not yet in the table
-            return entryKey != null && _keyComparer.Equals(key, entryKey.Value);
+            if (entryKey == null)
+            {
+                return false;
+            }
+
+            return _keyComparer.Equals(key, entryKey.Value);
         }
 
         protected override DictionaryImpl<TKey, Boxed<TKey>, TValue> CreateNew(int capacity)
