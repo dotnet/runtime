@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -32,10 +31,11 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             params object[] parameters)
         {
-            Type[] argumentTypes = parameters
-                ?.Select(parameter => parameter.GetType())
-                .ToArray()
-                ?? Array.Empty<Type>();
+            Type[] argumentTypes = new Type[parameters?.Length ?? 0];
+            for (int index = 0; index < argumentTypes.Length; index++)
+            {
+                argumentTypes[index] = parameters[index].GetType();
+            }
 
             FindApplicableConstructor(
                 instanceType,
