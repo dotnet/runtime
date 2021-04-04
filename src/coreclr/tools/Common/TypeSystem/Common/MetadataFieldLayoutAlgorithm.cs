@@ -666,7 +666,7 @@ namespace Internal.TypeSystem
                     LayoutInt AlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, context.Target.LayoutPointerSize);
                     cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, AlignmentRequired, context.Target);
                 }
-                offsets[fieldOrdinal] = new FieldAndOffset(instanceValueClassFieldsArr[i], cumulativeInstanceFieldPos + offsetBias);
+                offsets[fieldOrdinal] = new FieldAndOffset(instanceValueClassFieldsArr[i], cumulativeInstanceFieldPos.IsIndeterminate ? cumulativeInstanceFieldPos : cumulativeInstanceFieldPos + offsetBias);
 
                 // If the field has an indeterminate size, align the cumulative field offset to the indeterminate value
                 // Otherwise, align the cumulative field offset to the aligned-instance field size
@@ -701,7 +701,9 @@ namespace Internal.TypeSystem
             }
 
             SizeAndAlignment instanceByteSizeAndAlignment;
-            var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos + offsetBias, minAlign, 0/* specified field size unused */, out instanceByteSizeAndAlignment);
+            var instanceSizeAndAlignment = ComputeInstanceSize(type,
+                cumulativeInstanceFieldPos.IsIndeterminate ? cumulativeInstanceFieldPos : cumulativeInstanceFieldPos + offsetBias,
+                minAlign, 0/* specified field size unused */, out instanceByteSizeAndAlignment);
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
@@ -719,7 +721,7 @@ namespace Internal.TypeSystem
             var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, packingSize, out bool _);
 
             instanceFieldPos = AlignUpInstanceFieldOffset(field.OwningType, instanceFieldPos, fieldSizeAndAlignment.Alignment, field.Context.Target);
-            offsets[fieldOrdinal] = new FieldAndOffset(field, instanceFieldPos + offsetBias);
+            offsets[fieldOrdinal] = new FieldAndOffset(field, instanceFieldPos.IsIndeterminate ? instanceFieldPos : instanceFieldPos + offsetBias);
             instanceFieldPos = checked(instanceFieldPos + fieldSizeAndAlignment.Size);
 
             fieldOrdinal++;
@@ -760,19 +762,20 @@ namespace Internal.TypeSystem
         {
             LayoutInt cumulativeInstanceFieldPos = LayoutInt.Zero;
 
-            if (!type.IsValueType)
+            if (!type.IsValueType && type.HasBaseType)
             {
-                LayoutInt offsetBias = OffsetBias(type);
-                if (type.HasBaseType)
+                cumulativeInstanceFieldPos = type.BaseType.InstanceByteCountUnaligned;
+                if (!type.BaseType.InstanceByteCountUnaligned.IsIndeterminate)
                 {
+                    LayoutInt offsetBias = OffsetBias(type);
                     cumulativeInstanceFieldPos = type.BaseType.InstanceByteCountUnaligned - offsetBias;
-                    if (!type.BaseType.IsObject && type.BaseType.IsZeroSizedReferenceType)
+                    if (type.BaseType.IsZeroSizedReferenceType && ((MetadataType)type.BaseType).IsExplicitLayout)
                     {
                         cumulativeInstanceFieldPos += LayoutInt.One;
                     }
                     AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8);
+                    cumulativeInstanceFieldPos += offsetBias;
                 }
-                cumulativeInstanceFieldPos += offsetBias;
             }
 
             return cumulativeInstanceFieldPos;
@@ -780,7 +783,7 @@ namespace Internal.TypeSystem
 
         public static LayoutInt OffsetBias(TypeDesc type)
         {
-            return !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
+            return !type.IsValueType && type.HasBaseType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
         }
 
         private static SizeAndAlignment ComputeFieldSizeAndAlignment(TypeDesc fieldType, int packingSize, out bool layoutAbiStable)
