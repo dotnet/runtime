@@ -202,7 +202,7 @@ namespace System.Net.Http
             async ValueTask<int> ReadAheadWithZeroByteReadAsync()
             {
                 Debug.Assert(_readAheadTask is null);
-                Debug.Assert(_readLength == 0);
+                Debug.Assert(RemainingBuffer.Length == 0);
 
                 // Issue a zero-byte read.
                 // If the underlying stream supports it, this will not complete until the stream has data available,
