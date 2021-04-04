@@ -793,7 +793,7 @@ namespace System.Runtime.InteropServices
     }
     public static partial class RuntimeEnvironment
     {
-        [System.ObsoleteAttribute("This property is no longer supported.")]
+        [System.ObsoleteAttribute("SystemConfigurationFile is no longer supported.")]
         public static string SystemConfigurationFile { get { throw null; } }
         public static bool FromGlobalAccessCache(System.Reflection.Assembly a) { throw null; }
         public static string GetRuntimeDirectory() { throw null; }
