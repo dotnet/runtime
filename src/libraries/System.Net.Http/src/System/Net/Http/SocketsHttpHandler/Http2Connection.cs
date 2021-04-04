@@ -1587,7 +1587,7 @@ namespace System.Net.Http
                 (_httpStreams.Count == 0) &&
                 ((nowTicks - _idleSinceTickCount) > connectionIdleTimeout.TotalMilliseconds))
             {
-                if (NetEventSource.Log.IsEnabled()) Trace($"HTTP2 Connection no longer usable. Idle {TimeSpan.FromMilliseconds(nowTicks - _idleSinceTickCount)} > {connectionIdleTimeout}.");
+                if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/2 connection no longer usable. Idle {TimeSpan.FromMilliseconds(nowTicks - _idleSinceTickCount)} > {connectionIdleTimeout}.");
 
                 return true;
             }
