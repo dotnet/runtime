@@ -223,9 +223,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Queryable\tests\System.Linq.Queryable.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives\tests\FunctionalTests\System.Net.Primitives.Functional.Tests.csproj" />
-    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\CoreCLR\System.Reflection.CoreCLR.Tests.csproj" />-->
-    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Metadata\tests\System.Reflection.Metadata.Tests.csproj" />-->
-    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />-->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Reader\tests\System.Resources.Reader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Extensions\tests\System.Runtime.Extensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\System.Runtime.InteropServices.Tests.csproj" />
