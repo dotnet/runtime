@@ -5,6 +5,7 @@ using Xunit;
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 
 namespace System.IO.Tests
 {
@@ -45,26 +46,16 @@ namespace System.IO.Tests
 
         public static IEnumerable<object[]> GetArraysVariedBySize()
         {
-            yield return new object[] { FillWithData(new byte[0]) };
-            yield return new object[] { FillWithData(new byte[1]) };
-            yield return new object[] { FillWithData(new byte[2]) };
-            yield return new object[] { FillWithData(new byte[256]) };
-            yield return new object[] { FillWithData(new byte[512]) };
-            yield return new object[] { FillWithData(new byte[1024]) };
-            yield return new object[] { FillWithData(new byte[2047]) };
-            yield return new object[] { FillWithData(new byte[2048]) };
-            yield return new object[] { FillWithData(new byte[2049]) };
-            yield return new object[] { FillWithData(new byte[2100]) };
-        }
-
-        private static byte[] FillWithData(byte[] buffer)
-        {
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                buffer[i] = unchecked((byte)i);
-            }
-
-            return buffer;
+            yield return new object[] { RandomNumberGenerator.GetBytes(0) };
+            yield return new object[] { RandomNumberGenerator.GetBytes(1) };
+            yield return new object[] { RandomNumberGenerator.GetBytes(2) };
+            yield return new object[] { RandomNumberGenerator.GetBytes(256) };
+            yield return new object[] { RandomNumberGenerator.GetBytes(512) };
+            yield return new object[] { RandomNumberGenerator.GetBytes(1024) };
+            yield return new object[] { RandomNumberGenerator.GetBytes(2047) };
+            yield return new object[] { RandomNumberGenerator.GetBytes(2048) };
+            yield return new object[] { RandomNumberGenerator.GetBytes(2049) };
+            yield return new object[] { RandomNumberGenerator.GetBytes(2100) };
         }
     }
 }
