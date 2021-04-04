@@ -817,18 +817,13 @@ namespace ILCompiler
         /// This method decides whether the type needs aligned base offset in order to have layout resilient to 
         /// base class layout changes.
         /// </summary>
-        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8)
+        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8, bool requiresAlignedBase)
         {
-            DefType baseType = type.BaseType;
-
-            if (!_compilationGroup.NeedsAlignmentBetweenBaseTypeAndDerived(baseType: (MetadataType)baseType, derivedType: type))
+            if (requiresAlignedBase || _compilationGroup.NeedsAlignmentBetweenBaseTypeAndDerived(baseType: (MetadataType)type.BaseType, derivedType: type))
             {
-                // The type is defined in the module that's currently being compiled and the type layout doesn't depend on other modules
-                return;
+                LayoutInt alignment = new LayoutInt(requiresAlign8 ? 8 : type.Context.Target.PointerSize);
+                baseOffset = LayoutInt.AlignUp(baseOffset, alignment, type.Context.Target);
             }
-
-            LayoutInt alignment = new LayoutInt(requiresAlign8 ? 8 : type.Context.Target.PointerSize);
-            baseOffset = LayoutInt.AlignUp(baseOffset, alignment, type.Context.Target);
         }
 
         public static bool IsManagedSequentialType(TypeDesc type)

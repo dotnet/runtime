@@ -68,7 +68,12 @@ namespace ILCompiler
             }
         }
 
-        public LayoutInt CalculateFieldBaseOffset(MetadataType type) => _r2rFieldLayoutAlgorithm.CalculateFieldBaseOffset(type, type.RequiresAlign8());
+        /// <summary>
+        /// This is a rough equivalent of the CoreCLR runtime method ReadyToRunInfo::GetFieldBaseOffset.
+        /// In contrast to the auto field layout algorithm, this method unconditionally applies alignment
+        /// between base and derived class (even when they reside in the same version bubble).
+        /// </summary>
+        public LayoutInt CalculateFieldBaseOffset(MetadataType type) => _r2rFieldLayoutAlgorithm.CalculateFieldBaseOffset(type, type.RequiresAlign8(), requiresAlignedBase: true);
 
         public void SetCompilationGroup(ReadyToRunCompilationModuleGroupBase compilationModuleGroup)
         {

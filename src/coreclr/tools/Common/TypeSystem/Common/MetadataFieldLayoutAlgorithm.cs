@@ -393,7 +393,7 @@ namespace Internal.TypeSystem
             // For types inheriting from another type, field offsets continue on from where they left off
             // For reference types, we calculate field alignment as if the address after the method table pointer
             // has offset 0 (on 32-bit platforms, this location is guaranteed to be 8-aligned).
-            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false) - offsetBias;
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
 
             var layoutMetadata = type.GetClassLayout();
 
@@ -434,7 +434,7 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8)
+        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8, bool requiresAlignedBase)
         {
         }
 
@@ -541,7 +541,9 @@ namespace Internal.TypeSystem
             LayoutInt offsetBias = OffsetBias(type);
 
             // For types inheriting from another type, field offsets continue on from where they left off
-            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8);
+            // Base alignment is not always required, it's only applied when there's a version bubble boundary
+            // between base type and the current type.
+            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8, requiresAlignedBase: false);
             if (!cumulativeInstanceFieldPos.IsIndeterminate)
             {
                 cumulativeInstanceFieldPos -= offsetBias;
@@ -758,7 +760,7 @@ namespace Internal.TypeSystem
             return type.IsValueType && !type.IsPrimitive && !type.IsEnum;
         }
 
-        public LayoutInt CalculateFieldBaseOffset(MetadataType type, bool requiresAlign8)
+        public LayoutInt CalculateFieldBaseOffset(MetadataType type, bool requiresAlign8, bool requiresAlignedBase)
         {
             LayoutInt cumulativeInstanceFieldPos = LayoutInt.Zero;
 
@@ -773,7 +775,7 @@ namespace Internal.TypeSystem
                     {
                         cumulativeInstanceFieldPos += LayoutInt.One;
                     }
-                    AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8);
+                    AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8, requiresAlignedBase);
                     cumulativeInstanceFieldPos += offsetBias;
                 }
             }
