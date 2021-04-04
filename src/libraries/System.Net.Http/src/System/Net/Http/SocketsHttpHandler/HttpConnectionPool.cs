@@ -1489,11 +1489,9 @@ namespace System.Net.Http
 
             Debug.Assert(_maxConnections != int.MaxValue, "_waiters queue is allocated but no connection limit is set??");
 
-            while (_waiters.Count > 0)
+            while (_waiters.TryDequeue(out TaskCompletionSourceWithCancellation<HttpConnection?>? waiter))
             {
                 Debug.Assert(_idleConnections.Count == 0, $"With {_idleConnections.Count} idle connections, we shouldn't have a waiter.");
-
-                TaskCompletionSource<HttpConnection?> waiter = _waiters.Dequeue();
 
                 // Try to complete the task. If it's been cancelled already, this will fail.
                 if (waiter.TrySetResult(connection))
