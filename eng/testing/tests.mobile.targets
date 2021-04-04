@@ -9,6 +9,7 @@
     <UseDefaultBlazorWASMFeatureSwitches Condition="'$(UseDefaultBlazorWASMFeatureSwitches)' == ''">true</UseDefaultBlazorWASMFeatureSwitches>
     <UseDefaultAndroidFeatureSwitches Condition="'$(UseDefaultAndroidFeatureSwitches)' == ''">true</UseDefaultAndroidFeatureSwitches>
     <UseDefaultiOSFeatureSwitches Condition="'$(UseDefaultiOSFeatureSwitches)' == ''">true</UseDefaultiOSFeatureSwitches>
+    <BundleTestAppTargets>BundleTestAppleApp;BundleTestAndroidApp</BundleTestAppTargets>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android' and '$(UseDefaultAndroidFeatureSwitches)' == 'true'">
@@ -254,7 +255,7 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
+          DependsOnTargets="Publish;$(BundleTestAppTargets);ArchiveTests" />
 
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(SkipImportRepoLinkerTargets)' != 'true'" />
 </Project>
