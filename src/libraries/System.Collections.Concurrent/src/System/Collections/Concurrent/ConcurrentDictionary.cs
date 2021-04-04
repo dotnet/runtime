@@ -39,7 +39,7 @@ namespace System.Collections.Concurrent
         /// When choosing this value, we are making a trade-off between the size of a very small dictionary,
         /// and the number of resizes when constructing a large dictionary.
         /// </remarks>
-        private const int DefaultCapacity = 8;
+        private const int DefaultCapacity = 0;
 
         /// <summary>Concurrency level is ignored. However it must be > 0.</summary>
         private static int DefaultConcurrencyLevel => 1;
@@ -143,6 +143,26 @@ namespace System.Collections.Concurrent
             }
         }
 
+        // We want to call DictionaryImpl.CreateRef<TKey, TValue>(topDict, capacity)
+        // TKey is a reference type, but that is not statically known, so
+        // we use the following to get around "as class" contraint.
+        internal static Func<ConcurrentDictionary<TKey, TValue>, int, DictionaryImpl<TKey, TValue>> CreateRefUnsafe =
+            (ConcurrentDictionary<TKey, TValue> topDict, int capacity) =>
+            {
+                var method = typeof(DictionaryImpl).
+                    GetMethod("CreateRef", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).
+                    MakeGenericMethod(new Type[] { typeof(TKey), typeof(TValue) });
+
+                var del = (Func<ConcurrentDictionary<TKey, TValue>, int, DictionaryImpl<TKey, TValue>>)Delegate.CreateDelegate(
+                    typeof(Func<ConcurrentDictionary<TKey, TValue>, int, DictionaryImpl<TKey, TValue>>),
+                    method);
+
+                var result = del(topDict, capacity);
+                CreateRefUnsafe = del;
+
+                return result;
+            };
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ConcurrentDictionary{TKey,TValue}"/>
         /// class that is empty, has the specified concurrency level, has the specified initial capacity, and
@@ -163,9 +183,12 @@ namespace System.Collections.Concurrent
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ConcurrentDictionary_CapacityMustNotBeNegative);
             }
 
+            // add some extra so that filled to capacity would be at nice 75% density
+            capacity = Math.Max(capacity, capacity + capacity / 2);
+
             if (!typeof(TKey).IsValueType)
             {
-                _table = DictionaryImpl<TKey, TValue>.CreateRefUnsafe(this, capacity);
+                _table = CreateRefUnsafe(this, capacity);
                 _table._keyComparer = comparer ?? EqualityComparer<TKey>.Default;
                 return;
             }

@@ -16,26 +16,6 @@ namespace System.Collections.Concurrent
     {
         internal IEqualityComparer<TKey> _keyComparer;
 
-        // We want to call DictionaryImpl.CreateRef<TKey, TValue>(topDict, capacity)
-        // TKey is a reference type, but that is not statically known, so
-        // we use the following to get around "as class" contraint.
-        internal static Func<ConcurrentDictionary<TKey, TValue>, int, DictionaryImpl<TKey, TValue>> CreateRefUnsafe =
-            (ConcurrentDictionary<TKey, TValue> topDict, int capacity) =>
-            {
-                var method = typeof(DictionaryImpl).
-                    GetMethod("CreateRef", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).
-                    MakeGenericMethod(new Type[] { typeof(TKey), typeof(TValue) });
-
-                var del = (Func<ConcurrentDictionary<TKey, TValue>, int, DictionaryImpl<TKey, TValue>>)Delegate.CreateDelegate(
-                    typeof(Func<ConcurrentDictionary<TKey, TValue>, int, DictionaryImpl<TKey, TValue>>),
-                    method);
-
-                var result = del(topDict, capacity);
-                CreateRefUnsafe = del;
-
-                return result;
-            };
-
         internal DictionaryImpl() { }
 
         internal abstract void Clear();
