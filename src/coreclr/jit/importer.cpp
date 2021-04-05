@@ -2834,7 +2834,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         /* Create extra basic block for the spill */
         BasicBlock* newBlk = fgNewBBbefore(BBJ_NONE, hndBlk, /* extendRegion */ true);
         newBlk->bbFlags |= BBF_IMPORTED | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET;
-        newBlk->setBBWeight(hndBlk->bbWeight);
+        newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
         /* Account for the new link we are about to create */
@@ -10333,7 +10333,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                     BasicBlock* step2 = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
                     step->bbJumpDest  = step2;
                     step->bbJumpDest->bbRefs++;
-                    step2->setBBWeight(block->bbWeight);
+                    step2->inheritWeight(block);
                     step2->bbFlags |= (block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED;
 
 #ifdef DEBUG
