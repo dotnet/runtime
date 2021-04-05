@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <stdlib.h>
+
 #import <UIKit/UIKit.h>
 #import "runtime.h"
 
@@ -24,6 +26,7 @@
 
 UILabel *label;
 void (*clickHandlerPtr)(void);
+void (*clickHandlerApplyUpdatePtr)(void);
 
 @implementation ViewController
 
@@ -35,14 +38,22 @@ void (*clickHandlerPtr)(void);
     label.font = [UIFont boldSystemFontOfSize: 30];
     label.numberOfLines = 2;
     label.textAlignment = NSTextAlignmentCenter;
+    label.text = @"Hello, wire me up!\n(dllimport ios_set_text)";
     [self.view addSubview:label];
     
     UIButton *button = [UIButton buttonWithType:UIButtonTypeInfoDark];
     [button addTarget:self action:@selector(buttonClicked:) forControlEvents:UIControlEventTouchUpInside];
-    [button setFrame:CGRectMake(50, 300, 200, 50)];
-    [button setTitle:@"Click me" forState:UIControlStateNormal];
+    [button setFrame:CGRectMake(50, 250, 200, 50)];
+    [button setTitle:@"Click me (wire me up)" forState:UIControlStateNormal];
     [button setExclusiveTouch:YES];
     [self.view addSubview:button];
+
+    UIButton *apply_button = [UIButton buttonWithType:UIButtonTypeInfoDark];
+    [apply_button addTarget:self action:@selector(applyUpdateButtonClicked:) forControlEvents:UIControlEventTouchUpInside];
+    [apply_button setFrame:CGRectMake(50, 300, 200, 50)];
+    [apply_button setTitle:@"ApplyUpdate" forState:UIControlStateNormal];
+    [apply_button setExclusiveTouch:YES];
+    [self.view addSubview:apply_button];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         mono_ios_runtime_init ();
@@ -54,6 +65,12 @@ void (*clickHandlerPtr)(void);
         clickHandlerPtr();
 }
 
+-(void) applyUpdateButtonClicked:(UIButton*)sender
+{
+    if (clickHandlerApplyUpdatePtr)
+        clickHandlerApplyUpdatePtr();
+}
+
 @end
 
 // called from C# sample
@@ -61,6 +78,13 @@ void
 ios_register_button_click (void* ptr)
 {
     clickHandlerPtr = ptr;
+}
+
+// called from C# sample
+void
+ios_register_applyupdate_click (void* ptr)
+{
+    clickHandlerApplyUpdatePtr = ptr;
 }
 
 // called from C# sample
@@ -75,6 +99,8 @@ ios_set_text (const char* value)
 
 int main(int argc, char * argv[]) {
     @autoreleasepool {
+        setenv("DOTNET_MODIFIABLE_ASSEMBLIES", "Debug", 1);
         return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
     }
 }
+

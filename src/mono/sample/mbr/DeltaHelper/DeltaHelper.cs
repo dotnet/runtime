@@ -48,7 +48,8 @@ namespace MonoDelta {
 
         private static void LoadMetadataUpdate (Assembly assm, byte[] dmeta_data, byte[] dil_data, byte[] dpdb_data)
         {
-            UpdateMethod (assm, dmeta_data, dil_data, dpdb_data);
+            // UpdateMethod (assm, dmeta_data, dil_data, dpdb_data);
+	    System.Reflection.Metadata.AssemblyExtensions.ApplyUpdate (assm, dmeta_data, dil_data, dpdb_data);
         }
 
         DeltaHelper () { }
