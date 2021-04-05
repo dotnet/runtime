@@ -8996,7 +8996,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     if (tree->AsOp()->gtOp1 == nullptr)
     {
         // Currently we don't have intrinsics with variable number of args with a parameter-less option.
-        assert(!isVariableNumArgs); 
+        assert(!isVariableNumArgs);
 
         if (encodeResultType)
         {
