@@ -593,11 +593,13 @@ namespace Microsoft.Extensions.Configuration
                 throw new ArgumentNullException(nameof(property));
             }
 
+            // Check for a custom property name used for configuration key binding
             foreach (var attributeData in property.GetCustomAttributesData())
             {
                 if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute) ||
                     attributeData.ConstructorArguments.Count == 0)
                 {
+                    // ConfigurationKeyName expected to have a single string constructor argument
                     continue;
                 }
 
@@ -605,14 +607,18 @@ namespace Microsoft.Extensions.Configuration
                 if (constructorArgument.ArgumentType != typeof(string) ||
                     constructorArgument.Value == null)
                 {
-                    continue;
+                    // First argument didn't contain the expected string value
+                    break;
                 }
 
-                string value = constructorArgument.Value.ToString();
-                if (!string.IsNullOrWhiteSpace(value))
+                string name = constructorArgument.Value.ToString();
+                if (!string.IsNullOrWhiteSpace(name))
                 {
-                    return value;
+                    return name;
                 }
+
+                // No custom string "name" provided - we're done here.
+                break;
             }
 
             return property.Name;
