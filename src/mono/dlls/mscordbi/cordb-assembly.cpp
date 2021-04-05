@@ -329,17 +329,19 @@ HRESULT CordbModule::GetFunctionFromToken(mdMethodDef methodDef, ICorDebugFuncti
         m_dbgprot_buffer_free(&localbuf);
 
         ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
-
-        int            id   = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
-        CordbFunction* func = NULL;
-        func                = m_pProcess->FindFunction(id);
-        if (func == NULL)
+        if (received_reply_packet->Error() == 0 && received_reply_packet->Error2() == 0)
         {
-            func = new CordbFunction(conn, methodDef, id, this);
+            MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+            int            id = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+            CordbFunction* func = NULL;
+            func = m_pProcess->FindFunction(id);
+            if (func == NULL)
+            {
+                func = new CordbFunction(conn, methodDef, id, this);
+            }
+            func->QueryInterface(IID_ICorDebugFunction, (void**)ppFunction);
         }
-        func->QueryInterface(IID_ICorDebugFunction, (void**)ppFunction);
     }
     EX_CATCH_HRESULT(hr);
     return hr;

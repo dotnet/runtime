@@ -308,6 +308,9 @@ typedef struct {
 #define CHECK_PROTOCOL_VERSION(major,minor) \
 	(protocol_version_set && (major_version > (major) || (major_version == (major) && minor_version >= (minor))))
 
+#define CHECK_ICORDBG(status) \
+	(protocol_version_set && using_icordbg == status)
+
 /*
  * Globals
  */
@@ -381,6 +384,9 @@ static MonoCoopMutex debugger_thread_exited_mutex;
 
 /* The protocol version of the client */
 static int major_version, minor_version;
+
+/* If the debugger is using icordbg interface */
+static gboolean using_icordbg;
 
 /* Whenever the variables above are set by the client */
 static gboolean protocol_version_set;
@@ -1377,6 +1383,7 @@ transport_handshake (void)
 	 */
 	major_version = MAJOR_VERSION;
 	minor_version = MINOR_VERSION;
+	using_icordbg = FALSE;
 	protocol_version_set = FALSE;
 
 #ifndef DISABLE_SOCKET_TRANSPORT
@@ -4983,7 +4990,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		return;
 	}
 
-	if (agent_config.using_icordbg) {
+	if (CHECK_ICORDBG (TRUE)) {
 		switch (t->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -5073,7 +5080,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 				buffer_add_byte (buf, m_class_get_byval_arg (obj->vtable->klass)->type);
 			}
 			buffer_add_objid (buf, obj);
-			if (agent_config.using_icordbg)
+			if (CHECK_ICORDBG (TRUE))
 				buffer_add_long (buf, (gssize) addr);
 		}
 		break;
@@ -6584,6 +6591,8 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_VM_SET_PROTOCOL_VERSION: {
 		major_version = decode_int (p, &p, end);
 		minor_version = decode_int (p, &p, end);
+		if (p <= end)
+			using_icordbg = decode_byte (p, &p, end);
 		protocol_version_set = TRUE;
 		PRINT_DEBUG_MSG (1, "[dbg] Protocol version %d.%d, client protocol version %d.%d.\n", MAJOR_VERSION, MINOR_VERSION, major_version, minor_version);
 		break;
@@ -6909,10 +6918,6 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		int size = decode_int (p, &p, end);
 		PRINT_DEBUG_MSG(1, "MDBGPROT_CMD_VM_READ_MEMORY - [%p] - size - %d\n", memory, size);
 		buffer_add_byte_array (buf, memory, size);
-		break;
-	}
-	case MDBGPROT_CMD_VM_SET_USING_ICORDBG: {
-		agent_config.using_icordbg = TRUE;
 		break;
 	}
 	default:
@@ -7528,18 +7533,12 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (ass->dynamic) {
 		    return ERR_NOT_IMPLEMENTED;
 		}
+
 		// Mdbg uses arithmetics with this pointer and RVA to get information using readmemory, 
 		// but it doesn't work on mono, it should call mono_cli_rva_image_map to get the right offset and don't use pure RVA.
-		// To workaround it, I'm creating a buffer with the full file content and returning this address, this is not okay for memory
-		// usage, but it will work for now.
-		HMODULE module_handle;
-		gunichar2 *file16;
-		file16 = u8to16(mono_image_get_filename (ass->image)); 
-		module_handle = LoadLibrary (file16);
-		g_free(file16);
-
-		PRINT_DEBUG_MSG(1, "MDBGPROT_CMD_ASSEMBLY_GET_PEIMAGE_ADDRESS - [%p] - %d\n", module_handle, image->raw_data_len);
-		buffer_add_long (buf, (gssize)module_handle);
+		// To run the tests I changed mdbg but maybe in future we may need to find another solution
+		// PRINT_DEBUG_MSG(1, "MDBGPROT_CMD_ASSEMBLY_GET_PEIMAGE_ADDRESS - [%p] - %d\n", module_handle, image->raw_data_len);
+		buffer_add_long (buf, (gssize)image->raw_data);
 		buffer_add_int (buf, image->raw_data_len);
         break;
 	}
@@ -7689,7 +7688,7 @@ static int get_static_field_value(MonoClassField* f, MonoClass* klass, MonoDomai
 	if (!is_ok(error))
 		return -1;
 
-	if (agent_config.using_icordbg)
+	if (CHECK_ICORDBG (TRUE))
 	{
 		void *src;
 		if (f->type->attrs & FIELD_ATTRIBUTE_LITERAL) {
