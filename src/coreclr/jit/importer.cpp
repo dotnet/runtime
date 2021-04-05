@@ -1311,7 +1311,41 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             {
                 if (callConvIsInstanceMethodCallConv(srcCall->GetUnmanagedCallConv()))
                 {
+#ifdef TARGET_X86
+                    // The argument list has already been reversed.
+                    // Insert the return buffer as the second-to-last node
+                    // so it will be pushed on to the stack after the user args but before the native this arg
+                    // as required by the native ABI.
+                    GenTreeCall::Use* lastArg = srcCall->gtCallArgs;
+                    if (lastArg == nullptr)
+                    {
+                        srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, srcCall->gtCallArgs);
+                    }
+                    else if (srcCall->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall)
+                    {
+                        // For thiscall, the "this" parameter is not included in the argument list reversal,
+                        // so we need to put the return buffer as the last parameter.
+                        for (; lastArg->GetNext() != nullptr; lastArg = lastArg->GetNext())
+                            ;
+                        gtInsertNewCallArgAfter(destAddr, lastArg);
+                    }
+                    else if (lastArg->GetNext() == nullptr)
+                    {
+                        srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, lastArg);
+                    }
+                    else
+                    {
+                        assert(lastArg != nullptr && lastArg->GetNext() != nullptr);
+                        GenTreeCall::Use* secondLastArg = lastArg;
+                        lastArg                         = lastArg->GetNext();
+                        for (; lastArg->GetNext() != nullptr; secondLastArg = lastArg, lastArg = lastArg->GetNext())
+                            ;
+                        assert(secondLastArg->GetNext() != nullptr);
+                        gtInsertNewCallArgAfter(destAddr, secondLastArg);
+                    }
+#else
                     GenTreeCall::Use* thisArg = gtInsertNewCallArgAfter(destAddr, srcCall->gtCallArgs);
+#endif
                 }
                 else
                 {
@@ -2800,7 +2834,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         /* Create extra basic block for the spill */
         BasicBlock* newBlk = fgNewBBbefore(BBJ_NONE, hndBlk, /* extendRegion */ true);
         newBlk->bbFlags |= BBF_IMPORTED | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET;
-        newBlk->setBBWeight(hndBlk->bbWeight);
+        newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
         /* Account for the new link we are about to create */
@@ -7141,8 +7175,11 @@ void Compiler::impCheckForPInvokeCall(
         call->gtCallMoreFlags |= GTF_CALL_M_SUPPRESS_GC_TRANSITION;
     }
 
-    if (unmanagedCallConv != CorInfoCallConvExtension::C && unmanagedCallConv != CorInfoCallConvExtension::Stdcall &&
-        unmanagedCallConv != CorInfoCallConvExtension::Thiscall)
+    // If we can't get the unmanaged calling convention or the calling convention is unsupported in the JIT,
+    // return here without inlining the native call.
+    if (unmanagedCallConv == CorInfoCallConvExtension::Managed ||
+        unmanagedCallConv == CorInfoCallConvExtension::Fastcall ||
+        unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
     {
         return;
     }
@@ -7206,7 +7243,8 @@ void Compiler::impCheckForPInvokeCall(
     }
 
     // AMD64 convention is same for native and managed
-    if (unmanagedCallConv == CorInfoCallConvExtension::C)
+    if (unmanagedCallConv == CorInfoCallConvExtension::C ||
+        unmanagedCallConv == CorInfoCallConvExtension::CMemberFunction)
     {
         call->gtFlags |= GTF_CALL_POP_ARGS;
     }
@@ -10285,7 +10323,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                     BasicBlock* step2 = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
                     step->bbJumpDest  = step2;
                     step->bbJumpDest->bbRefs++;
-                    step2->setBBWeight(block->bbWeight);
+                    step2->inheritWeight(block);
                     step2->bbFlags |= (block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED;
 
 #ifdef DEBUG
@@ -21523,12 +21561,12 @@ void Compiler::considerGuardedDevirtualization(
 
     JITDUMP("Considering guarded devirtualization\n");
 
-    // We currently only get likely class guesses when there is PGO data. So if we've disabled
-    // PGO, just bail out.
-
-    if (JitConfig.JitDisablePGO() != 0)
+    // We currently only get likely class guesses when there is PGO data
+    // with class profiles.
+    //
+    if (fgPgoClassProfiles == 0)
     {
-        JITDUMP("Not guessing for class; pgo disabled\n");
+        JITDUMP("Not guessing for class: no class profile pgo data, or pgo disabled\n");
         return;
     }
 

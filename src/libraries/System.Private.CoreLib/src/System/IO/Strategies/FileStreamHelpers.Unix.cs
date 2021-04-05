@@ -15,10 +15,10 @@ namespace System.IO.Strategies
     {
         // in the future we are most probably going to introduce more strategies (io_uring etc)
         private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
-            => new LegacyFileStreamStrategy(handle, access, bufferSize, isAsync);
+            => new Net5CompatFileStreamStrategy(handle, access, bufferSize, isAsync);
 
         private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new LegacyFileStreamStrategy(path, mode, access, share, bufferSize, options);
+            => new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options);
 
         internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {

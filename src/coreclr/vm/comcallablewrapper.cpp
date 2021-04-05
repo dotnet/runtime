@@ -4192,11 +4192,6 @@ BOOL ComCallWrapperTemplate::IsSafeTypeForMarshalling()
         return TRUE;
     }
 
-    if ((CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AllowDComReflection) != 0))
-    {
-        return TRUE;
-    }
-
     BOOL isSafe = TRUE;
     PTR_MethodTable pMt = this->GetClassType().GetMethodTable();
     EX_TRY

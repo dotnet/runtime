@@ -2879,17 +2879,38 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             fgPgoData       = nullptr;
             fgPgoSchema     = nullptr;
         }
-        // Optionally, discard the profile data.
+        // Optionally, disable use of profile data.
         //
-        else if (JitConfig.JitDisablePGO() != 0)
+        else if (JitConfig.JitDisablePgo() > 0)
         {
-            fgPgoFailReason  = "PGO data available, but JitDisablePGO != 0";
+            fgPgoFailReason  = "PGO data available, but JitDisablePgo > 0";
             fgPgoQueryResult = E_FAIL;
             fgPgoData        = nullptr;
             fgPgoSchema      = nullptr;
+            fgPgoDisabled    = true;
+        }
+#ifdef DEBUG
+        // Optionally, enable use of profile data for only some methods.
+        //
+        else
+        {
+            static ConfigMethodRange JitEnablePgoRange;
+            JitEnablePgoRange.EnsureInit(JitConfig.JitEnablePgoRange());
+
+            // Base this decision on the root method hash, so a method either sees all available
+            // profile data (including that for inlinees), or none of it.
+            //
+            const unsigned hash = impInlineRoot()->info.compMethodHash();
+            if (!JitEnablePgoRange.Contains(hash))
+            {
+                fgPgoFailReason  = "PGO data available, but method hash NOT within JitEnablePgoRange";
+                fgPgoQueryResult = E_FAIL;
+                fgPgoData        = nullptr;
+                fgPgoSchema      = nullptr;
+                fgPgoDisabled    = true;
+            }
         }
 
-#ifdef DEBUG
         // A successful result implies a non-NULL fgPgoSchema
         //
         if (SUCCEEDED(fgPgoQueryResult))

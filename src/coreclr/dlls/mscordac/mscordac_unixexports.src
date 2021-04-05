@@ -107,6 +107,7 @@ nativeStringResourceTable_mscorrc
 #FlushFileBuffers
 #FlushInstructionCache
 #FormatMessageW
+#FreeEnvironmentStringsW
 #FreeLibrary
 #FileTimeToSystemTime
 #GetACP
@@ -114,6 +115,7 @@ nativeStringResourceTable_mscorrc
 #GetCurrentProcess
 #GetCurrentProcessId
 #GetCurrentThreadId
+#GetEnvironmentStringsW
 #GetEnvironmentVariableA
 #GetEnvironmentVariableW
 #GetFileAttributesExW

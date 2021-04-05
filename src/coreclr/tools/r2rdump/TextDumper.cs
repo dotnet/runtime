@@ -150,9 +150,12 @@ namespace R2RDump
 
             if (_options.Pgo)
             {
-                foreach (PgoInfo info in _r2r.AllPgoInfos)
+                if (_r2r != null)
                 {
-                    pgoEntriesNotDumped.Add(info.Key);
+                    foreach (PgoInfo info in _r2r.AllPgoInfos)
+                    {
+                        pgoEntriesNotDumped.Add(info.Key);
+                    }
                 }
             }
             foreach (ReadyToRunMethod method in NormalizedMethods())

@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Text;
 
 namespace System
 {
@@ -323,14 +322,16 @@ namespace System
                 _remoteStackTraceString, _ipForWatsonBuckets, _watsonBuckets);
         }
 
-        [StackTraceHidden]
-        internal void SetCurrentStackTrace()
+        // Returns true if setting the _remoteStackTraceString field is legal, false if not (immutable exception).
+        // A false return value means the caller should early-exit the operation.
+        // Can also throw InvalidOperationException if a stack trace is already set or if object has been thrown.
+        private bool CanSetRemoteStackTrace()
         {
             // If this is a preallocated singleton exception, silently skip the operation,
             // regardless of the value of throwIfHasExistingStack.
             if (IsImmutableAgileException(this))
             {
-                return;
+                return false;
             }
 
             // Check to see if the exception already has a stack set in it.
@@ -339,13 +340,7 @@ namespace System
                 ThrowHelper.ThrowInvalidOperationException();
             }
 
-            // Store the current stack trace into the "remote" stack trace, which was originally introduced to support
-            // remoting of exceptions cross app-domain boundaries, and is thus concatenated into Exception.StackTrace
-            // when it's retrieved.
-            var sb = new StringBuilder(256);
-            new StackTrace(fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.TrailingNewLine, sb);
-            sb.AppendLine(SR.Exception_EndStackTraceFromPreviousThrow);
-            _remoteStackTraceString = sb.ToString();
+            return true;
         }
     }
 }

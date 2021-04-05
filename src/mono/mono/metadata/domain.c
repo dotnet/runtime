@@ -47,6 +47,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
+#include <mono/metadata/jit-info.h>
 #include <mono/utils/mono-experiments.h>
 #include <mono/utils/w32subset.h>
 #include "external-only.h"
@@ -314,8 +315,6 @@ mono_domain_create (void)
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
 	domain->domain_assemblies = NULL;
-
-	mono_coop_mutex_init_recursive (&domain->lock);
 
 	mono_coop_mutex_init_recursive (&domain->assemblies_lock);
 
@@ -1254,18 +1253,6 @@ const MonoRuntimeInfo*
 mono_get_runtime_info (void)
 {
 	return current_runtime;
-}
-
-void
-mono_domain_lock (MonoDomain *domain)
-{
-	mono_locks_coop_acquire (&domain->lock, DomainLock);
-}
-
-void
-mono_domain_unlock (MonoDomain *domain)
-{
-	mono_locks_coop_release (&domain->lock, DomainLock);
 }
 
 GPtrArray*

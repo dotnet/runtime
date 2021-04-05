@@ -94,6 +94,7 @@ set(metadata_common_sources
     icall-eventpipe.c
     image.c
     image-internals.h
+    jit-info.h
     jit-info.c
     loader.c
     lock-tracer.c

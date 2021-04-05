@@ -13702,6 +13702,10 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 #if defined(TARGET_WASM)
 		{ "simd",	MONO_CPU_WASM_SIMD },
 #endif
+// flags_map cannot be zero length in MSVC, so add useless dummy entry for arm32
+#if defined(TARGET_ARM) && defined(HOST_WIN32)
+		{ "inited",	MONO_CPU_INITED},
+#endif
 	};
 	if (!cpu_features)
 		cpu_features = MONO_CPU_INITED | (MonoCPUFeatures)mono_llvm_check_cpu_features (flags_map, G_N_ELEMENTS (flags_map));

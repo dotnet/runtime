@@ -9590,7 +9590,19 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
     // guarantee slow performance for that block. Instead cache the return value
     // of CORINFO_HELP_STRCNS and go to cache first giving reasonable perf.
 
+    bool useLazyStrCns = false;
     if (compCurBB->bbJumpKind == BBJ_THROW)
+    {
+        useLazyStrCns = true;
+    }
+    else if (fgGlobalMorph && compCurStmt->GetRootNode()->IsCall())
+    {
+        // Quick check: if the root node of the current statement happens to be a noreturn call.
+        GenTreeCall* call = compCurStmt->GetRootNode()->AsCall();
+        useLazyStrCns     = call->IsNoReturn() || fgIsThrow(call);
+    }
+
+    if (useLazyStrCns)
     {
         CorInfoHelpFunc helper = info.compCompHnd->getLazyStringLiteralHelper(tree->AsStrCon()->gtScpHnd);
         if (helper != CORINFO_HELP_UNDEF)
@@ -14413,8 +14425,12 @@ DONE_MORPHING_CHILDREN:
 
         case GT_NOT:
         case GT_NEG:
-            // Remove double negation/not
-            if (op1->OperIs(oper) && opts.OptimizationEnabled())
+            // Remove double negation/not.
+            // Note: this is not a safe tranformation if "tree" is a CSE candidate.
+            // Consider for example the following expression: NEG(NEG(OP)), where the top-level
+            // NEG is a CSE candidate. Were we to morph this to just OP, CSE would fail to find
+            // the original NEG in the statement.
+            if (op1->OperIs(oper) && opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree))
             {
                 GenTree* child = op1->AsOp()->gtGetOp1();
                 return child;

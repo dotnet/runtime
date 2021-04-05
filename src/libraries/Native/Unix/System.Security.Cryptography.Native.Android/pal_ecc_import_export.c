@@ -240,10 +240,12 @@ error:
     ReleaseGRef(env, *seed);
     *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
 
-    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
+    // Clear local BigInteger instances. On success, these are converted to global
+    // references for the out variables, so the local release is only on error.
     RELEASE_LOCALS_ENV(bn, ReleaseLRef);
 
 exit:
+    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
     return rc;
 }
 

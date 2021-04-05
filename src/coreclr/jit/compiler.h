@@ -5646,6 +5646,7 @@ protected:
 
 public:
     const char*                            fgPgoFailReason;
+    bool                                   fgPgoDisabled;
     ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
     BYTE*                                  fgPgoData;
     UINT32                                 fgPgoSchemaCount;
@@ -5654,6 +5655,9 @@ public:
     UINT32                                 fgPgoBlockCounts;
     UINT32                                 fgPgoEdgeCounts;
     UINT32                                 fgPgoClassProfiles;
+    unsigned                               fgPgoInlineePgo;
+    unsigned                               fgPgoInlineeNoPgo;
+    unsigned                               fgPgoInlineeNoPgoSingleBlock;
 
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
     void fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t weight);

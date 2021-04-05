@@ -639,10 +639,12 @@ append_imethod (MonoMemoryManager *memory_manager, GSList *list, InterpMethod *i
 	GSList *ret;
 	InterpVTableEntry *entry;
 
-	entry = (InterpVTableEntry*) mono_mem_manager_alloc_nolock (memory_manager, sizeof (InterpVTableEntry));
+	entry = (InterpVTableEntry*) mono_mem_manager_alloc0 (memory_manager, sizeof (InterpVTableEntry));
 	entry->imethod = imethod;
 	entry->target_imethod = target_imethod;
-	ret = g_slist_append_mempool (memory_manager->mp, list, entry);
+	ret = mono_mem_manager_alloc0 (memory_manager, sizeof (GSList));
+	ret->data = entry;
+	ret = g_slist_concat (list, ret);
 
 	return ret;
 }
@@ -693,11 +695,11 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 
 	if (!table) {
 		/* Lazily allocate method table */
-		mono_domain_lock (vtable->domain);
+		mono_mem_manager_lock (memory_manager);
 		table = get_method_table (vtable, offset);
 		if (!table)
 			table = alloc_method_table (vtable, offset);
-		mono_domain_unlock (vtable->domain);
+		mono_mem_manager_unlock (memory_manager);
 	}
 
 	if (!table [offset]) {
@@ -3205,10 +3207,6 @@ main_loop:
 			++ip;
 			mono_break ();
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDNULL)
-			LOCAL_VAR (ip [1], gpointer) = NULL;
-			ip += 2;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_INIT_ARGLIST) {
 			const guint16 *call_ip = frame->parent->state.ip - 6;
 			g_assert_checked (*call_ip == MINT_CALL_VARARG);
@@ -3265,6 +3263,10 @@ main_loop:
 		MINT_IN_CASE(MINT_LDC_I4)
 			LOCAL_VAR (ip [1], gint32) = READ32 (ip + 2);
 			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDC_I8_0)
+			LOCAL_VAR (ip [1], gint64) = 0;
+			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDC_I8)
 			LOCAL_VAR (ip [1], gint64) = READ64 (ip + 2);
@@ -3623,6 +3625,12 @@ call:
 		}
 		MINT_IN_CASE(MINT_RET)
 			frame->retval [0] = LOCAL_VAR (ip [1], stackval);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_I4_IMM)
+			frame->retval [0].data.i = (gint16)ip [1];
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_I8_IMM)
+			frame->retval [0].data.l = (gint16)ip [1];
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VOID)
 			goto exit_frame;
@@ -4324,9 +4332,17 @@ call:
 			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) + 1;
 			ip += 3;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ADD_I4_IMM)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) + (gint16)ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD1_I8)
 			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) + 1;
 			ip += 3;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ADD_I8_IMM)
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) + (gint16)ip [3];
+			ip += 4;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SUB_I4)
 			BINOP(gint32, -);
@@ -4490,6 +4506,30 @@ call:
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SHR_UN_I8)
 			SHIFTOP(guint64, >>);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHL_I4_IMM)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) << ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHL_I8_IMM)
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) << ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHR_I4_IMM)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) >> ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHR_I8_IMM)
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) >> ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHR_UN_I4_IMM)
+			LOCAL_VAR (ip [1], guint32) = LOCAL_VAR (ip [2], guint32) >> ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHR_UN_I8_IMM)
+			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64) >> ip [3];
+			ip += 4;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_NEG_I4)
 			LOCAL_VAR (ip [1], gint32) = - LOCAL_VAR (ip [2], gint32);
@@ -4858,7 +4898,7 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_MARVIN_BLOCK) {
-			interp_intrins_marvin_block (LOCAL_VAR (ip [1], guint32*), LOCAL_VAR (ip [2], guint32*));
+			interp_intrins_marvin_block ((guint32*)(locals + ip [1]), (guint32*)(locals + ip [2]));
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -6419,15 +6459,17 @@ call:
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_PROF_EXIT) {
-			guint16 flag = ip [2];
+		MINT_IN_CASE(MINT_PROF_EXIT)
+		MINT_IN_CASE(MINT_PROF_EXIT_VOID) {
+			gboolean is_void = ip [0] == MINT_PROF_EXIT_VOID;
+			guint16 flag = is_void ? ip [1] : ip [2];
 			// Set retval
-			int i32 = READ32 (ip + 3);
-			if (i32 == -1) {
-			} else if (i32) {
-				memmove (frame->retval, locals + ip [1], i32);
-			} else {
-				frame->retval [0] = LOCAL_VAR (ip [1], stackval);
+			if (!is_void) {
+				int i32 = READ32 (ip + 3);
+				if (i32)
+					memmove (frame->retval, locals + ip [1], i32);
+				else
+					frame->retval [0] = LOCAL_VAR (ip [1], stackval);
 			}
 
 			if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_leave) &&
@@ -6435,7 +6477,7 @@ call:
 				MonoProfilerCallContext *prof_ctx = g_new0 (MonoProfilerCallContext, 1);
 				prof_ctx->interp_frame = frame;
 				prof_ctx->method = frame->imethod->method;
-				if (i32 != -1)
+				if (!is_void)
 					prof_ctx->return_value = frame->retval;
 				if (flag & TRACING_FLAG)
 					mono_trace_leave_method (frame->imethod->method, frame->imethod->jinfo, prof_ctx);
@@ -7184,7 +7226,7 @@ imethod_opcount_comparer (gconstpointer m1, gconstpointer m2)
 static void
 interp_print_method_counts (void)
 {
-	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 
 	jit_mm_lock (jit_mm);
 	imethods = (InterpMethod**) malloc (jit_mm->interp_code_hash.num_entries * sizeof (InterpMethod*));
