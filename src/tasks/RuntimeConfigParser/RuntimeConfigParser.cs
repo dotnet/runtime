@@ -139,26 +139,24 @@ public class StringConverter : JsonConverter<string>
 {
     public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (reader.TokenType == JsonTokenType.Number)
+        switch (reader.TokenType)
         {
-            var stringValue = reader.GetInt32();
-            return stringValue.ToString();
-        }
-        else if (reader.TokenType == JsonTokenType.True)
-        {
-            return "true";
-        }
-        else if (reader.TokenType == JsonTokenType.False)
-        {
-            return "false";
-        }
-        else if (reader.TokenType == JsonTokenType.String)
-        {
-            var stringValue = reader.GetString();
-            if (stringValue != null)
-            {
-                return stringValue;
-            }
+            case JsonTokenType.Number:
+                var stringValueInt = reader.GetInt32();
+                return stringValueInt.ToString();
+            case JsonTokenType.True:
+                return "true";
+            case JsonTokenType.False:
+                return "false";
+            case JsonTokenType.String:
+                var stringValue = reader.GetString();
+                if (stringValue != null)
+                {
+                    return stringValue;
+                }
+                break;
+            default:
+                throw new System.Text.Json.JsonException();
         }
 
         throw new System.Text.Json.JsonException();
