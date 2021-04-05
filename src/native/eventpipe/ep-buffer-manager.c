@@ -888,6 +888,8 @@ ep_buffer_manager_write_event (
 	bool alloc_new_buffer = false;
 	EventPipeBuffer *buffer = NULL;
 	EventPipeThreadSessionState *session_state = NULL;
+	EventPipeStackContents stack_contents;
+	EventPipeStackContents *current_stack_contents = nullptr;
 
 	EP_ASSERT (buffer_manager != NULL);
 	EP_ASSERT (ep_event != NULL);
@@ -915,8 +917,6 @@ ep_buffer_manager_write_event (
 	if (event_thread == NULL)
 		event_thread = thread;
 
-	EventPipeStackContents stack_contents;
-	EventPipeStackContents *current_stack_contents;
 	current_stack_contents = ep_stack_contents_init (&stack_contents);
 	if (stack == NULL && ep_event_get_need_stack (ep_event) && !ep_session_get_rundown_enabled (session)) {
 		ep_walk_managed_stack_for_current_thread (current_stack_contents);
