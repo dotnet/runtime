@@ -206,6 +206,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildWasmAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50705 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
+
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.FileExtensions\tests\Microsoft.Extensions.Configuration.FileExtensions.Tests.csproj" />-->
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration\tests\Microsoft.Extensions.Configuration.Tests.csproj" />-->
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />-->
@@ -220,7 +223,6 @@
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\System.Diagnostics.DiagnosticSource.Tests.csproj" />-->
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime\tests\System.Dynamic.Runtime.Tests.csproj" />-->
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />-->
-    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />-->
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Queryable\tests\System.Linq.Queryable.Tests.csproj" />-->
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives\tests\FunctionalTests\System.Net.Primitives.Functional.Tests.csproj" />-->
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Reader\tests\System.Resources.Reader.Tests.csproj" />-->
