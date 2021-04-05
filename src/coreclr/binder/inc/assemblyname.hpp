@@ -39,13 +39,11 @@ namespace BINDER_SPACE
         } INCLUDE_FLAGS;
 
         AssemblyName();
-        ~AssemblyName();
 
         HRESULT Init(/* in */ IMDInternalImport       *pIMetaDataAssemblyImport,
                      /* in */ PEKIND                   PeKind,
                      /* in */ mdAssemblyRef            mda = 0,
                      /* in */ BOOL                     fIsDefinition = TRUE);
-        HRESULT Init(/* in */ SString &assemblyDisplayName);
         HRESULT Init(/* in */ const AssemblyNameData &data);
 
         ULONG AddRef();
@@ -67,8 +65,6 @@ namespace BINDER_SPACE
         inline void SetIsRetargetable(BOOL fIsRetargetable);
         inline BOOL GetIsDefinition();
         inline void SetIsDefinition(BOOL fIsDefinition);
-
-        inline void SetHave(DWORD dwIdentityFlags);
 
         BOOL IsCoreLib();
         bool IsNeutralCulture();

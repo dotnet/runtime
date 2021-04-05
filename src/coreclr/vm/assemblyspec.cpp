@@ -888,9 +888,7 @@ HRESULT AssemblySpec::CheckFriendAssemblyName()
 
 HRESULT AssemblySpec::EmitToken(
     IMetaDataAssemblyEmit *pEmit,
-    mdAssemblyRef *pToken,
-    BOOL fUsePublicKeyToken, /*=TRUE*/
-    BOOL fMustBeBindable /*=FALSE*/)
+    mdAssemblyRef *pToken)
 {
     CONTRACTL
     {
@@ -931,7 +929,7 @@ HRESULT AssemblySpec::EmitToken(
 
         // If we've been asked to emit a public key token in the reference but we've
         // been given a public key then we need to generate the token now.
-        if (m_cbPublicKeyOrToken && fUsePublicKeyToken && IsAfPublicKey(m_dwFlags)) {
+        if (m_cbPublicKeyOrToken && IsAfPublicKey(m_dwFlags)) {
             StrongNameBufferHolder<BYTE> pbPublicKeyToken;
             DWORD cbPublicKeyToken;
             IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,

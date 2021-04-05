@@ -185,15 +185,10 @@ class AssemblySpec  : public BaseAssemblySpec
         m_dwHashAlg = pSource->m_dwHashAlg;
     }
 
-
     HRESULT CheckFriendAssemblyName();
 
-
     HRESULT EmitToken(IMetaDataAssemblyEmit *pEmit,
-                      mdAssemblyRef *pToken,
-                      BOOL fUsePublicKeyToken = TRUE,
-                      BOOL fMustBeBindable = FALSE /*(used only by FusionBind's implementation)*/);
-
+                      mdAssemblyRef *pToken);
 
     VOID Bind(
         AppDomain* pAppDomain,

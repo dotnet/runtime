@@ -37,8 +37,7 @@ public:
         return &m_appContext;
     }
 
-    HRESULT Bind(SString     &assemblyDisplayName,
-                 LPCWSTR      wszCodeBase,
+    HRESULT Bind(LPCWSTR      wszCodeBase,
                  PEAssembly  *pParentAssembly,
                  BOOL         fNgenExplicitBind,
                  BOOL         fExplicitBindToNativeImage,

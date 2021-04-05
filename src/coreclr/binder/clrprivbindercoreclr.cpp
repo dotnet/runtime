@@ -223,32 +223,20 @@ HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemb
 // See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
 // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
 // for an example of how they're used.
-HRESULT CLRPrivBinderCoreCLR::Bind(SString           &assemblyDisplayName,
-                                   LPCWSTR            wszCodeBase,
+HRESULT CLRPrivBinderCoreCLR::Bind(LPCWSTR            wszCodeBase,
                                    PEAssembly        *pParentAssembly,
                                    BOOL               fNgenExplicitBind,
                                    BOOL               fExplicitBindToNativeImage,
                                    ICLRPrivAssembly **ppAssembly)
 {
     HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(ppAssembly != NULL);
-
-    AssemblyName assemblyName;
-
-    ReleaseHolder<AssemblyName> pAssemblyName;
-
-    if (!assemblyDisplayName.IsEmpty())
-    {
-        // AssemblyDisplayName can be empty if wszCodeBase is specified.
-        SAFE_NEW(pAssemblyName, AssemblyName);
-        IF_FAIL_GO(pAssemblyName->Init(assemblyDisplayName));
-    }
+    VALIDATE_ARG_RET(wszCodeBase != NULL && ppAssembly != NULL);
 
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
         hr = AssemblyBinder::BindAssembly(&m_appContext,
-                                          pAssemblyName,
+                                          NULL,
                                           wszCodeBase,
                                           pParentAssembly,
                                           fNgenExplicitBind,
@@ -264,7 +252,6 @@ HRESULT CLRPrivBinderCoreCLR::Bind(SString           &assemblyDisplayName,
     }
     EX_CATCH_HRESULT(hr);
 
-Exit:
     return hr;
 }
 

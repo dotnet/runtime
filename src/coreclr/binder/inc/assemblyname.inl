@@ -125,9 +125,4 @@ void AssemblyName::SetIsDefinition(BOOL fIsDefinition)
     }
 }
 
-void AssemblyName::SetHave(DWORD dwIdentityFlags)
-{
-    AssemblyIdentity::SetHave(dwIdentityFlags);
-}
-
 #endif

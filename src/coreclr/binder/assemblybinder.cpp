@@ -274,6 +274,7 @@ namespace BINDER_SPACE
 
             if (szCodeBase == NULL)
             {
+                _ASSERTE(pAssemblyName != NULL);
                 IF_FAIL_GO(BindByName(pApplicationContext,
                                       pAssemblyName,
                                       false, // skipFailureCaching

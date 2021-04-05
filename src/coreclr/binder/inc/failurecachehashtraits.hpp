@@ -15,7 +15,6 @@
 #define __BINDER__FAILURE_CACHE_HASH_TRAITS_HPP__
 
 #include "bindertypes.hpp"
-#include "utils.hpp"
 #include "sstring.h"
 #include "shash.h"
 

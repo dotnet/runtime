@@ -36,11 +36,6 @@ namespace BINDER_SPACE
                 AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL);
     }
 
-    AssemblyName::~AssemblyName()
-    {
-        //  Nothing to do here
-    }
-
     HRESULT AssemblyName::Init(IMDInternalImport       *pIMetaDataAssemblyImport,
                                PEKIND                   PeKind,
                                mdAssemblyRef            mdar /* = 0 */,
@@ -165,11 +160,6 @@ namespace BINDER_SPACE
 
     Exit:
         return hr;
-    }
-
-    HRESULT AssemblyName::Init(SString &assemblyDisplayName)
-    {
-        return TextualIdentityParser::Parse(assemblyDisplayName, this);
     }
 
     HRESULT AssemblyName::Init(const AssemblyNameData &data)

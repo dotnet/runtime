@@ -13,7 +13,6 @@
 
 #include "textualidentityparser.hpp"
 #include "assemblyidentity.hpp"
-#include "utils.hpp"
 
 #include "ex.h"
 

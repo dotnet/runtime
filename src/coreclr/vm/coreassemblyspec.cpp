@@ -135,8 +135,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     }
     else
     {
-        hr = pTPABinder->Bind(SString(),
-                              m_wszCodeBase,
+        hr = pTPABinder->Bind(m_wszCodeBase,
                               GetParentAssembly() ? GetParentAssembly()->GetFile() : NULL,
                               fNgenExplicitBind,
                               fExplicitBindToNativeImage,
