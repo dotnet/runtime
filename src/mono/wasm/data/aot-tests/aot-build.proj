@@ -1,0 +1,42 @@
+<Project DefaultTargets="BundleTestWasmApp">
+  <Import Project="Directory.Build.props" />
+  <PropertyGroup>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
+    <TestRootDir>$(HELIX_WORKITEM_ROOT)\</TestRootDir>
+    <BundleDir>$(TestRootDir)AppBundle\</BundleDir>
+    <IntermediateOutputPath>$(HELIX_WORKITEM_ROOT)\obj</IntermediateOutputPath>
+    <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
+    <WasmNativeBuild>false</WasmNativeBuild>
+    <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+    <WasmNativeStrip>false</WasmNativeStrip>
+
+    <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
+
+  <Target Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
+
+  <Target Name="PrepareForWasmBuildApp">
+    <PropertyGroup>
+      <WasmAppDir>$(BundleDir)</WasmAppDir>
+      <WasmMainAssemblyFileName>$(TestRootDir)\publish\WasmTestRunner.dll</WasmMainAssemblyFileName>
+      <WasmMainJSPath>$(TestRootDir)\publish\runtime-test.js</WasmMainJSPath>
+      <WasmInvariantGlobalization>true</WasmInvariantGlobalization>
+      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmSatelliteAssemblies Include="$(TestRootDir)\publish\*.resources.dll" />
+      <WasmSatelliteAssemblies>
+        <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
+      </WasmSatelliteAssemblies>
+      <WasmAssembliesToBundle Include="$(TestRootDir)\publish\*.dll"/>
+
+      <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)"
+             TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
+
+      <_ExtraFiles Include="$(TestRootDir)\extraFiles\**\*" />
+      <WasmFilesToIncludeInFileSystem Include="@(_ExtraFiles)" TargetPath="%(RecursiveDir)%(FileName)%(Extension)" />
+    </ItemGroup>
+  </Target>
+  <Import Project="Directory.Build.targets" />
+</Project>

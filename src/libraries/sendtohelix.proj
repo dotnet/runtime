@@ -63,6 +63,7 @@
       <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
       <_ProjectsToBuild Include="$(PerScenarioProjectFile)">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
+        <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_ProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 

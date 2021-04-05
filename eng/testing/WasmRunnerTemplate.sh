@@ -2,7 +2,6 @@
 
 EXECUTION_DIR=$(dirname $0)
 SCENARIO=$3
-BUILD_AOT=$4
 
 cd $EXECUTION_DIR
 
