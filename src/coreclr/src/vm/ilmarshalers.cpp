@@ -2466,11 +2466,11 @@ void ILBlittablePtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslIL
     UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
     int fieldDef = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
-    ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
-    bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
-
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
+
+    ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
+    bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitLDFLDA(fieldDef);                            // dest
