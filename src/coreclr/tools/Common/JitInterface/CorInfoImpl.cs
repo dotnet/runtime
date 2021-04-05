@@ -592,7 +592,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (found && memberFunctionVariant)
+            if (memberFunctionVariant)
             {
                 callConv = GetMemberFunctionCallingConventionVariant(callConv);
             }
@@ -649,9 +649,9 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (found && memberFunctionVariant)
+            if (memberFunctionVariant)
             {
-                callConv = GetMemberFunctionCallingConventionVariant(callConv);
+                callConv = GetMemberFunctionCallingConventionVariant(found ? callConv : (CorInfoCallConvExtension)PlatformDefaultUnmanagedCallingConvention());
             }
 
             return found;
