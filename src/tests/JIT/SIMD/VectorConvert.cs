@@ -179,11 +179,18 @@ partial class VectorTest
             Vector<Int64> B = Vector.ConvertToInt64(A);
             Vector<Double> C = Vector.ConvertToDouble(B);
 
+	    Console.WriteLine("int VectorConvertDoubleInt64(Vector<Double> A) => B[] => C[]");
+	    Console.WriteLine();
+
             int returnVal = Pass;
             for (int i = 0; i < Vector<Double>.Count; i++)
             {
                 Int64 int64Val = (Int64)A[i];
                 Double cvtDblVal = (Double)int64Val;
+
+                Console.WriteLine("A[{0}] = {1}, B[{0}] = {2}, C[{0}] = {3}, int64Val = {4}, cvtDblVal = {5}",
+                                  i, A[i], B[i], C[i], int64Val, cvtDblVal);
+
                 if (B[i] != int64Val)
                 {
                     Console.WriteLine("B[" + i + "] = " + B[i] + ", int64Val = " + int64Val);
@@ -195,6 +202,8 @@ partial class VectorTest
                     returnVal = Fail;
                 }
             }
+	    Console.WriteLine();
+
             return returnVal;
         }
 
@@ -203,18 +212,34 @@ partial class VectorTest
             Vector<UInt64> B = Vector.ConvertToUInt64(A);
             Vector<Double> C = Vector.ConvertToDouble(B);
 
+	    Console.WriteLine("int VectorConvertDoubleUInt64(Vector<Double> A) => B[] => C[]");
+	    Console.WriteLine();
+
             int returnVal = Pass;
             for (int i = 0; i < Vector<Double>.Count; i++)
             {
                 UInt64 uint64Val = (UInt64)A[i];
                 Double cvtDblVal = (Double)uint64Val;
+
+                Console.WriteLine("A[{0}] = {1}, B[{0}] = {2}, C[{0}] = {3}, uint64Val = {4}, cvtDblVal = {5}",
+                                  i, A[i], B[i], C[i], uint64Val, cvtDblVal);
+
                 if ((B[i] != uint64Val) || (C[i] != cvtDblVal))
                 {
-                    Console.WriteLine("A[{0}] = {1}, B[{0}] = {2}, C[{0}] = {3}, uint64Val = {4}, cvtDblVal = {5}",
-                                      i, A[i], B[i], C[i], uint64Val, cvtDblVal);
+                    if (B[i] != uint64Val)
+                    {
+                        Console.WriteLine("Fail: B[i] != uint64Val :  B[i] and {0}", uint64Val);
+                    }
+                    if (C[i] != cvtDblVal)
+                    {
+                        Console.WriteLine("Fail: C[i] != cvtDblVal :  C[i] and {0}", cvtDblVal);
+                    }
+
                     returnVal = Fail;
                 }
             }
+	    Console.WriteLine();
+
             return returnVal;
         }
 
@@ -509,16 +534,8 @@ partial class VectorTest
             }
         }
         
-        for (int i = 0; i < 10; i++)
-        {
-            Vector<Double> doubleVector = getRandomVector<Double>(doubles, i);
-            if (VectorConvertTest.VectorConvertDoubleInt64(doubleVector) != Pass)
-            {
-                Console.WriteLine("Testing Converts between Double and Int64 failed");
-                returnVal = Fail;
-            }
-        }
-        
+// Reordered start
+
         for (int i = 0; i < 10; i++)
         {
             Vector<Double> doubleVector = getRandomVector<Double>(doubles, i);
@@ -529,6 +546,18 @@ partial class VectorTest
             }
         }
         
+        for (int i = 0; i < 10; i++)
+        {
+            Vector<Double> doubleVector = getRandomVector<Double>(doubles, i);
+            if (VectorConvertTest.VectorConvertDoubleInt64(doubleVector) != Pass)
+            {
+                Console.WriteLine("Testing Converts between Double and Int64 failed");
+                returnVal = Fail;
+            }
+        }
+        
+// Reordered end
+
         for (int i = 0; i < 10; i++)
         {
             Vector<Double> doubleVector1 = getRandomVector<Double>(doubles, i);
