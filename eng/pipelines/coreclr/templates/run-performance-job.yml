@@ -122,7 +122,7 @@ jobs:
     - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments)
       displayName: Run ci setup script
       # Run perf testing in helix
-    - template: /eng/common/templates/steps/perf-send-to-helix.yml
+    - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
       parameters:
         HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
         HelixType: 'test/performance/$(Kind)/$(_Framework)/$(Architecture)'
