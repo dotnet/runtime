@@ -16999,8 +16999,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             op2 = impImplicitIorI4Cast(op2, info.compRetType);
             op2 = impImplicitR4orR8Cast(op2, info.compRetType);
             assertImp((genActualType(op2->TypeGet()) == genActualType(info.compRetType)) ||
-                      ((op2->TypeGet() == TYP_I_IMPL) && (info.compRetType == TYP_BYREF)) ||
-                      ((op2->TypeGet() == TYP_BYREF) && (info.compRetType == TYP_I_IMPL)) ||
+                      ((op2->TypeGet() == TYP_I_IMPL) && TypeIs(info.compRetType, TYP_BYREF, TYP_REF)) ||
+                      (op2->TypeIs(TYP_BYREF, TYP_REF) && (info.compRetType == TYP_I_IMPL)) ||
                       (varTypeIsFloating(op2->gtType) && varTypeIsFloating(info.compRetType)) ||
                       (varTypeIsStruct(op2) && varTypeIsStruct(info.compRetType)));
 
@@ -17050,6 +17050,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             if (returnType != originalCallType)
             {
                 // Allow TYP_BYREF to be returned as TYP_I_IMPL and vice versa
+                // should we add REF here?
                 if (((returnType == TYP_BYREF) && (originalCallType == TYP_I_IMPL)) ||
                     ((returnType == TYP_I_IMPL) && (originalCallType == TYP_BYREF)))
                 {
