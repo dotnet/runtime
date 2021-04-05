@@ -220,7 +220,7 @@ namespace BINDER_SPACE
     BOOL AssemblyName::IsCoreLib()
     {
         // TODO: Is this simple comparison enough?
-        return SString::_wcsicmp(GetSimpleName(), CoreLibName_W) == 0;
+        return SString::_wcsicmp(GetSimpleName().GetUnicode(), CoreLibName_W) == 0;
     }
 
     bool AssemblyName::IsNeutralCulture()
@@ -261,7 +261,7 @@ namespace BINDER_SPACE
             dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_CULTURE;
         }
 
-        dwHash ^= static_cast<DWORD>(HashCaseInsensitive(GetSimpleName()));
+        dwHash ^= static_cast<DWORD>(GetSimpleName().HashCaseInsensitive());
         dwHash = _rotl(dwHash, 4);
 
         if (AssemblyIdentity::Have(dwUseIdentityFlags,
@@ -294,7 +294,7 @@ namespace BINDER_SPACE
 
         if (AssemblyIdentity::Have(dwUseIdentityFlags, AssemblyIdentity::IDENTITY_FLAG_CULTURE))
         {
-            dwHash ^= static_cast<DWORD>(HashCaseInsensitive(GetNormalizedCulture()));
+            dwHash ^= static_cast<DWORD>(GetNormalizedCulture().HashCaseInsensitive());
             dwHash = _rotl(dwHash, 4);
         }
 
@@ -332,14 +332,14 @@ namespace BINDER_SPACE
             return (GetContentType() == pAssemblyName->GetContentType());
         }
 
-        if (EqualsCaseInsensitive(GetSimpleName(), pAssemblyName->GetSimpleName()) &&
+        if (GetSimpleName().EqualsCaseInsensitive(pAssemblyName->GetSimpleName()) &&
             (GetContentType() == pAssemblyName->GetContentType()))
         {
             fEquals = TRUE;
 
             if ((dwIncludeFlags & EXCLUDE_CULTURE) == 0)
             {
-                fEquals = EqualsCaseInsensitive(GetNormalizedCulture(), pAssemblyName->GetNormalizedCulture());
+                fEquals = GetNormalizedCulture().EqualsCaseInsensitive(pAssemblyName->GetNormalizedCulture());
             }
 
             if (fEquals && (dwIncludeFlags & INCLUDE_PUBLIC_KEY_TOKEN) != 0)

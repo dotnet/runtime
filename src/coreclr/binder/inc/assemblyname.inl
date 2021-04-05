@@ -14,7 +14,7 @@
 #ifndef __BINDER__ASSEMBLY_NAME_INL__
 #define __BINDER__ASSEMBLY_NAME_INL__
 
-SString &AssemblyName::GetSimpleName()
+const SString &AssemblyName::GetSimpleName()
 {
     return m_simpleName;
 }

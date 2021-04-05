@@ -52,7 +52,7 @@ namespace BINDER_SPACE
         ULONG Release();
 
         // Getters/Setters
-        inline SString &GetSimpleName();
+        inline const SString &GetSimpleName();
         inline void SetSimpleName(SString &simpleName);
         inline AssemblyVersion *GetVersion();
         inline void SetVersion(/* in */ AssemblyVersion *pAssemblyVersion);

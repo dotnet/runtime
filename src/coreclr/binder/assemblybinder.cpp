@@ -29,7 +29,6 @@
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 #include "clrprivbindercoreclr.h"
-#include "clrprivbinderassemblyloadcontext.h"
 // Helper function in the VM, invoked by the Binder, to invoke the host assembly resolver
 extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                  BINDER_SPACE::AssemblyName *pAssemblyName,
@@ -884,7 +883,7 @@ namespace BINDER_SPACE
             // names as platform ones.
 
             HRESULT hr = S_OK;
-            SString& simpleNameRef = pRequestedAssemblyName->GetSimpleName();
+            const SString& simpleNameRef = pRequestedAssemblyName->GetSimpleName();
             SString& cultureRef = pRequestedAssemblyName->GetCulture();
 
             _ASSERTE(!pRequestedAssemblyName->IsNeutralCulture());
@@ -928,7 +927,7 @@ namespace BINDER_SPACE
             bool                    useNativeImages,
             Assembly                **ppAssembly)
         {
-            SString &simpleName = pRequestedAssemblyName->GetSimpleName();
+            const SString &simpleName = pRequestedAssemblyName->GetSimpleName();
             BinderTracing::PathSource pathSource = useNativeImages ? BinderTracing::PathSource::AppNativeImagePaths : BinderTracing::PathSource::AppPaths;
             // Loop through the binding paths looking for a matching assembly
             for (DWORD i = 0; i < pBindingPaths->GetCount(); i++)
@@ -1026,7 +1025,7 @@ namespace BINDER_SPACE
         else
         {
             ReleaseHolder<Assembly> pTPAAssembly;
-            SString& simpleName = pRequestedAssemblyName->GetSimpleName();
+            const SString& simpleName = pRequestedAssemblyName->GetSimpleName();
 
             // Is assembly in the bundle?
             // Single-file bundle contents take precedence over TPA.

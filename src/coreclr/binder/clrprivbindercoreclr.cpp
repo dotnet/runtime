@@ -172,7 +172,7 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
         {
             // Ensure we are not being asked to bind to a TPA assembly
             //
-            SString& simpleName = pAssemblyName->GetSimpleName();
+            const SString& simpleName = pAssemblyName->GetSimpleName();
             SimpleNameToFileNameMap* tpaMap = GetAppContext()->GetTpaList();
             if (tpaMap->LookupPtr(simpleName.GetUnicode()) != NULL)
             {
