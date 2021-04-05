@@ -548,17 +548,6 @@ struct BasicBlock : private LIR::Range
         return ((this->bbFlags & BBF_PROF_WEIGHT) != 0);
     }
 
-    // setBBWeight -- if the block weight is not derived from a profile,
-    // then set the weight to the input weight, making sure to not overflow BB_MAX_WEIGHT
-    // Note to set the weight from profile data, instead use setBBProfileWeight
-    void setBBWeight(weight_t weight)
-    {
-        if (!hasProfileWeight())
-        {
-            this->bbWeight = min(weight, BB_MAX_WEIGHT);
-        }
-    }
-
     // setBBProfileWeight -- Set the profile-derived weight for a basic block
     // and update the run rarely flag as appropriate.
     void setBBProfileWeight(weight_t weight)
@@ -576,16 +565,6 @@ struct BasicBlock : private LIR::Range
         }
     }
 
-    // modifyBBWeight -- same as setBBWeight, but also make sure that if the block is rarely run, it stays that
-    // way, and if it's not rarely run then its weight never drops below 1.
-    void modifyBBWeight(weight_t weight)
-    {
-        if (this->bbWeight != BB_ZERO_WEIGHT)
-        {
-            setBBWeight(max(weight, 1));
-        }
-    }
-
     // this block will inherit the same weight and relevant bbFlags as bSrc
     //
     void inheritWeight(BasicBlock* bSrc)
@@ -596,19 +575,13 @@ struct BasicBlock : private LIR::Range
     // Similar to inheritWeight(), but we're splitting a block (such as creating blocks for qmark removal).
     // So, specify a percentage (0 to 100) of the weight the block should inherit.
     //
+    // Can be invoked as a self-rescale, eg: block->inheritWeightPecentage(block, 50))
+    //
     void inheritWeightPercentage(BasicBlock* bSrc, unsigned percentage)
     {
         assert(0 <= percentage && percentage <= 100);
 
-        // Check for overflow
-        if ((bSrc->bbWeight * 100) <= bSrc->bbWeight)
-        {
-            this->bbWeight = bSrc->bbWeight;
-        }
-        else
-        {
-            this->bbWeight = (bSrc->bbWeight * percentage) / 100;
-        }
+        this->bbWeight = (bSrc->bbWeight * percentage) / 100;
 
         if (bSrc->hasProfileWeight())
         {
@@ -627,6 +600,29 @@ struct BasicBlock : private LIR::Range
         {
             this->bbFlags &= ~BBF_RUN_RARELY;
         }
+    }
+
+    // Scale a blocks' weight by some factor.
+    //
+    void scaleBBWeight(BasicBlock::weight_t scale)
+    {
+        this->bbWeight = this->bbWeight * scale;
+
+        if (this->bbWeight == BB_ZERO_WEIGHT)
+        {
+            this->bbFlags |= BBF_RUN_RARELY;
+        }
+        else
+        {
+            this->bbFlags &= ~BBF_RUN_RARELY;
+        }
+    }
+
+    // Set block weight to zero, and set run rarely flag.
+    //
+    void bbSetRunRarely()
+    {
+        this->scaleBBWeight(BB_ZERO_WEIGHT);
     }
 
     // makeBlockHot()
@@ -1044,7 +1040,6 @@ struct BasicBlock : private LIR::Range
     unsigned      bbStackDepthOnEntry();
     void bbSetStack(void* stackBuffer);
     StackEntry* bbStackOnEntry();
-    void        bbSetRunRarely();
 
     // "bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding
     // zero-based number for use as an array index.

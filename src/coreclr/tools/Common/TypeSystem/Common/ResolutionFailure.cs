@@ -84,7 +84,7 @@ namespace Internal.TypeSystem
 
         public void Throw()
         {
-            switch(_failureType)
+            switch (_failureType)
             {
                 case FailureType.TypeLoadException1:
                     ThrowHelper.ThrowTypeLoadException(_name, _module);

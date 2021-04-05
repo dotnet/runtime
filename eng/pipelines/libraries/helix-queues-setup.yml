@@ -105,9 +105,17 @@ jobs:
     - ${{ if in(parameters.platform, 'Android_arm', 'Android_arm64') }}:
       - Windows.10.Amd64.Android.Open
 
-    # iOS x64/x86
-    - ${{ if in(parameters.platform, 'iOSSimulator_x64', 'iOSSimulator_x86') }}:
+    # iOS/tvOS simulator x64/x86
+    - ${{ if in(parameters.platform, 'iOSSimulator_x64', 'iOSSimulator_x86', 'tvOSSimulator_x64') }}:
       - OSX.1015.Amd64.Open
+
+    # iOS devices
+    - ${{ if in(parameters.platform, 'iOS_arm64') }}:
+      - OSX.1015.Amd64.Iphone.Open
+
+    # tvOS devices
+    - ${{ if in(parameters.platform, 'tvOS_arm64') }}:
+      - OSX.1015.Amd64.AppleTV.Open
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:

@@ -307,16 +307,6 @@ public:
         return fProbeForStackOverflow;
     }
 
-#ifdef _DEBUG
-    inline bool AppDomainLeaks() const
-    {
-        // Workaround for CoreCLR bug #12075, until this configuration option is removed
-        // (CoreCLR Bug #12094)
-        LIMITED_METHOD_DAC_CONTRACT;
-        return false;
-    }
-#endif
-
 #ifdef TEST_DATA_CONSISTENCY
     // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
     // held locks in DAC builds. This is determined by an environment variable.

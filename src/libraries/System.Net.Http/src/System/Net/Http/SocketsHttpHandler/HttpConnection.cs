@@ -135,54 +135,84 @@ namespace System.Net.Http
             }
         }
 
-        /// <summary>Do a non-blocking poll to see whether the connection has data available or has been closed.</summary>
-        /// <remarks>If we don't have direct access to the underlying socket, we instead use a read-ahead task.</remarks>
-        public bool PollRead()
+        /// <summary>Prepare an idle connection to be used for a new request.</summary>
+        /// <param name="async">Indicates whether the coming request will be sync or async.</param>
+        /// <returns>True if connection can be used, false if it is invalid due to receiving EOF or unexpected data.</returns>
+        public bool PrepareForReuse(bool async)
         {
-            if (_socket != null) // may be null if we don't have direct access to the socket
+            // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
+            // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
+            if (_readAheadTask is not null)
             {
+                return !_readAheadTask.Value.IsCompleted;
+            }
+
+            // Check to see if we've received anything on the connection; if we have, that's
+            // either erroneous data (we shouldn't have received anything yet) or the connection
+            // has been closed; either way, we can't use it.
+            if (!async && _socket is not null)
+            {
+                // Directly poll the socket rather than doing an async read, so that we can
+                // issue an appropriate sync read when we actually need it.
                 try
                 {
-                    return _socket.Poll(0, SelectMode.SelectRead);
+                    return !_socket.Poll(0, SelectMode.SelectRead);
                 }
                 catch (Exception e) when (e is SocketException || e is ObjectDisposedException)
                 {
                     // Poll can throw when used on a closed socket.
-                    return true;
+                    return false;
                 }
             }
             else
             {
-                return EnsureReadAheadAndPollRead();
-            }
-        }
-
-        /// <summary>
-        /// Issues a read-ahead on the connection, which will serve both as the first read on the
-        /// response as well as a polling indication of whether the connection is usable.
-        /// </summary>
-        /// <returns>true if there's data available on the connection or it's been closed; otherwise, false.</returns>
-        public bool EnsureReadAheadAndPollRead()
-        {
-            try
-            {
-                Debug.Assert(_readAheadTask == null || _socket == null, "Should only already have a read-ahead task if we don't have a socket to poll");
-                if (_readAheadTask == null)
+                // Perform an async read on the stream, since we're going to need to read from it
+                // anyway, and in doing so we can avoid the extra syscall.
+                try
                 {
 #pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
                     _readAheadTask = _stream.ReadAsync(new Memory<byte>(_readBuffer));
 #pragma warning restore CA2012
+                    return !_readAheadTask.Value.IsCompleted;
+                }
+                catch (Exception error)
+                {
+                    // If reading throws, eat the error and don't reuse the connection.
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Error performing read ahead: {error}");
+                    return false;
                 }
             }
-            catch (Exception error)
+        }
+
+        /// <summary>Check whether a currently idle connection is still usable, or should be scavenged.</summary>
+        /// <returns>True if connection can be used, false if it is invalid due to receiving EOF or unexpected data.</returns>
+        public bool CheckUsabilityOnScavenge()
+        {
+            // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
+            if (_readAheadTask is null)
             {
-                // If reading throws, eat the error and don't pool the connection.
-                if (NetEventSource.Log.IsEnabled()) Trace($"Error performing read ahead: {error}");
-                Dispose();
-                _readAheadTask = new ValueTask<int>(0);
+#pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
+                _readAheadTask = ReadAheadWithZeroByteReadAsync();
+#pragma warning restore CA2012
             }
 
-            return _readAheadTask.Value.IsCompleted; // equivalent to polling
+            // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
+            return !_readAheadTask.Value.IsCompleted;
+
+            async ValueTask<int> ReadAheadWithZeroByteReadAsync()
+            {
+                Debug.Assert(_readAheadTask is null);
+                Debug.Assert(RemainingBuffer.Length == 0);
+
+                // Issue a zero-byte read.
+                // If the underlying stream supports it, this will not complete until the stream has data available,
+                // which will avoid pinning the connection's read buffer (and possibly allow us to release it to the buffer pool in the future, if desired).
+                // If not, it will complete immediately.
+                await _stream.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
+
+                // We don't know for sure that the stream actually has data available, so we need to issue a real read now.
+                return await _stream.ReadAsync(new Memory<byte>(_readBuffer)).ConfigureAwait(false);
+            }
         }
 
         private ValueTask<int>? ConsumeReadAheadTask()

@@ -17,6 +17,7 @@
 #include "mono-config-internals.h"
 #include "object-internals.h"
 #include "class-init.h"
+#include "assembly.h"
 #include "marshal.h"
 #include "object.h"
 #include "assembly-internals.h"
@@ -370,4 +371,9 @@ void
 mono_thread_manage (void)
 {
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_thread_manage_internal ());
+}
+
+void
+mono_register_config_for_assembly (const char* assembly_name, const char* config_xml)
+{
 }

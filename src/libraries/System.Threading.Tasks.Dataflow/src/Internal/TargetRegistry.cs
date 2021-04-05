@@ -365,10 +365,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     var displaySource = _owningSource as IDebuggerDisplay;
                     var displayTarget = _target as IDebuggerDisplay;
-                    return string.Format("{0} Source=\"{1}\", Target=\"{2}\"",
-                        Common.GetNameForDebugger(this),
-                        displaySource != null ? displaySource.Content : _owningSource,
-                        displayTarget != null ? displayTarget.Content : _target);
+                    return $"{Common.GetNameForDebugger(this)} Source=\"{(displaySource != null ? displaySource.Content : _owningSource)}\", Target=\"{(displayTarget != null ? displayTarget.Content : _target)}\"";
                 }
             }
             /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>

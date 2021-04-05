@@ -6421,8 +6421,8 @@ module_apply_changes (MonoImage *image, MonoArray *dmeta, MonoArray *dil, MonoAr
 	int32_t dmeta_len = mono_array_length_internal (dmeta);
 	gpointer dil_bytes = (gpointer)mono_array_addr_internal (dil, char, 0);
 	int32_t dil_len = mono_array_length_internal (dil);
-	gpointer dpdb_bytes = !dpdb ? NULL : (gpointer)mono_array_addr_internal (dpdb, char, 0);
-	int32_t dpdb_len = !dpdb ? 0 : mono_array_length_internal (dpdb);
+	gpointer dpdb_bytes G_GNUC_UNUSED = !dpdb ? NULL : (gpointer)mono_array_addr_internal (dpdb, char, 0);
+	int32_t dpdb_len G_GNUC_UNUSED = !dpdb ? 0 : mono_array_length_internal (dpdb);
 	mono_image_load_enc_delta (image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
 	return is_ok (error);
 #else

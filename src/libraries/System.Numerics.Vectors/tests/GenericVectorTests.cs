@@ -716,7 +716,7 @@ namespace System.Numerics.Tests
             // us to check that we didn't overwrite any part of the destination
             // if it was too small to contain the entire output.
 
-            new Random().NextBytes(MemoryMarshal.AsBytes(destination));
+            Random.Shared.NextBytes(MemoryMarshal.AsBytes(destination));
             T[] destinationCopy = destination.ToArray();
 
             Assert.False(vector.TryCopyTo(destination.Slice(1)));
