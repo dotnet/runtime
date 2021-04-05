@@ -902,6 +902,8 @@ ep_buffer_manager_write_event (
 	if (ep_event_payload_get_size (payload) > 64 * 1024)
 	{
 		ep_rt_atomic_inc_int64_t (&buffer_manager->num_oversized_events_dropped);
+		EventPipeThread *current_thread = ep_thread_get();
+		ep_rt_spin_lock_handle_t *thread_lock = ep_thread_get_rt_lock_ref (current_thread);
 		EP_SPIN_LOCK_ENTER (thread_lock, section1)
 			session_state = ep_thread_get_or_create_session_state (current_thread, session);
 			ep_thread_session_state_increment_sequence_number (session_state);
@@ -931,7 +933,7 @@ ep_buffer_manager_write_event (
 
 	EP_SPIN_LOCK_ENTER (thread_lock, section2)
 		session_state = ep_thread_get_or_create_session_state (current_thread, session);
-		ep_raise_error_if_nok_holding_spin_lock (session_state != NULL, section1);
+		ep_raise_error_if_nok_holding_spin_lock (session_state != NULL, section2);
 
 		buffer = ep_thread_session_state_get_write_buffer (session_state);
 		if (!buffer) {
