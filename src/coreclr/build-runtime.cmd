@@ -78,7 +78,7 @@ set __CrossArch2=
 set __CrossOS=0
 set __PgoOptDataPath=
 set __CMakeArgs=
-set __Ninja=0
+set __Ninja=1
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
 @REM    -priority=1
@@ -152,7 +152,9 @@ if /i "%1" == "-skipnative"          (set __BuildNative=0&set processedArgs=!pro
 if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipgenerateversion" (set __SkipGenerateVersion=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-ninja"               (set __Ninja=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+REM -ninja is a no-op option since Ninja is now the default generator on Windows.
+if /i "%1" == "-ninja"               (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-msbuild"             (set __Ninja=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -284,7 +286,7 @@ set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOS%.%__BuildArch%.%_
 set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"
-if "%__Ninja%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%__TargetOS%.%__BuildArch%.%__BuildType%")
+if "%__Ninja%"=="0" (set "__IntermediatesDir=%__IntermediatesDir%\ide")
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__CrossComponentBinDir=%__BinDir%"
 set "__CrossCompIntermediatesDir=%__IntermediatesDir%\crossgen"
@@ -707,6 +709,7 @@ REM ============================================================================
 
 echo %__MsgPrefix%Build succeeded.  Finished at %TIME%
 echo %__MsgPrefix%Product binaries are available at !__BinDir!
+
 exit /b 0
 
 REM =========================================================================================
