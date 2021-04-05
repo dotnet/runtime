@@ -889,7 +889,7 @@ ep_buffer_manager_write_event (
 	EventPipeBuffer *buffer = NULL;
 	EventPipeThreadSessionState *session_state = NULL;
 	EventPipeStackContents stack_contents;
-	EventPipeStackContents *current_stack_contents = nullptr;
+	EventPipeStackContents *current_stack_contents = NULL;
 
 	EP_ASSERT (buffer_manager != NULL);
 	EP_ASSERT (ep_event != NULL);
