@@ -192,7 +192,7 @@ int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
     // Certificate trustedCert = trustAnchor.getTrustedCert();
     // certs[i] = trustedCert;
     jobject trustedCert = (*env)->CallObjectMethod(env, ctx->trustAnchor, g_TrustAnchorGetTrustedCert);
-    if (!(*env)->IsSameObject(env, certs[i-1], certs[i]))
+    if (i == 0 || !(*env)->IsSameObject(env, certs[i-1], trustedCert))
     {
         certs[i] = ToGRef(env, trustedCert);
         ret = i + 1;
