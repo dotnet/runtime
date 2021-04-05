@@ -787,6 +787,7 @@ ep_buffer_manager_alloc (
 
 	instance->session = session;
 	instance->size_of_all_buffers = 0;
+	instance->num_oversized_events_dropped = 0;
 
 #ifdef EP_CHECKED_BUILD
 	instance->num_buffers_allocated = 0;
@@ -898,7 +899,11 @@ ep_buffer_manager_write_event (
 	ep_return_false_if_nok (ep_event_is_enabled (ep_event));
 
 	// Check that the payload size is less than 64 KB (max size for ETW events)
-	ep_return_false_if_nok (ep_event_payload_get_size (payload) <= 64 * 1024);
+	if (ep_event_payload_get_size (payload) > 64 * 1024)
+	{
+		ep_rt_atomic_inc_int64_t (&buffer_manager->num_oversized_events_dropped);
+		return false;
+	}
 
 	// Check to see an event thread was specified. If not, then use the current thread.
 	if (event_thread == NULL)
