@@ -12,21 +12,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class PublicKeyTests
     {
-        public static bool SupportsBrainpool { get; } = IsCurveSupported(ECCurve.NamedCurves.brainpoolP160r1.Oid);
-
-        private static bool IsCurveSupported(Oid oid)
-        {
-            try
-            {
-                using ECDsa ecdsa = ECDsa.Create(ECCurve.CreateFromOid(oid));
-            }
-            catch (Exception ex) when (ex is CryptographicException || ex is PlatformNotSupportedException)
-            {
-                return false;
-            }
-            return true;
-        }
-
         private static PublicKey GetTestRsaKey()
         {
             using (var cert = new X509Certificate2(TestData.MsCertificate))
@@ -487,7 +472,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(nameof(SupportsBrainpool)), MemberData(nameof(BrainpoolCurves))]
+        [Theory, MemberData(nameof(BrainpoolCurves))]
         public static void TestECDsaPublicKey_BrainpoolP160r1_ValidatesSignature(byte[] curveData, byte[] existingSignature)
         {
             byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
@@ -504,7 +489,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         Assert.Equal("1.2.840.10045.2.1", cert.PublicKey.Oid.Value);
 
                         bool isSignatureValid = publicKey.VerifyData(helloBytes, existingSignature, HashAlgorithmName.SHA256);
-                        Assert.True(isSignatureValid, "isSignatureValid");
+                        
+                        if (!isSignatureValid)
+                        {
+                            Assert.True(PlatformDetection.IsAndroid, "signature invalid on Android only");
+                            return;
+                        }
 
                         unchecked
                         {
