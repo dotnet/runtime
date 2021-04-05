@@ -897,6 +897,8 @@ call_thread_exiting (void *val, void *user_data)
 
 	mono_error_cleanup (error);
 
+	mono_gchandle_free_internal (gchandle);
+
 	HANDLE_FUNCTION_RETURN ();
 }
 
