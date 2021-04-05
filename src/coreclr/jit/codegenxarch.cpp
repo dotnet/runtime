@@ -6397,7 +6397,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
 #if !defined(TARGET_64BIT)
-    // We expect morph to replace long to float/double casts with helper calls
+    // On x86 We expect morph to replace long to float/double casts with helper calls
     noway_assert(!varTypeIsLong(srcType));
 #endif // !defined(TARGET_64BIT)
 
@@ -6449,17 +6449,25 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // Note that here we need to specify srcType that will determine
     // the size of source reg/mem operand and rex.w prefix.
     instruction ins = ins_FloatConv(dstType, TYP_INT);
-    GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
 
-    // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
-    // will interpret ULONG value as LONG.  Hence we need to adjust the
-    // result if sign-bit of srcType is set.
-    if (srcType == TYP_ULONG)
+    if (srcType != TYP_ULONG)
     {
+        GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
+    }
+    else // (srcType == TYP_ULONG)
+    {
+        // Above for 32-bit x86 we have a noway_assert(!varTypeIsLong(srcType))
+        //
+#if defined(TARGET_64BIT)
+        // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
+        // will interpret ULONG value as LONG.  Hence we need to adjust the
+        // result if sign-bit of srcType is set.
+
         // The instruction sequence below is less accurate than what clang
         // and gcc generate. However, we keep the current sequence for backward compatibility.
-        // If we change the instructions below, FloatingPointUtils::convertUInt64ToDobule
+        // If we change the instructions below, FloatingPointUtils::convertUInt64ToDouble
         // should be also updated for consistent conversion result.
+
         assert(dstType == TYP_DOUBLE);
         assert(op1->isUsedFromReg());
 
@@ -6467,29 +6475,57 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         // test op1Reg, op1Reg
         inst_RV_RV(INS_test, op1->GetRegNum(), op1->GetRegNum(), srcType);
 
-        // No need to adjust result if op1 >= 0 i.e. positive
-        // Jge label
-        BasicBlock* label = genCreateTempLabel();
-        inst_JMP(EJ_jge, label);
+        // We will need to adjust result if op1 has the sign bit set
+        // Js hiLabel
+        BasicBlock* hiLabel = genCreateTempLabel();
+        inst_JMP(EJ_js, hiLabel);
+
+        // No adjustment is necessary, the sign bit was clear
+        //
+        GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
+        BasicBlock* joinLabel = genCreateTempLabel();
+        inst_JMP(EJ_jmp, joinLabel);
+
+        genDefineTempLabel(hiLabel);
+
+        // We need an extra integer register
+        //
+        regNumber srcReg = op1->GetRegNum();
+        regNumber tmpReg = treeNode->GetSingleTempReg(RBM_ALLINT);
+        assert(genIsValidIntReg(tmpReg));
+
+        instGen_Set_Reg_To_Imm(EA_8BYTE, tmpReg, -0x8000000000000000i64);
+
+        // clear the sign bit
+        inst_RV_RV(INS_xor, srcReg, tmpReg, srcType);
+
+        // perform conversion using low 63-bits
+        GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
 
         // Adjust the result
-        // result = result + 0x43f00000 00000000
-        // addsd resultReg,  0x43f00000 00000000
+        // result = result + 0x43e00000 00000000
+        // addsd resultReg,  0x43e00000 00000000
         CORINFO_FIELD_HANDLE* cns = &u8ToDblBitmask;
         if (*cns == nullptr)
         {
             double d;
             static_assert_no_msg(sizeof(double) == sizeof(__int64));
-            *((__int64*)&d) = 0x43f0000000000000LL;
+            *((__int64*)&d) = 0x43e0000000000000LL;
 
             *cns = GetEmitter()->emitFltOrDblConst(d, EA_8BYTE);
         }
         GetEmitter()->emitIns_R_C(INS_addsd, EA_8BYTE, treeNode->GetRegNum(), *cns, 0);
 
-        genDefineTempLabel(label);
+        // restore the sign bit to srcReg, leaving srcReg unchanged
+        inst_RV_RV(INS_xor, srcReg, tmpReg, srcType);
+
+        genDefineTempLabel(joinLabel);
+#endif // defined(TARGET_64BIT)
     }
 
     genProduceReg(treeNode);
+
+
 }
 
 //------------------------------------------------------------------------

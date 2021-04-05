@@ -2624,6 +2624,11 @@ int LinearScan::BuildCast(GenTreeCast* cast)
         // rather require it to be different from operand's reg.
         buildInternalIntRegisterDefForNode(cast);
     }
+    // A cast from TYP_ULONG to TYP_DOUBLE requires a temporary register
+    if (cast->IsUnsigned() && (castType == TYP_DOUBLE) && varTypeIsLong(srcType))
+    {
+        buildInternalIntRegisterDefForNode(cast);
+    }
 #endif
 
     int srcCount = BuildOperandUses(src, candidates);
