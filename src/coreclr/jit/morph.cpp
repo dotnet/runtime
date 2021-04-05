@@ -17226,6 +17226,10 @@ void Compiler::fgMorphBlocks()
         block = block->bbNext;
     } while (block != nullptr);
 
+    // We are done with the global morphing phase
+    fgGlobalMorph = false;
+    compCurBB     = nullptr;
+
     // Under OSR, we no longer need to specially protect the original method entry
     //
     if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
@@ -17243,10 +17247,6 @@ void Compiler::fgMorphBlocks()
         fgDispBasicBlocks(true);
     }
 #endif
-
-    // We are done with the global morphing phase
-    fgGlobalMorph = false;
-    compCurBB     = nullptr;
 }
 
 //------------------------------------------------------------------------
