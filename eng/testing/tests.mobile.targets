@@ -20,7 +20,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildWasmAOTTestsOnHelix)' == 'true'">
-    <RunScriptCommand>find $HELIX_CORRELATION_PAYLOAD -type d ; find .</RunScriptCommand>
     <RunScriptCommand>$(RunScriptCommand); dotnet msbuild publish/aot-build.proj /p:WasmBuildSupportDir=$HELIX_CORRELATION_PAYLOAD/build /bl:$XHARNESS_OUT/AOTBuild.binlog</RunScriptCommand>
     <RunScriptCommand Condition="'$(RunAOTCompilation)' != ''">$(RunScriptCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</RunScriptCommand>
 
