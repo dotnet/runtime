@@ -4966,20 +4966,11 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
 
     if (reserve_success && separated_poh_p)
     {
-        for (int heap_no = 0; reserve_success && heap_no < num_heaps; heap_no++)
+        for (int heap_no = 0; (reserve_success && (heap_no < num_heaps)); heap_no++)
         {
             if (!GCToOSInterface::VirtualCommit(memory_details.initial_pinned_heap[heap_no].memory_base, pinned_size))
             {
                 reserve_success = FALSE;
-            }
-        }
-        if (!reserve_success)
-        {
-            for (int heap_no = 0; reserve_success && heap_no < num_heaps; heap_no++)
-            {
-                virtual_free(memory_details.initial_normal_heap[heap_no].memory_base, normal_size);
-                virtual_free(memory_details.initial_large_heap[heap_no].memory_base, large_size);
-                virtual_free(memory_details.initial_pinned_heap[heap_no].memory_base, pinned_size);
             }
         }
     }
@@ -11750,13 +11741,14 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         return E_FAIL;
     }
 #else //USE_REGIONS
-    bool empty_poh_p = heap_hard_limit_oh[soh] && 
-                       (GCConfig::GetGCHeapHardLimitPOH() == 0) && 
-                       (GCConfig::GetGCHeapHardLimitPOHPercent() == 0);
+    bool separated_poh_p = use_large_pages_p && 
+                           heap_hard_limit_oh[soh] && 
+                           (GCConfig::GetGCHeapHardLimitPOH() == 0) && 
+                           (GCConfig::GetGCHeapHardLimitPOHPercent() == 0);
     if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps, 
-                                 use_large_pages_p, empty_poh_p && use_large_pages_p, heap_no_to_numa_node))
+                                 use_large_pages_p, separated_poh_p, heap_no_to_numa_node))
         return E_OUTOFMEMORY;
-    if (empty_poh_p)
+    if (separated_poh_p)
     {
         heap_hard_limit_oh[poh] = min_segment_size_hard_limit * number_of_heaps;
         heap_hard_limit += heap_hard_limit_oh[poh];
@@ -40144,6 +40136,10 @@ HRESULT GCHeap::Initialize()
             return E_INVALIDARG;
         }
         if (!gc_heap::heap_hard_limit_oh[loh])
+        {
+            return E_INVALIDARG;
+        }
+        if (!gc_heap::heap_hard_limit_oh[poh] && !GCConfig::GetGCLargePages())
         {
             return E_INVALIDARG;
         }
