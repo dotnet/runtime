@@ -391,8 +391,7 @@
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
-  
-  <!-- Address this separately to make sure the functional tests are still working 
+
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser'">
     <ProjectReference Include="$(MonoProjectRoot)sample\wasm\**\*.Sample.csproj"
                       BuildInParallel="false" />
@@ -400,7 +399,6 @@
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
-  -->
 
   <Target Name="GenerateMergedCoverageReport"
           AfterTargets="Test"
