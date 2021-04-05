@@ -3844,6 +3844,26 @@ public:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
 
+private:
+    // For prefixFlags
+    enum
+    {
+        PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
+        PREFIX_TAILCALL_IMPLICIT =
+            0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
+        PREFIX_TAILCALL_STRESS =
+            0x00000100, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
+        PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
+        PREFIX_VOLATILE    = 0x00001000,
+        PREFIX_UNALIGNED   = 0x00010000,
+        PREFIX_CONSTRAINED = 0x00100000,
+        PREFIX_READONLY    = 0x01000000
+    };
+
+    static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
+    static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp);
+    static bool impOpcodeIsCallOpcode(OPCODE opcode);
+
 public:
     void impInit();
     void impImport();

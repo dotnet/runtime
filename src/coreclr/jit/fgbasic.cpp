@@ -852,7 +852,13 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     const bool  isForceInline          = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
     const bool  makeInlineObservations = (compInlineResult != nullptr);
     const bool  isInlining             = compIsForInlining();
+    const bool  isTier1                = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    const bool  isPreJit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool  resolveTokens          = makeInlineObservations && (isTier1 || isPreJit);
     unsigned    retBlocks              = 0;
+    unsigned    intrinsicCalls         = 0;
+    int         prefixFlags            = 0;
+    int         value                  = 0;
 
     if (makeInlineObservations)
     {
@@ -886,12 +892,14 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         compInlineResult->Note(InlineObservation::CALLEE_BEGIN_OPCODE_SCAN);
     }
 
+    CORINFO_RESOLVED_TOKEN resolvedToken;
+    CORINFO_RESOLVED_TOKEN constrainedResolvedToken;
+    CORINFO_CALL_INFO      callInfo;
+
     while (codeAddr < codeEndp)
     {
         OPCODE opcode = (OPCODE)getU1LittleEndian(codeAddr);
         codeAddr += sizeof(__int8);
-        opts.instrCount++;
-        typeIsNormed = false;
 
     DECODE_OPCODE:
 
@@ -942,18 +950,71 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 // There has to be code after the call, otherwise the inlinee is unverifiable.
                 if (isInlining)
                 {
-
                     noway_assert(codeAddr < codeEndp - sz);
                 }
 
-                // If the method has a call followed by a ret, assume that
-                // it is a wrapper method.
-                if (makeInlineObservations)
+                if (!makeInlineObservations)
                 {
-                    if ((OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
+                    break;
+                }
+
+                CORINFO_METHOD_HANDLE methodHnd   = nullptr;
+                unsigned              methodFlags = 0;
+                bool                  mustExpand  = false;
+                CorInfoIntrinsics     intrinsicID = CORINFO_INTRINSIC_Illegal;
+                NamedIntrinsic        ni          = NI_Illegal;
+
+                if (resolveTokens)
+                {
+                    impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Method);
+                    eeGetCallInfo(&resolvedToken,
+                                  (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
+                                  combine(CORINFO_CALLINFO_KINDONLY,
+                                          (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
+                                  &callInfo);
+
+                    methodHnd   = callInfo.hMethod;
+                    methodFlags = callInfo.methodFlags;
+                }
+
+                if ((methodFlags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_JIT_INTRINSIC)) != 0)
+                {
+                    intrinsicCalls++;
+
+                    if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
                     {
-                        compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
+                        intrinsicID = info.compCompHnd->getIntrinsicID(methodHnd, &mustExpand);
                     }
+
+                    if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
+                    {
+                        if (intrinsicID == CORINFO_INTRINSIC_Illegal)
+                        {
+                            ni = lookupNamedIntrinsic(methodHnd);
+
+                            switch (ni)
+                            {
+                                case NI_IsSupported_True:
+                                case NI_IsSupported_False:
+                                {
+                                    pushedStack.PushConstant();
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if ((OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
+                {
+                    // If the method has a call followed by a ret, assume that
+                    // it is a wrapper method.
+                    compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
             }
             break;
@@ -1085,17 +1146,79 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             break;
 
             case CEE_UNALIGNED:
+            {
+                noway_assert(sz == sizeof(__int8));
+                prefixFlags |= PREFIX_UNALIGNED;
+
+                value = getU1LittleEndian(codeAddr);
+                codeAddr += sizeof(__int8);
+
+                impValidateMemoryAccessOpcode(codeAddr, codeEndp, false);
+                goto OBSERVE_OPCODE;
+            }
+
             case CEE_CONSTRAINED:
+            {
+                noway_assert(sz == sizeof(unsigned));
+                prefixFlags |= PREFIX_CONSTRAINED;
+
+                if (resolveTokens)
+                {
+                    impResolveToken(codeAddr, &constrainedResolvedToken, CORINFO_TOKENKIND_Constrained);
+                }
+                codeAddr += sizeof(unsigned);
+
+                {
+                    OPCODE actualOpcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
+
+                    if (actualOpcode != CEE_CALLVIRT)
+                    {
+                        BADCODE("constrained. has to be followed by callvirt");
+                    }
+                }
+                goto OBSERVE_OPCODE;
+            }
+
             case CEE_READONLY:
+            {
+                noway_assert(sz == 0);
+                prefixFlags |= PREFIX_READONLY;
+
+                {
+                    OPCODE actualOpcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
+
+                    if ((actualOpcode != CEE_LDELEMA) && !impOpcodeIsCallOpcode(actualOpcode))
+                    {
+                        BADCODE("readonly. has to be followed by ldelema or call");
+                    }
+                }
+                goto OBSERVE_OPCODE;
+            }
+
             case CEE_VOLATILE:
+            {
+                noway_assert(sz == 0);
+                prefixFlags |= PREFIX_VOLATILE;
+
+                impValidateMemoryAccessOpcode(codeAddr, codeEndp, true);
+                goto OBSERVE_OPCODE;
+            }
+
             case CEE_TAILCALL:
             {
-                if (codeAddr >= codeEndp)
+                noway_assert(sz == 0);
+                prefixFlags |= PREFIX_TAILCALL_EXPLICIT;
+
                 {
-                    goto TOO_FAR;
+                    OPCODE actualOpcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
+
+                    if (!impOpcodeIsCallOpcode(actualOpcode))
+                    {
+                        BADCODE("tailcall. has to be followed by call, callvirt or calli");
+                    }
                 }
+                goto OBSERVE_OPCODE;
             }
-            break;
 
             case CEE_STARG:
             case CEE_STARG_S:
@@ -1312,6 +1435,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 // the list of other opcodes (for all platforms).
 
                 FALLTHROUGH;
+
             case CEE_MKREFANY:
             case CEE_RETHROW:
                 if (makeInlineObservations)
@@ -1386,6 +1510,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     fgObserveInlineConstants(opcode, pushedStack, isInlining);
                 }
                 break;
+
             case CEE_RET:
                 retBlocks++;
                 break;
@@ -1397,6 +1522,14 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         // Skip any remaining operands this opcode may have
         codeAddr += sz;
 
+        // Clear any prefix flags that may have been set
+        prefixFlags = 0;
+
+        // Increment the number of observed instructions
+        opts.instrCount++;
+
+    OBSERVE_OPCODE:
+
         // Note the opcode we just saw
         if (makeInlineObservations)
         {
@@ -1404,6 +1537,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 typeIsNormed ? InlineObservation::CALLEE_OPCODE_NORMED : InlineObservation::CALLEE_OPCODE;
             compInlineResult->NoteInt(obs, opcode);
         }
+
+        typeIsNormed = false;
     }
 
     if (codeAddr != codeEndp)
