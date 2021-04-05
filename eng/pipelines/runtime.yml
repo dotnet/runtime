@@ -216,48 +216,48 @@ jobs:
 # Build the whole product using Mono runtime
 # Only when libraries, mono or installer are changed
 #
-#- template: /eng/pipelines/common/platform-matrix.yml
-  #parameters:
-    #jobTemplate: /eng/pipelines/common/global-build-job.yml
-    #buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    #runtimeFlavor: mono
-    #platforms:
-    #- MacCatalyst_x64
-    #- MacCatalyst_arm64
-    #- tvOSSimulator_x64
-    #- iOSSimulator_x86
-    #- iOS_arm64
-    #- Linux_arm
-    #jobParameters:
-      #testGroup: innerloop
-      #nameSuffix: AllSubsets_Mono
-      #buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-      #condition: >-
-        #or(
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          #eq(variables['isFullMatrix'], true))
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    runtimeFlavor: mono
+    platforms:
+    - MacCatalyst_x64
+    - MacCatalyst_arm64
+    - tvOSSimulator_x64
+    - iOSSimulator_x86
+    - iOS_arm64
+    - Linux_arm
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-#- template: /eng/pipelines/common/platform-matrix.yml
-  #parameters:
-    #jobTemplate: /eng/pipelines/common/global-build-job.yml
-    #buildConfig: Release
-    #runtimeFlavor: mono
-    #platforms:
-    #- tvOS_arm64
-    #- iOS_arm
-    #- Linux_musl_x64
-    #jobParameters:
-      #testGroup: innerloop
-      #nameSuffix: AllSubsets_Mono
-      #buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-      #condition: >-
-        #or(
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          #eq(variables['isFullMatrix'], true))
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - tvOS_arm64
+    - iOS_arm
+    - Linux_musl_x64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Build the whole product using Mono and run libraries tests, multi-scenario
@@ -303,26 +303,26 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 # Build and test libraries under single-file publishing
-#- template: /eng/pipelines/common/platform-matrix.yml
-  #parameters:
-    #jobTemplate: /eng/pipelines/common/global-build-job.yml
-    #helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    #buildConfig: Release
-    #platforms:
-    #- windows_x64
-    #- Linux_x64
-    #jobParameters:
-      #testGroup: innerloop
-      #isFullMatrix: ${{ variables.isFullMatrix }}
-      #isSingleFile: true
-      #nameSuffix: SingleFile
-      #buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) /p:TestSingleFile=true /p:ArchiveTests=true
-      #timeoutInMinutes: 120
-      ## extra steps, run tests
-      #extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      #extraStepsParameters:
-        #creator: dotnet-bot
-        #testRunNamePrefixSuffix: SingleFile_$(_BuildConfig)
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    platforms:
+    - windows_x64
+    - Linux_x64
+    jobParameters:
+      testGroup: innerloop
+      isFullMatrix: ${{ variables.isFullMatrix }}
+      isSingleFile: true
+      nameSuffix: SingleFile
+      buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) /p:TestSingleFile=true /p:ArchiveTests=true
+      timeoutInMinutes: 120
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: SingleFile_$(_BuildConfig)
 
 #
 # Build the whole product using Mono and run runtime tests
@@ -365,86 +365,86 @@ jobs:
 #
 # Build Mono and Installer on LLVMJIT mode
 #
-#- template: /eng/pipelines/common/platform-matrix.yml
-  #parameters:
-    #jobTemplate: /eng/pipelines/common/global-build-job.yml
-    #buildConfig: Release
-    #runtimeFlavor: mono
-    #platforms:
-    #- OSX_x64
-    #jobParameters:
-      #testGroup: innerloop
-      #nameSuffix: AllSubsets_Mono_LLVMJIT
-      #buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                 #/p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-      #condition: >-
-        #or(
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          #eq(variables['isFullMatrix'], true))
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - OSX_x64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_LLVMJIT
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+                 /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-#- template: /eng/pipelines/common/platform-matrix.yml
-  #parameters:
-    #jobTemplate: /eng/pipelines/common/global-build-job.yml
-    #buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    #runtimeFlavor: mono
-    #platforms:
-    #- Linux_x64
-    #- Linux_arm64
-    #jobParameters:
-      #testGroup: innerloop
-      #nameSuffix: AllSubsets_Mono_LLVMJIT
-      #buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                 #/p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-      #condition: >-
-        #or(
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          #eq(variables['isFullMatrix'], true))
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    runtimeFlavor: mono
+    platforms:
+    - Linux_x64
+    - Linux_arm64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_LLVMJIT
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+                 /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-##
-## Build Mono and Installer on LLVMAOT mode
-##
-#- template: /eng/pipelines/common/platform-matrix.yml
-  #parameters:
-    #jobTemplate: /eng/pipelines/common/global-build-job.yml
-    #buildConfig: Release
-    #runtimeFlavor: mono
-    #platforms:
-    #- Linux_x64
-    #- Linux_arm64
-    #jobParameters:
-      #testGroup: innerloop
-      #nameSuffix: AllSubsets_Mono_LLVMAOT
-      #buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                 #/p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-      #condition: >-
-        #or(
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          #eq(variables['isFullMatrix'], true))
+#
+# Build Mono and Installer on LLVMAOT mode
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Linux_x64
+    - Linux_arm64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_LLVMAOT
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+                 /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-#- template: /eng/pipelines/common/platform-matrix.yml
-  #parameters:
-    #jobTemplate: /eng/pipelines/common/global-build-job.yml
-    #buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    #runtimeFlavor: mono
-    #platforms:
-    #- OSX_x64
-    #jobParameters:
-      #testGroup: innerloop
-      #nameSuffix: AllSubsets_Mono_LLVMAOT
-      #buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                 #/p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-      #condition: >-
-        #or(
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          #eq(variables['isFullMatrix'], true))
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    runtimeFlavor: mono
+    platforms:
+    - OSX_x64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_LLVMAOT
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+                 /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Build Mono debug
