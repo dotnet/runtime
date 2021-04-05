@@ -3084,15 +3084,6 @@ public:
         return (callMethodHandle == impInlineRoot()->info.compMethodHnd);
     }
 
-    NamedIntrinsic gtGetNamedIntrinsicForCall(GenTreeCall* call)
-    {
-        if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
-        {
-            return lookupNamedIntrinsic(call->gtCallMethHnd);
-        }
-        return NI_Illegal;
-    }
-
     //-------------------------------------------------------------------------
 
     GenTree* gtFoldExpr(GenTree* tree);
@@ -4004,7 +3995,6 @@ protected:
                               var_types             callType,
                               NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
-    NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,
@@ -4104,6 +4094,7 @@ public:
         CHECK_SPILL_NONE = -2
     };
 
+    NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);

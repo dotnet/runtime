@@ -9406,28 +9406,31 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     }
     else
     {
-        NamedIntrinsic ni = gtGetNamedIntrinsicForCall(call);
-        if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
-            (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
+        if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
         {
-            bool                 isExact   = false;
-            bool                 isNotNull = false;
-            CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(call, &isExact, &isNotNull);
-            if ((cls != nullptr) && isExact && isNotNull)
+            NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
+            if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
+                (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
             {
-                ValueNum clsVN = vnStore->VNForHandle(ssize_t(cls), GTF_ICON_CLASS_HDL);
-                ValueNum funcVN;
-                if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
+                bool                 isExact   = false;
+                bool                 isNotNull = false;
+                CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(call, &isExact, &isNotNull);
+                if ((cls != nullptr) && isExact && isNotNull)
                 {
-                    funcVN = vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultEqualityComparer, clsVN);
+                    ValueNum clsVN = vnStore->VNForHandle(ssize_t(cls), GTF_ICON_CLASS_HDL);
+                    ValueNum funcVN;
+                    if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
+                    {
+                        funcVN = vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultEqualityComparer, clsVN);
+                    }
+                    else
+                    {
+                        assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
+                        funcVN = vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultComparer, clsVN);
+                    }
+                    call->gtVNPair.SetBoth(funcVN);
+                    return;
                 }
-                else
-                {
-                    assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
-                    funcVN = vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultComparer, clsVN);
-                }
-                call->gtVNPair.SetBoth(funcVN);
-                return;
             }
         }
 

@@ -883,11 +883,14 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
 bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool ignoreCctors) const
 {
     // Some named intrinsics are known to have ignorable side effects.
-    NamedIntrinsic ni = compiler->gtGetNamedIntrinsicForCall(const_cast<GenTreeCall*>(this));
-    if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
-        (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
+    if (gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
     {
-        return false;
+        NamedIntrinsic ni = compiler->lookupNamedIntrinsic(gtCallMethHnd);
+        if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
+            (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
+        {
+            return false;
+        }
     }
 
     // Generally all GT_CALL nodes are considered to have side-effects, but we may have extra information about helper
