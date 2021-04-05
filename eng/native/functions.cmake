@@ -490,14 +490,6 @@ function(add_library_clr)
     endif()
 endfunction()
 
-function(add_library_clr)
-    _add_library(${ARGV})
-endfunction()
-
-function(add_executable_clr)
-    _add_executable(${ARGV})
-endfunction()
-
 # add_linker_flag(Flag [Config1 Config2 ...])
 function(add_linker_flag Flag)
   if (ARGN STREQUAL "")
