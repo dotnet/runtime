@@ -3913,7 +3913,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     // Optimize `ldstr + String::get_Length()` to CNS_INT
                     // e.g. "Hello".Length => 5
-                    GenTreeIntCon* iconNode = impStringLiteralLength(op1->AsStrCon());
+                    GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
                     if (iconNode != nullptr)
                     {
                         retNode = iconNode;
@@ -18443,38 +18443,6 @@ void Compiler::impWalkSpillCliqueFromPred(BasicBlock* block, SpillCliqueWalker* 
     // miss walking back to include the predecessor we started from.
     // This most likely cause: missing or out of date bbPreds
     assert(impSpillCliqueGetMember(SpillCliquePred, block) != 0);
-}
-
-//------------------------------------------------------------------------
-// impStringLiteralLength: create GenTreeIntCon node for the given string
-//    literal to store its length.
-//
-// Arguments:
-//    node  - string literal node.
-//
-// Return Value:
-//    GenTreeIntCon node with string's length as a value or null.
-//
-GenTreeIntCon* Compiler::impStringLiteralLength(GenTreeStrCon* node)
-{
-    int             length = -1;
-    const char16_t* str    = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, &length);
-    if (length >= 0)
-    {
-        GenTreeIntCon* iconNode = gtNewIconNode(length);
-
-        // str can be NULL for dynamic context
-        if (str != nullptr)
-        {
-            JITDUMP("String '\"%ws\".Length' is '%d'\n", str, length)
-        }
-        else
-        {
-            JITDUMP("Optimizing 'CNS_STR.Length' to just '%d'\n", length)
-        }
-        return iconNode;
-    }
-    return nullptr;
 }
 
 void Compiler::SetSpillTempsBase::Visit(SpillCliqueDir predOrSucc, BasicBlock* blk)

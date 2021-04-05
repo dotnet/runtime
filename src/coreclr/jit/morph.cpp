@@ -12517,7 +12517,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             {
                 // Optimize `ldstr + String::get_Length()` to CNS_INT
                 // e.g. "Hello".Length => 5
-                GenTreeIntCon* iconNode = impStringLiteralLength(op1->AsStrCon());
+                GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
                 if (iconNode != nullptr)
                 {
                     INDEBUG(iconNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
