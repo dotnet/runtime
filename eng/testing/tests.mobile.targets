@@ -294,8 +294,8 @@
   <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
    attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation 
    payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
-  <Target Name="StageEmSdkForHelix" Condition="'$(TargetOS)' == 'Browser' and !Exists($(EmSdkDirForHelixPayload))">
-    <Error Condition="!Exists($(EMSDK_PATH))" Text="Could not find emscripten sdk in $(EmSdkDirForHelixPayload) or in EMSDK_PATH=$(EMSDK_PATH)" />
+  <Target Name="StageEmSdkForHelix" Condition="'$(TargetOS)' == 'Browser' and ('$(EmSdkDirForHelixPayload)' == '' or !Exists($(EmSdkDirForHelixPayload)))">
+    <Error Condition="'$(EMSDK_PATH)' == '' or !Exists($(EMSDK_PATH))" Text="Could not find emscripten sdk in $(EmSdkDirForHelixPayload) or in EMSDK_PATH=$(EMSDK_PATH)" />
 
     <ItemGroup>
       <EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
