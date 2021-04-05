@@ -4,7 +4,6 @@
 #include "common.h"
 #include "assemblybinder.hpp"
 #include "clrprivbindercoreclr.h"
-#include "variables.hpp"
 
 using namespace BINDER_SPACE;
 

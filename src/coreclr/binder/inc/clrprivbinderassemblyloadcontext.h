@@ -10,8 +10,8 @@
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-class Assembly;
 class LoaderAllocator;
+class PEImage;
 
 class CLRPrivBinderAssemblyLoadContext : public AssemblyLoadContext
 {

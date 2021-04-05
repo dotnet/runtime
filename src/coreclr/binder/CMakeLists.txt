@@ -16,7 +16,6 @@ set(BINDER_COMMON_SOURCES
     stringlexer.cpp
     textualidentityparser.cpp
     utils.cpp
-    variables.cpp
 )
 
 set(BINDER_COMMON_HEADERS
@@ -47,7 +46,6 @@ set(BINDER_COMMON_HEADERS
     inc/stringlexer.inl
     inc/textualidentityparser.hpp
     inc/utils.hpp
-    inc/variables.hpp
 )
 
 set(BINDER_SOURCES

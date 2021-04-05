@@ -13,13 +13,17 @@
 
 #include "assemblyname.hpp"
 #include "utils.hpp"
-#include "variables.hpp"
 
 #include "textualidentityparser.hpp"
 
 #include "corpriv.h"
 
 #include "ex.h"
+
+namespace
+{
+    const WCHAR* s_neutralCulture = W("neutral");
+}
 
 namespace BINDER_SPACE
 {
@@ -186,12 +190,13 @@ namespace BINDER_SPACE
     BOOL AssemblyName::IsCoreLib()
     {
         // TODO: Is this simple comparison enough?
-        return EqualsCaseInsensitive(GetSimpleName(), g_BinderVariables->corelib);
+        return SString::_wcsicmp(GetSimpleName(), CoreLibName_W) == 0;
     }
 
     bool AssemblyName::IsNeutralCulture()
     {
-        return m_cultureOrLanguage.IsEmpty() || m_cultureOrLanguage.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral);
+        return m_cultureOrLanguage.IsEmpty()
+            || SString::_wcsicmp(m_cultureOrLanguage.GetUnicode(), s_neutralCulture) == 0;
     }
 
     ULONG AssemblyName::Hash(DWORD dwIncludeFlags)
@@ -363,7 +368,7 @@ namespace BINDER_SPACE
 
         if (culture.IsEmpty())
         {
-            culture = g_BinderVariables->cultureNeutral;
+            culture.SetLiteral(s_neutralCulture);
         }
 
         return culture;

@@ -16,19 +16,17 @@
 
 #include "bindertypes.hpp"
 #include "bindresult.hpp"
-#include "coreclrbindercommon.h"
 #include "bundle.h"
 
-class CLRPrivBinderAssemblyLoadContext;
 class CLRPrivBinderCoreCLR;
+class PEAssembly;
+class PEImage;
 
 namespace BINDER_SPACE
 {
     class AssemblyBinder
     {
     public:
-        static HRESULT Startup();
-
         // See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
         // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
         // for an example of how they're used.

@@ -8,6 +8,9 @@
 #include "applicationcontext.hpp"
 #include "assemblyloadcontext.h"
 
+class PEAssembly;
+class PEImage;
+
 class CLRPrivBinderCoreCLR : public AssemblyLoadContext
 {
 public:

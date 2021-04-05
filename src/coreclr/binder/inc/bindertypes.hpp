@@ -17,9 +17,6 @@
 #include "clrtypes.h"
 #include "sstring.h"
 
-class PEImage;
-class PEAssembly;
-
 namespace BINDER_SPACE
 {
     class AssemblyVersion;
