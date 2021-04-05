@@ -313,7 +313,7 @@ int32_t AndroidCryptoNative_DsaKeyCreateByExplicitParameters(
 error:
     returnValue = FAIL;
 cleanup:
-    RELEASE_LOCALS_ENV(bn, ReleaseGRef);
+    RELEASE_LOCALS_ENV(bn, ReleaseLRef);
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
 
     return returnValue;
