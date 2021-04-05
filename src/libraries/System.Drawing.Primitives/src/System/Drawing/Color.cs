@@ -488,33 +488,25 @@ namespace System.Drawing
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void MinMaxRgb(out int min, out int max, int r, int g, int b)
+        private static void MinMaxRgb(out int min, out int max, int r, int g, int b)
         {
-            if (b < g)
+            if (r > g)
             {
-                if (b < r)
-                {
-                    min = b;
-                    max = r < g ? g : r;
-                }
-                else
-                {
-                    min = r;
-                    max = g;
-                }
+                max = r;
+                min = g;
             }
             else
             {
-                if (r < b)
-                {
-                    max = b;
-                    min = g < r ? g : r;
-                }
-                else
-                {
-                    max = r;
-                    min = g;
-                }
+                max = g;
+                min = r;
+            }
+            if (b > max)
+            {
+                max = b;
+            }
+            else if (b < min)
+            {
+                min = b;
             }
         }
 
