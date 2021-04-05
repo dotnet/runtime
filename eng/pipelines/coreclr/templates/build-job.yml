@@ -130,7 +130,7 @@ jobs:
       value: ''
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
       - name: clrBuildPALTestsBuildArg
-        value: '-paltests '
+        value: '-component runtime -component alljits -component paltests '
 
     - name: pgoInstrumentArg
       value: ''

@@ -120,4 +120,4 @@ elseif(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_WIN32)
 
 # add the install targets
-install_clr(TARGETS mscordbi ADDITIONAL_DESTINATIONS sharedFramework)
+install_clr(TARGETS mscordbi DESTINATIONS . sharedFramework COMPONENT runtime)

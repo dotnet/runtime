@@ -219,6 +219,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
         add_custom_target(inject_debug_resources_coreclr ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources_coreclr.timestamp)
+        add_dependencies(runtime inject_debug_resources_coreclr)
     endif()
 
     add_custom_command(
@@ -240,11 +241,12 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
         add_custom_target(inject_debug_resources_singlefilehost ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources_singlefilehost.timestamp)
+        add_dependencies(runtime inject_debug_resources_singlefilehost)
     endif()
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
-install_clr(TARGETS coreclr ADDITIONAL_DESTINATIONS sharedFramework)
+install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
 
 # Enable profile guided optimization
 add_pgo(coreclr)
