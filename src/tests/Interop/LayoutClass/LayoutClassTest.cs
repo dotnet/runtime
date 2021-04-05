@@ -134,6 +134,9 @@ namespace PInvokeTests
         [DllImport("LayoutClassNative")]
         private static extern bool SimpleExpLayoutClassByRef(ExpClass p);
 
+        [DllImport("LayoutClassNative")]
+        private static extern bool SimpleBlittableSeqLayoutClass_Null(Blittable p);
+
         [DllImport("LayoutClassNative", EntryPoint = SimpleBlittableSeqLayoutClass_UpdateField)]
         private static extern bool SimpleBlittableSeqLayoutClassByRef(Blittable p);
 
@@ -198,6 +201,13 @@ namespace PInvokeTests
             // [Compat] Marshalled with [In, Out] behaviour by default
             Console.WriteLine($"Running {nameof(BlittableClass)}...");
             ValidateBlittableClassInOut(SimpleBlittableSeqLayoutClassByRef);
+        }
+
+        public static void BlittableClassNull()
+        {
+            // [Compat] Marshalled with [In, Out] behaviour by default
+            Console.WriteLine($"Running {nameof(BlittableClassNull)}...");
+            Assert.IsTrue(SimpleBlittableSeqLayoutClass_Null(null)));
         }
 
         public static void BlittableClassByInAttr()
@@ -272,6 +282,7 @@ namespace PInvokeTests
                 DerivedClassWithEmptyBase();
                 ExplicitClass();
                 BlittableClass();
+                BlittableClassNull();
                 SealedBlittableClass();
                 BlittableClassByInAttr();
                 SealedBlittableClassByInAttr();

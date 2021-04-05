@@ -91,6 +91,12 @@ DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleBlittableSeqLayoutClass_UpdateField(Blit
 }
 
 extern "C"
+DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleBlittableSeqLayoutClass_Null(BlittableClass* p)
+{
+    return p == NULL ? TRUE : FALSE;
+}
+
+extern "C"
 DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleNestedLayoutClassByValue(NestedLayoutClass v)
 {
     return SimpleSeqLayoutClassByRef(&v.str);
