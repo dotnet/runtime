@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private object VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
         {
             bool lockTaken = false;
-            IDictionary<ServiceCacheKey, object> resolvedServices = serviceProviderEngine.ResolvedServices;
+            object sync = serviceProviderEngine.Sync;
 
             // Taking locks only once allows us to fork resolution process
             // on another thread without causing the deadlock because we
@@ -98,7 +98,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // releasing the lock
             if ((context.AcquiredLocks & lockType) == 0)
             {
-                Monitor.Enter(resolvedServices, ref lockTaken);
+                Monitor.Enter(sync, ref lockTaken);
             }
 
             try
@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 if (lockTaken)
                 {
-                    Monitor.Exit(resolvedServices);
+                    Monitor.Exit(sync);
                 }
             }
         }
@@ -123,7 +123,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // For scoped: takes a dictionary as both a resolution lock and a dictionary access lock.
             Debug.Assert(
                 (lockType == RuntimeResolverLock.Root && resolvedServices is ConcurrentDictionary<ServiceCacheKey, object>) ||
-                (lockType == RuntimeResolverLock.Scope && Monitor.IsEntered(resolvedServices)));
+                (lockType == RuntimeResolverLock.Scope && Monitor.IsEntered(serviceProviderEngine.Sync)));
 
             if (resolvedServices.TryGetValue(callSite.Cache.Key, out object resolved))
             {

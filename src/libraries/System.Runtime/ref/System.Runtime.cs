@@ -3191,6 +3191,7 @@ namespace System
         public virtual float NextSingle() { throw null; }
         public virtual double NextDouble() { throw null; }
         protected virtual double Sample() { throw null; }
+        public static System.Random Shared { get { throw null; } }
     }
     public readonly partial struct Range : System.IEquatable<System.Range>
     {
@@ -3699,6 +3700,8 @@ namespace System
         public static System.StringComparer FromComparison(System.StringComparison comparisonType) { throw null; }
         public int GetHashCode(object obj) { throw null; }
         public abstract int GetHashCode(string obj);
+        public static bool IsWellKnownCultureAwareComparer(System.Collections.Generic.IEqualityComparer<string?>? comparer, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Globalization.CompareInfo? compareInfo, out System.Globalization.CompareOptions compareOptions) { throw null; }
+        public static bool IsWellKnownOrdinalComparer(System.Collections.Generic.IEqualityComparer<string?>? comparer, out bool ignoreCase) { throw null; }
     }
     public enum StringComparison
     {
@@ -6008,7 +6011,7 @@ namespace System.Diagnostics.CodeAnalysis
         public string? Message { get { throw null; } set { } }
         public string? Url { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class RequiresUnreferencedCodeAttribute : System.Attribute
     {
         public RequiresUnreferencedCodeAttribute(string message) { }
@@ -9114,7 +9117,7 @@ namespace System.Runtime.CompilerServices
     {
         public AsyncIteratorStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
     public sealed partial class AsyncMethodBuilderAttribute : System.Attribute
     {
         public AsyncMethodBuilderAttribute(System.Type builderType) { }
@@ -9524,6 +9527,33 @@ namespace System.Runtime.CompilerServices
     {
         public ModuleInitializerAttribute() { }
     }
+    public partial struct PoolingAsyncValueTaskMethodBuilder
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        public System.Threading.Tasks.ValueTask Task { get { throw null; } }
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public static System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder Create() { throw null; }
+        public void SetException(System.Exception exception) { }
+        public void SetResult() { }
+        public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
+        public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+    }
+    public partial struct PoolingAsyncValueTaskMethodBuilder<TResult>
+    {
+        private TResult _result;
+        private object _dummy;
+        private int _dummyPrimitive;
+        public System.Threading.Tasks.ValueTask<TResult> Task { get { throw null; } }
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public static System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder<TResult> Create() { throw null; }
+        public void SetException(System.Exception exception) { }
+        public void SetResult(TResult result) { }
+        public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
+        public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class PreserveBaseOverridesAttribute : System.Attribute
     {
@@ -9753,6 +9783,7 @@ namespace System.Runtime.ExceptionServices
         public System.Exception SourceException { get { throw null; } }
         public static System.Runtime.ExceptionServices.ExceptionDispatchInfo Capture(System.Exception source) { throw null; }
         public static System.Exception SetCurrentStackTrace(System.Exception source) { throw null; }
+        public static System.Exception SetRemoteStackTrace(System.Exception source, string stackTrace) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         public void Throw() => throw null;
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]

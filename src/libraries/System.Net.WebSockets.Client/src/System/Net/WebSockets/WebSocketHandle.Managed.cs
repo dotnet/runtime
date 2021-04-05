@@ -162,7 +162,18 @@ namespace System.Net.WebSockets
                     string[] subprotocolArray = (string[])subprotocolEnumerableValues;
                     if (subprotocolArray.Length > 0 && !string.IsNullOrEmpty(subprotocolArray[0]))
                     {
-                        subprotocol = options.RequestedSubProtocols.Find(requested => string.Equals(requested, subprotocolArray[0], StringComparison.OrdinalIgnoreCase));
+                        if (options._requestedSubProtocols is not null)
+                        {
+                            foreach (string requestedProtocol in options._requestedSubProtocols)
+                            {
+                                if (requestedProtocol.Equals(subprotocolArray[0], StringComparison.OrdinalIgnoreCase))
+                                {
+                                    subprotocol = requestedProtocol;
+                                    break;
+                                }
+                            }
+                        }
+
                         if (subprotocol == null)
                         {
                             throw new WebSocketException(

@@ -417,7 +417,7 @@ jobs:
       osGroup: tvOSSimulator
       archType: x64
       targetRid: tvossimulator-x64
-      platform: tvOSSimulatorim_x64
+      platform: tvOSSimulator_x64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}

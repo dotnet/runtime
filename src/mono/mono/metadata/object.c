@@ -2786,7 +2786,7 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 	} else {
 		dest = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
 	}
-	mono_copy_value (field->type, dest, value, FALSE);
+	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
 }
 
 gpointer
