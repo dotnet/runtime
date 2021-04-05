@@ -94,8 +94,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 if (_options is { BackgroundServiceExceptionBehavior: BackgroundServiceExceptionBehavior.StopHost })
                 {
                     _logger.LogCritical(SR.Format(SR.BackgroundServiceExceptionStoppedHost, ex));
-
-                    await StopAsync(CancellationToken.None).ConfigureAwait(false);
+                    _applicationLifetime.StopApplication();
                 }
             }
         }

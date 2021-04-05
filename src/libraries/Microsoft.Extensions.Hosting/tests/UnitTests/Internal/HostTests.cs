@@ -672,20 +672,20 @@ namespace Microsoft.Extensions.Hosting.Internal
                     })
                 .Build();
 
-            await host.StartAsync();
-
             var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            var wasStartedCalled = false;
+            lifetime.ApplicationStarted.Register(() => wasStartedCalled = true);
             var wasStoppingCalled = false;
             lifetime.ApplicationStopping.Register(() => wasStoppingCalled = true);
-            var wasStoppedCalled = false;
-            lifetime.ApplicationStopped.Register(() => wasStoppedCalled = true);
+
+            await host.StartAsync();
 
             Assert.True(
-                wasStoppingCalled,
-                $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, gracefully stopping the host.");
+                wasStartedCalled,
+                $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, started should not have been called.");
             Assert.True(
-                wasStoppedCalled,
-                $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, gracefully stopping the host.");
+                wasStoppingCalled,
+                $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, stopping should have been called.");
         }
 
         [Fact]
