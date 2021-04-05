@@ -23,6 +23,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/jit-info.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <string.h>

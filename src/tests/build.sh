@@ -148,8 +148,7 @@ precompile_coreroot_fx()
     # processors available to a single process.
     local platform="$(uname)"
     if [[ "$platform" == "FreeBSD" ]]; then
-        output=("$(sysctl hw.ncpu)")
-        __NumProc="$((output[1] + 1))"
+        __NumProc=$(($(sysctl -n hw.ncpu)+1))
     elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
         __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
     elif [[ "$platform" == "Darwin" ]]; then

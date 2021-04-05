@@ -14,7 +14,7 @@ set __BuildTarget="build"
 set __TargetOS=windows
 set CMAKE_BUILD_TYPE=Debug
 set "__LinkLibraries= "
-set __Ninja=0
+set __Ninja=1
 
 :Arg_Loop
 :: Since the native build requires some configuration information before msbuild is called, we have to do some manual args parsing
@@ -36,7 +36,7 @@ if /i [%1] == [Browser] ( set __TargetOS=Browser&&shift&goto Arg_Loop)
 
 if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 
-if /i [%1] == [ninja] ( set __Ninja=1&&shift&goto Arg_Loop)
+if /i [%1] == [msbuild] ( set __Ninja=0&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
@@ -65,6 +65,9 @@ if %__CMakeBinDir% == "" (
 )
 if %__IntermediatesDir% == "" (
     set "__IntermediatesDir=%__artifactsDir%\obj\native\%__outConfig%"
+)
+if %__Ninja% == 0 (
+    set "__IntermediatesDir=%__IntermediatesDir%\ide"
 )
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"

@@ -25,7 +25,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class XmlSchemaSubstitutionGroupV1Compat : XmlSchemaSubstitutionGroup
+    internal sealed class XmlSchemaSubstitutionGroupV1Compat : XmlSchemaSubstitutionGroup
     {
         private readonly XmlSchemaChoice _choice = new XmlSchemaChoice();
 

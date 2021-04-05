@@ -113,6 +113,30 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 
 #endif // which host OS
 
+const BYTE genTypeSizes[] = {
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) sz,
+#include "typelist.h"
+#undef DEF_TP
+};
+
+const BYTE genTypeAlignments[] = {
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) al,
+#include "typelist.h"
+#undef DEF_TP
+};
+
+const BYTE genTypeStSzs[] = {
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) st,
+#include "typelist.h"
+#undef DEF_TP
+};
+
+const BYTE genActualTypes[] = {
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) jitType,
+#include "typelist.h"
+#undef DEF_TP
+};
+
 #endif // FEATURE_JIT_METHOD_PERF
 /*****************************************************************************/
 inline unsigned getCurTime()
@@ -2855,17 +2879,38 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             fgPgoData       = nullptr;
             fgPgoSchema     = nullptr;
         }
-        // Optionally, discard the profile data.
+        // Optionally, disable use of profile data.
         //
-        else if (JitConfig.JitDisablePGO() != 0)
+        else if (JitConfig.JitDisablePgo() > 0)
         {
-            fgPgoFailReason  = "PGO data available, but JitDisablePGO != 0";
+            fgPgoFailReason  = "PGO data available, but JitDisablePgo > 0";
             fgPgoQueryResult = E_FAIL;
             fgPgoData        = nullptr;
             fgPgoSchema      = nullptr;
+            fgPgoDisabled    = true;
+        }
+#ifdef DEBUG
+        // Optionally, enable use of profile data for only some methods.
+        //
+        else
+        {
+            static ConfigMethodRange JitEnablePgoRange;
+            JitEnablePgoRange.EnsureInit(JitConfig.JitEnablePgoRange());
+
+            // Base this decision on the root method hash, so a method either sees all available
+            // profile data (including that for inlinees), or none of it.
+            //
+            const unsigned hash = impInlineRoot()->info.compMethodHash();
+            if (!JitEnablePgoRange.Contains(hash))
+            {
+                fgPgoFailReason  = "PGO data available, but method hash NOT within JitEnablePgoRange";
+                fgPgoQueryResult = E_FAIL;
+                fgPgoData        = nullptr;
+                fgPgoSchema      = nullptr;
+                fgPgoDisabled    = true;
+            }
         }
 
-#ifdef DEBUG
         // A successful result implies a non-NULL fgPgoSchema
         //
         if (SUCCEEDED(fgPgoQueryResult))
@@ -4870,7 +4915,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
 
         // Clone loops with optimization opportunities, and
-        // choose the one based on dynamic condition evaluation.
+        // choose one based on dynamic condition evaluation.
         //
         DoPhase(this, PHASE_CLONE_LOOPS, &Compiler::optCloneLoops);
 
@@ -9068,6 +9113,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_IND_INVARIANT)
                 {
                     chars += printf("[IND_INVARIANT]");
+                }
+                if (tree->gtFlags & GTF_IND_NONNULL)
+                {
+                    chars += printf("[IND_NONNULL]");
                 }
                 break;
 

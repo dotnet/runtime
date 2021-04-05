@@ -47,39 +47,40 @@ PALEXPORT void AndroidCryptoNative_RsaDestroy(RSA* rsa)
 
 PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
-    if (!rsa)
-        return RSA_FAIL;
-
+    assert(rsa != NULL);
     JNIEnv* env = GetJNIEnv();
 
-    jobject algName;
+    int32_t ret = RSA_FAIL;
+    INIT_LOCALS(loc, algName, cipher, fromBytes, encryptedBytes);
+
     if (padding == Pkcs1)
-        algName = JSTRING("RSA/ECB/PKCS1Padding");
-    else if (padding == OaepSHA1)
-        algName = JSTRING("RSA/ECB/OAEPPadding");
-    else
-        algName = JSTRING("RSA/ECB/NoPadding");
-
-    jobject cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
-    (*env)->CallVoidMethod(env, cipher, g_cipherInit2Method, CIPHER_ENCRYPT_MODE, rsa->publicKey);
-    jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
-    (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
-    jbyteArray encryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
-    if (CheckJNIExceptions(env))
     {
-        (*env)->DeleteLocalRef(env, fromBytes);
-        (*env)->DeleteLocalRef(env, cipher);
-        return RSA_FAIL;
+        loc[algName] = JSTRING("RSA/ECB/PKCS1Padding");
     }
-    jsize encryptedBytesLen = (*env)->GetArrayLength(env, encryptedBytes);
-    (*env)->GetByteArrayRegion(env, encryptedBytes, 0, encryptedBytesLen, (jbyte*) to);
+    else if (padding == OaepSHA1)
+    {
+        loc[algName] = JSTRING("RSA/ECB/OAEPPadding");
+    }
+    else
+    {
+        loc[algName] = JSTRING("RSA/ECB/NoPadding");
+    }
 
-    (*env)->DeleteLocalRef(env, cipher);
-    (*env)->DeleteLocalRef(env, fromBytes);
-    (*env)->DeleteLocalRef(env, encryptedBytes);
-    (*env)->DeleteLocalRef(env, algName);
+    loc[cipher] = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, loc[algName]);
+    (*env)->CallVoidMethod(env, loc[cipher], g_cipherInit2Method, CIPHER_ENCRYPT_MODE, rsa->publicKey);
+    loc[fromBytes] = (*env)->NewByteArray(env, flen);
+    (*env)->SetByteArrayRegion(env, loc[fromBytes], 0, flen, (jbyte*)from);
+    loc[encryptedBytes] = (jbyteArray)(*env)->CallObjectMethod(env, loc[cipher], g_cipherDoFinal2Method, loc[fromBytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    return (int32_t)encryptedBytesLen;
+    jsize encryptedBytesLen = (*env)->GetArrayLength(env, loc[encryptedBytes]);
+    (*env)->GetByteArrayRegion(env, loc[encryptedBytes], 0, encryptedBytesLen, (jbyte*) to);
+
+    ret = (int32_t)encryptedBytesLen;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)

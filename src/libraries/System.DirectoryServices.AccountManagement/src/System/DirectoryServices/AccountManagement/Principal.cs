@@ -717,7 +717,7 @@ namespace System.DirectoryServices.AccountManagement
             else
                 _extensionCache.properties[attribute] = new ExtensionCacheValue(new object[] { value }, objectType, mt);
 
-            _extensionCacheChanged = LoadState.Changed; ;
+            _extensionCacheChanged = LoadState.Changed;
         }
 
         //

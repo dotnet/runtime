@@ -124,29 +124,39 @@ internal static partial class Interop
                 throw new CryptographicException();
             }
 
-            int modulusSize = RsaSize(key);
-
-            // RSACryptoServiceProvider expects P, DP, Q, DQ, and InverseQ to all
-            // be padded up to half the modulus size.
-            int halfModulus = modulusSize / 2;
-
-            RSAParameters rsaParameters = new RSAParameters
+            using (n)
+            using (e)
+            using (d)
+            using (p)
+            using (dmp1)
+            using (q)
+            using (dmq1)
+            using (iqmp)
             {
-                Modulus = Crypto.ExtractBignum(n, modulusSize)!,
-                Exponent = Crypto.ExtractBignum(e, 0)!,
-            };
+                int modulusSize = RsaSize(key);
 
-            if (includePrivateParameters)
-            {
-                rsaParameters.D = Crypto.ExtractBignum(d, modulusSize);
-                rsaParameters.P = Crypto.ExtractBignum(p, halfModulus);
-                rsaParameters.DP = Crypto.ExtractBignum(dmp1, halfModulus);
-                rsaParameters.Q = Crypto.ExtractBignum(q, halfModulus);
-                rsaParameters.DQ = Crypto.ExtractBignum(dmq1, halfModulus);
-                rsaParameters.InverseQ = Crypto.ExtractBignum(iqmp, halfModulus);
+                // RSACryptoServiceProvider expects P, DP, Q, DQ, and InverseQ to all
+                // be padded up to half the modulus size.
+                int halfModulus = modulusSize / 2;
+
+                RSAParameters rsaParameters = new RSAParameters
+                {
+                    Modulus = Crypto.ExtractBignum(n, modulusSize)!,
+                    Exponent = Crypto.ExtractBignum(e, 0)!,
+                };
+
+                if (includePrivateParameters)
+                {
+                    rsaParameters.D = Crypto.ExtractBignum(d, modulusSize);
+                    rsaParameters.P = Crypto.ExtractBignum(p, halfModulus);
+                    rsaParameters.DP = Crypto.ExtractBignum(dmp1, halfModulus);
+                    rsaParameters.Q = Crypto.ExtractBignum(q, halfModulus);
+                    rsaParameters.DQ = Crypto.ExtractBignum(dmq1, halfModulus);
+                    rsaParameters.InverseQ = Crypto.ExtractBignum(iqmp, halfModulus);
+                }
+
+                return rsaParameters;
             }
-
-            return rsaParameters;
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_GetRsaParameters")]

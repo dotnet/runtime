@@ -19,6 +19,10 @@ set(SKIP_VERSIONING 1)
 include_directories(..)
 include_directories(../../json)
 
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    include_directories(../../../../libraries/Native/Unix/Common)
+endif()
+
 set(SOURCES
     ../bundle_marker.cpp
     ./hostfxr_resolver.cpp

@@ -12,7 +12,7 @@ using System.Xml.Extensions;
 
 namespace System.Xml.Serialization
 {
-    internal class SourceInfo
+    internal sealed class SourceInfo
     {
         //a[ia]
         //((global::System.Xml.Serialization.XmlSerializerNamespaces)p[0])

@@ -6,7 +6,7 @@ using System.IO;
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxIPInterfaceProperties : UnixIPInterfaceProperties
+    internal sealed class LinuxIPInterfaceProperties : UnixIPInterfaceProperties
     {
         private readonly LinuxNetworkInterface _linuxNetworkInterface;
         private readonly GatewayIPAddressInformationCollection _gatewayAddresses;

@@ -61,9 +61,13 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_localeNumberData.c
     pal_localeStringData.c
     pal_normalization.c
-    pal_timeZoneInfo.c
     pal_icushim.c
 )
+
+# time zone names are filtered out of icu data for the browser and associated functionality is disabled
+if (NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_timeZoneInfo.c)
+endif()
 
 if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} entrypoints.c)

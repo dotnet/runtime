@@ -164,17 +164,21 @@ void Compiler::fgInit()
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
 
-    fgHasSwitch          = false;
-    fgPgoSchema          = nullptr;
-    fgPgoData            = nullptr;
-    fgPgoSchemaCount     = 0;
-    fgNumProfileRuns     = 0;
-    fgPgoBlockCounts     = 0;
-    fgPgoEdgeCounts      = 0;
-    fgPgoClassProfiles   = 0;
-    fgCountInstrumentor  = nullptr;
-    fgClassInstrumentor  = nullptr;
-    fgPredListSortVector = nullptr;
+    fgHasSwitch                  = false;
+    fgPgoDisabled                = false;
+    fgPgoSchema                  = nullptr;
+    fgPgoData                    = nullptr;
+    fgPgoSchemaCount             = 0;
+    fgNumProfileRuns             = 0;
+    fgPgoBlockCounts             = 0;
+    fgPgoEdgeCounts              = 0;
+    fgPgoClassProfiles           = 0;
+    fgPgoInlineePgo              = 0;
+    fgPgoInlineeNoPgo            = 0;
+    fgPgoInlineeNoPgoSingleBlock = 0;
+    fgCountInstrumentor          = nullptr;
+    fgClassInstrumentor          = nullptr;
+    fgPredListSortVector         = nullptr;
 }
 
 /*****************************************************************************
@@ -4219,12 +4223,12 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                         flowList* newEdge = fgGetPredForBlock(jmpBlk, bSrc);
 
                         jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
-                        if (bSrc->bbWeight == 0)
+                        if (bSrc->bbWeight == BB_ZERO_WEIGHT)
                         {
-                            jmpBlk->bbWeight = 0;
+                            jmpBlk->bbWeight = BB_ZERO_WEIGHT;
                         }
 
-                        if (jmpBlk->bbWeight == 0)
+                        if (jmpBlk->bbWeight == BB_ZERO_WEIGHT)
                         {
                             jmpBlk->bbFlags |= BBF_RUN_RARELY;
                         }

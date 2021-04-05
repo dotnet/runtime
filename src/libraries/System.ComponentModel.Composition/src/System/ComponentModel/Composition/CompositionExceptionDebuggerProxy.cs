@@ -9,7 +9,7 @@ using Microsoft.Internal.Collections;
 
 namespace System.ComponentModel.Composition
 {
-    internal class CompositionExceptionDebuggerProxy
+    internal sealed class CompositionExceptionDebuggerProxy
     {
         private readonly CompositionException _exception;
 

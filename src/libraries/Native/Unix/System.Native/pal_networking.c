@@ -2031,7 +2031,14 @@ int32_t SystemNative_GetSockOpt(
     {
         if (socketOptionName == SocketOptionName_SO_IP_DONTFRAGMENT)
         {
-            *optionValue = *optionValue == IP_PMTUDISC_DO ? 1 : 0;
+            if (optLen >= (socklen_t)sizeof(int))
+            {
+                *(int*)optionValue = *(int*)optionValue == IP_PMTUDISC_DO ? 1 : 0;
+            }
+            else
+            {
+                *optionValue = *optionValue == IP_PMTUDISC_DO ? 1 : 0;
+            }
         }
     }
 #endif
@@ -2139,7 +2146,14 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
     {
         if (socketOptionName == SocketOptionName_SO_IP_DONTFRAGMENT)
         {
-            *optionValue = *optionValue != 0 ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
+            if ((socklen_t)optionLen >= (socklen_t)sizeof(int))
+            {
+                *(int*)optionValue = *(int*)optionValue != 0 ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
+            }
+            else
+            {
+                *optionValue = *optionValue != 0 ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
+            }
         }
     }
 #endif

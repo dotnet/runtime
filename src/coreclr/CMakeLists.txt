@@ -12,8 +12,6 @@ include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 if(MSVC)
-  string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHa>) # enable C++ EH (w/ SEH exceptions)
   set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
 endif (MSVC)
 
@@ -56,6 +54,22 @@ include(pgosupport.cmake)
 # Define sub-component targets for the build
 #---------------------------------------------------
 include(components.cmake)
+
+#---------------------------
+# Build the single file host
+#---------------------------
+if(NOT CLR_CROSS_COMPONENTS_BUILD)
+  set(CLR_SINGLE_FILE_HOST_ONLY 1)
+  add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
+  add_dependencies(runtime singlefilehost)
+endif()
+#-------------------------
+# Enable C++ EH with SEH
+#-------------------------
+if (MSVC)
+  string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHa>) # enable C++ EH (w/ SEH exceptions)
+endif()
 
 #-------------------------------
 # Include libraries native shims
@@ -133,12 +147,6 @@ if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
   add_subdirectory(gc)
 endif(FEATURE_STANDALONE_GC)
-
-if(NOT CLR_CROSS_COMPONENTS_BUILD)
-  set(CLR_SINGLE_FILE_HOST_ONLY 1)
-  add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
-  add_dependencies(runtime singlefilehost)
-endif()
 
 if (CLR_CMAKE_HOST_UNIX)
   include_directories("pal/inc")

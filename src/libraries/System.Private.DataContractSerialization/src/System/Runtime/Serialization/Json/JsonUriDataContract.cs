@@ -9,7 +9,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonUriDataContract : JsonDataContract
+    internal sealed class JsonUriDataContract : JsonDataContract
     {
         public JsonUriDataContract(UriDataContract traditionalUriDataContract)
             : base(traditionalUriDataContract)

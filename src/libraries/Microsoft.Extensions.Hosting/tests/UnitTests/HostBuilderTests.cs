@@ -11,6 +11,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting.Fakes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
@@ -532,6 +533,20 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        public void DisposingHostDisposesContentFileProvider()
+        {
+            var host = new HostBuilder()
+                .Build();
+
+            var env = host.Services.GetRequiredService<IHostEnvironment>();
+            var fileProvider = new FakeFileProvider();
+            env.ContentRootFileProvider = fileProvider;
+
+            host.Dispose();
+            Assert.True(fileProvider.Disposed);
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void HostServicesSameServiceProviderAsInHostBuilder()
         {
@@ -542,6 +557,28 @@ namespace Microsoft.Extensions.Hosting.Tests
             var field = type.GetField("_appServices", BindingFlags.Instance | BindingFlags.NonPublic)!;
             var appServicesFromHostBuilder = (IServiceProvider)field.GetValue(hostBuilder)!;
             Assert.Same(appServicesFromHostBuilder, host.Services);
+        }
+
+        [Fact]
+        public void HostBuilderConfigureDefaultsInterleavesMissingConfigValues()
+        {
+            IHostBuilder hostBuilder = new HostBuilder();
+            hostBuilder.ConfigureDefaults(args: null);
+
+            using var host = hostBuilder.Build();
+            var env = host.Services.GetRequiredService<IHostEnvironment>();
+
+            var expectedContentRootPath = Directory.GetCurrentDirectory();
+            Assert.Equal(expectedContentRootPath, env.ContentRootPath);
+        }
+
+        private class FakeFileProvider : IFileProvider, IDisposable
+        {
+            public bool Disposed { get; private set; }
+            public void Dispose() => Disposed = true;
+            public IDirectoryContents GetDirectoryContents(string subpath) => throw new NotImplementedException();
+            public IFileInfo GetFileInfo(string subpath) => throw new NotImplementedException();
+            public IChangeToken Watch(string filter) => throw new NotImplementedException();
         }
 
         private class ServiceC

@@ -817,7 +817,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
 
         if (condTree->OperGet() == GT_CNS_INT)
         {
-            JITDUMP(" ... found foldable jtrue at [%06u] in BB%02u\n", dspTreeID(tree), block->bbNum);
+            JITDUMP(" ... found foldable jtrue at [%06u] in " FMT_BB "\n", dspTreeID(tree), block->bbNum);
             noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
 
             // We have a constant operand, and should have the all clear to optimize.
@@ -849,7 +849,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             // other transitively unreachable blocks.
             if (bNotTaken->bbRefs == 0)
             {
-                JITDUMP("... it looks like BB%02u is now unreachable!\n", bNotTaken->bbNum);
+                JITDUMP("... it looks like " FMT_BB " is now unreachable!\n", bNotTaken->bbNum);
             }
         }
     }
@@ -1365,15 +1365,16 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             continue;
         }
 
-        if (inheritWeight)
+        // If we were unable to compute a scale for some reason, then
+        // try to do something plausible. Entry/exit blocks match call
+        // site, internal blocks scaled by half; all rare blocks left alone.
+        //
+        if (!block->isRunRarely())
         {
-            block->inheritWeight(iciBlock);
-            inheritWeight = false;
+            block->inheritWeightPercentage(iciBlock, inheritWeight ? 100 : 50);
         }
-        else
-        {
-            block->modifyBBWeight(iciBlock->bbWeight / 2);
-        }
+
+        inheritWeight = false;
     }
 
     // Insert inlinee's blocks into inliner's block list.
@@ -1426,7 +1427,30 @@ _Done:
     // Update unmanaged call details
     info.compUnmanagedCallCountWithGCTransition += InlineeCompiler->info.compUnmanagedCallCountWithGCTransition;
 
-// Update optMethodFlags
+    // Update stats for inlinee PGO
+    //
+    if (InlineeCompiler->fgPgoSchema != nullptr)
+    {
+        fgPgoInlineePgo++;
+    }
+    else if (InlineeCompiler->fgPgoFailReason != nullptr)
+    {
+        // Single block inlinees may not have probes
+        // when we've ensabled minimal profiling (which
+        // is now the default).
+        //
+        if (InlineeCompiler->fgBBcount == 1)
+        {
+            fgPgoInlineeNoPgoSingleBlock++;
+        }
+        else
+        {
+            fgPgoInlineeNoPgo++;
+        }
+    }
+
+    // Update optMethodFlags
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     unsigned optMethodFlagsBefore = optMethodFlags;

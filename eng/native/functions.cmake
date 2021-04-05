@@ -490,33 +490,13 @@ function(add_library_clr)
     endif()
 endfunction()
 
-function(generate_module_index Target ModuleIndexFile)
-    if(CLR_CMAKE_HOST_WIN32)
-        set(scriptExt ".cmd")
-    else()
-        set(scriptExt ".sh")
-    endif()
+function(add_library_clr)
+    _add_library(${ARGV})
+endfunction()
 
-    set(index_timestamp ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${Target}_index.timestamp)
-
-    add_custom_command(
-        OUTPUT ${index_timestamp}
-        COMMAND ${CLR_ENG_NATIVE_DIR}/genmoduleindex${scriptExt} $<TARGET_FILE:${Target}> ${ModuleIndexFile}
-        COMMAND ${CMAKE_COMMAND} -E touch ${index_timestamp}
-        DEPENDS ${Target}
-        COMMENT "Generating ${Target} module index file -> ${ModuleIndexFile}"
-    )
-
-    set_source_files_properties(
-        ${ModuleIndexFile}
-        PROPERTIES GENERATED TRUE
-    )
-
-    add_custom_target(
-        ${Target}_module_index_header
-        DEPENDS ${index_timestamp}
-    )
-endfunction(generate_module_index)
+function(add_executable_clr)
+    _add_executable(${ARGV})
+endfunction()
 
 # add_linker_flag(Flag [Config1 Config2 ...])
 function(add_linker_flag Flag)

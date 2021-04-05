@@ -10,15 +10,26 @@ using namespace bundle;
 
 bool file_entry_t::is_valid() const
 {
-    return m_offset > 0 && m_size >= 0 &&
+    return m_offset > 0 && m_size >= 0 && m_compressedSize >= 0 &&
         static_cast<file_type_t>(m_type) < file_type_t::__last;
 }
 
-file_entry_t file_entry_t::read(reader_t &reader, bool force_extraction)
+file_entry_t file_entry_t::read(reader_t &reader, uint32_t bundle_major_version, bool force_extraction)
 {
     // First read the fixed-sized portion of file-entry
-    const file_entry_fixed_t* fixed_data = reinterpret_cast<const file_entry_fixed_t*>(reader.read_direct(sizeof(file_entry_fixed_t)));
-    file_entry_t entry(fixed_data, force_extraction);
+    file_entry_fixed_t fixed_data;
+
+    fixed_data.offset = *(int64_t*)reader.read_direct(sizeof(int64_t));
+    fixed_data.size   = *(int64_t*)reader.read_direct(sizeof(int64_t));
+
+    // compressedSize is present only in v6+ headers
+    fixed_data.compressedSize = bundle_major_version >= 6 ?
+                        *(int64_t*)reader.read_direct(sizeof(int64_t)) :
+                        0;
+
+    fixed_data.type   = *(file_type_t*)reader.read_direct(sizeof(file_type_t));
+
+    file_entry_t entry(&fixed_data, force_extraction);
 
     if (!entry.is_valid())
     {
