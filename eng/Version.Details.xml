@@ -90,9 +90,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>f69d7fc09c4fdb9e9427741b9a176e867dab577f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.5.0-preview-20191115-01">
+    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.9.0-preview-20201201-01">
       <Uri>https://github.com/microsoft/vstest</Uri>
-      <Sha>ca24ad0d8b48021ddbe98e4d688bb7e31c7b7eaf</Sha>
+      <Sha>140434f7109d357d0158ade9e5164a4861513965</Sha>
     </Dependency>
     <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="6.0.0-beta.21174.2">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
@@ -162,9 +162,9 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>a2bf9755287bdd3dcf998e41042e79dfd0136c85</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-alpha.1.19618.1">
+    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-rc.1.20451.14">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>d86d0668bbb1c51695b7b914e60e49aec1fdefbb</Sha>
+      <Sha>38017c3935de95d0335bac04f4901ddfc2718656</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.DotNetHost" Version="6.0.0-preview.4.21178.6">
       <Uri>https://github.com/dotnet/runtime</Uri>
