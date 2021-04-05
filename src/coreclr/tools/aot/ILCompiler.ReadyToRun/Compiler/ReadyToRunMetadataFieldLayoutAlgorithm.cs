@@ -821,7 +821,7 @@ namespace ILCompiler
         {
             if (requiresAlignedBase || _compilationGroup.NeedsAlignmentBetweenBaseTypeAndDerived(baseType: (MetadataType)type.BaseType, derivedType: type))
             {
-                LayoutInt alignment = new LayoutInt(requiresAlign8 ? 8 : type.Context.Target.PointerSize);
+                LayoutInt alignment = new LayoutInt(requiresAlign8 || type.BaseType.RequiresAlign8() ? 8 : type.Context.Target.PointerSize);
                 baseOffset = LayoutInt.AlignUp(baseOffset, alignment, type.Context.Target);
             }
         }

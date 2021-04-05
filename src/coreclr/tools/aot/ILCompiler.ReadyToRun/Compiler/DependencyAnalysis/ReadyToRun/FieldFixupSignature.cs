@@ -51,8 +51,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         && !_fieldDesc.IsStatic
                         && !_fieldDesc.OwningType.IsValueType)
                     {
-                        baseOffset = (uint)((MetadataType)_fieldDesc.OwningType).FieldBaseOffset().AsInt;
-                        if (!factory.CompilationModuleGroup.VersionsWithType(_fieldDesc.OwningType.BaseType))
+                        MetadataType owningType = (MetadataType)_fieldDesc.OwningType;
+                        baseOffset = (uint)owningType.FieldBaseOffset().AsInt;
+                        if (factory.CompilationModuleGroup.NeedsAlignmentBetweenBaseTypeAndDerived((MetadataType)baseType, owningType))
                         {
                             fieldOffset -= baseOffset;
                             baseOffset = 0;
