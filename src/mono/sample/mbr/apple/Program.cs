@@ -30,7 +30,7 @@ public static class Program
     [UnmanagedCallersOnly]
     private static void OnApplyUpdateClick()
     {
-	deltaHelper.Update (typeof(ChangeablePart).Assembly);
+        deltaHelper.Update (typeof(ChangeablePart).Assembly);
     }
 
     static MonoDelta.DeltaHelper deltaHelper;
@@ -41,10 +41,10 @@ public static class Program
             // Register a managed callback (will be called by UIButton, see main.m)
             delegate* unmanaged<void> unmanagedPtr = &OnButtonClick;
             ios_register_button_click(unmanagedPtr);
-	    delegate* unmanaged<void> unmanagedPtr2 = &OnApplyUpdateClick;
-	    ios_register_applyupdate_click(unmanagedPtr2);
+            delegate* unmanaged<void> unmanagedPtr2 = &OnApplyUpdateClick;
+            ios_register_applyupdate_click(unmanagedPtr2);
         }
-	deltaHelper = MonoDelta.DeltaHelper.Make();
+        deltaHelper = MonoDelta.DeltaHelper.Make();
         const string msg = "Hello World!\n.NET 5.0";
         for (int i = 0; i < msg.Length; i++)
         {
