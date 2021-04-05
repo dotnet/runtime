@@ -217,7 +217,7 @@ namespace PInvokeTests
         {
             // [Compat] Marshalled with [In, Out] behaviour by default
             Console.WriteLine($"Running {nameof(BlittableClassNull)}...");
-            Assert.IsTrue(SimpleBlittableSeqLayoutClass_Null(null)));
+            Assert.IsTrue(SimpleBlittableSeqLayoutClass_Null(null));
         }
 
         public static void BlittableClassByInAttr()
