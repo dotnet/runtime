@@ -71,6 +71,25 @@ typedef enum __PEKIND
     peInvalid   = 0xffffffff,
 } PEKIND;
 
+struct AssemblyNameData
+{
+    LPCSTR Name;
+    LPCSTR Culture;
+
+    const BYTE* PublicKeyOrToken;
+    DWORD PublicKeyOrTokenLength;
+
+    DWORD MajorVersion;
+    DWORD MinorVersion;
+    DWORD BuildNumber;
+    DWORD RevisionNumber;
+
+    PEKIND ProcessorArchitecture;
+    AssemblyContentType ContentType;
+
+    DWORD IdentityFlags;
+};
+
 #define IF_FAIL_GO(expr)                        \
     hr = (expr);                                \
     if (FAILED(hr))                             \

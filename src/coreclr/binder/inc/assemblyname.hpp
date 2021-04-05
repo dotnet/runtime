@@ -46,6 +46,7 @@ namespace BINDER_SPACE
                      /* in */ mdAssemblyRef            mda = 0,
                      /* in */ BOOL                     fIsDefinition = TRUE);
         HRESULT Init(/* in */ SString &assemblyDisplayName);
+        HRESULT Init(/* in */ const AssemblyNameData &data);
 
         ULONG AddRef();
         ULONG Release();

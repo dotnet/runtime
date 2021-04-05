@@ -87,7 +87,7 @@ EXTERN_C const IID IID_ICLRPrivBinder;
     {
     public:
         virtual HRESULT STDMETHODCALLTYPE BindAssemblyByName( 
-            /* [string][in] */ const WCHAR *pAssemblyFullName,
+            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetBinderID( 
@@ -119,7 +119,7 @@ EXTERN_C const IID IID_ICLRPrivBinder;
         
         HRESULT ( STDMETHODCALLTYPE *BindAssemblyByName )( 
             ICLRPrivBinder * This,
-            /* [string][in] */ const WCHAR *pAssemblyFullName,
+            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
         
         HRESULT ( STDMETHODCALLTYPE *GetBinderID )( 
@@ -153,8 +153,8 @@ EXTERN_C const IID IID_ICLRPrivBinder;
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICLRPrivBinder_BindAssemblyByName(This,pAssemblyFullName,ppAssembly)	\
-    ( (This)->lpVtbl -> BindAssemblyByName(This,pAssemblyFullName,ppAssembly) ) 
+#define ICLRPrivBinder_BindAssemblyByName(This,pAssemblyNameData,ppAssembly)	\
+    ( (This)->lpVtbl -> BindAssemblyByName(This,pAssemblyNameData,ppAssembly) ) 
 
 #define ICLRPrivBinder_GetBinderID(This,pBinderId)	\
     ( (This)->lpVtbl -> GetBinderID(This,pBinderId) ) 
@@ -230,7 +230,7 @@ EXTERN_C const IID IID_ICLRPrivAssembly;
         
         HRESULT ( STDMETHODCALLTYPE *BindAssemblyByName )( 
             ICLRPrivAssembly * This,
-            /* [string][in] */ const WCHAR *pAssemblyFullName,
+            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
         
         HRESULT ( STDMETHODCALLTYPE *GetBinderID )( 
@@ -268,8 +268,8 @@ EXTERN_C const IID IID_ICLRPrivAssembly;
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICLRPrivAssembly_BindAssemblyByName(This,pAssemblyFullName,ppAssembly)	\
-    ( (This)->lpVtbl -> BindAssemblyByName(This,pAssemblyFullName,ppAssembly) ) 
+#define ICLRPrivAssembly_BindAssemblyByName(This,pAssemblyNameData,ppAssembly)	\
+    ( (This)->lpVtbl -> BindAssemblyByName(This,pAssemblyNameData,ppAssembly) ) 
 
 #define ICLRPrivAssembly_GetBinderID(This,pBinderId)	\
     ( (This)->lpVtbl -> GetBinderID(This,pBinderId) ) 

@@ -95,14 +95,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     ReleaseHolder<BINDER_SPACE::Assembly> result;
     HRESULT hr=S_OK;
 
-    SString assemblyDisplayName;
-
     pResult->Reset();
-
-    if (m_wszCodeBase == NULL)
-    {
-        GetDisplayName(0, assemblyDisplayName);
-    }
 
     // Have a default binding context setup
     ICLRPrivBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain);
@@ -136,11 +129,13 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     {
         // For name based binding these arguments shouldn't have been changed from default
         _ASSERTE(!fNgenExplicitBind && !fExplicitBindToNativeImage);
-        hr = pBinder->BindAssemblyByName(assemblyDisplayName, &pPrivAsm);
+        AssemblyNameData assemblyNameData = { 0 };
+        PopulateAssemblyNameData(assemblyNameData);
+        hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm);
     }
     else
     {
-        hr = pTPABinder->Bind(assemblyDisplayName,
+        hr = pTPABinder->Bind(SString(),
                               m_wszCodeBase,
                               GetParentAssembly() ? GetParentAssembly()->GetFile() : NULL,
                               fNgenExplicitBind,
@@ -483,6 +478,29 @@ VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString &result) const
     GetDisplayNameInternal(flags, result);
 }
 
+namespace
+{
+    PEKIND GetProcessorArchitectureFromAssemblyFlags(DWORD flags)
+    {
+        if (flags & afPA_MSIL)
+            return peMSIL;
+
+        if (flags & afPA_x86)
+            return peI386;
+
+        if (flags & afPA_IA64)
+            return peIA64;
+
+        if (flags & afPA_AMD64)
+            return peAMD64;
+
+        if (flags & afPA_ARM64)
+            return peARM64;
+
+        return peNone;
+    }
+}
+
 VOID BaseAssemblySpec::GetDisplayNameInternal(DWORD flags, SString &result) const
 {
     if (flags==0)
@@ -560,16 +578,7 @@ VOID BaseAssemblySpec::GetDisplayNameInternal(DWORD flags, SString &result) cons
         assemblyIdentity.
             SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PROCESSOR_ARCHITECTURE);
 
-        if (m_dwFlags & afPA_MSIL)
-            assemblyIdentity.m_kProcessorArchitecture = peMSIL;
-        else if (m_dwFlags & afPA_x86)
-            assemblyIdentity.m_kProcessorArchitecture = peI386;
-        else if (m_dwFlags & afPA_IA64)
-            assemblyIdentity.m_kProcessorArchitecture = peIA64;
-        else if (m_dwFlags & afPA_AMD64)
-            assemblyIdentity.m_kProcessorArchitecture = peAMD64;
-        else if (m_dwFlags & afPA_ARM)
-            assemblyIdentity.m_kProcessorArchitecture = peARM;
+        assemblyIdentity.m_kProcessorArchitecture = GetProcessorArchitectureFromAssemblyFlags(m_dwFlags);
     }
 
     if ((flags & ASM_DISPLAYF_RETARGET) && (m_dwFlags & afRetargetable))
@@ -588,4 +597,53 @@ VOID BaseAssemblySpec::GetDisplayNameInternal(DWORD flags, SString &result) cons
                                                               result));
 }
 
+void BaseAssemblySpec::PopulateAssemblyNameData(AssemblyNameData &data) const
+{
+    data.Name = m_pAssemblyName;
+    data.IdentityFlags = BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_SIMPLE_NAME;
 
+    if (m_context.usMajorVersion != 0xFFFF)
+    {
+        data.MajorVersion = m_context.usMajorVersion;
+        data.MinorVersion = m_context.usMinorVersion;
+        data.BuildNumber = m_context.usBuildNumber;
+        data.RevisionNumber = m_context.usRevisionNumber;
+        data.IdentityFlags |= BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_VERSION;
+    }
+
+    if (m_context.szLocale != NULL && m_context.szLocale[0] != 0)
+    {
+        data.Culture = m_context.szLocale;
+        data.IdentityFlags |= BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE;
+    }
+
+    data.PublicKeyOrTokenLength = m_cbPublicKeyOrToken;
+    if (m_cbPublicKeyOrToken > 0)
+    {
+        data.PublicKeyOrToken = m_pbPublicKeyOrToken;
+        data.IdentityFlags |= IsAfPublicKeyToken(m_dwFlags)
+            ? BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN
+            : BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY;
+    }
+    else
+    {
+        data.IdentityFlags |= BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL;
+    }
+
+    if ((m_dwFlags & afPA_Mask) != 0)
+    {
+        data.ProcessorArchitecture = GetProcessorArchitectureFromAssemblyFlags(m_dwFlags);
+        data.IdentityFlags |= BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PROCESSOR_ARCHITECTURE;
+    }
+
+    if ((m_dwFlags & afRetargetable) != 0)
+    {
+        data.IdentityFlags |= BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE;
+    }
+
+    if ((m_dwFlags & afContentType_Mask) == afContentType_WindowsRuntime)
+    {
+        data.ContentType = AssemblyContentType_WindowsRuntime;
+        data.IdentityFlags |= BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE;
+    }
+}

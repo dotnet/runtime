@@ -71,8 +71,8 @@ namespace BINDER_SPACE
         // --------------------------------------------------------------------
         LPCWSTR GetSimpleName();
 
-        STDMETHOD(BindAssemblyByName)( 
-            /* [string][in] */ const WCHAR *pAssemblyFullName,
+        STDMETHOD(BindAssemblyByName)(
+            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
 
         STDMETHOD(GetAvailableImageTypes)(PDWORD pdwImageTypes);

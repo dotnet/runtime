@@ -36,7 +36,7 @@ interface ICLRPrivBinder : IUnknown
      ** ppAssembly - upon success, receives the bound assembly.
      **********************************************************************************/
     HRESULT BindAssemblyByName(
-        [in, string]  const WCHAR* pAssemblyFullName,
+        [in] struct AssemblyNameData* pAssemblyNameData,
         [out, retval] ICLRPrivAssembly ** ppAssembly);
 
     /**********************************************************************************

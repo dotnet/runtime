@@ -42,17 +42,17 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 // ============================================================================
 // CLRPrivBinderCoreCLR implementation
 // ============================================================================
-HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(const WCHAR *pAssemblyFullName,
+HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(struct AssemblyNameData *pAssemblyNameData,
                                                  ICLRPrivAssembly **ppAssembly)
 {
     HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(pAssemblyFullName != nullptr && ppAssembly != nullptr);
+    VALIDATE_ARG_RET(pAssemblyNameData != nullptr && ppAssembly != nullptr);
 
     *ppAssembly = nullptr;
 
     ReleaseHolder<AssemblyName> pAssemblyName;
     SAFE_NEW(pAssemblyName, AssemblyName);
-    IF_FAIL_GO(pAssemblyName->Init(SString(pAssemblyFullName)));
+    IF_FAIL_GO(pAssemblyName->Init(*pAssemblyNameData));
 
     hr = BindUsingAssemblyName(pAssemblyName, ppAssembly);
 

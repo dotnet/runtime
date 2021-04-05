@@ -42,11 +42,11 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE:
     return hr;
 }
 
-HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(const WCHAR     *pAssemblyFullName,
+HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(struct AssemblyNameData *pAssemblyNameData,
                                                              ICLRPrivAssembly **ppAssembly)
 {
     HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(pAssemblyFullName != nullptr && ppAssembly != nullptr);
+    VALIDATE_ARG_RET(pAssemblyNameData != nullptr && ppAssembly != nullptr);
 
     _ASSERTE(m_pTPABinder != NULL);
 
@@ -54,7 +54,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(const WCHAR     *pA
     ReleaseHolder<AssemblyName> pAssemblyName;
 
     SAFE_NEW(pAssemblyName, AssemblyName);
-    IF_FAIL_GO(pAssemblyName->Init(SString(pAssemblyFullName)));
+    IF_FAIL_GO(pAssemblyName->Init(*pAssemblyNameData));
 
     // When LoadContext needs to resolve an assembly reference, it will go through the following lookup order:
     //

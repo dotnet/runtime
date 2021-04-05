@@ -19,7 +19,7 @@ public:
     // ICLRPrivBinder functions
     //-------------------------------------------------------------------------
     STDMETHOD(BindAssemblyByName)(
-            /* [string][in] */ const WCHAR *pAssemblyFullName,
+            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
 
     STDMETHOD(GetLoaderAllocator)(

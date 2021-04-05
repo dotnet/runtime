@@ -172,6 +172,36 @@ namespace BINDER_SPACE
         return TextualIdentityParser::Parse(assemblyDisplayName, this);
     }
 
+    HRESULT AssemblyName::Init(const AssemblyNameData &data)
+    {
+        DWORD flags = data.IdentityFlags;
+        m_simpleName.SetUTF8(data.Name);
+        m_version.SetFeatureVersion(data.MajorVersion, data.MinorVersion);
+        m_version.SetServiceVersion(data.BuildNumber, data.RevisionNumber);
+        m_cultureOrLanguage.SetUTF8(data.Culture);
+
+        m_publicKeyOrTokenBLOB.Set(data.PublicKeyOrToken, data.PublicKeyOrTokenLength);
+        if ((flags & BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY) != 0)
+        {
+            // Convert public key to token
+            SBuffer publicKeyToken;
+            HRESULT hr = GetTokenFromPublicKey(m_publicKeyOrTokenBLOB, publicKeyToken);
+            if (FAILED(hr))
+                return hr;
+
+            m_publicKeyOrTokenBLOB.Set(publicKeyToken);
+            flags &= ~BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY;
+            flags |= BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN;
+        }
+
+        m_kProcessorArchitecture = data.ProcessorArchitecture;
+        m_kContentType = data.ContentType;
+
+        SetHave(flags);
+
+        return S_OK;
+    }
+
     ULONG AssemblyName::AddRef()
     {
         return InterlockedIncrement(&m_cRef);

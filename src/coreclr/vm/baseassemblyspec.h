@@ -92,7 +92,6 @@ public:
     void SetCodeBase(LPCWSTR szCodeBase);
 
     VOID SetCulture(LPCSTR szCulture);
-    bool IsNeutralCulture();
 
     VOID ConvertPublicKeyToToken();
 
@@ -132,6 +131,7 @@ protected: // static
 
 protected:
     void InitializeWithAssemblyIdentity(BINDER_SPACE::AssemblyIdentity *identity);
+    void PopulateAssemblyNameData(AssemblyNameData &data) const;
 
 private:
     void GetDisplayNameInternal(DWORD flags, SString &result) const;
