@@ -129,6 +129,9 @@ namespace PInvokeTests
         private static extern bool SimpleSeqLayoutClassByRef(SeqClass p);
 
         [DllImport("LayoutClassNative")]
+        private static extern bool SimpleSeqLayoutClassByRefNull([In, Out] Blittable p);
+
+        [DllImport("LayoutClassNative")]
         private static extern bool DerivedSeqLayoutClassByRef(EmptyBase p, int expected);
 
         [DllImport("LayoutClassNative")]
@@ -168,6 +171,13 @@ namespace PInvokeTests
             string s = "before";
             var p = new SeqClass(0, false, s);
             Assert.IsTrue(SimpleSeqLayoutClassByRef(p));
+        }
+
+        public static void SequentialClassNull()
+        {
+            Console.WriteLine($"Running {nameof(SequentialClassNull)}...");
+
+            Assert.IsTrue(SimpleSeqLayoutClassByRefNull(null));
         }
 
         public static void DerivedClassWithEmptyBase()
@@ -279,6 +289,7 @@ namespace PInvokeTests
             try
             {
                 SequentialClass();
+                SequentialClassNull();
                 DerivedClassWithEmptyBase();
                 ExplicitClass();
                 BlittableClass();
