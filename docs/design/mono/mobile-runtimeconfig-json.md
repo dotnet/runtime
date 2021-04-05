@@ -31,8 +31,8 @@ We should be able to generate the encoded file from C# as an MSBuild task, using
 
 #### Task Contract:
 
-The task will take 3 input arguments: 
-1. The path to the `runtimeconfig.json` file. 
+The task will take 3 input arguments:
+1. The path to the `runtimeconfig.json` file.
 2. The name of the destination file to be written in the encoded format.
 3. An item list (`ITaskItem[]`) that is the name of the properties that the embedder will set on `monovm_initialize`.
 
@@ -72,7 +72,7 @@ We want at least 2 ways to pass data in: either ask the runtime to open the file
 
 ```
 struct MonovmRuntimeConfigArguments {
-  uint32_t kind; // 0 = Path of runtimeconfig.blob file, 1 = pointer to the blob data, >= 2 reserved
+  uint32_t kind; // 0 = Path of runtimeconfig.bin file, 1 = pointer to the blob data, >= 2 reserved
   union {
     struct {
       const char *path; // null terminated absolute path
