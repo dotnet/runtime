@@ -88,6 +88,57 @@ namespace Microsoft.NET.HostModel.Tests
                 .And.HaveStdOutContaining("Hello World");
         }
 
+        [Theory]
+        [InlineData("a/b/SymlinkToFrameworkDependentApp")]
+        [InlineData("a/SymlinkToFrameworkDependentApp")]
+        public void Run_framework_dependent_app_behind_symlink(string symlinkRelativePath)
+        {
+            // Creating symbolic links requires administrative privilege on Windows, so skip test.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
+            var fixture = sharedTestState.FrameworkDependentAppFixture_Published
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            var testDir = Directory.GetParent(appExe).ToString();
+            Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(symlinkRelativePath)));
+            var symlinkFullPath = Path.Combine(testDir, symlinkRelativePath);
+
+            CreateSymbolicLink(symlinkFullPath, appExe);
+            Command.Create(symlinkFullPath)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void Run_framework_dependent_app_with_runtime_behind_symlink()
+        {
+            // Creating symbolic links requires administrative privilege on Windows, so skip test.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
+            var fixture = sharedTestState.FrameworkDependentAppFixture_Published
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
+            var dotnetSymlink = Path.Combine(testDir, "dotnet");
+            var dotnetDir = Directory.GetParent(fixture.BuiltDotnet.DotnetExecutablePath).ToString();
+
+            CreateSymbolicLink(dotnetSymlink, dotnetDir);
+            Command.Create(appExe)
+                .EnvironmentVariable("DOTNET_ROOT", dotnetSymlink)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World");
+        }
+
         [Fact]
         public void Put_app_directory_behind_symlink()
         {
@@ -105,6 +156,30 @@ namespace Microsoft.NET.HostModel.Tests
 
             CreateSymbolicLink(binDir, binDirNewPath);
             Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void Put_dotnet_behind_symlink()
+        {
+            // Creating symbolic links requires administrative privilege on Windows, so skip test.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
+            var fixture = sharedTestState.StandaloneAppFixture_Published
+                .Copy();
+
+            var appDll = fixture.TestProject.AppDll;
+            var dotnetExe = fixture.BuiltDotnet.DotnetExecutablePath;
+            var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
+            var dotnetSymlink = Path.Combine(testDir, "dotnet");
+
+            CreateSymbolicLink(dotnetSymlink, dotnetExe);
+            Command.Create(dotnetSymlink, fixture.TestProject.AppDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -165,17 +240,13 @@ namespace Microsoft.NET.HostModel.Tests
         public void Put_satellite_assembly_behind_symlink()
         {
             // Creating symbolic links requires administrative privilege on Windows, so skip test.
+            // If enabled, this tests will need to set the console code page to output unicode characters:
+            // Command.Create("chcp 65001").Execute();
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return;
 
             var fixture = sharedTestState.StandaloneAppFixture_Localized
                 .Copy();
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Set code page to output unicode characters.
-                Command.Create("chcp 65001").Execute();
-            }
 
             var appExe = fixture.TestProject.AppExe;
             var binDir = fixture.TestProject.OutputDirectory;
@@ -204,6 +275,7 @@ namespace Microsoft.NET.HostModel.Tests
         {
             public TestProjectFixture StandaloneAppFixture_Localized { get; }
             public TestProjectFixture StandaloneAppFixture_Published { get; }
+            public TestProjectFixture FrameworkDependentAppFixture_Published { get; }
             public RepoDirectoriesProvider RepoDirectories { get; }
 
             public SharedTestState()
@@ -220,14 +292,21 @@ namespace Microsoft.NET.HostModel.Tests
                     .EnsureRestoredForRid(publishFixture.CurrentRid)
                     .PublishProject(runtime: publishFixture.CurrentRid);
 
+                var fwPublishedFixture = new TestProjectFixture("PortableApp", RepoDirectories);
+                fwPublishedFixture
+                    .EnsureRestored()
+                    .PublishProject();
+
                 StandaloneAppFixture_Localized = localizedFixture;
                 StandaloneAppFixture_Published = publishFixture;
+                FrameworkDependentAppFixture_Published = fwPublishedFixture;
             }
 
             public void Dispose()
             {
                 StandaloneAppFixture_Localized.Dispose();
                 StandaloneAppFixture_Published.Dispose();
+                FrameworkDependentAppFixture_Published.Dispose();
             }
         }
     }
