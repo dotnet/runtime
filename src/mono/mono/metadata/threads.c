@@ -904,10 +904,12 @@ void
 mono_threads_exiting (void)
 {
 	exiting_threads_lock ();
-	g_slist_foreach (exiting_threads, call_thread_exiting, NULL);
-	g_slist_free (exiting_threads);
+	GSList *exiting_threads_old = exiting_threads;
 	exiting_threads = NULL;
 	exiting_threads_unlock ();
+
+	g_slist_foreach (exiting_threads_old, call_thread_exiting, NULL);
+	g_slist_free (exiting_threads_old);
 }
 
 static void
