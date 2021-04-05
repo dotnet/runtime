@@ -54,7 +54,7 @@ internal static partial class Interop
             int appBufferSize);
         internal static void SSLStreamInitialize(
             SafeSslHandle sslHandle,
-            [MarshalAs(UnmanagedType.U1)] bool isServer,
+            bool isServer,
             SSLReadCallback streamRead,
             SSLWriteCallback streamWrite,
             int appBufferSize)
@@ -70,7 +70,7 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.LPUTF8Str)] string targetHost);
         internal static void SSLStreamConfigureParameters(
             SafeSslHandle sslHandle,
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string targetHost)
+            string targetHost)
         {
             int ret = SSLStreamConfigureParametersImpl(sslHandle, targetHost);
             if (ret != SUCCESS)
