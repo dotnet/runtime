@@ -221,6 +221,15 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.TypeConverter\tests\System.ComponentModel.TypeConverter.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
 
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50713 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\CoreCLR\System.Reflection.CoreCLR.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50714 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Metadata\tests\System.Reflection.Metadata.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/50715 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />
+
     <!-- Issue: https://github.com/dotnet/runtime/issues/50717 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\System.Runtime.InteropServices.Tests.csproj" />
 
@@ -259,6 +268,8 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\ReflectionOnly\System.Xml.XmlSerializer.ReflectionOnly.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Extensions\tests\System.Threading.Tasks.Extensions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ObjectModel/tests/System.ObjectModel.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/50726 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Caching/tests/System.Runtime.Caching.Tests.csproj" />
