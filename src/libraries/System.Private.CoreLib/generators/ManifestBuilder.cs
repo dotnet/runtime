@@ -78,8 +78,7 @@ namespace Generators
         {
             if ((value & (value - 1)) != 0)   // Is it a power of 2?
             {
-                LogManifestGenerationError("Error while adding Keyword  - value is not power of 2.");
-                //ManifestError(SR.Format(SR.EventSource_KeywordNeedPowerOfTwo, "0x" + value.ToString("x", CultureInfo.CurrentCulture), name), true);
+                return;
             }
             keywordTab ??= new Dictionary<ulong, string>();
             keywordTab[value] = name;
@@ -140,7 +139,6 @@ namespace Generators
 
                 AddTask(taskName, (int)eventAttribute.Task);
             }
-
 
             /*
             if (eventAttribute.Opcode != 0)
@@ -228,7 +226,6 @@ namespace Generators
 
             if (stringTab.TryGetValue(key, out string? prevValue) && !prevValue.Equals(value))
             {
-                LogManifestGenerationError("WriteMessageAtrib - Duplicate string key manifest error");
                 return;
             }
 
@@ -334,10 +331,6 @@ namespace Generators
                         }
                         writtenSoFar = i;
                     }
-                    else
-                    {
-                        LogManifestGenerationError("TranslateToManifestConvention - Unsupported message property");
-                    }
                 }
                 else if ((chIdx = "&<>'\"\r\n\t".IndexOf(eventMessage[i])) >= 0)
                 {
@@ -377,23 +370,6 @@ namespace Generators
         {
             string str = CreateManifestString();
             return Encoding.UTF8.GetBytes(str);
-        }
-
-        public IList<string> Errors => errors;
-
-        /// <summary>
-        /// When validating an event source it adds the error to the error collection.
-        /// When not validating it throws an exception if runtimeCritical is "true".
-        /// Otherwise the error is ignored.
-        /// </summary>
-        /// <param name="msg"></param>
-        /// <param name="runtimeCritical"></param>
-        public void ManifestError(string msg, bool runtimeCritical = false)
-        {
-//            if ((flags & EventManifestOptions.Strict) != 0)
-//                errors.Add(msg);
-            //else if (runtimeCritical)
-            //    throw new ArgumentException(msg);
         }
 
         public string CreateManifestString()
@@ -513,7 +489,6 @@ namespace Generators
                     }
                     if (keyword == null)
                     {
-                        LogManifestGenerationError("AppendKeywords: Keyword is null");
                         keyword = string.Empty;
                     }
 
@@ -540,214 +515,6 @@ namespace Generators
         }
 
 
-
-/*        private string CreateManifestString()
-        {
-            Span<char> ulongHexScratch = stackalloc char[16]; // long enough for ulong.MaxValue formatted as hex
-
-            // Write out the channels
-            if (channelTab != null)
-            {
-                sb.AppendLine(" <channels>");
-                var sortedChannels = new List<KeyValuePair<int, ChannelInfo>>();
-                foreach (KeyValuePair<int, ChannelInfo> p in channelTab) { sortedChannels.Add(p); }
-                sortedChannels.Sort((p1, p2) => -Comparer<ulong>.Default.Compare(p1.Value.Keywords, p2.Value.Keywords));
-                foreach (KeyValuePair<int, ChannelInfo> kvpair in sortedChannels)
-                {
-                    int channel = kvpair.Key;
-                    ChannelInfo channelInfo = kvpair.Value;
-
-                    string? channelType = null;
-                    bool enabled = false;
-                    string? fullName = null;
-                    string? isolation = null;
-                    string? access = null;
-
-                    if (channelInfo.Attribs != null)
-                    {
-                        EventChannelAttribute attribs = channelInfo.Attribs;
-                        if (Enum.IsDefined(typeof(EventChannelType), attribs.EventChannelType))
-                            channelType = attribs.EventChannelType.ToString();
-                        enabled = attribs.Enabled;
-                        if (attribs.ImportChannel != null)
-                        {
-                            fullName = attribs.ImportChannel;
-                            elementName = "importChannel";
-                        }
-                        if (Enum.IsDefined(typeof(EventChannelIsolation), attribs.Isolation))
-                            isolation = attribs.Isolation.ToString();
-                        access = attribs.Access;
-                    }
-
-                    fullName ??= providerName + "/" + channelInfo.Name;
-
-                    sb.Append("  <channel chid=\"").Append(channelInfo.Name).Append("\" name=\"").Append(fullName).Append('"');
-
-                    Debug.Assert(channelInfo.Name != null);
-                    WriteMessageAttrib(sb, "channel", channelInfo.Name, null);
-                    sb.Append(" value=\"").Append(channel).Append('"');
-                    if (channelType != null)
-                        sb.Append(" type=\"").Append(channelType).Append('"');
-                    sb.Append(" enabled=\"").Append(enabled ? "true" : "false").Append('"');
-                    if (access != null)
-                        sb.Append(" access=\"").Append(access).Append("\"");
-                    if (isolation != null)
-                        sb.Append(" isolation=\"").Append(isolation).Append("\"");
-                    sb.AppendLine("/>");
-                }
-                sb.AppendLine(" </channels>");
-            }
-
-            // Write out the tasks
-            if (taskTab != null)
-            {
-                sb.AppendLine(" <tasks>");
-                var sortedTasks = new List<int>(taskTab.Keys);
-                sortedTasks.Sort();
-                foreach (int task in sortedTasks)
-                {
-                    sb.Append("  <task");
-                    WriteNameAndMessageAttribs(sb, "task", taskTab[task]);
-                    sb.Append(" value=\"").Append(task).AppendLine("\"/>");
-                }
-                sb.AppendLine(" </tasks>");
-            }
-
-            // Write out the maps
-
-            // Scoping the call to enum GetFields to a local function to limit the linker suppression
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Trimmer does not trim enums")]
-            static FieldInfo[] GetEnumFields(Type localEnumType)
-            {
-                Debug.Assert(localEnumType.IsEnum);
-                return localEnumType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
-            }
-
-            if (mapsTab != null)
-            {
-                sb.AppendLine(" <maps>");
-                foreach (Type enumType in mapsTab.Values)
-                {
-                    bool isbitmap = EventSource.IsCustomAttributeDefinedHelper(enumType, typeof(FlagsAttribute), flags);
-                    string mapKind = isbitmap ? "bitMap" : "valueMap";
-                    sb.Append("  <").Append(mapKind).Append(" name=\"").Append(enumType.Name).AppendLine("\">");
-
-                    // write out each enum value
-                    FieldInfo[] staticFields = GetEnumFields(enumType);
-                    bool anyValuesWritten = false;
-                    foreach (FieldInfo staticField in staticFields)
-                    {
-                        object? constantValObj = staticField.GetRawConstantValue();
-
-                        if (constantValObj != null)
-                        {
-                            ulong hexValue;
-                            if (constantValObj is ulong)
-                                hexValue = (ulong)constantValObj;    // This is the only integer type that can't be represented by a long.
-                            else
-                                hexValue = (ulong)Convert.ToInt64(constantValObj); // Handles all integer types except ulong.
-
-                            // ETW requires all bitmap values to be powers of 2.  Skip the ones that are not.
-                            // TODO: Warn people about the dropping of values.
-                            if (isbitmap && ((hexValue & (hexValue - 1)) != 0 || hexValue == 0))
-                                continue;
-
-                            hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                            Span<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
-                            sb.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
-                            WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
-                            sb.AppendLine("/>");
-                            anyValuesWritten = true;
-                        }
-                    }
-
-                    // the OS requires that bitmaps and valuemaps have at least one value or it reject the whole manifest.
-                    // To avoid that put a 'None' entry if there are no other values.
-                    if (!anyValuesWritten)
-                    {
-                        sb.Append("   <map value=\"0x0\"");
-                        WriteMessageAttrib(sb, "map", enumType.Name + ".None", "None");
-                        sb.AppendLine("/>");
-                    }
-                    sb.Append("  </").Append(mapKind).AppendLine(">");
-                }
-                sb.AppendLine(" </maps>");
-            }
-
-            // Write out the opcodes
-            sb.AppendLine(" <opcodes>");
-            var sortedOpcodes = new List<int>(opcodeTab.Keys);
-            sortedOpcodes.Sort();
-            foreach (int opcode in sortedOpcodes)
-            {
-                sb.Append("  <opcode");
-                WriteNameAndMessageAttribs(sb, "opcode", opcodeTab[opcode]);
-                sb.Append(" value=\"").Append(opcode).AppendLine("\"/>");
-            }
-            sb.AppendLine(" </opcodes>");
-
-            // Write out the keywords
-            if (keywordTab != null)
-            {
-                sb.AppendLine(" <keywords>");
-                var sortedKeywords = new List<ulong>(keywordTab.Keys);
-                sortedKeywords.Sort();
-                foreach (ulong keyword in sortedKeywords)
-                {
-                    sb.Append("  <keyword");
-                    WriteNameAndMessageAttribs(sb, "keyword", keywordTab[keyword]);
-                    keyword.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                    Span<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
-                    sb.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
-                }
-                sb.AppendLine(" </keywords>");
-            }
-
-            sb.AppendLine(" <events>");
-            sb.Append(events);
-            sb.AppendLine(" </events>");
-
-            sb.AppendLine(" <templates>");
-            if (templates.Length > 0)
-            {
-                sb.Append(templates);
-            }
-            else
-            {
-                // Work around a cornercase ETW issue where a manifest with no templates causes
-                // ETW events to not get sent to their associated channel.
-                sb.AppendLine("    <template tid=\"_empty\"></template>");
-            }
-            sb.AppendLine(" </templates>");
-
-            sb.AppendLine("</provider>");
-            sb.AppendLine("</events>");
-            sb.AppendLine("</instrumentation>");
-
-            // Output the localization information.
-            sb.AppendLine("<localization>");
-
-            var sortedStrings = new string[stringTab.Keys.Count];
-            stringTab.Keys.CopyTo(sortedStrings, 0);
-            Array.Sort<string>(sortedStrings, 0, sortedStrings.Length);
-
-            CultureInfo ci = CultureInfo.CurrentUICulture;
-            sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
-            sb.AppendLine("  <stringTable>");
-            foreach (string stringKey in sortedStrings)
-            {
-                string? val = stringTab.TryGetValue(stringKey, out value);
-                sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
-            }
-            sb.AppendLine("  </stringTable>");
-            sb.AppendLine(" </resources>");
-
-            sb.AppendLine("</localization>");
-            sb.AppendLine("</instrumentationManifest>");
-            return sb.ToString();
-        }
-*/
         private string GetTypeName(ITypeSymbol type)
         {
             if (type is null) return string.Empty;
@@ -821,28 +588,9 @@ namespace Generators
         // Manifest messages use %N conventions for their message substitutions.   Translate from
         // .NET conventions.   We can't use RegEx for this (we are in mscorlib), so we do it 'by hand'
 
-
-        // Used to log errors during manifest generation.
-        // Currently this will just dump some string to the generated file which will prevent
-        // the compilation to go through. But that may not be the best way to log errors..
-        // Find out if there is any better way to log errors during source generation. 
-        private void LogManifestGenerationError(string errorMessage)
-        {
-            //_builder.AppendLine(errorMessage);   
-        }
-
-        private class ChannelInfo
-        {
-            //public string? Name;
-            //public ulong Keywords;
-//            public EventChannelAttribute? Attribs;
-        }
-
         private readonly Dictionary<int, string> opcodeTab;
         private Dictionary<int, string>? taskTab;
-//        private Dictionary<int, ChannelInfo>? channelTab;
         private Dictionary<ulong, string>? keywordTab;
-//        private Dictionary<string, Type>? mapsTab;
         private readonly Dictionary<string, string> stringTab;       // Maps unlocalized strings to localized ones
 
         // WCF used EventSource to mimic a existing ETW manifest.   To support this
@@ -851,15 +599,12 @@ namespace Generators
         // this set of channel keywords that we allow to be explicitly set.  You
         // can ignore these bits otherwise.
         internal const ulong ValidPredefinedChannelKeywords = 0xF000000000000000;
-//        private ulong nextChannelKeywordBit = 0x8000000000000000;   // available Keyword bit to be used for next channel definition, grows down
-        private const int MaxCountChannels = 8; // a manifest can defined at most 8 ETW channels
 
         private readonly StringBuilder sb;               // Holds the provider information.
         private readonly StringBuilder events;           // Holds the events.
         private readonly StringBuilder templates;
 
         private readonly string providerName;
-//        private readonly EventManifestOptions flags;
         private readonly IList<string> errors;           // list of currently encountered errors
         private readonly Dictionary<string, List<int>> perEventByteArrayArgIndices;  // "event_name" -> List_of_Indices_of_Byte[]_Arg
 

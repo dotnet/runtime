@@ -74,24 +74,6 @@ namespace Generators
                 _builder.AppendLine("            return eventData;");
                 _builder.AppendLine("        };");
             }
-
-
-                
-
-                /*
-
-                                EventMetadata[]? eventData = null;
-                    Dictionary<string, string>? eventsByName = null;
-                
-                
-                    if (source != null || (flags & EventManifestOptions.Strict) != 0)
-                    {
-                        eventData = new EventMetadata[methods.Length + 1];
-                        eventData[0].Name = "";         // Event 0 is the 'write messages string' event, and has an empty name.
-                    }
-                */
-
         }
-
     }
 }

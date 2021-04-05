@@ -55,7 +55,7 @@ namespace Generators
             if (eventSources?.Length > 0 && stringTypeSymbol is not null)
             {
                 Emitter? e = new Emitter(context);
-                e.Emit(eventSources, context.CancellationToken, stringTypeSymbol, p.GetDebugStrings());
+                e.Emit(eventSources, context.CancellationToken, stringTypeSymbol);
             }
         }
 
@@ -129,7 +129,6 @@ namespace Generators
             public string SourceName = string.Empty;
             public Guid Guid = Guid.Empty;
             public List<EventSourceEvent> Events = new List<EventSourceEvent>();
-            public List<string> DebugStrings = new List<string>(); // TODO: REMOVE ME!!!
             public Dictionary<string, Dictionary<string, int>> Maps = new Dictionary<string, Dictionary<string,int>>();
 
             public Dictionary<int, string>? TaskMap;
@@ -151,7 +150,6 @@ namespace Generators
             public ITypeSymbol? Type;
             public string TypeString = string.Empty;
             public string Name = string.Empty;
-
         }
     }
 }

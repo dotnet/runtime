@@ -22,16 +22,12 @@ namespace Generators
             private readonly CancellationToken _cancellationToken;
             private readonly Compilation _compilation;
             private readonly Action<Diagnostic> _reportDiagnostic;
-            private List<string> _debugStrings;
-
-            public List<string> GetDebugStrings() => _debugStrings;
 
             public Parser(Compilation compilation, Action<Diagnostic> reportDiagnostic, CancellationToken cancellationToken)
             {
                 _compilation = compilation;
                 _cancellationToken = cancellationToken;
                 _reportDiagnostic = reportDiagnostic;
-                _debugStrings = new List<string>();
             }
 
             public ITypeSymbol? GetStringTypeSymbol()
@@ -147,9 +143,8 @@ namespace Generators
                                     {
                                         result = GenerateGuidFromName(name.ToUpperInvariant());
                                     }
-                                    List<string> debugStrings = new List<string>();
                                     Dictionary<string, Dictionary<string, int>> maps = new Dictionary<string, Dictionary<string,int>>();
-                                    List<EventSourceEvent> events = GetMethodMetadataToken(methodDeclarations[classDef], eventMethodAttribute, sm, debugStrings, maps);
+                                    List<EventSourceEvent> events = GetMethodMetadataToken(methodDeclarations[classDef], eventMethodAttribute, sm, maps);
 
                                     eventSourceClass = new EventSourceClass
                                     {
@@ -158,7 +153,6 @@ namespace Generators
                                         SourceName = name,
                                         Guid = result,
                                         Events = events,
-                                        DebugStrings = debugStrings,
                                         Maps = maps
                                     };
                                     continue;
@@ -210,7 +204,7 @@ namespace Generators
                 return results?.ToArray() ?? Array.Empty<EventSourceClass>();
             }
 
-            private List<EventSourceEvent> GetMethodMetadataToken(List<MethodDeclarationSyntax> methods, INamedTypeSymbol? eventMethodAttribute, SemanticModel sm, List<string> debugStrings, Dictionary<string, Dictionary<string, int>> maps)
+            private List<EventSourceEvent> GetMethodMetadataToken(List<MethodDeclarationSyntax> methods, INamedTypeSymbol? eventMethodAttribute, SemanticModel sm, Dictionary<string, Dictionary<string, int>> maps)
             {
                 List<EventSourceEvent> metadataTokens = new List<EventSourceEvent>();
 
@@ -244,7 +238,6 @@ namespace Generators
                             {
                                 eventAttribute = ma;
                                 eventName = method.Identifier.ToString();
-                                debugStrings.Add(eventName);
                                 if (eventAttribute.ArgumentList is not null)
                                 {
                                     SeparatedSyntaxList<AttributeArgumentSyntax>? args = eventAttribute.ArgumentList?.Arguments;
@@ -266,7 +259,6 @@ namespace Generators
                                             {
                                                 string? argName = attribArg.NameEquals!.Name.Identifier.ToString();
                                                 string? value = sm.GetConstantValue(attribArg.Expression, _cancellationToken).ToString();
-                                                debugStrings.Add($"{argName} - {value}");
                                                 switch (argName)
                                                 {
                                                     case "Name":
@@ -297,68 +289,40 @@ namespace Generators
                                 foreach (ParameterSyntax param in method.ParameterList.Parameters)
                                 {
                                     parameters ??= new List<EventParameter>();
-                                    debugStrings.Add(param.Identifier.ToString());
-                                    ISymbol? paramSymbol = sm.GetDeclaredSymbol(param);
-                                    if (paramSymbol is IParameterSymbol yes)
+                                    ISymbol? sym = sm.GetDeclaredSymbol(param);
+                                    if (sym is IParameterSymbol paramSymbol)
                                     {
                                         // For enum, we need to create a mapping for the enum class type.
-                                        if (yes.Type.TypeKind == TypeKind.Enum)
+                                        if (paramSymbol.Type.TypeKind == TypeKind.Enum)
                                         {
-                                            debugStrings.Add("IsEnum");
-                                            INamedTypeSymbol? underlyingEnumType = ((INamedTypeSymbol)(yes.Type)).EnumUnderlyingType;
-                                            if (underlyingEnumType != null)
-                                            {
-                                                debugStrings.Add(underlyingEnumType.ToDisplayString());
-                                            }
-                                            else
-                                            {
-                                                debugStrings.Add("underlyingEnumType is null");
-                                            }
-
-                                            debugStrings.Add($"Name type: {yes.Type.Name}");
+                                            INamedTypeSymbol? underlyingEnumType = ((INamedTypeSymbol)(paramSymbol.Type)).EnumUnderlyingType;
                                             int recordedFieldCount = 0;
-                                            foreach (ISymbol symbol in yes.Type.GetMembers())
+                                            foreach (ISymbol symbol in paramSymbol.Type.GetMembers())
                                             {
                                                 if (symbol.Kind != SymbolKind.Field)
                                                 {
                                                     continue;
                                                 }
                                                 
-                                                if (!maps.ContainsKey(yes.Type.Name))
+                                                if (!maps.ContainsKey(paramSymbol.Type.Name))
                                                 {
-                                                    maps.Add(yes.Type.Name, new Dictionary<string, int>());
-                                                    maps[yes.Type.Name].Add(symbol.Name, recordedFieldCount);
+                                                    maps.Add(paramSymbol.Type.Name, new Dictionary<string, int>());
+                                                    maps[paramSymbol.Type.Name].Add(symbol.Name, recordedFieldCount);
                                                     recordedFieldCount++;
                                                 }
-                                                else if (!maps[yes.Type.Name].ContainsKey(symbol.Name))
+                                                else if (!maps[paramSymbol.Type.Name].ContainsKey(symbol.Name))
                                                 {
-                                                    maps[yes.Type.Name].Add(symbol.Name, recordedFieldCount);
+                                                    maps[paramSymbol.Type.Name].Add(symbol.Name, recordedFieldCount);
                                                     recordedFieldCount++;
                                                 }
-                                                debugStrings.Add(symbol.ToDisplayString());
                                             }
-                                        }
-                                        else
-                                        {
-                                            debugStrings.Add("IsNotEnum");
-                                        }
-
-
-                                        debugStrings.Add(yes.Type.ToDisplayString());
-
-                                            
+                                        }   
                                         parameters.Add(new EventParameter {
                                             Name = param.Identifier.ToString(),
                                             TypeString = param.Type!.ToFullString(),
-                                            Type = yes.Type
+                                            Type = paramSymbol.Type
                                         });
                                     }
-                                    else
-                                    {
-                                        debugStrings.Add("paramSymbol null");
-                                    }
-
-
                                 }
 
                                 metadataTokens.Add(new EventSourceEvent {
