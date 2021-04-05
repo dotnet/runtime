@@ -396,27 +396,6 @@ namespace System.Net.Http
             return GetHttpConnectionAsync(request, async, cancellationToken);
         }
 
-        private static bool IsUsableHttp11Connection(HttpConnection connection, long nowTicks, TimeSpan lifetime, bool async)
-        {
-            if (connection.LifetimeExpired(nowTicks, lifetime))
-            {
-                return false;
-            }
-
-            // Check to see if we've received anything on the connection; if we have, that's
-            // either erroneous data (we shouldn't have received anything yet) or the connection
-            // has been closed; either way, we can't use it.  If this is an async request, we
-            // perform an async read on the stream, since we're going to need to read from it
-            // anyway, and in doing so we can avoid the extra syscall.  For sync requests, we
-            // try to directly poll the socket rather than doing an async read, so that we can
-            // issue an appropriate sync read when we actually need it.  We don't have the
-            // underlying socket in all cases, though, so PollRead may fall back to an async
-            // read in some cases.
-            return async ?
-                !connection.EnsureReadAheadAndPollRead() :
-                !connection.PollRead();
-        }
-
         private ValueTask<HttpConnection?> GetOrReserveHttp11ConnectionAsync(bool async, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -474,16 +453,22 @@ namespace System.Net.Http
                     }
                 }
 
-                if (IsUsableHttp11Connection(connection, nowTicks, _poolManager.Settings._pooledConnectionLifetime, async))
+                if (connection.LifetimeExpired(nowTicks, _poolManager.Settings._pooledConnectionLifetime))
                 {
-                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Found usable connection in pool.");
-                    return new ValueTask<HttpConnection?>(connection);
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Found expired connection in pool.");
+                    connection.Dispose();
+                    continue;
                 }
-                else
+
+                if (!connection.PrepareForReuse(async))
                 {
                     if (NetEventSource.Log.IsEnabled()) connection.Trace("Found invalid connection in pool.");
                     connection.Dispose();
+                    continue;
                 }
+
+                if (NetEventSource.Log.IsEnabled()) connection.Trace("Found usable connection in pool.");
+                return new ValueTask<HttpConnection?>(connection);
             }
 
             // We are at the connection limit. Wait for an available connection or connection count.
@@ -716,6 +701,7 @@ namespace System.Net.Http
                 if (http2Connection.LifetimeExpired(Environment.TickCount64, pooledConnectionLifetime))
                 {
                     // Connection expired.
+                    if (NetEventSource.Log.IsEnabled()) http2Connection.Trace("Found expired HTTP2 connection.");
                     http2Connection.Dispose();
                     InvalidateHttp2Connection(http2Connection);
                 }
@@ -760,6 +746,7 @@ namespace System.Net.Http
                 if (http3Connection.LifetimeExpired(Environment.TickCount64, pooledConnectionLifetime) || http3Connection.Authority != authority)
                 {
                     // Connection expired.
+                    if (NetEventSource.Log.IsEnabled()) http3Connection.Trace("Found expired HTTP3 connection.");
                     http3Connection.Dispose();
                     InvalidateHttp3Connection(http3Connection);
                 }
@@ -1470,24 +1457,6 @@ namespace System.Net.Http
             return waiter;
         }
 
-        private bool HasWaiter()
-        {
-            Debug.Assert(Monitor.IsEntered(SyncObj));
-
-            return (_waiters != null && _waiters.Count > 0);
-        }
-
-        /// <summary>Dequeues a waiter from the waiters list.  The list must not be empty.</summary>
-        /// <returns>The dequeued waiter.</returns>
-        private TaskCompletionSourceWithCancellation<HttpConnection?> DequeueWaiter()
-        {
-            Debug.Assert(Monitor.IsEntered(SyncObj));
-            Debug.Assert(Settings._maxConnectionsPerServer != int.MaxValue);
-            Debug.Assert(_idleConnections.Count == 0, $"With {_idleConnections.Count} idle connections, we shouldn't have a waiter.");
-
-            return _waiters!.Dequeue();
-        }
-
         private void IncrementConnectionCountNoLock()
         {
             Debug.Assert(Monitor.IsEntered(SyncObj), $"Expected to be holding {nameof(SyncObj)}");
@@ -1513,9 +1482,16 @@ namespace System.Net.Http
         {
             Debug.Assert(Monitor.IsEntered(SyncObj));
 
-            while (HasWaiter())
+            if (_waiters == null)
             {
-                TaskCompletionSource<HttpConnection?> waiter = DequeueWaiter();
+                return false;
+            }
+
+            Debug.Assert(_maxConnections != int.MaxValue, "_waiters queue is allocated but no connection limit is set??");
+
+            while (_waiters.TryDequeue(out TaskCompletionSourceWithCancellation<HttpConnection?>? waiter))
+            {
+                Debug.Assert(_idleConnections.Count == 0, $"With {_idleConnections.Count} idle connections, we shouldn't have a waiter.");
 
                 // Try to complete the task. If it's been cancelled already, this will fail.
                 if (waiter.TrySetResult(connection))
@@ -1562,61 +1538,51 @@ namespace System.Net.Http
         /// <param name="connection">The connection to return.</param>
         public void ReturnConnection(HttpConnection connection)
         {
-            bool lifetimeExpired = connection.LifetimeExpired(Environment.TickCount64, _poolManager.Settings._pooledConnectionLifetime);
-
-            if (!lifetimeExpired)
+            if (connection.LifetimeExpired(Environment.TickCount64, _poolManager.Settings._pooledConnectionLifetime))
             {
-                List<CachedConnection> list = _idleConnections;
-                lock (SyncObj)
+                if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing connection return to pool. Connection lifetime expired.");
+                connection.Dispose();
+                return;
+            }
+
+            List<CachedConnection> list = _idleConnections;
+            lock (SyncObj)
+            {
+                Debug.Assert(list.Count <= _maxConnections, $"Expected {list.Count} <= {_maxConnections}");
+
+                // Mark the pool as still being active.
+                _usedSinceLastCleanup = true;
+
+                // If there's someone waiting for a connection and this one's still valid, simply transfer this one to them rather than pooling it.
+                // Note that while we checked connection lifetime above, we don't check idle timeout, as even if idle timeout
+                // is zero, we consider a connection that's just handed from one use to another to never actually be idle.
+                if (TransferConnection(connection))
                 {
-                    Debug.Assert(list.Count <= _maxConnections, $"Expected {list.Count} <= {_maxConnections}");
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Transferred connection to waiter.");
+                    return;
+                }
 
-                    // Mark the pool as still being active.
-                    _usedSinceLastCleanup = true;
-
-                    // If there's someone waiting for a connection and this one's still valid, simply transfer this one to them rather than pooling it.
-                    // Note that while we checked connection lifetime above, we don't check idle timeout, as even if idle timeout
-                    // is zero, we consider a connection that's just handed from one use to another to never actually be idle.
-                    bool receivedUnexpectedData = false;
-                    if (HasWaiter())
-                    {
-                        receivedUnexpectedData = connection.EnsureReadAheadAndPollRead();
-                        if (!receivedUnexpectedData && TransferConnection(connection))
-                        {
-                            if (NetEventSource.Log.IsEnabled()) connection.Trace("Transferred connection to waiter.");
-                            return;
-                        }
-                    }
-
-                    // If the connection is still valid, add it to the list.
+                if (_poolManager.Settings._pooledConnectionIdleTimeout == TimeSpan.Zero)
+                {
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing connection returned to pool. Zero idle timeout.");
+                }
+                else if (_disposed)
+                {
                     // If the pool has been disposed of, dispose the connection being returned,
                     // as the pool is being deactivated. We do this after the above in order to
                     // use pooled connections to satisfy any requests that pended before the
-                    // the pool was disposed of.  We also dispose of connections if connection
-                    // timeouts are such that the connection would immediately expire, anyway, as
-                    // well as for connections that have unexpectedly received extraneous data / EOF.
-                    if (!receivedUnexpectedData &&
-                        !_disposed &&
-                        _poolManager.Settings._pooledConnectionIdleTimeout != TimeSpan.Zero)
-                    {
-                        // Pool the connection by adding it to the list.
-                        list.Add(new CachedConnection(connection));
-                        if (NetEventSource.Log.IsEnabled()) connection.Trace("Stored connection in pool.");
-                        return;
-                    }
+                    // the pool was disposed of.
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing connection returned to pool. Pool was disposed.");
+                }
+                else
+                {
+                    // Pool the connection by adding it to the list.
+                    list.Add(new CachedConnection(connection));
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Stored connection in pool.");
+                    return;
                 }
             }
 
-            // The connection could be not be reused.  Dispose of it.
-            // Disposing it will alert any waiters that a connection slot has become available.
-            if (NetEventSource.Log.IsEnabled())
-            {
-                connection.Trace(
-                    lifetimeExpired ? "Disposing connection return to pool. Connection lifetime expired." :
-                    _poolManager.Settings._pooledConnectionIdleTimeout == TimeSpan.Zero ? "Disposing connection returned to pool. Zero idle timeout." :
-                    _disposed ? "Disposing connection returned to pool. Pool was disposed." :
-                    "Disposing connection returned to pool. Read-ahead unexpectedly completed.");
-            }
             connection.Dispose();
         }
 
@@ -1941,11 +1907,24 @@ namespace System.Net.Http
                 if ((pooledConnectionIdleTimeout != Timeout.InfiniteTimeSpan) &&
                     ((nowTicks - _returnedTickCount) > pooledConnectionIdleTimeout.TotalMilliseconds))
                 {
-                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds((nowTicks - _returnedTickCount))} > {pooledConnectionIdleTimeout}.");
+                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Scavenging connection. Idle {TimeSpan.FromMilliseconds((nowTicks - _returnedTickCount))} > {pooledConnectionIdleTimeout}.");
                     return false;
                 }
 
-                return IsUsableHttp11Connection(_connection, nowTicks, pooledConnectionLifetime, false);
+                // Validate that the connection lifetime has not been exceeded.
+                if (_connection.LifetimeExpired(nowTicks, pooledConnectionLifetime))
+                {
+                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Scavenging connection. Lifetime {TimeSpan.FromMilliseconds((nowTicks - _connection.CreationTickCount))} > {pooledConnectionLifetime}.");
+                    return false;
+                }
+
+                if (!_connection.CheckUsabilityOnScavenge())
+                {
+                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Scavenging connection. Unexpected data or EOF received.");
+                    return false;
+                }
+
+                return true;
             }
 
             public bool Equals(CachedConnection other) => ReferenceEquals(other._connection, _connection);

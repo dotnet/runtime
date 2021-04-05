@@ -1587,12 +1587,19 @@ namespace System.Net.Http
                 (_httpStreams.Count == 0) &&
                 ((nowTicks - _idleSinceTickCount) > connectionIdleTimeout.TotalMilliseconds))
             {
-                if (NetEventSource.Log.IsEnabled()) Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds(nowTicks - _idleSinceTickCount)} > {connectionIdleTimeout}.");
+                if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/2 connection no longer usable. Idle {TimeSpan.FromMilliseconds(nowTicks - _idleSinceTickCount)} > {connectionIdleTimeout}.");
 
                 return true;
             }
 
-            return LifetimeExpired(nowTicks, connectionLifetime);
+            if (LifetimeExpired(nowTicks, connectionLifetime))
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/2 connection no longer usable. Lifetime {TimeSpan.FromMilliseconds(nowTicks - CreationTickCount)} > {connectionLifetime}.");
+
+                return true;
+            }
+
+            return false;
         }
 
         private void AbortStreams(Exception abortException)

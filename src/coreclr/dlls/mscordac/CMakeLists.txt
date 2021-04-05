@@ -192,12 +192,6 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
-# Create the DAC module index header file containing the DAC build id
-# for xplat and the timestamp/size on Windows.
-if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-    generate_module_index(mscordaccore ${GENERATED_INCLUDE_DIR}/dacmoduleindex.h)
-endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-
 # add the install targets
 install_clr(TARGETS mscordaccore ADDITIONAL_DESTINATIONS sharedFramework)
 
