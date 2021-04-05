@@ -18428,7 +18428,7 @@ GenTreeIntCon* Compiler::impStringLiteralLength(GenTreeStrCon* node)
         // str can be NULL for dynamic context
         if (str != nullptr)
         {
-            JITDUMP("Optimizing '\"%ws\".Length' to just '%d'\n", str, length)
+            JITDUMP("String '\"%ws\".Length' is '%d'\n", str, length)
         }
         else
         {
