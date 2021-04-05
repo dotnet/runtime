@@ -235,7 +235,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     assert (res1 > 0);
 
     if (stat (file_path, &buffer) == 0) {
-        MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *) malloc (sizeof (MonovmRuntimeConfigArguments));
+        MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
         arg->kind = 0;
         arg->runtimeconfig.name.path = file_path;
         monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
