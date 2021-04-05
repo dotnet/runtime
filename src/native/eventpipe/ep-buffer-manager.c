@@ -902,6 +902,10 @@ ep_buffer_manager_write_event (
 	if (ep_event_payload_get_size (payload) > 64 * 1024)
 	{
 		ep_rt_atomic_inc_int64_t (&buffer_manager->num_oversized_events_dropped);
+		EP_SPIN_LOCK_ENTER (thread_lock, section1)
+			session_state = ep_thread_get_or_create_session_state (current_thread, session);
+			ep_thread_session_state_increment_sequence_number (session_state);
+		EP_SPIN_LOCK_EXIT (thread_lock, section1)
 		return false;
 	}
 
@@ -925,7 +929,7 @@ ep_buffer_manager_write_event (
 	ep_rt_spin_lock_handle_t *thread_lock;
 	thread_lock = ep_thread_get_rt_lock_ref (current_thread);
 
-	EP_SPIN_LOCK_ENTER (thread_lock, section1)
+	EP_SPIN_LOCK_ENTER (thread_lock, section2)
 		session_state = ep_thread_get_or_create_session_state (current_thread, session);
 		ep_raise_error_if_nok_holding_spin_lock (session_state != NULL, section1);
 
@@ -939,7 +943,7 @@ ep_buffer_manager_write_event (
 			else
 				alloc_new_buffer = true;
 		}
-	EP_SPIN_LOCK_EXIT (thread_lock, section1)
+	EP_SPIN_LOCK_EXIT (thread_lock, section2)
 
 	// alloc_new_buffer is reused below to detect if overflow happened, so cache it here to see if we should
 	// signal the reader thread
@@ -959,15 +963,15 @@ ep_buffer_manager_write_event (
 			// This lock looks unnecessary for the sequence number, but didn't want to
 			// do a broader refactoring to take it out. If it shows up as a perf
 			// problem then we should.
-			EP_SPIN_LOCK_ENTER (thread_lock, section2)
+			EP_SPIN_LOCK_ENTER (thread_lock, section3)
 				ep_thread_session_state_increment_sequence_number (session_state);
-			EP_SPIN_LOCK_EXIT (thread_lock, section2)
+			EP_SPIN_LOCK_EXIT (thread_lock, section3)
 		} else {
 			current_thread = ep_thread_get ();
 			EP_ASSERT (current_thread != NULL);
 
 			thread_lock = ep_thread_get_rt_lock_ref (current_thread);
-			EP_SPIN_LOCK_ENTER (thread_lock, section3)
+			EP_SPIN_LOCK_ENTER (thread_lock, section4)
 					ep_thread_session_state_set_write_buffer (session_state, buffer);
 					// Try to write the event after we allocated a buffer.
 					// This is the first time if the thread had no buffers before the call to this function.
@@ -975,7 +979,7 @@ ep_buffer_manager_write_event (
 					alloc_new_buffer = !ep_buffer_write_event (buffer, event_thread, session, ep_event, payload, activity_id, related_activity_id, stack);
 					EP_ASSERT(!alloc_new_buffer);
 					ep_thread_session_state_increment_sequence_number (session_state);
-			EP_SPIN_LOCK_EXIT (thread_lock, section3)
+			EP_SPIN_LOCK_EXIT (thread_lock, section4)
 		}
 	}
 
