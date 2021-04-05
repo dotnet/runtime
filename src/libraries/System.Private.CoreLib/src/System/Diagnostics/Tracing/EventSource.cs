@@ -2767,24 +2767,20 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
 #endif
 
-            if (m_EventDataInitializer != null && m_eventData == null)
-            {
-                m_eventData = m_EventDataInitializer();
-                DefineEventPipeEvents();
-            }
-
-            if (m_EventMetadataInitializer != null && m_rawManifest == null)
-            {
-                m_rawManifest = m_EventMetadataInitializer();
-            }
-
             if (m_eventData == null && m_rawManifest == null)
             {
-                // get the metadata via reflection.
-                Debug.Assert(m_rawManifest == null);
-                m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
-                Debug.Assert(m_eventData != null);
-
+                if (m_EventMetadataInitializer != null && m_EventDataInitializer != null)
+                {
+                    m_eventData = m_EventDataInitializer();
+                    m_rawManifest = m_EventMetadataInitializer();
+                }
+                else
+                {
+                    // get the metadata via reflection.
+                    Debug.Assert(m_rawManifest == null);
+                    m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
+                    Debug.Assert(m_eventData != null);
+                }
                 // TODO Enforce singleton pattern
                 Debug.Assert(EventListener.s_EventSources != null, "should be called within lock on EventListener.EventListenersLock which ensures s_EventSources to be initialized");
                 foreach (WeakReference<EventSource> eventSourceRef in EventListener.s_EventSources)
