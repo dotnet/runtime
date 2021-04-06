@@ -17,17 +17,17 @@ This feature could be achived by mainly two parts:
 1. A new MSBuild task called `RuntimeConfigParser` will run after the `runtimeconfig.json` is created by the dotnet build process. The task will extract properties keys and values into a binary blob format. The resulting `runtimeconfig.blob` file will be bundled with the application.
 2. The runtime will expose a new API entrypoint `monovm_runtimeconfig_initialize` that gets either a path to pass to `mono_file_map_open` or a pointer to the blob in memory. Then, the runtime will read the binary data and populate the managed AppContext with the properties.
 
-We will only take the `runtimeOptions→configProperties` json key. Its content is a flat key-value string/boolean dictionary.
+We will only take the `runtimeOptions→configProperties` json key. Its content is a json dictionary with string keys and string/bool/numeric values.  We convert the values to strings when we store them in the binary runtimeconfig.blob. 
 
 The runtime will assume that the properties passed via `monovm_initialize` and `monovm_runtimeconfig_initialize` will be different. To ensure this, the MSBuild task that we will provide will be given a list of property names that the embedder promises it will pass to `monovm_initialize`. The MSBuild task will check that `runtimeconfig.json` does not set any of those same properties. If there is a duplicate, error out.
 
-We take everything and pass all the properties to the managed AppContext. For the well-known standard properties the mono runtime will read and propagate the ones it cares about and ignore the rest.
+We take everything and pass all the properties to the managed AppContext. For the well-known standard properties the mono runtime will read and use the ones it cares about.
 
 ## Design Details
 
 ### Encoded file generation
 
-We should be able to generate the encoded file from C# as an MSBuild task, using System.Text.Json and System.Reflection.Metadata. This generator should also do duplicate checking (by comparing the keys in the json file with an input list of properties that the embedder promises to pass to `monovm_initialize`).
+ The runtime pack will provide an MSBuild task called  to generate the encoded file. The generator checks for duplicate property keys (by comparing the keys in the json file with an input list of properties that the embedder promises to pass to `monovm_initialize`).
 
 #### Task Contract:
 
@@ -40,6 +40,21 @@ The task should:
 1. Parse the given input file and create a dictionary from the configProperties key.
 2. Compare the keys from the input file with the names given in the item list. If there are any duplicates, return an MSBuild Error.
 3. Generate the output file.
+
+#### Example of the usage of the task:
+
+ ```
+ <UsingTask TaskName="RuntimeConfigParserTask"
+            AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)" />
+
+<Target Name="BundleTestAndroidApp">
+  <RuntimeConfigParserTask
+      RuntimeConfigFile="$(Path_to_runtimeconfig.json_file)"
+      OutputFile="$(Path_to_generated_binary_file)"
+      RuntimeConfigReservedProperties="@(runtime_properties_reserved_by_host)">
+  </RuntimeConfigParserTask>
+</Target>
+ ```
 
 ### The encoded runtimeconfig format
 
@@ -90,8 +105,39 @@ MONO_API void
 monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *args, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void* user_data);
 ```
 
-This declaration should live in the unstable header. `monovm_runtimeconfig_initialize` should be called after `monovm_initialize` but before starting the runtime. The cleanup function should be called in `mono_runtime_install_appctx_properties`.
+This declaration should live in the unstable header. `monovm_runtimeconfig_initialize` should be called after `monovm_initialize` but before starting the runtime.
+
+#### Example of the usage of `monovm_runtimeconfig_initialize`
+
+```
+void
+cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
+{
+    free (args);
+    free (user_data); // This may not be needed, depending on if there is anything needs to be freed.
+}
+
+int
+mono_droid_runtime_init (const char* executable, int managed_argc, char* managed_argv[])
+{
+  
+  ......
+
+  MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+  arg->kind = 0;
+  arg->runtimeconfig.name.path = "path_to_generated_binary_file";
+  monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
+
+  monovm_initialize(......);
+  ......
+
+}
+```
 
 ### Register and install runtime properties
 
-`monovm_runtimeconfig_initialize` will register the type `MonovmRuntimeConfigArguments` variable as it is. Processing and installing the properties will be done inside `mono_runtime_install_appctx_properties`. If given the path of runtimeconfig.blob file, read the binary data from the file first. Otherwise, parse the binary data and combine the properties with the ones registered by `monovm_initialize`.
+`monovm_runtimeconfig_initialize` will register the type `MonovmRuntimeConfigArguments` variable with the runtime. If given the path of the runtimeconfig.bin file, the runtime will read the binary data from the file, otherwise, it will parse the binary data from memory. The properties will be combined with the ones registered by `monovm_initialize` and used to initialize System.AppContext.
+
+### Cleanup function
+
+The `MonovmRuntimeConfigArguments*` will be stored in the runtime between `monovm_runtimeconfig_initialize` and `mono_jit_init_version`. The embedder should not dispose of the arguments after calling `monovm_runtimeconfig_initialize`. Instead the runtime will call the cleanup_fn that is passed to `monovm_runtimeconfig_initialize` at soon after it has initialized the managed property list in `System.AppContext` (which happens as part of mono_jit_init_version).
