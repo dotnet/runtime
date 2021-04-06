@@ -528,17 +528,35 @@ attributes are applied.
 <attribute fullname="SomecustomAttribute" feature="EnableOptionalFeature" featurevalue="false"/>
 ```
 
-### Special custom attributes
+### Removing custom attributes
 
-Also if the attribute is used in a type, a special property can be used to specify that the type
-is a Custom Attribute and it's instances should be removed by the linker. To do this use `internal="RemoveAttributeInstances"` instead of specifying `fullname` in the attribute as described in the following
-example:
+Any custom attribute can be annotated with a special custom attribute which can be used to specify
+that all instances of the attribute can be removed by the linker. To do this use `internal="RemoveAttributeInstances"`
+instead of specifying `fullname` in the attribute as described in the following example:
 
 ```xml
 <linker>
-  <assembly fullname="*"> 
+  <assembly fullname="*">
     <type fullname="System.Runtime.CompilerServices.NullableAttribute">
       <attribute internal="RemoveAttributeInstances" feature="EnableOptionalFeature" featurevalue="false" />
+    </type>
+  </assembly>
+</linker>
+```
+
+In some cases, it's useful to remove only specific usage of the attribute. This can be achieved by specifying the value
+or values of the arguments to match. In the example below only `System.Reflection.AssemblyMetadataAttribute` custom attributes
+with the first argument equal to `RemovableValue` will be removed.
+
+```xml
+<linker>
+  <assembly fullname="*">
+    <type fullname="System.Reflection.AssemblyMetadataAttribute">
+      <attribute internal="RemoveAttributeInstances">
+        <argument type="System.Object">
+          <argument>RemovableValue</argument>
+        </argument>
+      </attribute>
     </type>
   </assembly>
 </linker>

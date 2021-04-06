@@ -773,7 +773,7 @@ namespace Mono.Linker.Steps
 						continue;
 					}
 
-					if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (resolvedAttributeType) && providerInLinkedAssembly)
+					if (providerInLinkedAssembly && IsAttributeRemoved (ca, resolvedAttributeType))
 						continue;
 
 					MarkCustomAttribute (ca, reason, sourceLocationMember);
@@ -786,6 +786,41 @@ namespace Mono.Linker.Steps
 
 			foreach (var dynamicDependency in _context.Annotations.GetLinkerAttributes<DynamicDependency> ((IMemberDefinition) provider))
 				MarkDynamicDependency (dynamicDependency, (IMemberDefinition) provider);
+		}
+
+		bool IsAttributeRemoved (CustomAttribute ca, TypeDefinition attributeType)
+		{
+			foreach (var attr in _context.Annotations.GetLinkerAttributes<RemoveAttributeInstancesAttribute> (attributeType)) {
+				var args = attr.Arguments;
+				if (args.Length == 0)
+					return true;
+
+				if (args.Length > ca.ConstructorArguments.Count)
+					continue;
+
+				if (HasMatchingArguments (args, ca.ConstructorArguments))
+					return true;
+			}
+
+			return false;
+
+			static bool HasMatchingArguments (CustomAttributeArgument[] argsA, Collection<CustomAttributeArgument> argsB)
+			{
+				for (int i = 0; i < argsA.Length; ++i) {
+					object argB = argsB[i].Value;
+
+					// The internal attribute has only object overloads which does not allow
+					// to distinguish between boxed/converted and exact candidates. This
+					// allows simpler data entering and for now it does not like problem.
+					if (argB is CustomAttributeArgument caa)
+						argB = caa.Value;
+
+					if (!argsA[i].Value.Equals (argB))
+						return false;
+				}
+
+				return true;
+			}
 		}
 
 		protected virtual bool ProcessLinkerSpecialAttribute (CustomAttribute ca, ICustomAttributeProvider provider, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
@@ -1385,7 +1420,7 @@ namespace Mono.Linker.Steps
 					continue;
 				}
 
-				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (resolved.DeclaringType) && Annotations.GetAction (CustomAttributeSource.GetAssemblyFromCustomAttributeProvider (assemblyLevelAttribute.Provider)) == AssemblyAction.Link)
+				if (IsAttributeRemoved (customAttribute, resolved.DeclaringType) && Annotations.GetAction (CustomAttributeSource.GetAssemblyFromCustomAttributeProvider (assemblyLevelAttribute.Provider)) == AssemblyAction.Link)
 					continue;
 
 				if (customAttribute.AttributeType.IsTypeOf ("System.Runtime.CompilerServices", "InternalsVisibleToAttribute") && !Annotations.IsMarked (customAttribute)) {
