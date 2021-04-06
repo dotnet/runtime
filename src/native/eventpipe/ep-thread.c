@@ -375,6 +375,13 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
+uint32_t
+ep_thread_session_state_get_buffer_count_estimate(const EventPipeThreadSessionState *thread_session_state)
+{
+	// this is specifically unprotected and allowed to be incorrect due to memory ordering
+	return thread_session_state->buffer_list == NULL ? 0 : thread_session_state->buffer_list->buffer_count;
+}
+
 void
 ep_thread_session_state_free (EventPipeThreadSessionState *thread_session_state)
 {

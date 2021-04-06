@@ -311,6 +311,9 @@ ep_thread_session_state_free (EventPipeThreadSessionState *thread_session_state)
 EventPipeThread *
 ep_thread_session_state_get_thread (const EventPipeThreadSessionState *thread_session_state);
 
+uint32_t
+ep_thread_session_state_get_buffer_count_estimate(const EventPipeThreadSessionState *thread_session_state);
+
 // _Requires_lock_held (thread)
 EventPipeBuffer *
 ep_thread_session_state_get_write_buffer (const EventPipeThreadSessionState *thread_session_state);

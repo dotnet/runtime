@@ -114,7 +114,7 @@ struct _EventPipeBufferManager_Internal {
 	EventPipeBuffer *current_buffer;
 	EventPipeBufferList *current_buffer_list;
 	// The total allocation size of buffers under management.
-	size_t size_of_all_buffers;
+	volatile size_t size_of_all_buffers;
 	// The maximum allowable size of buffers under management.
 	// Attempted allocations above this threshold result in
 	// dropped events.
@@ -169,6 +169,18 @@ void
 ep_buffer_manager_init_sequence_point_thread_list (
 	EventPipeBufferManager *buffer_manager,
 	EventPipeSequencePoint *sequence_point);
+
+// Attempt to reserve space for a buffer
+bool
+ep_buffer_manager_try_reserve_buffer(
+	EventPipeBufferManager *buffer_manager,
+	uint32_t request_size);
+
+// Release a reserved buffer budget
+void
+ep_buffer_manager_release_buffer(
+	EventPipeBufferManager *buffer_manager,
+	uint32_t size);
 
 // Write an event to the input thread's current event buffer.
 // An optional event_thread can be provided for sample profiler events.
