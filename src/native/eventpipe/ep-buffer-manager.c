@@ -453,7 +453,6 @@ buffer_manager_allocate_buffer_for_thread (
 	EventPipeBuffer *new_buffer = NULL;
 	EventPipeBufferList *thread_buffer_list = NULL;
 	EventPipeSequencePoint* sequence_point = NULL;
-	bool allocate_new_buffer = false;
 	uint32_t sequence_number = 0;
 
 	// Pick a buffer size by multiplying the base buffer size by the number of buffers already allocated for this thread.
