@@ -397,7 +397,6 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
     m_Layout=LAYOUT_LOADED;
     m_pOwner=source->m_pOwner;
     _ASSERTE(!source->IsMapped());
-    m_isInBundle = isInBundle;
 
     m_pExceptionDir = NULL;
 
@@ -441,7 +440,7 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
         ApplyBaseRelocations();
     }
 #elif !defined(TARGET_UNIX)
-    if (m_isInBundle &&
+    if (isInBundle &&
         HasCorHeader() &&
         (HasNativeHeader() || HasReadyToRunHeader()) &&
         g_fAllowNativeImages)
@@ -704,6 +703,8 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         }
     }
 
+    LPVOID addr = 0;
+
     // It's okay if resource files are length zero
     if (size > 0)
     {
@@ -721,14 +722,35 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         _ASSERTE((offset - mapBegin) < mapSize);
         _ASSERTE(mapSize >= (UINT64)size);
 
-        char *addr = (char*)CLRMapViewOfFile(m_FileMap, FILE_MAP_READ, mapBegin >> 32, (DWORD)mapBegin, (DWORD)mapSize);
-        if (addr == NULL)
+        LPVOID view = CLRMapViewOfFile(m_FileMap, FILE_MAP_READ, mapBegin >> 32, (DWORD)mapBegin, (DWORD)mapSize);
+        if (view == NULL)
             ThrowLastError();
 
-        addr += (offset - mapBegin);
-        m_FileView.Assign((LPVOID)addr);
+        m_FileView.Assign(view);
+        addr = (LPVOID)((size_t)view + offset - mapBegin);
+
+        INT64 uncompressedSize = pOwner->GetSize();
+        if (uncompressedSize > 0)
+        {
+            HandleHolder anonMap = WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, size >> 32, (DWORD)size, NULL);
+            if (anonMap == NULL)
+                ThrowLastError();
+
+            LPVOID anonView = CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+            if (anonView == NULL)
+                ThrowLastError();
+
+            // read into anonymous mapping (will decompress here)
+            memcpy(anonView, addr, size);
+
+            // Replace file handles with handles to anonymous map. This will release the originals.
+            addr = anonView;
+            m_FileView.Assign(anonView);
+            m_FileMap.Assign(anonMap);
+        }
     }
-    Init(m_FileView, (COUNT_T)size);
+
+    Init(addr, (COUNT_T)size);
 }
 
 NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
