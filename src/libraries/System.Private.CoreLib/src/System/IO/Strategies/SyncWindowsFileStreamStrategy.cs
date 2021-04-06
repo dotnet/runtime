@@ -110,13 +110,13 @@ namespace System.IO.Strategies
             if (r == -1)
             {
                 // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
-                if (errorCode == ERROR_BROKEN_PIPE)
+                if (errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
                 {
                     r = 0;
                 }
                 else
                 {
-                    if (errorCode == ERROR_INVALID_PARAMETER)
+                    if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                         ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(_fileHandle));
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
@@ -143,7 +143,7 @@ namespace System.IO.Strategies
             if (r == -1)
             {
                 // For pipes, ERROR_NO_DATA is not an error, but the pipe is closing.
-                if (errorCode == ERROR_NO_DATA)
+                if (errorCode == Interop.Errors.ERROR_NO_DATA)
                 {
                     r = 0;
                 }
@@ -152,7 +152,7 @@ namespace System.IO.Strategies
                     // ERROR_INVALID_PARAMETER may be returned for writes
                     // where the position is too large or for synchronous writes
                     // to a handle opened asynchronously.
-                    if (errorCode == ERROR_INVALID_PARAMETER)
+                    if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                         throw new IOException(SR.IO_FileTooLongOrHandleNotSync);
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                 }
