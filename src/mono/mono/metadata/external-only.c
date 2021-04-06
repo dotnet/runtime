@@ -686,3 +686,13 @@ mono_jit_info_table_find (MonoDomain *domain, gpointer addr)
 {
 	return mono_jit_info_table_find_internal (addr, TRUE, FALSE);
 }
+
+/**
+ * mono_domain_owns_vtable_slot:
+ * \returns Whether \p vtable_slot is inside a vtable which belongs to \p domain.
+ */
+gboolean
+mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
+{
+	return mono_mem_manager_mp_contains_addr (mono_mem_manager_get_ambient (), vtable_slot);
+}

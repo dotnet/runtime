@@ -121,7 +121,7 @@ mono_domain_has_type_resolve (MonoDomain *domain);
 MONO_API MONO_RT_EXTERNAL_ONLY MonoReflectionAssembly *
 mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb);
 
-MONO_API mono_bool
+MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
 mono_domain_owns_vtable_slot (MonoDomain *domain, void* vtable_slot);
 
 MONO_API MONO_RT_EXTERNAL_ONLY void
