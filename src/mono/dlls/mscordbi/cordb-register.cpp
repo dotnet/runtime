@@ -56,7 +56,7 @@ HRESULT STDMETHODCALLTYPE CordbRegisterSet::SetRegisters(ULONG64 mask, ULONG32 r
 HRESULT STDMETHODCALLTYPE CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
 {
     if (m_ctxLen < contextSize)
-        memcpy(context, m_pCtx, m_ctxLen);
+        memcpy(context+POS_RAX, m_pCtx, m_ctxLen);
     LOG((LF_CORDB, LL_INFO100000, "CordbRegisterSet - GetThreadContext - NOT IMPLEMENTED\n"));
     return S_OK;
 }

@@ -58,7 +58,7 @@ HRESULT STDMETHODCALLTYPE CordbStackWalk::GetContext(ULONG32 contextFlags, ULONG
         m_dbgprot_buffer_init(&localbuf, 128);
         m_dbgprot_buffer_add_id(&localbuf, m_pThread->GetThreadId());
         m_dbgprot_buffer_add_int(&localbuf, m_nCurrentFrame);
-        
+
         int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_GET_CONTEXT, &localbuf);
         m_dbgprot_buffer_free(&localbuf);
 
@@ -69,7 +69,7 @@ HRESULT STDMETHODCALLTYPE CordbStackWalk::GetContext(ULONG32 contextFlags, ULONG
         int contextSizeReceived = 0;
         uint8_t* contextMemoryReceived = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, &contextSizeReceived);
         *contextSize = contextSizeReceived;
-        memcpy(contextBuf, contextMemoryReceived, contextSizeReceived);
+        memcpy(contextBuf+POS_RAX, contextMemoryReceived, contextSizeReceived);
         free(contextMemoryReceived);
     }
     EX_CATCH_HRESULT(hr);

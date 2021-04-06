@@ -48,6 +48,16 @@ include_directories(
 include_directories("../../../coreclr/pal/prebuilt/inc")
 include_directories("../../../coreclr/nativeresources")
 
+if (CLR_CMAKE_HOST_UNIX)
+  include_directories("${PROJECT_SOURCE_DIR}/../../../coreclr/pal/inc")
+  include_directories("${PROJECT_SOURCE_DIR}/../../../coreclr/pal/inc/rt")
+  include_directories("${PROJECT_SOURCE_DIR}/../../../coreclr/pal/src/safecrt")
+
+  append("-Wno-missing-prototypes  -Wno-pointer-arith -Wno-macro-redefined" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+
+  include_directories("../../../coreclr/pal/inc/rt/cpp")
+endif (CLR_CMAKE_HOST_UNIX)
+
 set(DBGSHIM_SOURCES
     dbgshim.cpp
 )

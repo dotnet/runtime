@@ -7,8 +7,10 @@
 
 #include <mono/utils/mono-publib.h>
 
+#if defined(TARGET_WINDOWS)
 #include <windows.h>
 #include <libloaderapi.h>
+#endif
 
 #include <unknwn.h>
 

@@ -12,8 +12,12 @@
 #include "dbgshim.h"
 
 #include "palclr.h"
-
+#if defined(TARGET_WINDOWS)
 #include <libloaderapi.h>
+#else
+#include <dlfcn.h>
+#define putenv _putenv
+#endif
 
 #ifndef MAX_LONGPATH
 #define MAX_LONGPATH   1024
@@ -117,10 +121,16 @@ HRESULT CreateCoreDbg(HMODULE hDBIModule, DWORD processId, int iDebuggerVersion,
 {
     HRESULT hr = S_OK;
 
+#if defined(TARGET_WINDOWS)
     FPCoreCLRCreateCordbObject fpCreate =
         (FPCoreCLRCreateCordbObject)GetProcAddress(hDBIModule, "CoreCLRCreateCordbObject");
+#else
+    FPCoreCLRCreateCordbObject fpCreate = (FPCoreCLRCreateCordbObject)dlsym (hDBIModule, "CoreCLRCreateCordbObject");
+#endif
+
     if (fpCreate == NULL)
     {
+        printf("*********************nao tem fpCreate\n");
         return CORDBG_E_INCOMPATIBLE_PROTOCOL;
     }
 
@@ -129,7 +139,7 @@ HRESULT CreateCoreDbg(HMODULE hDBIModule, DWORD processId, int iDebuggerVersion,
     return hr;
 }
 
-char* convertC(const WCHAR * wString) 
+char* convertC(const WCHAR * wString)
 {
     int size;
     char * MultiBuffer = NULL;
@@ -158,10 +168,13 @@ RegisterForRuntimeStartup(
 
     HRESULT hr = S_OK;
     HMODULE hMod = NULL;
-    
-    char* msCorDbiPath = getenv("MSCORDBI_PATH");
 
+    char* msCorDbiPath = getenv("MSCORDBI_PATH");
+#ifdef TARGET_WINDOWS
     hMod = LoadLibraryA(msCorDbiPath);
+#else
+    hMod = dlopen(msCorDbiPath, RTLD_LAZY);
+#endif
     if (hMod == NULL)
     {
         hr = CORDBG_E_DEBUG_COMPONENT_MISSING;
@@ -173,6 +186,8 @@ RegisterForRuntimeStartup(
     exit:
     if (FAILED(hr))
     {
+        printf("*********************FAILED\n");
+        fflush(stdout);
         _ASSERTE(pCordb == NULL);
 
         if (hMod != NULL)
@@ -182,7 +197,10 @@ RegisterForRuntimeStartup(
 
         // Invoke the callback on error
         pfnCallback(NULL, parameter, hr);
+        return hr;
     }
+    printf("*********************DEU CERTO\n");
+    fflush(stdout);
     pfnCallback(pCordb, parameter, S_OK);
     return S_OK;
 }

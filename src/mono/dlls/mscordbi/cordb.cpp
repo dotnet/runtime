@@ -119,6 +119,11 @@ Cordb::Cordb(DWORD PID) : CordbBaseMono(NULL)
     m_pCallback     = NULL;
     m_pSemReadWrite = new UTSemReadWrite();
     m_nPID = PID;
+
+#ifndef HOST_WIN32
+    PAL_InitializeDLL();
+#endif
+
 #ifdef LOGGING
     InitializeLogging();
 #endif
@@ -262,7 +267,7 @@ void Connection::Receive()
             return;
         }
 
-        MdbgProtBuffer* recvbuf = new MdbgProtBuffer();        
+        MdbgProtBuffer* recvbuf = new MdbgProtBuffer();
         m_dbgprot_buffer_init(recvbuf, header.len - HEADER_LENGTH);
         if (header.len - HEADER_LENGTH != 0)
         {
@@ -511,7 +516,7 @@ void Connection::StartConnection()
     m_socket = new Socket();
     int port = 56000 + (m_pCordb->PID() % 1000);
     char* s_port = new char[10];
-    sprintf(s_port, "%d", port);
+    sprintf_s(s_port, 10, "%d", port);
     LOG((LF_CORDB, LL_INFO100000, "Listening to %s:%s\n", DEBUG_ADDRESS, s_port));
 
     int ret = m_socket->OpenSocketAcceptConnection(DEBUG_ADDRESS, s_port);

@@ -6,6 +6,9 @@
 #define HEADER_LENGTH 11
 #define REPLY_PACKET 0x80
 
+#ifdef TARGET_AMD64
+#define POS_RAX 0x78
+#endif
 /* 
  * Wire Protocol definitions
  */

@@ -8740,7 +8740,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				wait_for_suspend();
 		}
 		int context_size = 0;
-		char* contextMemoryReceived = m_dbgprot_decode_byte_array(p, &p, end, &context_size);
+		uint8_t * contextMemoryReceived = m_dbgprot_decode_byte_array(p, &p, end, &context_size);
 
 		mono_loader_lock();
 		tls = (DebuggerTlsData*)mono_g_hash_table_lookup(thread_to_tls, thread);
@@ -8750,26 +8750,17 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		compute_frame_info(thread, tls, TRUE); //the last parameter is TRUE to force that the frame info that will be send is synchronised with the debugged thread
 
+		MonoContext ctx;
+		memcpy(&ctx, contextMemoryReceived+POS_RAX, sizeof(MonoContext));
 		for (int i = 0; i < tls->frame_count; i++)
 		{
-#ifdef HOST_WIN32
-			CONTEXT uctx;
-			int contextSize = sizeof(CONTEXT);
-#else						
-			ucontext_t uctx;
-			int contextSize = sizeof(ucontext_t);
-#endif
-			memcpy(&uctx, contextMemoryReceived, contextSize);
-			MonoContext ctx;
-			mono_sigctx_to_monoctx(&uctx, &ctx);
-			PRINT_DEBUG_MSG(1, "[dbg] Received Context - [%p]\n", MONO_CONTEXT_GET_SP(&ctx));
-
-			PRINT_DEBUG_MSG(1, "[dbg] Searching Context [%d] - [%p]\n", i, MONO_CONTEXT_GET_SP(&tls->frames[i]->ctx));
+			PRINT_DEBUG_MSG(1, "[dbg] Searching Context [%d] - [%p] - [%p]\n", i, MONO_CONTEXT_GET_SP(&tls->frames[i]->ctx), MONO_CONTEXT_GET_SP(&ctx));
 			if (MONO_CONTEXT_GET_SP(&ctx) == MONO_CONTEXT_GET_SP(&tls->frames[i]->ctx)) {
 				buffer_add_int(buf, i);
 				break;
 			}
 		}
+		g_free (contextMemoryReceived);
 		break;
 	}
 	case MDBGPROT_CMD_THREAD_GET_CONTEXT: {
@@ -8791,16 +8782,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		if (start_frame < tls->frame_count)
 		{
-			PRINT_DEBUG_MSG (1, "[dbg] Getting Context - [%p]\n", MONO_CONTEXT_GET_SP(&tls->frames [start_frame]->ctx));
-#ifdef HOST_WIN32
-			CONTEXT uctx;
-			int contextSize = sizeof(CONTEXT);
-#else						
-			ucontext_t uctx;
-			int contextSize = sizeof(ucontext_t);
-#endif			
-			mono_monoctx_to_sigctx (&tls->frames [start_frame]->ctx, &uctx);
-			buffer_add_byte_array (buf, (guint8*)&uctx, contextSize);
+			buffer_add_byte_array (buf, &tls->frames [start_frame]->ctx, sizeof(MonoContext));
 		}
 		break;
 	}
@@ -9672,7 +9654,11 @@ static const char* thread_cmds_str[] = {
 	"GET_INFO",
 	"GET_ID",
 	"GET_TID",
-	"SET_IP"
+	"SET_IP",
+	"ELAPSED_TIME",
+	"GET_APPDOMAIN",
+	"GET_CONTEXT",
+	"SET_CONTEXT"
 };
 
 static const char* event_cmds_str[] = {
