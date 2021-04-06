@@ -134,7 +134,7 @@ namespace System.IO.Strategies
 
             // Create and store async stream class library specific data in the async result
             FileStreamValueTaskSource valueTaskSource = FileStreamValueTaskSource.Create(this, _preallocatedOverlapped, 0, destination);
-
+            NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
             long positionBefore = _filePosition;
@@ -156,8 +156,8 @@ namespace System.IO.Strategies
 
                 // Now set the position to read from in the NativeOverlapped struct
                 // For pipes, we should leave the offset fields set to 0.
-                valueTaskSource.Overlapped->OffsetLow = unchecked((int)positionBefore);
-                valueTaskSource.Overlapped->OffsetHigh = (int)(positionBefore >> 32);
+                intOverlapped->OffsetLow = unchecked((int)positionBefore);
+                intOverlapped->OffsetHigh = (int)(positionBefore >> 32);
 
                 // When using overlapped IO, the OS is not supposed to
                 // touch the file pointer location at all.  We will adjust it
@@ -166,7 +166,7 @@ namespace System.IO.Strategies
             }
 
             // queue an async ReadFile operation and pass in a packed overlapped
-            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination.Span, false, valueTaskSource.Overlapped, out int errorCode);
+            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination.Span, false, intOverlapped, out int errorCode);
 
             // ReadFile, the OS version, will return 0 on failure.  But
             // my ReadFileNative wrapper returns -1.  My wrapper will return
@@ -188,7 +188,7 @@ namespace System.IO.Strategies
 
                     // We clear the overlapped status bit for this special case.
                     // Failure to do so looks like we are freeing a pending overlapped later.
-                    valueTaskSource.Overlapped->InternalLow = IntPtr.Zero;
+                    intOverlapped->InternalLow = IntPtr.Zero;
                     valueTaskSource.ReleaseNativeResource();
                     return new ValueTask<int>(valueTaskSource.NumBufferedBytes);
                 }
@@ -250,14 +250,15 @@ namespace System.IO.Strategies
 
             // Create and store async stream class library specific data in the async result
             FileStreamValueTaskSource valueTaskSource = FileStreamValueTaskSource.Create(this, _preallocatedOverlapped, 0, source);
+            NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
 
             long positionBefore = _filePosition;
             if (CanSeek)
             {
                 // Now set the position to read from in the NativeOverlapped struct
                 // For pipes, we should leave the offset fields set to 0.
-                valueTaskSource.Overlapped->OffsetLow = (int)positionBefore;
-                valueTaskSource.Overlapped->OffsetHigh = (int)(positionBefore >> 32);
+                intOverlapped->OffsetLow = (int)positionBefore;
+                intOverlapped->OffsetHigh = (int)(positionBefore >> 32);
 
                 // When using overlapped IO, the OS is not supposed to
                 // touch the file pointer location at all.  We will adjust it
@@ -267,7 +268,7 @@ namespace System.IO.Strategies
             }
 
             // queue an async WriteFile operation and pass in a packed overlapped
-            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source.Span, false, valueTaskSource.Overlapped, out int errorCode);
+            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source.Span, false, intOverlapped, out int errorCode);
 
             // WriteFile, the OS version, will return 0 on failure.  But
             // my WriteFileNative wrapper returns -1.  My wrapper will return
