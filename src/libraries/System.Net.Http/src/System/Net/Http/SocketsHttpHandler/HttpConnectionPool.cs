@@ -1403,7 +1403,15 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode));
             }
 
-            return tunnelResponse.Content.ReadAsStream(cancellationToken);
+            try
+            {
+                return tunnelResponse.Content.ReadAsStream(cancellationToken);
+            }
+            catch
+            {
+                tunnelResponse.Dispose();
+                throw;
+            }
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>
