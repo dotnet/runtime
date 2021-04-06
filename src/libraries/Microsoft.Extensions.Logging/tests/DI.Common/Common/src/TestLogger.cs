@@ -25,6 +25,7 @@ namespace Microsoft.Extensions.Logging.Testing
         }
 
         public string Name { get; set; }
+        public int IsEnabledCallCount { get; private set; }
 
         public IDisposable BeginScope<TState>(TState state)
         {
@@ -41,6 +42,11 @@ namespace Microsoft.Extensions.Logging.Testing
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
+            if (!IsEnabled(logLevel))
+            {
+                return;
+            }
+
             _sink.Write(new WriteContext()
             {
                 LogLevel = logLevel,
@@ -55,6 +61,7 @@ namespace Microsoft.Extensions.Logging.Testing
 
         public bool IsEnabled(LogLevel logLevel)
         {
+            IsEnabledCallCount++;
             return logLevel != LogLevel.None && _filter(logLevel);
         }
 

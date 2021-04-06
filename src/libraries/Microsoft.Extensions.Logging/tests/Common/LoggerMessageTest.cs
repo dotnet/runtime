@@ -191,6 +191,7 @@ namespace Microsoft.Extensions.Logging.Test
             var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(write.State);
             AssertLogValues(expectedValues, actualLogValues.ToList());
             Assert.Equal(expectedToString, actualLogValues.ToString());
+            Assert.Equal(2, testLogger.IsEnabledCallCount);
         }
 
         [Theory]
@@ -199,7 +200,7 @@ namespace Microsoft.Extensions.Logging.Test
         {
             // Arrange
             var testSink = new TestSink();
-            var testLogger = new TestLogger("testlogger", testSink, l => l == LogLevel.None);
+            var testLogger = new TestLogger("testlogger", testSink, enabled: true);
             var exception = new Exception("TestException");
             var parameterNames = Enumerable.Range(0, argumentCount).Select(i => "P" + i).ToArray();
             var parameters = new List<object>();
@@ -221,6 +222,7 @@ namespace Microsoft.Extensions.Logging.Test
             var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(write.State);
             AssertLogValues(expectedValues, actualLogValues.ToList());
             Assert.Equal(expectedToString, actualLogValues.ToString());
+            Assert.Equal(1, testLogger.IsEnabledCallCount);
         }
 
         [Fact]
