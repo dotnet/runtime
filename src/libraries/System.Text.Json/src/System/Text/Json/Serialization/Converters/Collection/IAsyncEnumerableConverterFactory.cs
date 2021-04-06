@@ -17,11 +17,8 @@ namespace System.Text.Json.Serialization
 
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            if (!TryGetAsyncEnumerableInterface(typeToConvert, out Type? asyncEnumerableInterface))
-            {
-                Debug.Fail("type not supported by the converter.");
-                throw new Exception();
-            }
+            TryGetAsyncEnumerableInterface(typeToConvert, out Type? asyncEnumerableInterface);
+            Debug.Assert(asyncEnumerableInterface is not null, $"{typeToConvert} not supported by converter.");
 
             Type elementType = asyncEnumerableInterface.GetGenericArguments()[0];
             Type converterType = typeof(IAsyncEnumerableOfTConverter<,>).MakeGenericType(typeToConvert, elementType);
