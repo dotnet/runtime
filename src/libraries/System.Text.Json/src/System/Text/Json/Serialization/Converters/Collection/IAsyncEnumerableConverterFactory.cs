@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Converter for streaming <see cref="IAsyncEnumerable{T}" /> values.
     /// </summary>
-    internal class IAsyncEnumerableConverterFactory : JsonConverterFactory
+    internal sealed class IAsyncEnumerableConverterFactory : JsonConverterFactory
     {
         public override bool CanConvert(Type typeToConvert) => TryGetAsyncEnumerableInterface(typeToConvert, out _);
 
