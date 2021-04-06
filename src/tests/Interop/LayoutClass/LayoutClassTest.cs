@@ -129,7 +129,7 @@ namespace PInvokeTests
         private static extern bool SimpleSeqLayoutClassByRef(SeqClass p);
 
         [DllImport("LayoutClassNative")]
-        private static extern bool SimpleSeqLayoutClassByRefNull([In, Out] Blittable p);
+        private static extern bool SimpleSeqLayoutClassByRefNull([In, Out] SeqClass p);
 
         [DllImport("LayoutClassNative")]
         private static extern bool DerivedSeqLayoutClassByRef(EmptyBase p, int expected);
