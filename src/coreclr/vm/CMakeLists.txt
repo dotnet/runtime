@@ -5,6 +5,11 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
 
+# needed when zLib compression is used
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../libraries/Native/Unix/Common)
+endif()
+
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
