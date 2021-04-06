@@ -122,7 +122,7 @@ namespace {ec.Namespace}
             private string MetadataForProvider(EventSourceClass ec, ITypeSymbol stringTypeSymbol)
             {
                 ManifestBuilder manifest = new ManifestBuilder(_builder, ec.Namespace + "." + ec.ClassName, ec.Guid, ec.KeywordMap, ec.TaskMap);
-                                // Add an entry unconditionally for event ID 0 which will be for a string message.
+                // Add an entry unconditionally for event ID 0 which will be for a string message.
                 manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
                 manifest.AddEventParameter(stringTypeSymbol, "message");
                 manifest.EndEvent("EventSourceMessage");

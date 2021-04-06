@@ -35,7 +35,6 @@ namespace Generators
 
         public void Initialize(GeneratorInitializationContext context)
         {
-            //Debugger.Launch();
             context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
         }
 

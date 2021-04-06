@@ -356,8 +356,9 @@ namespace Generators
                         {
                             ISymbol? fieldSymbol = smm.GetDeclaredSymbol(variable);
 
-                            // Do stuff with the symbol here
-                            if (fieldSymbol is null && variable.Initializer is null)
+                            // Check if we can't get the symbol or there isn't an initializer.
+                            // If so, bail out before adding nulls into the mapping.
+                            if (fieldSymbol is null || variable.Initializer is null)
                             {
                                 continue;
                             }
@@ -389,8 +390,9 @@ namespace Generators
                         {
                             ISymbol? fieldSymbol = smm.GetDeclaredSymbol(variable);
 
-                            // Do stuff with the symbol here
-                            if (fieldSymbol is null && variable.Initializer is null)
+                            // Check if we can't get the symbol or there isn't an initializer.
+                            // If so, bail out before adding nulls into the mapping.
+                            if (fieldSymbol is null || variable.Initializer is null)
                             {
                                 continue;
                             }

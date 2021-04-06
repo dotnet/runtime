@@ -2001,8 +2001,9 @@ namespace System.Diagnostics.Tracing
         private void LogEventArgsMismatches(int eventId, object?[] args)
         {
             Debug.Assert(m_eventData != null);
-            // TODO: Figure out what to do with this paramterinfo
-            if (m_eventData[eventId].Parameters == null)
+            // TODO: Parameters may be null if this EventSource was source-generated.
+            // We may want to add logic here that checks arg mismatches for source-generated EventSources
+            if (m_eventData[eventId].Parameters == null && m_EventDataInitializer != null && m_EventMetadataInitializer != null)
             {
                 return;
             }
