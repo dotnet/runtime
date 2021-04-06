@@ -962,6 +962,13 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 			g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
 			break;
 		}
+		case MONO_TABLE_PROPERTY: {
+			/* allow updates to existing properties. */
+			/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
+			g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
+			/* assuming that property attributes and type haven't changed. */
+			break;
+		}
 		default: {
 			g_assert (token_index > table_info_get_rows (&image_base->tables [token_table]));
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
