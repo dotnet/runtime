@@ -101,6 +101,7 @@ namespace Microsoft.NET.HostModel.Tests
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
+            var builtDotnet = fixture.BuiltDotnet.BinPath;
             var testDir = Directory.GetParent(appExe).ToString();
             Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(symlinkRelativePath)));
             var symlinkFullPath = Path.Combine(testDir, symlinkRelativePath);
@@ -109,6 +110,8 @@ namespace Microsoft.NET.HostModel.Tests
             Command.Create(symlinkFullPath)
                 .CaptureStdErr()
                 .CaptureStdOut()
+                .EnvironmentVariable("DOTNET_ROOT", builtDotnet)
+                .EnvironmentVariable("DOTNET_ROOT(x86)", builtDotnet)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
