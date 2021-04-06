@@ -25,8 +25,8 @@ extern int doParallelSuperPMI(CommandLine::Options& o);
 // There must be a single, fixed prefix common to all strings, to ease the determination of when
 // to parse the string fully.
 const char* const g_AllFormatStringFixedPrefix  = "Loaded ";
-const char* const g_SummaryFormatString         = "Loaded %d  Jitted %d  FailedCompile %d Excluded %d";
-const char* const g_AsmDiffsSummaryFormatString = "Loaded %d  Jitted %d  FailedCompile %d Excluded %d Diffs %d";
+const char* const g_SummaryFormatString         = "Loaded %d  Jitted %d  FailedCompile %d Excluded %d Missing %d";
+const char* const g_AsmDiffsSummaryFormatString = "Loaded %d  Jitted %d  FailedCompile %d Excluded %d Missing %d Diffs %d";
 
 //#define SuperPMI_ChewMemory 0x7FFFFFFF //Amount of address space to consume on startup
 
@@ -576,11 +576,11 @@ int __cdecl main(int argc, char* argv[])
     if (o.applyDiff)
     {
         LogInfo(g_AsmDiffsSummaryFormatString, loadedCount, jittedCount, failToReplayCount, excludedCount,
-                jittedCount - failToReplayCount - matchCount);
+                missingCount, jittedCount - failToReplayCount - matchCount);
     }
     else
     {
-        LogInfo(g_SummaryFormatString, loadedCount, jittedCount, failToReplayCount, excludedCount);
+        LogInfo(g_SummaryFormatString, loadedCount, jittedCount, failToReplayCount, excludedCount, missingCount);
     }
 
     st2.Stop();
@@ -607,7 +607,7 @@ int __cdecl main(int argc, char* argv[])
     {
         result = SpmiResult::Error;
     }
-    else if (o.applyDiff && matchCount != jittedCount)
+    else if (o.applyDiff && (matchCount != jittedCount - missingCount))
     {
         result = SpmiResult::Diffs;
     }

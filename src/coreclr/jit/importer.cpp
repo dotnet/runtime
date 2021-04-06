@@ -2834,7 +2834,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         /* Create extra basic block for the spill */
         BasicBlock* newBlk = fgNewBBbefore(BBJ_NONE, hndBlk, /* extendRegion */ true);
         newBlk->bbFlags |= BBF_IMPORTED | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET;
-        newBlk->setBBWeight(hndBlk->bbWeight);
+        newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
         /* Account for the new link we are about to create */
@@ -3109,7 +3109,7 @@ unsigned Compiler::impInitBlockLineInfo()
 
 /*****************************************************************************/
 
-static inline bool impOpcodeIsCallOpcode(OPCODE opcode)
+bool Compiler::impOpcodeIsCallOpcode(OPCODE opcode)
 {
     switch (opcode)
     {
@@ -7849,21 +7849,6 @@ bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetTy
     return false;
 }
 
-// For prefixFlags
-enum
-{
-    PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
-    PREFIX_TAILCALL_IMPLICIT =
-        0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
-    PREFIX_TAILCALL_STRESS =
-        0x00000100, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
-    PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
-    PREFIX_VOLATILE    = 0x00001000,
-    PREFIX_UNALIGNED   = 0x00010000,
-    PREFIX_CONSTRAINED = 0x00100000,
-    PREFIX_READONLY    = 0x01000000
-};
-
 /********************************************************************************
  *
  * Returns true if the current opcode and and the opcodes following it correspond
@@ -10333,7 +10318,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                     BasicBlock* step2 = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
                     step->bbJumpDest  = step2;
                     step->bbJumpDest->bbRefs++;
-                    step2->setBBWeight(block->bbWeight);
+                    step2->inheritWeight(block);
                     step2->bbFlags |= (block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED;
 
 #ifdef DEBUG
@@ -10643,7 +10628,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
 // Get the first non-prefix opcode. Used for verification of valid combinations
 // of prefixes and actual opcodes.
 
-static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp)
+OPCODE Compiler::impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp)
 {
     while (codeAddr < codeEndp)
     {
@@ -10681,7 +10666,7 @@ static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp)
 /*****************************************************************************/
 // Checks whether the opcode is a valid opcode for volatile. and unaligned. prefixes
 
-static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix)
+void Compiler::impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix)
 {
     OPCODE opcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
 

@@ -765,8 +765,8 @@
         <ExcludeList Include="$(XunitTestBinBase)Loader/classloader/TypeGeneratorTests/**">
             <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)Interop/ICustomMarshaler/Primitives/**">
-            <Issue>https://github.com/dotnet/runtime/issues/49621</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)tracing/eventcounter/**">
+            <Issue>https://github.com/dotnet/runtime/issues/50238</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -3282,13 +3282,13 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/StdCallMemberFunction/StdCallMemberFunctionTest/*">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/*">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/CdeclMemberFunction/CdeclMemberFunctionTest/*">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Aes/Aes_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/44648</Issue>

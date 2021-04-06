@@ -523,7 +523,7 @@ eventpipe_execute_rundown (
 		g_free (events_data.buffer);
 
 		// Iterate all assemblies in domain.
-		GPtrArray *assemblies = mono_domain_get_assemblies (root_domain);
+		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
 		if (assemblies) {
 			for (int i = 0; i < assemblies->len; ++i) {
 				MonoAssembly *assembly = (MonoAssembly *)g_ptr_array_index (assemblies, i);

@@ -116,7 +116,7 @@
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)slngen.targets" />
 
-  <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.targets" />
+  <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.targets" Condition="'$(UseTargetFrameworkSDK)' != 'false'"  />
   <Import Project="$(RepositoryEngineeringDir)restore\repoRestore.targets" Condition="'$(DisableProjectRestore)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)AvoidRestoreCycleOnSelfReference.targets" Condition="'$(AvoidRestoreCycleOnSelfReference)' == 'true'" />

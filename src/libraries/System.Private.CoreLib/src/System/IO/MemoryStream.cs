@@ -602,8 +602,8 @@ namespace System.IO
             int count = _length - _origin;
             if (count == 0)
                 return Array.Empty<byte>();
-            byte[] copy = new byte[count];
-            Buffer.BlockCopy(_buffer, _origin, copy, 0, count);
+            byte[] copy = GC.AllocateUninitializedArray<byte>(count);
+            _buffer.AsSpan(_origin, count).CopyTo(copy);
             return copy;
         }
 

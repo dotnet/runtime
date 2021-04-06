@@ -11855,7 +11855,7 @@ HRESULT Module::WriteMethodProfileDataLogFile(bool cleanup)
     {
         if (GetAssembly()->IsInstrumented() && (m_pProfilingBlobTable != NULL) && (m_tokenProfileData != NULL))
         {
-            ProfileEmitter * pEmitter = new ProfileEmitter();
+            NewHolder<ProfileEmitter> pEmitter(new ProfileEmitter());
 
             // Get this ahead of time - metadata access may be logged, which will
             // take the m_tokenProfileData->crst, which we take a couple lines below

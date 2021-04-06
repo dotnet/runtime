@@ -45,9 +45,8 @@ private:
 #ifdef __APPLE__
     vm_map_t m_task;                                // the mach task for the process
 #else
-#ifndef HAVE_PROCESS_VM_READV
+    bool m_canUseProcVmReadSyscall;
     int m_fd;                                       // /proc/<pid>/mem handle
-#endif
 #endif
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
 #ifdef __APPLE__
@@ -112,7 +111,7 @@ private:
     void VisitModule(uint64_t baseAddress, std::string& moduleName);
     void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr);
     bool EnumerateModuleMappings();
-#endif 
+#endif
     bool EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType);
     bool EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess);
     bool UnwindAllThreads(IXCLRDataProcess* pClrDataProcess);
