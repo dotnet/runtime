@@ -131,6 +131,7 @@ jobs:
     buildConfig: release
     platforms:
     - Linux_x64
+    - Linux_x64_SourceBuild
     jobParameters:
       nameSuffix: SourceBuild
       buildArgs: /p:DotNetBuildFromSource=true
