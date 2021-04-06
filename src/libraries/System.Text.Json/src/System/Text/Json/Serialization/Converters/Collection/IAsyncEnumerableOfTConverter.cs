@@ -108,7 +108,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ReturnValue = new BufferedAsyncEnumerable();
         }
 
-        private class BufferedAsyncEnumerable : IAsyncEnumerable<TElement>
+        private sealed class BufferedAsyncEnumerable : IAsyncEnumerable<TElement>
         {
             public readonly List<TElement> _buffer = new();
 
