@@ -8,7 +8,11 @@
 
 #ifdef TARGET_AMD64
 #define POS_RAX 0x78
+#else
+#define POS_RAX 0 //TODO fix for other platforms
 #endif
+
+
 /* 
  * Wire Protocol definitions
  */
