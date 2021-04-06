@@ -13,6 +13,13 @@
 #include "amsi.h"
 #endif
 
+#if defined(CORECLR_EMBEDDED)
+extern "C"
+{
+#include "../../../libraries/Native/AnyOS/zlib/pal_zlib.h"
+}
+#endif
+
 #ifndef DACCESS_COMPILE
 PEImageLayout* PEImageLayout::CreateFlat(const void *flat, COUNT_T size,PEImage* pOwner)
 {
@@ -397,7 +404,6 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
     m_Layout=LAYOUT_LOADED;
     m_pOwner=source->m_pOwner;
     _ASSERTE(!source->IsMapped());
-    m_isInBundle = isInBundle;
 
     m_pExceptionDir = NULL;
 
@@ -441,7 +447,7 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
         ApplyBaseRelocations();
     }
 #elif !defined(TARGET_UNIX)
-    if (m_isInBundle &&
+    if (isInBundle &&
         HasCorHeader() &&
         (HasNativeHeader() || HasReadyToRunHeader()) &&
         g_fAllowNativeImages)
@@ -704,6 +710,8 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         }
     }
 
+    LPVOID addr = 0;
+
     // It's okay if resource files are length zero
     if (size > 0)
     {
@@ -721,14 +729,57 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         _ASSERTE((offset - mapBegin) < mapSize);
         _ASSERTE(mapSize >= (UINT64)size);
 
-        char *addr = (char*)CLRMapViewOfFile(m_FileMap, FILE_MAP_READ, mapBegin >> 32, (DWORD)mapBegin, (DWORD)mapSize);
-        if (addr == NULL)
+        LPVOID view = CLRMapViewOfFile(m_FileMap, FILE_MAP_READ, mapBegin >> 32, (DWORD)mapBegin, (DWORD)mapSize);
+        if (view == NULL)
             ThrowLastError();
 
-        addr += (offset - mapBegin);
-        m_FileView.Assign((LPVOID)addr);
+        m_FileView.Assign(view);
+        addr = (LPVOID)((size_t)view + offset - mapBegin);
+
+        INT64 uncompressedSize = pOwner->GetUncompressedSize();
+        if (uncompressedSize > 0)
+        {
+#if defined(CORECLR_EMBEDDED)
+            HandleHolder anonMap = WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL);
+            if (anonMap == NULL)
+                ThrowLastError();
+
+            LPVOID anonView = CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+            if (anonView == NULL)
+                ThrowLastError();
+
+            //NB: PE cannot be larger than 4GB, conversions are ok
+            PAL_ZStream zStream;
+            zStream.nextIn = (uint8_t*)addr;
+            zStream.availIn = (uint32_t)size;
+            zStream.nextOut = (uint8_t*)anonView;
+            zStream.availOut = (uint32_t)uncompressedSize;
+
+            // Legal values are 8..15 and -8..-15. 15 is the window size,
+            // negative val causes deflate to produce raw deflate data (no zlib header).
+            const int Deflate_DefaultWindowBits = -15;
+            if (CompressionNative_InflateInit2_(&zStream, Deflate_DefaultWindowBits) != PAL_Z_OK)
+                ThrowLastError();
+
+            int ret = CompressionNative_Inflate(&zStream, PAL_Z_NOFLUSH);
+            CompressionNative_InflateEnd(&zStream);
+            if (ret < 0)
+                ThrowLastError();
+
+            addr = anonView;
+            size = uncompressedSize;
+            // Replace file handles with handles to anonymous map. This will release the handles to the source view and map.
+            m_FileView.Assign(anonView);
+            m_FileMap.Assign(anonMap);
+
+#else
+            _ASSERTE(!"Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost.");
+            ThrowLastError();
+#endif
+        }
     }
-    Init(m_FileView, (COUNT_T)size);
+
+    Init(addr, (COUNT_T)size);
 }
 
 NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)

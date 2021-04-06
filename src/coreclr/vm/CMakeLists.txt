@@ -107,7 +107,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     onstackreplacement.cpp
     pefile.cpp
     peimage.cpp
-    peimagelayout.cpp
     perfmap.cpp
     perfinfo.cpp
     pgo.cpp
@@ -891,6 +890,11 @@ endif(CLR_CMAKE_TARGET_WIN32)
 set (VM_SOURCES_WKS_SPECIAL
     codeman.cpp
     ceemain.cpp
+    peimagelayout.cpp
+)
+
+list(APPEND VM_SOURCES_DAC
+    peimagelayout.cpp
 )
 
 # gcdecode.cpp is included by both JIT and VM. to avoid duplicate definitions we need to
