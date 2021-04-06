@@ -88,24 +88,26 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// todo
+        /// Wraps the UTF-8 encoded text into an <see cref="IAsyncEnumerable{TValue}" />
+        /// that can be used to deserialize root-level JSON arrays in a streaming manner.
         /// </summary>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="utf8Json"></param>
-        /// <param name="options"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <returns>An <see cref="IAsyncEnumerable{TValue}" /> representation of the provided JSON array.</returns>
+        /// <param name="utf8Json">JSON data to parse.</param>
+        /// <param name="options">Options to control the behavior during reading.</param>
+        /// <returns>An <typeparamref name="TValue"/> representation of the JSON value.</returns>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="utf8Json"/> is <see langword="null"/>.
+        /// </exception>
         public static IAsyncEnumerable<TValue> DeserializeAsyncEnumerable<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(
             Stream utf8Json,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+            JsonSerializerOptions? options = null)
         {
             if (utf8Json == null)
             {
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            return new SerializerReadAsyncEnumerable<TValue>(utf8Json, options);
+            return new AsyncEnumerableStreamingDeserializer<TValue>(utf8Json, options);
         }
 
         internal static async ValueTask<TValue?> ReadAllAsync<TValue>(
@@ -114,17 +116,16 @@ namespace System.Text.Json
             JsonSerializerOptions? options,
             CancellationToken cancellationToken)
         {
-            using (var asyncState = new ReadAsyncState(inputType, cancellationToken, options))
-            {
-                while (true)
-                {
-                    bool isFinalBlock = await ReadFromStream(utf8Json, asyncState).ConfigureAwait(false);
-                    TValue value = ContinueDeserialize<TValue>(asyncState, isFinalBlock);
+            using var asyncState = new ReadAsyncState(inputType, options, cancellationToken);
 
-                    if (isFinalBlock)
-                    {
-                        return value!;
-                    }
+            while (true)
+            {
+                bool isFinalBlock = await ReadFromStream(utf8Json, asyncState).ConfigureAwait(false);
+                TValue value = ContinueDeserialize<TValue>(asyncState, isFinalBlock);
+
+                if (isFinalBlock)
+                {
+                    return value!;
                 }
             }
         }

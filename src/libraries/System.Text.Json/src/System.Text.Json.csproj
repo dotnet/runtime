@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0;net461</TargetFrameworks>
@@ -65,11 +65,11 @@
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonNumberHandlingAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyNameAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceResolver.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IAsyncEnumerableConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />
     <Compile Include="System\Text\Json\Serialization\ClassType.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterList.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ArrayConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IAsyncEnumerableConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IAsyncEnumerableOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentQueueOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentStackOfTConverter.cs" />
@@ -184,8 +184,7 @@
     <Compile Include="System\Text\Json\Serialization\ReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\ReflectionEmitMemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\ReflectionMemberAccessor.cs" />
-    <Compile Include="System\Text\Json\Serialization\SerializerReadAsyncEnumerable.cs" />
-    <Compile Include="System\Text\Json\Serialization\SerializerReadAsyncEnumerator.cs" />
+    <Compile Include="System\Text\Json\Serialization\AsyncEnumerableStreamingDeserializer.cs" />
     <Compile Include="System\Text\Json\Serialization\StackFrameObjectState.cs" />
     <Compile Include="System\Text\Json\Serialization\StackFramePropertyState.cs" />
     <Compile Include="System\Text\Json\Serialization\WriteStack.cs" />
@@ -240,7 +239,8 @@
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or&#xD;&#xA;                        '$(TargetFramework)' == 'netcoreapp3.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or
+                        '$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />

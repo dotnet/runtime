@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,14 +11,6 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        // We flush the Stream when the buffer is >=90% of capacity.
-        // This threshold is a compromise between buffer utilization and minimizing cases where the buffer
-        // needs to be expanded\doubled because it is not large enough to write the current property or element.
-        // We check for flush after each object property and array element is written to the buffer.
-        // Once the buffer is expanded to contain the largest single element\property, a 90% thresold
-        // means the buffer may be expanded a maximum of 4 times: 1-(1\(2^4))==.9375.
-        private const float FlushThreshold = .9f;
-
         /// <summary>
         /// Convert the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
@@ -93,66 +82,6 @@ namespace System.Text.Json
             return WriteAsyncCore<object>(utf8Json, value!, inputType, options, cancellationToken);
         }
 
-        /// <summary>
-        /// todo
-        /// </summary>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="utf8Json"></param>
-        /// <param name="value"></param>
-        /// <param name="options"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public static async Task SerializeAsyncEnumerable<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(
-            Stream utf8Json,
-            IAsyncEnumerable<TValue> value,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
-        {
-            if (options == null)
-            {
-                options = JsonSerializerOptions.s_defaultOptions;
-            }
-
-            Type inputType = typeof(TValue);
-            JsonWriterOptions writerOptions = options.GetWriterOptions();
-
-            WriteStack state = default;
-
-            using (var bufferWriter = new PooledByteBufferWriter(options.DefaultBufferSize))
-            using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
-            {
-                writer.WriteStartArray();
-
-                await foreach (TValue item in value)
-                {
-                    bool isFinalBlock;
-
-                    // todo: make this faster by caching converter and avoiding dictionary lookup
-                    state = default;
-                    JsonConverter converterBase = state.Initialize(inputType, options, supportContinuation: true);
-
-                    while (true)
-                    {
-                        state.FlushThreshold = (int)(bufferWriter.Capacity * FlushThreshold);
-                        isFinalBlock = WriteCore(converterBase, writer, item, options, ref state);
-                        if (isFinalBlock)
-                        {
-                            // We finished successfully; no need to flush to Stream yet.
-                            break;
-                        }
-
-                        // We hit the flush threshold.
-                        await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-                        bufferWriter.Clear();
-                    };
-                }
-
-                writer.WriteEndArray();
-                writer.Flush();
-                await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
         private static async Task WriteAsyncCore<TValue>(
             Stream utf8Json,
             TValue value,
@@ -160,6 +89,14 @@ namespace System.Text.Json
             JsonSerializerOptions? options,
             CancellationToken cancellationToken)
         {
+            // We flush the Stream when the buffer is >=90% of capacity.
+            // This threshold is a compromise between buffer utilization and minimizing cases where the buffer
+            // needs to be expanded\doubled because it is not large enough to write the current property or element.
+            // We check for flush after each object property and array element is written to the buffer.
+            // Once the buffer is expanded to contain the largest single element\property, a 90% thresold
+            // means the buffer may be expanded a maximum of 4 times: 1-(1\(2^4))==.9375.
+            const float FlushThreshold = .9f;
+
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
@@ -167,18 +104,18 @@ namespace System.Text.Json
 
             JsonWriterOptions writerOptions = options.GetWriterOptions();
 
-            //  We treat typeof(object) special and allow polymorphic behavior.
-            if (inputType == JsonClassInfo.ObjectType && value != null)
+            using (var bufferWriter = new PooledByteBufferWriter(options.DefaultBufferSize))
+            using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
             {
-                inputType = value!.GetType();
-            }
+                //  We treat typeof(object) special and allow polymorphic behavior.
+                if (inputType == JsonClassInfo.ObjectType && value != null)
+                {
+                    inputType = value!.GetType();
+                }
 
                 WriteStack state = new WriteStack { CancellationToken = cancellationToken };
                 JsonConverter converterBase = state.Initialize(inputType, options, supportContinuation: true);
 
-            using (var bufferWriter = new PooledByteBufferWriter(options.DefaultBufferSize))
-            using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
-            {
                 bool isFinalBlock;
 
                 try

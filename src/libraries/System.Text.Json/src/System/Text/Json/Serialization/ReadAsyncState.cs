@@ -6,9 +6,9 @@ using System.Threading;
 
 namespace System.Text.Json.Serialization
 {
-    internal class ReadAsyncState : IDisposable
+    internal sealed class ReadAsyncState : IDisposable
     {
-        public CancellationToken CancellationToken;
+        public readonly CancellationToken CancellationToken;
         public byte[] Buffer;
         public int BytesInBuffer;
         public int ClearMax;
@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization
         public JsonSerializerOptions Options;
         public long TotalBytesRead;
 
-        public ReadAsyncState(Type returnType, CancellationToken cancellationToken = default, JsonSerializerOptions? options = null)
+        public ReadAsyncState(Type returnType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             Options = options ??= JsonSerializerOptions.s_defaultOptions;
             Buffer = ArrayPool<byte>.Shared.Rent(Math.Max(Options.DefaultBufferSize, JsonConstants.Utf8Bom.Length));
@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization
             IsFirstIteration = true;
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing)
             {
