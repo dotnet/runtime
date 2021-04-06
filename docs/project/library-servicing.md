@@ -8,41 +8,14 @@ Your first step is to determine whether or not your library has its own package.
 
 For example, if you made changes to [Microsoft.Win32.Primitives](https://github.com/dotnet/runtime/tree/master/src/libraries/Microsoft.Win32.Primitives), then you have a `.pkgproj`, and will have to follow the steps in this document. However, if you made changes to [System.Collections](https://github.com/dotnet/runtime/tree/master/src/libraries/System.Collections), then you don't have a `.pkgproj`, and you do not need to do any further work for servicing.
 
-## Determine PackageVersion
+## Determine ServicingVersion
 
-Each package has a property called `PackageVersion`. When you make a change to a library & ship it, the `PackageVersion` must be bumped. This property could either be in one of two places inside your library's source folder: `Directory.Build.Props` (or dir.props), or the `.pkgproj`. It's also possible that the property is in neither of those files, in which case we're using the default version from [Packaging.props](https://github.com/dotnet/runtime/blob/master/eng/packaging.props#L25) (IMPORTANT - make sure to check the default version from the branch that you're making changes to, not from master). You'll need to increment this package version. If the property is already present in your library's source folder, just increment the patch version by 1 (e.g. `4.6.0` -> `4.6.1`). If it's not present, add it to the  library's `Directory.Build.props`, where it is equal to the version in `Packaging.props`, with the patch version incremented by 1.
+When you make a change to a library & ship it during the servicing release, the `ServicingVersion` must be bumped. This property is found in the library's `Directory.Build.props`. It's also possible that the property is not in that file, in which case we're using the default version. You'll need to increment this servicing version. If the property is already present in your library's source folder, just increment the patch version by 1. If it's not present, add it to the library's `Directory.Build.props` and set it to 1.
 
-Note that it's possible that somebody else has already incremented the package version since our last release. If this is the case, you don't need to increment it yourself. To confirm, check [Nuget.org](https://www.nuget.org/) to see if there is already a published version of your package with the same package version. If so, the `PackageVersion` must be incremented. If not, there's still a possibility that the version should be bumped, in the event that we've already built the package with its current version in an official build, but haven't released it publicly yet. If you see that the `PackageVersion` has been changed in the last 1-2 months, but don't see a matching package in Nuget.org, contact somebody on the servicing team for guidance.
-
-## Determine AssemblyVersion
-
-Each library has a property called `AssemblyVersion` which will be in either the library `.csproj` or in `Directory.Build.Props`. For servicing events you will want to increment the revision by 1 (e.g `4.0.0.0` -> `4.0.0.1`) in the library's `Directory.Build.Props` if the library ships in its own package and has an asset that is applicable to .NET Framework. To determine if it applies to .NET Framework you should check to see if there are any `netstandard` or `net4x` configurations in the ref and/or src project, if there are then it has assets that apply.
-
-The reason we need to increment the assembly version for things running on .NET Framework is because of the way binding works there. If there are two assemblies with the same assembly version the loader will essentially pick the first one it finds and use that version so applications don't have full control over using the later build with a particular fix included. This is worse if someone puts the older assembly in the GAC as the GAC will always win for matching assembly versions so an application couldn't load the newer one because it has the same assembly version.
-
-If this library ships both inbox on a platform and in its own library package then we need to keep the reference assembly version pinned to the same version that was shipped inbox on. In those cases we generally need to condition the AssemblyVersion in the library `ref` project like such:
-
-```
-    <!-- Must match version supported by frameworks which support 4.0.* inbox.
-         Can be removed when API is added and this assembly is versioned to 4.1.* -->
-    <AssemblyVersion Condition="!$(TargetFramework.StartsWith('net4'))' != 'true'">4.0.3.0</AssemblyVersion>
-```
-Where the `AssemblyVersion` is set to the old version before updating. To determine if the library ships inbox you can look at for `InboxOnTargetFramework` item groups or `TreatAsOutOfBox` suppressions in the pkgproj for the library.
-
-If the library is part of a Aspnetcore or .NET targeting pack then we cannot increment the assembly version. For Aspnetcore and WindowsDesktop, You can examine the [refpack-assemblies.md](refpack-assemblies.md) 
-
-For .Net you can examine the list in ```NetCoreAppLibrary.Props```
-
-If the library is part of a targeting pack and also contains an asset applicable to the .NET Framework then we will increment the assembly version for that asset.
-eg.
-```
-<AssemblyVersion Condition="$(TargetFramework.StartsWith('net4'))">5.0.0.1</AssemblyVersion>
-<SkipValidatePackage>true</SkipValidatePackage>
-```
+Note that it's possible that somebody else has already incremented the servicing version since our last release. If this is the case, you don't need to increment it yourself. To confirm, check [Nuget.org](https://www.nuget.org/) to see if there is already a published version of your package with the same servicing version. If so, the `ServicingVersion` must be incremented. If not, there's still a possibility that the version should be bumped, in the event that we've already built the package with its current version in an official build, but haven't released it publicly yet. If you see that the `ServicingVersion` has been changed in the last 1-2 months, but don't see a matching package in Nuget.org, contact somebody on the servicing team for guidance.
 
 ## Update the package index
 
-If you incremented the `AssemblyVersion` in the last step, you'll also need to add an entry to [packageIndex.json](https://github.com/dotnet/runtime/blob/master/src/libraries/pkg/Microsoft.Private.PackageBaseline/packageIndex.json). Find the entry for your library in that file (again, making sure you're in the correct release branch), then find the subsection labeled `AssemblyVersionInPackageVersion`. There, add an entry that maps your new `AssemblyVersion` to your new `PackageVersion`. For an example, see [this PR](https://github.com/dotnet/runtime/commit/d0e4dcc7ebf008e7b6835cafbd03878c3a0e75f8#diff-ec9fd7a62cb0c494d86029014940382cR107), where we bumped the `PackageVersion` of `Microsoft.Diagnostics.Tracing.EventSource` from `2.0.0` to `2.0.1`, and bumped the `AssemblyVersion` from `2.0.0.0` to `2.0.1.0`. Therefore, we added an entry to `packageIndex.json` of the form `"2.0.1.0": "2.0.1"`.
 The baseline version for the assembly in the package index should also be incremented so that all the other packages can use this servicing version for package dependencies.
 The package version should also be added to the stable versions list.
 

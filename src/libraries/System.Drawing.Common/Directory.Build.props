@@ -4,7 +4,8 @@
     <StrongNameKeyId>Open</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
-    <PackageVersion>5.0.2</PackageVersion>
+    <ServicingVersion>2</ServicingVersion>
+    <!-- This should be pinned to 5.0.0.2 for non-netfx assets as it is part of aspnetcore ref pack.-->
     <AssemblyVersion>5.0.0.2</AssemblyVersion>
   </PropertyGroup>
 </Project>
