@@ -44,7 +44,7 @@ namespace System.IO.Strategies
 
         private Task _activeBufferOperation = Task.CompletedTask;    // tracks in-progress async ops using the buffer
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
-        internal FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
+        private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
         private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
         {
@@ -547,7 +547,7 @@ namespace System.IO.Strategies
                 _preallocatedOverlapped = new PreAllocatedOverlapped(FileStreamCompletionSource.s_ioCallback, this, _buffer);
         }
 
-        internal FileStreamCompletionSource? CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource? newSource, FileStreamCompletionSource? existingSource)
+        private FileStreamCompletionSource? CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource? newSource, FileStreamCompletionSource? existingSource)
             => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
         private void WriteSpan(ReadOnlySpan<byte> source)
