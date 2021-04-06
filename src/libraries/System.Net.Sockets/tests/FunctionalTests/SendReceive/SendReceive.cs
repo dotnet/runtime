@@ -961,6 +961,7 @@ namespace System.Net.Sockets.Tests
 
         [Theory(Timeout = 40000)]
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient)
         {
             // RHEL7 kernel has a bug preventing close(AF_UNKNOWN) to succeed with IPv6 sockets.
