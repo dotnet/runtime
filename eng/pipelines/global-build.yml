@@ -130,7 +130,6 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
     platforms:
-    - Linux_x64
     - SourceBuild_Linux_x64
     jobParameters:
       nameSuffix: SourceBuild
