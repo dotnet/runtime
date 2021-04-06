@@ -592,7 +592,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (found && memberFunctionVariant)
+            if (memberFunctionVariant)
             {
                 callConv = GetMemberFunctionCallingConventionVariant(callConv);
             }
@@ -603,6 +603,8 @@ namespace Internal.JitInterface
         private bool TryGetUnmanagedCallingConventionFromModOpt(MethodSignature signature, out CorInfoCallConvExtension callConv, out bool suppressGCTransition)
         {
             suppressGCTransition = false;
+            // Default to managed since in the modopt case we need to differentiate explicitly using a calling convention that matches the default
+            // and not specifying a calling convention at all and using the implicit default case in P/Invoke stub inlining.
             callConv = CorInfoCallConvExtension.Managed;
             if (!signature.HasEmbeddedSignatureData || signature.GetEmbeddedSignatureData() == null)
                 return false;
@@ -649,9 +651,9 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (found && memberFunctionVariant)
+            if (memberFunctionVariant)
             {
-                callConv = GetMemberFunctionCallingConventionVariant(callConv);
+                callConv = GetMemberFunctionCallingConventionVariant(found ? callConv : (CorInfoCallConvExtension)PlatformDefaultUnmanagedCallingConvention());
             }
 
             return found;
