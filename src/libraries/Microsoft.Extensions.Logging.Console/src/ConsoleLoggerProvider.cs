@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Logging.Console
                 logFormatter = options.Format switch
                 {
                     ConsoleLoggerFormat.Systemd => _formatters[ConsoleFormatterNames.Systemd],
-                    _ => _formatters[ConsoleFormatterNames.Simple],
+                    _ => ContainerUtils.IsContainer ? _formatters[ConsoleFormatterNames.Json]: _formatters[ConsoleFormatterNames.Simple]
                 };
                 if (options.FormatterName == null)
                 {
@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.Logging.Console
                 logFormatter = _options.CurrentValue.Format switch
                 {
                     ConsoleLoggerFormat.Systemd => _formatters[ConsoleFormatterNames.Systemd],
-                    _ => _formatters[ConsoleFormatterNames.Simple],
+                    _ => ContainerUtils.IsContainer ? _formatters[ConsoleFormatterNames.Json]: _formatters[ConsoleFormatterNames.Simple]
                 };
 #pragma warning restore CS0618
 
@@ -157,7 +157,16 @@ namespace Microsoft.Extensions.Logging.Console
         private void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)
         {
             // kept for deprecated apis:
-            if (formatter is SimpleConsoleFormatter defaultFormatter)
+            if (ContainerUtils.IsContainer && formatter is JsonConsoleFormatter jsonFormatter)
+            {
+                jsonFormatter.FormatterOptions = new JsonConsoleFormatterOptions()
+                {
+                    IncludeScopes = deprecatedFromOptions.IncludeScopes,
+                    TimestampFormat = deprecatedFromOptions.TimestampFormat,
+                    UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp,
+                };
+            }
+            else if (formatter is SimpleConsoleFormatter defaultFormatter)
             {
                 defaultFormatter.FormatterOptions = new SimpleConsoleFormatterOptions()
                 {

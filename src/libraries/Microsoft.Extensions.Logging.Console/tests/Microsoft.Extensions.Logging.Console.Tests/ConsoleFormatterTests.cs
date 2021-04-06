@@ -83,7 +83,9 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
             // Act & Assert
             Assert.Equal("NonExistentFormatter", logger.Options.FormatterName);
-            Assert.Equal(ConsoleFormatterNames.Simple, logger.Formatter.Name);
+            var expectedFormatterName = ContainerUtils.IsContainer ? 
+                ConsoleFormatterNames.Json : ConsoleFormatterNames.Simple;
+            Assert.Equal(expectedFormatterName, logger.Formatter.Name);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

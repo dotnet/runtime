@@ -256,9 +256,18 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 case ConsoleLoggerFormat.Default:
                 {
                     Assert.Null(logger.Options.FormatterName);
-                    Assert.Equal(ConsoleFormatterNames.Simple, logger.Formatter.Name);
-                    var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
-                    Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
+                    if (ContainerUtils.IsContainer)
+                    {
+                        Assert.Equal(ConsoleFormatterNames.Json, logger.Formatter.Name);
+                        var formatter = Assert.IsType<JsonConsoleFormatter>(logger.Formatter);
+                        Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
+                    }
+                    else
+                    {
+                        Assert.Equal(ConsoleFormatterNames.Simple, logger.Formatter.Name);
+                        var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+                        Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
+                    }
                 }
                 break;
                 case ConsoleLoggerFormat.Systemd:
@@ -1306,8 +1315,19 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
             var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
             Assert.NotNull(logger.ScopeProvider);
-            var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
-            Assert.True(formatter.FormatterOptions.IncludeScopes);
+
+            ConsoleFormatterOptions formatterOptions;
+            if (ContainerUtils.IsContainer)
+            {
+                var formatter = Assert.IsType<JsonConsoleFormatter>(logger.Formatter);
+                formatterOptions = formatter.FormatterOptions;
+            }
+            else
+            {
+                var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+                formatterOptions = formatter.FormatterOptions;
+            }
+            Assert.True(formatterOptions.IncludeScopes);
         }
 
         public static TheoryData<ConsoleLoggerFormat, LogLevel> FormatsAndLevels
