@@ -65,21 +65,26 @@ namespace System.Reflection
             return parameterTypes;
         }
 
-        private protected Span<object> CheckArguments(ref StackAllocedArguments stackArgs, object[] parameters, Binder? binder,
+        private protected Span<object?> CheckArguments(ref StackAllocedArguments stackArgs, object?[]? parameters, Binder? binder,
             BindingFlags invokeAttr, CultureInfo? culture, Signature sig)
         {
             Debug.Assert(Unsafe.SizeOf<StackAllocedArguments>() == StackAllocedArguments.MaxStackAllocArgCount * Unsafe.SizeOf<object>(),
                 "MaxStackAllocArgCount not properly defined.");
 
+            if (parameters is null)
+            {
+                return default; // allow caller to provide null input
+            }
+
             // copy the arguments into a temporary buffer (or a new array) so we detach from any user changes
-            Span<object> copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
+            Span<object?> copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
                     ? MemoryMarshal.CreateSpan(ref stackArgs._arg0, parameters.Length)
-                    : new Span<object>(new object[parameters.Length]);
+                    : new Span<object?>(new object?[parameters.Length]);
 
             ParameterInfo[]? p = null;
             for (int i = 0; i < parameters.Length; i++)
             {
-                object arg = parameters[i];
+                object? arg = parameters[i];
                 RuntimeType argRT = sig.Arguments[i];
 
                 if (arg == Type.Missing)
@@ -102,15 +107,15 @@ namespace System.Reflection
         private protected struct StackAllocedArguments
         {
             internal const int MaxStackAllocArgCount = 8;
-            internal object _arg0;
+            internal object? _arg0;
 #pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private object _arg1;
-            private object _arg2;
-            private object _arg3;
-            private object _arg4;
-            private object _arg5;
-            private object _arg6;
-            private object _arg7;
+            private object? _arg1;
+            private object? _arg2;
+            private object? _arg3;
+            private object? _arg4;
+            private object? _arg5;
+            private object? _arg6;
+            private object? _arg7;
 #pragma warning restore CA1823, CS0169, IDE0051
         }
         #endregion

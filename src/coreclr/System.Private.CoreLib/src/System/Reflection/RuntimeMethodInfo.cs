@@ -385,10 +385,10 @@ namespace System.Reflection
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             StackAllocedArguments stackArgs = default; // try to avoid intermediate array allocation if possible
-            Span<object> arguments = InvokeArgumentsCheck(ref stackArgs, obj, invokeAttr, binder, parameters, culture);
+            Span<object?> arguments = InvokeArgumentsCheck(ref stackArgs, obj, invokeAttr, binder, parameters, culture);
 
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
+            object? retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
 
             // copy out. This should be made only if ByRef are present.
             // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
@@ -400,7 +400,7 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        private Span<object> InvokeArgumentsCheck(ref StackAllocedArguments stackArgs, object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
+        private Span<object?> InvokeArgumentsCheck(ref StackAllocedArguments stackArgs, object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             Signature sig = Signature;
 
