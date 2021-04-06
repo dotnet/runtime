@@ -16,13 +16,6 @@ namespace System.IO.Strategies
     {
         private unsafe class FileStreamCompletionSource : TaskCompletionSource<int>
         {
-            private const long NoResult = 0;
-            private const long ResultSuccess = (long)1 << 32;
-            private const long ResultError = (long)2 << 32;
-            private const long RegisteringCancellation = (long)4 << 32;
-            private const long CompletedCallback = (long)8 << 32;
-            private const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
-
             internal static readonly unsafe IOCompletionCallback s_ioCallback = IOCallback;
 
             private static Action<object?>? s_cancelCallback;
@@ -42,7 +35,7 @@ namespace System.IO.Strategies
             {
                 _numBufferedBytes = numBufferedBytes;
                 _strategy = strategy;
-                _result = NoResult;
+                _result = FileStreamHelpers.NoResult;
 
                 // The _preallocatedOverlapped is null if the internal buffer was never created, so we check for
                 // a non-null bytes before using the stream's _preallocatedOverlapped
@@ -74,23 +67,23 @@ namespace System.IO.Strategies
                     Action<object?>? cancelCallback = s_cancelCallback ??= Cancel;
 
                     // Register the cancellation only if the IO hasn't completed
-                    long packedResult = Interlocked.CompareExchange(ref _result, RegisteringCancellation, NoResult);
-                    if (packedResult == NoResult)
+                    long packedResult = Interlocked.CompareExchange(ref _result, FileStreamHelpers.RegisteringCancellation, FileStreamHelpers.NoResult);
+                    if (packedResult == FileStreamHelpers.NoResult)
                     {
                         _cancellationRegistration = cancellationToken.UnsafeRegister(cancelCallback, this);
 
                         // Switch the result, just in case IO completed while we were setting the registration
-                        packedResult = Interlocked.Exchange(ref _result, NoResult);
+                        packedResult = Interlocked.Exchange(ref _result, FileStreamHelpers.NoResult);
                     }
-                    else if (packedResult != CompletedCallback)
+                    else if (packedResult != FileStreamHelpers.CompletedCallback)
                     {
                         // Failed to set the result, IO is in the process of completing
                         // Attempt to take the packed result
-                        packedResult = Interlocked.Exchange(ref _result, NoResult);
+                        packedResult = Interlocked.Exchange(ref _result, FileStreamHelpers.NoResult);
                     }
 
                     // If we have a callback that needs to be completed
-                    if ((packedResult != NoResult) && (packedResult != CompletedCallback) && (packedResult != RegisteringCancellation))
+                    if ((packedResult != FileStreamHelpers.NoResult) && (packedResult != FileStreamHelpers.CompletedCallback) && (packedResult != FileStreamHelpers.RegisteringCancellation))
                     {
                         CompleteCallback((ulong)packedResult);
                     }
@@ -143,19 +136,19 @@ namespace System.IO.Strategies
                 ulong packedResult;
                 if (errorCode != 0 && errorCode != Interop.Errors.ERROR_BROKEN_PIPE && errorCode != Interop.Errors.ERROR_NO_DATA)
                 {
-                    packedResult = ((ulong)ResultError | errorCode);
+                    packedResult = ((ulong)FileStreamHelpers.ResultError | errorCode);
                 }
                 else
                 {
-                    packedResult = ((ulong)ResultSuccess | numBytes);
+                    packedResult = ((ulong)FileStreamHelpers.ResultSuccess | numBytes);
                 }
 
                 // Stow the result so that other threads can observe it
                 // And, if no other thread is registering cancellation, continue
-                if (NoResult == Interlocked.Exchange(ref completionSource._result, (long)packedResult))
+                if (FileStreamHelpers.NoResult == Interlocked.Exchange(ref completionSource._result, (long)packedResult))
                 {
                     // Successfully set the state, attempt to take back the callback
-                    if (Interlocked.Exchange(ref completionSource._result, CompletedCallback) != NoResult)
+                    if (Interlocked.Exchange(ref completionSource._result, FileStreamHelpers.CompletedCallback) != FileStreamHelpers.NoResult)
                     {
                         // Successfully got the callback, finish the callback
                         completionSource.CompleteCallback(packedResult);
@@ -172,8 +165,8 @@ namespace System.IO.Strategies
                 ReleaseNativeResource();
 
                 // Unpack the result and send it to the user
-                long result = (long)(packedResult & ResultMask);
-                if (result == ResultError)
+                long result = (long)(packedResult & FileStreamHelpers.ResultMask);
+                if (result == FileStreamHelpers.ResultError)
                 {
                     int errorCode = unchecked((int)(packedResult & uint.MaxValue));
                     if (errorCode == Interop.Errors.ERROR_OPERATION_ABORTED)
@@ -189,7 +182,7 @@ namespace System.IO.Strategies
                 }
                 else
                 {
-                    Debug.Assert(result == ResultSuccess, "Unknown result");
+                    Debug.Assert(result == FileStreamHelpers.ResultSuccess, "Unknown result");
                     TrySetResult((int)(packedResult & uint.MaxValue) + _numBufferedBytes);
                 }
             }
