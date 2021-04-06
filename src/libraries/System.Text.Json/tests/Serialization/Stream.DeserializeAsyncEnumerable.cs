@@ -105,10 +105,10 @@ namespace System.Text.Json.Serialization.Tests
         {
             yield return WrapArgs(Enumerable.Empty<int>(), 1);
             yield return WrapArgs(Enumerable.Range(0, 20), 1);
-            yield return WrapArgs(Enumerable.Range(0, 100), 1);
-            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => $"lorem ipsum dolor: {i}"), 50);
-            yield return WrapArgs(Enumerable.Range(0, 1000).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 100);
-            yield return WrapArgs(Enumerable.Range(0, 1000).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 1000);
+            yield return WrapArgs(Enumerable.Range(0, 100), 20);
+            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => $"lorem ipsum dolor: {i}"), 500);
+            yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 100);
+            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 500);
 
             static object[] WrapArgs<TSource>(IEnumerable<TSource> source, int bufferSize) => new object[] { source, bufferSize };
         }
