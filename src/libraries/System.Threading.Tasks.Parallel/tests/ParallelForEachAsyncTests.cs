@@ -124,6 +124,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(2)]
         [InlineData(4)]
         [InlineData(128)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50566", TestPlatforms.Android)]
         public async Task Dop_WorkersCreatedRespectingLimitAndTaskScheduler_Sync(int dop)
         {
             static IEnumerable<int> IterateUntilSet(StrongBox<bool> box)
