@@ -33,6 +33,7 @@
     <PropertyGroup>
       <MonoAotTargetOS>$(MonoAotTargetRid.Substring(0,$(MonoAotTargetRid.LastIndexOf('-'))))</MonoAotTargetOS>
       <MonoAotTargetArchitecture>$(MonoAotTargetRid.Substring($([MSBuild]::Add(1, $(MonoAotTargetRid.LastIndexOf('-'))))))</MonoAotTargetArchitecture>
+      <_MonoAOTCrossDir>$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid.ToLower())\</_MonoAOTCrossDir>
     </PropertyGroup>
 
     <MSBuild Targets="Build"
@@ -43,9 +44,15 @@
              Projects="$(MSBuildThisFileDirectory)mono.proj"
              Properties="RealTargetOS=$(TargetOS);BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
 
+    <Error Condition="!Exists($(_MonoAOTCrossDir))"
+           Text="Could not find cross compiler directory: $(_MonoAOTCrossDir), for MonoTargetOS=$(MonoTargetOS), MonoAotTargetArchitecture=$(MonoAotTargetArchitecture), Configuration=$(Configuration), and MonoAotTargetRid=$(MonoAotTargetRid)" />
+
     <ItemGroup>
-      <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid.ToLower())\**" />
+      <_MonoAOTCrossFiles Include="$(_MonoAOTCrossDir)\$(MonoAotTargetRid.ToLower())\**" />
     </ItemGroup>
+
+    <Error Condition="@(_MonoAOTCrossFiles->Count()) == 0"
+           Text="Could not find cross compiler output files in $(_MonoAOTCrossDir), for MonoTargetOS=$(MonoTargetOS), MonoAotTargetArchitecture=$(MonoAotTargetArchitecture), Configuration=$(Configuration), and MonoAotTargetRid=$(MonoAotTargetRid)" />
 
     <Message Text="Copying @(_MonoAOTCrossFiles) to $(RealRuntimeBinDir)cross\$(MonoAotTargetRid.ToLower())" Importance="High" />
 
