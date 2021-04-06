@@ -6225,7 +6225,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
 {
     int             length = -1;
-    const char16_t* str = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, &length);
+    const char16_t* str    = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, &length);
     if (length >= 0)
     {
         GenTreeIntCon* iconNode = gtNewIconNode(length);
