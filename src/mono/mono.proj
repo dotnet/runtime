@@ -664,12 +664,12 @@
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
         <Destination>$(RuntimeBinDir)libmono-profiler-aot.a</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)dbgshim$(LibExt)">
+      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)dbgshim$(LibExt)">
         <Destination>$(RuntimeBinDir)$(LibPrefix)dbgshim$(LibExt)</Destination>
-      </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(LibExt)">
+      </_MonoICorDebugArtifacts>
+      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(LibExt)">
         <Destination>$(RuntimeBinDir)$(LibPrefix)mscordbi$(LibExt)</Destination>
-      </_MonoRuntimeArtifacts>
+      </_MonoICorDebugArtifacts>
 
       <_IcuArtifacts  Condition="'$(_MonoIncludeIcuFiles)' == 'true'"
                       Include="$(_IcuLibdir)\libicuuc.a;
@@ -687,6 +687,12 @@
           DestinationFiles="%(_MonoRuntimeArtifacts.Destination)"
           Condition="'$(MonoGenerateOffsetsOSGroups)' == ''"
           SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(_MonoICorDebugArtifacts)"
+          DestinationFiles="%(_MonoICorDebugArtifacts.Destination)"
+          Condition="'$(MonoGenerateOffsetsOSGroups)' == ''"
+          SkipUnchangedFiles="true"
+          ContinueOnError="WarnAndContinue" />
 
     <Copy SourceFiles="@(_MonoIncludeArtifacts)"
           DestinationFiles="@(_MonoIncludeArtifacts->'$(RuntimeBinDir)include\%(RecursiveDir)%(Filename)%(Extension)')"
