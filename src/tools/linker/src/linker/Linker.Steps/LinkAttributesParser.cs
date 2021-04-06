@@ -104,12 +104,17 @@ namespace Mono.Linker.Steps
 			if (attributeType == null)
 				return null;
 
+			var objectType = BCL.FindPredefinedType ("System", "Object", _context);
+			if (objectType == null)
+				return null;
+
 			//
 			// Generates metadata information for internal type
 			//
 			// public sealed class RemoveAttributeInstancesAttribute : Attribute
 			// {
 			//		public RemoveAttributeInstancesAttribute () {}
+			//		public RemoveAttributeInstancesAttribute (object value1) {}
 			// }
 			//
 			var td = new TypeDefinition ("", "RemoveAttributeInstancesAttribute", TypeAttributes.Public);
@@ -117,6 +122,10 @@ namespace Mono.Linker.Steps
 
 			const MethodAttributes ctorAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName | MethodAttributes.Final;
 			var ctor = new MethodDefinition (".ctor", ctorAttributes, voidType);
+			td.Methods.Add (ctor);
+
+			ctor = new MethodDefinition (".ctor", ctorAttributes, voidType);
+			ctor.Parameters.Add (new ParameterDefinition (objectType));
 			td.Methods.Add (ctor);
 
 			return _context.MarkedKnownMembers.RemoveAttributeInstancesAttributeDefinition = td;
