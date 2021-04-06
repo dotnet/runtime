@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Threading;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -62,11 +65,16 @@ namespace System.Reflection
             return parameterTypes;
         }
 
-        internal object[] CheckArguments(object[] parameters, Binder? binder,
+        private protected Span<object> CheckArguments(ref StackAllocedArguments stackArgs, object[] parameters, Binder? binder,
             BindingFlags invokeAttr, CultureInfo? culture, Signature sig)
         {
-            // copy the arguments in a different array so we detach from any user changes
-            object[] copyOfParameters = new object[parameters.Length];
+            Debug.Assert(Unsafe.SizeOf<StackAllocedArguments>() == StackAllocedArguments.MaxStackAllocArgCount * Unsafe.SizeOf<object>(),
+                "MaxStackAllocArgCount not properly defined.");
+
+            // copy the arguments into a temporary buffer (or a new array) so we detach from any user changes
+            Span<object> copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
+                    ? MemoryMarshal.CreateSpan(ref stackArgs._arg0, parameters.Length)
+                    : new Span<object>(new object[parameters.Length]);
 
             ParameterInfo[]? p = null;
             for (int i = 0; i < parameters.Length; i++)
@@ -85,6 +93,25 @@ namespace System.Reflection
             }
 
             return copyOfParameters;
+        }
+
+        // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.
+        // Typical usage is to define a local of type default(StackAllocedArguments), then pass 'ref theLocal'
+        // as the first parameter to CheckArguments. CheckArguments will try to utilize storage within this
+        // struct instance if there's sufficient space; otherwise CheckArguments will allocate a temp array.
+        private protected struct StackAllocedArguments
+        {
+            internal const int MaxStackAllocArgCount = 8;
+            internal object _arg0;
+#pragma warning disable CA1823 // accessed via 'CheckArguments' ref arithmetic
+            private object _arg1;
+            private object _arg2;
+            private object _arg3;
+            private object _arg4;
+            private object _arg5;
+            private object _arg6;
+            private object _arg7;
+#pragma warning restore CA1823
         }
         #endregion
     }

@@ -384,26 +384,23 @@ namespace System.Reflection
         [Diagnostics.DebuggerHidden]
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            object[]? arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);
+            StackAllocedArguments stackArgs = default; // try to avoid intermediate array allocation if possible
+            Span<object> arguments = InvokeArgumentsCheck(ref stackArgs, obj, invokeAttr, binder, parameters, culture);
 
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            if (arguments == null || arguments.Length == 0)
-                return RuntimeMethodHandle.InvokeMethod(obj, null, Signature, false, wrapExceptions);
-            else
-            {
-                object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
+            object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
 
-                // copy out. This should be made only if ByRef are present.
-                for (int index = 0; index < arguments.Length; index++)
-                    parameters![index] = arguments[index];
+            // copy out. This should be made only if ByRef are present.
+            // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
+            for (int index = 0; index < arguments.Length; index++)
+                parameters![index] = arguments[index];
 
-                return retValue;
-            }
+            return retValue;
         }
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        private object[]? InvokeArgumentsCheck(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
+        private Span<object> InvokeArgumentsCheck(ref StackAllocedArguments stackArgs, object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             Signature sig = Signature;
 
@@ -426,9 +423,9 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
             if (actualCount != 0)
-                return CheckArguments(parameters!, binder, invokeAttr, culture, sig);
+                return CheckArguments(ref stackArgs, parameters!, binder, invokeAttr, culture, sig);
             else
-                return null;
+                return default;
         }
 
         #endregion
