@@ -139,7 +139,7 @@ mono_context_get_id         (MonoAppContext *context);
 MONO_API MONO_RT_EXTERNAL_ONLY int32_t
 mono_context_get_domain_id  (MonoAppContext *context);
 
-MONO_API MonoJitInfo *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoJitInfo *
 mono_jit_info_table_find   (MonoDomain *domain, void* addr);
 
 /* MonoJitInfo accessors */
