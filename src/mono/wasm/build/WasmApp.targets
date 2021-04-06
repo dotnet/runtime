@@ -421,7 +421,6 @@
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
    </ItemGroup>
-   <!--This pinvoke-table.h will be used instead of the one in the runtime pack because of -I$(_WasmIntermediateOutputPath) -->
    <PInvokeTableGenerator
      Modules="@(_WasmPInvokeModules)"
      Assemblies="@(_WasmAssembliesInternal)"
