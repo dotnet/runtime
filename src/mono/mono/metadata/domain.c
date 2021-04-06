@@ -547,8 +547,8 @@ mono_domain_unset (void)
 	SET_APPDOMAIN (NULL);
 }
 
-gboolean
-mono_domain_set_fast (MonoDomain *domain, gboolean force)
+void
+mono_domain_set_fast (MonoDomain *domain)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
