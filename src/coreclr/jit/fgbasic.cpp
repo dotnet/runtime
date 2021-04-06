@@ -988,9 +988,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                     if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
                     {
-                        if (intrinsicID == CORINFO_INTRINSIC_StringLength)
+                        if ((intrinsicID == CORINFO_INTRINSIC_StringLength) && pushedStack.IsStackAtLeastOneDeep())
                         {
-                            assert(pushedStack.IsStackAtLeastOneDeep());
                             unsigned slot0 = pushedStack.GetSlot0();
 
                             if (FgStack::IsConstant(slot0) || (FgStack::IsArgument(slot0) && isInlining &&
