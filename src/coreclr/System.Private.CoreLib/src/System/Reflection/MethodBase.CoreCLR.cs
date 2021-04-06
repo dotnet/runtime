@@ -103,7 +103,7 @@ namespace System.Reflection
         {
             internal const int MaxStackAllocArgCount = 8;
             internal object _arg0;
-#pragma warning disable CA1823 // accessed via 'CheckArguments' ref arithmetic
+#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
             private object _arg1;
             private object _arg2;
             private object _arg3;
@@ -111,7 +111,7 @@ namespace System.Reflection
             private object _arg5;
             private object _arg6;
             private object _arg7;
-#pragma warning restore CA1823
+#pragma warning restore CA1823, CS0169, IDE0051
         }
         #endregion
     }
