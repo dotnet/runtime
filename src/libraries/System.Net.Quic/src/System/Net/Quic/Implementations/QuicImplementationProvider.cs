@@ -11,10 +11,8 @@ namespace System.Net.Quic.Implementations
 
         public abstract bool IsSupported { get; }
 
-        internal virtual QuicListenerProvider CreateListener(QuicListenerOptions options)
-            => throw new NotImplementedException();
+        internal abstract QuicListenerProvider CreateListener(QuicListenerOptions options);
 
-        internal virtual QuicConnectionProvider CreateConnection(QuicClientConnectionOptions options)
-            => throw new NotImplementedException();
+        internal abstract QuicConnectionProvider CreateConnection(QuicClientConnectionOptions options);
     }
 }
