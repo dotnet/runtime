@@ -3,9 +3,6 @@
 
 #include "pal_sslstream.h"
 
-// Explicitly ignore jobject return value - assumes there is a JNIEnv* variable named env
-#define IGNORE_RETURN(retval) (*env)->DeleteLocalRef(env, retval)
-
 // javax/net/ssl/SSLEngineResult$HandshakeStatus
 enum
 {
@@ -624,24 +621,27 @@ int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream
     assert(sslStream != NULL);
 
     JNIEnv* env = GetJNIEnv();
-
     int32_t ret = FAIL;
-    INIT_LOCALS(loc, protocol, bytes);
 
     // String protocol = sslEngine.getApplicationProtocol();
-    loc[protocol] = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetApplicationProtocol);
+    jstring protocol = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetApplicationProtocol);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    if (loc[protocol] == NULL)
+    if (protocol == NULL)
         goto cleanup;
 
-    // byte[] bytes = protocol.getBytes();
-    loc[bytes] = (*env)->CallObjectMethod(env, loc[protocol], g_StringGetBytes);
+    jsize len = (*env)->GetStringUTFLength(env, protocol);
+    bool insufficientBuffer = *outLen < len;
+    *outLen = len;
+    if (insufficientBuffer)
+        return INSUFFICIENT_BUFFER;
+
+    (*env)->GetStringUTFRegion(env, protocol, 0, len, (char*)out);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    ret = PopulateByteArray(env, loc[bytes], out, outLen);
+    ret = SUCCESS;
 
 cleanup:
-    RELEASE_LOCALS(loc, env);
+    (*env)->DeleteLocalRef(env, protocol);
     return ret;
 }
 

@@ -610,19 +610,6 @@ int GetEnumAsInt(JNIEnv *env, jobject enumObj)
     return value;
 }
 
-int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len)
-{
-    jsize bytesLen = (*env)->GetArrayLength(env, source);
-
-    bool insufficientBuffer = *len < bytesLen;
-    *len = bytesLen;
-    if (insufficientBuffer)
-        return INSUFFICIENT_BUFFER;
-
-    (*env)->GetByteArrayRegion(env, source, 0, bytesLen, (jbyte*)dest);
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
-}
-
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved)
 {

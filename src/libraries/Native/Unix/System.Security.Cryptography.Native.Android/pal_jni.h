@@ -363,7 +363,7 @@ extern jclass    g_CollectionClass;
 extern jmethodID g_CollectionIterator;
 extern jmethodID g_CollectionSize;
 
-// java/util/ArrayListe
+// java/util/ArrayList
 extern jclass    g_ArrayList;
 extern jmethodID g_ArrayListCtor;
 extern jmethodID g_ArrayListAdd;
@@ -462,12 +462,17 @@ extern jmethodID g_KeyAgreementInit;
 extern jmethodID g_KeyAgreementDoPhase;
 extern jmethodID g_KeyAgreementGenerateSecret;
 
-// JNI helpers
+// Logging helpers
 #define LOG_DEBUG(fmt, ...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_INFO(fmt, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_ERROR(fmt, ...) ((void)__android_log_print(ANDROID_LOG_ERROR, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
+
+// JNI helpers - assume there is a JNIEnv* variable named env
 #define JSTRING(str) ((jstring)(*env)->NewStringUTF(env, str))
 #define ON_EXCEPTION_PRINT_AND_GOTO(label) if (CheckJNIExceptions(env)) goto label
+
+// Explicitly ignore jobject return value
+#define IGNORE_RETURN(retval) (*env)->DeleteLocalRef(env, retval)
 
 #define INIT_LOCALS(name, ...) \
     enum { __VA_ARGS__, count_##name }; \
@@ -512,5 +517,3 @@ jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 JNIEnv* GetJNIEnv(void);
 int GetEnumAsInt(JNIEnv *env, jobject enumObj);
-
-int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len);
