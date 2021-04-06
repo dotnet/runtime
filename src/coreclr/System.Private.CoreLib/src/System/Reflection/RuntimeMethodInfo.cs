@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -30,35 +31,44 @@ namespace System.Reflection
 
         internal INVOCATION_FLAGS InvocationFlags
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if ((m_invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
+                INVOCATION_FLAGS flags = m_invocationFlags;
+                if ((flags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
                 {
-                    INVOCATION_FLAGS invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_UNKNOWN;
-
-                    Type? declaringType = DeclaringType;
-
-                    //
-                    // first take care of all the NO_INVOKE cases.
-                    if (ContainsGenericParameters ||
-                         IsDisallowedByRefType(ReturnType) ||
-                         (declaringType != null && declaringType.ContainsGenericParameters) ||
-                         ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs))
+                    [MethodImpl(MethodImplOptions.NoInlining)] // move lazy invocation flags population out of the hot path
+                    INVOCATION_FLAGS LazyCreateInvocationFlags()
                     {
-                        // We don't need other flags if this method cannot be invoked
-                        invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
-                    }
-                    else
-                    {
-                        // Check for byref-like types
-                        if ((declaringType != null && declaringType.IsByRefLike) || ReturnType.IsByRefLike)
-                            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
-                    }
+                        INVOCATION_FLAGS invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_UNKNOWN;
 
-                    m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
+                        Type? declaringType = DeclaringType;
+
+                        //
+                        // first take care of all the NO_INVOKE cases.
+                        if (ContainsGenericParameters ||
+                             IsDisallowedByRefType(ReturnType) ||
+                             (declaringType != null && declaringType.ContainsGenericParameters) ||
+                             ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs))
+                        {
+                            // We don't need other flags if this method cannot be invoked
+                            invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
+                        }
+                        else
+                        {
+                            // Check for byref-like types
+                            if ((declaringType != null && declaringType.IsByRefLike) || ReturnType.IsByRefLike)
+                                invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
+                        }
+
+                        invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
+                        m_invocationFlags = invocationFlags; // accesses are guaranteed atomic
+                        return invocationFlags;
+                    }
+                    flags = LazyCreateInvocationFlags();
                 }
 
-                return m_invocationFlags;
+                return flags;
             }
         }
 
@@ -105,7 +115,27 @@ namespace System.Reflection
         internal override bool CacheEquals(object? o) =>
             o is RuntimeMethodInfo m && m.m_handle == m_handle;
 
-        internal Signature Signature => m_signature ??= new Signature(this, m_declaringType);
+        internal Signature Signature
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Signature? signature = m_signature;
+                if (signature is null)
+                {
+                    [MethodImpl(MethodImplOptions.NoInlining)] // move lazy sig generation out of the hot path
+                    Signature LazyCreateSignature()
+                    {
+                        Signature newSig = new Signature(this, m_declaringType);
+                        Volatile.Write(ref m_signature, newSig);
+                        return newSig;
+                    }
+                    signature = LazyCreateSignature();
+                }
+
+                return signature;
+            }
+        }
 
         internal BindingFlags BindingFlags => m_bindingFlags;
 
