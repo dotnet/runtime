@@ -351,7 +351,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue("TODO")]
         [Fact]
         public async Task ProxyTunnelRequest_MaxConnectionsSetButDoesNotApplyToProxyConnect_Success()
         {
