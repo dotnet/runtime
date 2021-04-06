@@ -360,18 +360,24 @@ namespace System.Reflection
         #endregion
 
         #region Invocation Logic(On MemberBase)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckConsistency(object? target)
         {
             // only test instance methods
-            if ((m_methodAttributes & MethodAttributes.Static) != MethodAttributes.Static)
+            if ((m_methodAttributes & MethodAttributes.Static) == 0)
             {
-                if (!m_declaringType.IsInstanceOfType(target))
+                [MethodImpl(MethodImplOptions.NoInlining)] // move check out of hot path when invoking static methods
+                void CheckConsistencyInstance(object? target)
                 {
-                    if (target == null)
-                        throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
-                    else
-                        throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+                    if (!m_declaringType.IsInstanceOfType(target))
+                    {
+                        if (target == null)
+                            throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
+                        else
+                            throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+                    }
                 }
+                CheckConsistencyInstance(target);
             }
         }
 
@@ -452,10 +458,12 @@ namespace System.Reflection
             if (formalCount != actualCount)
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
+            Span<object?> retVal = default;
             if (actualCount != 0)
-                return CheckArguments(ref stackArgs, parameters!, binder, invokeAttr, culture, sig);
-            else
-                return default;
+            {
+                retVal = CheckArguments(ref stackArgs, parameters!, binder, invokeAttr, culture, sig);
+            }
+            return retVal;
         }
 
         #endregion

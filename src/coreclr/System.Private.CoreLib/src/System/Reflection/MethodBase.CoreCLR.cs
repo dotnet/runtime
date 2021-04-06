@@ -71,30 +71,30 @@ namespace System.Reflection
             Debug.Assert(Unsafe.SizeOf<StackAllocedArguments>() == StackAllocedArguments.MaxStackAllocArgCount * Unsafe.SizeOf<object>(),
                 "MaxStackAllocArgCount not properly defined.");
 
-            if (parameters is null)
+            Span<object?> copyOfParameters = default;
+
+            if (parameters is not null)
             {
-                return default; // allow caller to provide null input
-            }
+                // copy the arguments into a temporary buffer (or a new array) so we detach from any user changes
+                copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
+                        ? MemoryMarshal.CreateSpan(ref stackArgs._arg0, parameters.Length)
+                        : new Span<object?>(new object?[parameters.Length]);
 
-            // copy the arguments into a temporary buffer (or a new array) so we detach from any user changes
-            Span<object?> copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
-                    ? MemoryMarshal.CreateSpan(ref stackArgs._arg0, parameters.Length)
-                    : new Span<object?>(new object?[parameters.Length]);
-
-            ParameterInfo[]? p = null;
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                object? arg = parameters[i];
-                RuntimeType argRT = sig.Arguments[i];
-
-                if (arg == Type.Missing)
+                ParameterInfo[]? p = null;
+                for (int i = 0; i < parameters.Length; i++)
                 {
-                    p ??= GetParametersNoCopy();
-                    if (p[i].DefaultValue == System.DBNull.Value)
-                        throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
-                    arg = p[i].DefaultValue!;
+                    object? arg = parameters[i];
+                    RuntimeType argRT = sig.Arguments[i];
+
+                    if (arg == Type.Missing)
+                    {
+                        p ??= GetParametersNoCopy();
+                        if (p[i].DefaultValue == System.DBNull.Value)
+                            throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
+                        arg = p[i].DefaultValue!;
+                    }
+                    copyOfParameters[i] = argRT.CheckValue(arg, binder, culture, invokeAttr);
                 }
-                copyOfParameters[i] = argRT.CheckValue(arg, binder, culture, invokeAttr)!;
             }
 
             return copyOfParameters;
