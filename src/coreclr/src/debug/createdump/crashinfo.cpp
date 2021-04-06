@@ -16,9 +16,7 @@ CrashInfo::CrashInfo(pid_t pid) :
     m_task = 0;
 #else
     m_auxvValues.fill(0);
-#ifndef HAVE_PROCESS_VM_READV
     m_fd = -1;
-#endif
 #endif
 }
 
