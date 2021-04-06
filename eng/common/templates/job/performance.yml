@@ -71,11 +71,11 @@ jobs:
         # Run all of the steps to setup repo
         - ${{ each step in parameters.steps }}:
           - ${{ step }}
-        - powershell: $(Build.SourcesDirectory)\eng\common\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) ${{ parameters.extraSetupParameters }}
+        - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) ${{ parameters.extraSetupParameters }}
           displayName: Performance Setup (Windows)
           condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
           continueOnError: ${{ parameters.continueOnError }}
-        - script: $(Build.SourcesDirectory)/eng/common/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) ${{ parameters.extraSetupParameters }}
+        - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) ${{ parameters.extraSetupParameters }}
           displayName: Performance Setup (Unix)
           condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
           continueOnError: ${{ parameters.continueOnError }}
