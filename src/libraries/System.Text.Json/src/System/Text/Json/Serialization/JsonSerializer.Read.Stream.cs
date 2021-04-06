@@ -210,16 +210,18 @@ namespace System.Text.Json
                 if ((uint)asyncState.BytesInBuffer > ((uint)asyncState.Buffer.Length / 2))
                 {
                     // We have less than half the buffer available, double the buffer size.
-                    byte[] dest = ArrayPool<byte>.Shared.Rent((asyncState.Buffer.Length < (int.MaxValue / 2)) ? asyncState.Buffer.Length * 2 : int.MaxValue);
+                    byte[] oldBuffer = asyncState.Buffer;
+                    int oldClearMax = asyncState.ClearMax;
+                    byte[] newBuffer = ArrayPool<byte>.Shared.Rent((asyncState.Buffer.Length < (int.MaxValue / 2)) ? asyncState.Buffer.Length * 2 : int.MaxValue);
 
                     // Copy the unprocessed data to the new buffer while shifting the processed bytes.
-                    Buffer.BlockCopy(asyncState.Buffer, bytesConsumed + start, dest, 0, asyncState.BytesInBuffer);
-
-                    new Span<byte>(asyncState.Buffer, 0, asyncState.ClearMax).Clear();
-                    ArrayPool<byte>.Shared.Return(asyncState.Buffer);
-
+                    Buffer.BlockCopy(oldBuffer, bytesConsumed + start, newBuffer, 0, asyncState.BytesInBuffer);
+                    asyncState.Buffer = newBuffer;
                     asyncState.ClearMax = asyncState.BytesInBuffer;
-                    asyncState.Buffer = dest;
+
+                    // Clear and return the old buffer
+                    new Span<byte>(oldBuffer, 0, oldClearMax).Clear();
+                    ArrayPool<byte>.Shared.Return(oldBuffer);
                 }
                 else if (asyncState.BytesInBuffer != 0)
                 {

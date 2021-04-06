@@ -209,15 +209,12 @@ namespace System.Text.Json
         }
 
         // asynchronously await any pending stacks that resumable converters depend on.
-        public async ValueTask AwaitPendingTask()
+        public Task AwaitPendingTask()
         {
             Debug.Assert(PendingTask != null);
-
-            if (!PendingTask.IsCompleted)
-            {
-                // wrap with Task.WhenAny to avoid surfacing any exceptions here
-                await Task.WhenAny(PendingTask).ConfigureAwait(false);
-            }
+            return PendingTask.IsCompleted ?
+                Task.CompletedTask :
+                Task.WhenAny(PendingTask); // wrap with Task.WhenAny to avoid surfacing any exceptions here
 
             // Do not clear the `PendingTask` field here since the result
             // will need to be consumed by a resumable converter.
