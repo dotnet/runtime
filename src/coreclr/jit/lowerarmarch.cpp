@@ -681,7 +681,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
     GenTree* op1    = node->gtOp1;
     GenTree* castOp = nullptr;
 
-    if (varTypeIsIntegral(node->gtSIMDBaseType) && op1->OperIs(GT_CAST))
+    if (varTypeIsIntegral(node->GetSimdBaseType()) && op1->OperIs(GT_CAST))
     {
         // We will sometimes get a cast around a constant value (such as for
         // certain long constants) which would block the below containment.
@@ -696,7 +696,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
     {
         const ssize_t dataValue = op1->AsIntCon()->gtIconVal;
 
-        if (comp->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(node->gtSIMDBaseType)))
+        if (comp->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(node->GetSimdBaseType())))
         {
             if (castOp != nullptr)
             {
@@ -711,7 +711,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
     }
     else if (op1->IsCnsFltOrDbl())
     {
-        assert(varTypeIsFloating(node->gtSIMDBaseType));
+        assert(varTypeIsFloating(node->GetSimdBaseType()));
         assert(castOp == nullptr);
 
         const double dataValue = op1->AsDblCon()->gtDconVal;
@@ -731,8 +731,8 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 {
     NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
-    var_types      baseType    = node->gtSIMDBaseType;
-    unsigned       simdSize    = node->gtSIMDSize;
+    var_types      baseType    = node->GetSimdBaseType();
+    unsigned       simdSize    = node->GetSimdSize();
     var_types      simdType    = Compiler::getSIMDTypeForSize(simdSize);
 
     assert((intrinsicId == NI_Vector64_op_Equality) || (intrinsicId == NI_Vector64_op_Inequality) ||
@@ -849,8 +849,8 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
     var_types      simdType    = node->gtType;
-    var_types      baseType    = node->gtSIMDBaseType;
-    unsigned       simdSize    = node->gtSIMDSize;
+    var_types      baseType    = node->GetSimdBaseType();
+    unsigned       simdSize    = node->GetSimdSize();
     VectorConstant vecCns      = {};
 
     if ((simdSize == 8) && (simdType == TYP_DOUBLE))
@@ -1130,8 +1130,8 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
-    var_types      baseType    = node->gtSIMDBaseType;
-    unsigned       simdSize    = node->gtSIMDSize;
+    var_types      baseType    = node->GetSimdBaseType();
+    unsigned       simdSize    = node->GetSimdSize();
     var_types      simdType    = Compiler::getSIMDTypeForSize(simdSize);
 
     assert((intrinsicId == NI_Vector64_Dot) || (intrinsicId == NI_Vector128_Dot));

@@ -396,7 +396,8 @@ void Compiler::gsParamsToShadows()
         shadowVarDsc->lvUsedInSIMDIntrinsic = varDsc->lvUsedInSIMDIntrinsic;
         if (varDsc->lvSIMDType)
         {
-            shadowVarDsc->lvBaseType = varDsc->lvBaseType;
+            var_types simdBaseType = varDsc->GetSimdBaseType();
+            shadowVarDsc->SetSimdBaseType(simdBaseType);
         }
 #endif
         shadowVarDsc->lvRegStruct = varDsc->lvRegStruct;

@@ -57,12 +57,12 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
         {
             assert(varTypeIsSIMD(intrin->GetAuxiliaryType()));
             const unsigned int indexedElementSimdSize = genTypeSize(intrin->GetAuxiliaryType());
-            HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, indexedElementSimdSize, intrin->gtSIMDBaseType,
+            HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, indexedElementSimdSize, intrin->GetSimdBaseType(),
                                              &immLowerBound, &immUpperBound);
         }
         else
         {
-            HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, intrin->gtSIMDSize, intrin->gtSIMDBaseType,
+            HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, intrin->GetSimdSize(), intrin->GetSimdBaseType(),
                                              &immLowerBound, &immUpperBound);
         }
 
@@ -243,7 +243,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     }
     else
     {
-        emitSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->gtSIMDSize));
+        emitSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
         opt      = genGetSimdInsOpt(emitSize, intrin.baseType);
     }
 
@@ -546,7 +546,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 
-                // Prior to codegen, the emitSize is based on node->gtSIMDSize which
+                // Prior to codegen, the emitSize is based on node->GetSimdSize() which
                 // tracks the size of the first operand and is used to tell if the index
                 // is in range. However, when actually emitting it needs to be the size
                 // of the return and the size of the operand is interpreted based on the

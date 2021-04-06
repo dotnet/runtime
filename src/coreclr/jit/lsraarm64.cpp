@@ -871,9 +871,9 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
         case SIMDIntrinsicInitN:
         {
-            var_types baseType = simdTree->gtSIMDBaseType;
-            srcCount           = (short)(simdTree->gtSIMDSize / genTypeSize(baseType));
-            if (varTypeIsFloating(simdTree->gtSIMDBaseType))
+            var_types baseType = simdTree->GetSimdBaseType();
+            srcCount           = (short)(simdTree->GetSimdSize() / genTypeSize(baseType));
+            if (varTypeIsFloating(simdTree->GetSimdBaseType()))
             {
                 // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
                 buildInternalFloatRegisterDefForNode(simdTree);
@@ -984,7 +984,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         }
         else
         {
-            HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->gtSIMDSize, intrin.baseType, &immLowerBound,
+            HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->GetSimdSize(), intrin.baseType, &immLowerBound,
                                              &immUpperBound);
         }
 

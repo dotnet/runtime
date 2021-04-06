@@ -10079,7 +10079,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
                 noway_assert(src->IsIntegralConst(0));
                 noway_assert(destVarDsc != nullptr);
 
-                src = new (this, GT_SIMD) GenTreeSIMD(asgType, src, SIMDIntrinsicInit, destVarDsc->lvBaseType, size);
+                src = new (this, GT_SIMD) GenTreeSIMD(asgType, src, SIMDIntrinsicInit, destVarDsc->GetSimdBaseType(), size);
             }
             else
 #endif
@@ -11966,16 +11966,16 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*   tree,
             {
                 ret                   = obj;
                 GenTreeSIMD* simdNode = obj->AsSIMD();
-                *simdSizeOut          = simdNode->gtSIMDSize;
-                *pBaseTypeOut         = simdNode->gtSIMDBaseType;
+                *simdSizeOut          = simdNode->GetSimdSize();
+                *pBaseTypeOut         = simdNode->GetSimdBaseType();
             }
 #ifdef FEATURE_HW_INTRINSICS
             else if (obj->OperIsHWIntrinsic())
             {
                 ret                          = obj;
                 GenTreeHWIntrinsic* simdNode = obj->AsHWIntrinsic();
-                *simdSizeOut                 = simdNode->gtSIMDSize;
-                *pBaseTypeOut                = simdNode->gtSIMDBaseType;
+                *simdSizeOut                 = simdNode->GetSimdSize();
+                *pBaseTypeOut                = simdNode->GetSimdBaseType();
             }
 #endif // FEATURE_HW_INTRINSICS
         }

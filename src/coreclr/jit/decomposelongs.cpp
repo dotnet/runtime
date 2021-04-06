@@ -1687,8 +1687,8 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
     assert(oper == GT_SIMD);
 
     GenTreeSIMD* simdTree = tree->AsSIMD();
-    var_types    baseType = simdTree->gtSIMDBaseType;
-    unsigned     simdSize = simdTree->gtSIMDSize;
+    var_types    baseType = simdTree->GetSimdBaseType();
+    unsigned     simdSize = simdTree->GetSimdSize();
 
     assert(simdTree->gtSIMDIntrinsicID == SIMDIntrinsicGetItem);
     assert(varTypeIsLong(baseType));

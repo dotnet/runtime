@@ -505,7 +505,18 @@ public:
     // type of an arg node is TYP_BYREF and a local node is TYP_SIMD*.
     unsigned char lvSIMDType : 1;            // This is a SIMD struct
     unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
-    var_types     lvBaseType : 5;            // Note: this only packs because var_types is a typedef of unsigned char
+    var_types     lvSimdBaseType : 5;        // Note: this only packs because var_types is a typedef of unsigned char
+
+    var_types GetSimdBaseType() const
+    {
+        return lvSimdBaseType;
+    }
+
+    void SetSimdBaseType(var_types simdBaseType)
+    {
+        assert(simdBaseType < (1 << 5));
+        lvSimdBaseType = simdBaseType;
+    }
 #endif                                       // FEATURE_SIMD
     unsigned char lvRegStruct : 1;           // This is a reg-sized non-field-addressed struct.
 
@@ -8403,7 +8414,7 @@ private:
     {
         if (isSIMDTypeLocal(tree))
         {
-            return lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvBaseType;
+            return lvaTable[tree->AsLclVarCommon()->GetLclNum()].GetSimdBaseType();
         }
 
         return TYP_UNKNOWN;
@@ -8544,7 +8555,7 @@ private:
 #else
         vectorRegisterByteLength = getSIMDVectorRegisterByteLength();
 #endif
-        return (simdNode->gtSIMDSize < vectorRegisterByteLength);
+        return (simdNode->GetSimdSize() < vectorRegisterByteLength);
     }
 
     // Get the type for the hardware SIMD vector.

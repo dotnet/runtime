@@ -1479,8 +1479,8 @@ AGAIN:
 #ifdef FEATURE_SIMD
                 case GT_SIMD:
                     if ((op1->AsSIMD()->gtSIMDIntrinsicID != op2->AsSIMD()->gtSIMDIntrinsicID) ||
-                        (op1->AsSIMD()->gtSIMDBaseType != op2->AsSIMD()->gtSIMDBaseType) ||
-                        (op1->AsSIMD()->gtSIMDSize != op2->AsSIMD()->gtSIMDSize))
+                        (op1->AsSIMD()->GetSimdBaseType() != op2->AsSIMD()->GetSimdBaseType()) ||
+                        (op1->AsSIMD()->GetSimdSize() != op2->AsSIMD()->GetSimdSize()))
                     {
                         return false;
                     }
@@ -1490,8 +1490,8 @@ AGAIN:
 #ifdef FEATURE_HW_INTRINSICS
                 case GT_HWINTRINSIC:
                     if ((op1->AsHWIntrinsic()->gtHWIntrinsicId != op2->AsHWIntrinsic()->gtHWIntrinsicId) ||
-                        (op1->AsHWIntrinsic()->gtSIMDBaseType != op2->AsHWIntrinsic()->gtSIMDBaseType) ||
-                        (op1->AsHWIntrinsic()->gtSIMDSize != op2->AsHWIntrinsic()->gtSIMDSize) ||
+                        (op1->AsHWIntrinsic()->GetSimdBaseType() != op2->AsHWIntrinsic()->GetSimdBaseType()) ||
+                        (op1->AsHWIntrinsic()->GetSimdSize() != op2->AsHWIntrinsic()->GetSimdSize()) ||
                         (op1->AsHWIntrinsic()->GetAuxiliaryType() != op2->AsHWIntrinsic()->GetAuxiliaryType()))
                     {
                         return false;
@@ -2152,16 +2152,16 @@ AGAIN:
 #ifdef FEATURE_SIMD
                 case GT_SIMD:
                     hash += tree->AsSIMD()->gtSIMDIntrinsicID;
-                    hash += tree->AsSIMD()->gtSIMDBaseType;
-                    hash += tree->AsSIMD()->gtSIMDSize;
+                    hash += tree->AsSIMD()->GetSimdBaseType();
+                    hash += tree->AsSIMD()->GetSimdSize();
                     break;
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
                 case GT_HWINTRINSIC:
                     hash += tree->AsHWIntrinsic()->gtHWIntrinsicId;
-                    hash += tree->AsHWIntrinsic()->gtSIMDBaseType;
-                    hash += tree->AsHWIntrinsic()->gtSIMDSize;
+                    hash += tree->AsHWIntrinsic()->GetSimdBaseType();
+                    hash += tree->AsHWIntrinsic()->GetSimdSize();
                     hash += tree->AsHWIntrinsic()->GetAuxiliaryType();
                     break;
 #endif // FEATURE_HW_INTRINSICS
@@ -7907,7 +7907,7 @@ GenTree* Compiler::gtCloneExpr(
             {
                 GenTreeSIMD* simdOp = tree->AsSIMD();
                 copy                = gtNewSIMDNode(simdOp->TypeGet(), simdOp->gtGetOp1(), simdOp->gtGetOp2IfPresent(),
-                                     simdOp->gtSIMDIntrinsicID, simdOp->gtSIMDBaseType, simdOp->gtSIMDSize);
+                                     simdOp->gtSIMDIntrinsicID, simdOp->GetSimdBaseType(), simdOp->GetSimdSize());
             }
             break;
 #endif
@@ -7919,7 +7919,7 @@ GenTree* Compiler::gtCloneExpr(
                 copy                              = new (this, GT_HWINTRINSIC)
                     GenTreeHWIntrinsic(hwintrinsicOp->TypeGet(), hwintrinsicOp->gtGetOp1(),
                                        hwintrinsicOp->gtGetOp2IfPresent(), hwintrinsicOp->gtHWIntrinsicId,
-                                       hwintrinsicOp->gtSIMDBaseType, hwintrinsicOp->gtSIMDSize);
+                                       hwintrinsicOp->GetSimdBaseType(), hwintrinsicOp->GetSimdSize());
                 copy->AsHWIntrinsic()->SetAuxiliaryType(hwintrinsicOp->GetAuxiliaryType());
             }
             break;
@@ -11832,7 +11832,7 @@ void Compiler::gtDispTree(GenTree*     tree,
 #ifdef FEATURE_SIMD
         if (tree->gtOper == GT_SIMD)
         {
-            printf(" %s %s", varTypeName(tree->AsSIMD()->gtSIMDBaseType),
+            printf(" %s %s", varTypeName(tree->AsSIMD()->GetSimdBaseType()),
                    simdIntrinsicNames[tree->AsSIMD()->gtSIMDIntrinsicID]);
         }
 #endif // FEATURE_SIMD
@@ -11840,9 +11840,9 @@ void Compiler::gtDispTree(GenTree*     tree,
 #ifdef FEATURE_HW_INTRINSICS
         if (tree->gtOper == GT_HWINTRINSIC)
         {
-            printf(" %s %s", tree->AsHWIntrinsic()->gtSIMDBaseType == TYP_UNKNOWN
+            printf(" %s %s", tree->AsHWIntrinsic()->GetSimdBaseType() == TYP_UNKNOWN
                                  ? ""
-                                 : varTypeName(tree->AsHWIntrinsic()->gtSIMDBaseType),
+                                 : varTypeName(tree->AsHWIntrinsic()->GetSimdBaseType()),
                    HWIntrinsicInfo::lookupName(tree->AsHWIntrinsic()->gtHWIntrinsicId));
         }
 #endif // FEATURE_HW_INTRINSICS
@@ -17780,18 +17780,18 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 break;
 #ifdef FEATURE_SIMD
             case GT_SIMD:
-                structHnd = gtGetStructHandleForSIMD(tree->gtType, tree->AsSIMD()->gtSIMDBaseType);
+                structHnd = gtGetStructHandleForSIMD(tree->gtType, tree->AsSIMD()->GetSimdBaseType());
                 break;
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
                 if ((tree->gtFlags & GTF_SIMDASHW_OP) != 0)
                 {
-                    structHnd = gtGetStructHandleForSIMD(tree->gtType, tree->AsHWIntrinsic()->gtSIMDBaseType);
+                    structHnd = gtGetStructHandleForSIMD(tree->gtType, tree->AsHWIntrinsic()->GetSimdBaseType());
                 }
                 else
                 {
-                    structHnd = gtGetStructHandleForHWSIMD(tree->gtType, tree->AsHWIntrinsic()->gtSIMDBaseType);
+                    structHnd = gtGetStructHandleForHWSIMD(tree->gtType, tree->AsHWIntrinsic()->GetSimdBaseType());
                 }
                 break;
 #endif

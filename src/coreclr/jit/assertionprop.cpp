@@ -2733,8 +2733,8 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                     LclVarDsc* varDsc   = lvaGetDesc(lclNum);
                     var_types  simdType = tree->TypeGet();
                     assert(varDsc->TypeGet() == simdType);
-                    var_types baseType = varDsc->lvBaseType;
-                    newTree            = gtGetSIMDZero(simdType, baseType, varDsc->GetStructHnd());
+                    var_types simdBaseType = varDsc->GetSimdBaseType();
+                    newTree                = gtGetSIMDZero(simdType, simdBaseType, varDsc->GetStructHnd());
                     if (newTree == nullptr)
                     {
                         return nullptr;

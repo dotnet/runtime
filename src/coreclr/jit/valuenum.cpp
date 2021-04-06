@@ -8858,8 +8858,8 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
 
         if (encodeResultType)
         {
-            ValueNum vnSize     = vnStore->VNForIntCon(simdNode->gtSIMDSize);
-            ValueNum vnBaseType = vnStore->VNForIntCon(INT32(simdNode->gtSIMDBaseType));
+            ValueNum vnSize     = vnStore->VNForIntCon(simdNode->GetSimdSize());
+            ValueNum vnBaseType = vnStore->VNForIntCon(INT32(simdNode->GetSimdBaseType()));
             ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
             resvnp.SetBoth(simdTypeVN);
 
@@ -8975,8 +8975,8 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
 
     if (encodeResultType)
     {
-        ValueNum vnSize     = vnStore->VNForIntCon(hwIntrinsicNode->gtSIMDSize);
-        ValueNum vnBaseType = vnStore->VNForIntCon(INT32(hwIntrinsicNode->gtSIMDBaseType));
+        ValueNum vnSize     = vnStore->VNForIntCon(hwIntrinsicNode->GetSimdSize());
+        ValueNum vnBaseType = vnStore->VNForIntCon(INT32(hwIntrinsicNode->GetSimdBaseType()));
         ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
         resvnp.SetBoth(simdTypeVN);
 

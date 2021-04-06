@@ -473,7 +473,7 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
                 {
                     assert(varTypeIsSIMD(type));
                     varDsc->lvSIMDType  = true;
-                    varDsc->lvBaseType  = simdBaseType;
+                    varDsc->SetSimdBaseType(simdBaseType);
                     varDsc->lvExactSize = genTypeSize(type);
                 }
             }
@@ -578,9 +578,11 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         else if (supportSIMDTypes() && varTypeIsSIMD(info.compRetType))
         {
             varDsc->lvSIMDType = true;
-            varDsc->lvBaseType =
-                getBaseTypeAndSizeOfSIMDType(info.compMethodInfo->args.retTypeClass, &varDsc->lvExactSize);
-            assert(varDsc->lvBaseType != TYP_UNKNOWN);
+
+            var_types simdBaseType = getBaseTypeAndSizeOfSIMDType(info.compMethodInfo->args.retTypeClass, &varDsc->lvExactSize);
+            varDsc->SetSimdBaseType(simdBaseType);
+
+            assert(varDsc->GetSimdBaseType() != TYP_UNKNOWN);
         }
 #endif // FEATURE_SIMD
 
@@ -2812,7 +2814,7 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
             {
                 assert(varTypeIsSIMD(varDsc));
                 varDsc->lvSIMDType = true;
-                varDsc->lvBaseType = simdBaseType;
+                varDsc->SetSimdBaseType(simdBaseType);
             }
 #endif // FEATURE_SIMD
             if (GlobalJitOptions::compFeatureHfa)
@@ -2840,7 +2842,7 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
     else
     {
 #if FEATURE_SIMD
-        assert(!varTypeIsSIMD(varDsc) || (varDsc->lvBaseType != TYP_UNKNOWN));
+        assert(!varTypeIsSIMD(varDsc) || (varDsc->GetSimdBaseType() != TYP_UNKNOWN));
 #endif // FEATURE_SIMD
         ClassLayout* layout = typGetObjLayout(typeHnd);
         assert(ClassLayout::AreCompatible(varDsc->GetLayout(), layout));
