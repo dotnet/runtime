@@ -1,16 +1,16 @@
-using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.TypeForwarding.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
-	// Actions:
-	// link - Forwarder.dll and Implementation.dll
-	// copy - this (test.dll) assembly
 
-	[SetupLinkerDefaultAction ("link")]
-	[SetupLinkerAction ("copy", "test")]
+	[SetupLinkerAction ("copyused", "Forwarder")]
 	[KeepTypeForwarderOnlyAssemblies ("false")]
 
 	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
@@ -21,35 +21,17 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 
 	[KeptMemberInAssembly ("Forwarder.dll", typeof (ImplementationLibrary))]
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary))]
-	static class AttributesScopeUpdated
+	class UsedForwarderIsDynamicallyAccessedWithAssemblyCopyUsed
 	{
 		static void Main ()
 		{
+			PointToTypeInFacade ("Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.ImplementationLibrary, Forwarder");
 		}
 
 		[Kept]
-		public static void Test_1 ([KeptAttributeAttribute (typeof (TestType3Attribute))][TestType3 (typeof (ImplementationLibrary))] int arg)
-		{
-		}
-
-		[Kept]
-		public static void Test_2<[KeptAttributeAttribute (typeof (TestType3Attribute))] [TestType3 (typeof (ImplementationLibrary))] T> ()
-		{
-		}
-
-		[Kept]
-		[return: KeptAttributeAttribute (typeof (TestType3Attribute))]
-		[return: TestType3 (typeof (ImplementationLibrary))]
-		public static void Test_3 ()
-		{
-		}
-	}
-
-	[KeptBaseType (typeof (Attribute))]
-	public class TestType3Attribute : Attribute
-	{
-		[Kept]
-		public TestType3Attribute (Type type)
+		static void PointToTypeInFacade (
+			[KeptAttributeAttribute (typeof(DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] string typeName)
 		{
 		}
 	}

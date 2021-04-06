@@ -8,7 +8,8 @@ namespace Mono.Linker.Tests.Cases.Symbols
 	[SetupLinkerLinkSymbols ("false")]
 	[SetupLinkerAction ("copy", "LibraryWithEmbeddedPdbSymbols")]
 
-	[RemovedSymbols ("LibraryWithEmbeddedPdbSymbols.dll")]
+	// Copy assemblies cannot be modified.
+	[KeptSymbols ("LibraryWithEmbeddedPdbSymbols.dll")]
 
 	// Copying with symbol linking off is a little more complex for embedded pdbs.
 	// Do a little extra asserting here to make sure the assembly wasn't accidentally linked
