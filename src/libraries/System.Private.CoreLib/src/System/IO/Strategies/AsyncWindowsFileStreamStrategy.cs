@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Strategies
@@ -11,7 +12,7 @@ namespace System.IO.Strategies
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
-        private AwaitableProvider? _currentOverlappedOwner; // async op currently using the preallocated overlapped
+        private FileStreamAwaitableProvider? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
         internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
             : base(handle, access, share)
@@ -108,10 +109,10 @@ namespace System.IO.Strategies
         {
             Debug.Assert(_preallocatedOverlapped == null);
 
-            _preallocatedOverlapped = new PreAllocatedOverlapped(AwaitableProvider.s_ioCallback, this, buffer);
+            _preallocatedOverlapped = new PreAllocatedOverlapped(FileStreamAwaitableProvider.s_ioCallback, this, buffer);
         }
 
-        internal AwaitableProvider? CompareExchangeCurrentOverlappedOwner(AwaitableProvider? newSource, AwaitableProvider? existingSource)
+        internal FileStreamAwaitableProvider? CompareExchangeCurrentOverlappedOwner(FileStreamAwaitableProvider? newSource, FileStreamAwaitableProvider? existingSource)
             => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -133,7 +134,7 @@ namespace System.IO.Strategies
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             // Create and store async stream class library specific data in the async result
-            AwaitableProvider provider = AwaitableProvider.Create(this, _preallocatedOverlapped, 0, destination);
+            FileStreamAwaitableProvider provider = FileStreamAwaitableProvider.Create(this, _preallocatedOverlapped, 0, destination);
             return provider.ReadAsync(destination, cancellationToken);
         }
 
@@ -158,7 +159,7 @@ namespace System.IO.Strategies
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             // Create and store async stream class library specific data in the async result
-            AwaitableProvider provider = AwaitableProvider.Create(this, _preallocatedOverlapped, 0, source);
+            FileStreamAwaitableProvider provider = FileStreamAwaitableProvider.Create(this, _preallocatedOverlapped, 0, source);
             return provider.WriteAsync(source, cancellationToken);
         }
 

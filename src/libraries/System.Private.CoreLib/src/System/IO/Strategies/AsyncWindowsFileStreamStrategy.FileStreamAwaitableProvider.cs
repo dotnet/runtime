@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal;
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
@@ -14,54 +13,36 @@ namespace System.IO.Strategies
 {
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
-        internal sealed class ManualResetValueTaskSource<T> : IValueTaskSource<T>, IValueTaskSource
+        internal unsafe class FileStreamAwaitableProvider : IValueTaskSource<int>, IValueTaskSource
         {
-            private ManualResetValueTaskSourceCore<T> _core; // mutable struct; do not make this readonly
+            private ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
 
-            public bool RunContinuationsAsynchronously
-            {
-                get => _core.RunContinuationsAsynchronously;
-                set => _core.RunContinuationsAsynchronously = value;
-            }
+            public ValueTaskSourceStatus GetStatus(short token) => _source.GetStatus(token);
+            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _source.OnCompleted(continuation, state, token, flags);
+            void IValueTaskSource.GetResult(short token) => _source.GetResult(token);
+            int IValueTaskSource<int>.GetResult(short token) => _source.GetResult(token);
 
-            public short Version => _core.Version;
-            public void Reset() => _core.Reset();
-            public void SetResult(T result) => _core.SetResult(result);
-            public void SetException(Exception error) => _core.SetException(error);
 
-            public T GetResult(short token) => _core.GetResult(token);
-            void IValueTaskSource.GetResult(short token) => _core.GetResult(token);
-            public ValueTaskSourceStatus GetStatus(short token) => _core.GetStatus(token);
-            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _core.OnCompleted(continuation, state, token, flags);
-
-            public ValueTaskSourceStatus GetStatus() => _core.GetStatus(_core.Version);
-        }
-
-        internal unsafe class AwaitableProvider
-        {
             private const long NoResult = 0;
             private const long ResultSuccess = (long)1 << 32;
             private const long ResultError = (long)2 << 32;
             private const long RegisteringCancellation = (long)4 << 32;
             private const long CompletedCallback = (long)8 << 32;
             private const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
-            private const int ERROR_BROKEN_PIPE = 109;
-            private const int ERROR_NO_DATA = 232;
 
-            internal static readonly unsafe IOCompletionCallback s_ioCallback = IOCallback;
+            internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
 
             protected readonly AsyncWindowsFileStreamStrategy _strategy;
             protected readonly int _numBufferedBytes;
 
             protected NativeOverlapped* _overlapped;
-            private ManualResetValueTaskSource<int> _source;
             private CancellationTokenRegistration _cancellationRegistration;
             private long _result; // Using long since this needs to be used in Interlocked APIs
 #if DEBUG
             private bool _cancellationHasBeenRegistered;
 #endif
 
-            public static AwaitableProvider Create(
+            public static FileStreamAwaitableProvider Create(
                 AsyncWindowsFileStreamStrategy strategy,
                 PreAllocatedOverlapped? preallocatedOverlapped,
                 int numBufferedBytesRead,
@@ -74,11 +55,11 @@ namespace System.IO.Strategies
                 return preallocatedOverlapped != null &&
                        MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer) &&
                        preallocatedOverlapped.IsUserObject(buffer.Array) ?
-                            new AwaitableProvider(strategy, preallocatedOverlapped, numBufferedBytesRead, buffer.Array) :
+                            new FileStreamAwaitableProvider(strategy, preallocatedOverlapped, numBufferedBytesRead, buffer.Array) :
                             new MemoryAwaitableProvider(strategy, numBufferedBytesRead, memory);
             }
 
-            protected AwaitableProvider(
+            protected FileStreamAwaitableProvider(
                 AsyncWindowsFileStreamStrategy strategy,
                 PreAllocatedOverlapped? preallocatedOverlapped,
                 int numBufferedBytes,
@@ -89,7 +70,7 @@ namespace System.IO.Strategies
 
                 _result = NoResult;
 
-                _source = new ManualResetValueTaskSource<int>();
+                _source = default;
                 // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
                 _source.RunContinuationsAsynchronously = true;
 
@@ -194,7 +175,7 @@ namespace System.IO.Strategies
                     // results.
                 }
 
-                return new ValueTask<int>(_source, _source.Version);
+                return new ValueTask<int>(this, _source.Version);
             }
 
             public ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
@@ -272,7 +253,7 @@ namespace System.IO.Strategies
                     // results.
                 }
 
-                return new ValueTask(_source, _source.Version);
+                return new ValueTask(this, _source.Version);
             }
 
             private static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
@@ -283,11 +264,11 @@ namespace System.IO.Strategies
                 // be directly the AwaitableProvider that's completing (in the case where the preallocated
                 // overlapped was already in use by another operation).
                 object? state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
-                Debug.Assert(state is (AsyncWindowsFileStreamStrategy or AwaitableProvider));
-                AwaitableProvider provider = state switch
+                Debug.Assert(state is (AsyncWindowsFileStreamStrategy or FileStreamAwaitableProvider));
+                FileStreamAwaitableProvider provider = state switch
                 {
                     AsyncWindowsFileStreamStrategy strategy => strategy._currentOverlappedOwner!, // must be owned
-                    _ => (AwaitableProvider)state
+                    _ => (FileStreamAwaitableProvider)state
                 };
                 Debug.Assert(provider != null);
                 Debug.Assert(provider._overlapped == pOverlapped, "Overlaps don't match");
@@ -334,7 +315,7 @@ namespace System.IO.Strategies
                     int errorCode = unchecked((int)(packedResult & uint.MaxValue));
                     if (errorCode == Interop.Errors.ERROR_OPERATION_ABORTED)
                     {
-                        _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true))));
+                        _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(canceled: true))));
                     }
                     else
                     {
@@ -365,7 +346,7 @@ namespace System.IO.Strategies
                     long packedResult = Interlocked.CompareExchange(ref _result, RegisteringCancellation, NoResult);
                     if (packedResult == NoResult)
                     {
-                        _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) => ((AwaitableProvider)s!).Cancel(token), this);
+                        _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) => ((FileStreamAwaitableProvider)s!).Cancel(token), this);
 
                         // Switch the result, just in case IO completed while we were setting the registration
                         packedResult = Interlocked.Exchange(ref _result, NoResult);
@@ -421,14 +402,15 @@ namespace System.IO.Strategies
                 // Only one operation at a time is eligible to use the preallocated overlapped
                 _strategy.CompareExchangeCurrentOverlappedOwner(null, this);
             }
+
         }
 
         /// <summary>
-        /// Extends <see cref="AwaitableProvider"/> with to support disposing of a
+        /// Extends <see cref="FileStreamAwaitableProvider"/> with to support disposing of a
         /// <see cref="MemoryHandle"/> when the operation has completed.  This should only be used
         /// when memory doesn't wrap a byte[].
         /// </summary>
-        internal sealed class MemoryAwaitableProvider : AwaitableProvider
+        internal sealed class MemoryAwaitableProvider : FileStreamAwaitableProvider
         {
             private MemoryHandle _handle; // mutable struct; do not make this readonly
 
