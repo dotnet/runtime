@@ -1172,11 +1172,11 @@ namespace System.Net.Http
             }
         }
 
-        public bool DoProxyAuth() => (_kind == HttpConnectionKind.Proxy || _kind == HttpConnectionKind.ProxyConnect);
+        private bool DoProxyAuth => (_kind == HttpConnectionKind.Proxy || _kind == HttpConnectionKind.ProxyConnect);
 
         public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (DoProxyAuth() && ProxyCredentials is not null)
+            if (DoProxyAuth && ProxyCredentials is not null)
             {
                 return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, connection, this, cancellationToken);
             }
@@ -1186,7 +1186,7 @@ namespace System.Net.Http
 
         public ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            if (DoProxyAuth() && ProxyCredentials is not null)
+            if (DoProxyAuth && ProxyCredentials is not null)
             {
                 return AuthenticationHelper.SendWithProxyAuthAsync(request, _proxyUri!, async, ProxyCredentials, doRequestAuth, this, cancellationToken);
             }
