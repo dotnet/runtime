@@ -140,4 +140,4 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
 
 ### Cleanup function
 
-The `MonovmRuntimeConfigArguments*` will be stored in the runtime between `monovm_runtimeconfig_initialize` and `mono_jit_init_version`. The embedder should not dispose of the arguments after calling `monovm_runtimeconfig_initialize`. Instead the runtime will call the cleanup_fn that is passed to `monovm_runtimeconfig_initialize` at soon after it has initialized the managed property list in `System.AppContext` (which happens as part of mono_jit_init_version).
+The `MonovmRuntimeConfigArguments*` will be stored in the runtime between `monovm_runtimeconfig_initialize` and `mono_jit_init_version`. The embedder should not dispose of the arguments after calling `monovm_runtimeconfig_initialize`. Instead the runtime will call the `cleanup_fn` that is passed to `monovm_runtimeconfig_initialize` at soon after it has initialized the managed property list in `System.AppContext` (which happens as part of `mono_jit_init_version`).
