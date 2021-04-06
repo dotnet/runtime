@@ -199,28 +199,38 @@ public:
     static size_t GetNumPointers (MethodTable* pMT, size_t ObjectSize, size_t NumComponents)
     {
         size_t NumOfPointers = 0;
-        CGCDesc* map = GetCGCDescFromMT(pMT);
-        CGCDescSeries* cur = map->GetHighestSeries();
-        ptrdiff_t cnt = (ptrdiff_t) map->GetNumSeries();
 
-        if (cnt > 0)
+        if (pMT->ContainsPointers())
         {
-            CGCDescSeries* last = map->GetLowestSeries();
-            while (cur >= last)
+            CGCDesc* map = GetCGCDescFromMT(pMT);
+            CGCDescSeries* cur = map->GetHighestSeries();
+            ptrdiff_t cnt = (ptrdiff_t)map->GetNumSeries();
+
+            if (cnt >= 0)
             {
-                NumOfPointers += (cur->GetSeriesSize() + ObjectSize) / sizeof(JSlot);
-                cur--;
+                CGCDescSeries* last = map->GetLowestSeries();
+                do
+                {
+                    NumOfPointers += (cur->GetSeriesSize() + ObjectSize) / sizeof(JSlot);
+                    cur--;
+                }
+                while (cur >= last);
+            }
+            else
+            {
+                /* Handle the repeating case - array of valuetypes */
+                for (ptrdiff_t __i = 0; __i > cnt; __i--)
+                {
+                    NumOfPointers += cur->val_serie[__i].nptrs;
+                }
+
+                NumOfPointers *= NumComponents;
             }
         }
-        else
-        {
-            /* Handle the repeating case - array of valuetypes */
-            for (ptrdiff_t __i = 0; __i > cnt; __i--)
-            {
-                NumOfPointers += cur->val_serie[__i].nptrs;
-            }
 
-            NumOfPointers *= NumComponents;
+        if (pMT->Collectible())
+        {
+            NumOfPointers += 1;
         }
 
         return NumOfPointers;
