@@ -1323,7 +1323,7 @@ namespace System.Diagnostics
             private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
         }
 
-        private partial class LinkedListNode<T>
+        private sealed partial class LinkedListNode<T>
         {
             public LinkedListNode(T value) => Value = value;
             public T Value;
@@ -1331,7 +1331,7 @@ namespace System.Diagnostics
         }
 
         // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
-        private class LinkedList<T> : IEnumerable<T>
+        private sealed class LinkedList<T> : IEnumerable<T>
         {
             private LinkedListNode<T> _first;
             private LinkedListNode<T> _last;
@@ -1379,7 +1379,7 @@ namespace System.Diagnostics
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
+        private sealed class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
         {
             private LinkedListNode<KeyValuePair<string, string?>>? _first;
 
@@ -1461,7 +1461,7 @@ namespace System.Diagnostics
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
+        private sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
         {
             private LinkedListNode<KeyValuePair<string, object?>>? _first;
             private LinkedListNode<KeyValuePair<string, object?>>? _last;

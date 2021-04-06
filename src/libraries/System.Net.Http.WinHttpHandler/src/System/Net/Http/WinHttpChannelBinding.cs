@@ -10,7 +10,7 @@ using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
 namespace System.Net.Http
 {
-    internal class WinHttpChannelBinding : ChannelBinding
+    internal sealed class WinHttpChannelBinding : ChannelBinding
     {
         private int _size;
         private string _cachedToString;

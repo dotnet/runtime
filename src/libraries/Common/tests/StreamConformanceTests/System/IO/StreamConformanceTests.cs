@@ -2240,7 +2240,7 @@ namespace System.IO.Tests
                 Assert.Equal(1024, writeBuffer.Memory.Length);
                 Assert.Equal(writeBuffer.Memory.Length, readBuffer.Memory.Length);
 
-                new Random().NextBytes(writeBuffer.Memory.Span);
+                Random.Shared.NextBytes(writeBuffer.Memory.Span);
                 readBuffer.Memory.Span.Clear();
 
                 Task write = useAsync ?

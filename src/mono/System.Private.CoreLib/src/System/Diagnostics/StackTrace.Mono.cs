@@ -10,7 +10,7 @@ namespace System.Diagnostics
 {
     // Need our own stackframe class since the shared version has its own fields
     [StructLayout(LayoutKind.Sequential)]
-    internal class MonoStackFrame
+    internal sealed class MonoStackFrame
     {
         #region Keep in sync with object-internals.h
         internal int ilOffset;

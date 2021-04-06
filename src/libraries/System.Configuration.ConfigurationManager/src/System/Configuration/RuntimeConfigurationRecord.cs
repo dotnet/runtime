@@ -79,7 +79,7 @@ namespace System.Configuration
             return runtimeObject;
         }
 
-        private class RuntimeConfigurationFactory
+        private sealed class RuntimeConfigurationFactory
         {
             private ConstructorInfo _sectionCtor;
             private IConfigurationSectionHandler _sectionHandler;

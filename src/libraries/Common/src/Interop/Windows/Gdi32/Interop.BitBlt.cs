@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
     internal static partial class Gdi32
     {

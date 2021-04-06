@@ -15,7 +15,7 @@ namespace System.ComponentModel
         /// This class contains all the reflection information for a
         /// given type.
         /// </summary>
-        private class ReflectedTypeData
+        private sealed class ReflectedTypeData
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             private readonly Type _type;
@@ -41,6 +41,8 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves custom attributes.
             /// </summary>
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
+                Justification = "_type is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
             internal AttributeCollection GetAttributes()
             {
                 // Worst case collision scenario:  we don't want the perf hit
@@ -170,7 +172,7 @@ namespace System.ComponentModel
             /// it will be used to retrieve attributes. Otherwise, _type
             /// will be used.
             /// </summary>
-            [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
+            [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
             internal TypeConverter GetConverter(object instance)
             {
                 TypeConverterAttribute typeAttr = null;
@@ -260,7 +262,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Return the default property.
             /// </summary>
-            [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
+            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
             internal PropertyDescriptor GetDefaultProperty(object instance)
             {
                 AttributeCollection attributes;
@@ -448,6 +450,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the properties for this type.
             /// </summary>
+            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
             internal PropertyDescriptorCollection GetProperties()
             {
                 // Worst case collision scenario:  we don't want the perf hit

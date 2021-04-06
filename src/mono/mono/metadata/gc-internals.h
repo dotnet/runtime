@@ -68,7 +68,6 @@ mono_object_register_finalizer_handle (MonoObjectHandle obj);
 
 extern void mono_gc_init (void);
 extern void mono_gc_base_init (void);
-extern void mono_gc_cleanup (void);
 extern void mono_gc_base_cleanup (void);
 extern void mono_gc_init_icalls (void);
 

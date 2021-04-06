@@ -30,7 +30,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private class GenericParameterDataContractCriticalHelper : DataContract.DataContractCriticalHelper
+        private sealed class GenericParameterDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private readonly int _parameterPosition;
 

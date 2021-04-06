@@ -31,6 +31,7 @@ typedef enum {
 	MONO_TRACE_TIERED             = 1 << 18,
 	MONO_TRACE_QCALL              = 1 << 19,
 	MONO_TRACE_METADATA_UPDATE    = 1 << 20,
+	MONO_TRACE_DIAGNOSTICS        = 1 << 21
 } MonoTraceMask;
 
 MONO_BEGIN_DECLS
@@ -40,9 +41,6 @@ MONO_END_DECLS
 
 MONO_API void
 mono_trace_init (void);
-
-void 
-mono_trace_cleanup (void);
 
 MONO_API void
 mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args);

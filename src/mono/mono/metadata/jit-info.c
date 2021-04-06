@@ -17,6 +17,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <mono/metadata/jit-info.h>
 #include <mono/metadata/gc-internals.h>
 
 #include <mono/utils/atomic.h>
@@ -50,6 +51,7 @@ static MonoJitInfoTable * volatile jit_info_table;
 static MonoJitInfoTable * volatile aot_modules;
 static GSList *jit_info_free_queue;
 static int num_jit_info_table_duplicates;
+static mono_mutex_t jit_info_mutex;
 
 #define JIT_INFO_TABLE_FILL_RATIO_NOM		3
 #define JIT_INFO_TABLE_FILL_RATIO_DENOM		4
@@ -63,6 +65,18 @@ static int num_jit_info_table_duplicates;
 
 #define JIT_INFO_TABLE_HAZARD_INDEX		0
 #define JIT_INFO_HAZARD_INDEX			1
+
+static inline void
+jit_info_lock (void)
+{
+	mono_os_mutex_lock (&jit_info_mutex);
+}
+
+static inline void
+jit_info_unlock (void)
+{
+	mono_os_mutex_unlock (&jit_info_mutex);
+}
 
 static int
 jit_info_table_num_elements (MonoJitInfoTable *table)
@@ -83,6 +97,7 @@ void
 mono_jit_info_tables_init (void)
 {
 	jit_info_table = mono_jit_info_table_new ();
+	mono_os_mutex_init_recursive (&jit_info_mutex);
 }
 
 MonoJitInfoTable *
@@ -104,9 +119,8 @@ jit_info_table_free (MonoJitInfoTable *table, gboolean duplicate)
 
 	int i;
 	int num_chunks = table->num_chunks;
-	MonoDomain *domain = mono_get_root_domain ();
 
-	mono_domain_lock (domain);
+	jit_info_lock ();
 
 	if (duplicate) {
 		num_jit_info_table_duplicates--;
@@ -141,7 +155,7 @@ jit_info_table_free (MonoJitInfoTable *table, gboolean duplicate)
 		g_free (chunk);
 	}
 
-	mono_domain_unlock (domain);
+	jit_info_unlock ();
 
 	g_free (table);
 }
@@ -700,17 +714,15 @@ jit_info_table_add (MonoJitInfoTable *volatile *table_ptr, MonoJitInfo *ji)
 void
 mono_jit_info_table_add (MonoJitInfo *ji)
 {
-	MonoDomain *domain = mono_get_root_domain ();
-
 	g_assert (ji->d.method != NULL);
 
-	mono_domain_lock (domain);
+	jit_info_lock ();
 
 	UnlockedIncrement (&mono_stats.jit_info_table_insert_count);
 
 	jit_info_table_add (&jit_info_table, ji);
 
-	mono_domain_unlock (domain);
+	jit_info_unlock ();
 }
 
 static MonoJitInfo*
@@ -792,10 +804,10 @@ jit_info_table_remove (MonoJitInfoTable *table, MonoJitInfo *ji)
 void
 mono_jit_info_table_remove (MonoJitInfo *ji)
 {
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoJitInfoTable *table;
 
-	mono_domain_lock (domain);
+	jit_info_lock ();
+
 	table = jit_info_table;
 
 	UnlockedIncrement (&mono_stats.jit_info_table_remove_count);
@@ -804,7 +816,7 @@ mono_jit_info_table_remove (MonoJitInfo *ji)
 
 	mono_jit_info_free_or_queue (ji);
 
-	mono_domain_unlock (domain);
+	jit_info_unlock ();
 }
 
 /*
@@ -815,11 +827,9 @@ mono_jit_info_table_remove (MonoJitInfo *ji)
 void
 mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end)
 {
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoJitInfo *ji;
 
-	g_assert (domain);
-	mono_domain_lock (domain);
+	jit_info_lock ();
 
 	/*
 	 * We reuse MonoJitInfoTable to store AOT module info,
@@ -834,7 +844,7 @@ mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end)
 	ji->code_size = (guint8*)end - (guint8*)start;
 	jit_info_table_add (&aot_modules, ji);
 
-	mono_domain_unlock (domain);
+	jit_info_unlock ();
 }
 
 void

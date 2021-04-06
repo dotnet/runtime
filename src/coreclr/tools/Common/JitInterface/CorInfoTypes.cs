@@ -357,8 +357,11 @@ namespace Internal.JitInterface
         C,
         Stdcall,
         Thiscall,
-        Fastcall
+        Fastcall,
         // New calling conventions supported with the extensible calling convention encoding go here.
+        CMemberFunction,
+        StdcallMemberFunction,
+        FastcallMemberFunction
     }
 
     public enum CORINFO_CALLINFO_FLAGS
@@ -1266,6 +1269,9 @@ namespace Internal.JitInterface
 
         // token comes from CEE_LDVIRTFTN
         CORINFO_TOKENKIND_Ldvirtftn = 0x400 | CORINFO_TOKENKIND_Method,
+
+        // token comes from devirtualizing a method
+        CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod

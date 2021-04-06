@@ -10,9 +10,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage>SR.SystemSecurityCryptographyX509Certificates_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- Use Android native crypto when ANDROID_OPENSSL_AAR is not defined.
-         TODO: [AndroidCrypto] Remove ANDROID_OPENSSL_AAR check once Android native crypto is complete -->
-    <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_OPENSSL_AAR)' == ''">true</UseAndroidCrypto>
+    <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
@@ -317,6 +315,7 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\PkcsFormatReader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\SingleCertLoader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\UnsupportedDisallowedStore.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X509Pal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X509Persistence.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -325,6 +324,8 @@
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Permissions.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.ReadLink.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.GetIntegerBytes.cs"
@@ -400,10 +401,13 @@
     <Compile Include="Internal\Cryptography\Pal.Android\ChainPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\StorePal.AndroidKeyStore.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\StorePal.ExportPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\StorePal.LoaderPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\StorePal.TrustedStore.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\X509Pal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificateData.ManagedDecode.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\UnsupportedDisallowedStore.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs"
              Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs" />
     <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
@@ -424,6 +428,10 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Chain.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Chain.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Store.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Store.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"

@@ -17,7 +17,7 @@ set "__LinkArgs= "
 set "__LinkLibraries= "
 set __PortableBuild=0
 set __IncrementalNativeBuild=0
-set __Ninja=0
+set __Ninja=1
 
 :Arg_Loop
 if [%1] == [] goto :InitVSEnv
@@ -43,7 +43,7 @@ if /i [%1] == [commit]      (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [incremental-native-build] ( set __IncrementalNativeBuild=1&&shift&goto Arg_Loop)
 if /i [%1] == [rootDir]     ( set __rootDir=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [coreclrartifacts]  (set __CoreClrArtifacts=%2&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [ninja] (set __Ninja=1)
+if /i [%1] == [msbuild] (set __Ninja=0)
 if /i [%1] == [runtimeflavor]  (set __RuntimeFlavor=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [runtimeconfiguration]  (set __RuntimeConfiguration=%2&&shift&&shift&goto Arg_Loop)
 
@@ -72,6 +72,9 @@ if %__CMakeBinDir% == "" (
 
 if %__IntermediatesDir% == "" (
     set "__IntermediatesDir=%__objDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%\corehost"
+)
+if %__Ninja% == 0 (
+    set "__IntermediatesDir=%__IntermediatesDir%\ide"
 )
 set "__ResourcesDir=%__objDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%\hostResourceFiles"
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
@@ -130,7 +133,7 @@ if "%__RuntimeFlavor%" NEQ "Mono" (
     copy /B /Y "%__CoreClrArtifacts%\corehost\PDB\singlefilehost.pdb"  "%__CMakeBinDir%/corehost/PDB/"
 
     echo Embedding "%__CoreClrArtifacts%\mscordaccore.dll" into "%__CMakeBinDir%\corehost\singlefilehost.exe"
-    if /i "%__BuildArch%" == "x64"  (
+    if not exist "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" (
         "%__CoreClrArtifacts%\dactabletools\InjectResource.exe"     /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER
     ) else (
         "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER

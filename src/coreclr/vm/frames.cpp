@@ -1509,7 +1509,7 @@ struct IsObjRefProtectedScanContext : public ScanContext
     BOOL        oref_protected;
     IsObjRefProtectedScanContext (OBJECTREF * oref)
     {
-        thread_under_crawl = GetThread ();
+        thread_under_crawl = GetThread();
         promotion = TRUE;
         oref_to_check = oref;
         oref_protected = FALSE;

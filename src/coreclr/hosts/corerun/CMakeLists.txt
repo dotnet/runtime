@@ -9,7 +9,7 @@ else(CLR_CMAKE_HOST_WIN32)
     include(configure.cmake)
 endif(CLR_CMAKE_HOST_WIN32)
 
-_add_executable(corerun
+add_executable_clr(corerun
   corerun.cpp
   native.rc
 )
@@ -32,4 +32,4 @@ else(CLR_CMAKE_HOST_WIN32)
     endif()
 endif(CLR_CMAKE_HOST_WIN32)
 
-install_clr(TARGETS corerun)
+install_clr(TARGETS corerun DESTINATIONS . COMPONENT runtime)

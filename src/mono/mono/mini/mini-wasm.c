@@ -502,14 +502,6 @@ mono_runtime_setup_stat_profiler (void)
 	g_error ("mono_runtime_setup_stat_profiler");
 }
 
-
-void
-mono_runtime_shutdown_stat_profiler (void)
-{
-	g_error ("mono_runtime_shutdown_stat_profiler");
-}
-
-
 gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
@@ -524,18 +516,7 @@ mono_runtime_install_handlers (void)
 }
 
 void
-mono_runtime_cleanup_handlers (void)
-{
-}
-
-void
 mono_init_native_crash_info (void)
-{
-	return;
-}
-
-void
-mono_cleanup_native_crash_info (void)
 {
 	return;
 }
@@ -567,13 +548,13 @@ mono_set_timeout_exec (int id)
 	//YES we swallow exceptions cuz there's nothing much we can do from here.
 	//FIXME Maybe call the unhandled exception function?
 	if (!is_ok (error)) {
-		printf ("timeout callback failed due to %s\n", mono_error_get_message (error));
+		g_printerr ("timeout callback failed due to %s\n", mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
 
 	if (exc) {
 		char *type_name = mono_type_get_full_name (mono_object_class (exc));
-		printf ("timeout callback threw a %s\n", type_name);
+		g_printerr ("timeout callback threw a %s\n", type_name);
 		g_free (type_name);
 	}
 }
@@ -605,13 +586,13 @@ tp_cb (void)
 	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
 
 	if (!is_ok (error)) {
-		printf ("ThreadPool Callback failed due to error: %s\n", mono_error_get_message (error));
+		g_printerr ("ThreadPool Callback failed due to error: %s\n", mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
 
 	if (exc) {
 		char *type_name = mono_type_get_full_name (mono_object_class (exc));
-		printf ("ThreadPool Callback threw an unhandled exception of type %s\n", type_name);
+		g_printerr ("ThreadPool Callback threw an unhandled exception of type %s\n", type_name);
 		g_free (type_name);
 	}
 }

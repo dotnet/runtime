@@ -390,6 +390,12 @@ namespace System.Drawing.Primitives.Tests
         [InlineData(51, 255, 51, 0.6f)]
         [InlineData(51, 51, 255, 0.6f)]
         [InlineData(51, 51, 51, 0.2f)]
+        [InlineData(0, 51, 255, 0.5f)]
+        [InlineData(51, 255, 0, 0.5f)]
+        [InlineData(0, 255, 51, 0.5f)]
+        [InlineData(255, 0, 51, 0.5f)]
+        [InlineData(51, 0, 255, 0.5f)]
+        [InlineData(255, 51, 0, 0.5f)]
         public void GetBrightness(int r, int g, int b, float expected)
         {
             Assert.Equal(expected, Color.FromArgb(r, g, b).GetBrightness());

@@ -10,7 +10,7 @@ namespace System.Xml.Xsl.Qil
     /// <summary>
     /// A function invocation node which represents a call to an early bound Clr function.
     /// </summary>
-    internal class QilInvokeEarlyBound : QilTernary
+    internal sealed class QilInvokeEarlyBound : QilTernary
     {
         //-----------------------------------------------
         // Constructor

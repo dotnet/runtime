@@ -1115,7 +1115,7 @@ void SystemDomain::DetachBegin()
     // yet).
 
     // TODO: we should really not running managed DLLMain during process detach.
-    if (GetThread() == NULL)
+    if (GetThreadNULLOk() == NULL)
     {
         return;
     }
@@ -1291,7 +1291,7 @@ void SystemDomain::Init()
     }
 
 #ifdef _DEBUG
-    BOOL fPause = EEConfig::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_PauseOnLoad, FALSE);
+    BOOL fPause = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PauseOnLoad);
 
     while (fPause)
     {
@@ -1611,8 +1611,6 @@ void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
     STANDARD_VM_CONTRACT;
 
     Thread* pThread = GetThread();
-    _ASSERTE(pThread);
-
     if(state == Thread::AS_InSTA)
     {
         Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InSTA);
@@ -3043,6 +3041,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         // Find the list lock entry
         FileLoadLock * fileLock = (FileLoadLock *)lock->FindFileLock(pFile);
+        bool registerNewAssembly = false;
         if (fileLock == NULL)
         {
             // Check again in case we were racing
@@ -3050,6 +3049,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
             if (result == NULL)
             {
                 // We are the first one in - create the DomainAssembly
+                registerNewAssembly = true;
                 fileLock = FileLoadLock::Create(lock, pFile, pDomainAssembly);
                 pDomainAssembly.SuppressRelease();
 #ifndef CROSSGEN_COMPILE
@@ -3081,6 +3081,11 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         else
         {
             result->EnsureLoadLevel(targetLevel);
+        }
+
+        if (registerNewAssembly)
+        {
+            pFile->GetAssemblyLoadContext()->AddLoadedAssembly(pDomainAssembly->GetCurrentAssembly());
         }
     }
     else
@@ -3541,7 +3546,7 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=T
     CONTRACTL
     {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
     }
@@ -3595,7 +3600,7 @@ LPCWSTR AppDomain::GetFriendlyName(BOOL fDebuggerCares/*=TRUE*/)
     CONTRACT (LPCWSTR)
     {
         THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -3626,7 +3631,7 @@ LPCWSTR AppDomain::GetFriendlyNameForDebugger()
     CONTRACT (LPCWSTR)
     {
         NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
         MODE_ANY;
         POSTCONDITION(CheckPointer(RETVAL));
     }
@@ -4530,7 +4535,6 @@ void AppDomain::ExceptionUnwind(Frame *pFrame)
 
     LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind for %8.8x\n", pFrame));
     Thread *pThread = GetThread();
-    _ASSERTE(pThread);
 
     LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind: not first transition or abort\n"));
 }

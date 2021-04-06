@@ -13,17 +13,19 @@ XCODE_PATH=$(xcode-select -p)/../..
 
 if [ -n "$5" ]; then
     XHARNESS_CMD="run"
-    EXPECTED_EXIT_CODE="--expected-exit-code $5"
+    ADDITIONAL_ARGS=${@:5}
 fi
 
 if [[ "$TARGET_OS" == "MacCatalyst" ]]; then TARGET=maccatalyst; fi
 
-if [[ "$TARGET_OS" == "iOS" && "$TARGET_ARCH" == "x86" ]]; then TARGET=ios-simulator-32; fi
-if [[ "$TARGET_OS" == "iOS" && "$TARGET_ARCH" == "x64" ]]; then TARGET=ios-simulator-64; fi
+if [[ "$TARGET_OS" == "iOSSimulator" && "$TARGET_ARCH" == "x86" ]]; then TARGET=ios-simulator-32; fi
+if [[ "$TARGET_OS" == "iOSSimulator" && "$TARGET_ARCH" == "x64" ]]; then TARGET=ios-simulator-64; fi
+if [[ "$TARGET_OS" == "iOSSimulator" && "$TARGET_ARCH" == "arm64" ]]; then TARGET=ios-simulator-64; fi
 if [[ "$TARGET_OS" == "iOS" && "$TARGET_ARCH" == "arm" ]]; then TARGET=ios-device; fi
 if [[ "$TARGET_OS" == "iOS" && "$TARGET_ARCH" == "arm64" ]]; then TARGET=ios-device; fi
 
-if [[ "$TARGET_OS" == "tvOS" && "$TARGET_ARCH" == "x64" ]]; then TARGET=tvos-simulator; fi
+if [[ "$TARGET_OS" == "tvOSSimulator" && "$TARGET_ARCH" == "x64" ]]; then TARGET=tvos-simulator; fi
+if [[ "$TARGET_OS" == "tvOSSimulator" && "$TARGET_ARCH" == "arm64" ]]; then TARGET=tvos-simulator; fi
 if [[ "$TARGET_OS" == "tvOS" && "$TARGET_ARCH" == "arm64" ]]; then TARGET=tvos-device; fi
 
 # "Release" in SCHEME_SDK is what xcode produces (see "bool Optimized" property in AppleAppBuilderTask)
@@ -60,7 +62,7 @@ $HARNESS_RUNNER apple $XHARNESS_CMD    \
     --targets="$TARGET" \
     --xcode="$XCODE_PATH"   \
     --output-directory="$XHARNESS_OUT" \
-    $EXPECTED_EXIT_CODE
+    $ADDITIONAL_ARGS
 
 _exitCode=$?
 

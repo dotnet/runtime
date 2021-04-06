@@ -188,6 +188,28 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(typeof(ConverterFactoryThatReturnsNull).ToString(), ex.Message);
         }
 
+        private class ConverterFactoryThatReturnsJsonConverterFactory : JsonConverterFactory
+        {
+            public override bool CanConvert(Type type) => true;
+
+            public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options) => new ConverterFactoryThatReturnsJsonConverterFactory();
+        }
+
+        [Fact]
+        public static void CustomJsonConverterFactoryThatReturnsJsonConverterFactoryFail()
+        {
+            JsonSerializerOptions options = new()
+            {
+                Converters = { new ConverterFactoryThatReturnsJsonConverterFactory() }
+            };
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(1, options));
+            Assert.Contains(typeof(ConverterFactoryThatReturnsJsonConverterFactory).ToString(), ex.Message);
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<int>("1", options));
+            Assert.Contains(typeof(ConverterFactoryThatReturnsJsonConverterFactory).ToString(), ex.Message);
+        }
+
         private class Level1
         {
             public Level1()

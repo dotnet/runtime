@@ -78,15 +78,6 @@ namespace Mono
             return res;
         }
 
-        internal static int AsciHexDigitValue(int c)
-        {
-            if (c >= '0' && c <= '9')
-                return c - '0';
-            if (c >= 'a' && c <= 'f')
-                return c - 'a' + 10;
-            return c - 'A' + 10;
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void FreeAssemblyName(ref MonoAssemblyName name, bool freeStruct);
     }

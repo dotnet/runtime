@@ -14,7 +14,7 @@ using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
 {
-    internal partial class FindPal : IFindPal
+    internal sealed partial class FindPal : IFindPal
     {
         private readonly StorePal _storePal;
         private readonly X509Certificate2Collection _copyTo;
@@ -50,7 +50,7 @@ namespace Internal.Cryptography.Pal
             fixed (byte* pThumbPrint = thumbPrint)
             {
                 CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(thumbPrint.Length, pThumbPrint);
-                FindCore(CertFindType.CERT_FIND_HASH, &blob);
+                FindCore<object>(CertFindType.CERT_FIND_HASH, &blob);
             }
         }
 
@@ -58,14 +58,15 @@ namespace Internal.Cryptography.Pal
         {
             fixed (char* pSubjectName = subjectName)
             {
-                FindCore(CertFindType.CERT_FIND_SUBJECT_STR, pSubjectName);
+                FindCore<object>(CertFindType.CERT_FIND_SUBJECT_STR, pSubjectName);
             }
         }
 
         public void FindBySubjectDistinguishedName(string subjectDistinguishedName)
         {
             FindCore(
-                delegate (SafeCertContextHandle pCertContext)
+                subjectDistinguishedName,
+                static (subjectDistinguishedName, pCertContext) =>
                 {
                     string actual = GetCertNameInfo(pCertContext, CertNameType.CERT_NAME_RDN_TYPE, CertNameFlags.None);
                     return subjectDistinguishedName.Equals(actual, StringComparison.OrdinalIgnoreCase);
@@ -76,14 +77,15 @@ namespace Internal.Cryptography.Pal
         {
             fixed (char* pIssuerName = issuerName)
             {
-                FindCore(CertFindType.CERT_FIND_ISSUER_STR, pIssuerName);
+                FindCore<object>(CertFindType.CERT_FIND_ISSUER_STR, pIssuerName);
             }
         }
 
         public void FindByIssuerDistinguishedName(string issuerDistinguishedName)
         {
             FindCore(
-                delegate (SafeCertContextHandle pCertContext)
+                issuerDistinguishedName,
+                static (issuerDistinguishedName, pCertContext) =>
                 {
                     string actual = GetCertNameInfo(pCertContext, CertNameType.CERT_NAME_RDN_TYPE, CertNameFlags.CERT_NAME_ISSUER_FLAG);
                     return issuerDistinguishedName.Equals(actual, StringComparison.OrdinalIgnoreCase);
@@ -93,7 +95,8 @@ namespace Internal.Cryptography.Pal
         public unsafe void FindBySerialNumber(BigInteger hexValue, BigInteger decimalValue)
         {
             FindCore(
-                delegate (SafeCertContextHandle pCertContext)
+                (hexValue, decimalValue),
+                static (state, pCertContext) =>
                 {
                     byte[] actual = pCertContext.CertContext->pCertInfo->SerialNumber.ToByteArray();
                     GC.KeepAlive(pCertContext);
@@ -101,7 +104,7 @@ namespace Internal.Cryptography.Pal
                     // Convert to BigInteger as the comparison must not fail due to spurious leading zeros
                     BigInteger actualAsBigInteger = PositiveBigIntegerFromByteArray(actual);
 
-                    return hexValue.Equals(actualAsBigInteger) || decimalValue.Equals(actualAsBigInteger);
+                    return state.hexValue.Equals(actualAsBigInteger) || state.decimalValue.Equals(actualAsBigInteger);
                 });
         }
 
@@ -125,19 +128,21 @@ namespace Internal.Cryptography.Pal
             FILETIME fileTime = FILETIME.FromDateTime(dateTime);
 
             FindCore(
-                delegate (SafeCertContextHandle pCertContext)
+                (fileTime, compareResult),
+                static (state, pCertContext) =>
                 {
-                    int comparison = Interop.crypt32.CertVerifyTimeValidity(ref fileTime,
+                    int comparison = Interop.crypt32.CertVerifyTimeValidity(ref state.fileTime,
                         pCertContext.CertContext->pCertInfo);
                     GC.KeepAlive(pCertContext);
-                    return comparison == compareResult;
+                    return comparison == state.compareResult;
                 });
         }
 
         public unsafe void FindByTemplateName(string templateName)
         {
             FindCore(
-                delegate (SafeCertContextHandle pCertContext)
+                templateName,
+                static (templateName, pCertContext) =>
                 {
                     // The template name can have 2 different formats: V1 format (<= Win2K) is just a string
                     // V2 format (XP only) can be a friendly name or an OID.
@@ -203,7 +208,8 @@ namespace Internal.Cryptography.Pal
         public unsafe void FindByApplicationPolicy(string oidValue)
         {
             FindCore(
-                delegate (SafeCertContextHandle pCertContext)
+                oidValue,
+                static (oidValue, pCertContext) =>
                 {
                     int numOids;
                     int cbData = 0;
@@ -234,7 +240,8 @@ namespace Internal.Cryptography.Pal
         public unsafe void FindByCertificatePolicy(string oidValue)
         {
             FindCore(
-                delegate (SafeCertContextHandle pCertContext)
+                oidValue,
+                static (oidValue, pCertContext) =>
                 {
                     CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
                     CERT_EXTENSION* pCertExtension = Interop.crypt32.CertFindExtension(Oids.CertPolicies,
@@ -274,7 +281,8 @@ namespace Internal.Cryptography.Pal
         public unsafe void FindByExtension(string oidValue)
         {
             FindCore(
-                delegate (SafeCertContextHandle pCertContext)
+                oidValue,
+                static (oidValue, pCertContext) =>
                 {
                     CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
                     CERT_EXTENSION* pCertExtension = Interop.crypt32.CertFindExtension(oidValue, pCertInfo->cExtension, pCertInfo->rgExtension);
@@ -286,7 +294,8 @@ namespace Internal.Cryptography.Pal
         public unsafe void FindByKeyUsage(X509KeyUsageFlags keyUsage)
         {
             FindCore(
-                delegate (SafeCertContextHandle pCertContext)
+                keyUsage,
+                static (keyUsage, pCertContext) =>
                 {
                     CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
                     X509KeyUsageFlags actual;
@@ -300,7 +309,8 @@ namespace Internal.Cryptography.Pal
         public void FindBySubjectKeyIdentifier(byte[] keyIdentifier)
         {
             FindCore(
-                delegate (SafeCertContextHandle pCertContext)
+                keyIdentifier,
+                static (keyIdentifier, pCertContext) =>
                 {
                     int cbData = 0;
                     if (!Interop.crypt32.CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, null, ref cbData))
@@ -319,12 +329,12 @@ namespace Internal.Cryptography.Pal
             _storePal.Dispose();
         }
 
-        private unsafe void FindCore(Func<SafeCertContextHandle, bool> filter)
+        private unsafe void FindCore<TState>(TState state, Func<TState, SafeCertContextHandle, bool> filter)
         {
-            FindCore(CertFindType.CERT_FIND_ANY, null, filter);
+            FindCore(CertFindType.CERT_FIND_ANY, null, state, filter);
         }
 
-        private unsafe void FindCore(CertFindType dwFindType, void* pvFindPara, Func<SafeCertContextHandle, bool>? filter = null)
+        private unsafe void FindCore<TState>(CertFindType dwFindType, void* pvFindPara, TState state = default!, Func<TState, SafeCertContextHandle, bool>? filter = null)
         {
             SafeCertStoreHandle findResults = Interop.crypt32.CertOpenStore(
                 CertStoreProvider.CERT_STORE_PROV_MEMORY,
@@ -338,7 +348,7 @@ namespace Internal.Cryptography.Pal
             SafeCertContextHandle? pCertContext = null;
             while (Interop.crypt32.CertFindCertificateInStore(_storePal.SafeCertStoreHandle, dwFindType, pvFindPara, ref pCertContext))
             {
-                if (filter != null && !filter(pCertContext))
+                if (filter != null && !filter(state, pCertContext))
                     continue;
 
                 if (_validOnly)

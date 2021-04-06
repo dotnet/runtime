@@ -9,6 +9,7 @@
 
 class NativeImage;
 class Module;
+class Assembly;
 
 //
 // Unmanaged counter-part of System.Runtime.Loader.AssemblyLoadContext
@@ -22,6 +23,8 @@ public:
         /* [retval][out] */ UINT_PTR* pBinderId);
 
     NativeImage *LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName);
+
+    void AddLoadedAssembly(Assembly *loadedAssembly);
 
     INT_PTR GetManagedAssemblyLoadContext()
     {
@@ -40,6 +43,7 @@ protected:
 
 private:
     SArray<NativeImage *> m_nativeImages;
+    SArray<Assembly *> m_loadedAssemblies;
 };
 
 #endif

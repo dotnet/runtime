@@ -98,7 +98,7 @@ namespace System.Xml.Xsl.Runtime
     /// Sort key for the empty sequence.  Empty sequence always compares sorts either before all other values,
     /// or after all other values.
     /// </summary>
-    internal class XmlEmptySortKey : XmlSortKey
+    internal sealed class XmlEmptySortKey : XmlSortKey
     {
         private readonly bool _isEmptyGreatest;
 
@@ -136,7 +136,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Sort key for xs:decimal values.
     /// </summary>
-    internal class XmlDecimalSortKey : XmlSortKey
+    internal sealed class XmlDecimalSortKey : XmlSortKey
     {
         private readonly decimal _decVal;
 
@@ -194,7 +194,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Sort key for xs:int values.
     /// </summary>
-    internal class XmlIntSortKey : XmlSortKey
+    internal sealed class XmlIntSortKey : XmlSortKey
     {
         private readonly int _intVal;
 
@@ -221,7 +221,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Sort key for xs:string values.  Strings are sorted according to a byte-wise sort key calculated by caller.
     /// </summary>
-    internal class XmlStringSortKey : XmlSortKey
+    internal sealed class XmlStringSortKey : XmlSortKey
     {
         private readonly SortKey _sortKey;
         private readonly byte[] _sortKeyBytes;
@@ -294,7 +294,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Sort key for Double values.
     /// </summary>
-    internal class XmlDoubleSortKey : XmlSortKey
+    internal sealed class XmlDoubleSortKey : XmlSortKey
     {
         private readonly double _dblVal;
         private readonly bool _isNaN;
@@ -361,7 +361,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Sort key for DateTime values (just convert DateTime to ticks and use Long sort key).
     /// </summary>
-    internal class XmlDateTimeSortKey : XmlIntegerSortKey
+    internal sealed class XmlDateTimeSortKey : XmlIntegerSortKey
     {
         public XmlDateTimeSortKey(DateTime value, XmlCollation collation) : base(value.Ticks, collation)
         {

@@ -12,11 +12,24 @@ using Microsoft.Build.Utilities;
 
 public class AppleAppBuilderTask : Task
 {
+    private string targetOS = TargetNames.iOS;
+
     /// <summary>
     /// The Apple OS we are targeting (iOS or tvOS)
     /// </summary>
     [Required]
-    public string TargetOS { get; set; } = TargetNames.iOS;
+    public string TargetOS
+    {
+        get
+        {
+            return targetOS;
+        }
+
+        set
+        {
+            targetOS = value.ToLower();
+        }
+    }
 
     /// <summary>
     /// ProjectName is used as an app name, bundleId and xcode project name
@@ -131,7 +144,7 @@ public class AppleAppBuilderTask : Task
     public override bool Execute()
     {
         Utils.Logger = Log;
-        bool isDevice = Arch.Equals("arm64", StringComparison.InvariantCultureIgnoreCase) && TargetOS != TargetNames.MacCatalyst;
+        bool isDevice = (TargetOS == TargetNames.iOS || TargetOS == TargetNames.tvOS);
 
         if (!File.Exists(Path.Combine(AppDir, MainLibraryFileName)))
         {

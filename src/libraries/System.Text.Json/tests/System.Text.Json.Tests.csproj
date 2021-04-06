@@ -4,9 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Suppress warning 'JsonSerializerOptions.IgnoreNullValues' is obsolete. -->
     <NoWarn>CS0618</NoWarn>
-    <!-- ActiveIssue XUnit crashes on Apple Silicon
-        https://github.com/dotnet/runtime/issues/49110 -->
-    <IgnoreForCI Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' ">true</IgnoreForCI>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>

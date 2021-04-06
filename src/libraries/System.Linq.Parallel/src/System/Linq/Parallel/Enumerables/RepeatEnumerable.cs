@@ -18,7 +18,7 @@ namespace System.Linq.Parallel
     /// partitioning of the count space by implementing an interface that PLINQ recognizes.
     /// </summary>
     /// <typeparam name="TResult"></typeparam>
-    internal class RepeatEnumerable<TResult> : ParallelQuery<TResult>, IParallelPartitionable<TResult>
+    internal sealed class RepeatEnumerable<TResult> : ParallelQuery<TResult>, IParallelPartitionable<TResult>
     {
         private readonly TResult _element; // Element value to repeat.
         private readonly int _count; // Count of element values.
@@ -77,7 +77,7 @@ namespace System.Linq.Parallel
         // The actual enumerator that produces a set of repeated elements.
         //
 
-        private class RepeatEnumerator : QueryOperatorEnumerator<TResult, int>
+        private sealed class RepeatEnumerator : QueryOperatorEnumerator<TResult, int>
         {
             private readonly TResult _element; // The element to repeat.
             private readonly int _count; // The number of times to repeat it.

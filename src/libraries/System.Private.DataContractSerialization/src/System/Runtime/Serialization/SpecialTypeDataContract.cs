@@ -16,7 +16,7 @@ namespace System.Runtime.Serialization
 
         public override bool IsBuiltInDataContract => true;
 
-        private class SpecialTypeDataContractCriticalHelper : DataContract.DataContractCriticalHelper
+        private sealed class SpecialTypeDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             internal SpecialTypeDataContractCriticalHelper(Type type, XmlDictionaryString name, XmlDictionaryString ns) : base(type)
             {

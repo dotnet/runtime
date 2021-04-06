@@ -85,7 +85,7 @@ mono_metadata_update_enabled (int *modifiable_assemblies_out)
 
 	if (!inited) {
 		char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
-		if (!g_strcasecmp (val, "debug"))
+		if (val && !g_strcasecmp (val, "debug"))
 			modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
 		g_free (val);
 		inited = TRUE;
@@ -248,12 +248,6 @@ mono_metadata_update_init (void)
 	mono_native_tls_alloc (&exposed_generation_id, NULL);
 }
 
-void
-mono_metadata_update_cleanup (void)
-{
-	mono_native_tls_free (exposed_generation_id);
-}
-
 /* Inform the execution engine that updates are coming */
 static void
 mono_metadata_update_ee_init (MonoError *error)
@@ -406,8 +400,10 @@ mono_image_append_delta (MonoImage *base, MonoImage *delta)
 		return;
 	}
 	g_assert (((MonoImage*)base->delta_image_last->data)->generation < delta->generation);
-	/* FIXME: g_list_append returns the previous end of the list, not the newly appended element! */
-	base->delta_image_last = g_list_append (base->delta_image_last, delta);
+	/* g_list_append returns the given list, not the newly appended */
+	GList *l = g_list_append (base->delta_image_last, delta);
+	g_assert (l != NULL && l->next != NULL && l->next->next == NULL);
+	base->delta_image_last = l->next;
 }
 
 /**
@@ -536,7 +532,7 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 void
 mono_image_effective_table_slow (const MonoTableInfo **t, int *idx)
 {
-	if (G_LIKELY (*idx < (*t)->rows))
+	if (G_LIKELY (*idx < table_info_get_rows (*t)))
 		return;
 
 	/* FIXME: don't let any thread other than the updater thread see values from a delta image
@@ -579,6 +575,7 @@ mono_image_effective_table_slow (const MonoTableInfo **t, int *idx)
 	 *
 	 * 1. Keep a table of inv
 	 */
+	int g = 0;
 
 	do {
 		g_assertf (list, "couldn't find idx=0x%08x in assembly=%s", *idx, dmeta && dmeta->name ? dmeta->name : "unknown image");
@@ -586,9 +583,10 @@ mono_image_effective_table_slow (const MonoTableInfo **t, int *idx)
 		list = list->next;
 		table = &dmeta->tables [tbl_index];
 		ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (tbl_index, *idx + 1)) - 1;
-	} while (ridx < 0 || ridx >= table->rows);
+		g++;
+	} while (ridx < 0 || ridx >= table_info_get_rows (table));
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "effective table for %s: 0x%08x -> 0x%08x (gen %d)", mono_meta_table_name (tbl_index), *idx, ridx, metadata_update_local_generation (base, dmeta));
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "effective table for %s: 0x%08x -> 0x%08x (rows = 0x%08x) (gen %d, g %d)", mono_meta_table_name (tbl_index), *idx, ridx, table_info_get_rows (table), metadata_update_local_generation (base, dmeta), g);
 
 	*t = table;
 	*idx = ridx;
@@ -596,6 +594,8 @@ mono_image_effective_table_slow (const MonoTableInfo **t, int *idx)
 
 /*
  * The ENCMAP table contains the base of the relative offset.
+ *
+ * Returns -1 if the token does not resolve in this generation's ENCMAP.
  *
  * Example:
  * Say you have a base image with a METHOD table having 5 entries.  The minimal
@@ -622,34 +622,46 @@ mono_image_relative_delta_index (MonoImage *image_dmeta, int token)
 	/* this helper expects and returns as "index origin = 1" */
 	g_assert (index > 0);
 
-	if (!encmap->rows || !image_dmeta->minimal_delta)
+	if (!table_info_get_rows (encmap) || !image_dmeta->minimal_delta)
 		return mono_metadata_token_index (token);
 
 	DeltaInfo *delta_info = delta_info_lookup (image_dmeta);
 	g_assert (delta_info);
 
 	int index_map = delta_info->enc_recs [table];
+	int encmap_rows = table_info_get_rows (encmap);
+
+	/* if the table didn't have any updates in this generation and the
+	 * table index is bigger than the last table that got updates,
+	 * enc_recs will point past the last row */
+	if (index_map - 1 == encmap_rows)
+		return -1;
 	guint32 cols[MONO_ENCMAP_SIZE];
 	mono_metadata_decode_row (encmap, index_map - 1, cols, MONO_ENCMAP_SIZE);
 	int map_entry = cols [MONO_ENCMAP_TOKEN];
 
-	while (mono_metadata_token_table (map_entry) == table && mono_metadata_token_index (map_entry) < index && index_map < encmap->rows) {
+	while (mono_metadata_token_table (map_entry) == table && mono_metadata_token_index (map_entry) < index && index_map < encmap_rows) {
 		mono_metadata_decode_row (encmap, ++index_map - 1, cols, MONO_ENCMAP_SIZE);
 		map_entry = cols [MONO_ENCMAP_TOKEN];
 	}
 
 	if (mono_metadata_token_table (map_entry) == table) {
-#if 0
-		g_assert (mono_metadata_token_index (map_entry) == index);
-#endif
-		if (mono_metadata_token_index (map_entry) != index)
-			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
-				g_print ("warning: map_entry=0x%08x != index=0x%08x. is this a problem?\n", map_entry, index);
+		if (mono_metadata_token_index (map_entry) == index) {
+			/* token resolves to this generation */
+			int return_val = index_map - delta_info->enc_recs [table] + 1;
+			g_assert (return_val > 0 && return_val <= table_info_get_rows (&image_dmeta->tables[table]));
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "relative index for token 0x%08x -> table 0x%02x row 0x%08x", token, table, return_val);
+			return return_val;
+		} else {
+			/* otherwise the last entry in the encmap is for this table, but is still less than the index - the index is in the next generation */
+			g_assert (mono_metadata_token_index (map_entry) < index && index_map == encmap_rows);
+			return -1;
+		}
+	} else {
+		/* otherwise there are no more encmap entries for this table, and we didn't see the index, so there index is in the next generation */
+		g_assert (mono_metadata_token_table (map_entry) > table);
+		return -1;
 	}
-
-	int return_val = index_map - delta_info->enc_recs [table] + 1;
-	g_assert (return_val > 0);
-	return return_val;
 }
 
 static DeltaInfo*
@@ -660,7 +672,7 @@ delta_info_init (MonoImage *image_dmeta, MonoImage *image_base)
 
 	g_assert (!delta_info_lookup (image_dmeta));
 
-	if (!encmap->rows)
+	if (!table_info_get_rows (encmap))
 		return NULL;
 
 	DeltaInfo *delta_info = g_malloc0 (sizeof (DeltaInfo));
@@ -669,7 +681,7 @@ delta_info_init (MonoImage *image_dmeta, MonoImage *image_base)
 	if (image_base->delta_image == image_base->delta_image_last) {
 		/* this is the first update. */
 		for (int i = 0; i < MONO_TABLE_NUM; ++i) {
-			delta_info->count[i].prev_gen_rows = image_base->tables[i].rows;
+			delta_info->count[i].prev_gen_rows = table_info_get_rows (&image_base->tables[i]);
 		}
 	} else {
 		/* Current image_dmeta is image_base->delta_image_last->data,
@@ -687,7 +699,8 @@ delta_info_init (MonoImage *image_dmeta, MonoImage *image_base)
 
 	/* TODO: while going through the tables, update delta_info->count[tbl].{modified,inserted}_rows */
 
-	for (idx = 1; idx <= encmap->rows; ++idx) {
+	int encmap_rows = table_info_get_rows (encmap);
+	for (idx = 1; idx <= encmap_rows; ++idx) {
 		guint32 cols[MONO_ENCMAP_SIZE];
 		mono_metadata_decode_row (encmap, idx - 1, cols, MONO_ENCMAP_SIZE);
 		uint32_t tok = cols [MONO_ENCMAP_TOKEN];
@@ -754,7 +767,7 @@ static gboolean
 apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
-	int rows = table_enclog->rows;
+	int rows = table_info_get_rows (table_enclog);
 
 	gboolean unsupported_edits = FALSE;
 
@@ -776,13 +789,13 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 		int token_table = mono_metadata_token_table (log_token);
 		int token_index = mono_metadata_token_index (log_token);
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x (%s idx=0x%02x) (base table has 0x%04x rows)\tfunc=0x%02x\n", i, log_token, mono_meta_table_name (token_table), token_index, image_base->tables [token_table].rows, func_code);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x (%s idx=0x%02x) (base table has 0x%04x rows)\tfunc=0x%02x\n", i, log_token, mono_meta_table_name (token_table), token_index, table_info_get_rows (&image_base->tables [token_table]), func_code);
 
 
 		if (token_table != MONO_TABLE_METHOD)
 			continue;
 
-		if (token_index > image_base->tables [token_table].rows) {
+		if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "\tcannot add new method with token 0x%08x", log_token);
 			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: cannot add new method with token 0x%08x", log_token);
 			unsupported_edits = TRUE;
@@ -806,7 +819,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 		} else if (token_table == MONO_TABLE_METHOD) {
 			/* handled above */
 		} else {
-			if (token_index <= image_base->tables [token_table].rows) {
+			if (token_index <= table_info_get_rows (&image_base->tables [token_table])) {
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
 				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
 				unsupported_edits = TRUE;
@@ -836,6 +849,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 static void
 set_update_method (MonoImage *image_base, uint32_t generation, MonoImage *image_dmeta, uint32_t token_index, const char* il_address)
 {
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "setting method 0x%08x in g=%d IL=%p", token_index, generation, (void*)il_address);
 	/* FIXME: this is a race if other threads are doing a lookup. */
 	g_hash_table_insert (image_base->method_table_update, GUINT_TO_POINTER (token_index), GUINT_TO_POINTER (generation));
 	g_hash_table_insert (image_dmeta->method_table_update, GUINT_TO_POINTER (token_index), (gpointer) il_address);
@@ -846,7 +860,7 @@ static gboolean
 apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image_dmeta, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
-	int rows = table_enclog->rows;
+	int rows = table_info_get_rows (table_enclog);
 
 	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {
@@ -871,7 +885,7 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 		}
 
 		if (token_table == MONO_TABLE_ASSEMBLYREF) {
-			g_assert (token_index > image_base->tables [token_table].rows);
+			g_assert (token_index > table_info_get_rows (&image_base->tables [token_table]));
 
 			if (assemblyref_updated)
 				continue;
@@ -880,12 +894,12 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 
 			/* FIXME: use DeltaInfo:prev_gen_rows instead of looping */
 			/* TODO: do we know that there will never be modified rows in ASSEMBLYREF? */
-			int old_rows = image_base->tables [MONO_TABLE_ASSEMBLYREF].rows;
+			int old_rows = table_info_get_rows (&image_base->tables [MONO_TABLE_ASSEMBLYREF]);
 			for (GList *l = image_base->delta_image; l; l = l->next) {
 				MonoImage *delta_child = l->data;
-				old_rows += delta_child->tables [MONO_TABLE_ASSEMBLYREF].rows;
+				old_rows += table_info_get_rows (&delta_child->tables [MONO_TABLE_ASSEMBLYREF]);
 			}
-			int new_rows = image_dmeta->tables [MONO_TABLE_ASSEMBLYREF].rows;
+			int new_rows = table_info_get_rows (&image_dmeta->tables [MONO_TABLE_ASSEMBLYREF]);
 
 			old_rows -= new_rows;
 			g_assert (new_rows > 0);
@@ -903,7 +917,7 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 
 			g_free (old_array);
 		} else if (token_table == MONO_TABLE_METHOD) {
-			if (token_index > image_base->tables [token_table].rows) {
+			if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
 				g_error ("EnC: new method added, should be caught by pass1");
 			}
 
@@ -926,9 +940,9 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
 			/* TODO: happens changing the class (adding field or method). we ignore it, but dragons are here */
 
 			/* existing entries are supposed to be patched */
-			g_assert (token_index <= image_base->tables [token_table].rows);
+			g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
 		} else {
-			g_assert (token_index > image_base->tables [token_table].rows);
+			g_assert (token_index > table_info_get_rows (&image_base->tables [token_table]));
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
 				g_print ("todo: do something about this table index: 0x%02x\n", token_table);
 		}
@@ -996,7 +1010,7 @@ mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uin
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	MonoTableInfo *table_encmap = &image_dmeta->tables [MONO_TABLE_ENCMAP];
 
-	if (!table_enclog->rows && !table_encmap->rows) {
+	if (!table_info_get_rows (table_enclog) && !table_info_get_rows (table_encmap)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "No enclog or encmap in delta image for base=%s, nothing to do", basename);
 		mono_metadata_update_cancel (generation);
 		return;
@@ -1009,7 +1023,7 @@ mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uin
 	}
 
 	/* if there are updates, start tracking the tables of the base image, if we weren't already. */
-	if (table_enclog->rows)
+	if (table_info_get_rows (table_enclog))
 		table_to_image_add (image_base);
 
 	delta_info_init (image_dmeta, image_base);

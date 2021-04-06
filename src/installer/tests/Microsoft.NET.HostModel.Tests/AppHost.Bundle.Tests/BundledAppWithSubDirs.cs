@@ -59,7 +59,7 @@ namespace AppHost.Bundle.Tests
         public void Bundled_Self_Contained_App_Run_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestSelfContainedFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture, options);
+            var singleFile = BundleSelfContainedApp(fixture, options);
 
             // Run the bundled app (extract files)
             RunTheApp(singleFile, fixture);
@@ -72,10 +72,68 @@ namespace AppHost.Bundle.Tests
         [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
+        public void Bundled_Self_Contained_NoCompression_App_Run_Succeeds(BundleOptions options)
+        {
+            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
+            var singleFile = BundleSelfContainedApp(fixture, options, disableCompression: true);
+
+            // Run the bundled app (extract files)
+            RunTheApp(singleFile, fixture);
+
+            // Run the bundled app again (reuse extracted files)
+            RunTheApp(singleFile, fixture);
+        }
+
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
+        public void Bundled_Self_Contained_Targeting50_App_Run_Succeeds(BundleOptions options)
+        {
+            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
+            var singleFile = BundleSelfContainedApp(fixture, options, new Version(5, 0));
+
+            // Run the bundled app (extract files)
+            RunTheApp(singleFile, fixture);
+
+            // Run the bundled app again (reuse extracted files)
+            RunTheApp(singleFile, fixture);
+        }
+
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
+        public void Bundled_Framework_dependent_Targeting50_App_Run_Succeeds(BundleOptions options)
+        {
+            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
+            UseFrameworkDependentHost(fixture);
+            var singleFile = BundleHelper.BundleApp(fixture, options, new Version(5, 0));
+
+            // Run the bundled app (extract files)
+            RunTheApp(singleFile, fixture);
+
+            // Run the bundled app again (reuse extracted files)
+            RunTheApp(singleFile, fixture);
+        }
+
+        [Fact]
+        public void Bundled_Self_Contained_Targeting50_WithCompression_Throws()
+        {
+            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
+            UseSingleFileSelfContainedHost(fixture);
+            // compression must be off when targeting 5.0
+            var options = BundleOptions.EnableCompression;
+
+            Assert.Throws<ArgumentException>(()=>BundleHelper.BundleApp(fixture, options, new Version(5, 0)));
+        }
+
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
         public void Bundled_With_Empty_File_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestAppWithEmptyFileFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture, options);
+            var singleFile = BundleSelfContainedApp(fixture, options);
 
             // Run the app
             RunTheApp(singleFile, fixture);

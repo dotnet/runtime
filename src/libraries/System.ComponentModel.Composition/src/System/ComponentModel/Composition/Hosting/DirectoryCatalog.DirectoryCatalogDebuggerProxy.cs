@@ -12,7 +12,7 @@ namespace System.ComponentModel.Composition.Hosting
 {
     public partial class DirectoryCatalog
     {
-        internal class DirectoryCatalogDebuggerProxy
+        internal sealed class DirectoryCatalogDebuggerProxy
         {
             private readonly DirectoryCatalog _catalog;
 

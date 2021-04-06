@@ -26,7 +26,7 @@ int JitHost::getIntConfigValue(const WCHAR* name, int defaultValue)
     WRAPPER_NO_CONTRACT;
 
     // Translate JIT call into runtime configuration query
-    CLRConfig::ConfigDWORDInfo info{ name, (DWORD)defaultValue, CLRConfig::EEConfig_default };
+    CLRConfig::ConfigDWORDInfo info{ name, (DWORD)defaultValue, CLRConfig::LookupOptions::Default };
 
     // Perform a CLRConfig look up on behalf of the JIT.
     return CLRConfig::GetConfigValue(info);
@@ -37,7 +37,7 @@ const WCHAR* JitHost::getStringConfigValue(const WCHAR* name)
     WRAPPER_NO_CONTRACT;
 
     // Translate JIT call into runtime configuration query
-    CLRConfig::ConfigStringInfo info{ name, CLRConfig::EEConfig_default };
+    CLRConfig::ConfigStringInfo info{ name, CLRConfig::LookupOptions::Default };
 
     // Perform a CLRConfig look up on behalf of the JIT.
     return CLRConfig::GetConfigValue(info);
@@ -63,7 +63,7 @@ void* JitHost::allocateSlab(size_t size, size_t* pActualSize)
 {
     size = max(size, sizeof(Slab));
 
-    Thread* pCurrentThread = GetThread();
+    Thread* pCurrentThread = GetThreadNULLOk();
     if (m_pCurrentCachedList != NULL || m_pPreviousCachedList != NULL)
     {
         CrstHolder lock(&m_jitSlabAllocatorCrst);
@@ -124,7 +124,7 @@ void JitHost::freeSlab(void* slab, size_t actualSize)
 
             Slab* pSlab = (Slab*)slab;
             pSlab->size = actualSize;
-            pSlab->affinity = GetThread();
+            pSlab->affinity = GetThreadNULLOk();
             pSlab->pNext = m_pCurrentCachedList;
             m_pCurrentCachedList = pSlab;
             return;
