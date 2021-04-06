@@ -19,7 +19,7 @@ public struct ArrayStruct
 public class struct1
 {
     public static Random rand;
-    public const int DEFAULT_SEED = 20010415;
+    public const int DefaultSeed = 20010415;
     public static int size;
     public static ArrayStruct ima;
 
@@ -154,24 +154,12 @@ public class struct1
     {
         bool pass = false;
 
-        int seed = DEFAULT_SEED;
-
-        if (Environment.GetEnvironmentVariable("CORECLR_SEED") != null)
+        int seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
         {
-            string CORECLR_SEED = Environment.GetEnvironmentVariable("CORECLR_SEED");
-
-            if (!int.TryParse(CORECLR_SEED, out seed))
-            {
-                if (string.Equals(CORECLR_SEED, "random", StringComparison.OrdinalIgnoreCase))
-                {
-                    seed = new Random().Next();
-                }
-                else
-                {
-                    seed = DEFAULT_SEED;
-                }
-            }
-        }
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
 
         rand = new Random(seed);
         size = rand.Next(5, 10);

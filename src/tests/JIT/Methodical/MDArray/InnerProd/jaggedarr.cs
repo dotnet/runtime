@@ -6,7 +6,7 @@ using System;
 public class doublemm
 {
     public static Random rand;
-    public const int DEFAULT_SEED = 20010415;
+    public const int DefaultSeed = 20010415;
     public static int size;
 
     public static double GenerateDbl()
@@ -118,26 +118,14 @@ public class doublemm
     {
         bool pass = false;
 
-        int seed = DEFAULT_SEED;
-
-        if (Environment.GetEnvironmentVariable("CORECLR_SEED") != null)
+        int seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
         {
-            string CORECLR_SEED = Environment.GetEnvironmentVariable("CORECLR_SEED");
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
 
-            if (!int.TryParse(CORECLR_SEED, out seed))
-            {
-                if (string.Equals(CORECLR_SEED, "random", StringComparison.OrdinalIgnoreCase))
-                {
-                    seed = new Random().Next();
-                }
-                else
-                {
-                    seed = DEFAULT_SEED;
-                }
-            }
-        }
-
-        rand = new Random();
+        rand = new Random(seed);
         size = rand.Next(2, 10);
 
         Console.WriteLine();
