@@ -10610,7 +10610,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                     {
                         // Promoted implicit by-refs can have this state during
                         // global morph while they are being rewritten
-                        assert(fgGlobalMorph);
                         printf("(P?!)"); // Promoted struct
                     }
                 }
@@ -11310,7 +11309,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                 {
                     // Promoted implicit byrefs can get in this state while they are being rewritten
                     // in global morph.
-                    assert(fgGlobalMorph);
                 }
                 else
                 {

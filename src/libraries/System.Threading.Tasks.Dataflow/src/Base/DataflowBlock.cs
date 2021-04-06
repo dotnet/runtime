@@ -197,10 +197,7 @@ namespace System.Threading.Tasks.Dataflow
                 {
                     var displaySource = _source as IDebuggerDisplay;
                     var displayTarget = _target as IDebuggerDisplay;
-                    return string.Format("{0} Source=\"{1}\", Target=\"{2}\"",
-                        Common.GetNameForDebugger(this),
-                        displaySource != null ? displaySource.Content : _source,
-                        displayTarget != null ? displayTarget.Content : _target);
+                    return $"{Common.GetNameForDebugger(this)} Source=\"{(displaySource != null ? displaySource.Content : _source)}\", Target=\"{(displayTarget != null ? displayTarget.Content : _target)}\"";
                 }
             }
             /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
@@ -726,10 +723,7 @@ namespace System.Threading.Tasks.Dataflow
                 get
                 {
                     var displayTarget = _target as IDebuggerDisplay;
-                    return string.Format("{0} Message={1}, Target=\"{2}\"",
-                        Common.GetNameForDebugger(this),
-                        _messageValue,
-                        displayTarget != null ? displayTarget.Content : _target);
+                    return $"{Common.GetNameForDebugger(this)} Message={_messageValue}, Target=\"{(displayTarget != null ? displayTarget.Content : _target)}\"";
                 }
             }
             /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
@@ -1365,14 +1359,8 @@ namespace System.Threading.Tasks.Dataflow
             Task IDataflowBlock.Completion { get { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); } }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
-            private object DebuggerDisplayContent
-            {
-                get
-                {
-                    return string.Format("{0} IsCompleted={1}",
-                        Common.GetNameForDebugger(this), base.Task.IsCompleted);
-                }
-            }
+            private object DebuggerDisplayContent => $"{Common.GetNameForDebugger(this)} IsCompleted={base.Task.IsCompleted}";
+
             /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
             object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
         }
@@ -1559,14 +1547,8 @@ namespace System.Threading.Tasks.Dataflow
             Task IDataflowBlock.Completion { get { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); } }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
-            private object DebuggerDisplayContent
-            {
-                get
-                {
-                    return string.Format("{0} IsCompleted={1}",
-                        Common.GetNameForDebugger(this), base.Task.IsCompleted);
-                }
-            }
+            private object DebuggerDisplayContent => $"{Common.GetNameForDebugger(this)} IsCompleted={base.Task.IsCompleted}";
+
             /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
             object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
         }
@@ -1685,10 +1667,7 @@ namespace System.Threading.Tasks.Dataflow
                 {
                     var displayTarget = _target as IDebuggerDisplay;
                     var displaySource = _source as IDebuggerDisplay;
-                    return string.Format("{0} Target=\"{1}\", Source=\"{2}\"",
-                        Common.GetNameForDebugger(this),
-                        displayTarget != null ? displayTarget.Content : _target,
-                        displaySource != null ? displaySource.Content : _source);
+                    return $"{Common.GetNameForDebugger(this)} Target=\"{(displayTarget != null ? displayTarget.Content : _target)}\", Source=\"{(displaySource != null ? displaySource.Content : _source)}\"";
                 }
             }
             /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
@@ -2222,14 +2201,8 @@ namespace System.Threading.Tasks.Dataflow
             Task IDataflowBlock.Completion { get { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); } }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
-            private object DebuggerDisplayContent
-            {
-                get
-                {
-                    return string.Format("{0} IsCompleted={1}",
-                        Common.GetNameForDebugger(this), base.Task.IsCompleted);
-                }
-            }
+            private object DebuggerDisplayContent => $"{Common.GetNameForDebugger(this)} IsCompleted={base.Task.IsCompleted}";
+
             /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
             object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
         }
@@ -2411,9 +2384,7 @@ namespace System.Threading.Tasks.Dataflow
                 get
                 {
                     var displaySource = _source as IDebuggerDisplay;
-                    return string.Format("Observers={0}, Block=\"{1}\"",
-                        _observersState.Observers.Count,
-                        displaySource != null ? displaySource.Content : _source);
+                    return $"Observers={_observersState.Observers.Count}, Block=\"{(displaySource != null ? displaySource.Content : _source)}\"";
                 }
             }
             /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
@@ -2671,8 +2642,7 @@ namespace System.Threading.Tasks.Dataflow
                 get
                 {
                     var displayTarget = _target as IDebuggerDisplay;
-                    return string.Format("Block=\"{0}\"",
-                        displayTarget != null ? displayTarget.Content : _target);
+                    return $"Block=\"{(displayTarget != null ? displayTarget.Content : _target)}\"";
                 }
             }
             /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>

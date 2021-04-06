@@ -303,7 +303,11 @@ namespace System.Xml.Xsl.IlGen
         public static readonly MethodInfo GetDataSource = typeof(XmlQueryContext).GetMethod("GetDataSource")!;
         public static readonly MethodInfo GetDefaultDataSource = typeof(XmlQueryContext).GetMethod("get_DefaultDataSource")!;
         public static readonly MethodInfo GetParam = typeof(XmlQueryContext).GetMethod("GetParameter")!;
-        public static readonly MethodInfo InvokeXsltLate = typeof(XmlQueryContext).GetMethod("InvokeXsltLateBoundFunction")!;
+        public static readonly MethodInfo InvokeXsltLate = GetInvokeXsltLateBoundFunction();
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Supressing warning about not having the RequiresUnreferencedCode attribute since this code path " +
+            "will only be emitting IL that will later be called by Transform() method which is already annotated as RequiresUnreferencedCode")]
+        private static MethodInfo GetInvokeXsltLateBoundFunction() => typeof(XmlQueryContext).GetMethod("InvokeXsltLateBoundFunction")!;
 
         // XmlILIndex
         public static readonly MethodInfo IndexAdd = typeof(XmlILIndex).GetMethod("Add")!;

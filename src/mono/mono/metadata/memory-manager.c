@@ -95,12 +95,12 @@ memory_manager_init (MonoMemoryManager *memory_manager, gboolean collectible)
 {
 	MonoDomain *domain = mono_get_root_domain ();
 
-	memory_manager->domain = domain;
 	memory_manager->freeing = FALSE;
 
 	mono_coop_mutex_init_recursive (&memory_manager->lock);
+	mono_os_mutex_init (&memory_manager->mp_mutex);
 
-	memory_manager->mp = mono_mempool_new ();
+	memory_manager->_mp = mono_mempool_new ();
 	memory_manager->code_mp = mono_code_manager_new ();
 	memory_manager->lock_free_mp = lock_free_mempool_new ();
 
@@ -183,15 +183,15 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 	mono_coop_mutex_destroy (&memory_manager->lock);
 
 	if (debug_unload) {
-		mono_mempool_invalidate (memory_manager->mp);
+		mono_mempool_invalidate (memory_manager->_mp);
 		mono_code_manager_invalidate (memory_manager->code_mp);
 	} else {
 #ifndef DISABLE_PERFCOUNTERS
 		/* FIXME: use an explicit subtraction method as soon as it's available */
-		mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, -1 * mono_mempool_get_allocated (memory_manager->mp));
+		mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, -1 * mono_mempool_get_allocated (memory_manager->_mp));
 #endif
-		mono_mempool_destroy (memory_manager->mp);
-		memory_manager->mp = NULL;
+		mono_mempool_destroy (memory_manager->_mp);
+		memory_manager->_mp = NULL;
 		mono_code_manager_destroy (memory_manager->code_mp);
 		memory_manager->code_mp = NULL;
 	}
@@ -217,15 +217,25 @@ mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gbo
 void
 mono_mem_manager_lock (MonoMemoryManager *memory_manager)
 {
-	//mono_coop_mutex_lock (&memory_manager->lock);
-	mono_domain_lock (memory_manager->domain);
+	mono_locks_coop_acquire (&memory_manager->lock, MemoryManagerLock);
 }
 
 void
 mono_mem_manager_unlock (MonoMemoryManager *memory_manager)
 {
-	//mono_coop_mutex_unlock (&memory_manager->lock);
-	mono_domain_unlock (memory_manager->domain);
+	mono_locks_coop_release (&memory_manager->lock, MemoryManagerLock);
+}
+
+static inline void
+alloc_lock (MonoMemoryManager *memory_manager)
+{
+	mono_os_mutex_lock (&memory_manager->mp_mutex);
+}
+
+static inline void
+alloc_unlock (MonoMemoryManager *memory_manager)
+{
+	mono_os_mutex_unlock (&memory_manager->mp_mutex);
 }
 
 void *
@@ -233,20 +243,14 @@ mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size)
 {
 	void *res;
 
-	mono_mem_manager_lock (memory_manager);
-	res = mono_mem_manager_alloc_nolock (memory_manager, size);
-	mono_mem_manager_unlock (memory_manager);
-
-	return res;
-}
-
-void *
-mono_mem_manager_alloc_nolock (MonoMemoryManager *memory_manager, guint size)
-{
+	alloc_lock (memory_manager);
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
 #endif
-	return mono_mempool_alloc (memory_manager->mp, size);
+	res = mono_mempool_alloc (memory_manager->_mp, size);
+	alloc_unlock (memory_manager);
+
+	return res;
 }
 
 void *
@@ -254,20 +258,14 @@ mono_mem_manager_alloc0 (MonoMemoryManager *memory_manager, guint size)
 {
 	void *res;
 
-	mono_mem_manager_lock (memory_manager);
-	res = mono_mem_manager_alloc0_nolock (memory_manager, size);
-	mono_mem_manager_unlock (memory_manager);
-
-	return res;
-}
-
-void *
-mono_mem_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size)
-{
+	alloc_lock (memory_manager);
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
 #endif
-	return mono_mempool_alloc0 (memory_manager->mp, size);
+	res = mono_mempool_alloc0 (memory_manager->_mp, size);
+	alloc_unlock (memory_manager);
+
+	return res;
 }
 
 char*
@@ -275,10 +273,21 @@ mono_mem_manager_strdup (MonoMemoryManager *memory_manager, const char *s)
 {
 	char *res;
 
-	mono_mem_manager_lock (memory_manager);
-	res = mono_mempool_strdup (memory_manager->mp, s);
-	mono_mem_manager_unlock (memory_manager);
+	alloc_lock (memory_manager);
+	res = mono_mempool_strdup (memory_manager->_mp, s);
+	alloc_unlock (memory_manager);
 
+	return res;
+}
+
+gboolean
+mono_mem_manager_mp_contains_addr (MonoMemoryManager *memory_manager, gpointer addr)
+{
+	gboolean res;
+
+	alloc_lock (memory_manager);
+	res = mono_mempool_contains_addr (memory_manager->_mp, addr);
+	alloc_unlock (memory_manager);
 	return res;
 }
 

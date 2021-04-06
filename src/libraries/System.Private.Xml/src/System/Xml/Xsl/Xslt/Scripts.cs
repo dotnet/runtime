@@ -16,6 +16,7 @@ namespace System.Xml.Xsl.Xslt
         private readonly Compiler _compiler;
         private readonly TrimSafeDictionary _nsToType = new TrimSafeDictionary();
         private readonly XmlExtensionFunctionTable _extFuncs = new XmlExtensionFunctionTable();
+        internal const string ExtensionFunctionCannotBeStaticallyAnalyzed = "The extension function referenced will be called from the stylesheet which cannot be statically analyzed.";
 
         public Scripts(Compiler compiler)
         {
@@ -27,6 +28,7 @@ namespace System.Xml.Xsl.Xslt
             get { return _nsToType; }
         }
 
+        [RequiresUnreferencedCode(ExtensionFunctionCannotBeStaticallyAnalyzed)]
         public XmlExtensionFunction? ResolveFunction(string name, string ns, int numArgs, IErrorHelper errorHelper)
         {
             Type? type;

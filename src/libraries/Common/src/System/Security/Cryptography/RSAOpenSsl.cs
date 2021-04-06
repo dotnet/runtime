@@ -660,84 +660,33 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
             Debug.Assert(padding != null);
+            ValidatePadding(padding);
 
             signature = null;
 
-            // Do not factor out getting _key.Value, since the key creation should not happen on
-            // invalid padding modes.
+            IntPtr digestAlgorithm = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithm.Name);
+            SafeEvpPKeyHandle key = GetPKey();
+            int bytesRequired = Interop.Crypto.EvpPKeySize(key);
 
-            if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
+            if (allocateSignature)
             {
-                int algorithmNid = GetAlgorithmNid(hashAlgorithm);
-                SafeRsaHandle rsa = GetKey();
-
-                int bytesRequired = Interop.Crypto.RsaSize(rsa);
-
-                if (allocateSignature)
-                {
-                    Debug.Assert(destination.Length == 0);
-                    signature = new byte[bytesRequired];
-                    destination = signature;
-                }
-
-                if (destination.Length < bytesRequired)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                if (!Interop.Crypto.RsaSign(algorithmNid, hash, hash.Length, destination, out int signatureSize, rsa))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                Debug.Assert(
-                    signatureSize == bytesRequired,
-                    $"RSA_sign reported signatureSize was {signatureSize}, when {bytesRequired} was expected");
-
-                bytesWritten = signatureSize;
-                return true;
+                Debug.Assert(destination.Length == 0);
+                signature = new byte[bytesRequired];
+                destination = signature;
             }
-            else if (padding.Mode == RSASignaturePaddingMode.Pss)
+            else if (destination.Length < bytesRequired)
             {
-                RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
-                SafeRsaHandle rsa = GetKey();
-
-                int bytesRequired = Interop.Crypto.RsaSize(rsa);
-
-                if (allocateSignature)
-                {
-                    Debug.Assert(destination.Length == 0);
-                    signature = new byte[bytesRequired];
-                    destination = signature;
-                }
-
-                if (destination.Length < bytesRequired)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                byte[] pssRented = CryptoPool.Rent(bytesRequired);
-                Span<byte> pssBytes = new Span<byte>(pssRented, 0, bytesRequired);
-
-                processor.EncodePss(hash, pssBytes, KeySize);
-
-                int ret = Interop.Crypto.RsaSignPrimitive(pssBytes, destination, rsa);
-
-                CryptoPool.Return(pssRented, bytesRequired);
-
-                CheckReturn(ret);
-
-                Debug.Assert(
-                    ret == bytesRequired,
-                    $"RSA_private_encrypt returned {ret} when {bytesRequired} was expected");
-
-                bytesWritten = ret;
-                return true;
+                bytesWritten = 0;
+                return false;
             }
 
-            throw PaddingModeNotSupported();
+            int written = Interop.Crypto.RsaSignHash(key, padding.Mode, digestAlgorithm, hash, destination);
+            Debug.Assert(written == bytesRequired);
+            bytesWritten = written;
+
+            // Until EVP_PKEY is what gets stored, free the temporary key handle.
+            key.Dispose();
+            return true;
         }
 
         public override bool VerifyHash(

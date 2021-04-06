@@ -3890,13 +3890,12 @@ void InitializeComInterop()
 //-------------------------------------------------------------------
 
 static int g_TraceCount = 0;
-static IUnknown* g_pTraceIUnknown = 0;
+static IUnknown* g_pTraceIUnknown = NULL;
 
 VOID IntializeInteropLogging()
 {
     WRAPPER_NO_CONTRACT;
 
-    g_pTraceIUnknown = g_pConfig->GetTraceIUnknown();
     g_TraceCount = g_pConfig->GetTraceWrapper();
 }
 

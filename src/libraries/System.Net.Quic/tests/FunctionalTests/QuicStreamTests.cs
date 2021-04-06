@@ -435,7 +435,7 @@ namespace System.Net.Quic.Tests
         public async Task ReadWrite_Random_Success(int readSize, int writeSize)
         {
             byte[] testBuffer = new byte[8192];
-            new Random().NextBytes(testBuffer);
+            Random.Shared.NextBytes(testBuffer);
 
             await RunClientServer(
                 async clientConnection =>

@@ -86,7 +86,7 @@ namespace Internal.IL
         /// (typically a <see cref="MethodDesc"/>, <see cref="FieldDesc"/>, <see cref="TypeDesc"/>,
         /// or <see cref="MethodSignature"/>).
         /// </summary>
-        public abstract Object GetObject(int token);
+        public abstract Object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw);
 
         /// <summary>
         /// Gets a list of exception regions this method body defines.

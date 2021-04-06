@@ -995,21 +995,6 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg()
 
 /*****************************************************************************
  *
- *  Mark a block as rarely run, we also don't want to have a loop in a
- *   rarely run block, and we set it's weight to zero.
- */
-
-void BasicBlock::bbSetRunRarely()
-{
-    setBBWeight(BB_ZERO_WEIGHT);
-    if (bbWeight == BB_ZERO_WEIGHT)
-    {
-        bbFlags |= BBF_RUN_RARELY; // This block is never/rarely run
-    }
-}
-
-/*****************************************************************************
- *
  *  Can a BasicBlock be inserted after this without altering the flowgraph
  */
 

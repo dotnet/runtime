@@ -9,4 +9,4 @@ target_link_libraries(InjectResource
     ${STATIC_MT_VCRT_LIB}
 )
 
-install(TARGETS InjectResource EXPORT dactabletools DESTINATION dactabletools)
+install(TARGETS InjectResource EXPORT dactabletools DESTINATION dactabletools COMPONENT crosscomponents)

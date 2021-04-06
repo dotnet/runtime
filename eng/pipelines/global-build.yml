@@ -46,6 +46,21 @@ jobs:
       timeoutInMinutes: 90
 
 #
+# Build with Release config and runtimeConfiguration with MSBuild generator
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: release
+    platforms:
+    - windows_x86
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: MSBuild_CMake
+      buildArgs: -c Release -msbuild
+      timeoutInMinutes: 90
+
+#
 # Build with Debug config and Release runtimeConfiguration
 #
 - template: /eng/pipelines/common/platform-matrix.yml

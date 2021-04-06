@@ -47,39 +47,40 @@ PALEXPORT void AndroidCryptoNative_RsaDestroy(RSA* rsa)
 
 PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
-    if (!rsa)
-        return RSA_FAIL;
-
+    assert(rsa != NULL);
     JNIEnv* env = GetJNIEnv();
 
-    jobject algName;
+    int32_t ret = RSA_FAIL;
+    INIT_LOCALS(loc, algName, cipher, fromBytes, encryptedBytes);
+
     if (padding == Pkcs1)
-        algName = JSTRING("RSA/ECB/PKCS1Padding");
-    else if (padding == OaepSHA1)
-        algName = JSTRING("RSA/ECB/OAEPPadding");
-    else
-        algName = JSTRING("RSA/ECB/NoPadding");
-
-    jobject cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
-    (*env)->CallVoidMethod(env, cipher, g_cipherInit2Method, CIPHER_ENCRYPT_MODE, rsa->publicKey);
-    jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
-    (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
-    jbyteArray encryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
-    if (CheckJNIExceptions(env))
     {
-        (*env)->DeleteLocalRef(env, fromBytes);
-        (*env)->DeleteLocalRef(env, cipher);
-        return RSA_FAIL;
+        loc[algName] = JSTRING("RSA/ECB/PKCS1Padding");
     }
-    jsize encryptedBytesLen = (*env)->GetArrayLength(env, encryptedBytes);
-    (*env)->GetByteArrayRegion(env, encryptedBytes, 0, encryptedBytesLen, (jbyte*) to);
+    else if (padding == OaepSHA1)
+    {
+        loc[algName] = JSTRING("RSA/ECB/OAEPPadding");
+    }
+    else
+    {
+        loc[algName] = JSTRING("RSA/ECB/NoPadding");
+    }
 
-    (*env)->DeleteLocalRef(env, cipher);
-    (*env)->DeleteLocalRef(env, fromBytes);
-    (*env)->DeleteLocalRef(env, encryptedBytes);
-    (*env)->DeleteLocalRef(env, algName);
+    loc[cipher] = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, loc[algName]);
+    (*env)->CallVoidMethod(env, loc[cipher], g_cipherInit2Method, CIPHER_ENCRYPT_MODE, rsa->publicKey);
+    loc[fromBytes] = (*env)->NewByteArray(env, flen);
+    (*env)->SetByteArrayRegion(env, loc[fromBytes], 0, flen, (jbyte*)from);
+    loc[encryptedBytes] = (jbyteArray)(*env)->CallObjectMethod(env, loc[cipher], g_cipherDoFinal2Method, loc[fromBytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    return (int32_t)encryptedBytesLen;
+    jsize encryptedBytesLen = (*env)->GetArrayLength(env, loc[encryptedBytes]);
+    (*env)->GetByteArrayRegion(env, loc[encryptedBytes], 0, encryptedBytesLen, (jbyte*) to);
+
+    ret = (int32_t)encryptedBytesLen;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
@@ -337,51 +338,41 @@ PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
         return FAIL;
 
     JNIEnv* env = GetJNIEnv();
+    INIT_LOCALS(bn, N, E, D, P, Q, DMP1, DMQ1, IQMP);
+    INIT_LOCALS(loc, algName, keyFactory, rsaPubKeySpec, rsaPrivateKeySpec);
 
-    jobject nObj = AndroidCryptoNative_BigNumFromBinary(n, nLength);
-    jobject eObj = AndroidCryptoNative_BigNumFromBinary(e, eLength);
+    bn[N] = AndroidCryptoNative_BigNumFromBinary(n, nLength);
+    bn[E] = AndroidCryptoNative_BigNumFromBinary(e, eLength);
 
     rsa->keyWidthInBits = nLength * 8;
 
-    jobject algName = JSTRING("RSA");
-    jobject keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algName);
+    loc[algName] = JSTRING("RSA");
+    loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
 
     if (dLength > 0)
     {
         // private key section
-        jobject dObj = AndroidCryptoNative_BigNumFromBinary(d, dLength);
-        jobject pObj = AndroidCryptoNative_BigNumFromBinary(p, pLength);
-        jobject qObj = AndroidCryptoNative_BigNumFromBinary(q, qLength);
-        jobject dmp1Obj = AndroidCryptoNative_BigNumFromBinary(dmp1, dmp1Length);
-        jobject dmq1Obj = AndroidCryptoNative_BigNumFromBinary(dmq1, dmq1Length);
-        jobject iqmpObj = AndroidCryptoNative_BigNumFromBinary(iqmp, iqmpLength);
+        bn[D] = AndroidCryptoNative_BigNumFromBinary(d, dLength);
+        bn[P] = AndroidCryptoNative_BigNumFromBinary(p, pLength);
+        bn[Q] = AndroidCryptoNative_BigNumFromBinary(q, qLength);
+        bn[DMP1] = AndroidCryptoNative_BigNumFromBinary(dmp1, dmp1Length);
+        bn[DMQ1] = AndroidCryptoNative_BigNumFromBinary(dmq1, dmq1Length);
+        bn[IQMP] = AndroidCryptoNative_BigNumFromBinary(iqmp, iqmpLength);
 
-        jobject rsaPrivateKeySpec = (*env)->NewObject(env, g_RSAPrivateCrtKeySpecClass, g_RSAPrivateCrtKeySpecCtor,
-            nObj, eObj, dObj, pObj, qObj, dmp1Obj, dmq1Obj, iqmpObj);
+        loc[rsaPrivateKeySpec] = (*env)->NewObject(env, g_RSAPrivateCrtKeySpecClass, g_RSAPrivateCrtKeySpecCtor,
+            bn[N], bn[E], bn[D], bn[P], bn[Q], bn[DMP1], bn[DMQ1], bn[IQMP]);
 
         ReleaseGRef(env, rsa->privateKey);
-        rsa->privateKey = ToGRef(env, (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPrivateMethod, rsaPrivateKeySpec));
-
-        (*env)->DeleteGlobalRef(env, dObj);
-        (*env)->DeleteGlobalRef(env, pObj);
-        (*env)->DeleteGlobalRef(env, qObj);
-        (*env)->DeleteGlobalRef(env, dmp1Obj);
-        (*env)->DeleteGlobalRef(env, dmq1Obj);
-        (*env)->DeleteGlobalRef(env, iqmpObj);
-        (*env)->DeleteLocalRef(env, rsaPrivateKeySpec);
+        rsa->privateKey = ToGRef(env, (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPrivateMethod, loc[rsaPrivateKeySpec]));
     }
 
-    jobject rsaPubKeySpec = (*env)->NewObject(env, g_RSAPublicCrtKeySpecClass, g_RSAPublicCrtKeySpecCtor, nObj, eObj);
+    loc[rsaPubKeySpec] = (*env)->NewObject(env, g_RSAPublicCrtKeySpecClass, g_RSAPublicCrtKeySpecCtor, bn[N], bn[E]);
 
     ReleaseGRef(env, rsa->publicKey);
-    rsa->publicKey = ToGRef(env, (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPublicMethod, rsaPubKeySpec));
+    rsa->publicKey = ToGRef(env, (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPublicMethod, loc[rsaPubKeySpec]));
 
-    (*env)->DeleteLocalRef(env, algName);
-    (*env)->DeleteLocalRef(env, keyFactory);
-    (*env)->DeleteGlobalRef(env, nObj);
-    (*env)->DeleteGlobalRef(env, eObj);
-    (*env)->DeleteLocalRef(env, rsaPubKeySpec);
-
+    RELEASE_LOCALS(bn, env);
+    RELEASE_LOCALS(loc, env);
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 

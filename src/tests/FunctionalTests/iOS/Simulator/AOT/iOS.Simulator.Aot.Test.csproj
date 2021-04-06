@@ -6,6 +6,7 @@
     <RunAOTCompilation>true</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetOS Condition="'$(TargetOS)' == ''">iOSSimulator</TargetOS>
     <MainLibraryFileName>iOS.Simulator.Aot.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>

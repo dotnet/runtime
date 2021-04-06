@@ -99,7 +99,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 typeName = "IDispatch";
             }
 
-            return string.Format(CultureInfo.CurrentCulture, "{0} ({1})", RuntimeCallableWrapper.ToString(), typeName);
+            return $"{RuntimeCallableWrapper.ToString()} ({typeName})";
         }
 
         public ComTypeDesc ComTypeDesc

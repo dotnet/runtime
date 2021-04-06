@@ -3812,7 +3812,7 @@ public static partial class DataContractSerializerTests
         foreach (var type in typelist)
         {
             var possibleValues = Enum.GetValues(type);
-            var input = possibleValues.GetValue(new Random().Next(possibleValues.Length));
+            var input = possibleValues.GetValue(Random.Shared.Next(possibleValues.Length));
             string baseline = $"<ObjectContainer xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_data i:type=\"a:{type}***\" xmlns:a=\"http://schemas.datacontract.org/2004/07/{type}***\">{input}</_data><_data2 i:type=\"a:{type}***\" xmlns:a=\"http://schemas.datacontract.org/2004/07/{type}***\">{input}</_data2></ObjectContainer>";
             var value = new SerializationTestTypes.ObjectContainer(input);
             var actual = DataContractSerializerHelper.SerializeAndDeserialize(value, baseline, setting);

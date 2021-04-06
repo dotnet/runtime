@@ -194,7 +194,7 @@ void *DumpEnvironmentBlock(void)
     CONTRACTL_END;
 
     LPTSTR lpszVariable;
-    lpszVariable = (LPTSTR)WszGetEnvironmentStrings();
+    lpszVariable = (LPTSTR)GetEnvironmentStringsW();
 
     while (*lpszVariable)
     {
@@ -203,7 +203,7 @@ void *DumpEnvironmentBlock(void)
 
     fprintf(stderr, "\n");
 
-    return WszGetEnvironmentStrings();
+    return GetEnvironmentStringsW();
 }
 
 #if defined(TARGET_X86) && !defined(TARGET_UNIX)

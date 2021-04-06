@@ -13,7 +13,7 @@ XCODE_PATH=$(xcode-select -p)/../..
 
 if [ -n "$5" ]; then
     XHARNESS_CMD="run"
-    EXPECTED_EXIT_CODE="--expected-exit-code $5"
+    ADDITIONAL_ARGS=${@:5}
 fi
 
 if [[ "$TARGET_OS" == "MacCatalyst" ]]; then TARGET=maccatalyst; fi
@@ -62,7 +62,7 @@ $HARNESS_RUNNER apple $XHARNESS_CMD    \
     --targets="$TARGET" \
     --xcode="$XCODE_PATH"   \
     --output-directory="$XHARNESS_OUT" \
-    $EXPECTED_EXIT_CODE
+    $ADDITIONAL_ARGS
 
 _exitCode=$?
 
