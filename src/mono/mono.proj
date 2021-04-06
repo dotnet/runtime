@@ -664,10 +664,10 @@
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
         <Destination>$(RuntimeBinDir)libmono-profiler-aot.a</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Include="$(MonoObjDir)out\lib\$(LibPrefix)dbgshim$(LibExt)">
+      <_MonoRuntimeArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)dbgshim$(LibExt)">
         <Destination>$(RuntimeBinDir)$(LibPrefix)dbgshim$(LibExt)</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(LibExt)">
+      <_MonoRuntimeArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(LibExt)">
         <Destination>$(RuntimeBinDir)$(LibPrefix)mscordbi$(LibExt)</Destination>
       </_MonoRuntimeArtifacts>
 
