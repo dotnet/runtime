@@ -112,15 +112,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             try
             {
-                // TODO: find out what to do for OpenSSL here -- passing handle won't work, because
-                // MsQuic has a private copy of OpenSSL so the SSL_CTX will be incompatible.
-
                 CredentialConfig config = default;
                 config.Flags = flags; // TODO: consider using LOAD_ASYNCHRONOUS with a callback.
 
                 if (certificate != null)
                 {
-                    // TODO: doesn't work on non-Windows
                     if (OperatingSystem.IsWindows())
                     {
                         config.Type = QUIC_CREDENTIAL_TYPE.CONTEXT;
@@ -131,18 +127,15 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     {
                         CredentialConfigCertificatePkcs12 pkcs12Config;
                         byte[] asn1 = certificate.Export(X509ContentType.Pkcs12);
-                        unsafe
+                        fixed (void* ptr = asn1)
                         {
-                            fixed (void* ptr = asn1)
-                            {
-                                pkcs12Config.Asn1Blob = (IntPtr)ptr;
-                                pkcs12Config.Asn1BlobLength = asn1.Length;
-                                pkcs12Config.PrivateKeyPassword = IntPtr.Zero;
+                            pkcs12Config.Asn1Blob = (IntPtr)ptr;
+                            pkcs12Config.Asn1BlobLength = asn1.Length;
+                            pkcs12Config.PrivateKeyPassword = IntPtr.Zero;
 
-                                config.Type = QUIC_CREDENTIAL_TYPE.PKCS12;
-                                config.Certificate = (IntPtr)(&pkcs12Config);
-                                status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
-                            }
+                            config.Type = QUIC_CREDENTIAL_TYPE.PKCS12;
+                            config.Certificate = (IntPtr)(&pkcs12Config);
+                            status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
                         }
                     }
                 }

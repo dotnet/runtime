@@ -457,9 +457,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal ConnectionEventDataStreamsAvailable StreamsAvailable;
 
             [FieldOffset(0)]
-            internal ConnectionEventPeerCertificateReceived PeerCertificate;
+            internal ConnectionEventPeerCertificateReceived PeerCertificateReceived;
 
-            // TODO: missing IDEAL_PROCESSOR_CHANGED, ...,  (7 total)
+            // TODO: missing IDEAL_PROCESSOR_CHANGED, ...,  (6 total)
         }
 
         [StructLayout(LayoutKind.Sequential)]

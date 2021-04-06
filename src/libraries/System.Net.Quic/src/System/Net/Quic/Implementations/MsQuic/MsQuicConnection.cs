@@ -207,7 +207,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!OperatingSystem.IsWindows())
             {
-                // TBD fix validation with OpenSSL
+                // TODO fix validation with OpenSSL
                 return MsQuicStatusCodes.Success;
             }
 
@@ -217,9 +217,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return MsQuicStatusCodes.InvalidState;
             }
 
-            if (connectionEvent.Data.PeerCertificate.PlatformCertificateHandle != IntPtr.Zero)
+            if (connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle != IntPtr.Zero)
             {
-                certificate = new X509Certificate2(connectionEvent.Data.PeerCertificate.PlatformCertificateHandle);
+                certificate = new X509Certificate2(connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle);
             }
 
             try
@@ -236,7 +236,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                     chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
                     chain.ChainPolicy.ApplicationPolicy.Add(connection._isServer ? s_clientAuthOid : s_serverAuthOid);
 
-                    if (!chain.Build(certificate)) {
+                    if (!chain.Build(certificate))
+                    {
                         sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
                     }
                 }
