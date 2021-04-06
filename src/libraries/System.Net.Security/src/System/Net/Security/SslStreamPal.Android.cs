@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
@@ -79,20 +78,7 @@ namespace System.Net.Security
                 SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
                 SafeSslHandle sslHandle = sslContext.SslContext;
 
-                PAL_SSLStreamStatus ret;
-                unsafe
-                {
-                    MemoryHandle memHandle = input.Pin();
-                    try
-                    {
-                        ret = Interop.AndroidCrypto.SSLStreamWrite(sslHandle, (byte*)memHandle.Pointer, input.Length);
-                    }
-                    finally
-                    {
-                        memHandle.Dispose();
-                    }
-                }
-
+                PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamWrite(sslHandle, input);
                 SecurityStatusPalErrorCode statusCode = ret switch
                 {
                     PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
@@ -133,28 +119,22 @@ namespace System.Net.Security
 
                 sslContext.Write(buffer.AsSpan(offset, count));
 
-                unsafe
+                PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, buffer.AsSpan(offset, count), out int read);
+                if (ret == PAL_SSLStreamStatus.Error)
+                    return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+
+                count = read;
+
+                SecurityStatusPalErrorCode statusCode = ret switch
                 {
-                    fixed (byte* offsetInput = &buffer[offset])
-                    {
-                        PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, offsetInput, count, out int read);
-                        if (ret == PAL_SSLStreamStatus.Error)
-                            return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+                    PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
+                    PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.OK,
+                    PAL_SSLStreamStatus.Renegotiate => SecurityStatusPalErrorCode.Renegotiate,
+                    PAL_SSLStreamStatus.Closed => SecurityStatusPalErrorCode.ContextExpired,
+                    _ => SecurityStatusPalErrorCode.InternalError
+                };
 
-                        count = read;
-
-                        SecurityStatusPalErrorCode statusCode = ret switch
-                        {
-                            PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
-                            PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.OK,
-                            PAL_SSLStreamStatus.Renegotiate => SecurityStatusPalErrorCode.Renegotiate,
-                            PAL_SSLStreamStatus.Closed => SecurityStatusPalErrorCode.ContextExpired,
-                            _ => SecurityStatusPalErrorCode.InternalError
-                        };
-
-                        return new SecurityStatusPal(statusCode);
-                    }
-                }
+                return new SecurityStatusPal(statusCode);
             }
             catch (Exception e)
             {

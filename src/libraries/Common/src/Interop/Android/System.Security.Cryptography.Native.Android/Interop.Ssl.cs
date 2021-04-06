@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
@@ -98,17 +99,36 @@ internal static partial class Interop
         }
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamRead")]
-        internal static unsafe extern PAL_SSLStreamStatus SSLStreamRead(
+        private static unsafe extern PAL_SSLStreamStatus SSLStreamRead(
             SafeSslHandle sslHandle,
             byte* buffer,
             int length,
             out int bytesRead);
+        internal static unsafe PAL_SSLStreamStatus SSLStreamRead(
+            SafeSslHandle sslHandle,
+            Span<byte> buffer,
+            out int bytesRead)
+        {
+            fixed (byte* bufferPtr = buffer)
+            {
+                return SSLStreamRead(sslHandle, bufferPtr, buffer.Length, out bytesRead);
+            }
+        }
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamWrite")]
-        internal static unsafe extern PAL_SSLStreamStatus SSLStreamWrite(
+        private static unsafe extern PAL_SSLStreamStatus SSLStreamWrite(
             SafeSslHandle sslHandle,
             byte* buffer,
             int length);
+        internal static unsafe PAL_SSLStreamStatus SSLStreamWrite(
+            SafeSslHandle sslHandle,
+            ReadOnlyMemory<byte> buffer)
+        {
+            using (MemoryHandle memHandle = buffer.Pin())
+            {
+                return SSLStreamWrite(sslHandle, (byte*)memHandle.Pointer, buffer.Length);
+            }
+        }
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamRelease")]
         internal static extern void SSLStreamRelease(IntPtr ptr);
