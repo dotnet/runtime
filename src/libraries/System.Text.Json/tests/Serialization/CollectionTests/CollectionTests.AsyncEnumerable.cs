@@ -199,10 +199,10 @@ namespace System.Text.Json.Tests.Serialization
             yield return WrapArgs(Enumerable.Empty<int>(), 0, 1);
             yield return WrapArgs(Enumerable.Range(0, 20), 0, 1);
             yield return WrapArgs(Enumerable.Range(0, 100), 20, 20);
-            yield return WrapArgs(Enumerable.Range(0, 1000), 20, 1000);
-            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => $"lorem ipsum dolor: {i}"), 1, 500);
-            yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 1, 100);
-            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 1, 500);
+            yield return WrapArgs(Enumerable.Range(0, 1000), 20, 20);
+            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => $"lorem ipsum dolor: {i}"), 20, 100);
+            yield return WrapArgs(Enumerable.Range(0, 10).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 3, 100);
+            yield return WrapArgs(Enumerable.Range(0, 100).Select(i => new { Field1 = i, Field2 = $"lorem ipsum dolor: {i}", Field3 = i % 2 == 0 }), 20, 100);
 
             static object[] WrapArgs<TSource>(IEnumerable<TSource> source, int delayInterval, int bufferSize) => new object[]{ source, delayInterval, bufferSize };
         }
