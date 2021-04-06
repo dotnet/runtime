@@ -1,7 +1,7 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
-if(CLR_CMAKE_BUILD_SUBSET_RUNTIME)
+if(CLR_SINGLE_FILE_HOST_ONLY)
     # CLR partition builds only the single file host where hosting components are all statically linked.
     # the versioning information is irrelevant and may only come up in tracing.
     # so we will use "static"

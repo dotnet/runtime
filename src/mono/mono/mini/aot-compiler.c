@@ -5810,6 +5810,10 @@ add_generic_instances (MonoAotCompile *acfg)
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 
+		klass = mono_class_try_load_from_name (acfg->image, "System", "SZGenericArrayEnumerator`1");
+		if (klass)
+			add_instances_of (acfg, klass, insts, ninsts, TRUE);
+
 		/* 
 		 * Add a managed-to-native wrapper of Array.GetGenericValue_icall<object>, which is
 		 * used for all instances of GetGenericValue_icall by the AOT runtime.
@@ -12821,7 +12825,7 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 		return;
 
 	/* Images */
-	GPtrArray *assemblies = mono_domain_get_assemblies (mono_get_root_domain ());
+	GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
 	g_hash_table_iter_init (&iter, data->images);
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
 		ImageProfileData *idata = (ImageProfileData*)value;

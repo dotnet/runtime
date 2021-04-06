@@ -91,9 +91,8 @@ namespace System.Net.WebSockets.Client.Tests
         [PlatformSpecific(~TestPlatforms.Browser)]  // JS Websocket does not support see issue https://github.com/dotnet/runtime/issues/46983
         public async Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
         {
-            var rand = new Random();
             var sendBuffer = new byte[ushort.MaxValue + 1];
-            rand.NextBytes(sendBuffer);
+            Random.Shared.NextBytes(sendBuffer);
             var sendSegment = new ArraySegment<byte>(sendBuffer);
 
             // Ask the remote server to echo back received messages without ever signaling "end of message".
@@ -464,7 +463,6 @@ namespace System.Net.WebSockets.Client.Tests
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
-                var rand = new Random();
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 // Do a 0-byte receive.  It shouldn't complete yet.

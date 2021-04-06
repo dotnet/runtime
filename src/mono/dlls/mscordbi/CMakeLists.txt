@@ -95,9 +95,12 @@ include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configureplatform.cmake)
 include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configurecompiler.cmake)
 
 if (CLR_CMAKE_HOST_UNIX)
-  include_directories("${PROJECT_SOURCE_DIR}/../../../coreclr/pal/inc")
-  include_directories("${PROJECT_SOURCE_DIR}/../../../coreclr/pal/inc/rt")
-  include_directories("${PROJECT_SOURCE_DIR}/../../../coreclr/pal/src/safecrt")
+  # Add custom targets that the pal build expects.
+  add_component(${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
+  add_component(paltests_install)
+  include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/inc")
+  include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/inc/rt")
+  include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/src/safecrt")
 
   append("-Wno-missing-prototypes  -Wno-pointer-arith -Wno-macro-redefined" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   add_subdirectory(${PROJECT_SOURCE_DIR}/../../../coreclr/pal pal)

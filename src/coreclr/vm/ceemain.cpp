@@ -305,8 +305,8 @@ HRESULT EnsureEEStarted()
     {
         BEGIN_ENTRYPOINT_NOTHROW;
 
-        // Initialize our configuration cache to avoid unuseful probing.
-        CLRConfig::InitCache();
+        // Initialize our configuration.
+        CLRConfig::Initialize();
 
         BOOL bStarted=FALSE;
 

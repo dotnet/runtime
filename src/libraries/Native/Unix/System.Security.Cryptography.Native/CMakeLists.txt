@@ -119,4 +119,4 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Security.Cryptography.Native.OpenSsl PROGRAMS .)
 endif()
 
-install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION ${STATIC_LIB_DESTINATION})
+install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)

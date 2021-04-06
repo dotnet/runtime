@@ -84,6 +84,10 @@ else()
     set_exports_linker_option(${EXPORTS_FILE})
 endif()
 
+if (CLR_SINGLE_FILE_HOST_ONLY)
+    set(ADDITIONAL_INSTALL_ARGUMENTS COMPONENT runtime)
+endif()
+
 include(../../exe.cmake)
 include(configure.cmake)
 
