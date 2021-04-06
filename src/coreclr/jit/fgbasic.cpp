@@ -992,10 +992,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         {
                             unsigned slot0 = pushedStack.GetSlot0();
 
-                            if (FgStack::IsConstant(slot0) || (FgStack::IsArgument(slot0) && isInlining &&
-                                impInlineInfo->inlArgInfo[FgStack::SlotTypeToArgNum(slot0)].argIsInvariant))
+                            if (FgStack::IsConstant(slot0) ||
+                                (FgStack::IsArgument(slot0) && isInlining &&
+                                 impInlineInfo->inlArgInfo[FgStack::SlotTypeToArgNum(slot0)].argIsInvariant))
                             {
-                                // slot0 is an ldstr or an arg which is a string literal (we hope argIsInvariant means that)
+                                // slot0 is an ldstr or an arg which is a string literal
                                 compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_CALL);
                             }
                         }
