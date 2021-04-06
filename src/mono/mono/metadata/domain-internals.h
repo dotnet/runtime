@@ -136,8 +136,8 @@ mono_runtime_register_runtimeconfig_json_properties (MonovmRuntimeConfigArgument
 void
 mono_runtime_install_appctx_properties (void);
 
-gboolean 
-mono_domain_set_fast (MonoDomain *domain, gboolean force);
+void 
+mono_domain_set_fast (MonoDomain *domain);
 
 G_END_DECLS
 
