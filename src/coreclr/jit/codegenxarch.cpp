@@ -6456,9 +6456,10 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     }
     else // (srcType == TYP_ULONG)
     {
-        // Above for 32-bit x86 we have a noway_assert(!varTypeIsLong(srcType))
-        //
-#if defined(TARGET_64BIT)
+// Above for 32-bit x86 we have a noway_assert(!varTypeIsLong(srcType))
+//
+
+#ifdef TARGET_64BIT
         // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
         // will interpret ULONG value as LONG.  Hence we need to adjust the
         // result if sign-bit of srcType is set.
@@ -6494,7 +6495,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         regNumber tmpReg = treeNode->GetSingleTempReg(RBM_ALLINT);
         assert(genIsValidIntReg(tmpReg));
 
-        instGen_Set_Reg_To_Imm(EA_8BYTE, tmpReg, -0x8000000000000000i64);
+        GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpReg, -0x8000000000000000i64);
 
         // clear the sign bit
         inst_RV_RV(INS_xor, srcReg, tmpReg, srcType);
@@ -6520,12 +6521,10 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         inst_RV_RV(INS_xor, srcReg, tmpReg, srcType);
 
         genDefineTempLabel(joinLabel);
-#endif // defined(TARGET_64BIT)
+#endif // TARGET_64BIT
     }
 
     genProduceReg(treeNode);
-
-
 }
 
 //------------------------------------------------------------------------

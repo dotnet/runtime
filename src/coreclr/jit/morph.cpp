@@ -323,16 +323,6 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
                 tree               = gtNewCastNode(TYP_FLOAT, tree, false, TYP_FLOAT);
                 return fgMorphTree(tree);
             }
-#if 0
-            else
-            {
-                // Casting a ULONG to a DOUBLE, expand sequence inline using a GT_QMARK
-                //
-                DEBUG_DESTROY_NODE(tree);
-                GenTree* castTree = gtNewCastULongToDouble(oper);
-                return fgMorphTree(castTree);
-            }
-#endif
         }
         else if (srcType == TYP_UINT)
         {

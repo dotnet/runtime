@@ -2765,10 +2765,6 @@ public:
 
     GenTree* gtNewBitCastNode(var_types type, GenTree* arg);
 
-#ifdef TARGET_AMD64
-    GenTree* gtNewCastULongToDouble(GenTree* src);
-#endif
-
 protected:
     void gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVal, bool isVolatile);
 
