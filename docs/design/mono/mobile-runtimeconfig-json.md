@@ -27,7 +27,7 @@ We take everything and pass all the properties to the managed AppContext. For th
 
 ### Encoded file generation
 
- The runtime pack will provide an MSBuild task called  to generate the encoded file. The generator checks for duplicate property keys (by comparing the keys in the json file with an input list of properties that the embedder promises to pass to `monovm_initialize`).
+ The runtime pack will provide an MSBuild task called RuntimeConfigParserTask to generate the encoded file. The generator checks for duplicate property keys (by comparing the keys in the json file with an input list of properties that the embedder promises to pass to `monovm_initialize`).
 
 #### Task Contract:
 
