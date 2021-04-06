@@ -42,7 +42,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE:
     return hr;
 }
 
-HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(struct AssemblyNameData *pAssemblyNameData,
+HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(AssemblyNameData *pAssemblyNameData,
                                                              ICLRPrivAssembly **ppAssembly)
 {
     HRESULT hr = S_OK;

@@ -182,7 +182,7 @@ namespace BINDER_SPACE
         return (pAsmName == nullptr ? nullptr : (LPCWSTR)pAsmName->GetSimpleName());
     }
 
-    HRESULT Assembly::BindAssemblyByName(struct AssemblyNameData *pAssemblyNameData, ICLRPrivAssembly ** ppAssembly)
+    HRESULT Assembly::BindAssemblyByName(AssemblyNameData *pAssemblyNameData, ICLRPrivAssembly ** ppAssembly)
     {
         return (m_pBinder == NULL) ? E_FAIL : m_pBinder->BindAssemblyByName(pAssemblyNameData, ppAssembly);
     }

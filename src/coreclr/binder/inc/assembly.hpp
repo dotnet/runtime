@@ -72,7 +72,7 @@ namespace BINDER_SPACE
         LPCWSTR GetSimpleName();
 
         STDMETHOD(BindAssemblyByName)(
-            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
+            /* [in] */ AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
 
         STDMETHOD(GetAvailableImageTypes)(PDWORD pdwImageTypes);

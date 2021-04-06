@@ -42,7 +42,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 // ============================================================================
 // CLRPrivBinderCoreCLR implementation
 // ============================================================================
-HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(struct AssemblyNameData *pAssemblyNameData,
+HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(AssemblyNameData *pAssemblyNameData,
                                                  ICLRPrivAssembly **ppAssembly)
 {
     HRESULT hr = S_OK;
