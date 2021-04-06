@@ -31,10 +31,18 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             params object[] parameters)
         {
-            Type[] argumentTypes = new Type[parameters?.Length ?? 0];
-            for (int index = 0; index < argumentTypes.Length; index++)
+            Type[] argumentTypes;
+            if (parameters == null || parameters.Length == 0)
             {
-                argumentTypes[index] = parameters[index].GetType();
+                argumentTypes = Type.EmptyTypes;
+            }
+            else
+            {
+                argumentTypes = new Type[parameters.Length];
+                for (int index = 0; index < argumentTypes.Length; index++)
+                {
+                    argumentTypes[index] = parameters[index].GetType();
+                }
             }
 
             FindApplicableConstructor(
