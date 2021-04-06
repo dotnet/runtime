@@ -13,6 +13,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [InlineData(LoggerColorBehavior.Default)]
         [InlineData(LoggerColorBehavior.Enabled)]
         [InlineData(LoggerColorBehavior.Disabled)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50575", TestPlatforms.Android)]
         public void Log_WritingScopes_LogsWithCorrectColorsWhenColorEnabled(LoggerColorBehavior colorBehavior)
         {
             // Arrange
