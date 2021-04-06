@@ -8325,7 +8325,7 @@ mono_arch_get_patch_offset (guint8 *code)
 }
 
 /**
- * \return TRUE if no sw breakpoint was present.
+ * \return TRUE if no sw breakpoint was present (always).
  *
  * Copy \p size bytes from \p code - \p offset to the buffer \p buf. If the debugger inserted software
  * breakpoints in the original code, they are removed in the copy.

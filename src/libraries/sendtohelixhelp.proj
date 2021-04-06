@@ -210,15 +210,25 @@
     <Message Importance="High" Text="Using WorkItemArchiveWildCard: $(WorkItemArchiveWildCard)" />
     <Message Importance="High" Text="Using Timeout: $(_workItemTimeout)" />
 
+    <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
+      <AppleTestTarget Condition="'$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'tvOSSimulator'">tvos-simulator</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'iOS'">ios-device</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'tvOS'">tvos-device</AppleTestTarget>
+    </PropertyGroup>
+
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
       <!-- Create work items for test apps -->
-      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))" />
+      <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
+        <Targets>$(AppleTestTarget)</Targets>
+      </XHarnessAppBundleToTest>
       <!-- Create work items for run-only apps -->
       <XHarnessAppBundleToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveRoot)runonly', '*.app', System.IO.SearchOption.AllDirectories))" >
         <!-- The sample app doesn't need test runner -->
         <IncludesTestRunner>false</IncludesTestRunner>
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
         <ExpectedExitCode>42</ExpectedExitCode>
+        <Targets>$(AppleTestTarget)</Targets>
       </XHarnessAppBundleToTest>
     </ItemGroup>
 

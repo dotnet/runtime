@@ -635,9 +635,7 @@ namespace System.Numerics
         /// <summary>Returns a string that represents this quaternion.</summary>
         /// <returns>The string representation of this quaternion.</returns>
         /// <remarks>The numeric values in the returned string are formatted by using the conventions of the current culture. For example, for the en-US culture, the returned string might appear as <c>{X:1.1 Y:2.2 Z:3.3 W:4.4}</c>.</remarks>
-        public override readonly string ToString()
-        {
-            return string.Format(CultureInfo.CurrentCulture, "{{X:{0} Y:{1} Z:{2} W:{3}}}", X, Y, Z, W);
-        }
+        public override readonly string ToString() =>
+            $"{{X:{X} Y:{Y} Z:{Z} W:{W}}}";
     }
 }

@@ -1406,22 +1406,6 @@ bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SI
 }
 
 /**************************************************************************/
-void ConfigDWORD::init_DontUse_(__in_z LPCWSTR keyName, DWORD defaultVal)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    // make sure that the memory was zero initialized
-    _ASSERTE(m_inited == 0 || m_inited == 1);
-
-    m_value = REGUTIL::GetConfigDWORD_DontUse_(keyName, defaultVal);
-    m_inited = 1;
-}
-
-/**************************************************************************/
 void ConfigString::init(const CLRConfig::ConfigStringInfo & info)
 {
     CONTRACTL

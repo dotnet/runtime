@@ -835,7 +835,6 @@ mono_pop_lmf (MonoLMF *lmf)
 MonoDomain*
 mono_jit_thread_attach (MonoDomain *domain)
 {
-	MonoDomain *orig;
 	gboolean attached;
 
 	if (!domain) {
@@ -862,11 +861,7 @@ mono_jit_thread_attach (MonoDomain *domain)
 		mono_threads_enter_gc_safe_region_unbalanced_internal (&stackdata);
 	}
 
-	orig = mono_domain_get ();
-	if (orig != domain)
-		mono_domain_set_fast (domain, TRUE);
-
-	return orig != domain ? orig : NULL;
+	return NULL;
 }
 
 /*
@@ -880,7 +875,7 @@ mono_jit_set_domain (MonoDomain *domain)
 	g_assert (!mono_threads_is_blocking_transition_enabled ());
 
 	if (domain)
-		mono_domain_set_fast (domain, TRUE);
+		mono_domain_set_fast (domain);
 }
 
 /**
@@ -3267,22 +3262,19 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		*exc = NULL;
 
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
-	MonoDomain *domain = mono_get_root_domain ();
 	static RuntimeInvokeDynamicFunction dyn_runtime_invoke = NULL;
 	if (info->dyn_call_info) {
 		if (!dyn_runtime_invoke) {
-			mono_domain_lock (domain);
-
 			invoke = mono_marshal_get_runtime_invoke_dynamic ();
-			dyn_runtime_invoke = (RuntimeInvokeDynamicFunction)mono_jit_compile_method_jit_only (invoke, error);
+			RuntimeInvokeDynamicFunction invoke_func = (RuntimeInvokeDynamicFunction)mono_jit_compile_method_jit_only (invoke, error);
+			mono_memory_barrier ();
+			dyn_runtime_invoke = invoke_func;
 			if (!dyn_runtime_invoke && mono_use_interpreter) {
 				info->use_interp = TRUE;
 				info->dyn_call_info = NULL;
 			} else if (!is_ok (error)) {
-				mono_domain_unlock (domain);
 				return NULL;
 			}
-			mono_domain_unlock (domain);
 		}
 	}
 	if (info->dyn_call_info) {

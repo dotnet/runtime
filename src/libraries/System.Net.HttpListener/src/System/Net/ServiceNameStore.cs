@@ -118,8 +118,7 @@ namespace System.Net
             string normalizedHost = constructedUri.GetComponents(
                 UriComponents.NormalizedHost, UriFormat.SafeUnescaped);
 
-            string normalizedServiceName = string.Format(CultureInfo.InvariantCulture,
-                "{0}{1}{2}{3}", prefix, normalizedHost, port, distinguisher);
+            string normalizedServiceName = prefix + normalizedHost + port + distinguisher;
 
             // Don't return the new one unless we absolutely have to.  It may have only changed casing.
             if (inputServiceName.Equals(normalizedServiceName, StringComparison.OrdinalIgnoreCase))

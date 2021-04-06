@@ -20,8 +20,6 @@ namespace System.Net.NetworkInformation
         private const int MaxIpHeaderLengthInBytes = 60;
         private static bool SendIpHeader => OperatingSystem.IsMacOS();
         private static bool NeedsConnect => OperatingSystem.IsLinux();
-        [ThreadStatic]
-        private static Random? t_idGenerator;
 
         private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
@@ -51,8 +49,7 @@ namespace System.Net.NetworkInformation
         {
             // Use a random value as the identifier. This doesn't need to be perfectly random
             // or very unpredictable, rather just good enough to avoid unexpected conflicts.
-            Random rand = t_idGenerator ??= new Random();
-            ushort id = (ushort)rand.Next(ushort.MaxValue + 1);
+            ushort id = (ushort)Random.Shared.Next(ushort.MaxValue + 1);
             IpHeader iph = default;
 
             bool ipv4 = address.AddressFamily == AddressFamily.InterNetwork;

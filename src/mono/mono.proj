@@ -93,7 +93,7 @@
       <Output TaskParameter="ExitCode" PropertyName="_MonoFindNinjaExitCode"/>
     </Exec>
     <PropertyGroup>
-      <_MonoUseNinja Condition="'$(Ninja)' == 'true' or '$(_MonoFindNinjaExitCode)' == '0'">true</_MonoUseNinja>
+      <_MonoUseNinja Condition="'$(Ninja)' == 'true' or '$(_MonoFindNinjaExitCode)' == '0' or ('$(OS)' == 'Windows_NT' and '$(Ninja)' == '')">true</_MonoUseNinja>
     </PropertyGroup>
 
     <Exec Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT'" Command="cmake --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
