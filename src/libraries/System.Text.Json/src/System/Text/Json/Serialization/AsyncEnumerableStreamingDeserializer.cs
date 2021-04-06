@@ -24,7 +24,7 @@ namespace System.Text.Json.Serialization
             bool isFinalBlock = false;
             do
             {
-                isFinalBlock = await JsonSerializer.ReadFromStream(_utf8Json, asyncState).ConfigureAwait(false);
+                isFinalBlock = await JsonSerializer.ReadFromStreamAsync(_utf8Json, asyncState).ConfigureAwait(false);
                 JsonSerializer.ContinueDeserialize<Queue<TValue>>(asyncState, isFinalBlock);
                 if (asyncState.ReadStack.Current.ReturnValue is Queue<TValue> queue)
                 {

@@ -120,7 +120,7 @@ namespace System.Text.Json
 
             while (true)
             {
-                bool isFinalBlock = await ReadFromStream(utf8Json, asyncState).ConfigureAwait(false);
+                bool isFinalBlock = await ReadFromStreamAsync(utf8Json, asyncState).ConfigureAwait(false);
                 TValue value = ContinueDeserialize<TValue>(asyncState, isFinalBlock);
 
                 if (isFinalBlock)
@@ -135,7 +135,7 @@ namespace System.Text.Json
         /// Calling ReadCore is relatively expensive, so we minimize the number of times
         /// we need to call it.
         /// </summary>
-        internal static async ValueTask<bool> ReadFromStream(Stream utf8Json, ReadAsyncState asyncState)
+        internal static async ValueTask<bool> ReadFromStreamAsync(Stream utf8Json, ReadAsyncState asyncState)
         {
             bool isFinalBlock = false;
             while (!isFinalBlock)
