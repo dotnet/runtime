@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
@@ -238,12 +239,120 @@ namespace System.Net.Quic.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
+        public async Task ByteMixingMinimalFailingTest()
+        {
+            const int writeSize = 64 * 1024;
+            const int NumberOfWrites = 256;       // total sent = 16M
+            byte[] data1 = Enumerable.Range(0, writeSize * NumberOfWrites).Select(x => (byte)1).ToArray();
+            byte[] data2 = Enumerable.Range(0, writeSize * NumberOfWrites).Select(x => (byte)2).ToArray();
+
+            Task t1 = RunTest(data1);
+            Task t2 = RunTest(data2);
+            Task t3 = CallDifferentWriteMethodsWorks();
+
+            async Task RunTest(byte[] data)
+            {
+                using QuicListener listener = CreateQuicListener();
+
+                var dataConsumedByServer = new ManualResetEventSlim();
+                var dataConsumedByClient = new ManualResetEventSlim();
+
+                for (int j = 0; j < 10; j++)
+                {
+                    dataConsumedByServer.Reset();
+                    dataConsumedByClient.Reset();
+
+                    Task listenTask = Task.Run(async () =>
+                    {
+                        using QuicConnection connection = await listener.AcceptConnectionAsync();
+                        await using QuicStream stream = await connection.AcceptStreamAsync();
+
+                        byte[] buffer = new byte[data.Length];
+                        int bytesRead = await ReadAll(stream, buffer);
+                        Assert.Equal(data.Length, bytesRead);
+                        AssertArrayEqual(data, buffer);
+                        dataConsumedByServer.Set();
+
+                        for (int pos = 0; pos < data.Length; pos += writeSize)
+                        {
+                            await stream.WriteAsync(data[pos..(pos + writeSize)]);
+                        }
+                        await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+                        await stream.ShutdownWriteCompleted();
+
+                        await stream.ShutdownCompleted();
+                        dataConsumedByClient.Wait();
+                        await connection.CloseAsync(errorCode: 0);
+                    });
+
+                    Task clientTask = Task.Run(async () =>
+                    {
+                        using QuicConnection connection = CreateQuicConnection(listener.ListenEndPoint);
+                        await connection.ConnectAsync();
+                        await using QuicStream stream = connection.OpenBidirectionalStream();
+
+                        for (int pos = 0; pos < data.Length; pos += writeSize)
+                        {
+                            await stream.WriteAsync(data[pos..(pos + writeSize)]);
+                        }
+                        await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+                        await stream.ShutdownWriteCompleted();
+                        dataConsumedByServer.Wait();
+
+                        byte[] buffer = new byte[data.Length];
+                        int bytesRead = await ReadAll(stream, buffer);
+                        Assert.Equal(data.Length, bytesRead);
+                        AssertArrayEqual(data, buffer);
+
+                        dataConsumedByClient.Set();
+                        await stream.ShutdownCompleted();
+                        await connection.CloseAsync(errorCode: 0);
+                    });
+
+                    await(new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
+                }
+            }
+
+            async Task CallDifferentWriteMethodsWorks()
+            {
+                using QuicListener listener = CreateQuicListener();
+                using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+
+                ValueTask clientTask = clientConnection.ConnectAsync();
+                using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                await clientTask;
+
+                var buf = new byte[12];
+                Array.Fill(buf, (byte)3);
+                ReadOnlyMemory<byte> helloWorld = buf;
+                ReadOnlySequence<byte> ros = MsQuicTests.CreateReadOnlySequenceFromBytes(helloWorld.ToArray());
+
+                Assert.False(ros.IsSingleSegment);
+                using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                ValueTask writeTask = clientStream.WriteAsync(ros);
+                using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
+
+                await writeTask;
+                byte[] memory = new byte[24];
+                int res = await serverStream.ReadAsync(memory);
+                Assert.Equal(12, res);
+                ReadOnlyMemory<ReadOnlyMemory<byte>> romrom = new ReadOnlyMemory<ReadOnlyMemory<byte>>(new ReadOnlyMemory<byte>[] { helloWorld, helloWorld });
+
+                await clientStream.WriteAsync(romrom);
+
+                res = await serverStream.ReadAsync(memory);
+                Assert.Equal(24, res);
+            }
+
+            await (new[] { t1, t2, t3 }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
+        [Fact]
         public async Task LargeDataSentAndReceived()
         {
-            //var log = new LogEventListener();
-
             const int writeSize = 64 * 1024;
-            const int NumberOfWrites = 4; //256;       // total sent = 16M
+            const int NumberOfWrites = 256;       // total sent = 16M
             byte[] data = Enumerable.Range(0, writeSize * NumberOfWrites).Select(x => (byte)x).ToArray();
 
             using QuicListener listener = CreateQuicListener();

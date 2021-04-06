@@ -173,6 +173,7 @@ namespace System.Net.Quic.Tests
             GatheredSequence
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
         public async Task CallDifferentWriteMethodsWorks()
         {
@@ -220,7 +221,7 @@ namespace System.Net.Quic.Tests
                 });
         }
 
-        private static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
+        public static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
         {
             List<byte[]> segments = new List<byte[]>
             {
