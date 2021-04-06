@@ -795,7 +795,6 @@ namespace System.Net.Security
                     int payloadBytes = int.MaxValue;
                     if (_internalBufferCount >= SecureChannel.ReadHeaderSize)
                     {
-                        //GetFrameSizepayloadBytes = GetFrameSize(_internalBuffer.Span.Slice(_internalOffset));
                         payloadBytes = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
                         if (payloadBytes < 0)
                         {
