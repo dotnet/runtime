@@ -20,6 +20,7 @@ public class intmm
 {
     public static int size;
     public static Random rand;
+    public const int DEFAULT_SEED = 20010415;
     public static ArrayStruct ima;
     public static ArrayStruct imb;
     public static ArrayStruct imr;
@@ -120,11 +121,31 @@ public class intmm
     {
         bool pass = false;
 
-        rand = new Random();
+        int seed = DEFAULT_SEED;
+
+        if (Environment.GetEnvironmentVariable("CORECLR_SEED") != null)
+        {
+            string CORECLR_SEED = Environment.GetEnvironmentVariable("CORECLR_SEED");
+
+            if (!int.TryParse(CORECLR_SEED, out seed))
+            {
+                if (string.Equals(CORECLR_SEED, "random", StringComparison.OrdinalIgnoreCase))
+                {
+                    seed = new Random().Next();
+                }
+                else
+                {
+                    seed = DEFAULT_SEED;
+                }
+            }
+        }
+
+        rand = new Random(seed);
         size = rand.Next(2, 10);
 
         Console.WriteLine();
         Console.WriteLine("2D Array");
+        Console.WriteLine("Random seed: {0}; set environment variable CORECLR_SEED to this value to reproduce", seed);
         Console.WriteLine("Testing inner product of {0} by {0} matrices", size);
         Console.WriteLine("the matrices are members of Struct");
         Console.WriteLine("Matrix element stores random integer");

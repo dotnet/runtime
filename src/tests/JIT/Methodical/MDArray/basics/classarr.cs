@@ -22,6 +22,8 @@ public class class1
     public static int size;
     public static Arrayclass ima;
 
+    private const int DEFAULT_SEED = 20010415;
+
     public static double GenerateDbl()
     {
         int e;
@@ -158,11 +160,31 @@ public class class1
     {
         bool pass = false;
 
-        rand = new Random();
+        int seed = DEFAULT_SEED;
+
+        if (Environment.GetEnvironmentVariable("CORECLR_SEED") != null)
+        {
+            string CORECLR_SEED = Environment.GetEnvironmentVariable("CORECLR_SEED");
+
+            if (!int.TryParse(CORECLR_SEED, out seed))
+            {
+                if (string.Equals(CORECLR_SEED, "random", StringComparison.OrdinalIgnoreCase))
+                {
+                    seed = new Random().Next();
+                }
+                else
+                {
+                    seed = DEFAULT_SEED;
+                }
+            }
+        }
+
+        rand = new Random(seed);
         size = rand.Next(5, 10);
 
         Console.WriteLine();
         Console.WriteLine("2D Array");
+        Console.WriteLine("Random seed: {0}; set environment variable CORECLR_SEED to this value to reproduce", seed);
         Console.WriteLine("Element manipulation of {0} by {0} matrices with different arithmatic operations", size);
         Console.WriteLine("Matrix is member of class, element stores random double");
         Console.WriteLine("array set/get, ref/out param are used");
