@@ -318,10 +318,11 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
 
             case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
-                // We shouldn't see this for a prejit root since
-                // we don't know anything about callers.
-                assert(!m_IsPrejitRoot);
                 m_ConstantArgFeedsConstantTest++;
+                break;
+
+            case InlineObservation::CALLEE_FOLDABLE_CALL:
+                m_FoldableCall++;
                 break;
 
             case InlineObservation::CALLEE_BEGIN_OPCODE_SCAN:
@@ -718,6 +719,15 @@ double DefaultPolicy::DetermineMultiplier()
     {
         multiplier += 0.5;
         JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_FoldableCall > 0)
+    {
+        // TBD:
+        // Do we want to increase the multiplier here?
+        // At least we should compensate increased calleeNativeSizeEstimate because of "call" instructions
+        // (weight = 79) which actually are guaranteed to be folded.
+        JITDUMP("\nInline candidate has %d call(s) which is guaranteed to be folded", m_FoldableCall);
     }
 
     if (m_ConstantArgFeedsConstantTest > 0)
@@ -2017,6 +2027,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_MethodIsMostlyLoadStore ? 1 : 0);
     fprintf(file, ",%u", m_ArgFeedsRangeCheck);
     fprintf(file, ",%u", m_ConstantArgFeedsConstantTest);
+    fprintf(file, ",%u", m_FoldableCall);
     fprintf(file, ",%d", m_CalleeNativeSizeEstimate);
     fprintf(file, ",%d", m_CallsiteNativeSizeEstimate);
     fprintf(file, ",%d", m_ModelCodeSizeEstimate);

@@ -66,6 +66,7 @@ INLINE_OBSERVATION(TOO_MUCH_IL,               bool,   "too many il bytes",      
 
 // ------ Callee Information -------
 
+INLINE_OBSERVATION(FOLDABLE_CALL,             bool,   "foldable call",                        INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_FEEDS_CONSTANT_TEST,   bool,   "argument feeds constant test",         INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_FEEDS_TEST,            bool,   "argument feeds test",                  INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_FEEDS_RANGE_CHECK,     bool,   "argument feeds range check",           INFORMATION, CALLEE)

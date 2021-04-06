@@ -988,6 +988,20 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                     if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
                     {
+                        if (intrinsicID == CORINFO_INTRINSIC_StringLength)
+                        {
+                            if (makeInlineObservations && pushedStack.IsStackAtLeastOneDeep())
+                            {
+                                unsigned slot0 = pushedStack.GetSlot0();
+
+                                if (FgStack::IsConstant(slot0) || (FgStack::IsArgument(slot0) && isInlining &&
+                                    impInlineInfo->inlArgInfo[FgStack::SlotTypeToArgNum(slot0)].argIsInvariant))
+                                {
+                                    // slot0 is an ldstr or an arg which is a string literal (we hope argIsInvariant means that)
+                                    compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_CALL);
+                                }
+                            }
+                        }
                         if (intrinsicID == CORINFO_INTRINSIC_Illegal)
                         {
                             ni = lookupNamedIntrinsic(methodHnd);
@@ -997,6 +1011,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 case NI_IsSupported_True:
                                 case NI_IsSupported_False:
                                 {
+                                    compInlineResult->Note(InlineObservation::CALLEE_FOLDABLE_CALL);
                                     pushedStack.PushConstant();
                                     break;
                                 }
@@ -1733,7 +1748,12 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
                     }
                 }
             }
-
+            // e.g. "if (Avx.IsSupported)" where get_IsSupported() was recognized as a run-time const
+            else if (FgStack::IsConstant(slot0))
+            {
+                compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
+                compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
+            }
             return;
         }
     }
@@ -1752,6 +1772,13 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
         (FgStack::IsConstant(slot1) && FgStack::IsArgument(slot0)))
     {
         compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
+    }
+
+    // Constant feeds constant test
+    if (FgStack::IsConstant(slot0) && FgStack::IsConstant(slot1))
+    {
+        compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
+        compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
     }
 
     // Arg feeds range check
