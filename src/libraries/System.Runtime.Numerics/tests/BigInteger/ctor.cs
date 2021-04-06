@@ -660,6 +660,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         public static void RunCtorByteArrayTests()
         {
             ulong tempUInt64;
