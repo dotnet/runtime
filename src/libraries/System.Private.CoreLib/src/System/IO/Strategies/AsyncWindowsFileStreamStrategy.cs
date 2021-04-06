@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Sources;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Strategies
@@ -112,7 +111,7 @@ namespace System.IO.Strategies
             _preallocatedOverlapped = new PreAllocatedOverlapped(FileStreamAwaitableProvider.s_ioCallback, this, buffer);
         }
 
-        internal FileStreamAwaitableProvider? CompareExchangeCurrentOverlappedOwner(FileStreamAwaitableProvider? newSource, FileStreamAwaitableProvider? existingSource)
+        private FileStreamAwaitableProvider? CompareExchangeCurrentOverlappedOwner(FileStreamAwaitableProvider? newSource, FileStreamAwaitableProvider? existingSource)
             => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -135,7 +134,100 @@ namespace System.IO.Strategies
 
             // Create and store async stream class library specific data in the async result
             FileStreamAwaitableProvider provider = FileStreamAwaitableProvider.Create(this, _preallocatedOverlapped, 0, destination);
-            return provider.ReadAsync(destination, cancellationToken);
+
+
+            // Calculate position in the file we should be at after the read is done
+            long positionBefore = _filePosition;
+            if (CanSeek)
+            {
+                long len = Length;
+
+                if (positionBefore + destination.Length > len)
+                {
+                    if (positionBefore <= len)
+                    {
+                        destination = destination.Slice(0, (int)(len - positionBefore));
+                    }
+                    else
+                    {
+                        destination = default;
+                    }
+                }
+
+                // Now set the position to read from in the NativeOverlapped struct
+                // For pipes, we should leave the offset fields set to 0.
+                provider.Overlapped->OffsetLow = unchecked((int)positionBefore);
+                provider.Overlapped->OffsetHigh = (int)(positionBefore >> 32);
+
+                // When using overlapped IO, the OS is not supposed to
+                // touch the file pointer location at all.  We will adjust it
+                // ourselves, but only in memory. This isn't threadsafe.
+                _filePosition += destination.Length;
+            }
+
+            // queue an async ReadFile operation and pass in a packed overlapped
+            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination.Span, false, provider.Overlapped, out int errorCode);
+
+            // ReadFile, the OS version, will return 0 on failure.  But
+            // my ReadFileNative wrapper returns -1.  My wrapper will return
+            // the following:
+            // On error, r==-1.
+            // On async requests that are still pending, r==-1 w/ errorCode==ERROR_IO_PENDING
+            // on async requests that completed sequentially, r==0
+            // You will NEVER RELIABLY be able to get the number of bytes
+            // read back from this call when using overlapped structures!  You must
+            // not pass in a non-null lpNumBytesRead to ReadFile when using
+            // overlapped structures!  This is by design NT behavior.
+            if (r == -1)
+            {
+                // For pipes, when they hit EOF, they will come here.
+                if (errorCode == ERROR_BROKEN_PIPE)
+                {
+                    // Not an error, but EOF.  AsyncFSCallback will NOT be
+                    // called.  Call the user callback here.
+
+                    // We clear the overlapped status bit for this special case.
+                    // Failure to do so looks like we are freeing a pending overlapped later.
+                    provider.Overlapped->InternalLow = IntPtr.Zero;
+                    provider.ReleaseNativeResource();
+                    return new ValueTask<int>(provider.NumBufferedBytes);
+                }
+                else if (errorCode != ERROR_IO_PENDING)
+                {
+                    if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
+                    {
+                        _filePosition = positionBefore;
+                    }
+
+                    provider.ReleaseNativeResource();
+
+                    if (errorCode == ERROR_HANDLE_EOF)
+                    {
+                        ThrowHelper.ThrowEndOfFileException();
+                    }
+                    else
+                    {
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                    }
+                }
+                else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
+                {
+                    // Only once the IO is pending do we register for cancellation
+                    provider.RegisterForCancellation(cancellationToken);
+                }
+            }
+            else
+            {
+                // Due to a workaround for a race condition in NT's ReadFile &
+                // WriteFile routines, we will always be returning 0 from ReadFileNative
+                // when we do async IO instead of the number of bytes read,
+                // irregardless of whether the operation completed
+                // synchronously or asynchronously.  We absolutely must not
+                // set asyncResult._numBytes here, since will never have correct
+                // results.
+            }
+
+            return new ValueTask<int>(provider, provider.Version);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -160,7 +252,81 @@ namespace System.IO.Strategies
 
             // Create and store async stream class library specific data in the async result
             FileStreamAwaitableProvider provider = FileStreamAwaitableProvider.Create(this, _preallocatedOverlapped, 0, source);
-            return provider.WriteAsync(source, cancellationToken);
+
+            long positionBefore = _filePosition;
+            if (CanSeek)
+            {
+                // Now set the position to read from in the NativeOverlapped struct
+                // For pipes, we should leave the offset fields set to 0.
+                provider.Overlapped->OffsetLow = (int)positionBefore;
+                provider.Overlapped->OffsetHigh = (int)(positionBefore >> 32);
+
+                // When using overlapped IO, the OS is not supposed to
+                // touch the file pointer location at all.  We will adjust it
+                // ourselves, but only in memory.  This isn't threadsafe.
+                _filePosition += source.Length;
+                UpdateLengthOnChangePosition();
+            }
+
+            // queue an async WriteFile operation and pass in a packed overlapped
+            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source.Span, false, provider.Overlapped, out int errorCode);
+
+            // WriteFile, the OS version, will return 0 on failure.  But
+            // my WriteFileNative wrapper returns -1.  My wrapper will return
+            // the following:
+            // On error, r==-1.
+            // On async requests that are still pending, r==-1 w/ errorCode==ERROR_IO_PENDING
+            // On async requests that completed sequentially, r==0
+            // You will NEVER RELIABLY be able to get the number of bytes
+            // written back from this call when using overlapped IO!  You must
+            // not pass in a non-null lpNumBytesWritten to WriteFile when using
+            // overlapped structures!  This is ByDesign NT behavior.
+            if (r == -1)
+            {
+                // For pipes, when they are closed on the other side, they will come here.
+                if (errorCode == ERROR_NO_DATA)
+                {
+                    // Not an error, but EOF. AsyncFSCallback will NOT be called.
+                    // Completing TCS and return cached task allowing the GC to collect TCS.
+                    provider.ReleaseNativeResource();
+                    return ValueTask.CompletedTask;
+                }
+                else if (errorCode != ERROR_IO_PENDING)
+                {
+                    if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
+                    {
+                        _filePosition = positionBefore;
+                    }
+
+                    provider.ReleaseNativeResource();
+
+                    if (errorCode == ERROR_HANDLE_EOF)
+                    {
+                        ThrowHelper.ThrowEndOfFileException();
+                    }
+                    else
+                    {
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                    }
+                }
+                else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
+                {
+                    // Only once the IO is pending do we register for cancellation
+                    provider.RegisterForCancellation(cancellationToken);
+                }
+            }
+            else
+            {
+                // Due to a workaround for a race condition in NT's ReadFile &
+                // WriteFile routines, we will always be returning 0 from WriteFileNative
+                // when we do async IO instead of the number of bytes written,
+                // irregardless of whether the operation completed
+                // synchronously or asynchronously.  We absolutely must not
+                // set asyncResult._numBytes here, since will never have correct
+                // results.
+            }
+
+            return new ValueTask(provider, provider.Version);
         }
 
 
