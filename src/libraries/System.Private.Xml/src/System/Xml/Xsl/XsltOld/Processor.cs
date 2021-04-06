@@ -6,6 +6,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Reflection;
@@ -247,6 +248,8 @@ namespace System.Xml.Xsl.XsltOld
             return parameter;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = XsltArgumentList.ExtensionObjectSuppresion)]
         internal object? GetExtensionObject(string nsUri)
         {
             return _args.GetExtensionObject(nsUri);
@@ -1073,7 +1076,7 @@ namespace System.Xml.Xsl.XsltOld
 
         // ---------------------- Debugger stack -----------------------
 
-        internal class DebuggerFrame
+        internal sealed class DebuggerFrame
         {
             internal ActionFrame? actionFrame;
             internal XmlQualifiedName? currentMode;

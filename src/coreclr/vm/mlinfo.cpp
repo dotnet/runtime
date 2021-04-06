@@ -1133,6 +1133,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
     CorElementType corElemType      = ELEMENT_TYPE_END;
     m_pMT                           = NULL;
     m_pMD                           = pMD;
+    // [Compat] For backward compatibility reasons, some marshalers imply [In, Out] behavior when marked as [In], [Out], or not marked with either.
+    BOOL byValAlwaysInOut           = FALSE;
 
 #ifdef FEATURE_COMINTEROP
     m_fDispItf                      = FALSE;
@@ -1877,6 +1879,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     }
                     m_type = IsFieldScenario() ? MARSHAL_TYPE_BLITTABLE_LAYOUTCLASS : MARSHAL_TYPE_BLITTABLEPTR;
                     m_args.m_pMT = m_pMT;
+                    byValAlwaysInOut = TRUE;
                 }
                 else if (m_pMT->HasLayout())
                 {
@@ -2369,10 +2372,16 @@ lExit:
             }
         }
 
-        // If neither IN nor OUT are true, this signals the URT to use the default
-        // rules.
-        if (!m_in && !m_out)
+        if (!m_byref && byValAlwaysInOut)
         {
+            // Some marshalers expect [In, Out] behavior with [In], [Out], or no directional attributes.
+            m_in = TRUE;
+            m_out = TRUE;
+        }
+        else if (!m_in && !m_out)
+        {
+            // If neither IN nor OUT are true, this signals the URT to use the default
+            // rules.
             if (m_byref ||
                  (mtype == ELEMENT_TYPE_CLASS
                   && !(sig.IsStringType(pModule, pTypeContext))
@@ -2386,7 +2395,6 @@ lExit:
                 m_in = TRUE;
                 m_out = FALSE;
             }
-
         }
     }
 

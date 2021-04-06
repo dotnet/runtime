@@ -2357,12 +2357,6 @@ mono_aot_init (void)
 	}
 }
 
-void
-mono_aot_cleanup (void)
-{
-	g_hash_table_destroy (aot_modules);
-}
-
 /*
  * load_container_amodule:
  *
@@ -5880,7 +5874,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 		} else {
 			void *ptr = mono_binary_search (GINT_TO_POINTER (method_index), amodule->info.llvm_unbox_tramp_indexes, amodule->info.llvm_unbox_tramp_num, amodule->info.llvm_unbox_tramp_elemsize, ui16_idx_comparer);
 			g_assert (ptr);
-			g_assert (*(gint16*)ptr == method_index);
+			g_assert (*(guint16*)ptr == method_index);
 			unbox_tramp_idx = (guint16*)ptr - (guint16*)amodule->info.llvm_unbox_tramp_indexes;
 		}
 		g_assert (unbox_tramp_idx < amodule->info.llvm_unbox_tramp_num);
@@ -6203,11 +6197,6 @@ mono_aot_get_method_flags (guint8 *code)
 
 void
 mono_aot_init (void)
-{
-}
-
-void
-mono_aot_cleanup (void)
 {
 }
 

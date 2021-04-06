@@ -10016,8 +10016,15 @@ void Compiler::gtDispNodeName(GenTree* tree)
         switch (tree->AsBoundsChk()->gtThrowKind)
         {
             case SCK_RNGCHK_FAIL:
-                sprintf_s(bufp, sizeof(buf), " %s_Rng", name);
+            {
+                bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " %s_Rng", name);
+                if (tree->AsBoundsChk()->gtIndRngFailBB != nullptr)
+                {
+                    bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " -> " FMT_BB,
+                                            tree->AsBoundsChk()->gtIndRngFailBB->bbNum);
+                }
                 break;
+            }
             case SCK_ARG_EXCPN:
                 sprintf_s(bufp, sizeof(buf), " %s_Arg", name);
                 break;
@@ -10603,7 +10610,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                     {
                         // Promoted implicit by-refs can have this state during
                         // global morph while they are being rewritten
-                        assert(fgGlobalMorph);
                         printf("(P?!)"); // Promoted struct
                     }
                 }
@@ -11303,7 +11309,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                 {
                     // Promoted implicit byrefs can get in this state while they are being rewritten
                     // in global morph.
-                    assert(fgGlobalMorph);
                 }
                 else
                 {

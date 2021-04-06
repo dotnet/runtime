@@ -1311,7 +1311,41 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             {
                 if (callConvIsInstanceMethodCallConv(srcCall->GetUnmanagedCallConv()))
                 {
+#ifdef TARGET_X86
+                    // The argument list has already been reversed.
+                    // Insert the return buffer as the second-to-last node
+                    // so it will be pushed on to the stack after the user args but before the native this arg
+                    // as required by the native ABI.
+                    GenTreeCall::Use* lastArg = srcCall->gtCallArgs;
+                    if (lastArg == nullptr)
+                    {
+                        srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, srcCall->gtCallArgs);
+                    }
+                    else if (srcCall->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall)
+                    {
+                        // For thiscall, the "this" parameter is not included in the argument list reversal,
+                        // so we need to put the return buffer as the last parameter.
+                        for (; lastArg->GetNext() != nullptr; lastArg = lastArg->GetNext())
+                            ;
+                        gtInsertNewCallArgAfter(destAddr, lastArg);
+                    }
+                    else if (lastArg->GetNext() == nullptr)
+                    {
+                        srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, lastArg);
+                    }
+                    else
+                    {
+                        assert(lastArg != nullptr && lastArg->GetNext() != nullptr);
+                        GenTreeCall::Use* secondLastArg = lastArg;
+                        lastArg                         = lastArg->GetNext();
+                        for (; lastArg->GetNext() != nullptr; secondLastArg = lastArg, lastArg = lastArg->GetNext())
+                            ;
+                        assert(secondLastArg->GetNext() != nullptr);
+                        gtInsertNewCallArgAfter(destAddr, secondLastArg);
+                    }
+#else
                     GenTreeCall::Use* thisArg = gtInsertNewCallArgAfter(destAddr, srcCall->gtCallArgs);
+#endif
                 }
                 else
                 {
@@ -2800,7 +2834,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         /* Create extra basic block for the spill */
         BasicBlock* newBlk = fgNewBBbefore(BBJ_NONE, hndBlk, /* extendRegion */ true);
         newBlk->bbFlags |= BBF_IMPORTED | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET;
-        newBlk->setBBWeight(hndBlk->bbWeight);
+        newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
         /* Account for the new link we are about to create */
@@ -3075,7 +3109,7 @@ unsigned Compiler::impInitBlockLineInfo()
 
 /*****************************************************************************/
 
-static inline bool impOpcodeIsCallOpcode(OPCODE opcode)
+bool Compiler::impOpcodeIsCallOpcode(OPCODE opcode)
 {
     switch (opcode)
     {
@@ -7151,8 +7185,11 @@ void Compiler::impCheckForPInvokeCall(
         call->gtCallMoreFlags |= GTF_CALL_M_SUPPRESS_GC_TRANSITION;
     }
 
-    if (unmanagedCallConv != CorInfoCallConvExtension::C && unmanagedCallConv != CorInfoCallConvExtension::Stdcall &&
-        unmanagedCallConv != CorInfoCallConvExtension::Thiscall)
+    // If we can't get the unmanaged calling convention or the calling convention is unsupported in the JIT,
+    // return here without inlining the native call.
+    if (unmanagedCallConv == CorInfoCallConvExtension::Managed ||
+        unmanagedCallConv == CorInfoCallConvExtension::Fastcall ||
+        unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
     {
         return;
     }
@@ -7216,7 +7253,8 @@ void Compiler::impCheckForPInvokeCall(
     }
 
     // AMD64 convention is same for native and managed
-    if (unmanagedCallConv == CorInfoCallConvExtension::C)
+    if (unmanagedCallConv == CorInfoCallConvExtension::C ||
+        unmanagedCallConv == CorInfoCallConvExtension::CMemberFunction)
     {
         call->gtFlags |= GTF_CALL_POP_ARGS;
     }
@@ -7810,21 +7848,6 @@ bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetTy
 
     return false;
 }
-
-// For prefixFlags
-enum
-{
-    PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
-    PREFIX_TAILCALL_IMPLICIT =
-        0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
-    PREFIX_TAILCALL_STRESS =
-        0x00000100, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
-    PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
-    PREFIX_VOLATILE    = 0x00001000,
-    PREFIX_UNALIGNED   = 0x00010000,
-    PREFIX_CONSTRAINED = 0x00100000,
-    PREFIX_READONLY    = 0x01000000
-};
 
 /********************************************************************************
  *
@@ -10295,7 +10318,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                     BasicBlock* step2 = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
                     step->bbJumpDest  = step2;
                     step->bbJumpDest->bbRefs++;
-                    step2->setBBWeight(block->bbWeight);
+                    step2->inheritWeight(block);
                     step2->bbFlags |= (block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED;
 
 #ifdef DEBUG
@@ -10605,7 +10628,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
 // Get the first non-prefix opcode. Used for verification of valid combinations
 // of prefixes and actual opcodes.
 
-static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp)
+OPCODE Compiler::impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp)
 {
     while (codeAddr < codeEndp)
     {
@@ -10643,7 +10666,7 @@ static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp)
 /*****************************************************************************/
 // Checks whether the opcode is a valid opcode for volatile. and unaligned. prefixes
 
-static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix)
+void Compiler::impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix)
 {
     OPCODE opcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
 
@@ -21501,12 +21524,12 @@ void Compiler::considerGuardedDevirtualization(
 
     JITDUMP("Considering guarded devirtualization\n");
 
-    // We currently only get likely class guesses when there is PGO data. So if we've disabled
-    // PGO, just bail out.
-
-    if (JitConfig.JitDisablePGO() != 0)
+    // We currently only get likely class guesses when there is PGO data
+    // with class profiles.
+    //
+    if (fgPgoClassProfiles == 0)
     {
-        JITDUMP("Not guessing for class; pgo disabled\n");
+        JITDUMP("Not guessing for class: no class profile pgo data, or pgo disabled\n");
         return;
     }
 

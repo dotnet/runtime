@@ -22,9 +22,9 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     internal sealed class EventPayload : IDictionary<string, object?>
     {
-        internal EventPayload(List<string> payloadNames, List<object?> payloadValues)
+        internal EventPayload(string[] payloadNames, object?[] payloadValues)
         {
-            Debug.Assert(payloadNames.Count == payloadValues.Count);
+            Debug.Assert(payloadNames.Length == payloadValues.Length);
 
             m_names = payloadNames;
             m_values = payloadValues;
@@ -88,7 +88,7 @@ namespace System.Diagnostics.Tracing
             return false;
         }
 
-        public int Count => m_names.Count;
+        public int Count => m_names.Length;
 
         public bool IsReadOnly => true;
 
@@ -142,8 +142,8 @@ namespace System.Diagnostics.Tracing
         }
 
 #region private
-        private readonly List<string> m_names;
-        private readonly List<object?> m_values;
+        private readonly string[] m_names;
+        private readonly object?[] m_values;
 #endregion
     }
 }

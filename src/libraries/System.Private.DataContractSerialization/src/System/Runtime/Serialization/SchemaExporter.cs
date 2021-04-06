@@ -16,7 +16,7 @@ using System.Xml.Serialization;
 
 namespace System.Runtime.Serialization
 {
-    internal class SchemaExporter
+    internal sealed class SchemaExporter
     {
         private readonly XmlSchemaSet _schemas;
         private XmlDocument? _xmlDoc;

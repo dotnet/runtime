@@ -34,7 +34,7 @@ namespace bundle
         bool is_valid() const;
     };
 
-    // netcoreapp3_compat_mode flag is set on a .net5 app, which chooses to build single-file apps in .netcore3.x compat mode,
+    // netcoreapp3_compat_mode flag is set on a .net5+ app, which chooses to build single-file apps in .netcore3.x compat mode,
     // This indicates that:
     //   All published files are bundled into the app; some of them will be extracted to disk.
     //   AppContext.BaseDirectory is set to the extraction directory (and not the AppHost directory).
@@ -72,8 +72,10 @@ namespace bundle
     struct header_t
     {
     public:
-        header_t(int32_t num_embedded_files = 0)
+        header_t(uint32_t major_version, uint32_t minor_version, int32_t num_embedded_files)
             : m_num_embedded_files(num_embedded_files)
+            , m_major_version(major_version)
+            , m_minor_version(minor_version)
             , m_bundle_id()
             , m_v2_header()
         {
@@ -87,11 +89,13 @@ namespace bundle
         const location_t& runtimeconfig_json_location() const { return m_v2_header.runtimeconfig_json_location; }
         bool is_netcoreapp3_compat_mode() const { return m_v2_header.is_netcoreapp3_compat_mode(); }
 
-        static const uint32_t major_version = 2;
-        static const uint32_t minor_version = 0;
+        const uint32_t major_version() const { return m_major_version; };
+        const uint32_t minor_version() const { return m_minor_version; };
 
     private:
         int32_t m_num_embedded_files;
+        uint32_t m_major_version;
+        uint32_t m_minor_version;
         pal::string_t m_bundle_id;
         header_fixed_v2_t m_v2_header;
     };

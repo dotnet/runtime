@@ -1365,15 +1365,16 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             continue;
         }
 
-        if (inheritWeight)
+        // If we were unable to compute a scale for some reason, then
+        // try to do something plausible. Entry/exit blocks match call
+        // site, internal blocks scaled by half; all rare blocks left alone.
+        //
+        if (!block->isRunRarely())
         {
-            block->inheritWeight(iciBlock);
-            inheritWeight = false;
+            block->inheritWeightPercentage(iciBlock, inheritWeight ? 100 : 50);
         }
-        else
-        {
-            block->modifyBBWeight(iciBlock->bbWeight / 2);
-        }
+
+        inheritWeight = false;
     }
 
     // Insert inlinee's blocks into inliner's block list.
@@ -1426,7 +1427,30 @@ _Done:
     // Update unmanaged call details
     info.compUnmanagedCallCountWithGCTransition += InlineeCompiler->info.compUnmanagedCallCountWithGCTransition;
 
-// Update optMethodFlags
+    // Update stats for inlinee PGO
+    //
+    if (InlineeCompiler->fgPgoSchema != nullptr)
+    {
+        fgPgoInlineePgo++;
+    }
+    else if (InlineeCompiler->fgPgoFailReason != nullptr)
+    {
+        // Single block inlinees may not have probes
+        // when we've ensabled minimal profiling (which
+        // is now the default).
+        //
+        if (InlineeCompiler->fgBBcount == 1)
+        {
+            fgPgoInlineeNoPgoSingleBlock++;
+        }
+        else
+        {
+            fgPgoInlineeNoPgo++;
+        }
+    }
+
+    // Update optMethodFlags
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     unsigned optMethodFlagsBefore = optMethodFlags;

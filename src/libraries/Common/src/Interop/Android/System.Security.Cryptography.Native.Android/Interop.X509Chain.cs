@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -41,16 +42,23 @@ internal static partial class Interop
             var certPtrs = new IntPtr[count];
 
             int res = Interop.AndroidCrypto.X509ChainGetCertificates(ctx, certPtrs, certPtrs.Length);
-            if (res != SUCCESS)
+            if (res == 0)
                 throw new CryptographicException();
 
+            Debug.Assert(res <= certPtrs.Length);
+
             var certs = new X509Certificate2[certPtrs.Length];
-            for (int i = 0; i < certs.Length; i++)
+            for (int i = 0; i < res; i++)
             {
                 certs[i] = new X509Certificate2(certPtrs[i]);
             }
 
-            return certs;
+            if (res == certPtrs.Length)
+            {
+                return certs;
+            }
+
+            return certs[0..res];
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -89,6 +97,10 @@ internal static partial class Interop
             SafeX509ChainContextHandle ctx,
             IntPtr[] customTrustStore,
             int customTrustStoreLen);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainSupportsRevocationOptions")]
+        [return:MarshalAs(UnmanagedType.U1)]
+        internal static extern bool X509ChainSupportsRevocationOptions();
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainValidate")]
         internal static extern int X509ChainValidate(

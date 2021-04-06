@@ -578,9 +578,9 @@ namespace System
 
         public static string Join(string? separator, IEnumerable<string?> values)
         {
-            if (values is List<string?> valuesIList)
+            if (values is List<string?> valuesList)
             {
-                return JoinCore(separator.AsSpan(), CollectionsMarshal.AsSpan(valuesIList));
+                return JoinCore(separator.AsSpan(), CollectionsMarshal.AsSpan(valuesList));
             }
 
             if (values is string?[] valuesArray)
@@ -875,7 +875,7 @@ namespace System
         public string Remove(int startIndex)
         {
             if ((uint)startIndex > Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex < 0 ? SR.ArgumentOutOfRange_StartIndex : SR.ArgumentOutOfRange_StartIndexLessThanLength);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex < 0 ? SR.ArgumentOutOfRange_StartIndex : SR.ArgumentOutOfRange_StartIndexLargerThanLength);
 
             return Substring(0, startIndex);
         }

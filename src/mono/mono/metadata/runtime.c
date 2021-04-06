@@ -52,8 +52,9 @@ mono_runtime_is_shutting_down (void)
 }
 
 static void
-fire_process_exit_event (MonoDomain *domain, gpointer user_data)
+mono_runtime_fire_process_exit_event (void)
 {
+#ifndef MONO_CROSS_COMPILE
 	ERROR_DECL (error);
 	MonoObject *exc;
 
@@ -67,13 +68,6 @@ fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 	g_assert (procexit_method);
 	
 	mono_runtime_try_invoke (procexit_method, NULL, NULL, &exc, error);
-}
-
-static void
-mono_runtime_fire_process_exit_event (void)
-{
-#ifndef MONO_CROSS_COMPILE
-	mono_domain_foreach (fire_process_exit_event, NULL);
 #endif
 }
 

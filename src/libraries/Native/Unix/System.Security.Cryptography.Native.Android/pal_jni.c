@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_jni.h"
+#include <pthread.h>
 
 JavaVM* gJvm;
 
@@ -18,11 +19,6 @@ jmethodID g_EnumOrdinal;
 jclass    g_ThrowableClass;
 jmethodID g_ThrowableGetCause;
 jmethodID g_ThrowableGetMessage;
-
-// java/security/Key
-jclass    g_KeyClass;
-jmethodID g_KeyGetAlgorithm;
-jmethodID g_KeyGetEncoded;
 
 // java/security/SecureRandom
 jclass    g_randClass;
@@ -154,7 +150,6 @@ jmethodID g_CertFactoryGenerateCertificate;
 jmethodID g_CertFactoryGenerateCertificates;
 jmethodID g_CertFactoryGenerateCertPathFromList;
 jmethodID g_CertFactoryGenerateCertPathFromStream;
-jmethodID g_CertFactoryGenerateCRL;
 
 // java/security/cert/CertPath
 jclass    g_CertPathClass;
@@ -193,7 +188,6 @@ jclass    g_PKIXBuilderParametersClass;
 jmethodID g_PKIXBuilderParametersCtor;
 jmethodID g_PKIXBuilderParametersAddCertStore;
 jmethodID g_PKIXBuilderParametersAddCertPathChecker;
-jmethodID g_PKIXBuilderParametersSetCertPathCheckers;
 jmethodID g_PKIXBuilderParametersSetDate;
 jmethodID g_PKIXBuilderParametersSetRevocationEnabled;
 jmethodID g_PKIXBuilderParametersSetTrustAnchors;
@@ -212,10 +206,7 @@ jmethodID g_PKIXRevocationCheckerSetOptions;
 
 // java/security/cert/PKIXRevocationChecker$Option - only in API level 24+
 jclass    g_PKIXRevocationCheckerOptionClass;
-jfieldID  g_PKIXRevocationCheckerOptionNoFallback;
 jfieldID  g_PKIXRevocationCheckerOptionOnlyEndEntity;
-jfieldID  g_PKIXRevocationCheckerOptionPreferCrls;
-jfieldID  g_PKIXRevocationCheckerOptionSoftFail;
 
 // java/security/cert/TrustAnchor
 jclass    g_TrustAnchorClass;
@@ -355,7 +346,6 @@ jmethodID g_CollectionSize;
 // java/util/Date
 jclass    g_DateClass;
 jmethodID g_DateCtor;
-jmethodID g_DateGetTime;
 
 // java/util/Enumeration
 jclass    g_Enumeration;
@@ -375,10 +365,6 @@ jmethodID g_IteratorNext;
 // java/util/List
 jclass    g_ListClass;
 jmethodID g_ListGet;
-
-// java/util/Set
-jclass    g_SetClass;
-jmethodID g_SetIterator;
 
 // javax/net/ssl/SSLEngine
 jclass    g_SSLEngine;
@@ -423,11 +409,6 @@ jmethodID g_SSLEngineResultGetHandshakeStatusMethod;
 
 // javax/net/ssl/TrustManager
 jclass    g_TrustManager;
-
-// javax/security/auth/x500/X500Principal
-jclass    g_X500PrincipalClass;
-jmethodID g_X500PrincipalGetEncoded;
-jmethodID g_X500PrincipalHashCode;
 
 // javax/crypto/KeyAgreement
 jclass    g_KeyAgreementClass;
@@ -496,6 +477,8 @@ static jclass GetOptionalClassGRef(JNIEnv *env, const char* name)
     if (!TryGetClassGRef(env, name, &klass))
     {
         LOG_DEBUG("optional class %s was not found", name);
+        // Failing to find an optional class causes an exception state, which we need to clear.
+        TryClearJNIExceptions(env);
     }
 
     return klass;
@@ -571,6 +554,8 @@ jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char
     jmethodID mid = isStatic ? (*env)->GetStaticMethodID(env, klass, name, sig) : (*env)->GetMethodID(env, klass, name, sig);
     if (!mid) {
         LOG_INFO("optional method %s %s was not found", name, sig);
+        // Failing to find an optional method causes an exception state, which we need to clear.
+        TryClearJNIExceptions(env);
     }
     return mid;
 }
@@ -586,6 +571,22 @@ jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, co
     return fid;
 }
 
+static void DetatchThreadFromJNI(void* unused)
+{
+    LOG_DEBUG("Detaching thread from JNI");
+    (void)unused;
+    (*gJvm)->DetachCurrentThread(gJvm);
+}
+
+static pthread_key_t threadLocalEnvKey;
+static pthread_once_t threadLocalEnvInitKey = PTHREAD_ONCE_INIT;
+
+static void
+make_key()
+{
+    (void) pthread_key_create(&threadLocalEnvKey, &DetatchThreadFromJNI);
+}
+
 JNIEnv* GetJNIEnv()
 {
     JNIEnv *env;
@@ -593,6 +594,11 @@ JNIEnv* GetJNIEnv()
     if (env)
         return env;
     jint ret = (*gJvm)->AttachCurrentThreadAsDaemon(gJvm, &env, NULL);
+
+    (void) pthread_once(&threadLocalEnvInitKey, make_key);
+    LOG_DEBUG("Registering JNI thread detach. env ptr %p. Key: %ld", (void*)env, (long)threadLocalEnvKey);
+    pthread_setspecific(threadLocalEnvKey, env);
+
     assert(ret == JNI_OK && "Unable to attach thread to JVM");
     (void)ret;
     return env;
@@ -625,10 +631,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_ThrowableClass =      GetClassGRef(env, "java/lang/Throwable");
     g_ThrowableGetCause =   GetMethod(env, false, g_ThrowableClass, "getCause", "()Ljava/lang/Throwable;");
     g_ThrowableGetMessage = GetMethod(env, false, g_ThrowableClass, "getMessage", "()Ljava/lang/String;");
-
-    g_KeyClass =        GetClassGRef(env, "java/security/Key");
-    g_KeyGetAlgorithm = GetMethod(env, false, g_KeyClass, "getAlgorithm", "()Ljava/lang/String;");
-    g_KeyGetEncoded =   GetMethod(env, false, g_KeyClass, "getEncoded", "()[B");
 
     g_randClass =               GetClassGRef(env, "java/security/SecureRandom");
     g_randCtor =                GetMethod(env, false, g_randClass, "<init>", "()V");
@@ -692,7 +694,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_CertFactoryGenerateCertificates =         GetMethod(env, false, g_CertFactoryClass, "generateCertificates", "(Ljava/io/InputStream;)Ljava/util/Collection;");
     g_CertFactoryGenerateCertPathFromList =     GetMethod(env, false, g_CertFactoryClass, "generateCertPath", "(Ljava/util/List;)Ljava/security/cert/CertPath;");
     g_CertFactoryGenerateCertPathFromStream =   GetMethod(env, false, g_CertFactoryClass, "generateCertPath", "(Ljava/io/InputStream;Ljava/lang/String;)Ljava/security/cert/CertPath;");
-    g_CertFactoryGenerateCRL =                  GetMethod(env, false, g_CertFactoryClass, "generateCRL", "(Ljava/io/InputStream;)Ljava/security/cert/CRL;");
 
     g_CertPathClass =           GetClassGRef(env, "java/security/cert/CertPath");
     g_CertPathGetEncoded =      GetMethod(env, false, g_CertPathClass, "getEncoded", "(Ljava/lang/String;)[B");
@@ -723,7 +724,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_PKIXBuilderParametersCtor =                   GetMethod(env, false, g_PKIXBuilderParametersClass, "<init>", "(Ljava/security/KeyStore;Ljava/security/cert/CertSelector;)V");
     g_PKIXBuilderParametersAddCertStore =           GetMethod(env, false, g_PKIXBuilderParametersClass, "addCertStore", "(Ljava/security/cert/CertStore;)V");
     g_PKIXBuilderParametersAddCertPathChecker =     GetMethod(env, false, g_PKIXBuilderParametersClass, "addCertPathChecker", "(Ljava/security/cert/PKIXCertPathChecker;)V");
-    g_PKIXBuilderParametersSetCertPathCheckers =    GetMethod(env, false, g_PKIXBuilderParametersClass, "setCertPathCheckers", "(Ljava/util/List;)V");
     g_PKIXBuilderParametersSetDate =                GetMethod(env, false, g_PKIXBuilderParametersClass, "setDate", "(Ljava/util/Date;)V");
     g_PKIXBuilderParametersSetRevocationEnabled =   GetMethod(env, false, g_PKIXBuilderParametersClass, "setRevocationEnabled", "(Z)V");
     g_PKIXBuilderParametersSetTrustAnchors =        GetMethod(env, false, g_PKIXBuilderParametersClass, "setTrustAnchors", "(Ljava/util/Set;)V");
@@ -740,10 +740,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
         g_PKIXRevocationCheckerSetOptions =             GetMethod(env, false, g_PKIXRevocationCheckerClass, "setOptions", "(Ljava/util/Set;)V");
 
         g_PKIXRevocationCheckerOptionClass =            GetClassGRef(env, "java/security/cert/PKIXRevocationChecker$Option");
-        g_PKIXRevocationCheckerOptionNoFallback =       GetField(env, true, g_PKIXRevocationCheckerOptionClass, "NO_FALLBACK", "Ljava/security/cert/PKIXRevocationChecker$Option;");
         g_PKIXRevocationCheckerOptionOnlyEndEntity =    GetField(env, true, g_PKIXRevocationCheckerOptionClass, "ONLY_END_ENTITY", "Ljava/security/cert/PKIXRevocationChecker$Option;");
-        g_PKIXRevocationCheckerOptionPreferCrls =       GetField(env, true, g_PKIXRevocationCheckerOptionClass, "PREFER_CRLS", "Ljava/security/cert/PKIXRevocationChecker$Option;");
-        g_PKIXRevocationCheckerOptionSoftFail =         GetField(env, true, g_PKIXRevocationCheckerOptionClass, "SOFT_FAIL", "Ljava/security/cert/PKIXRevocationChecker$Option;");
     }
 
     g_TrustAnchorClass =            GetClassGRef(env, "java/security/cert/TrustAnchor");
@@ -906,7 +903,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_DateClass =   GetClassGRef(env, "java/util/Date");
     g_DateCtor =    GetMethod(env, false, g_DateClass, "<init>", "(J)V");
-    g_DateGetTime = GetMethod(env, false, g_DateClass, "getTime", "()J");
 
     g_Enumeration =                 GetClassGRef(env, "java/util/Enumeration");
     g_EnumerationHasMoreElements =  GetMethod(env, false, g_Enumeration, "hasMoreElements", "()Z");
@@ -922,9 +918,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_ListClass =   GetClassGRef(env, "java/util/List");
     g_ListGet =     GetMethod(env, false, g_ListClass, "get", "(I)Ljava/lang/Object;");
-
-    g_SetClass =    GetClassGRef(env, "java/util/Set");
-    g_SetIterator = GetMethod(env, false, g_SetClass, "iterator", "()Ljava/util/Iterator;");
 
     g_SSLEngine =                         GetClassGRef(env, "javax/net/ssl/SSLEngine");
     g_SSLEngineSetUseClientModeMethod =   GetMethod(env, false, g_SSLEngine, "setUseClientMode", "(Z)V");
@@ -963,10 +956,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLEngineResultGetHandshakeStatusMethod =  GetMethod(env, false, g_SSLEngineResult, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
 
     g_TrustManager =                             GetClassGRef(env, "javax/net/ssl/TrustManager");
-
-    g_X500PrincipalClass =      GetClassGRef(env, "javax/security/auth/x500/X500Principal");
-    g_X500PrincipalGetEncoded = GetMethod(env, false, g_X500PrincipalClass, "getEncoded", "()[B");
-    g_X500PrincipalHashCode =   GetMethod(env, false, g_X500PrincipalClass, "hashCode", "()I");
 
     g_KeyAgreementClass          = GetClassGRef(env, "javax/crypto/KeyAgreement");
     g_KeyAgreementGetInstance    = GetMethod(env, true, g_KeyAgreementClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/KeyAgreement;");

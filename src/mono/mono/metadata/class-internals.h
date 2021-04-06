@@ -1083,9 +1083,6 @@ mono_reflection_init       (void);
 void
 mono_icall_init            (void);
 
-void
-mono_icall_cleanup         (void);
-
 gpointer
 mono_method_get_wrapper_data (MonoMethod *method, guint32 id);
 
@@ -1540,6 +1537,13 @@ m_field_get_offset (MonoClassField *field)
  */
 
 static inline MonoMemoryManager*
+mono_mem_manager_get_ambient (void)
+{
+	// FIXME: All callers should get a MemoryManager from their callers or context
+	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
+}
+
+static inline MonoMemoryManager*
 m_image_get_mem_manager (MonoImage *image)
 {
 	return (MonoMemoryManager*)mono_image_get_alc (image)->memory_manager;
@@ -1585,7 +1589,7 @@ static inline MonoMemoryManager*
 m_method_get_mem_manager (MonoMethod *method)
 {
 	// FIXME:
-	return mono_domain_memory_manager (mono_get_root_domain ());
+	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
 }
 
 static inline void *

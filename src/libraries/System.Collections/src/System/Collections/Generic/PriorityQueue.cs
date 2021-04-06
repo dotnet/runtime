@@ -555,25 +555,25 @@ namespace System.Collections.Generic
         /// </summary>
         private void RemoveRootNode()
         {
-            // The idea is to replace the root node by the very last
-            // node and shorten the array by one.
-            int lastNodeIndex = _size - 1;
-            (TElement Element, TPriority Priority) lastNode = _nodes[lastNodeIndex];
+            int lastNodeIndex = --_size;
+            _version++;
+
+            if (lastNodeIndex > 0)
+            {
+                (TElement Element, TPriority Priority) lastNode = _nodes[lastNodeIndex];
+                if (_comparer == null)
+                {
+                    MoveDownDefaultComparer(lastNode, 0);
+                }
+                else
+                {
+                    MoveDownCustomComparer(lastNode, 0);
+                }
+            }
+
             if (RuntimeHelpers.IsReferenceOrContainsReferences<(TElement, TPriority)>())
             {
                 _nodes[lastNodeIndex] = default;
-            }
-
-            _size--;
-            _version++;
-
-            if (_comparer == null)
-            {
-                MoveDownDefaultComparer(lastNode, 0);
-            }
-            else
-            {
-                MoveDownCustomComparer(lastNode, 0);
             }
         }
 
@@ -625,6 +625,7 @@ namespace System.Collections.Generic
             // a similar optimization as in the insertion sort.
 
             Debug.Assert(_comparer is null);
+            Debug.Assert(0 <= nodeIndex && nodeIndex < _size);
 
             (TElement Element, TPriority Priority)[] nodes = _nodes;
 
@@ -656,6 +657,7 @@ namespace System.Collections.Generic
             // a similar optimization as in the insertion sort.
 
             Debug.Assert(_comparer is not null);
+            Debug.Assert(0 <= nodeIndex && nodeIndex < _size);
 
             IComparer<TPriority> comparer = _comparer;
             (TElement Element, TPriority Priority)[] nodes = _nodes;
@@ -689,6 +691,7 @@ namespace System.Collections.Generic
             // for this value to drop in. Similar optimization as in the insertion sort.
 
             Debug.Assert(_comparer is null);
+            Debug.Assert(0 <= nodeIndex && nodeIndex < _size);
 
             (TElement Element, TPriority Priority)[] nodes = _nodes;
             int size = _size;
@@ -736,6 +739,7 @@ namespace System.Collections.Generic
             // for this value to drop in. Similar optimization as in the insertion sort.
 
             Debug.Assert(_comparer is not null);
+            Debug.Assert(0 <= nodeIndex && nodeIndex < _size);
 
             IComparer<TPriority> comparer = _comparer;
             (TElement Element, TPriority Priority)[] nodes = _nodes;
@@ -908,10 +912,7 @@ namespace System.Collections.Generic
                 /// Gets the element at the current position of the enumerator.
                 /// </summary>
                 public (TElement Element, TPriority Priority) Current => _current;
-
-                object IEnumerator.Current =>
-                    _index == 0 || _index == _queue._size + 1 ? throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen) :
-                    Current;
+                object IEnumerator.Current => _current;
 
                 void IEnumerator.Reset()
                 {

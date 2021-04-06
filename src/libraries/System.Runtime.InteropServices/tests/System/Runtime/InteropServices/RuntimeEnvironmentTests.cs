@@ -23,19 +23,25 @@ namespace System.Runtime.InteropServices
         [Fact]
         public void SystemConfigurationFile_Get_ThrowsPlatformNotSupportedException()
         {
+#pragma warning disable 618 // SystemConfigurationFile is marked as Obsolete
             Assert.Throws<PlatformNotSupportedException>(() => RuntimeEnvironment.SystemConfigurationFile);
+#pragma warning restore 618
         }
 
         [Fact]
         public void GetRuntimeInterfaceAsObject_Invoke_ThrowsPlatformNotSupportedException()
         {
+#pragma warning disable 618 // GetRuntimeInterfaceAsObject is marked as Obsolete
             Assert.Throws<PlatformNotSupportedException>(() => RuntimeEnvironment.GetRuntimeInterfaceAsObject(Guid.Empty, Guid.Empty));
+#pragma warning restore 618
         }
 
         [Fact]
         public void GetRuntimeInterfaceAsIntPtr_Invoke_ThrowsPlatformNotSupportedException()
         {
+#pragma warning disable 618 // GetRuntimeInterfaceAsIntPtr is marked as Obsolete
             Assert.Throws<PlatformNotSupportedException>(() => RuntimeEnvironment.GetRuntimeInterfaceAsIntPtr(Guid.Empty, Guid.Empty));
+#pragma warning restore 618
         }
 
         [Fact]

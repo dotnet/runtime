@@ -630,4 +630,7 @@
   <data name="net_socks_unexpected_version" xml:space="preserve">
     <value>Unexpected SOCKS protocol version. Required {0}, got {1}.</value>
   </data>
+  <data name="net_http_proxy_tunnel_returned_failure_status_code" xml:space="preserve">
+    <value>The proxy tunnel request to proxy '{0}' failed with status code '{1}'."</value>
+  </data>
 </root>

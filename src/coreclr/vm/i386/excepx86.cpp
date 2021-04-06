@@ -172,7 +172,7 @@ Frame *GetCurrFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame)
         pFrame = ((FrameHandlerExRecord *)pEstablisherFrame)->GetCurrFrame();
 
     // Assert that the exception frame is on the thread or that the exception frame is the top frame.
-    _ASSERTE(GetThread() == NULL || GetThread()->GetFrame() == (Frame*)-1 || GetThread()->GetFrame() <= pFrame);
+    _ASSERTE(GetThreadNULLOk() == NULL || GetThread()->GetFrame() == (Frame*)-1 || GetThread()->GetFrame() <= pFrame);
 
     return pFrame;
 }
@@ -280,7 +280,7 @@ void VerifyValidTransitionFromManagedCode(Thread *pThread, CrawlFrame *pCF)
     _ASSERTE(ExecutionManager::IsManagedCode(GetControlPC(pCF->GetRegisterSet())));
 
     // Cannot get to the TEB of other threads. So ignore them.
-    if (pThread != GetThread())
+    if (pThread != GetThreadNULLOk())
     {
         return;
     }
@@ -1864,7 +1864,6 @@ LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVO
     // Set up m_OSContext for the call to COMPlusCheckForAbort
     //
     Thread* pThread = GetThread();
-    _ASSERTE(pThread != NULL);
 
     SetIP(pThread->m_OSContext, (PCODE)*pRetAddress);
     SetSP(pThread->m_OSContext, (TADDR)esp);
@@ -3304,7 +3303,6 @@ EXCEPTION_HANDLER_IMPL(COMPlusNestedExceptionHandler)
         // the unwind.
 
         Thread* pThread = GetThread();
-        _ASSERTE(pThread);
         ExInfo* pExInfo = &(pThread->GetExceptionState()->m_currentExInfo);
         ExInfo* pPrevNestedInfo = pExInfo->m_pPrevNestedInfo;
 
@@ -3424,7 +3422,6 @@ EXCEPTION_HANDLER_IMPL(UMThunkPrestubHandler)
         GCX_COOP();     // Must be cooperative to modify frame chain.
 
         Thread *pThread = GetThread();
-        _ASSERTE(pThread);
         Frame *pFrame = pThread->GetFrame();
         pFrame->ExceptionUnwind();
         pFrame->Pop(pThread);
@@ -3503,7 +3500,7 @@ AdjustContextForVirtualStub(
 {
     LIMITED_METHOD_CONTRACT;
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreadNULLOk();
 
     // We may not have a managed thread object. Example is an AV on the helper thread.
     // (perhaps during StubManager::IsStub)

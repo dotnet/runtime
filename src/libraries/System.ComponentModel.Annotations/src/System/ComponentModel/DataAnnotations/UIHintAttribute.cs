@@ -68,7 +68,7 @@ namespace System.ComponentModel.DataAnnotations
         public override bool Equals(object? obj) =>
             obj is UIHintAttribute otherAttribute && _implementation.Equals(otherAttribute._implementation);
 
-        internal class UIHintImplementation
+        internal sealed class UIHintImplementation
         {
             private readonly object?[]? _inputControlParameters;
             private IDictionary<string, object?>? _controlParameters;

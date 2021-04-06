@@ -355,7 +355,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             catch (COMException e)
             {
-                throw ExceptionHelper.GetExceptionFromCOMException(context, e); ;
+                throw ExceptionHelper.GetExceptionFromCOMException(context, e);
             }
 
             // invalidate the role collection so that it gets loaded again next time

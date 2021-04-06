@@ -406,8 +406,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     // Dynamic object serialized as string
                     { new { a = 1, b = 2 }, "\"{ a = 1, b = 2 }\"" },
 
-                    // null serialized as special string
-                    { null, "\"(null)\"" }
+                    // null should not be serialized as special string in the state value, only in message
+                    { null, "null" }
                 };
                 return data;
             }
