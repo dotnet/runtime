@@ -22,8 +22,6 @@ namespace System.IO.Strategies
             private const long RegisteringCancellation = (long)4 << 32;
             private const long CompletedCallback = (long)8 << 32;
             private const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
-            private const int ERROR_BROKEN_PIPE = 109;
-            private const int ERROR_NO_DATA = 232;
 
             internal static readonly unsafe IOCompletionCallback s_ioCallback = IOCallback;
 
@@ -143,7 +141,7 @@ namespace System.IO.Strategies
                 // an async read on a pipe to be issued and then the pipe is closed,
                 // returning this error.  This may very well be necessary.
                 ulong packedResult;
-                if (errorCode != 0 && errorCode != ERROR_BROKEN_PIPE && errorCode != ERROR_NO_DATA)
+                if (errorCode != 0 && errorCode != Interop.Errors.ERROR_BROKEN_PIPE && errorCode != Interop.Errors.ERROR_NO_DATA)
                 {
                     packedResult = ((ulong)ResultError | errorCode);
                 }

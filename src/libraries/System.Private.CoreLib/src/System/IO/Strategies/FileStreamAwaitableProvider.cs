@@ -6,13 +6,15 @@ using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
 namespace System.IO.Strategies
 {
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
+        /// <summary>
+        /// Type that ensures we return a ValueTask when asynchronous work is scheduled when reading/writing inside AsyncWindowsFileStreamStrategy.
+        /// </summary>
         private unsafe class FileStreamAwaitableProvider : IValueTaskSource<int>, IValueTaskSource
         {
             private ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
@@ -158,7 +160,7 @@ namespace System.IO.Strategies
                 // an async read on a pipe to be issued and then the pipe is closed,
                 // returning this error.  This may very well be necessary.
                 ulong packedResult;
-                if (errorCode != 0 && errorCode != ERROR_BROKEN_PIPE && errorCode != ERROR_NO_DATA)
+                if (errorCode != 0 && errorCode != Interop.Errors.ERROR_BROKEN_PIPE && errorCode != Interop.Errors.ERROR_NO_DATA)
                 {
                     packedResult = ((ulong)ResultError | errorCode);
                 }

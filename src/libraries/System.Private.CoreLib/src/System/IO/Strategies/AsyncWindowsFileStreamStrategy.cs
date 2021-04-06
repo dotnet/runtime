@@ -181,7 +181,7 @@ namespace System.IO.Strategies
             if (r == -1)
             {
                 // For pipes, when they hit EOF, they will come here.
-                if (errorCode == ERROR_BROKEN_PIPE)
+                if (errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
                 {
                     // Not an error, but EOF.  AsyncFSCallback will NOT be
                     // called.  Call the user callback here.
@@ -192,7 +192,7 @@ namespace System.IO.Strategies
                     provider.ReleaseNativeResource();
                     return new ValueTask<int>(provider.NumBufferedBytes);
                 }
-                else if (errorCode != ERROR_IO_PENDING)
+                else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
                 {
                     if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
                     {
@@ -201,7 +201,7 @@ namespace System.IO.Strategies
 
                     provider.ReleaseNativeResource();
 
-                    if (errorCode == ERROR_HANDLE_EOF)
+                    if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
                     {
                         ThrowHelper.ThrowEndOfFileException();
                     }
@@ -284,14 +284,14 @@ namespace System.IO.Strategies
             if (r == -1)
             {
                 // For pipes, when they are closed on the other side, they will come here.
-                if (errorCode == ERROR_NO_DATA)
+                if (errorCode == Interop.Errors.ERROR_NO_DATA)
                 {
                     // Not an error, but EOF. AsyncFSCallback will NOT be called.
                     // Completing TCS and return cached task allowing the GC to collect TCS.
                     provider.ReleaseNativeResource();
                     return ValueTask.CompletedTask;
                 }
-                else if (errorCode != ERROR_IO_PENDING)
+                else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
                 {
                     if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
                     {
@@ -300,7 +300,7 @@ namespace System.IO.Strategies
 
                     provider.ReleaseNativeResource();
 
-                    if (errorCode == ERROR_HANDLE_EOF)
+                    if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
                     {
                         ThrowHelper.ThrowEndOfFileException();
                     }
@@ -328,7 +328,6 @@ namespace System.IO.Strategies
 
             return new ValueTask(provider, provider.Version);
         }
-
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
