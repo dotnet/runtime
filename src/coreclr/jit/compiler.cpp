@@ -8338,7 +8338,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
 #ifdef DEBUG
     fprintf(s_csvFile, "%u,", comp->loopAlignCandidates);
     fprintf(s_csvFile, "%u,", comp->loopsAligned);
-#endif  // DEBUG
+#endif // DEBUG
 #endif // FEATURE_LOOP_ALIGN
     unsigned __int64 totCycles = 0;
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
