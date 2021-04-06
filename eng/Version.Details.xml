@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-preview.4.21179.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-preview.4.21205.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>29647ace51f6bb8085326ff137525f7a6d89d726</Sha>
+      <Sha>8d8a9f44bf31bc0cb039619e508e46cf85c08768</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
