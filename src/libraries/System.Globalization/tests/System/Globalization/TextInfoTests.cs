@@ -305,6 +305,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(ToLower_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void ToLower(string name, string str, string expected)
         {
             TestToLower(name, str, expected);
@@ -428,6 +429,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(ToUpper_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void ToUpper(string name, string str, string expected)
         {
             TestToUpper(name, str, expected);
