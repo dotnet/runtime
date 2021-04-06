@@ -13,7 +13,7 @@ namespace System.IO.Strategies
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
         /// <summary>
-        /// Type that ensures we return a ValueTask when asynchronous work is scheduled when reading/writing inside AsyncWindowsFileStreamStrategy.
+        /// Type that helps reduce allocations for FileStream.ReadAsync and FileStream.WriteAsync.
         /// </summary>
         private unsafe class FileStreamAwaitableProvider : IValueTaskSource<int>, IValueTaskSource
         {
