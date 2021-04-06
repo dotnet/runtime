@@ -45,7 +45,7 @@ void AndroidCryptoNative_EcKeyDestroy(EC_KEY* r)
             {
                 // Destroy the private key data.
                 jobject privateKey = (*env)->CallObjectMethod(env, r->keyPair, g_keyPairGetPrivateMethod);
-                if (privateKey)
+                if (privateKey && (*env)->IsInstanceOf(env, privateKey, g_DestroyableClass))
                 {
                     (*env)->CallVoidMethod(env, privateKey, g_destroy);
                     ReleaseLRef(env, privateKey);
