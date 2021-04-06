@@ -130,7 +130,6 @@ HRESULT CreateCoreDbg(HMODULE hDBIModule, DWORD processId, int iDebuggerVersion,
 
     if (fpCreate == NULL)
     {
-        printf("*********************nao tem fpCreate\n");
         return CORDBG_E_INCOMPATIBLE_PROTOCOL;
     }
 
@@ -186,8 +185,6 @@ RegisterForRuntimeStartup(
     exit:
     if (FAILED(hr))
     {
-        printf("*********************FAILED\n");
-        fflush(stdout);
         _ASSERTE(pCordb == NULL);
 
         if (hMod != NULL)
@@ -199,8 +196,6 @@ RegisterForRuntimeStartup(
         pfnCallback(NULL, parameter, hr);
         return hr;
     }
-    printf("*********************DEU CERTO\n");
-    fflush(stdout);
     pfnCallback(pCordb, parameter, S_OK);
     return S_OK;
 }

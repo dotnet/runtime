@@ -120,7 +120,7 @@ Cordb::Cordb(DWORD PID) : CordbBaseMono(NULL)
     m_pSemReadWrite = new UTSemReadWrite();
     m_nPID = PID;
 
-#ifndef HOST_WIN32
+#ifndef TARGET_WINDOWS
     PAL_InitializeDLL();
 #endif
 

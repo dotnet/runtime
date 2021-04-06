@@ -8771,7 +8771,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		if (start_frame < tls->frame_count)
 		{
-			buffer_add_byte_array (buf, &tls->frames [start_frame]->ctx, sizeof(MonoContext));
+			buffer_add_byte_array (buf, (uint8_t *)&tls->frames [start_frame]->ctx, sizeof(MonoContext));
 		}
 		break;
 	}
