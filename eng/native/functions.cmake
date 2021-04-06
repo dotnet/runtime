@@ -398,16 +398,16 @@ function(install_clr)
       add_dependencies(${INSTALL_CLR_COMPONENT} ${targetName})
     endif()
     get_target_property(targetType ${targetName} TYPE)
-    if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS AND NOT "${targetType}" STREQUAL "STATIC")
-      get_symbol_file_name(${targetName} symbol_file)
+    if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS AND NOT "${targetType}" STREQUAL "STATIC_LIBRARY")
+      get_symbol_file_name(${targetName} symbolFile)
     endif()
 
     foreach(destination ${destinations})
       # We don't need to install the export libraries for our DLLs
       # since they won't be directly linked against.
       install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-      if (NOT "${symbol_file}" STREQUAL "")
-        install_symbol_file(${symbol_file} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+      if (NOT "${symbolFile}" STREQUAL "")
+        install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
       endif()
 
       if(CLR_CMAKE_PGO_INSTRUMENT)
