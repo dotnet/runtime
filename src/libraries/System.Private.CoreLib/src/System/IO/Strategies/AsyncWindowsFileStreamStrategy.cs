@@ -11,7 +11,7 @@ namespace System.IO.Strategies
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
-        private FileStreamAwaitableProvider? _currentOverlappedOwner; // async op currently using the preallocated overlapped
+        private FileStreamValueTaskSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
         internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
             : base(handle, access, share)
@@ -108,10 +108,10 @@ namespace System.IO.Strategies
         {
             Debug.Assert(_preallocatedOverlapped == null);
 
-            _preallocatedOverlapped = new PreAllocatedOverlapped(FileStreamAwaitableProvider.s_ioCallback, this, buffer);
+            _preallocatedOverlapped = new PreAllocatedOverlapped(FileStreamValueTaskSource.s_ioCallback, this, buffer);
         }
 
-        private FileStreamAwaitableProvider? CompareExchangeCurrentOverlappedOwner(FileStreamAwaitableProvider? newSource, FileStreamAwaitableProvider? existingSource)
+        private FileStreamValueTaskSource? CompareExchangeCurrentOverlappedOwner(FileStreamValueTaskSource? newSource, FileStreamValueTaskSource? existingSource)
             => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -133,7 +133,7 @@ namespace System.IO.Strategies
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamAwaitableProvider provider = FileStreamAwaitableProvider.Create(this, _preallocatedOverlapped, 0, destination);
+            FileStreamValueTaskSource valueTaskSource = FileStreamValueTaskSource.Create(this, _preallocatedOverlapped, 0, destination);
 
 
             // Calculate position in the file we should be at after the read is done
@@ -156,8 +156,8 @@ namespace System.IO.Strategies
 
                 // Now set the position to read from in the NativeOverlapped struct
                 // For pipes, we should leave the offset fields set to 0.
-                provider.Overlapped->OffsetLow = unchecked((int)positionBefore);
-                provider.Overlapped->OffsetHigh = (int)(positionBefore >> 32);
+                valueTaskSource.Overlapped->OffsetLow = unchecked((int)positionBefore);
+                valueTaskSource.Overlapped->OffsetHigh = (int)(positionBefore >> 32);
 
                 // When using overlapped IO, the OS is not supposed to
                 // touch the file pointer location at all.  We will adjust it
@@ -166,7 +166,7 @@ namespace System.IO.Strategies
             }
 
             // queue an async ReadFile operation and pass in a packed overlapped
-            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination.Span, false, provider.Overlapped, out int errorCode);
+            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination.Span, false, valueTaskSource.Overlapped, out int errorCode);
 
             // ReadFile, the OS version, will return 0 on failure.  But
             // my ReadFileNative wrapper returns -1.  My wrapper will return
@@ -188,9 +188,9 @@ namespace System.IO.Strategies
 
                     // We clear the overlapped status bit for this special case.
                     // Failure to do so looks like we are freeing a pending overlapped later.
-                    provider.Overlapped->InternalLow = IntPtr.Zero;
-                    provider.ReleaseNativeResource();
-                    return new ValueTask<int>(provider.NumBufferedBytes);
+                    valueTaskSource.Overlapped->InternalLow = IntPtr.Zero;
+                    valueTaskSource.ReleaseNativeResource();
+                    return new ValueTask<int>(valueTaskSource.NumBufferedBytes);
                 }
                 else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
                 {
@@ -199,7 +199,7 @@ namespace System.IO.Strategies
                         _filePosition = positionBefore;
                     }
 
-                    provider.ReleaseNativeResource();
+                    valueTaskSource.ReleaseNativeResource();
 
                     if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
                     {
@@ -213,7 +213,7 @@ namespace System.IO.Strategies
                 else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
                 {
                     // Only once the IO is pending do we register for cancellation
-                    provider.RegisterForCancellation(cancellationToken);
+                    valueTaskSource.RegisterForCancellation(cancellationToken);
                 }
             }
             else
@@ -227,7 +227,7 @@ namespace System.IO.Strategies
                 // results.
             }
 
-            return new ValueTask<int>(provider, provider.Version);
+            return new ValueTask<int>(valueTaskSource, valueTaskSource.Version);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -249,15 +249,15 @@ namespace System.IO.Strategies
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamAwaitableProvider provider = FileStreamAwaitableProvider.Create(this, _preallocatedOverlapped, 0, source);
+            FileStreamValueTaskSource valueTaskSource = FileStreamValueTaskSource.Create(this, _preallocatedOverlapped, 0, source);
 
             long positionBefore = _filePosition;
             if (CanSeek)
             {
                 // Now set the position to read from in the NativeOverlapped struct
                 // For pipes, we should leave the offset fields set to 0.
-                provider.Overlapped->OffsetLow = (int)positionBefore;
-                provider.Overlapped->OffsetHigh = (int)(positionBefore >> 32);
+                valueTaskSource.Overlapped->OffsetLow = (int)positionBefore;
+                valueTaskSource.Overlapped->OffsetHigh = (int)(positionBefore >> 32);
 
                 // When using overlapped IO, the OS is not supposed to
                 // touch the file pointer location at all.  We will adjust it
@@ -267,7 +267,7 @@ namespace System.IO.Strategies
             }
 
             // queue an async WriteFile operation and pass in a packed overlapped
-            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source.Span, false, provider.Overlapped, out int errorCode);
+            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source.Span, false, valueTaskSource.Overlapped, out int errorCode);
 
             // WriteFile, the OS version, will return 0 on failure.  But
             // my WriteFileNative wrapper returns -1.  My wrapper will return
@@ -286,7 +286,7 @@ namespace System.IO.Strategies
                 {
                     // Not an error, but EOF. AsyncFSCallback will NOT be called.
                     // Completing TCS and return cached task allowing the GC to collect TCS.
-                    provider.ReleaseNativeResource();
+                    valueTaskSource.ReleaseNativeResource();
                     return ValueTask.CompletedTask;
                 }
                 else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
@@ -296,7 +296,7 @@ namespace System.IO.Strategies
                         _filePosition = positionBefore;
                     }
 
-                    provider.ReleaseNativeResource();
+                    valueTaskSource.ReleaseNativeResource();
 
                     if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
                     {
@@ -310,7 +310,7 @@ namespace System.IO.Strategies
                 else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
                 {
                     // Only once the IO is pending do we register for cancellation
-                    provider.RegisterForCancellation(cancellationToken);
+                    valueTaskSource.RegisterForCancellation(cancellationToken);
                 }
             }
             else
@@ -324,7 +324,7 @@ namespace System.IO.Strategies
                 // results.
             }
 
-            return new ValueTask(provider, provider.Version);
+            return new ValueTask(valueTaskSource, valueTaskSource.Version);
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush

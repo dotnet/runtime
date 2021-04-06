@@ -15,21 +15,22 @@ namespace System.IO.Strategies
         /// <summary>
         /// Type that helps reduce allocations for FileStream.ReadAsync and FileStream.WriteAsync.
         /// </summary>
-        private unsafe class FileStreamAwaitableProvider : IValueTaskSource<int>, IValueTaskSource
+        private unsafe class FileStreamValueTaskSource : IValueTaskSource<int>, IValueTaskSource
         {
-            private ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
-
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
-            private NativeOverlapped* _overlapped;
+
             private readonly AsyncWindowsFileStreamStrategy _strategy;
             private readonly int _numBufferedBytes;
+
+            private ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
+            private NativeOverlapped* _overlapped;
             private CancellationTokenRegistration _cancellationRegistration;
             private long _result; // Using long since this needs to be used in Interlocked APIs
 #if DEBUG
             private bool _cancellationHasBeenRegistered;
 #endif
 
-            public static FileStreamAwaitableProvider Create(
+            public static FileStreamValueTaskSource Create(
                 AsyncWindowsFileStreamStrategy strategy,
                 PreAllocatedOverlapped? preallocatedOverlapped,
                 int numBufferedBytes,
@@ -42,11 +43,11 @@ namespace System.IO.Strategies
                 return preallocatedOverlapped != null &&
                        MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer) &&
                        preallocatedOverlapped.IsUserObject(buffer.Array) ?
-                            new FileStreamAwaitableProvider(strategy, preallocatedOverlapped, numBufferedBytes, buffer.Array) :
+                            new FileStreamValueTaskSource(strategy, preallocatedOverlapped, numBufferedBytes, buffer.Array) :
                             new MemoryAwaitableProvider(strategy, numBufferedBytes, memory);
             }
 
-            protected FileStreamAwaitableProvider(
+            protected FileStreamValueTaskSource(
                 AsyncWindowsFileStreamStrategy strategy,
                 PreAllocatedOverlapped? preallocatedOverlapped,
                 int numBufferedBytes,
@@ -92,7 +93,7 @@ namespace System.IO.Strategies
                     long packedResult = Interlocked.CompareExchange(ref _result, FileStreamHelpers.RegisteringCancellation, FileStreamHelpers.NoResult);
                     if (packedResult == FileStreamHelpers.NoResult)
                     {
-                        _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) => ((FileStreamAwaitableProvider)s!).Cancel(token), this);
+                        _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) => ((FileStreamValueTaskSource)s!).Cancel(token), this);
 
                         // Switch the result, just in case IO completed while we were setting the registration
                         packedResult = Interlocked.Exchange(ref _result, FileStreamHelpers.NoResult);
@@ -139,14 +140,14 @@ namespace System.IO.Strategies
                 // be directly the AwaitableProvider that's completing (in the case where the preallocated
                 // overlapped was already in use by another operation).
                 object? state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
-                Debug.Assert(state is (AsyncWindowsFileStreamStrategy or FileStreamAwaitableProvider));
-                FileStreamAwaitableProvider provider = state switch
+                Debug.Assert(state is (AsyncWindowsFileStreamStrategy or FileStreamValueTaskSource));
+                FileStreamValueTaskSource valueTaskSource = state switch
                 {
                     AsyncWindowsFileStreamStrategy strategy => strategy._currentOverlappedOwner!, // must be owned
-                    _ => (FileStreamAwaitableProvider)state
+                    _ => (FileStreamValueTaskSource)state
                 };
-                Debug.Assert(provider != null);
-                Debug.Assert(provider._overlapped == pOverlapped, "Overlaps don't match");
+                Debug.Assert(valueTaskSource != null);
+                Debug.Assert(valueTaskSource._overlapped == pOverlapped, "Overlaps don't match");
 
                 // Handle reading from & writing to closed pipes.  While I'm not sure
                 // this is entirely necessary anymore, maybe it's possible for
@@ -164,13 +165,13 @@ namespace System.IO.Strategies
 
                 // Stow the result so that other threads can observe it
                 // And, if no other thread is registering cancellation, continue
-                if (Interlocked.Exchange(ref provider._result, (long)packedResult) == FileStreamHelpers.NoResult)
+                if (Interlocked.Exchange(ref valueTaskSource._result, (long)packedResult) == FileStreamHelpers.NoResult)
                 {
                     // Successfully set the state, attempt to take back the callback
-                    if (Interlocked.Exchange(ref provider._result, FileStreamHelpers.CompletedCallback) != FileStreamHelpers.NoResult)
+                    if (Interlocked.Exchange(ref valueTaskSource._result, FileStreamHelpers.CompletedCallback) != FileStreamHelpers.NoResult)
                     {
                         // Successfully got the callback, finish the callback
-                        provider.CompleteCallback(packedResult);
+                        valueTaskSource.CompleteCallback(packedResult);
                     }
                     // else: Some other thread stole the result, so now it is responsible to finish the callback
                 }
@@ -226,11 +227,11 @@ namespace System.IO.Strategies
         }
 
         /// <summary>
-        /// Extends <see cref="FileStreamAwaitableProvider"/> with to support disposing of a
+        /// Extends <see cref="FileStreamValueTaskSource"/> with to support disposing of a
         /// <see cref="MemoryHandle"/> when the operation has completed.  This should only be used
         /// when memory doesn't wrap a byte[].
         /// </summary>
-        private sealed class MemoryAwaitableProvider : FileStreamAwaitableProvider
+        private sealed class MemoryAwaitableProvider : FileStreamValueTaskSource
         {
             private MemoryHandle _handle; // mutable struct; do not make this readonly
 
