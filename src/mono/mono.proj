@@ -690,9 +690,8 @@
 
     <Copy SourceFiles="@(_MonoICorDebugArtifacts)"
           DestinationFiles="%(_MonoICorDebugArtifacts.Destination)"
-          Condition="'$(MonoGenerateOffsetsOSGroups)' == ''"
           SkipUnchangedFiles="true"
-          ContinueOnError="WarnAndContinue" />
+          Condition="Exists(@(_MonoICorDebugArtifacts))" />
 
     <Copy SourceFiles="@(_MonoIncludeArtifacts)"
           DestinationFiles="@(_MonoIncludeArtifacts->'$(RuntimeBinDir)include\%(RecursiveDir)%(Filename)%(Extension)')"
