@@ -115,7 +115,7 @@ namespace System.Text.Json.Serialization.Converters
             public IAsyncEnumerator<TElement> GetAsyncEnumerator(CancellationToken _) =>
                 new BufferedAsyncEnumerator(_buffer);
 
-            private class BufferedAsyncEnumerator : IAsyncEnumerator<TElement>
+            private sealed class BufferedAsyncEnumerator : IAsyncEnumerator<TElement>
             {
                 private readonly List<TElement> _buffer;
                 private int _index;
