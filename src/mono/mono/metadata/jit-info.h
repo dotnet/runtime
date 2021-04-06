@@ -285,6 +285,16 @@ mono_jit_info_get_unwind_info (MonoJitInfo *ji);
 typedef MonoJitInfo *(*MonoJitInfoFindInAot)         (MonoDomain *domain, MonoImage *image, gpointer addr);
 void          mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func);
 
+MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, gpointer addr, gboolean try_aot, gboolean allow_trampolines);
+
+typedef void (*MonoJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
+
+void
+mono_jit_info_table_foreach_internal (MonoDomain *domain, MonoJitInfoFunc func, gpointer user_data);
+
+void
+mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash);
+
 G_END_DECLS
 
 #endif /* __MONO_METADATA_JIT_INFO_H__ */

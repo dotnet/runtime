@@ -3893,19 +3893,16 @@ send_types_for_domain (MonoDomain *domain, void *user_data)
 static void
 send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 {
-	GSList *tmp;
 	MonoDomain* old_domain;
 
 	old_domain = mono_domain_get ();
 
 	mono_domain_set_fast (domain, TRUE);
 
-	mono_domain_assemblies_lock (domain);
-	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		MonoAssembly* ass = (MonoAssembly *)tmp->data;
-		emit_assembly_load (ass, NULL);
-	}
-	mono_domain_assemblies_unlock (domain);
+	GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
+	for (int i = 0; i < assemblies->len; ++i)
+		emit_assembly_load ((MonoAssembly*)g_ptr_array_index (assemblies, i), NULL);
+	g_ptr_array_free (assemblies, TRUE);
 
 	mono_domain_set_fast (old_domain, TRUE);
 }
@@ -6312,15 +6309,14 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	MonoAssembly *ass;
 	gboolean type_resolve;
 	MonoType *t;
-	GSList *tmp;
 	MonoDomain *domain = (MonoDomain*)key;
 
 	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
-	mono_domain_assemblies_lock (domain);
-	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		ass = (MonoAssembly *)tmp->data;
+	GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
+	for (int i = 0; i < assemblies->len; ++i) {
+		ass = (MonoAssembly*)g_ptr_array_index (assemblies, i);
 
 		if (ass->image) {
 			ERROR_DECL (probe_type_error);
@@ -6333,7 +6329,7 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 			}
 		}
 	}
-	mono_domain_assemblies_unlock (domain);
+	g_ptr_array_free (assemblies, TRUE);
 }
 
 typedef struct {
@@ -7099,7 +7095,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			case EVENT_KIND_ASSEMBLY_LOAD:
 				/* Emit load events for currently loaded assemblies */
-				mono_domain_foreach (send_assemblies_for_domain, NULL);
+				send_assemblies_for_domain (mono_get_root_domain (), NULL);
 				break;
 			case EVENT_KIND_THREAD_START:
 				/* Emit start events for currently started threads */
@@ -7107,7 +7103,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			case EVENT_KIND_TYPE_LOAD:
 				/* Emit type load events for currently loaded types */
-				mono_domain_foreach (send_types_for_domain, NULL);
+				send_types_for_domain (mono_get_root_domain (), NULL);
 				break;
 			default:
 				break;
@@ -7174,24 +7170,17 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_APPDOMAIN_GET_ASSEMBLIES: {
-		GSList *tmp;
-		MonoAssembly *ass;
-		int count;
-
 		domain = decode_domainid (p, &p, end, NULL, &err);
 		if (err != ERR_NONE)
 			return err;
-		mono_domain_assemblies_lock (domain);
-		count = 0;
-		for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-			count ++;
-		}
-		buffer_add_int (buf, count);
-		for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-			ass = (MonoAssembly *)tmp->data;
+
+		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
+		buffer_add_int (buf, assemblies->len);
+		for (int i = 0; i < assemblies->len; ++i) {
+			MonoAssembly *ass = (MonoAssembly*)g_ptr_array_index (assemblies, i);
 			buffer_add_assemblyid (buf, domain, ass);
 		}
-		mono_domain_assemblies_unlock (domain);
+		g_ptr_array_free (assemblies, TRUE);
 		break;
 	}
 	case CMD_APPDOMAIN_GET_ENTRY_ASSEMBLY: {
