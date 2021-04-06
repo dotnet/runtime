@@ -239,8 +239,6 @@ namespace System.IO.Strategies
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => WriteAsyncInternal(buffer, cancellationToken);
 
-        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush
-
         private unsafe ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             if (!CanWrite)
@@ -328,6 +326,8 @@ namespace System.IO.Strategies
 
             return new ValueTask(provider, provider.Version);
         }
+
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {

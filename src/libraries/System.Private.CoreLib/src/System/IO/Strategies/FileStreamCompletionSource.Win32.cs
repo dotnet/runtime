@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 
 namespace System.IO.Strategies
 {
-    // This is an internal object extending TaskCompletionSource with fields
-    // for all of the relevant data necessary to complete the IO operation.
-    // This is used by IOCallback and all of the async methods.
     internal sealed partial class Net5CompatFileStreamStrategy : FileStreamStrategy
     {
+        // This is an internal object extending TaskCompletionSource with fields
+        // for all of the relevant data necessary to complete the IO operation.
+        // This is used by IOCallback and all of the async methods.
         private unsafe class FileStreamCompletionSource : TaskCompletionSource<int>
         {
             internal static readonly unsafe IOCompletionCallback s_ioCallback = IOCallback;
