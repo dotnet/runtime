@@ -139,23 +139,6 @@ namespace Generators
 
                 AddTask(taskName, (int)eventAttribute.Task);
             }
-
-            /*
-            if (eventAttribute.Opcode != 0)
-            {
-                events.Append(" opcode=\"").Append(GetOpcodeName(eventAttribute.Opcode, eventName)).Append('"');
-            }
-
-            if (eventAttribute.Task != 0)
-            {
-                events.Append(" task=\"").Append(GetTaskName(eventAttribute.Task, eventName)).Append('"');
-            }
-
-            if (eventAttribute.Channel != 0)
-            {
-                events.Append(" channel=\"").Append(GetChannelName(eventAttribute.Channel, eventName, eventAttribute.Message)).Append('"');
-            }
-            */
         }
 
         public void AddEventParameter(ITypeSymbol? type, string name)
@@ -165,6 +148,7 @@ namespace Generators
                 // ???
                 return;
             }
+
             if (this.numParams == 0)
                 templates.Append("  <template tid=\"").Append(this.eventName).AppendLine("Args\">");
             if (type.ToDisplayString() == "byte[]")
@@ -180,8 +164,7 @@ namespace Generators
             }
             numParams++;
             templates.Append("   <data name=\"").Append(name).Append("\" inType=\"").Append(GetTypeName(type)).Append('"');
-            // TODO: for 'byte*' types it assumes the user provided length is named using the same naming convention
-            //       as for 'byte[]' args (blob_arg_name + "Size")
+
             if ((type.TypeKind == TypeKind.Array && ((IArrayTypeSymbol)type).ElementType.SpecialType == SpecialType.System_Byte) ||
                 (type.TypeKind == TypeKind.Pointer && ((IPointerTypeSymbol)type).PointedAtType.SpecialType == SpecialType.System_Byte))
             {
@@ -206,18 +189,6 @@ namespace Generators
         private void WriteMessageAttrib(StringBuilder stringBuilder, string elementName, string name, string? value)
         {
             string? key = null;
-
-            // See if the user wants things localized.
-            /*
-            if (resources != null)
-            {
-                // resource fallback: strings in the neutral culture will take precedence over inline strings
-                key = elementName + "_" + name;
-                if (resources.GetString(key, CultureInfo.InvariantCulture) is string localizedString)
-                    value = localizedString;
-            }
-            */
-
             if (value == null)
                 return;
 
@@ -239,7 +210,7 @@ namespace Generators
                 sb.Append("win:");
             }
 
-            sb.Append(level switch // avoid boxing that comes from level.ToString()
+            sb.Append(level switch 
             {
                 EventLevel.LogAlways => nameof(EventLevel.LogAlways),
                 EventLevel.Critical => nameof(EventLevel.Critical),
@@ -250,7 +221,6 @@ namespace Generators
                 _ => ((int)level).ToString()
             });
         }
-
 
         public void EndEvent(string eventName)
         {
@@ -273,6 +243,7 @@ namespace Generators
                 stringTab[prefixedEventName] = msg;
             }
         }
+
         private string TranslateToManifestConvention(string eventMessage, string evtName)
         {
             StringBuilder? stringBuilder = null;        // We lazily create this
@@ -365,13 +336,6 @@ namespace Generators
             stringBuilder.Append(eventMessage, startIndex, count);
         }
 
-
-        public byte[] CreateManifest()
-        {
-            string str = CreateManifestString();
-            return Encoding.UTF8.GetBytes(str);
-        }
-
         public string CreateManifestString()
         {
             Span<char> ulongHexScratch = stackalloc char[16]; // long enough for ulong.MaxValue formatted as hex
@@ -407,8 +371,6 @@ namespace Generators
             }
             sb.AppendLine(" </maps>");
 
-            // TODO: WRITE OUT OPCODE
-
             // Write out the keywords
             if (keywordTab != null)
             {
@@ -435,9 +397,6 @@ namespace Generators
             sb.AppendLine("</provider>");
             sb.AppendLine("</events>");
             sb.AppendLine("</instrumentation>");
-
-            // TODO: StringTable? (localization)
-            // Output the localization information.
 
             sb.AppendLine("<localization>");
 
@@ -528,7 +487,7 @@ namespace Generators
                 }
                 else
                 {
-                    // TODO: error?
+                    // TODO: error handling?
                     return string.Empty;
                 }
             }
@@ -578,8 +537,7 @@ namespace Generators
                         return "win:Binary";
                     }
 
-                    // ManifestError(SR.Format(SR.EventSource_UnsupportedEventTypeInManifest, type.Name), true);
-                    // TODO: ERROR
+                    // TODO: Error handling
                     return string.Empty;
             }
         }
@@ -615,27 +573,4 @@ namespace Generators
 
         private Dictionary<string, Dictionary<string, int>> maps;
     }
-
-    /// <summary>
-    /// Used to send the m_rawManifest into the event dispatcher as a series of events.
-    /// </summary>
-    internal struct ManifestEnvelope
-    {
-        public const int MaxChunkSize = 0xFF00;
-        public enum ManifestFormats : byte
-        {
-            SimpleXmlFormat = 1,          // simply dump the XML manifest as UTF8
-        }
-
-#if FEATURE_MANAGED_ETW
-        public ManifestFormats Format;
-        public byte MajorVersion;
-        public byte MinorVersion;
-        public byte Magic;
-        public ushort TotalChunks;
-        public ushort ChunkNumber;
-#endif
-    }
-
-
 }
