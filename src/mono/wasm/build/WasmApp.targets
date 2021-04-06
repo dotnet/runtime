@@ -471,8 +471,8 @@
 
    <ItemGroup>
      <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
-     <_EmccIncludePaths Include="$(_WasmIncludeDir)mono-2.0" />
-     <_EmccIncludePaths Include="$(_WasmIncludeDir)wasm" />
+     <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
+     <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)wasm" />
    </ItemGroup>
 
    <PropertyGroup>
