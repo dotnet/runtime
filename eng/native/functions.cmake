@@ -406,7 +406,7 @@ function(install_clr)
       # We don't need to install the export libraries for our DLLs
       # since they won't be directly linked against.
       install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-      if (NOT "${symbolFile}" STREQUAL "")
+      if (NOT "${symbol_file}" STREQUAL "")
         install_symbol_file(${symbol_file} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
       endif()
 
