@@ -23,11 +23,7 @@ namespace Microsoft.Extensions.Hosting
         public virtual System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
-    public enum BackgroundServiceExceptionBehavior
-    {
-        Ignore,
-        StopHost
-    }
+
     [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version. The recommended alternative is Microsoft.Extensions.Hosting.Environments.", false)]
     public static partial class EnvironmentName
     {
