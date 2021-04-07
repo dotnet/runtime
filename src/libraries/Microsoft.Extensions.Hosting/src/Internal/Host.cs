@@ -91,9 +91,9 @@ namespace Microsoft.Extensions.Hosting.Internal
             catch (Exception ex)
             {
                 _logger.BackgroundServiceFaulted(ex);
-                if (_options is { BackgroundServiceExceptionBehavior: BackgroundServiceExceptionBehavior.StopHost })
+                if (_options.BackgroundServiceExceptionBehavior == BackgroundServiceExceptionBehavior.StopHost)
                 {
-                    _logger.LogCritical(SR.Format(SR.BackgroundServiceExceptionStoppedHost, ex));
+                    _logger.BackgroundServiceStoppingHost(ex);
                     _applicationLifetime.StopApplication();
                 }
             }
