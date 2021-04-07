@@ -690,14 +690,13 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     }
 
     BYTE parentManagedAlignmentRequirement = 0;
-    UINT32 parentSize = pParentMT->GetNumInstanceFieldBytes();
     if (pParentMT && (pParentMT->IsManagedSequential() || (pParentMT->GetClass()->HasExplicitFieldOffsetLayout() && pParentMT->IsBlittable())))
     {
         parentManagedAlignmentRequirement = pParentLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
     }
 
     CalculateSizeAndFieldOffsets(
-        parentSize,
+        cbAdjustedParentLayoutNativeSize,
         cInstanceFields,
         fExplicitOffsets,
         pSortArray.Ptr(),
