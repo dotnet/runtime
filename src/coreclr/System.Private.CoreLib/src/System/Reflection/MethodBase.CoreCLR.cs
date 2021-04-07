@@ -75,7 +75,13 @@ namespace System.Reflection
 
             if (parameters is not null)
             {
-                // copy the arguments into a temporary buffer (or a new array) so we detach from any user changes
+                // We need to perform type safety validation against the incoming arguments, but we also need
+                // to be resilient against the possibility that some other thread (or even the binder itself!)
+                // may mutate the array after we've validated the arguments but before we've properly invoked
+                // the method. The solution is to copy the arguments to a different, not-user-visible buffer
+                // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
+                // considered user-visible to threads which may still be holding on to returned instances.
+
                 copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
                         ? MemoryMarshal.CreateSpan(ref stackArgs._arg0, parameters.Length)
                         : new Span<object?>(new object?[parameters.Length]);
