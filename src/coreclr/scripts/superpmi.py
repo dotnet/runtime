@@ -247,7 +247,6 @@ superpmi_common_parser.add_argument("--sequential", action="store_true", help="R
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
 superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_win_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
-superpmi_common_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
 # subparser for collect
 collect_parser = subparsers.add_parser("collect", description=collect_description, parents=[core_root_parser, target_parser, superpmi_common_parser])
@@ -291,8 +290,8 @@ replay_common_parser.add_argument("-private_store", action="append", help=privat
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
 
-# Add required arguments
 replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
+replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
 # subparser for asmdiffs
 asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -1790,9 +1789,6 @@ class SuperPMIReplayAsmDiffs:
 
         altjit_asm_diffs_flags = target_flags
         altjit_replay_flags = target_flags
-
-        if self.coreclr_args.jitoption:
-            logging.warning("Ignoring -jitoption; use -base_jit_option or -diff_jit_option instead");
 
         base_option_flags = []
         if self.coreclr_args.base_jit_option:
@@ -3310,11 +3306,6 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set spmi_log_file.")
 
-        coreclr_args.verify(args,
-                            "jitoption",
-                            lambda unused: True,
-                            "Unable to set jitoption")
-
         if coreclr_args.spmi_log_file is not None and not coreclr_args.sequential:
             print("-spmi_log_file requires --sequential")
             sys.exit(1)
@@ -3368,6 +3359,11 @@ def setup_args(args):
                             "altjit",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Unable to set altjit.")
+
+        coreclr_args.verify(args,
+                            "jitoption",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set jitoption")
 
         coreclr_args.verify(args,
                             "collection_command",
@@ -3535,6 +3531,11 @@ def setup_args(args):
                             os.path.isfile,
                             "Error: JIT not found at jit_path {}".format,
                             modify_arg=setup_jit_path_arg)
+
+        coreclr_args.verify(args,
+                            "jitoption",
+                            lambda unused: True,
+                            "Unable to set jitoption")
 
         jit_in_product_location = False
         if coreclr_args.product_location.lower() in coreclr_args.jit_path.lower():

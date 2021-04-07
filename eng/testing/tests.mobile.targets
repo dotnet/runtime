@@ -71,6 +71,9 @@
   <UsingTask Condition="'$(TargetOS)' == 'Android'"
              TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
+  <UsingTask Condition="'$(TargetOS)' == 'Android'"
+             TaskName="RuntimeConfigParserTask"
+             AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)" />
 
   <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
@@ -82,12 +85,16 @@
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
 
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
+      <RuntimeConfigFilePath>$(PublishDir)$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
+      <ParsedRuntimeConfigFilePath>$(PublishDir)runtimeconfig.bin</ParsedRuntimeConfigFilePath>
     </PropertyGroup>
     <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
       <AotInputAssemblies Include="$(PublishDir)\*.dll">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </AotInputAssemblies>
+      <RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
+      <RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
     </ItemGroup>
 
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
@@ -95,6 +102,13 @@
     <MakeDir Directories="$(_MobileIntermediateOutputPath)"
              Condition="'$(RunAOTCompilation)' == 'true'"/>
     <RemoveDir Directories="$(BundleDir)" />
+
+    <!-- Parse runtimeconfig.template.json file -->
+    <RuntimeConfigParserTask
+        RuntimeConfigFile="$(RuntimeConfigFilePath)"
+        OutputFile="$(ParsedRuntimeConfigFilePath)"
+        RuntimeConfigReservedProperties="@(RuntimeConfigReservedProperties)">
+    </RuntimeConfigParserTask>
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\$(PackageRID)\mono-aot-cross"

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_jni.h"
+#include <pthread.h>
 
 JavaVM* gJvm;
 
@@ -476,6 +477,8 @@ static jclass GetOptionalClassGRef(JNIEnv *env, const char* name)
     if (!TryGetClassGRef(env, name, &klass))
     {
         LOG_DEBUG("optional class %s was not found", name);
+        // Failing to find an optional class causes an exception state, which we need to clear.
+        TryClearJNIExceptions(env);
     }
 
     return klass;
@@ -551,6 +554,8 @@ jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char
     jmethodID mid = isStatic ? (*env)->GetStaticMethodID(env, klass, name, sig) : (*env)->GetMethodID(env, klass, name, sig);
     if (!mid) {
         LOG_INFO("optional method %s %s was not found", name, sig);
+        // Failing to find an optional method causes an exception state, which we need to clear.
+        TryClearJNIExceptions(env);
     }
     return mid;
 }
@@ -566,6 +571,22 @@ jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, co
     return fid;
 }
 
+static void DetatchThreadFromJNI(void* unused)
+{
+    LOG_DEBUG("Detaching thread from JNI");
+    (void)unused;
+    (*gJvm)->DetachCurrentThread(gJvm);
+}
+
+static pthread_key_t threadLocalEnvKey;
+static pthread_once_t threadLocalEnvInitKey = PTHREAD_ONCE_INIT;
+
+static void
+make_key()
+{
+    (void) pthread_key_create(&threadLocalEnvKey, &DetatchThreadFromJNI);
+}
+
 JNIEnv* GetJNIEnv()
 {
     JNIEnv *env;
@@ -573,6 +594,11 @@ JNIEnv* GetJNIEnv()
     if (env)
         return env;
     jint ret = (*gJvm)->AttachCurrentThreadAsDaemon(gJvm, &env, NULL);
+
+    (void) pthread_once(&threadLocalEnvInitKey, make_key);
+    LOG_DEBUG("Registering JNI thread detach. env ptr %p. Key: %ld", (void*)env, (long)threadLocalEnvKey);
+    pthread_setspecific(threadLocalEnvKey, env);
+
     assert(ret == JNI_OK && "Unable to attach thread to JVM");
     (void)ret;
     return env;

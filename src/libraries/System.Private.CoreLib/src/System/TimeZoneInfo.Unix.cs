@@ -46,7 +46,7 @@ namespace System
             {
                 _standardDisplayName = GetUtcStandardDisplayName();
                 _daylightDisplayName = _standardDisplayName;
-                _displayName = $"(UTC) {_standardDisplayName}";
+                _displayName = GetUtcFullDisplayName(_id, _standardDisplayName);
                 _baseUtcOffset = TimeSpan.Zero;
                 _adjustmentRules = Array.Empty<AdjustmentRule>();
                 return;
