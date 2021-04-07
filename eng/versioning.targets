@@ -59,6 +59,7 @@
 
   <ItemGroup>
     <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
+    <_supportedOSPlatforms Include="$(SupportedOSPlatforms)" />
   </ItemGroup>
 
   <!-- Adds UnsupportedOSPlatform attribute to the assembly when:
@@ -72,6 +73,21 @@
     <ItemGroup>
       <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform">
         <_Parameter1>%(_unsupportedOSPlatforms.Identity)</_Parameter1>
+      </AssemblyAttribute>
+    </ItemGroup>
+  </Target>
+
+  <!-- Adds SupportedOSPlatform attribute to the assembly when:
+      * At least one <SupportedOSPlatform /> has been specified
+      * This isn't a test project
+      * This is a cross-platform target
+      * The build isn't targeting .NET Framework
+    -->
+  <Target Name="AddSupportedOSPlatformAttribute" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild"
+    Condition="'@(_supportedOSPlatforms)' != '' and '$(TargetsAnyOS)' == 'true' and '$(IsTestProject)' != 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
+        <_Parameter1>%(_supportedOSPlatforms.Identity)</_Parameter1>
       </AssemblyAttribute>
     </ItemGroup>
   </Target>
