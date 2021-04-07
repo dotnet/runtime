@@ -2301,10 +2301,11 @@ MethodTableBuilder::EnumerateMethodImpls()
             // type of MethodDesc for bodies that are part of methodImpls.
             if (TypeFromToken(theBody) != mdtMethodDef)
             {
+                // TODO: should there be a static-ness check somewhere here?
                 hr = FindMethodDeclarationForMethodImpl(
                     theBody,
                     &theBody,
-                    TRUE);
+                    /* sameClass: */ FALSE);
                 if (FAILED(hr))
                 {
                     BuildMethodTableThrowException(hr, IDS_CLASSLOAD_MI_ILLEGAL_BODY, mdMethodDefNil);
@@ -2376,6 +2377,7 @@ MethodTableBuilder::EnumerateMethodImpls()
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_ILLEGAL_TOKEN_BODY);
                 }
+                /* TODO: what to do about this check
                 // Body's parent must be this class
                 hr = pMDInternalImport->GetParentToken(theBody,&tkParent);
                 if (FAILED(hr))
@@ -2384,6 +2386,7 @@ MethodTableBuilder::EnumerateMethodImpls()
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_ILLEGAL_BODY);
                 }
+                */
             }
             // Decl's and Body's signatures must match
             if(pSigDecl && cbSigDecl)
@@ -4766,17 +4769,15 @@ VOID MethodTableBuilder::TestMethodImpl(
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_NONVIRTUAL_DECL);
     }
-    if (!IsMdVirtual(dwImplAttrs))
+    if (!IsMdVirtual(dwImplAttrs) && !IsMdStatic(dwImplAttrs))
     {
+        // TODO: better error message? When non-virtual, it must be static.
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL);
     }
     // Virtual methods cannot be static
-    if (IsMdStatic(dwDeclAttrs))
+    if (IsMdStatic(dwDeclAttrs) != IsMdStatic(dwImplAttrs))
     {
-        BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL);
-    }
-    if (IsMdStatic(dwImplAttrs))
-    {
+        // TODO: better error message? Static-ness of declaration and implementation must match
         BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL);
     }
     if (IsMdFinal(dwDeclAttrs))
@@ -5289,8 +5290,8 @@ MethodTableBuilder::PlaceVirtualMethods()
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
-        if (!IsMdVirtual(it.Attrs()))
-        {   // Only processing declared virtual methods
+        if (!IsMdVirtual(it.Attrs()) && !it.IsMethodImpl())
+        {   // Only processing declared virtual methods and static virtual method implementations
             continue;
         }
 

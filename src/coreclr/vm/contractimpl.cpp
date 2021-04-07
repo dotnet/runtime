@@ -434,9 +434,11 @@ DispatchMap::CreateEncodedMapping(
             curTargetSlot = -1;
             do
             {
+                /* TODO: right now it's unclear to me whether the SVMs should go in the method table or not, for now I assume they should.
                 // Only virtual targets can be mapped virtually.
                 CONSISTENCY_CHECK((it.GetTargetMD() == NULL) ||
                                   it.GetTargetMD()->IsVirtual());
+                */
                 // Encode the slot
                 prevSlot = curSlot;
                 curSlot = it.GetSlotNumber();
