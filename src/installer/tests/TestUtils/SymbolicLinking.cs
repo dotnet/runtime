@@ -28,8 +28,16 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string targetFileName,
             string linkPath);
 
+        [DllImport("libSystem.dylib", SetLastError = true)]
+        internal static extern int symlink_OSX(
+            string targetFileName,
+            string linkPath);
+
         [DllImport("libc", CharSet = CharSet.Ansi)]
         internal static extern IntPtr strerror(int errnum);
+
+        [DllImport("libSystem.dylib", CharSet = CharSet.Ansi)]
+        internal static extern IntPtr strerror_OSX(int errnum);
 #endif
 
         public static bool MakeSymbolicLink(string symbolicLinkName, string targetFileName, out string errorMessage)
@@ -43,7 +51,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 return false;
             }
 #else
-            if (symlink(targetFileName, symbolicLinkName) == -1)
+            int symlinkReturnValue = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
+                symlink(targetFileName, symbolicLinkName) : symlink_OSX(targetFileName, symbolicLinkName);
+            if (symlinkReturnValue == -1)
             {
                 int errno = Marshal.GetLastWin32Error();
                 errorMessage = Marshal.PtrToStringAnsi(strerror(errno));
