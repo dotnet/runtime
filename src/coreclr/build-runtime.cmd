@@ -68,17 +68,13 @@ set __BuildCrossArchNative=0
 set __SkipCrossArchNative=0
 set __SkipGenerateVersion=0
 set __RestoreOptData=1
-set __BuildJit=1
-set __BuildPALTests=0
-set __BuildAllJits=1
-set __BuildRuntime=1
-set __BuildILTools=1
 set __CrossArch=
 set __CrossArch2=
 set __CrossOS=0
 set __PgoOptDataPath=
 set __CMakeArgs=
-set __Ninja=0
+set __Ninja=1
+set __RequestedBuildComponents=
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
 @REM    -priority=1
@@ -152,14 +148,13 @@ if /i "%1" == "-skipnative"          (set __BuildNative=0&set processedArgs=!pro
 if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipgenerateversion" (set __SkipGenerateVersion=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-ninja"               (set __Ninja=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+REM -ninja is a no-op option since Ninja is now the default generator on Windows.
+if /i "%1" == "-ninja"               (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-msbuild"             (set __Ninja=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-skipjit"             (set __BuildJit=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-skipalljits"         (set __BuildAllJits=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-skipruntime"         (set __BuildRuntime=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-skipiltools"         (set __BuildILTools=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -284,7 +279,7 @@ set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOS%.%__BuildArch%.%_
 set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"
-if "%__Ninja%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%__TargetOS%.%__BuildArch%.%__BuildType%")
+if "%__Ninja%"=="0" (set "__IntermediatesDir=%__IntermediatesDir%\ide")
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__CrossComponentBinDir=%__BinDir%"
 set "__CrossCompIntermediatesDir=%__IntermediatesDir%\crossgen"
@@ -421,7 +416,28 @@ if NOT DEFINED PYTHON (
     goto ExitWithError
 )
 
-set __CMakeClrBuildSubsetArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=%__BuildJit%" "-DCLR_CMAKE_BUILD_SUBSET_ALLJITS=%__BuildAllJits%" "-DCLR_CMAKE_BUILD_SUBSET_RUNTIME=%__BuildRuntime%" "-DCLR_CMAKE_BUILD_SUBSET_ILTOOLS=%__BuildILTools%"
+set __CMakeTarget=
+for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
+    set "string=%%a"
+    if not "!string:-jit-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! jit
+    )
+    if not "!string:-alljits-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! alljits
+    )
+    if not "!string:-runtime-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! runtime
+    )
+    if not "!string:-paltests-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! paltests_install
+    )
+    if not "!string:-iltools-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! iltools
+    )
+)
+if [!__CMakeTarget!] == [] (
+    set __CMakeTarget=install
+)
 
 REM =========================================================================================
 REM ===
@@ -453,7 +469,7 @@ if %__BuildCrossArchNative% EQU 1 (
         set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
     )
 
-    set __ExtraCmakeArgs=!__ExtraCmakeArgs! %__CMakeClrBuildSubsetArgs% "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" %__CMakeArgs%
+    set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" %__CMakeArgs%
     call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
 
     if not !errorlevel! == 0 (
@@ -490,7 +506,7 @@ if %__BuildCrossArchNative% EQU 1 (
         set __CmakeBuildToolArgs=/nologo /m !__Logging!
     )
 
-    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- !__CmakeBuildToolArgs!
+    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target crosscomponents --config %__BuildType% -- !__CmakeBuildToolArgs!
 
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!
@@ -527,7 +543,7 @@ if %__BuildCrossArchNative% EQU 1 (
             set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
         )
 
-        set __ExtraCmakeArgs=!__ExtraCmakeArgs! %__CMakeClrBuildSubsetArgs% "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCMAKE_SYSTEM_VERSION=10.0" %__CMakeArgs%
+        set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=0" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=0" "-DCMAKE_SYSTEM_VERSION=10.0" %__CMakeArgs%
         call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossComp2IntermediatesDir%" %__VSVersion% %__CrossArch2% !__ExtraCmakeArgs!
 
         if not !errorlevel! == 0 (
@@ -565,7 +581,7 @@ if %__BuildCrossArchNative% EQU 1 (
             set __CmakeBuildToolArgs=/nologo /m !__Logging!
         )
 
-        "%CMakePath%" --build %__CrossComp2IntermediatesDir% --target install --config %__BuildType% -- !__CmakeBuildToolArgs!
+        "%CMakePath%" --build %__CrossComp2IntermediatesDir% --target crosscomponents --config %__BuildType% -- !__CmakeBuildToolArgs!
 
         if not !errorlevel! == 0 (
             set __exitCode=!errorlevel!
@@ -619,7 +635,7 @@ if %__BuildNative% EQU 1 (
         set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
     )
 
-    set __ExtraCmakeArgs=!__ExtraCmakeArgs! !___CrossBuildDefine! %__CMakeClrBuildSubsetArgs% "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" %__CMakeArgs%
+    set __ExtraCmakeArgs=!__ExtraCmakeArgs! !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" %__CMakeArgs%
     call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
@@ -655,7 +671,8 @@ if %__BuildNative% EQU 1 (
         set __CmakeBuildToolArgs=/nologo /m !__Logging!
     )
 
-    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- !__CmakeBuildToolArgs!
+    echo running "%CMakePath%" --build %__IntermediatesDir% --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
+    "%CMakePath%" --build %__IntermediatesDir% --target %__CMakeTarget% --config %__BuildType% -- !__CmakeBuildToolArgs!
 
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!
@@ -707,6 +724,7 @@ REM ============================================================================
 
 echo %__MsgPrefix%Build succeeded.  Finished at %TIME%
 echo %__MsgPrefix%Product binaries are available at !__BinDir!
+
 exit /b 0
 
 REM =========================================================================================

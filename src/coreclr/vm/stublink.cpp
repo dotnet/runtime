@@ -1343,7 +1343,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 #ifdef _DEBUG
     static SIZE_T MaxSegmentSize = -1;
     if (MaxSegmentSize == (SIZE_T)-1)
-        MaxSegmentSize = EEConfig::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_MaxStubUnwindInfoSegmentSize, DYNAMIC_FUNCTION_TABLE_MAX_RANGE);
+        MaxSegmentSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MaxStubUnwindInfoSegmentSize, DYNAMIC_FUNCTION_TABLE_MAX_RANGE);
 #else
     const SIZE_T MaxSegmentSize = DYNAMIC_FUNCTION_TABLE_MAX_RANGE;
 #endif

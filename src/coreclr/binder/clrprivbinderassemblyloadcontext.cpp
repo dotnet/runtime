@@ -42,11 +42,11 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE:
     return hr;
 }
 
-HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(IAssemblyName     *pIAssemblyName,
+HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(AssemblyNameData *pAssemblyNameData,
                                                              ICLRPrivAssembly **ppAssembly)
 {
     HRESULT hr = S_OK;
-    VALIDATE_ARG_RET(pIAssemblyName != nullptr && ppAssembly != nullptr);
+    VALIDATE_ARG_RET(pAssemblyNameData != nullptr && ppAssembly != nullptr);
 
     _ASSERTE(m_pTPABinder != NULL);
 
@@ -54,7 +54,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(IAssemblyName     *
     ReleaseHolder<AssemblyName> pAssemblyName;
 
     SAFE_NEW(pAssemblyName, AssemblyName);
-    IF_FAIL_GO(pAssemblyName->Init(pIAssemblyName));
+    IF_FAIL_GO(pAssemblyName->Init(*pAssemblyNameData));
 
     // When LoadContext needs to resolve an assembly reference, it will go through the following lookup order:
     //
@@ -84,7 +84,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(IAssemblyName     *
             // of what to do next. The host-overridden binder can either fail the bind or return reference to an existing assembly
             // that has been loaded.
             //
-            hr = AssemblyBinder::BindUsingHostAssemblyResolver(GetManagedAssemblyLoadContext(), pAssemblyName, pIAssemblyName, m_pTPABinder, &pCoreCLRFoundAssembly);
+            hr = AssemblyBinder::BindUsingHostAssemblyResolver(GetManagedAssemblyLoadContext(), pAssemblyName, m_pTPABinder, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {
                 // We maybe returned an assembly that was bound to a different AssemblyLoadContext instance.

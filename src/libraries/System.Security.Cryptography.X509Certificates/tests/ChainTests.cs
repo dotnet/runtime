@@ -210,10 +210,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         /// <summary>
         /// Tests that when a certificate chain has a root certification which is not trusted by the trust provider,
-        /// Build returns false and a ChainStatus returns UntrustedRoot
+        /// Build returns false and a ChainStatus returns UntrustedRoot.
+        /// Android does not support the detailed status in this test. It always validates time
+        /// and trusted root. It will fail to build any chain if those are not valid.
         /// </summary>
         [Fact]
         [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Android)]
         public static void BuildChainExtraStoreUntrustedRoot()
         {
             using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))

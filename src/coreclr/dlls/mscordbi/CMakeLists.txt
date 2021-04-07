@@ -119,11 +119,5 @@ elseif(CLR_CMAKE_HOST_UNIX)
 
 endif(CLR_CMAKE_HOST_WIN32)
 
-# Create the DBI module index header file containing the DBI build id
-# for xplat and the timestamp/size on Windows.
-if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-    generate_module_index(mscordbi ${GENERATED_INCLUDE_DIR}/dbimoduleindex.h)
-endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-
 # add the install targets
-install_clr(TARGETS mscordbi ADDITIONAL_DESTINATIONS sharedFramework)
+install_clr(TARGETS mscordbi DESTINATIONS . sharedFramework COMPONENT runtime)

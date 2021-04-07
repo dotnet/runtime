@@ -912,10 +912,7 @@ namespace System.Collections.Generic
                 /// Gets the element at the current position of the enumerator.
                 /// </summary>
                 public (TElement Element, TPriority Priority) Current => _current;
-
-                object IEnumerator.Current =>
-                    _index == 0 || _index == _queue._size + 1 ? throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen) :
-                    Current;
+                object IEnumerator.Current => _current;
 
                 void IEnumerator.Reset()
                 {

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -2334,14 +2335,55 @@ namespace System.Tests
         private const string IanaAbbreviationPattern = @"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$";
         private static readonly Regex s_IanaAbbreviationRegex = new Regex(IanaAbbreviationPattern);
 
+        // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
+        // (This list is not likely to change.)
+        private static readonly string[] s_UtcAliases = new[] {
+            "Etc/UTC",
+            "Etc/UCT",
+            "Etc/Universal",
+            "Etc/Zulu",
+            "UCT",
+            "UTC",
+            "Universal",
+            "Zulu"
+        };
+
         [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void TimeZoneDisplayNames_Unix(TimeZoneInfo timeZone)
         {
-            if (timeZone.Id == TimeZoneInfo.Utc.Id || timeZone.StandardName == TimeZoneInfo.Utc.StandardName)
+            bool isUtc = s_UtcAliases.Contains(timeZone.Id, StringComparer.OrdinalIgnoreCase);
+
+            if (PlatformDetection.IsBrowser)
             {
-                // UTC's display name is always the string "(UTC) " and the same text as the standard name.
+                // Browser platform doesn't have full ICU names, but uses the IANA IDs and abbreviations instead.
+
+                // The display name will be the offset plus the ID.
+                // The offset is checked separately in TimeZoneInfo_DisplayNameStartsWithOffset
+                Assert.True(timeZone.DisplayName.EndsWith(" " + timeZone.Id),
+                    $"Id: \"{timeZone.Id}\", DisplayName should have ended with the ID, Actual DisplayName: \"{timeZone.DisplayName}\"");
+
+                if (isUtc)
+                {
+                    // Make sure UTC and its aliases have exactly "UTC" for the standard and daylight names
+                    Assert.True(timeZone.StandardName == "UTC",
+                        $"Id: \"{timeZone.Id}\", Expected StandardName: \"UTC\", Actual StandardName: \"{timeZone.StandardName}\"");
+                    Assert.True(timeZone.DaylightName == "UTC",
+                        $"Id: \"{timeZone.Id}\", Expected DaylightName: \"UTC\", Actual DaylightName: \"{timeZone.DaylightName}\"");
+                }
+                else
+                {
+                    // For other time zones, match any valid IANA time zone abbreviation, including numeric forms
+                    Assert.True(s_IanaAbbreviationRegex.IsMatch(timeZone.StandardName),
+                        $"Id: \"{timeZone.Id}\", StandardName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual StandardName: \"{timeZone.StandardName}\"");
+                    Assert.True(s_IanaAbbreviationRegex.IsMatch(timeZone.DaylightName),
+                        $"Id: \"{timeZone.Id}\", DaylightName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual DaylightName: \"{timeZone.DaylightName}\"");
+                }
+            }
+            else if (isUtc)
+            {
+                // UTC's display name is the string "(UTC) " and the same text as the standard name.
                 Assert.True(timeZone.DisplayName == $"(UTC) {timeZone.StandardName}",
                     $"Id: \"{timeZone.Id}\", Expected DisplayName: \"(UTC) {timeZone.StandardName}\", Actual DisplayName: \"{timeZone.DisplayName}\"");
 
@@ -2352,21 +2394,6 @@ namespace System.Tests
                     $"Id: \"{timeZone.Id}\", Expected StandardName: \"{TimeZoneInfo.Utc.StandardName}\", Actual StandardName: \"{timeZone.StandardName}\"");
                 Assert.True(timeZone.DaylightName == TimeZoneInfo.Utc.DaylightName,
                     $"Id: \"{timeZone.Id}\", Expected DaylightName: \"{TimeZoneInfo.Utc.DaylightName}\", Actual DaylightName: \"{timeZone.DaylightName}\"");
-            }
-            else if (PlatformDetection.IsBrowser)
-            {
-                // Browser platform doesn't have full ICU names, but uses the IANA data instead.
-
-                // The display name will be the offset plus the ID.
-                // The offset is checked separately in TimeZoneInfo_DisplayNameStartsWithOffset
-                Assert.True(timeZone.DisplayName.EndsWith(" " + timeZone.Id),
-                    $"Id: \"{timeZone.Id}\", DisplayName should have ended with the ID, Actual DisplayName: \"{timeZone.DisplayName}\"");
-
-                // Match any valid IANA time zone abbreviation, including numeric forms
-                Assert.True(s_IanaAbbreviationRegex.IsMatch(timeZone.StandardName),
-                     $"Id: \"{timeZone.Id}\", StandardName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual StandardName: \"{timeZone.StandardName}\"");
-                Assert.True(s_IanaAbbreviationRegex.IsMatch(timeZone.DaylightName),
-                     $"Id: \"{timeZone.Id}\", DaylightName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual DaylightName: \"{timeZone.DaylightName}\"");
             }
             else
             {
@@ -2440,6 +2467,79 @@ namespace System.Tests
             }
         }
 
+        private static byte [] timeZoneFileContents = new byte[]
+        {
+            0x54, 0x5A, 0x69, 0x66, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x54, 0x5A, 0x69, 0x66,
+            0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+            0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x0C, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0xFF, 0xFF, 0xF8, 0xE4, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x10, 0x01, 0x04, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x08, 0x00, 0x00, 0x0E, 0x10, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x4C,
+            0x4D, 0x54, 0x00, 0x2B, 0x30, 0x31, 0x00, 0x2B, 0x30, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00,
+            // POSIX Rule
+            // 0x0A, 0x3C, 0x2B, 0x30, 0x30, 0x3E, 0x30, 0x3C, 0x2B, 0x30, 0x31,
+            // 0x3E, 0x2C, 0x30, 0x2F, 0x30, 0x2C, 0x4A, 0x33, 0x36, 0x35, 0x2F, 0x32, 0x35, 0x0A
+        };
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("<+00>0<+01>,0/0,J365/25", 1, 1, true)]
+        [InlineData("<+00>0<+01>,30/0,J365/25", 31, 1, true)]
+        [InlineData("<+00>0<+01>,31/0,J365/25", 1, 2, true)]
+        [InlineData("<+00>0<+01>,58/0,J365/25", 28, 2, true)]
+        [InlineData("<+00>0<+01>,59/0,J365/25", 0, 0, false)]
+        [InlineData("<+00>0<+01>,9999999/0,J365/25", 0, 0, false)]
+        [InlineData("<+00>0<+01>,A/0,J365/25", 0, 0, false)]
+        public static void NJulianRuleTest(string posixRule, int dayNumber, int monthNumber, bool shouldSucceed)
+        {
+            string zoneFilePath = Path.GetTempPath() + Path.GetRandomFileName();
+            using (FileStream fs = new FileStream(zoneFilePath, FileMode.Create))
+            {
+                fs.Write(timeZoneFileContents.AsSpan());
+
+                // Append the POSIX rule
+                fs.WriteByte(0x0A);
+                foreach (char c in posixRule)
+                {
+                    fs.WriteByte((byte) c);
+                }
+                fs.WriteByte(0x0A);
+            }
+
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
+                psi.Environment.Add("TZ", zoneFilePath);
+
+                RemoteExecutor.Invoke((day, month, succeed) =>
+                {
+                    bool expectedToSucceed = bool.Parse(succeed);
+                    int d = int.Parse(day);
+                    int m = int.Parse(month);
+
+                    TimeZoneInfo.AdjustmentRule [] rules = TimeZoneInfo.Local.GetAdjustmentRules();
+
+                    if (expectedToSucceed)
+                    {
+                        Assert.Equal(1, rules.Length);
+                        Assert.Equal(d, rules[0].DaylightTransitionStart.Day);
+                        Assert.Equal(m, rules[0].DaylightTransitionStart.Month);
+                    }
+                    else
+                    {
+                        Assert.Equal(0, rules.Length);
+                    }
+                }, dayNumber.ToString(), monthNumber.ToString(), shouldSucceed.ToString(), new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
+            }
+            finally
+            {
+                try { File.Delete(zoneFilePath); } catch { } // don't fail the test if we couldn't delete the file.
+            }
+        }
+
         [Fact]
         public static void TimeZoneInfo_DaylightDeltaIsNoMoreThan12Hours()
         {
@@ -2456,7 +2556,7 @@ namespace System.Tests
         [MemberData(nameof(SystemTimeZonesTestData))]
         public static void TimeZoneInfo_DisplayNameStartsWithOffset(TimeZoneInfo tzi)
         {
-            if (tzi.StandardName == TimeZoneInfo.Utc.StandardName)
+            if (s_UtcAliases.Contains(tzi.Id, StringComparer.OrdinalIgnoreCase))
             {
                 // UTC and all of its aliases (Etc/UTC, and others) start with just "(UTC) "
                 Assert.StartsWith("(UTC) ", tzi.DisplayName);

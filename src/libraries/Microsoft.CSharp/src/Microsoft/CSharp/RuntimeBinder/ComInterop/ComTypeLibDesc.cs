@@ -32,10 +32,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             _classes = new LinkedList<ComTypeClassDesc>();
         }
 
-        public override string ToString()
-        {
-            return string.Format(CultureInfo.CurrentCulture, "<type library {0}>", Name);
-        }
+        public override string ToString() => $"<type library {Name}>";
 
         public string Documentation
         {

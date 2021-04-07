@@ -5810,6 +5810,10 @@ add_generic_instances (MonoAotCompile *acfg)
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 
+		klass = mono_class_try_load_from_name (acfg->image, "System", "SZGenericArrayEnumerator`1");
+		if (klass)
+			add_instances_of (acfg, klass, insts, ninsts, TRUE);
+
 		/* 
 		 * Add a managed-to-native wrapper of Array.GetGenericValue_icall<object>, which is
 		 * used for all instances of GetGenericValue_icall by the AOT runtime.
@@ -10574,7 +10578,11 @@ mono_aot_method_hash (MonoMethod *method)
 		hashes [0] = mono_metadata_str_hash (m_class_get_name (klass));
 		hashes [1] = mono_metadata_str_hash (m_class_get_name_space (klass));
 	}
-	hashes [2] = mono_metadata_str_hash (method->name);
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && mono_marshal_get_wrapper_info (method)->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER)
+		/* The name might not be set correctly if DISABLE_JIT is set */
+		hashes [2] = mono_marshal_get_wrapper_info (method)->d.icall.jit_icall_id;
+	else
+		hashes [2] = mono_metadata_str_hash (method->name);
 	hashes [3] = method->wrapper_type;
 	hashes [4] = mono_aot_type_hash (sig->ret);
 	hindex = 5;
@@ -12817,7 +12825,7 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 		return;
 
 	/* Images */
-	GPtrArray *assemblies = mono_domain_get_assemblies (mono_get_root_domain ());
+	GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
 	g_hash_table_iter_init (&iter, data->images);
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
 		ImageProfileData *idata = (ImageProfileData*)value;

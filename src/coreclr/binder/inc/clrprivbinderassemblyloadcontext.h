@@ -5,22 +5,13 @@
 #ifndef __CLRPRIVBINDERASSEMBLYLOADCONTEXT_H__
 #define __CLRPRIVBINDERASSEMBLYLOADCONTEXT_H__
 
-#include "coreclrbindercommon.h"
 #include "applicationcontext.hpp"
 #include "clrprivbindercoreclr.h"
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-namespace BINDER_SPACE
-{
-    class AssemblyIdentityUTF8;
-};
-
-class AppDomain;
-
-class Object;
-class Assembly;
 class LoaderAllocator;
+class PEImage;
 
 class CLRPrivBinderAssemblyLoadContext : public AssemblyLoadContext
 {
@@ -30,7 +21,7 @@ public:
     // ICLRPrivBinder functions
     //-------------------------------------------------------------------------
     STDMETHOD(BindAssemblyByName)(
-            /* [in] */ IAssemblyName *pIAssemblyName,
+            /* [in] */ struct AssemblyNameData *pAssemblyNameData,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
 
     STDMETHOD(GetLoaderAllocator)(
@@ -74,7 +65,7 @@ private:
 
     // A strong GC handle to the managed AssemblyLoadContext. This handle is set when the unload of the AssemblyLoadContext is initiated
     // to keep the managed AssemblyLoadContext alive until the unload is finished.
-    // We still keep the weak handle pointing to the same managed AssemblyLoadContext so that native code can use the handle above 
+    // We still keep the weak handle pointing to the same managed AssemblyLoadContext so that native code can use the handle above
     // to refer to it during the whole lifetime of the AssemblyLoadContext.
     INT_PTR m_ptrManagedStrongAssemblyLoadContext;
 

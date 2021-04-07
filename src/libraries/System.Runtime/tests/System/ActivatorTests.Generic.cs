@@ -53,7 +53,7 @@ namespace System.Tests
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance<StructWithPrivateDefaultConstructor>());
 
         [Fact]
-        public void CreateInstanceT_StructWithoutDefaultConstructor_ThrowsMissingMethodException() =>
+        public void CreateInstanceT_StructWithoutDefaultConstructor_InvokesConstructor() =>
             Activator.CreateInstance<StructWithoutDefaultConstructor>();
 
         [Fact]

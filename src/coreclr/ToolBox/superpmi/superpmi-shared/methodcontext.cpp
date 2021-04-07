@@ -2685,8 +2685,11 @@ void MethodContext::dmpGetArgNext(DWORDLONG key, DWORDLONG value)
 }
 CORINFO_ARG_LIST_HANDLE MethodContext::repGetArgNext(CORINFO_ARG_LIST_HANDLE args)
 {
-    CORINFO_ARG_LIST_HANDLE temp = (CORINFO_ARG_LIST_HANDLE)GetArgNext->Get(CastHandle(args));
-    DEBUG_REP(dmpGetArgNext(CastHandle(args), CastHandle(temp)));
+    DWORDLONG key = CastHandle(args);
+    AssertCodeMsg(GetArgNext != nullptr, EXCEPTIONCODE_MC, "Didn't find %016llx", key);
+    AssertCodeMsg(GetArgNext->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llx", key);
+    CORINFO_ARG_LIST_HANDLE temp = (CORINFO_ARG_LIST_HANDLE)GetArgNext->Get(key);
+    DEBUG_REP(dmpGetArgNext(key, CastHandle(temp)));
     return temp;
 }
 void MethodContext::recGetMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_HANDLE memberParent)
