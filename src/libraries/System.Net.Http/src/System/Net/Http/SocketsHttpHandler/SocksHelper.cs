@@ -18,27 +18,15 @@ namespace System.Net.Http
         private const int BufferSize = 512;
         private const int ProtocolVersion4 = 4;
         private const int ProtocolVersion5 = 5;
-        private const int SubnegotiationVersion = 1;
+        private const int SubnegotiationVersion = 1; // Socks5 username/password auth
         private const byte METHOD_NO_AUTH = 0;
-        // private const byte METHOD_GSSAPI = 1;
         private const byte METHOD_USERNAME_PASSWORD = 2;
-        private const byte METHOD_NO_ACCEPTABLE = 0xFF;
         private const byte CMD_CONNECT = 1;
-        // private const byte CMD_BIND = 2;
-        // private const byte CMD_UDP_ASSOCIATE = 3;
         private const byte ATYP_IPV4 = 1;
         private const byte ATYP_DOMAIN_NAME = 3;
         private const byte ATYP_IPV6 = 4;
-        private const byte REP_SUCCESS = 0;
-        // private const byte REP_FAILURE = 1;
-        // private const byte REP_NOT_ALLOWED = 2;
-        // private const byte REP_NETWORK_UNREACHABLE = 3;
-        // private const byte REP_HOST_UNREACHABLE = 4;
-        // private const byte REP_CONNECTION_REFUSED = 5;
-        // private const byte REP_TTL_EXPIRED = 6;
-        // private const byte REP_CMD_NOT_SUPPORT = 7;
-        // private const byte REP_ATYP_NOT_SUPPORT = 8;
-        private const byte CD_SUCCESS = 90;
+        private const byte Socks5_Success = 0;
+        private const byte Socks4_Success = 90;
 
         public static async ValueTask EstablishSocksTunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, bool async, CancellationToken cancellationToken)
         {
@@ -85,7 +73,7 @@ namespace System.Net.Http
                 // | 1  |    1     | 1 to 255 |
                 // +----+----------+----------+
                 buffer[0] = ProtocolVersion5;
-                var credentials = proxyCredentials?.GetCredential(proxyUri, "");
+                NetworkCredential? credentials = proxyCredentials?.GetCredential(proxyUri, "");
                 if (credentials is null)
                 {
                     buffer[1] = 1;
@@ -116,9 +104,9 @@ namespace System.Net.Http
                     case METHOD_USERNAME_PASSWORD:
                         {
                             // https://tools.ietf.org/html/rfc1929
-                            if (credentials == null)
+                            if (credentials is null)
                             {
-                                throw new SocksException(SR.net_socks_no_auth_method);
+                                throw new SocksException(SR.net_socks_auth_required);
                             }
 
                             // +----+------+----------+------+----------+
@@ -139,14 +127,13 @@ namespace System.Net.Http
                             // | 1  |   1    |
                             // +----+--------+
                             await ReadToFillAsync(stream, buffer.AsMemory(0, 2), async).ConfigureAwait(false);
-                            if (buffer[0] != SubnegotiationVersion || buffer[1] != REP_SUCCESS)
+                            if (buffer[0] != SubnegotiationVersion || buffer[1] != Socks5_Success)
                             {
                                 throw new SocksException(SR.net_socks_auth_failed);
                             }
                             break;
                         }
 
-                    case METHOD_NO_ACCEPTABLE:
                     default:
                         throw new SocksException(SR.net_socks_no_auth_method);
                 }
@@ -162,7 +149,7 @@ namespace System.Net.Http
                 buffer[2] = 0;
                 int addressLength;
 
-                if (IPAddress.TryParse(host, out var hostIP))
+                if (IPAddress.TryParse(host, out IPAddress? hostIP))
                 {
                     if (hostIP.AddressFamily == AddressFamily.InterNetwork)
                     {
@@ -199,7 +186,7 @@ namespace System.Net.Http
                 // +----+-----+-------+------+----------+----------+
                 await ReadToFillAsync(stream, buffer.AsMemory(0, 5), async).ConfigureAwait(false);
                 VerifyProtocolVersion(ProtocolVersion5, buffer[0]);
-                if (buffer[1] != REP_SUCCESS)
+                if (buffer[1] != Socks5_Success)
                 {
                     throw new SocksException(SR.net_socks_connection_failed);
                 }
@@ -255,7 +242,7 @@ namespace System.Net.Http
                 }
                 else if (!isVersion4a)
                 {
-                    // SOCKS4 requires DNS resolution locally
+                    // Socks4 does not support domain names - try to resolve it here
                     var addresses = async
                         ? await Dns.GetHostAddressesAsync(host, AddressFamily.InterNetwork, cancellationToken).ConfigureAwait(false)
                         : Dns.GetHostAddresses(host, AddressFamily.InterNetwork);
@@ -268,7 +255,7 @@ namespace System.Net.Http
                     ipv4Address = addresses[0];
                 }
 
-                if (ipv4Address == null)
+                if (ipv4Address is null)
                 {
                     Debug.Assert(isVersion4a);
                     buffer[4] = 0;
@@ -280,19 +267,13 @@ namespace System.Net.Http
                 {
                     ipv4Address.TryWriteBytes(buffer.AsSpan(4), out int bytesWritten);
                     Debug.Assert(bytesWritten == 4);
-                    if (buffer[4] == 0 && buffer[5] == 0 && buffer[6] == 0)
-                    {
-                        // Invalid IP address used by SOCKS4a to represent remote DNS.
-                        // In case we don't have a domain name, throwing.
-                        throw new SocksException(SR.net_socks_ipv4_invalid);
-                    }
                 }
 
                 byte usernameLength = checked((byte)Encoding.UTF8.GetBytes(username, buffer.AsSpan(8)));
                 buffer[8 + usernameLength] = 0;
                 int totalLength = 9 + usernameLength;
 
-                if (ipv4Address == null)
+                if (ipv4Address is null)
                 {
                     // https://www.openssh.com/txt/socks4a.protocol
                     byte hostLength = checked((byte)Encoding.UTF8.GetBytes(host, buffer.AsSpan(totalLength)));
@@ -308,7 +289,7 @@ namespace System.Net.Http
                 //    1    1      2              4
                 await ReadToFillAsync(stream, buffer.AsMemory(0, 8), async).ConfigureAwait(false);
                 VerifyProtocolVersion(ProtocolVersion4, buffer[0]);
-                if (buffer[1] != CD_SUCCESS)
+                if (buffer[1] != Socks4_Success)
                 {
                     throw new SocksException(SR.net_socks_connection_failed);
                 }
