@@ -2276,6 +2276,21 @@ public:
 #endif // FEATURE_COMINTEROP
 
 
+    // Try a partial resolve of the static virtual constraint call, up to generic code sharing.
+    //
+    // Note that this will not necessarily resolve the call exactly, since we might be compiling
+    // shared generic code - it may just resolve it to a candidate suitable for
+    // JIT compilation, and require a runtime lookup for the actual code pointer
+    // to call. Return NULL if the call could not be resolved.
+    //
+    // TODO: Should we throw an exception instead? SVM's should always resolve statically.
+    //
+    // Always returns an unboxed entry point with a uniform calling convention.
+    MethodDesc* TryResolveStaticVirtualConstraintMethodApprox(
+        TypeHandle   ownerType,
+        MethodDesc* pMD,
+        BOOL* pfForceUseRuntimeLookup = NULL);
+
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
     // Note that this will not necessarily resolve the call exactly, since we might be compiling

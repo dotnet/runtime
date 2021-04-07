@@ -1950,7 +1950,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
 
         MethodTable* pDispatchingMT = NULL;
-        if (pMD->IsVtableMethod())
+        if (!pMD->IsStatic() && pMD->IsVtableMethod())
         {
             OBJECTREF curobj = pPFrame->GetThis();
 
