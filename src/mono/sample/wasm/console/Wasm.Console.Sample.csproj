@@ -9,7 +9,5 @@
     <_SampleProject>Wasm.Console.Sample.csproj</_SampleProject>
   </PropertyGroup>
 
-  <Target Name="RunSample" DependsOnTargets="BuildSampleInTree">
-    <Exec Command="cd bin/$(Configuration)/AppBundle &amp;&amp; v8 --expose_wasm runtime.js -- $(DOTNET_MONO_LOG_LEVEL) --run Wasm.Console.Sample.dll" IgnoreExitCode="true" />
-  </Target>
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />
 </Project>
