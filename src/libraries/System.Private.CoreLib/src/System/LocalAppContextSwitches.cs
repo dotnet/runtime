@@ -54,7 +54,7 @@ namespace System
             if (s_showILOffset < 0) return false;
             if (s_showILOffset > 0) return true;
 
-            bool isSwitchEnabled = AppContextConfigHelper.GetBooleanConfig("Switch.System.Diagnostics.StackTrace.ShowILOffsets", "DOTNET_ILOffsetToStackTrace");
+            bool isSwitchEnabled = AppContextConfigHelper.GetBooleanConfig("Switch.System.Diagnostics.StackTrace.ShowILOffsets", "DOTNET_SYSTEM_DIAGNOSTICS_STACKTRACE_SHOWILOFFSETS");
             s_showILOffset = isSwitchEnabled ? 1 : -1;
 
             return isSwitchEnabled;
