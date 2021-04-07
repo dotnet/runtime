@@ -38,9 +38,17 @@ namespace Microsoft.Extensions.Logging.Console
                 return false;
             }
 
-            var lines = File.ReadAllLines(procFile);
             // typically the last line in the file is "1:name=openrc:/docker"
-            return lines.Reverse().Any(l => l.EndsWith("name=openrc:/docker", StringComparison.Ordinal));
+            string[] lines = File.ReadAllLines(procFile);
+            for (int i = lines.Length - 1; i >= 0; i--)
+            {
+                if (lines[i].EndsWith("name=openrc:/docker", StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            
+            return false;
         }
 
         private static bool GetBooleanEnvVar(string envVarName)
