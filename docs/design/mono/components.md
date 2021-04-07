@@ -119,9 +119,7 @@ To implement `feature_X` as a component.  Carry out the following steps:
 
 * Add a new entry to the `components` list in `src/mono/mono/component/CMakeLists.txt`:
   ```
-  set(components
-    hot_reload
-	...
+  list(APPEND components
 	feature_X
   )
   ```
@@ -129,7 +127,7 @@ To implement `feature_X` as a component.  Carry out the following steps:
   ```
   set(feature_X-sources_base feature_X.h feature_X.c)
   ```
-* Add a new list `featrue_X-stub-sources_base` to `src/mono/mono/component/CMakeLists.txt` that lists the source files for the component stub:
+* Add a new list `feature_X-stub-sources_base` to `src/mono/mono/component/CMakeLists.txt` that lists the source files for the component stub:
   ```
   set(feature_X-stub-sources_base feature_X-stub.c)
   ```
@@ -189,10 +187,10 @@ To implement `feature_X` as a component.  Carry out the following steps:
     ```
     #ifdef STATIC_COMPONENTS
     MONO_COMPONENT_EXPORT_ENTRYPOINT
-    MonoComponentHotReload *
-    mono_component_hot_reload_init (void)
+    MonoComponentFeatureX *
+    mono_component_feature_X_init (void)
     {
-        return mono_component_hot_reload_stub_init ();
+        return mono_component_feature_X_stub_init ();
     }
     #endif
 	#ifndef STATIC_COMPONENTS
@@ -227,12 +225,35 @@ To implement `feature_X` as a component.  Carry out the following steps:
 	   /* implement the feature_X hello functionality */
 	}
     ```
-* Add a getter for the component to `mono/metadata/components.h`, and add code to load the component to `mono/metadata/components.h`
+* Add a getter for the component to `mono/metadata/components.h`, and also add a declaration for the component stub initialization function here
   ```c
     MonoComponentFeatureX*
 	mono_component_feature_X (void);
+	
+    ...
+    MonoComponentFeatureX*
+	mono_component_feature_X_stub_init (void);
   ```
-* Call the component functions through the getter.
+
+* Add an entry to the `components` list to load the component to `mono/metadata/components.c`, and also implement the getter for the component:
+  ```c
+    static MonoComponentFeatureX *feature_X = NULL;
+	
+    MonoComponentEntry components[] = {
+	   ...
+	   {"feature_X", "feature_X", COMPONENT_INIT_FUNC (feature_X), (MonoComponent**)&feature_X, NULL },
+    }
+
+
+    ...
+	MonoComponentFeatureX*
+	mono_component_feature_X (void)
+	{
+	  return feature_X;
+    }
+  ```
+
+* In the runtime, call the component functions through the getter.
    ```c
      mono_component_feature_X()->hello()
    ```
