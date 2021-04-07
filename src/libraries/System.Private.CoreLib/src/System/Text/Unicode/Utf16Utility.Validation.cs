@@ -12,28 +12,10 @@ using System.Numerics;
 using Internal.Runtime.CompilerServices;
 #endif
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if SYSTEM_PRIVATE_CORELIB
-#if TARGET_64BIT
-using nuint_t = System.UInt64;
-#else // TARGET_64BIT
-using nuint_t = System.UInt32;
-#endif // TARGET_64BIT
-#else
-using nuint_t = System.UInt64;
-#endif
-
 namespace System.Text.Unicode
 {
     internal static unsafe partial class Utf16Utility
     {
-#if DEBUG && SYSTEM_PRIVATE_CORELIB
-        static Utf16Utility()
-        {
-            Debug.Assert(sizeof(nuint_t) == IntPtr.Size && nuint.MinValue == 0, "nuint_t is defined incorrectly.");
-        }
-#endif // DEBUG && SYSTEM_PRIVATE_CORELIB
-
         // Returns &inputBuffer[inputLength] if the input buffer is valid.
         /// <summary>
         /// Given an input buffer <paramref name="pInputBuffer"/> of char length <paramref name="inputLength"/>,
@@ -341,13 +323,13 @@ namespace System.Text.Unicode
                         Vector<ushort> utf16Data = Unsafe.ReadUnaligned<Vector<ushort>>(pInputBuffer);
                         Vector<ushort> twoOrMoreUtf8Bytes = Vector.GreaterThanOrEqual(utf16Data, vector0080);
                         Vector<ushort> threeOrMoreUtf8Bytes = Vector.GreaterThanOrEqual(utf16Data, vector0800);
-                        Vector<nuint_t> sumVector = (Vector<nuint_t>)(Vector<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes);
+                        Vector<nuint> sumVector = (Vector<nuint>)(Vector<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes);
 
                         // We'll try summing by a natural word (rather than a 16-bit word) at a time,
                         // which should halve the number of operations we must perform.
 
                         nuint popcnt = 0;
-                        for (int i = 0; i < Vector<nuint_t>.Count; i++)
+                        for (int i = 0; i < Vector<nuint>.Count; i++)
                         {
                             popcnt += (nuint)sumVector[i];
                         }
