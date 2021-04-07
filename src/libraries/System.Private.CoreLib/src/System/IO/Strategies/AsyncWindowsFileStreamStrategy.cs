@@ -11,7 +11,7 @@ namespace System.IO.Strategies
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
-        private FileStreamValueTaskSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
+        private ValueTaskSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
         internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
             : base(handle, access, share)
@@ -108,10 +108,10 @@ namespace System.IO.Strategies
         {
             Debug.Assert(_preallocatedOverlapped == null);
 
-            _preallocatedOverlapped = new PreAllocatedOverlapped(FileStreamValueTaskSource.s_ioCallback, this, buffer);
+            _preallocatedOverlapped = new PreAllocatedOverlapped(ValueTaskSource.s_ioCallback, this, buffer);
         }
 
-        private FileStreamValueTaskSource? CompareExchangeCurrentOverlappedOwner(FileStreamValueTaskSource? newSource, FileStreamValueTaskSource? existingSource)
+        private ValueTaskSource? CompareExchangeCurrentOverlappedOwner(ValueTaskSource? newSource, ValueTaskSource? existingSource)
             => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -138,7 +138,7 @@ namespace System.IO.Strategies
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamValueTaskSource valueTaskSource = FileStreamValueTaskSource.Create(this, _preallocatedOverlapped, destination);
+            ValueTaskSource valueTaskSource = ValueTaskSource.Create(this, _preallocatedOverlapped, destination);
             NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
@@ -254,7 +254,7 @@ namespace System.IO.Strategies
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamValueTaskSource valueTaskSource = FileStreamValueTaskSource.Create(this, _preallocatedOverlapped, source);
+            ValueTaskSource valueTaskSource = ValueTaskSource.Create(this, _preallocatedOverlapped, source);
             NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
 
             long positionBefore = _filePosition;

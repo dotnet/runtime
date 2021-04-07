@@ -3,77 +3,57 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks.Sources;
+using System.Threading.Tasks;
 
 namespace System.IO.Strategies
 {
-    internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
+    internal sealed partial class Net5CompatFileStreamStrategy : FileStreamStrategy
     {
-        /// <summary>
-        /// Type that helps reduce allocations for FileStream.ReadAsync and FileStream.WriteAsync.
-        /// </summary>
-        private unsafe class FileStreamValueTaskSource : IValueTaskSource<int>, IValueTaskSource
+        // This is an internal object extending TaskCompletionSource with fields
+        // for all of the relevant data necessary to complete the IO operation.
+        // This is used by IOCallback and all of the async methods.
+        private unsafe class CompletionSource : TaskCompletionSource<int>
         {
-            internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
+            internal static readonly unsafe IOCompletionCallback s_ioCallback = IOCallback;
 
-            private readonly AsyncWindowsFileStreamStrategy _strategy;
+            private static Action<object?>? s_cancelCallback;
 
-            private ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
-            private NativeOverlapped* _overlapped;
+            private readonly Net5CompatFileStreamStrategy _strategy;
+            private readonly int _numBufferedBytes;
             private CancellationTokenRegistration _cancellationRegistration;
-            private long _result; // Using long since this needs to be used in Interlocked APIs
 #if DEBUG
             private bool _cancellationHasBeenRegistered;
 #endif
+            private NativeOverlapped* _overlapped; // Overlapped class responsible for operations in progress when an appdomain unload occurs
+            private long _result; // Using long since this needs to be used in Interlocked APIs
 
-            public static FileStreamValueTaskSource Create(
-                AsyncWindowsFileStreamStrategy strategy,
-                PreAllocatedOverlapped? preallocatedOverlapped,
-                ReadOnlyMemory<byte> memory)
+            // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
+            internal CompletionSource(Net5CompatFileStreamStrategy strategy, PreAllocatedOverlapped? preallocatedOverlapped,
+                int numBufferedBytes, byte[]? bytes) : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
-                // If the memory passed in is the strategy's internal buffer, we can use the base AwaitableProvider,
-                // which has a PreAllocatedOverlapped with the memory already pinned.  Otherwise, we use the derived
-                // MemoryAwaitableProvider, which Retains the memory, which will result in less pinning in the case
-                // where the underlying memory is backed by pre-pinned buffers.
-                return preallocatedOverlapped != null &&
-                       MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer) &&
-                       preallocatedOverlapped.IsUserObject(buffer.Array) ?
-                            new FileStreamValueTaskSource(strategy, preallocatedOverlapped, buffer.Array) :
-                            new MemoryFileStreamValueTaskSource(strategy, memory);
-            }
-
-            protected FileStreamValueTaskSource(
-                AsyncWindowsFileStreamStrategy strategy,
-                PreAllocatedOverlapped? preallocatedOverlapped,
-                byte[]? bytes)
-            {
+                _numBufferedBytes = numBufferedBytes;
                 _strategy = strategy;
-
                 _result = FileStreamHelpers.NoResult;
 
-                _source = default;
-                // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
-                _source.RunContinuationsAsynchronously = true;
-
-                _overlapped = bytes != null &&
-                              _strategy.CompareExchangeCurrentOverlappedOwner(this, null) == null ?
-                              _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(preallocatedOverlapped!) : // allocated when buffer was created, and buffer is non-null
-                              strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(s_ioCallback, this, bytes);
-
+                // The _preallocatedOverlapped is null if the internal buffer was never created, so we check for
+                // a non-null bytes before using the stream's _preallocatedOverlapped
+                _overlapped = bytes != null && strategy.CompareExchangeCurrentOverlappedOwner(this, null) == null ?
+                    strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(preallocatedOverlapped!) : // allocated when buffer was created, and buffer is non-null
+                    strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(s_ioCallback, this, bytes);
                 Debug.Assert(_overlapped != null, "AllocateNativeOverlapped returned null");
             }
 
             internal NativeOverlapped* Overlapped => _overlapped;
-            public ValueTaskSourceStatus GetStatus(short token) => _source.GetStatus(token);
-            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _source.OnCompleted(continuation, state, token, flags);
-            void IValueTaskSource.GetResult(short token) => _source.GetResult(token);
-            int IValueTaskSource<int>.GetResult(short token) => _source.GetResult(token);
-            internal short Version => _source.Version;
 
-            internal void RegisterForCancellation(CancellationToken cancellationToken)
+            public void SetCompletedSynchronously(int numBytes)
+            {
+                ReleaseNativeResource();
+                TrySetResult(numBytes + _numBufferedBytes);
+            }
+
+            public void RegisterForCancellation(CancellationToken cancellationToken)
             {
 #if DEBUG
                 Debug.Assert(cancellationToken.CanBeCanceled);
@@ -84,11 +64,13 @@ namespace System.IO.Strategies
                 // Quick check to make sure the IO hasn't completed
                 if (_overlapped != null)
                 {
+                    Action<object?>? cancelCallback = s_cancelCallback ??= Cancel;
+
                     // Register the cancellation only if the IO hasn't completed
                     long packedResult = Interlocked.CompareExchange(ref _result, FileStreamHelpers.RegisteringCancellation, FileStreamHelpers.NoResult);
                     if (packedResult == FileStreamHelpers.NoResult)
                     {
-                        _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) => ((FileStreamValueTaskSource)s!).Cancel(token), this);
+                        _cancellationRegistration = cancellationToken.UnsafeRegister(cancelCallback, this);
 
                         // Switch the result, just in case IO completed while we were setting the registration
                         packedResult = Interlocked.Exchange(ref _result, FileStreamHelpers.NoResult);
@@ -122,27 +104,30 @@ namespace System.IO.Strategies
                     _overlapped = null;
                 }
 
-                // Ensure we're no longer set as the current AwaitableProvider (we may not have been to begin with).
-                // Only one operation at a time is eligible to use the preallocated overlapped
+                // Ensure we're no longer set as the current completion source (we may not have been to begin with).
+                // Only one operation at a time is eligible to use the preallocated overlapped,
                 _strategy.CompareExchangeCurrentOverlappedOwner(null, this);
             }
 
-            private static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
+            // When doing IO asynchronously (i.e. _isAsync==true), this callback is
+            // called by a free thread in the threadpool when the IO operation
+            // completes.
+            internal static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
-                // Extract the AwaitableProvider from the overlapped.  The state in the overlapped
-                // will either be a AsyncWindowsFileStreamStrategy (in the case where the preallocated overlapped was used),
+                // Extract the completion source from the overlapped.  The state in the overlapped
+                // will either be a FileStreamStrategy (in the case where the preallocated overlapped was used),
                 // in which case the operation being completed is its _currentOverlappedOwner, or it'll
-                // be directly the AwaitableProvider that's completing (in the case where the preallocated
+                // be directly the FileStreamCompletionSource that's completing (in the case where the preallocated
                 // overlapped was already in use by another operation).
                 object? state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
-                Debug.Assert(state is (AsyncWindowsFileStreamStrategy or FileStreamValueTaskSource));
-                FileStreamValueTaskSource valueTaskSource = state switch
+                Debug.Assert(state is Net5CompatFileStreamStrategy || state is CompletionSource);
+                CompletionSource completionSource = state switch
                 {
-                    AsyncWindowsFileStreamStrategy strategy => strategy._currentOverlappedOwner!, // must be owned
-                    _ => (FileStreamValueTaskSource)state
+                    Net5CompatFileStreamStrategy strategy => strategy._currentOverlappedOwner!, // must be owned
+                    _ => (CompletionSource)state
                 };
-                Debug.Assert(valueTaskSource != null);
-                Debug.Assert(valueTaskSource._overlapped == pOverlapped, "Overlaps don't match");
+                Debug.Assert(completionSource != null);
+                Debug.Assert(completionSource._overlapped == pOverlapped, "Overlaps don't match");
 
                 // Handle reading from & writing to closed pipes.  While I'm not sure
                 // this is entirely necessary anymore, maybe it's possible for
@@ -160,13 +145,13 @@ namespace System.IO.Strategies
 
                 // Stow the result so that other threads can observe it
                 // And, if no other thread is registering cancellation, continue
-                if (Interlocked.Exchange(ref valueTaskSource._result, (long)packedResult) == FileStreamHelpers.NoResult)
+                if (FileStreamHelpers.NoResult == Interlocked.Exchange(ref completionSource._result, (long)packedResult))
                 {
                     // Successfully set the state, attempt to take back the callback
-                    if (Interlocked.Exchange(ref valueTaskSource._result, FileStreamHelpers.CompletedCallback) != FileStreamHelpers.NoResult)
+                    if (Interlocked.Exchange(ref completionSource._result, FileStreamHelpers.CompletedCallback) != FileStreamHelpers.NoResult)
                     {
                         // Successfully got the callback, finish the callback
-                        valueTaskSource.CompleteCallback(packedResult);
+                        completionSource.CompleteCallback(packedResult);
                     }
                     // else: Some other thread stole the result, so now it is responsible to finish the callback
                 }
@@ -186,27 +171,33 @@ namespace System.IO.Strategies
                     int errorCode = unchecked((int)(packedResult & uint.MaxValue));
                     if (errorCode == Interop.Errors.ERROR_OPERATION_ABORTED)
                     {
-                        _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(canceled: true))));
+                        TrySetCanceled(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
                     }
                     else
                     {
                         Exception e = Win32Marshal.GetExceptionForWin32Error(errorCode);
                         e.SetCurrentStackTrace();
-                        _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(e));
+                        TrySetException(e);
                     }
                 }
                 else
                 {
                     Debug.Assert(result == FileStreamHelpers.ResultSuccess, "Unknown result");
-                    _source.SetResult((int)(packedResult & uint.MaxValue));
+                    TrySetResult((int)(packedResult & uint.MaxValue) + _numBufferedBytes);
                 }
             }
 
-            private void Cancel(CancellationToken token)
+            private static void Cancel(object? state)
             {
+                // WARNING: This may potentially be called under a lock (during cancellation registration)
+
+                Debug.Assert(state is CompletionSource, "Unknown state passed to cancellation");
+                CompletionSource completionSource = (CompletionSource)state;
+                Debug.Assert(completionSource._overlapped != null && !completionSource.Task.IsCompleted, "IO should not have completed yet");
+
                 // If the handle is still valid, attempt to cancel the IO
-                if (!_strategy._fileHandle.IsInvalid &&
-                    !Interop.Kernel32.CancelIoEx(_strategy._fileHandle, _overlapped))
+                if (!completionSource._strategy._fileHandle.IsInvalid &&
+                    !Interop.Kernel32.CancelIoEx(completionSource._strategy._fileHandle, completionSource._overlapped))
                 {
                     int errorCode = Marshal.GetLastWin32Error();
 
@@ -214,25 +205,36 @@ namespace System.IO.Strategies
                     // This probably means that the IO operation has completed.
                     if (errorCode != Interop.Errors.ERROR_NOT_FOUND)
                     {
-                        _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace( // TODO: Resource string for exception
-                            new OperationCanceledException("IO operation cancelled.", Win32Marshal.GetExceptionForWin32Error(errorCode), token)));
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                     }
                 }
+            }
+
+            public static CompletionSource Create(Net5CompatFileStreamStrategy strategy, PreAllocatedOverlapped? preallocatedOverlapped,
+                int numBufferedBytesRead, ReadOnlyMemory<byte> memory)
+            {
+                // If the memory passed in is the strategy's internal buffer, we can use the base FileStreamCompletionSource,
+                // which has a PreAllocatedOverlapped with the memory already pinned.  Otherwise, we use the derived
+                // MemoryFileStreamCompletionSource, which Retains the memory, which will result in less pinning in the case
+                // where the underlying memory is backed by pre-pinned buffers.
+                return preallocatedOverlapped != null && MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer)
+                    && preallocatedOverlapped.IsUserObject(buffer.Array) // preallocatedOverlapped is allocated when BufferedStream|Net5CompatFileStreamStrategy allocates the buffer
+                    ? new CompletionSource(strategy, preallocatedOverlapped, numBufferedBytesRead, buffer.Array)
+                    : new MemoryFileStreamCompletionSource(strategy, numBufferedBytesRead, memory);
             }
         }
 
         /// <summary>
-        /// Extends <see cref="FileStreamValueTaskSource"/> with to support disposing of a
+        /// Extends <see cref="CompletionSource"/> with to support disposing of a
         /// <see cref="MemoryHandle"/> when the operation has completed.  This should only be used
         /// when memory doesn't wrap a byte[].
         /// </summary>
-        private sealed class MemoryFileStreamValueTaskSource : FileStreamValueTaskSource
+        private sealed class MemoryFileStreamCompletionSource : CompletionSource
         {
             private MemoryHandle _handle; // mutable struct; do not make this readonly
 
-            // this type handles the pinning, so bytes are null
-            internal unsafe MemoryFileStreamValueTaskSource(AsyncWindowsFileStreamStrategy strategy, ReadOnlyMemory<byte> memory)
-                : base(strategy, null, null) // this type handles the pinning, so null is passed for bytes to the base
+            internal MemoryFileStreamCompletionSource(Net5CompatFileStreamStrategy strategy, int numBufferedBytes, ReadOnlyMemory<byte> memory)
+                : base(strategy, null, numBufferedBytes, null) // this type handles the pinning, so null is passed for bytes
             {
                 _handle = memory.Pin();
             }

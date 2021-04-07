@@ -44,7 +44,7 @@ namespace System.IO.Strategies
 
         private Task _activeBufferOperation = Task.CompletedTask;    // tracks in-progress async ops using the buffer
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
-        private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
+        private CompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
         private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
         {
@@ -544,10 +544,10 @@ namespace System.IO.Strategies
             Debug.Assert(_preallocatedOverlapped == null);
 
             if (_useAsyncIO)
-                _preallocatedOverlapped = new PreAllocatedOverlapped(FileStreamCompletionSource.s_ioCallback, this, _buffer);
+                _preallocatedOverlapped = new PreAllocatedOverlapped(CompletionSource.s_ioCallback, this, _buffer);
         }
 
-        private FileStreamCompletionSource? CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource? newSource, FileStreamCompletionSource? existingSource)
+        private CompletionSource? CompareExchangeCurrentOverlappedOwner(CompletionSource? newSource, CompletionSource? existingSource)
             => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
         private void WriteSpan(ReadOnlySpan<byte> source)
@@ -757,7 +757,7 @@ namespace System.IO.Strategies
             Debug.Assert(_useAsyncIO, "ReadNativeAsync doesn't work on synchronous file streams!");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, _preallocatedOverlapped, numBufferedBytesRead, destination);
+            CompletionSource completionSource = CompletionSource.Create(this, _preallocatedOverlapped, numBufferedBytesRead, destination);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
@@ -975,7 +975,7 @@ namespace System.IO.Strategies
             Debug.Assert(_useAsyncIO, "WriteInternalCoreAsync doesn't work on synchronous file streams!");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, _preallocatedOverlapped, 0, source);
+            CompletionSource completionSource = CompletionSource.Create(this, _preallocatedOverlapped, 0, source);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             if (CanSeek)
