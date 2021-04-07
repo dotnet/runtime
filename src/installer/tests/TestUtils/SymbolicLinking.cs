@@ -8,58 +8,75 @@ namespace Microsoft.DotNet.CoreSetup.Test
 {
     public static class SymbolicLinking
     {
-#if WINDOWS
-        [Flags]
-        internal enum SymbolicLinkFlag
+        static class Kernel32
         {
-            IsFile = 0x0,
-            IsDirectory = 0x1,
-            AllowUnprivilegedCreate = 0x2
+            [Flags]
+            internal enum SymbolicLinkFlag
+            {
+                IsFile = 0x0,
+                IsDirectory = 0x1,
+                AllowUnprivilegedCreate = 0x2
+            }
+
+            [DllImport("kernel32.dll", SetLastError = true)]
+            internal static extern bool CreateSymbolicLink(
+                string symbolicLinkName,
+                string targetFileName,
+                SymbolicLinkFlag flags);
         }
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        internal static extern bool CreateSymbolicLink(
-            string symbolicLinkName,
-            string targetFileName,
-            SymbolicLinkFlag flags);
-#else
-        [DllImport("libc", SetLastError = true)]
-        internal static extern int symlink(
-            string targetFileName,
-            string linkPath);
+        static class libc
+        {
+            [DllImport("libc", SetLastError = true)]
+            internal static extern int symlink(
+                string targetFileName,
+                string linkPath);
 
-        [DllImport("libSystem.dylib", SetLastError = true)]
-        internal static extern int symlink_OSX(
-            string targetFileName,
-            string linkPath);
+            [DllImport("libc", CharSet = CharSet.Ansi)]
+            internal static extern IntPtr strerror(int errnum);
+        }
 
-        [DllImport("libc", CharSet = CharSet.Ansi)]
-        internal static extern IntPtr strerror(int errnum);
+        static class libSystem
+        {
+            [DllImport("libSystem.dylib", SetLastError = true)]
+            internal static extern int symlink(
+                string targetFileName,
+                string linkPath);
 
-        [DllImport("libSystem.dylib", CharSet = CharSet.Ansi)]
-        internal static extern IntPtr strerror_OSX(int errnum);
-#endif
+            [DllImport("libSystem.dylib", CharSet = CharSet.Ansi)]
+            internal static extern IntPtr strerror(int errnum);
+        }
 
         public static bool MakeSymbolicLink(string symbolicLinkName, string targetFileName, out string errorMessage)
         {
             errorMessage = string.Empty;
-#if WINDOWS
-            if (!CreateSymbolicLink(symbolicLinkName, targetFileName, SymbolicLinkFlag.IsFile))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                int errno = Marshal.GetLastWin32Error();
-                errorMessage = $"CreateSymbolicLink failed with error number {errno}";
-                return false;
+                if (!Kernel32.CreateSymbolicLink(symbolicLinkName, targetFileName, Kernel32.SymbolicLinkFlag.IsFile))
+                {
+                    int errno = Marshal.GetLastWin32Error();
+                    errorMessage = $"CreateSymbolicLink failed with error number {errno}";
+                    return false;
+                }
             }
-#else
-            int symlinkReturnValue = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
-                symlink(targetFileName, symbolicLinkName) : symlink_OSX(targetFileName, symbolicLinkName);
-            if (symlinkReturnValue == -1)
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                int errno = Marshal.GetLastWin32Error();
-                errorMessage = Marshal.PtrToStringAnsi(strerror(errno));
-                return false; 
+                if (libc.symlink(targetFileName, symbolicLinkName) == -1)
+                {
+                    int errno = Marshal.GetLastWin32Error();
+                    errorMessage = Marshal.PtrToStringAnsi(libc.strerror(errno));
+                    return false; 
+                }
             }
-#endif
+            else
+            {
+                if (libSystem.symlink(targetFileName, symbolicLinkName) == -1)
+                {
+                    int errno = Marshal.GetLastWin32Error();
+                    errorMessage = Marshal.PtrToStringAnsi(libSystem.strerror(errno));
+                    return false; 
+                }
+            }
 
             return true;
         }
