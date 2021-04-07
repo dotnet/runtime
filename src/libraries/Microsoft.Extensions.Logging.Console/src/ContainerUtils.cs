@@ -47,7 +47,6 @@ namespace Microsoft.Extensions.Logging.Console
                     return true;
                 }
             }
-            
             return false;
         }
 
