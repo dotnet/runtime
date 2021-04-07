@@ -6,18 +6,17 @@
 
 To minimize the impact on the app startup time, the design constraints are as follows:
 1. Don’t parse JSON at runtime during application startup
-2. Don’t need to support full set of well-known properties, just the ones that make sense on mobile
-3. Don’t need to support shared framework configuration parameters
-4. Don't need to support the desktop host environment variables, startup hooks, or other configuration mechanisms that do not make sense on mobile.
-5. This is separate from the key/value set passed to `monovm_initialize`/`coreclr_initialize`  (ie we will not pass the additional properties via `monovm_initialize` - just using this new mechanism). Things like the TPA list, additional probing paths, PINVOKE_OVERRIDE, etc will be addressed by an evolution of `monovm_initialize` - https://github.com/dotnet/runtime/issues/48416
+2. Don’t need to support shared framework configuration parameters
+3. Don't need to support the desktop host environment variables, startup hooks, or other configuration mechanisms that do not make sense on mobile.
+4. This is separate from the key/value set passed to `monovm_initialize`/`coreclr_initialize`  (ie we will not pass the additional properties via `monovm_initialize` - just using this new mechanism). Things like the TPA list, additional probing paths, PINVOKE_OVERRIDE, etc will be addressed by an evolution of `monovm_initialize` - https://github.com/dotnet/runtime/issues/48416
 
 ## Design Overview
 
 We break up runtimeconfig.json loading into two parts:
-1. A new MSBuild task called `RuntimeConfigParser` will run after the `runtimeconfig.json` is created by the `dotnet build` process. The task will convert the properties and their values into a binary blob format. The resulting `runtimeconfig.blob` file will be bundled with the application.
+1. A new MSBuild task called `RuntimeConfigParser` will run after the `runtimeconfig.json` is created by the `dotnet build` process. The task will convert the properties and their values into a binary blob format. The resulting `runtimeconfig.bin` file will be bundled with the application.
 2. The runtime will expose a new API entrypoint `monovm_runtimeconfig_initialize` that gets either a path to pass to `mono_file_map_open` or a pointer to the blob in memory. When called, the runtime will read the binary data and populate the managed AppContext with the properties.
 
-We will only use the `runtimeOptions→configProperties` json key. Its content is a JSON dictionary with string keys and string/bool/numeric values.  We convert the values to strings when we store them in the binary runtimeconfig.blob, which is the same way they are treated by the default host.
+We will only use the `runtimeOptions→configProperties` json key. Its content is a JSON dictionary with string keys and string/bool/numeric values.  We convert the values to strings when we store them in the binary runtimeconfig.bin, which is the same way they are treated by the default host.
 
 The runtime assumes that the properties passed via `monovm_initialize` and `monovm_runtimeconfig_initialize` will be different. To ensure this, the provided MSBuild task will be passed a list of property names that the embedder promises it will pass to `monovm_initialize`. The MSBuild task will check that `runtimeconfig.json` does not set any of those same properties. If there is a duplicate, error out.
 
@@ -105,7 +104,7 @@ MONO_API void
 monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *args, MonovmRuntimeConfigArgumentsCleanup cleanup_fn, void* user_data);
 ```
 
-This declaration should live in the unstable header. `monovm_runtimeconfig_initialize` should be called after `monovm_initialize` but before starting the runtime.
+This declaration should live in the unstable header. `monovm_runtimeconfig_initialize` should be called before `monovm_initialize`.
 
 #### Example of the usage of `monovm_runtimeconfig_initialize`
 
