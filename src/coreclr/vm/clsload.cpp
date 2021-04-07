@@ -2958,6 +2958,25 @@ ClassLoader::LoadApproxTypeThrowing(
         CorElementType type = ELEMENT_TYPE_END;
         IfFailThrowBF(sigptr.GetElemType(&type), BFA_BAD_SIGNATURE, pModule);
 
+        // TODO: For some reason, the base class BaseScenario1 - DerivedScenario1 inheritance
+        // is encoded using a TypeSpec token even though it's not generic; is there more to
+        // this distinction?
+        if (type == ELEMENT_TYPE_CLASS)
+        {
+            mdToken baseTypeTok = 0;
+            IfFailThrowBF(sigptr.GetToken(&baseTypeTok), BFA_BAD_SIGNATURE, pModule);
+
+            if (pSigInst != NULL)
+                *pSigInst = SigPointer();
+            RETURN LoadTypeDefOrRefThrowing(
+                pModule,
+                baseTypeTok,
+                ClassLoader::ThrowIfNotFound,
+                ClassLoader::FailIfUninstDefOrRef,
+                tdNoTypes,
+                CLASS_LOAD_APPROXPARENTS);
+        }
+
         // The only kind of type specs that we recognise are instantiated types
         if (type != ELEMENT_TYPE_GENERICINST)
             pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, tok, IDS_CLASSLOAD_GENERAL);

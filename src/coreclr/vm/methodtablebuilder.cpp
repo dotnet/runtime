@@ -2943,10 +2943,6 @@ MethodTableBuilder::EnumerateClassMethods()
                 {
                     BuildMethodTableThrowException(BFA_VIRTUAL_PINVOKE_METHOD);
                 }
-                if(IsMdStatic(dwMemberAttrs))
-                {
-                    BuildMethodTableThrowException(BFA_VIRTUAL_STATIC_METHOD);
-                }
                 if(strMethodName && (0==strcmp(strMethodName, COR_CTOR_METHOD_NAME)))
                 {
                     BuildMethodTableThrowException(BFA_VIRTUAL_INSTANCE_CTOR);
@@ -5023,14 +5019,10 @@ MethodTableBuilder::ValidateMethods()
         {
             if (!IsMdVirtual(it.Attrs()))
             {   // Non-virtual methods cannot participate in a methodImpl pair.
+                /* TODO: we should probably check that we're overriding a virtual static method here
                 BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL, it.Token());
+                */
             }
-        }
-
-        // Virtual static methods are not allowed.
-        if (IsMdStatic(it.Attrs()) && IsMdVirtual(it.Attrs()))
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL, it.Token());
         }
     }
 }
@@ -5613,15 +5605,6 @@ MethodTableBuilder::ProcessMethodImpls()
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
-        // Non-virtual methods cannot be classified as methodImpl - we should have thrown an
-        // error before reaching this point.
-        CONSISTENCY_CHECK(!(!IsMdVirtual(it.Attrs()) && it.IsMethodImpl()));
-
-        if (!IsMdVirtual(it.Attrs()))
-        {   // Only virtual methods can participate in methodImpls
-            continue;
-        }
-
         // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
         // of them this method participates in as the BODY.
