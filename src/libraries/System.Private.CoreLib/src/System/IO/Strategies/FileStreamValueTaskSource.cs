@@ -44,7 +44,7 @@ namespace System.IO.Strategies
                        MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer) &&
                        preallocatedOverlapped.IsUserObject(buffer.Array) ?
                             new FileStreamValueTaskSource(strategy, preallocatedOverlapped, numBufferedBytes, buffer.Array) :
-                            new MemoryAwaitableProvider(strategy, numBufferedBytes, memory);
+                            new MemoryFileStreamValueTaskSource(strategy, numBufferedBytes, memory);
             }
 
             protected FileStreamValueTaskSource(
@@ -231,12 +231,12 @@ namespace System.IO.Strategies
         /// <see cref="MemoryHandle"/> when the operation has completed.  This should only be used
         /// when memory doesn't wrap a byte[].
         /// </summary>
-        private sealed class MemoryAwaitableProvider : FileStreamValueTaskSource
+        private sealed class MemoryFileStreamValueTaskSource : FileStreamValueTaskSource
         {
             private MemoryHandle _handle; // mutable struct; do not make this readonly
 
             // this type handles the pinning, so bytes are null
-            internal unsafe MemoryAwaitableProvider(AsyncWindowsFileStreamStrategy strategy, int numBufferedBytes, ReadOnlyMemory<byte> memory)
+            internal unsafe MemoryFileStreamValueTaskSource(AsyncWindowsFileStreamStrategy strategy, int numBufferedBytes, ReadOnlyMemory<byte> memory)
                 : base(strategy, null, numBufferedBytes, null) // this type handles the pinning, so null is passed for bytes to the base
             {
                 _handle = memory.Pin();
