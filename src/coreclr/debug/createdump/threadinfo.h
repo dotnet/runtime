@@ -40,9 +40,17 @@ private:
     pid_t m_tid;                                // thread id
     pid_t m_ppid;                               // parent process
     pid_t m_tgid;                               // thread group
+
 #ifdef __APPLE__
     mach_port_t m_port;                         // MacOS thread port
+#if defined(__x86_64__)
+    x86_thread_state64_t m_gpRegisters;         // MacOS general purpose registers
+    x86_float_state64_t m_fpRegisters;          // MacOS floating point registers
+#elif defined(__aarch64__)
+    arm_thread_state64_t m_gpRegisters;         // MacOS general purpose arm64 registers
+    arm_neon_state64_t m_fpRegisters;           // MacOS floating point arm64 registers
 #endif
+#else // __APPLE__
     struct user_regs_struct m_gpRegisters;      // general purpose registers
     struct user_fpregs_struct m_fpRegisters;    // floating point registers
 #if defined(__i386__)
@@ -50,6 +58,7 @@ private:
 #elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
     struct user_vfpregs_struct m_vfpRegisters;  // ARM VFP/NEON registers
 #endif
+#endif // __APPLE__
 
 public:
 #ifdef __APPLE__
@@ -68,6 +77,17 @@ public:
     inline pid_t Ppid() const { return m_ppid; }
     inline pid_t Tgid() const { return m_tgid; }
 
+#ifdef __APPLE__
+#if defined(__x86_64__)
+    inline const x86_thread_state64_t* GPRegisters() const { return &m_gpRegisters; }
+    inline const x86_float_state64_t* FPRegisters() const { return &m_fpRegisters; }
+    inline const uint64_t GetStackPointer() const { return m_gpRegisters.__rsp; }
+#elif defined(__aarch64__)
+    inline const arm_thread_state64_t* GPRegisters() const { return &m_gpRegisters; }
+    inline const arm_neon_state64_t* FPRegisters() const { return &m_fpRegisters; }
+    inline const uint64_t GetStackPointer() const { return arm_thread_state64_get_sp(m_gpRegisters); }
+#endif
+#else // __APPLE__
     inline const user_regs_struct* GPRegisters() const { return &m_gpRegisters; }
     inline const user_fpregs_struct* FPRegisters() const { return &m_fpRegisters; }
 #if defined(__i386__)
@@ -75,6 +95,17 @@ public:
 #elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
     inline const user_vfpregs_struct* VFPRegisters() const { return &m_vfpRegisters; }
 #endif
+    inline const uint64_t GetStackPointer() const
+    {
+#if defined(__x86_64__)
+        return m_gpRegisters.rsp;
+#elif defined(__aarch64__)
+        return MCREG_Sp(m_gpRegisters);
+#elif defined(__arm__)
+        return m_gpRegisters.ARM_sp;
+#endif
+    }
+#endif // __APPLE__
 
 private:
     void UnwindNativeFrames(CONTEXT* pContext);

@@ -60,4 +60,5 @@ private:
     virtual void VisitSection(MachOModule& module, const section_64& section) { };
     virtual bool ReadMemory(void* address, void* buffer, size_t size) = 0;
     virtual void Trace(const char* format, ...) { };
+    virtual void TraceVerbose(const char* format, ...) { };
 };
