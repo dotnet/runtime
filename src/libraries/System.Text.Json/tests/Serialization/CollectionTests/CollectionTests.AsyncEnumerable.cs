@@ -157,6 +157,23 @@ namespace System.Text.Json.Tests.Serialization
         }
 
         [Fact]
+        public static async Task WriteAsyncEnumerable_ElementSerializationThrows_ShouldDisposeEnumerator()
+        {
+            using var stream = new Utf8MemoryStream();
+            var asyncEnumerable = new MockedAsyncEnumerable<IEnumerable<int>>(Enumerable.Repeat(ThrowingEnumerable(), 2));
+
+            await Assert.ThrowsAsync<DivideByZeroException>(() => JsonSerializer.SerializeAsync(stream, new { Data = asyncEnumerable }));
+            Assert.Equal(1, asyncEnumerable.TotalCreatedEnumerators);
+            Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
+
+            static IEnumerable<int> ThrowingEnumerable()
+            {
+                yield return 0;
+                throw new DivideByZeroException();
+            }
+        }
+
+        [Fact]
         public static async Task ReadRootLevelAsyncEnumerable()
         {
             var utf8Stream = new Utf8MemoryStream("[0,1,2,3,4]");
