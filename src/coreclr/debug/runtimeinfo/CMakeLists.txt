@@ -37,4 +37,4 @@ if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
 endif()
 
 # publish runtimeinfo lib
-_install(TARGETS runtimeinfo DESTINATION lib)
+install_clr(TARGETS runtimeinfo DESTINATIONS lib COMPONENT runtime)

@@ -11,9 +11,8 @@ endif()
 function(create_standalone_jit)
 
   set(oneValueArgs TARGET OS ARCH)
-  set(multiValueArgs ADDITIONAL_DESTINATIONS)
-  set(options)
-  cmake_parse_arguments(TARGETDETAILS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+  set(multiValueArgs DESTINATIONS)
+  cmake_parse_arguments(TARGETDETAILS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx")
     if (NOT (TARGETDETAILS_ARCH STREQUAL "arm64"))
@@ -36,10 +35,10 @@ function(create_standalone_jit)
     clr_unknown_arch()
   endif()
 
-  if (TARGETDETAILS_ADDITIONAL_DESTINATIONS STREQUAL "")
+  if (TARGETDETAILS_DESTINATIONS STREQUAL "")
     add_jit(${TARGETDETAILS_TARGET})
   else()
-    add_jit(${TARGETDETAILS_TARGET} ADDITIONAL_DESTINATIONS "${TARGETDETAILS_ADDITIONAL_DESTINATIONS}")
+    add_jit(${TARGETDETAILS_TARGET} DESTINATIONS "${TARGETDETAILS_DESTINATIONS}")
   endif()
 
   set_target_definitions_to_custom_os_and_arch(${ARGN})
@@ -420,7 +419,7 @@ else()
 endif(CLR_CMAKE_HOST_UNIX)
 
 # Shared function for generating JIT
-# optional arguments: ADDITIONAL_DESTINATIONS path
+# optional arguments: DESTINATIONS path
 function(add_jit jitName)
 
     set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
@@ -453,7 +452,7 @@ function(add_jit jitName)
     )
 
     # add the install targets
-    install_clr(TARGETS ${jitName} ${ARGN})
+    install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljits)
 endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -473,39 +472,37 @@ else()
   set(TARGET_OS_NAME win)
 endif()
 
-create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} ADDITIONAL_DESTINATIONS sharedFramework)
+create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} DESTINATIONS . sharedFramework)
+install_clr(TARGETS clrjit DESTINATIONS . sharedFramework COMPONENT jit)
 
 # Enable profile guided optimization
 add_pgo(clrjit)
 
-if (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
-  if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
-    create_standalone_jit(TARGET clrjit_unix_arm64_${ARCH_HOST_NAME} OS unix ARCH arm64)
-    create_standalone_jit(TARGET clrjit_unix_osx_arm64_${ARCH_HOST_NAME} OS unix_osx ARCH arm64)
-    create_standalone_jit(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix ARCH x64)
-    create_standalone_jit(TARGET clrjit_win_arm64_${ARCH_HOST_NAME} OS win ARCH arm64)
-    create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64)
-  endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+  create_standalone_jit(TARGET clrjit_unix_arm64_${ARCH_HOST_NAME} OS unix ARCH arm64 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_unix_osx_arm64_${ARCH_HOST_NAME} OS unix_osx ARCH arm64 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix ARCH x64 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_win_arm64_${ARCH_HOST_NAME} OS win ARCH arm64 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64 DESTINATIONS .)
+endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
-  create_standalone_jit(TARGET clrjit_unix_armel_${ARCH_HOST_NAME} OS unix ARCH armel)
-  create_standalone_jit(TARGET clrjit_unix_arm_${ARCH_HOST_NAME} OS unix ARCH arm)
-  target_compile_definitions(clrjit_unix_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
-  create_standalone_jit(TARGET clrjit_win_arm_${ARCH_HOST_NAME} OS win ARCH arm)
-  create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86)
-else()
-  if (CLR_CMAKE_TARGET_UNIX)
-    create_standalone_jit(TARGET clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} OS unix ARCH ${ARCH_TARGET_NAME})
+create_standalone_jit(TARGET clrjit_unix_armel_${ARCH_HOST_NAME} OS unix ARCH armel DESTINATIONS .)
+create_standalone_jit(TARGET clrjit_unix_arm_${ARCH_HOST_NAME} OS unix ARCH arm DESTINATIONS .)
+target_compile_definitions(clrjit_unix_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
+create_standalone_jit(TARGET clrjit_win_arm_${ARCH_HOST_NAME} OS win ARCH arm DESTINATIONS .)
+create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86 DESTINATIONS .)
+
+if (CLR_CMAKE_TARGET_UNIX)
+    install_clr(TARGETS clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
     if (ARCH_TARGET_NAME STREQUAL arm)
       target_compile_definitions(clrjit_unix_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
-    endif (ARCH_TARGET_NAME STREQUAL arm)
-  endif(CLR_CMAKE_TARGET_UNIX)
-endif (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
-
+  endif (ARCH_TARGET_NAME STREQUAL arm)
+endif()
 
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_PGO_INSTRUMENT)
   # Copy PGO dependency to target dir
   set(PGORT_DLL "pgort140.dll")
   find_path(PGORT_DIR ${PGORT_DLL} REQUIRED)
-  _install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX})
-  _install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX}/sharedFramework)
+  install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX})
+  install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX}/sharedFramework)
 endif ()

@@ -5,7 +5,7 @@
     <!-- Windows is currently the only OS for which we provide a new strategy, so we test the Net5Compat only for Windows -->
     <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
 
-    <RunTestsJSArguments>--working-dir=/test-dir</RunTestsJSArguments>
+    <WasmXHarnessMonoArgs>--working-dir=/test-dir</WasmXHarnessMonoArgs>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\**\*.cs" />

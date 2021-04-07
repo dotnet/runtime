@@ -830,6 +830,8 @@ mono_runtime_do_background_work (void)
 {
 	mono_threads_perform_thread_dump ();
 
+	mono_threads_exiting ();
+
 	finalize_domain_objects ();
 
 	MONO_PROFILER_RAISE (gc_finalizing, ());

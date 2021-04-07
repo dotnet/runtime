@@ -13,7 +13,6 @@ set __BuildArch=x64
 set __BuildTarget="build"
 set __TargetOS=windows
 set CMAKE_BUILD_TYPE=Debug
-set "__LinkArgs= "
 set "__LinkLibraries= "
 set __Ninja=1
 
