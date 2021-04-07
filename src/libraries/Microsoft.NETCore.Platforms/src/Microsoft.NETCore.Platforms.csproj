@@ -48,7 +48,7 @@
     <PackageReference Include="NuGet.ProjectModel" Version="$(RefOnlyNugetProjectModelVersion)" />
   </ItemGroup>
 
-  <Target Name="GenerateRuntimeJson" Condition="'$(AdditionalRuntimeIdentifiers)' != ''" BeforeTargets="Pack">
+  <Target Name="GenerateRuntimeJson" Condition="'$(AdditionalRuntimeIdentifiers)' != ''" BeforeTargets="GenerateNuspec">
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroupWithQualifiers)"
                           AdditionalRuntimeIdentifiers="$(AdditionalRuntimeIdentifiers)"
