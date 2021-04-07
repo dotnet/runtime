@@ -8475,7 +8475,8 @@ interp_super_instructions (TransformData *td)
 						dump_interp_inst (new_inst);
 					}
 				}
-			} else if (opcode == MINT_ADD_I4 || opcode == MINT_ADD_I8) {
+			} else if (opcode == MINT_ADD_I4 || opcode == MINT_ADD_I8 ||
+					opcode == MINT_MUL_I4 || opcode == MINT_MUL_I8) {
 				int sreg = -1;
 				int sreg_imm = -1;
 				gint16 imm;
@@ -8487,8 +8488,15 @@ interp_super_instructions (TransformData *td)
 					sreg_imm = ins->sregs [1];
 				}
 				if (sreg != -1) {
-					int add_op = opcode == MINT_ADD_I4 ? MINT_ADD_I4_IMM : MINT_ADD_I8_IMM;
-					InterpInst *new_inst = interp_insert_ins (td, ins, add_op);
+					int binop;
+					switch (opcode) {
+						case MINT_ADD_I4: binop = MINT_ADD_I4_IMM; break;
+						case MINT_ADD_I8: binop = MINT_ADD_I8_IMM; break;
+						case MINT_MUL_I4: binop = MINT_MUL_I4_IMM; break;
+						case MINT_MUL_I8: binop = MINT_MUL_I8_IMM; break;
+						default: g_assert_not_reached ();
+					}
+					InterpInst *new_inst = interp_insert_ins (td, ins, binop);
 					new_inst->dreg = ins->dreg;
 					new_inst->sregs [0] = sreg;
 					new_inst->data [0] = imm;

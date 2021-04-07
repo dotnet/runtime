@@ -604,6 +604,9 @@ OPDEF(MINT_RET_I8_IMM, "ret.i8.imm", 2, 0, 0, MintOpShortInt)
 OPDEF(MINT_ADD_I4_IMM, "add.i4.imm", 4, 1, 1, MintOpShortInt)
 OPDEF(MINT_ADD_I8_IMM, "add.i8.imm", 4, 1, 1, MintOpShortInt)
 
+OPDEF(MINT_MUL_I4_IMM, "mul.i4.imm", 4, 1, 1, MintOpShortInt)
+OPDEF(MINT_MUL_I8_IMM, "mul.i8.imm", 4, 1, 1, MintOpShortInt)
+
 OPDEF(MINT_SHR_UN_I4_IMM, "shr.un.i4.imm", 4, 1, 1, MintOpShortInt)
 OPDEF(MINT_SHR_UN_I8_IMM, "shr.un.i8.imm", 4, 1, 1, MintOpShortInt)
 OPDEF(MINT_SHL_I4_IMM, "shl.i4.imm", 4, 1, 1, MintOpShortInt)

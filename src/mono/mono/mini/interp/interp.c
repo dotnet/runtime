@@ -4371,6 +4371,14 @@ call:
 		MINT_IN_CASE(MINT_MUL_I8)
 			BINOP(gint64, *);
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MUL_I4_IMM)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) * (gint16)ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MUL_I8_IMM)
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) * (gint16)ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_R4)
 			BINOP(float, *);
 			MINT_IN_BREAK;
