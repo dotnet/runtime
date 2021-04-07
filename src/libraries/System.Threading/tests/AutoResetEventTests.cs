@@ -52,6 +52,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public void WaitHandleWaitAll()
         {
             AutoResetEvent[] handles = new AutoResetEvent[10];
@@ -70,6 +71,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public void WaitHandleWaitAny()
         {
             AutoResetEvent[] handles = new AutoResetEvent[10];
@@ -84,6 +86,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49890", TestPlatforms.Android)]
         public void PingPong()
         {
             using (AutoResetEvent are1 = new AutoResetEvent(true), are2 = new AutoResetEvent(false))
