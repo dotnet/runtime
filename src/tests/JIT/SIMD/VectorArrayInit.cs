@@ -142,6 +142,10 @@ internal partial class VectorTest
         if (VectorArrayInitTest<uint>.VectorArrayInit(17, random) == Fail) returnVal = Fail;
         if (VectorArrayInitTest<ulong>.VectorArrayInit(12, random) == Fail) returnVal = Fail;
         if (VectorArrayInitTest<ulong>.VectorArrayInit(17, random) == Fail) returnVal = Fail;
+        if (VectorArrayInitTest<nint>.VectorArrayInit(12, random) == Fail) returnVal = Fail;
+        if (VectorArrayInitTest<nint>.VectorArrayInit(17, random) == Fail) returnVal = Fail;
+        if (VectorArrayInitTest<nuint>.VectorArrayInit(12, random) == Fail) returnVal = Fail;
+        if (VectorArrayInitTest<nuint>.VectorArrayInit(17, random) == Fail) returnVal = Fail;
 
         JitLog jitLog = new JitLog();
         if (!jitLog.Check(".ctor(ref)", "Single")) returnVal = Fail;
@@ -164,6 +168,10 @@ internal partial class VectorTest
         if (!jitLog.Check(".ctor(ref,int)", "UInt32")) returnVal = Fail;
         if (!jitLog.Check(".ctor(ref)", "UInt64")) returnVal = Fail;
         if (!jitLog.Check(".ctor(ref,int)", "UInt64")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref)", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref,int)", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref)", "UIntPtr")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref,int)", "UIntPtr")) returnVal = Fail;
         jitLog.Dispose();
 
         return returnVal;

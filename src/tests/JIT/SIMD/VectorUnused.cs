@@ -75,6 +75,8 @@ internal partial class VectorTest
         if (VectorUnusedTest<sbyte>.VectorUnused(3, 2) != Pass) returnVal = Fail;
         if (VectorUnusedTest<uint>.VectorUnused(3, 2) != Pass) returnVal = Fail;
         if (VectorUnusedTest<ulong>.VectorUnused(3, 2) != Pass) returnVal = Fail;
+        if (VectorUnusedTest<nint>.VectorUnused(3, 2) != Pass) returnVal = Fail;
+        if (VectorUnusedTest<nuint>.VectorUnused(3, 2) != Pass) returnVal = Fail;
         if (Vector4Test.VectorUnused() != Pass) returnVal = Fail;
         if (Vector3Test.VectorUnused() != Pass) returnVal = Fail;
         if (Vector2Test.VectorUnused() != Pass) returnVal = Fail;

@@ -143,6 +143,10 @@ internal partial class VectorTest
         if (VectorCopyToArrayTest<uint>.VectorCopyToArray(17, random) == Fail) returnVal = Fail;
         if (VectorCopyToArrayTest<ulong>.VectorCopyToArray(12, random) == Fail) returnVal = Fail;
         if (VectorCopyToArrayTest<ulong>.VectorCopyToArray(17, random) == Fail) returnVal = Fail;
+        if (VectorCopyToArrayTest<nint>.VectorCopyToArray(12, random) == Fail) returnVal = Fail;
+        if (VectorCopyToArrayTest<nint>.VectorCopyToArray(17, random) == Fail) returnVal = Fail;
+        if (VectorCopyToArrayTest<nuint>.VectorCopyToArray(12, random) == Fail) returnVal = Fail;
+        if (VectorCopyToArrayTest<nuint>.VectorCopyToArray(17, random) == Fail) returnVal = Fail;
 
         JitLog jitLog = new JitLog();
         if (!jitLog.Check("CopyTo(ref)", "Single")) returnVal = Fail;
@@ -165,6 +169,10 @@ internal partial class VectorTest
         if (!jitLog.Check("CopyTo(ref,int)", "UInt32")) returnVal = Fail;
         if (!jitLog.Check("CopyTo(ref)", "UInt64")) returnVal = Fail;
         if (!jitLog.Check("CopyTo(ref,int)", "UInt64")) returnVal = Fail;
+        if (!jitLog.Check("CopyTo(ref)", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("CopyTo(ref,int)", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("CopyTo(ref)", "UIntPtr")) returnVal = Fail;
+        if (!jitLog.Check("CopyTo(ref,int)", "UIntPtr")) returnVal = Fail;
         jitLog.Dispose();
 
         return returnVal;
