@@ -261,7 +261,7 @@ namespace System.Text.Json
             List<Exception>? exceptions = null;
 
             Debug.Assert(Current.AsyncEnumerator is null);
-            DisposeFrame(Current.CollectionEnumerator);
+            DisposeFrame(Current.CollectionEnumerator, ref exceptions);
 
             int stackSize = Math.Max(_count, _continuationCount);
             if (stackSize > 1)
@@ -269,28 +269,22 @@ namespace System.Text.Json
                 for (int i = 0; i < stackSize - 1; i++)
                 {
                     Debug.Assert(_previous[i].AsyncEnumerator is null);
-                    DisposeFrame(_previous[i].CollectionEnumerator);
+                    DisposeFrame(_previous[i].CollectionEnumerator, ref exceptions);
                 }
             }
 
             if (exceptions is not null)
             {
-                if (exceptions.Count == 1)
-                {
-                    ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
-                }
-
-                throw new AggregateException(exceptions);
+                ThrowHelper.ThrowAggregateExceptions(exceptions);
             }
 
-            void DisposeFrame(IEnumerator? collectionEnumerator)
+            static void DisposeFrame(IEnumerator? collectionEnumerator, ref List<Exception>? exceptions)
             {
                 try
                 {
                     if (collectionEnumerator is IDisposable disposable)
                     {
                         disposable.Dispose();
-                        return;
                     }
                 }
                 catch (Exception e)
@@ -309,28 +303,23 @@ namespace System.Text.Json
         {
             List<Exception>? exceptions = null;
 
-            await DisposeFrame(Current.CollectionEnumerator, Current.AsyncEnumerator).ConfigureAwait(false);
+            exceptions = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncEnumerator, exceptions).ConfigureAwait(false);
 
             int stackSize = Math.Max(_count, _continuationCount);
             if (stackSize > 1)
             {
                 for (int i = 0; i < stackSize - 1; i++)
                 {
-                    await DisposeFrame(_previous[i].CollectionEnumerator, _previous[i].AsyncEnumerator).ConfigureAwait(false);
+                    exceptions = await DisposeFrame(_previous[i].CollectionEnumerator, _previous[i].AsyncEnumerator, exceptions).ConfigureAwait(false);
                 }
             }
 
             if (exceptions is not null)
             {
-                if (exceptions.Count == 1)
-                {
-                    ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
-                }
-
-                throw new AggregateException(exceptions);
+                ThrowHelper.ThrowAggregateExceptions(exceptions);
             }
 
-            async ValueTask DisposeFrame(IEnumerator? collectionEnumerator, IAsyncDisposable? asyncDisposable)
+            static async ValueTask<List<Exception>?> DisposeFrame(IEnumerator? collectionEnumerator, IAsyncDisposable? asyncDisposable, List<Exception>? exceptions)
             {
                 Debug.Assert(!(collectionEnumerator is not null && asyncDisposable is not null));
 
@@ -339,10 +328,8 @@ namespace System.Text.Json
                     if (collectionEnumerator is IDisposable disposable)
                     {
                         disposable.Dispose();
-                        return;
                     }
-
-                    if (asyncDisposable is not null)
+                    else if (asyncDisposable is not null)
                     {
                         await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                     }
@@ -352,6 +339,8 @@ namespace System.Text.Json
                     exceptions ??= new();
                     exceptions.Add(e);
                 }
+
+                return exceptions;
             }
         }
 
