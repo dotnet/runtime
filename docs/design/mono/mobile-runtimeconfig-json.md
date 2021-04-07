@@ -21,7 +21,7 @@ We will only use the `runtimeOptions→configProperties` json key. Its content i
 
 The runtime assumes that the properties passed via `monovm_initialize` and `monovm_runtimeconfig_initialize` will be different. To ensure this, the provided MSBuild task will be passed a list of property names that the embedder promises it will pass to `monovm_initialize`. The MSBuild task will check that `runtimeconfig.json` does not set any of those same properties. If there is a duplicate, error out.
 
-We take everything and pass all the properties to the managed AppContext. For the well-known standard properties the mono runtime will read and use the ones it cares about.
+All properties set in either the `runtimeconfig.json` or set via `monovm_initialize` will be propagated to the managed `AppContext`. Mono will also check for properties it supports in the runtime itself and make use of them as appropriate.
 
 ## Design Details
 
