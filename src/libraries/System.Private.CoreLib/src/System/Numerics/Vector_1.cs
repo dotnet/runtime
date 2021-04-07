@@ -41,7 +41,7 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
                 return Unsafe.SizeOf<Vector<T>>() / Unsafe.SizeOf<T>();
             }
         }
@@ -52,7 +52,7 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
                 return default;
             }
         }
@@ -63,7 +63,7 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
                 return new Vector<T>(GetOneValue());
             }
         }
@@ -73,7 +73,7 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
                 return new Vector<T>(GetAllBitsSetValue());
             }
         }
@@ -82,7 +82,7 @@ namespace System.Numerics
         [Intrinsic]
         public unsafe Vector(T value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             Unsafe.SkipInit(out this);
 
             for (nint index = 0; index < Count; index++)
@@ -102,7 +102,7 @@ namespace System.Numerics
         [Intrinsic]
         public unsafe Vector(T[] values, int index)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if (values is null)
             {
@@ -125,7 +125,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(ReadOnlySpan<byte> values)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if (values.Length < Vector<byte>.Count)
             {
@@ -142,7 +142,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(ReadOnlySpan<T> values)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if (values.Length < Count)
             {
@@ -167,7 +167,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination span</exception>
         public readonly void CopyTo(Span<byte> destination)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if ((uint)destination.Length < (uint)Vector<byte>.Count)
             {
@@ -185,7 +185,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination span</exception>
         public readonly void CopyTo(Span<T> destination)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if ((uint)destination.Length < (uint)Count)
             {
@@ -217,7 +217,7 @@ namespace System.Numerics
         [Intrinsic]
         public readonly unsafe void CopyTo(T[] destination, int startIndex)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if (destination is null)
             {
@@ -244,7 +244,7 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
                 if ((uint)index >= (uint)Count)
                 {
@@ -271,7 +271,7 @@ namespace System.Numerics
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             HashCode hashCode = default;
 
             for (nint index = 0; index < Count; index++)
@@ -297,7 +297,7 @@ namespace System.Numerics
         /// <returns>The string representation.</returns>
         public readonly string ToString(string? format, IFormatProvider? formatProvider)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             StringBuilder sb = new StringBuilder();
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
@@ -323,7 +323,7 @@ namespace System.Numerics
         /// <paramref name="destination" /> is not large enough to hold the source vector.</returns>
         public readonly bool TryCopyTo(Span<byte> destination)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if ((uint)destination.Length < (uint)Vector<byte>.Count)
             {
@@ -343,7 +343,7 @@ namespace System.Numerics
         /// <paramref name="destination" /> is not large enough to hold the source vector.</returns>
         public readonly bool TryCopyTo(Span<T> destination)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if ((uint)destination.Length < (uint)Count)
             {
@@ -460,7 +460,7 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator &(Vector<T> left, Vector<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             Vector<T> result = default;
 
             result.register.uint64_0 = left.register.uint64_0 & right.register.uint64_0;
@@ -476,7 +476,7 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator |(Vector<T> left, Vector<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             Vector<T> result = default;
 
             result.register.uint64_0 = left.register.uint64_0 | right.register.uint64_0;
@@ -492,7 +492,7 @@ namespace System.Numerics
         [Intrinsic]
         public static unsafe Vector<T> operator ^(Vector<T> left, Vector<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             Vector<T> result = default;
 
             result.register.uint64_0 = left.register.uint64_0 ^ right.register.uint64_0;
@@ -540,7 +540,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<byte>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<byte>>(ref value);
         }
 
@@ -551,7 +551,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<sbyte>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<sbyte>>(ref value);
         }
 
@@ -562,7 +562,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<ushort>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<ushort>>(ref value);
         }
 
@@ -572,7 +572,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<short>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<short>>(ref value);
         }
 
@@ -583,7 +583,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<uint>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<uint>>(ref value);
         }
 
@@ -593,7 +593,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<int>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<int>>(ref value);
         }
 
@@ -604,7 +604,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<ulong>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<ulong>>(ref value);
         }
 
@@ -614,7 +614,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<long>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<long>>(ref value);
         }
 
@@ -624,7 +624,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<float>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<float>>(ref value);
         }
 
@@ -634,7 +634,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<double>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<double>>(ref value);
         }
 
@@ -645,7 +645,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<nuint>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<nuint>>(ref value);
         }
 
@@ -655,7 +655,7 @@ namespace System.Numerics
         [Intrinsic]
         public static explicit operator Vector<nint>(Vector<T> value)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector<nint>>(ref value);
         }
 
@@ -736,7 +736,7 @@ namespace System.Numerics
         [Intrinsic]
         internal static Vector<T> ConditionalSelect(Vector<T> condition, Vector<T> left, Vector<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             Vector<T> result = default;
 
             result.register.uint64_0 = (left.register.uint64_0 & condition.register.uint64_0) | (right.register.uint64_0 & ~condition.register.uint64_0);

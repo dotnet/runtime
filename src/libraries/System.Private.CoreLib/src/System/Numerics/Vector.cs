@@ -1287,8 +1287,8 @@ namespace System.Numerics
             where TFrom : struct
             where TTo : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<TFrom>();
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<TTo>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<TFrom>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<TTo>();
 
             return Unsafe.As<Vector<TFrom>, Vector<TTo>>(ref vector);
         }
