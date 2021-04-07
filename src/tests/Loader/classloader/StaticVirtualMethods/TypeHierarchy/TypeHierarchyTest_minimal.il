@@ -9,7 +9,7 @@
 .assembly TypeHierarchyTest {}
 .class interface public abstract auto ansi InterfaceScenario1
 {
-  .method public newslot virtual abstract static int32 Method() cil managed noinlining
+  .method public newslot virtual abstract static string Method() cil managed noinlining
   {
   } // end of method Method
 } // end of class InterfaceScenario1
@@ -17,7 +17,7 @@
        extends [System.Runtime]System.Object
        implements InterfaceScenario1
 {
-  .method public static int32 Method() cil managed noinlining
+  .method public static string Method() cil managed noinlining
   {
     .override method int32 InterfaceScenario1::Method()
     .locals init (int32 V_O)
@@ -44,10 +44,20 @@
     call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Scenario1
+  .method public static void Test_Scenario2() cil managed noinlining
+  {
+    ldstr "Test_Scenario2"
+    ldstr "BaseScenario1.Method"
+    constrained. class DerivedScenario1
+    call string class InterfaceScenario1::Method()
+    call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+    ret
+  } // end of method Test_Scenario2
   .method public static int32 Main() cil managed noinlining
   {
     .entrypoint
     call void TestEntrypoint::Test_Scenario1()
+    call void TestEntrypoint::Test_Scenario2()
     call int32 [TypeHierarchyCommonCs]Statics::ReportResults()
     ret
   } // end of method Main

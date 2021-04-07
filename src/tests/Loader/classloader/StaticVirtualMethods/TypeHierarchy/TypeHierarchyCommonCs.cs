@@ -16,7 +16,7 @@ public static class Statics
     {
         if (expectedResult != actualResult)
         {
-            Console.WriteLine($"Scenario {scenario} failed - expected {expectedResult ?? "<null>"}, got {actualResult ?? "<null>"}");
+            Console.WriteLine($"Scenario {scenario} failed - expected {expectedResult}, got {actualResult}");
             Failures++;
         }
         else
