@@ -327,6 +327,7 @@ OPDEF(MINT_STOBJ_VT, "stobj.vt", 4, 0, 2, MintOpClassToken)
 OPDEF(MINT_CPBLK, "cpblk", 4, 0, 3, MintOpNoArgs)
 OPDEF(MINT_INITBLK, "initblk", 4, 0, 3, MintOpNoArgs)
 OPDEF(MINT_LOCALLOC, "localloc", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_INITLOCAL, "initlocal", 3, 1, 0, MintOpShortInt)
 OPDEF(MINT_INITLOCALS, "initlocals", 3, 0, 0, MintOpTwoShorts)
 
 OPDEF(MINT_LDELEM_I, "ldelem.i", 4, 1, 2, MintOpNoArgs)

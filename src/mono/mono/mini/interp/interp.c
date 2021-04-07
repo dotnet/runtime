@@ -3189,6 +3189,7 @@ main_loop:
 		MintOpcode opcode;
 		DUMP_INSTR();
 		MINT_IN_SWITCH (*ip) {
+		MINT_IN_CASE(MINT_INITLOCAL)
 		MINT_IN_CASE(MINT_INITLOCALS)
 			memset (locals + ip [1], 0, ip [2]);
 			ip += 3;

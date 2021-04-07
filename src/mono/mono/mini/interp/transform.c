@@ -8347,7 +8347,21 @@ retry:
 
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/ldfld pair :\n\t");
-						dump_interp_inst (ins->next);
+						dump_interp_inst (ins);
+					}
+				}
+			} else if (opcode == MINT_INITOBJ) {
+				InterpInst *ldloca = local_defs [sregs [0]].ins;
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int local = ldloca->sregs [0];
+					// Replace LDLOCA + INITOBJ with INITLOCAL
+					ins->opcode = MINT_INITLOCAL;
+					local_ref_count [sregs [0]]--;
+					ins->dreg = local;
+
+					if (td->verbose_level) {
+						g_print ("Replace ldloca/initobj pair :\n\t");
+						dump_interp_inst (ins);
 					}
 				}
 			} else if (MINT_IS_STFLD (opcode) && ins->data [0] == 0) {
