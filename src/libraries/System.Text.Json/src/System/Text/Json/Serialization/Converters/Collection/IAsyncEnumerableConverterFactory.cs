@@ -27,26 +27,14 @@ namespace System.Text.Json.Serialization
 
         internal static bool TryGetAsyncEnumerableInterface(Type type, [NotNullWhen(true)] out Type? asyncEnumerableInterface)
         {
-            if (type.IsInterface && IsAsyncEnumerableInterface(type))
+            if (IEnumerableConverterFactoryHelpers.GetCompatibleGenericInterface(type, typeof(IAsyncEnumerable<>)) is Type interfaceTy)
             {
-                asyncEnumerableInterface = type;
+                asyncEnumerableInterface = interfaceTy;
                 return true;
-            }
-
-            foreach (Type interfaceTy in type.GetInterfaces())
-            {
-                if (IsAsyncEnumerableInterface(interfaceTy))
-                {
-                    asyncEnumerableInterface = interfaceTy;
-                    return true;
-                }
             }
 
             asyncEnumerableInterface = null;
             return false;
-
-            static bool IsAsyncEnumerableInterface(Type interfaceTy)
-                => interfaceTy.IsGenericType && interfaceTy.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>);
         }
     }
 }

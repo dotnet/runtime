@@ -212,7 +212,7 @@ namespace System.Text.Json
         public async ValueTask DisposePendingAsyncDisposables()
         {
             Debug.Assert(PendingAsyncDisposables?.Count > 0);
-            List<Exception>? exceptions = null;
+            Exception? exception = null;
 
             foreach (IAsyncDisposable asyncDisposable in PendingAsyncDisposables)
             {
@@ -220,21 +220,15 @@ namespace System.Text.Json
                 {
                     await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                 }
-                catch (Exception exn)
+                catch (Exception e)
                 {
-                    exceptions ??= new();
-                    exceptions.Add(exn);
+                    exception = e;
                 }
             }
 
-            if (exceptions is not null)
+            if (exception is not null)
             {
-                if (exceptions.Count == 1)
-                {
-                    ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
-                }
-
-                throw new AggregateException(exceptions);
+                ExceptionDispatchInfo.Capture(exception).Throw();
             }
 
             PendingAsyncDisposables.Clear();
