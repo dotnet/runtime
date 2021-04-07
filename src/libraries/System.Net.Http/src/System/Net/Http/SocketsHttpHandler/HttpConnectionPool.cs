@@ -299,7 +299,6 @@ namespace System.Net.Http
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
         public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.SslSocksTunnel;
-        public bool AnyProxyKind => (_proxyUri != null);
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
         public byte[]? HostHeaderValueBytes => _hostHeaderValueBytes;
@@ -1160,9 +1159,9 @@ namespace System.Net.Http
 
         public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (AnyProxyKind && ProxyCredentials != null)
+            if (ProxyUri != null && ProxyUri.Scheme == Uri.UriSchemeHttp && ProxyCredentials != null)
             {
-                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, connection, this, cancellationToken);
+                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri, async, ProxyCredentials, connection, this, cancellationToken);
             }
 
             return connection.SendAsync(request, async, cancellationToken);
