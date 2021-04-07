@@ -14,20 +14,6 @@ namespace System.Net.Http.Functional.Tests.Socks
     {
         public SocksProxyTest(ITestOutputHelper helper) : base(helper) { }
 
-        private class Credentials : ICredentials
-        {
-            private readonly string _username, _password;
-
-            public Credentials(string username, string password)
-            {
-                _username = username;
-                _password = password;
-            }
-
-            public NetworkCredential? GetCredential(Uri uri, string authType)
-                => new NetworkCredential(_username, _password);
-        }
-
         public static IEnumerable<object[]> TestLoopbackAsync_MemberData() =>
             from scheme in new[] { "socks4", "socks4a", "socks5" }
             from useSsl in BoolValues
@@ -58,7 +44,7 @@ namespace System.Net.Http.Functional.Tests.Socks
 
                     if (useAuth)
                     {
-                        handler.Proxy.Credentials = new Credentials("DOTNET", "424242");
+                        handler.Proxy.Credentials = new NetworkCredential("DOTNET", "424242");
                     }
 
                     uri = new UriBuilder(uri) { Host = host }.Uri;
