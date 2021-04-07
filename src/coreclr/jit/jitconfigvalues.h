@@ -306,6 +306,10 @@ CONFIG_INTEGER(EnableArm64Sm4,          W("EnableArm64Sm4"), 1)
 CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
 #endif // defined(TARGET_ARM64)
 
+#if defined(CONFIGURABLE_ARM_ABI)
+CONFIG_INTEGER(JitSoftFP, W("JitSoftFP"), 0)
+#endif // defined(CONFIGURABLE_ARM_ABI)
+
 // clang-format on
 
 #ifdef FEATURE_SIMD
@@ -457,6 +461,12 @@ CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)
 CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)
+
+// Profile consumption options
+CONFIG_INTEGER(JitDisablePgo, W("JitDisablePgo"), 0) // Ignore pgo data for all methods
+#if defined(DEBUG)
+CONFIG_STRING(JitEnablePgoRange, W("JitEnablePgoRange")) // Enable pgo data for only some methods
+#endif                                                   // debug
 
 // Control when Virtual Calls are expanded
 CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph

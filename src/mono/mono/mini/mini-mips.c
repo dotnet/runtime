@@ -5276,6 +5276,12 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	return ctx->sc_regs [reg];
 }
 
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	return &ctx->sc_regs [reg];
+}
+
 #define ENABLE_WRONG_METHOD_CHECK 0
 
 #define MIPS_LOAD_SEQUENCE_LENGTH	8

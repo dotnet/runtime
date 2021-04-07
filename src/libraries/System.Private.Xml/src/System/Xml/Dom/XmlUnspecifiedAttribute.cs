@@ -3,12 +3,12 @@
 
 namespace System.Xml
 {
-    internal class XmlUnspecifiedAttribute : XmlAttribute
+    internal sealed class XmlUnspecifiedAttribute : XmlAttribute
     {
         private bool _fSpecified;
 
 
-        protected internal XmlUnspecifiedAttribute(string? prefix, string localName, string? namespaceURI, XmlDocument doc)
+        internal XmlUnspecifiedAttribute(string? prefix, string localName, string? namespaceURI, XmlDocument doc)
         : base(prefix, localName, namespaceURI, doc)
         {
         }

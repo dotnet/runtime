@@ -247,10 +247,13 @@ void Compiler::lvaInitTypeRef()
             break;
         case CorInfoCallConvExtension::C:
         case CorInfoCallConvExtension::Stdcall:
+        case CorInfoCallConvExtension::CMemberFunction:
+        case CorInfoCallConvExtension::StdcallMemberFunction:
             varDscInfo.Init(lvaTable, hasRetBuffArg, 0, 0);
             break;
         case CorInfoCallConvExtension::Managed:
         case CorInfoCallConvExtension::Fastcall:
+        case CorInfoCallConvExtension::FastcallMemberFunction:
         default:
             varDscInfo.Init(lvaTable, hasRetBuffArg, MAX_REG_ARG, MAX_FLOAT_REG_ARG);
             break;
@@ -1400,11 +1403,12 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     varDsc->lvIsImplicitByRef = 0;
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
-// Set the lvType (before this point it is TYP_UNDEF).
+    // Set the lvType (before this point it is TYP_UNDEF).
 
-#ifdef FEATURE_HFA
-    varDsc->SetHfaType(TYP_UNDEF);
-#endif
+    if (GlobalJitOptions::compFeatureHfa)
+    {
+        varDsc->SetHfaType(TYP_UNDEF);
+    }
     if ((varTypeIsStruct(type)))
     {
         lvaSetStruct(varNum, typeHnd, typeHnd != nullptr, !tiVerificationNeeded);
@@ -2104,6 +2108,14 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         // TODO-1stClassStructs: a temporary solution to keep diffs small, it will be fixed later.
         shouldPromote = false;
     }
+#if defined(DEBUG)
+    else if (compiler->compPromoteFewerStructs(lclNum))
+    {
+        // Do not promote some structs, that can be promoted, to stress promoted/unpromoted moves.
+        JITDUMP("Not promoting promotable struct local V%02u, because of STRESS_PROMOTE_FEWER_STRUCTS\n", lclNum);
+        shouldPromote = false;
+    }
+#endif
 
     //
     // If the lvRefCnt is zero and we have a struct promoted parameter we can end up with an extra store of
@@ -2804,25 +2816,26 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
                 varDsc->lvBaseType = simdBaseType;
             }
 #endif // FEATURE_SIMD
-#ifdef FEATURE_HFA
-            // For structs that are small enough, we check and set HFA element type
-            if (varDsc->lvExactSize <= MAX_PASS_MULTIREG_BYTES)
+            if (GlobalJitOptions::compFeatureHfa)
             {
-                // hfaType is set to float, double or SIMD type if it is an HFA, otherwise TYP_UNDEF
-                var_types hfaType = GetHfaType(typeHnd);
-                if (varTypeIsValidHfaType(hfaType))
+                // For structs that are small enough, we check and set HFA element type
+                if (varDsc->lvExactSize <= MAX_PASS_MULTIREG_BYTES)
                 {
-                    varDsc->SetHfaType(hfaType);
+                    // hfaType is set to float, double or SIMD type if it is an HFA, otherwise TYP_UNDEF
+                    var_types hfaType = GetHfaType(typeHnd);
+                    if (varTypeIsValidHfaType(hfaType))
+                    {
+                        varDsc->SetHfaType(hfaType);
 
-                    // hfa variables can never contain GC pointers
-                    assert(!layout->HasGCPtr());
-                    // The size of this struct should be evenly divisible by 4 or 8
-                    assert((varDsc->lvExactSize % genTypeSize(hfaType)) == 0);
-                    // The number of elements in the HFA should fit into our MAX_ARG_REG_COUNT limit
-                    assert((varDsc->lvExactSize / genTypeSize(hfaType)) <= MAX_ARG_REG_COUNT);
+                        // hfa variables can never contain GC pointers
+                        assert(!layout->HasGCPtr());
+                        // The size of this struct should be evenly divisible by 4 or 8
+                        assert((varDsc->lvExactSize % genTypeSize(hfaType)) == 0);
+                        // The number of elements in the HFA should fit into our MAX_ARG_REG_COUNT limit
+                        assert((varDsc->lvExactSize / genTypeSize(hfaType)) <= MAX_ARG_REG_COUNT);
+                    }
                 }
             }
-#endif // FEATURE_HFA
         }
     }
     else
@@ -2936,14 +2949,15 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
 
 void Compiler::lvaSetStructUsedAsVarArg(unsigned varNum)
 {
-#ifdef FEATURE_HFA
+    if (GlobalJitOptions::compFeatureHfa)
+    {
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-    LclVarDsc* varDsc = &lvaTable[varNum];
-    // For varargs methods incoming and outgoing arguments should not be treated
-    // as HFA.
-    varDsc->SetHfaType(TYP_UNDEF);
+        LclVarDsc* varDsc = &lvaTable[varNum];
+        // For varargs methods incoming and outgoing arguments should not be treated
+        // as HFA.
+        varDsc->SetHfaType(TYP_UNDEF);
 #endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-#endif // FEATURE_HFA
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3257,9 +3271,9 @@ BasicBlock::weight_t BasicBlock::getCalledCount(Compiler* comp)
 // getBBWeight -- get the normalized weight of this block
 BasicBlock::weight_t BasicBlock::getBBWeight(Compiler* comp)
 {
-    if (this->bbWeight == 0)
+    if (this->bbWeight == BB_ZERO_WEIGHT)
     {
-        return 0;
+        return BB_ZERO_WEIGHT;
     }
     else
     {
@@ -4088,6 +4102,21 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
                 if (varDsc->lvEhWriteThruCandidate || needsExplicitZeroInit)
                 {
+#ifdef DEBUG
+                    if (needsExplicitZeroInit)
+                    {
+                        varDsc->lvDisqualifyEHVarReason = 'Z';
+                        JITDUMP("EH Var V%02u needs explicit zero init. Disqualified as a register candidate.\n",
+                                lclNum);
+                    }
+                    else
+                    {
+                        varDsc->lvDisqualifyEHVarReason = 'M';
+                        JITDUMP("EH Var V%02u has multiple definitions. Disqualified as a register candidate.\n",
+                                lclNum);
+                    }
+
+#endif // DEBUG
                     varDsc->lvEhWriteThruCandidate     = false;
                     varDsc->lvDisqualifyForEhWriteThru = true;
                 }
@@ -4100,6 +4129,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 #endif
                     {
                         varDsc->lvEhWriteThruCandidate = true;
+                        JITDUMP("Marking EH Var V%02u as a register candidate.\n", lclNum);
                     }
                 }
             }
@@ -5455,9 +5485,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     // the native return buffer parameter.
     if (callConvIsInstanceMethodCallConv(info.compCallConv))
     {
-        noway_assert(lvaTable[lclNum].lvIsRegArg);
-#ifndef TARGET_X86
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
+#ifdef TARGET_X86
+        if (!lvaTable[lclNum].lvIsRegArg)
+        {
+            argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
+        }
+#else
+        argOffs              = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
 #endif // TARGET_X86
         lclNum++;
         userArgsToSkip++;
@@ -7354,7 +7388,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
         if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
         {
-            printf("H");
+            printf("%c", varDsc->lvDisqualifyEHVarReason);
         }
         if (varDsc->lvLclFieldExpr)
         {

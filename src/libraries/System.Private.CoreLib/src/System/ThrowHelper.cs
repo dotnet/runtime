@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-// This file defines an internal class used to throw exceptions in BCL code.
+// This file defines an internal static class used to throw exceptions in BCL code.
 // The main purpose is to reduce code size.
 //
 // The old way to throw an exception generates quite a lot IL code and assembly code.
@@ -38,6 +38,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
@@ -218,15 +219,16 @@ namespace System
             throw GetArgumentException(resource, argument);
         }
 
-        private static ArgumentNullException GetArgumentNullException(ExceptionArgument argument)
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_HandleNotSync(string paramName)
         {
-            return new ArgumentNullException(GetArgumentName(argument));
+            throw new ArgumentException(SR.Arg_HandleNotSync, paramName);
         }
 
         [DoesNotReturn]
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
         {
-            throw GetArgumentNullException(argument);
+            throw new ArgumentNullException(GetArgumentName(argument));
         }
 
         [DoesNotReturn]
@@ -257,6 +259,12 @@ namespace System
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, int paramNumber, ExceptionResource resource)
         {
             throw GetArgumentOutOfRangeException(argument, paramNumber, resource);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowEndOfFileException()
+        {
+            throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
         }
 
         [DoesNotReturn]
@@ -308,6 +316,24 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowNotSupportedException_UnseekableStream()
+        {
+            throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowNotSupportedException_UnreadableStream()
+        {
+            throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowNotSupportedException_UnwritableStream()
+        {
+            throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowUnauthorizedAccessException(ExceptionResource resource)
         {
             throw new UnauthorizedAccessException(GetResourceString(resource));
@@ -317,6 +343,18 @@ namespace System
         internal static void ThrowObjectDisposedException(string objectName, ExceptionResource resource)
         {
             throw new ObjectDisposedException(objectName, GetResourceString(resource));
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowObjectDisposedException_StreamClosed(string? objectName)
+        {
+            throw new ObjectDisposedException(objectName, SR.ObjectDisposed_StreamClosed);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowObjectDisposedException_FileClosed()
+        {
+            throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
         }
 
         [DoesNotReturn]
@@ -715,6 +753,8 @@ namespace System
                     return "buffer";
                 case ExceptionArgument.offset:
                     return "offset";
+                case ExceptionArgument.stream:
+                    return "stream";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -871,6 +911,8 @@ namespace System
                     return SR.Argument_SpansMustHaveSameLength;
                 case ExceptionResource.Argument_InvalidFlag:
                     return SR.Argument_InvalidFlag;
+                case ExceptionResource.CancellationTokenSource_Disposed:
+                    return SR.CancellationTokenSource_Disposed;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -975,6 +1017,7 @@ namespace System
         suffix,
         buffer,
         offset,
+        stream
     }
 
     //
@@ -1049,5 +1092,6 @@ namespace System
         Arg_TypeNotSupported,
         Argument_SpansMustHaveSameLength,
         Argument_InvalidFlag,
+        CancellationTokenSource_Disposed,
     }
 }

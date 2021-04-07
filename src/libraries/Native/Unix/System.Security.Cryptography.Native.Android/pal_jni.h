@@ -23,10 +23,10 @@ extern jmethodID g_ByteArrayInputStreamReset;
 extern jclass    g_Enum;
 extern jmethodID g_EnumOrdinal;
 
-// java/security/Key
-extern jclass    g_KeyClass;
-extern jmethodID g_KeyGetAlgorithm;
-extern jmethodID g_KeyGetEncoded;
+// java/lang/Throwable
+extern jclass    g_ThrowableClass;
+extern jmethodID g_ThrowableGetCause;
+extern jmethodID g_ThrowableGetMessage;
 
 // java/security/SecureRandom
 extern jclass    g_randClass;
@@ -101,16 +101,85 @@ extern jmethodID g_CertFactoryGenerateCertificate;
 extern jmethodID g_CertFactoryGenerateCertificates;
 extern jmethodID g_CertFactoryGenerateCertPathFromList;
 extern jmethodID g_CertFactoryGenerateCertPathFromStream;
-extern jmethodID g_CertFactoryGenerateCRL;
 
 // java/security/cert/CertPath
 extern jclass    g_CertPathClass;
 extern jmethodID g_CertPathGetEncoded;
+extern jmethodID g_CertPathGetCertificates;
+
+// java/security/cert/CertPathBuilder
+extern jclass    g_CertPathBuilderClass;
+extern jmethodID g_CertPathBuilderGetInstance;
+extern jmethodID g_CertPathBuilderBuild;
+
+// java/security/cert/CertPathValidator
+extern jclass    g_CertPathValidatorClass;
+extern jmethodID g_CertPathValidatorGetInstance;
+extern jmethodID g_CertPathValidatorValidate;
+extern jmethodID g_CertPathValidatorGetRevocationChecker; // only in API level 24+
+
+// java/security/cert/CertPathValidatorException
+extern jclass    g_CertPathValidatorExceptionClass;
+extern jmethodID g_CertPathValidatorExceptionGetIndex;
+extern jmethodID g_CertPathValidatorExceptionGetReason;
+
+// java/security/cert/CertPathValidatorException$BasicReason - only in API level 24+
+extern jclass    g_CertPathExceptionBasicReasonClass;
+
+// java/security/cert/CertStore
+extern jclass    g_CertStoreClass;
+extern jmethodID g_CertStoreGetInstance;
+
+// java/security/cert/CollectionCertStoreParameters
+extern jclass    g_CollectionCertStoreParametersClass;
+extern jmethodID g_CollectionCertStoreParametersCtor;
+
+// java/security/cert/PKIXBuilderParameters
+extern jclass    g_PKIXBuilderParametersClass;
+extern jmethodID g_PKIXBuilderParametersCtor;
+extern jmethodID g_PKIXBuilderParametersAddCertStore;
+extern jmethodID g_PKIXBuilderParametersAddCertPathChecker;
+extern jmethodID g_PKIXBuilderParametersSetDate;
+extern jmethodID g_PKIXBuilderParametersSetRevocationEnabled;
+extern jmethodID g_PKIXBuilderParametersSetTrustAnchors;
+
+// java/security/cert/PKIXCertPathBuilderResult
+extern jclass    g_PKIXCertPathBuilderResultClass;
+extern jmethodID g_PKIXCertPathBuilderResultGetCertPath;
+extern jmethodID g_PKIXCertPathBuilderResultGetTrustAnchor;
+
+// java/security/cert/PKIXReason - only in API level 24+
+extern jclass    g_PKIXReasonClass;
+
+// java/security/cert/PKIXRevocationChecker - only in API level 24+
+extern jclass    g_PKIXRevocationCheckerClass;
+extern jmethodID g_PKIXRevocationCheckerSetOptions;
+
+// java/security/cert/PKIXRevocationChecker$Option - only in API level 24+
+extern jclass    g_PKIXRevocationCheckerOptionClass;
+extern jfieldID  g_PKIXRevocationCheckerOptionOnlyEndEntity;
+
+// java/security/cert/TrustAnchor
+extern jclass    g_TrustAnchorClass;
+extern jclass    g_TrustAnchorCtor;
+extern jmethodID g_TrustAnchorGetTrustedCert;
 
 // java/security/cert/X509Certificate
 extern jclass    g_X509CertClass;
+extern jmethodID g_X509CertEquals;
 extern jmethodID g_X509CertGetEncoded;
 extern jmethodID g_X509CertGetPublicKey;
+
+// java/security/cert/X509CertSelector
+extern jclass    g_X509CertSelectorClass;
+extern jmethodID g_X509CertSelectorCtor;
+extern jmethodID g_X509CertSelectorSetCertificate;
+
+// java/security/interfaces/DSAKey
+extern jclass    g_DSAKeyClass;
+
+// java/security/interfaces/ECKey
+extern jclass    g_ECKeyClass;
 
 // java/security/interfaces/RSAKey
 extern jclass    g_RSAKeyClass;
@@ -132,6 +201,27 @@ extern jmethodID g_keyPairGenGetInstanceMethod;
 extern jmethodID g_keyPairGenInitializeMethod;
 extern jmethodID g_keyPairGenInitializeWithParamsMethod;
 extern jmethodID g_keyPairGenGenKeyPairMethod;
+
+// java/security/KeyStore
+extern jclass    g_KeyStoreClass;
+extern jmethodID g_KeyStoreGetInstance;
+extern jmethodID g_KeyStoreAliases;
+extern jmethodID g_KeyStoreContainsAlias;
+extern jmethodID g_KeyStoreDeleteEntry;
+extern jmethodID g_KeyStoreGetCertificate;
+extern jmethodID g_KeyStoreGetEntry;
+extern jmethodID g_KeyStoreLoad;
+extern jmethodID g_KeyStoreSetCertificateEntry;
+extern jmethodID g_KeyStoreSetKeyEntry;
+
+// java/security/KeyStore$PrivateKeyEntry
+extern jclass    g_PrivateKeyEntryClass;
+extern jmethodID g_PrivateKeyEntryGetCertificate;
+extern jmethodID g_PrivateKeyEntryGetPrivateKey;
+
+// java/security/KeyStore$TrustedCertificateEntry
+extern jclass    g_TrustedCertificateEntryClass;
+extern jmethodID g_TrustedCertificateEntryGetTrustedCertificate;
 
 // java/security/Signature
 extern jclass    g_SignatureClass;
@@ -249,9 +339,11 @@ extern jmethodID g_X509EncodedKeySpecCtor;
 extern jclass    g_DestroyableClass;
 extern jmethodID g_destroy;
 
-// java/util/Collection
+// java/util/ArrayList
 extern jclass    g_ArrayListClass;
 extern jmethodID g_ArrayListCtor;
+extern jmethodID g_ArrayListCtorWithCapacity;
+extern jmethodID g_ArrayListCtorWithCollection;
 extern jmethodID g_ArrayListAdd;
 
 // java/util/Collection
@@ -261,16 +353,26 @@ extern jmethodID g_CollectionSize;
 
 // java/util/Date
 extern jclass    g_DateClass;
-extern jmethodID g_DateGetTime;
+extern jmethodID g_DateCtor;
+
+// java/util/Enumeration
+extern jclass    g_Enumeration;
+extern jmethodID g_EnumerationHasMoreElements;
+extern jmethodID g_EnumerationNextElement;
+
+// java/util/HashSet
+extern jclass    g_HashSetClass;
+extern jmethodID g_HashSetCtorWithCapacity;
+extern jmethodID g_HashSetAdd;
 
 // java/util/Iterator
 extern jclass    g_IteratorClass;
 extern jmethodID g_IteratorHasNext;
 extern jmethodID g_IteratorNext;
 
-// java/util/Set
-extern jclass    g_SetClass;
-extern jmethodID g_SetIterator;
+// java/util/List
+extern jclass    g_ListClass;
+extern jmethodID g_ListGet;
 
 // javax/net/ssl/SSLEngine
 extern jclass    g_SSLEngine;
@@ -316,11 +418,6 @@ extern jmethodID g_SSLEngineResultGetHandshakeStatusMethod;
 // javax/net/ssl/TrustManager
 extern jclass    g_TrustManager;
 
-// javax/security/auth/x500/X500Principal
-extern jclass    g_X500PrincipalClass;
-extern jmethodID g_X500PrincipalGetEncoded;
-extern jmethodID g_X500PrincipalHashCode;
-
 // javax/crypto/KeyAgreement
 extern jclass    g_KeyAgreementClass;
 extern jmethodID g_KeyAgreementGetInstance;
@@ -335,14 +432,47 @@ extern jmethodID g_KeyAgreementGenerateSecret;
 #define JSTRING(str) ((jstring)(*env)->NewStringUTF(env, str))
 #define ON_EXCEPTION_PRINT_AND_GOTO(label) if (CheckJNIExceptions(env)) goto label
 
+#define INIT_LOCALS(name, ...) \
+    enum { __VA_ARGS__, count_##name }; \
+    jobject name[count_##name] = { 0 } \
+
+#define RELEASE_LOCALS(name, env) \
+do { \
+    for (int i_##name = 0; i_##name < count_##name; ++i_##name) \
+    { \
+        jobject local = name[i_##name]; \
+        if (local != NULL) \
+            (*env)->DeleteLocalRef(env, local); \
+    } \
+} while(0)
+
+#define RELEASE_LOCALS_ENV(name, releaseFn) \
+do { \
+    for (int i = 0; i < count_##name; ++i) \
+    { \
+        releaseFn(env, name[i]); \
+    } \
+} while(0)
+
 void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite);
 jobject ToGRef(JNIEnv *env, jobject lref);
 jobject AddGRef(JNIEnv *env, jobject gref);
 void ReleaseGRef(JNIEnv *env, jobject gref);
 void ReleaseLRef(JNIEnv *env, jobject lref);
 jclass GetClassGRef(JNIEnv *env, const char* name);
+
+// Print and clear any JNI exceptions. Returns true if there was an exception, false otherwise.
 bool CheckJNIExceptions(JNIEnv* env);
+
+// Clear any JNI exceptions without printing them. Returns true if there was an exception, false otherwise.
+bool TryClearJNIExceptions(JNIEnv* env);
+
+// Get any pending JNI exception. Returns true if there was an exception, false otherwise.
+bool TryGetJNIException(JNIEnv* env, jthrowable *ex, bool printException);
+
+// Assert on any JNI exceptions. Prints the exception before asserting.
 void AssertOnJNIExceptions(JNIEnv* env);
+
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);

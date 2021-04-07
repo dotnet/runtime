@@ -49,6 +49,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.DigestAlgs.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.DigestAlgs.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs"

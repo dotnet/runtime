@@ -68,7 +68,6 @@ mono_object_register_finalizer_handle (MonoObjectHandle obj);
 
 extern void mono_gc_init (void);
 extern void mono_gc_base_init (void);
-extern void mono_gc_cleanup (void);
 extern void mono_gc_base_cleanup (void);
 extern void mono_gc_init_icalls (void);
 
@@ -121,10 +120,6 @@ MonoObject*
 mono_gc_alloc_fixed_no_descriptor (size_t size, MonoGCRootSource source, void *key, const char *msg);
 
 void  mono_gc_free_fixed             (void* addr);
-
-/* make sure the gchandle was allocated for an object in domain */
-gboolean mono_gchandle_is_in_domain (MonoGCHandle gchandle, MonoDomain *domain);
-void     mono_gchandle_free_domain  (MonoDomain *domain);
 
 typedef void (*FinalizerThreadCallback) (gpointer user_data);
 

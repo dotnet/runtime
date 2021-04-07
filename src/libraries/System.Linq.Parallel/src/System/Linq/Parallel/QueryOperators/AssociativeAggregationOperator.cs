@@ -222,7 +222,7 @@ namespace System.Linq.Parallel
         // (possibly partitioned) data source.
         //
 
-        private class AssociativeAggregationOperatorEnumerator<TKey> : QueryOperatorEnumerator<TIntermediate, int>
+        private sealed class AssociativeAggregationOperatorEnumerator<TKey> : QueryOperatorEnumerator<TIntermediate, int>
         {
             private readonly QueryOperatorEnumerator<TInput, TKey> _source; // The source data.
             private readonly AssociativeAggregationOperator<TInput, TIntermediate, TOutput> _reduceOperator; // The operator.
@@ -299,7 +299,7 @@ namespace System.Linq.Parallel
                 while (_source.MoveNext(ref input!, ref keyUnused))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                        _cancellationToken.ThrowIfCancellationRequested();;
+                        _cancellationToken.ThrowIfCancellationRequested();
                     hadNext = true;
                     accumulator = _reduceOperator._intermediateReduce(accumulator, input);
                 }

@@ -392,7 +392,7 @@ build_stack_trace (struct _Unwind_Context *frame_ctx, void *state)
 {
 	uintptr_t ip = _Unwind_GetIP (frame_ctx);
 
-	if (show_native_addresses || mono_jit_info_table_find (mono_get_root_domain (), (char*)ip)) {
+	if (show_native_addresses || mono_jit_info_table_find_internal ((char*)ip, TRUE, FALSE)) {
 		GList **trace_ips = (GList **)state;
 		*trace_ips = g_list_prepend (*trace_ips, (gpointer)ip);
 	}
@@ -762,7 +762,7 @@ unwinder_unwind_frame (Unwinder *unwinder,
 		}
 
 		if (!unwinder->in_interp)
-			return unwinder_unwind_frame (unwinder, jit_tls, prev_ji, ctx, new_ctx, trace, lmf, save_locations, frame);
+			frame->type = FRAME_TYPE_INTERP_ENTRY;
 		return TRUE;
 	} else {
 		gboolean res = mono_find_jit_info_ext (jit_tls, prev_ji, ctx, new_ctx, trace, lmf,
@@ -937,7 +937,7 @@ mono_exception_stackframe_obj_walk (MonoStackFrame *captured_frame, MonoExceptio
 		return TRUE;
 
 	gpointer ip = (gpointer) (captured_frame->method_address + captured_frame->native_offset);
-	MonoJitInfo *ji = mono_jit_info_table_find_internal (mono_domain_get (), ip, TRUE, TRUE);
+	MonoJitInfo *ji = mono_jit_info_table_find_internal (ip, TRUE, TRUE);
 
 	// Other domain maybe?
 	if (!ji)
@@ -975,7 +975,6 @@ mono_exception_walk_trace_internal (MonoException *ex, MonoExceptionFrameWalk fu
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoArray *ta = ex->trace_ips;
 
 	/* Exception is not thrown yet */
@@ -996,7 +995,7 @@ mono_exception_walk_trace_internal (MonoException *ex, MonoExceptionFrameWalk fu
 		if (trace_ip.ji) {
 			ji = trace_ip.ji;
 		} else {
-			ji = mono_jit_info_table_find (domain, ip);
+			ji = mono_jit_info_table_find_internal (ip, TRUE, FALSE);
 		}
 
 		if (ji == NULL) {
@@ -1032,7 +1031,6 @@ MonoArray *
 ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
 {
 	ERROR_DECL (error);
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoArray *res;
 	MonoArray *ta = exc->trace_ips;
 	MonoDebugSourceLocation *location;
@@ -1076,7 +1074,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		if (trace_ip.ji) {
 			ji = trace_ip.ji;
 		} else {
-			ji = mono_jit_info_table_find (domain, ip);
+			ji = mono_jit_info_table_find_internal (ip, TRUE, FALSE);
 			if (ji == NULL) {
 				/* Unmanaged frame */
 				mono_array_setref_internal (res, i, sf);
@@ -1874,6 +1872,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			case FRAME_TYPE_TRAMPOLINE:
 			case FRAME_TYPE_INTERP_TO_MANAGED:
 			case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+			case FRAME_TYPE_INTERP_ENTRY:
 				continue;
 			case FRAME_TYPE_INTERP:
 			case FRAME_TYPE_MANAGED:
@@ -1977,7 +1976,7 @@ mini_jit_info_table_find_ext (gpointer addr, gboolean allow_trampolines)
 {
 	// FIXME: Transition all callers to this function
 	addr = MINI_FTNPTR_TO_ADDR (addr);
-	return mono_jit_info_table_find_internal (mono_get_root_domain (), addr, TRUE, allow_trampolines);
+	return mono_jit_info_table_find_internal (addr, TRUE, allow_trampolines);
 }
 
 MonoJitInfo*
@@ -2278,6 +2277,15 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		case FRAME_TYPE_TRAMPOLINE:
 		case FRAME_TYPE_INTERP_TO_MANAGED:
 		case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+			*ctx = new_ctx;
+			continue;
+		case FRAME_TYPE_INTERP_ENTRY:
+			if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
+				/*
+				 * There might be AOTed frames above the intepreted frames which can handle the exception,
+				 * so stop first pass, the caller will rethrow the exception, starting the process again.
+				 */
+				return MONO_FIRST_PASS_UNHANDLED;
 			*ctx = new_ctx;
 			continue;
 		case FRAME_TYPE_INTERP:
@@ -2734,6 +2742,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			case FRAME_TYPE_MANAGED_TO_NATIVE:
 			case FRAME_TYPE_TRAMPOLINE:
 			case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+			case FRAME_TYPE_INTERP_ENTRY:
 				*ctx = new_ctx;
 				continue;
 			case FRAME_TYPE_INTERP_TO_MANAGED:
@@ -3435,7 +3444,11 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 
 	mono_walk_stack_with_ctx (print_stack_frame_to_string, &ctx, MONO_UNWIND_LOOKUP_ALL, text);
 
+#if HOST_WASM
+	mono_runtime_printf_err ("%s", text->str); //to print the native callstack
+#else
 	mono_runtime_printf ("%s", text->str);
+#endif	
 
 #if HOST_WIN32 && TARGET_WIN32 && _DEBUG
 	OutputDebugStringA(text->str);

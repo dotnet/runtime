@@ -76,7 +76,6 @@
 //
 
 #define JIT_TO_EE_TRANSITION()          MAKE_CURRENT_THREAD_AVAILABLE_EX(m_pThread);                \
-                                        _ASSERTE(CURRENT_THREAD == GetThread());                    \
                                         INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;               \
                                         COOPERATIVE_TRANSITION_BEGIN();                             \
 
@@ -12910,6 +12909,10 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
         flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
     }
 
+#ifdef ARM_SOFTFP
+    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI);
+#endif // ARM_SOFTFP
+
 #ifdef FEATURE_PGO
 
     // Instrument, if
@@ -14102,6 +14105,14 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 !pEnclosingMT->IsValueType())
             {
                 actualBaseOffset = ReadyToRunInfo::GetFieldBaseOffset(pEnclosingMT);
+            }
+
+            if (baseOffset == 0)
+            {
+                // Relative verification of just the field offset when the base class
+                // is outside of the current R2R version bubble
+                actualFieldOffset -= actualBaseOffset;
+                actualBaseOffset = 0;
             }
 
             if ((fieldOffset != actualFieldOffset) || (baseOffset != actualBaseOffset))

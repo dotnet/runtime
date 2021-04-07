@@ -6,6 +6,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Reflection;
@@ -247,6 +248,8 @@ namespace System.Xml.Xsl.XsltOld
             return parameter;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = XsltArgumentList.ExtensionObjectSuppresion)]
         internal object? GetExtensionObject(string nsUri)
         {
             return _args.GetExtensionObject(nsUri);
@@ -371,15 +374,10 @@ namespace System.Xml.Xsl.XsltOld
 
             _scriptExtensions = new Hashtable(_stylesheet.ScriptObjectTypes.Count);
             {
-                foreach (DictionaryEntry entry in _stylesheet.ScriptObjectTypes)
+                // Scripts are not supported on stylesheets
+                if (_stylesheet.ScriptObjectTypes.Count > 0)
                 {
-                    string namespaceUri = (string)entry.Key;
-                    if (GetExtensionObject(namespaceUri) != null)
-                    {
-                        throw XsltException.Create(SR.Xslt_ScriptDub, namespaceUri);
-                    }
-                    _scriptExtensions.Add(namespaceUri, Activator.CreateInstance((Type)entry.Value!,
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, null, null));
+                    throw new PlatformNotSupportedException(SR.CompilingScriptsNotSupported);
                 }
             }
 
@@ -1078,7 +1076,7 @@ namespace System.Xml.Xsl.XsltOld
 
         // ---------------------- Debugger stack -----------------------
 
-        internal class DebuggerFrame
+        internal sealed class DebuggerFrame
         {
             internal ActionFrame? actionFrame;
             internal XmlQualifiedName? currentMode;

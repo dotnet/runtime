@@ -18,7 +18,7 @@
 
 HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen)
 {
-    if (riid != IID_ICeeGen)
+    if (riid != IID_ICeeGenInternal)
         return E_NOTIMPL;
     if (!pCeeGen)
         return E_POINTER;
@@ -67,9 +67,7 @@ STDMETHODIMP CCeeGen::QueryInterface(REFIID riid, void** ppv)
     *ppv = NULL;
 
     if (riid == IID_IUnknown)
-        *ppv = (IUnknown*)(ICeeGen*)this;
-    else if (riid == IID_ICeeGen)
-        *ppv = (ICeeGen*)this;
+        *ppv = (IUnknown*)(ICeeGenInternal*)this;
     else if (riid == IID_ICeeGenInternal)
         *ppv = (ICeeGenInternal*)this;
     if (*ppv == NULL)
@@ -226,16 +224,6 @@ STDMETHODIMP CCeeGen::GenerateCeeFile ()
     return E_NOTIMPL;
 }
 
-STDMETHODIMP CCeeGen::GenerateCeeMemoryImage (void **)
-{
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    _ASSERTE(!"E_NOTIMPL");
-    END_ENTRYPOINT_NOTHROW;
-
-    return E_NOTIMPL;
-}
-
 STDMETHODIMP CCeeGen::GetIlSection (
         HCEESECTION *section)
 {
@@ -315,18 +303,6 @@ STDMETHODIMP CCeeGen::GetSectionBlock (
     return NOERROR;
 }
 
-STDMETHODIMP CCeeGen::TruncateSection (
-        HCEESECTION section,
-        ULONG len)
-{
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    _ASSERTE(!"E_NOTIMPL");
-    END_ENTRYPOINT_NOTHROW;
-    return E_NOTIMPL;
-}
-
-
 
 CCeeGen::CCeeGen() // protected ctor
 {
@@ -386,7 +362,6 @@ HRESULT CCeeGen::Init() // not-virtual, protected
     m_metaIdx = m_textIdx;  // meta section is actually in .text
     m_ilIdx = m_textIdx;    // il section is actually in .text
     m_corHdrIdx = -1;
-    m_encMode = FALSE;
 
 LExit:
     if (FAILED(hr)) {
@@ -395,24 +370,6 @@ LExit:
 
     return hr;
 }
-
-// For EnC mode, generate strings into .rdata section rather than .text section
-HRESULT CCeeGen::setEnCMode()
-{
-    PESection *section = NULL;
-    HRESULT hr = m_peSectionMan->getSectionCreate(".rdata", sdExecute, &section);
-    TESTANDRETURNHR(hr);
-    CeeSection *ceeSection = new CeeSectionString(*this, *section);
-    if (ceeSection == NULL)
-    {
-        return E_OUTOFMEMORY;
-    }
-    hr = addSection(ceeSection, &m_stringIdx);
-    if (SUCCEEDED(hr))
-        m_encMode = TRUE;
-    return hr;
-}
-
 
 HRESULT CCeeGen::cloneInstance(CCeeGen *destination) { //public, virtual
     _ASSERTE(destination);
@@ -493,7 +450,7 @@ HRESULT CCeeGen::getSectionCreate (const char *name, DWORD flags, CeeSection **s
         name = ".text";
     else if (strcmp(name, ".meta") == 0)
         name = ".text";
-    else if (strcmp(name, ".rdata") == 0 && !m_encMode)
+    else if (strcmp(name, ".rdata") == 0)
         name = ".text";
     for (int i=0; i<m_numSections; i++) {
         if (strcmp((const char *)m_sections[i]->name(), name) == 0) {
@@ -549,12 +506,6 @@ HRESULT CCeeGen::emitMetaData(IMetaDataEmit *emitter, CeeSection* section, DWORD
         IfFailGoto((HRESULT)(metaStream->Stat(&statStg, STATFLAG_NONAME)), Exit);
 
         buffLen = statStg.cbSize.u.LowPart;
-        if(m_objSwitch)
-        {
-            CeeSection* pSect;
-            DWORD flags = IMAGE_SCN_LNK_INFO | IMAGE_SCN_LNK_REMOVE | IMAGE_SCN_ALIGN_1BYTES; // 0x00100A00
-            IfFailGoto(getSectionCreate(".cormeta",flags,&pSect,&m_metaIdx), Exit);
-        }
         buffer = (BYTE *)section->getBlock(buffLen, sizeof(DWORD));
         IfNullGoto(buffer, Exit);
         offset = getMetaSection().dataLen() - buffLen;

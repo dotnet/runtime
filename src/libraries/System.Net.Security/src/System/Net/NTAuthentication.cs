@@ -8,7 +8,7 @@ using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
-    internal partial class NTAuthentication
+    internal sealed partial class NTAuthentication
     {
         internal string? AssociatedName
         {
@@ -86,7 +86,7 @@ namespace System.Net
             }
         }
 
-        private class InitializeCallbackContext
+        private sealed class InitializeCallbackContext
         {
             internal InitializeCallbackContext(NTAuthentication thisPtr, bool isServer, string package, NetworkCredential credential, string spn, ContextFlagsPal requestedContextFlags, ChannelBinding channelBinding)
             {

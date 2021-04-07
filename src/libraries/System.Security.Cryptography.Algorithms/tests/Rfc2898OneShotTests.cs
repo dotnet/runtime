@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
     [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static class Rfc2898OneShotTests
     {
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Password for testing.")]
         private const string Password = "tired";
 
         private static readonly byte[] s_passwordBytes = Encoding.UTF8.GetBytes(Password);

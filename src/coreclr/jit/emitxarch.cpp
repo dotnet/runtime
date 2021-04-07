@@ -2709,7 +2709,7 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 
     while (insAlignCount)
     {
-        emitLoopAlign();
+        emitLoopAlign(MAX_ENCODED_SIZE);
         insAlignCount--;
     }
     emitLoopAlign(lastInsAlignSize);
@@ -9434,6 +9434,8 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     {
         assert(paddingToAdd == paddingNeeded);
     }
+
+    emitComp->loopsAligned++;
 #endif
 
     return emitOutputNOP(dst, paddingToAdd);
@@ -12532,13 +12534,12 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
         if (id->idCodeSize() != JMP_SIZE_SMALL)
         {
-            emitOffsAdj += id->idCodeSize() - JMP_SIZE_SMALL;
-
-#ifdef DEBUG
-            if (emitComp->verbose)
+#if DEBUG_EMIT || defined(DEBUG)
+            int offsShrinkage = id->idCodeSize() - JMP_SIZE_SMALL;
+            if (INDEBUG(emitComp->verbose ||)(id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM ||
+                                              INTERESTING_JUMP_NUM == 0))
             {
-                printf("; NOTE: size of jump [%08X] mis-predicted by %d bytes\n", emitComp->dspPtr(id),
-                       (id->idCodeSize() - JMP_SIZE_SMALL));
+                printf("; NOTE: size of jump [%08p] mis-predicted by %d bytes\n", dspPtr(id), offsShrinkage);
             }
 #endif
         }
@@ -12699,11 +12700,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     assert(emitIssuing);
 
-    BYTE*         dst               = *dp;
-    size_t        sz                = sizeof(instrDesc);
-    instruction   ins               = id->idIns();
-    unsigned char callInstrSize     = 0;
-    int           emitOffsAdjBefore = emitOffsAdj;
+    BYTE*         dst           = *dp;
+    size_t        sz            = sizeof(instrDesc);
+    instruction   ins           = id->idIns();
+    unsigned char callInstrSize = 0;
 
 #ifdef DEBUG
     bool dspOffs = emitComp->opts.dspGCtbls;
@@ -13882,18 +13882,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #endif
 
             dst = emitOutputNOP(dst, diff);
-
-            // since we compensated the over-estimation, revert the offsAdj that
-            // might have happened in the jump
-            if (emitOffsAdjBefore != emitOffsAdj)
-            {
-#ifdef DEBUG
-                insFormat format = id->idInsFmt();
-                assert((format == IF_LABEL) || (format == IF_RWR_LABEL) || (format == IF_SWR_LABEL));
-                assert(diff == (emitOffsAdj - emitOffsAdjBefore));
-#endif
-                emitOffsAdj -= diff;
-            }
         }
         assert((id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp))) == 0);
     }
@@ -14299,7 +14287,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_2X; // one or two components
             result.insLatency    = PERFSCORE_LATENCY_1C;
 
-            if (id->idInsFmt() == IF_RWR_LABEL)
+            if (insFmt == IF_RWR_LABEL)
             {
                 // RIP relative addressing
                 //
@@ -14307,7 +14295,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 //
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
-            else if (id->idInsFmt() != IF_RWR_SRD)
+            else if (insFmt != IF_RWR_SRD)
             {
                 if (id->idAddr()->iiaAddrMode.amIndxReg != REG_NA)
                 {
@@ -14355,11 +14343,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_imul_14:
         case INS_imul_15:
 #endif // TARGET_AMD64
-        case INS_mulEAX:
-        case INS_imulEAX:
         case INS_imul:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_3C;
+            result.insLatency += PERFSCORE_LATENCY_3C;
+            break;
+
+        case INS_mulEAX:
+        case INS_imulEAX:
+            // uops.info: mul/imul rdx:rax,reg latency is 3 only if the low half of the result is needed, but in that
+            // case codegen uses imul reg,reg instruction form (except for unsigned overflow checks, which are rare)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
             break;
 
         case INS_div:
@@ -14373,12 +14367,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 assert(id->idOpSize() == EA_4BYTE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-                result.insThroughput = PERFSCORE_LATENCY_26C;
+                result.insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
 
         case INS_idiv:
-            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
             // The integer divide instructions have long latenies
             if ((id->idOpSize() == EA_8BYTE))
             {
@@ -14389,7 +14382,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 assert(id->idOpSize() == EA_4BYTE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-                result.insThroughput = PERFSCORE_LATENCY_26C;
+                result.insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
 
@@ -14416,19 +14409,21 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case IF_ARW_CNS:
                     // ins   [mem], cns
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency += PERFSCORE_LATENCY_1C;
                     break;
 
-                case IF_RRW: // probably should use INS_shl_N
+                case IF_RRW:
                     // ins   reg, cl
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
 
-                case IF_MRW: // probably should use INS_shr_N
+                case IF_MRW:
                 case IF_SRW:
                 case IF_ARW:
                     // ins   [mem], cl
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                    result.insLatency += PERFSCORE_LATENCY_2C;
                     break;
 
                 default:
@@ -14441,7 +14436,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_shl_1:
         case INS_shr_1:
         case INS_sar_1:
-            result.insLatency = PERFSCORE_LATENCY_1C;
+            result.insLatency += PERFSCORE_LATENCY_1C;
             switch (insFmt)
             {
                 case IF_RRW:
@@ -14466,7 +14461,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_ror_1:
         case INS_rol_1:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insLatency += PERFSCORE_LATENCY_1C;
             break;
 
         case INS_shl_N:
@@ -14474,19 +14469,19 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_sar_N:
         case INS_ror_N:
         case INS_rol_N:
-            result.insLatency = PERFSCORE_LATENCY_2C;
+            result.insLatency += PERFSCORE_LATENCY_1C;
             switch (insFmt)
             {
                 case IF_RRW_SHF:
-                    // ins   reg, cl
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    // ins   reg, cns
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     break;
 
                 case IF_MRW_SHF:
                 case IF_SRW_SHF:
                 case IF_ARW_SHF:
-                    // ins   [mem], cl
-                    result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                    // ins   [mem], cns
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     break;
 
                 default:
@@ -14499,13 +14494,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_rcr:
         case INS_rcl:
             result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-            result.insLatency    = PERFSCORE_LATENCY_6C;
+            result.insLatency += PERFSCORE_LATENCY_6C;
             break;
 
         case INS_rcr_1:
         case INS_rcl_1:
             // uops.info
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_2C;
             break;
 
         case INS_shld:

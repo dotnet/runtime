@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class NullableConverterFactory : JsonConverterFactory
+    internal sealed class NullableConverterFactory : JsonConverterFactory
     {
         public override bool CanConvert(Type typeToConvert)
         {
@@ -34,11 +35,17 @@ namespace System.Text.Json.Serialization.Converters
         public static JsonConverter CreateValueConverter(Type valueTypeToConvert, JsonConverter valueConverter)
         {
             return (JsonConverter)Activator.CreateInstance(
-                typeof(NullableConverter<>).MakeGenericType(valueTypeToConvert),
+                GetNullableConverterType(valueTypeToConvert),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 args: new object[] { valueConverter },
                 culture: null)!;
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
+            Justification = "'NullableConverter<T> where T : struct' implies 'T : new()', so the trimmer is warning calling MakeGenericType here because valueTypeToConvert's constructors are not annotated. " +
+            "But NullableConverter doesn't call new T(), so this is safe.")]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        private static Type GetNullableConverterType(Type valueTypeToConvert) => typeof(NullableConverter<>).MakeGenericType(valueTypeToConvert);
     }
 }

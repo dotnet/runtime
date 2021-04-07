@@ -192,7 +192,9 @@ namespace System.Diagnostics
     {
         public virtual void OnActivityExport(System.Diagnostics.Activity activity, object? payload) { }
         public virtual void OnActivityImport(System.Diagnostics.Activity activity, object? payload) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of object being written to DiagnosticSource cannot be discovered statically.")]
         public System.Diagnostics.Activity StartActivity(System.Diagnostics.Activity activity, object? args) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of object being written to DiagnosticSource cannot be discovered statically.")]
         public void StopActivity(System.Diagnostics.Activity activity, object? args) { }
     }
     public enum ActivitySamplingResult

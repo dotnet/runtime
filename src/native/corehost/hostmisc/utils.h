@@ -6,6 +6,7 @@
 
 #include "pal.h"
 #include "trace.h"
+#include <type_traits>
 
 #define _STRINGIFY(s) _X(s)
 #if defined(_WIN32)
@@ -40,7 +41,7 @@ bool get_global_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::s
 bool multilevel_lookup_enabled();
 void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, std::vector<pal::string_t>* locations);
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);
-size_t index_of_non_numeric(const pal::string_t& str, unsigned i);
+size_t index_of_non_numeric(const pal::string_t& str, size_t i);
 bool try_stou(const pal::string_t& str, unsigned* num);
 pal::string_t get_dotnet_root_env_var_name();
 pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal::string_t& app);
@@ -114,5 +115,14 @@ public:
         trace::set_error_writer(m_old_error_writer);
     }
 };
+
+template<typename T>
+size_t to_size_t_dbgchecked(T value)
+{
+    assert(value >= 0);
+    size_t result = static_cast<size_t>(value);
+    assert(static_cast<T>(result) == value);
+    return result;
+}
 
 #endif

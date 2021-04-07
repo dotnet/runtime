@@ -219,7 +219,7 @@ mono_get_method_from_ip (void *ip)
 	if (!domain)
 		domain = mono_get_root_domain ();
 
-	ji = mono_jit_info_table_find_internal (domain, ip, TRUE, TRUE);
+	ji = mono_jit_info_table_find_internal (ip, TRUE, TRUE);
 	if (!ji) {
 		user_data.ip = ip;
 		user_data.method = NULL;
@@ -568,19 +568,6 @@ mono_aot_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain)
 	mono_tramp_info_register_internal (info, domain, TRUE);
 }
 
-static void
-mono_tramp_info_cleanup (void)
-{
-	GSList *l;
-
-	for (l = tramp_infos; l; l = l->next) {
-		MonoTrampInfo *info = (MonoTrampInfo *)l->data;
-
-		mono_tramp_info_free (info);
-	}
-	g_slist_free (tramp_infos);
-}
-
 /* Register trampolines created before the root domain was created in the jit info tables */
 static void
 register_trampolines (MonoDomain *domain)
@@ -848,7 +835,6 @@ mono_pop_lmf (MonoLMF *lmf)
 MonoDomain*
 mono_jit_thread_attach (MonoDomain *domain)
 {
-	MonoDomain *orig;
 	gboolean attached;
 
 	if (!domain) {
@@ -875,11 +861,7 @@ mono_jit_thread_attach (MonoDomain *domain)
 		mono_threads_enter_gc_safe_region_unbalanced_internal (&stackdata);
 	}
 
-	orig = mono_domain_get ();
-	if (orig != domain)
-		mono_domain_set_fast (domain, TRUE);
-
-	return orig != domain ? orig : NULL;
+	return NULL;
 }
 
 /*
@@ -893,7 +875,7 @@ mono_jit_set_domain (MonoDomain *domain)
 	g_assert (!mono_threads_is_blocking_transition_enabled ());
 
 	if (domain)
-		mono_domain_set_fast (domain, TRUE);
+		mono_domain_set_fast (domain);
 }
 
 /**
@@ -2564,7 +2546,6 @@ lookup_start:
 		g_assert (vtable);
 		if (!mono_runtime_class_init_full (vtable, error))
 			return NULL;
-		MONO_PROFILER_RAISE (jit_done, (method, info));
 
 		code = MINI_ADDR_TO_FTNPTR (info->code_start);
 		return mono_create_ftnptr (code);
@@ -3281,22 +3262,19 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		*exc = NULL;
 
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
-	MonoDomain *domain = mono_get_root_domain ();
 	static RuntimeInvokeDynamicFunction dyn_runtime_invoke = NULL;
 	if (info->dyn_call_info) {
 		if (!dyn_runtime_invoke) {
-			mono_domain_lock (domain);
-
 			invoke = mono_marshal_get_runtime_invoke_dynamic ();
-			dyn_runtime_invoke = (RuntimeInvokeDynamicFunction)mono_jit_compile_method_jit_only (invoke, error);
+			RuntimeInvokeDynamicFunction invoke_func = (RuntimeInvokeDynamicFunction)mono_jit_compile_method_jit_only (invoke, error);
+			mono_memory_barrier ();
+			dyn_runtime_invoke = invoke_func;
 			if (!dyn_runtime_invoke && mono_use_interpreter) {
 				info->use_interp = TRUE;
 				info->dyn_call_info = NULL;
 			} else if (!is_ok (error)) {
-				mono_domain_unlock (domain);
 				return NULL;
 			}
-			mono_domain_unlock (domain);
 		}
 	}
 	if (info->dyn_call_info) {
@@ -3376,7 +3354,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
-	ji = mono_jit_info_table_find_internal (mono_domain_get (), mono_arch_ip_from_context (ctx), TRUE, TRUE);
+	ji = mono_jit_info_table_find_internal (mono_arch_ip_from_context (ctx), TRUE, TRUE);
 
 	MONO_ENTER_GC_UNSAFE_UNBALANCED;
 
@@ -3521,7 +3499,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 
 	if (domain) {
 		gpointer ip = MINI_FTNPTR_TO_ADDR (mono_arch_ip_from_context (ctx));
-		ji = mono_jit_info_table_find_internal (domain, ip, TRUE, TRUE);
+		ji = mono_jit_info_table_find_internal (ip, TRUE, TRUE);
 	}
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
@@ -3709,17 +3687,13 @@ static void
 mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error)
 {
 	MonoDelegate *del = MONO_HANDLE_RAW (delegate);
-	MonoDomain *domain = MONO_HANDLE_DOMAIN (delegate);
 
 	if (!method) {
 		MonoJitInfo *ji;
 		gpointer lookup_addr = MINI_FTNPTR_TO_ADDR (addr);
 
 		g_assert (addr);
-		ji = mono_jit_info_table_find_internal (domain, mono_get_addr_from_ftnptr (lookup_addr), TRUE, TRUE);
-		/* Shared code */
-		if (!ji && domain != mono_get_root_domain ())
-			ji = mono_jit_info_table_find_internal (mono_get_root_domain (), mono_get_addr_from_ftnptr (lookup_addr), TRUE, TRUE);
+		ji = mono_jit_info_table_find_internal (mono_get_addr_from_ftnptr (lookup_addr), TRUE, TRUE);
 		if (ji) {
 			if (ji->is_trampoline) {
 				/* Could be an unbox trampoline etc. */
@@ -4550,8 +4524,6 @@ register_icalls (void)
 				ves_icall_get_trace);
 	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_install_handlers",
 				mono_runtime_install_handlers);
-	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_cleanup_handlers",
-				mono_runtime_cleanup_handlers);
 
 #if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
 	mono_add_internal_call_internal ("System.Diagnostics.Debugger::Mono_UnhandledException_internal",
@@ -4896,7 +4868,6 @@ runtime_cleanup (MonoDomain *domain, gpointer user_data)
 	mini_cleanup (domain);
 }
 
-#ifdef DISABLE_CLEANUP
 void
 mini_cleanup (MonoDomain *domain)
 {
@@ -4911,100 +4882,6 @@ mini_cleanup (MonoDomain *domain)
 	ds_server_shutdown ();
 #endif
 }
-#else
-void
-mini_cleanup (MonoDomain *domain)
-{
-	if (mono_stats.enabled)
-		g_printf ("Printing runtime stats at shutdown\n");
-	if (mono_profiler_sampling_enabled ())
-		mono_runtime_shutdown_stat_profiler ();
-
-	MONO_PROFILER_RAISE (runtime_shutdown_begin, ());
-
-#ifndef DISABLE_COM
-	mono_cominterop_release_all_rcws ();
-#endif
-
-#ifndef MONO_CROSS_COMPILE
-	/*
-	 * mono_domain_finalize () needs to be called early since it needs the
-	 * execution engine still fully working (it may invoke managed finalizers).
-	 */
-	mono_domain_finalize (domain, 2000);
-#endif
-
-	/* This accesses metadata so needs to be called before runtime shutdown */
-	mono_runtime_print_stats ();
-	jit_stats_cleanup ();
-
-#ifndef MONO_CROSS_COMPILE
-	mono_runtime_cleanup (domain);
-#endif
-
-	MONO_PROFILER_RAISE (runtime_shutdown_end, ());
-
-	mono_profiler_cleanup ();
-
-	if (profile_options) {
-		for (guint i = 0; i < profile_options->len; ++i)
-			g_free (g_ptr_array_index (profile_options, i));
-		g_ptr_array_free (profile_options, TRUE);
-	}
-
-	mono_icall_cleanup ();
-
-	mono_runtime_cleanup_handlers ();
-
-#ifndef MONO_CROSS_COMPILE
-	mono_domain_free (domain, TRUE);
-#endif
-	free_jit_tls_data (mono_tls_get_jit_tls ());
-
-#ifdef ENABLE_LLVM
-	if (mono_use_llvm)
-		mono_llvm_cleanup ();
-#endif
-
-	mono_aot_cleanup ();
-
-	mono_trampolines_cleanup ();
-
-	mono_unwind_cleanup ();
-
-	mono_code_manager_destroy (global_codeman);
-	g_free (vtable_trampolines);
-
-	mini_jit_cleanup ();
-
-	mini_get_interp_callbacks ()->cleanup ();
-
-	mono_tramp_info_cleanup ();
-
-	mono_arch_cleanup ();
-
-	mono_generic_sharing_cleanup ();
-
-	mono_cleanup_native_crash_info ();
-
-	mono_cleanup ();
-
-	mono_trace_cleanup ();
-
-	if (mono_inject_async_exc_method)
-		mono_method_desc_free (mono_inject_async_exc_method);
-
-	mono_tls_free_keys ();
-
-	mono_os_mutex_destroy (&jit_mutex);
-
-	mono_code_manager_cleanup ();
-
-#ifndef HOST_WIN32
-	mono_w32handle_cleanup ();
-#endif
-}
-#endif
 
 void
 mono_set_defaults (int verbose_level, guint32 opts)

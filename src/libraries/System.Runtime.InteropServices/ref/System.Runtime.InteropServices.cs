@@ -176,6 +176,7 @@ namespace System.Runtime.InteropServices
     public static partial class CollectionsMarshal
     {
         public static System.Span<T> AsSpan<T>(System.Collections.Generic.List<T>? list) { throw null; }
+        public static ref TValue GetValueRefOrNullRef<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class ComAliasNameAttribute : System.Attribute
@@ -792,10 +793,13 @@ namespace System.Runtime.InteropServices
     }
     public static partial class RuntimeEnvironment
     {
+        [System.ObsoleteAttribute("SystemConfigurationFile is no longer supported.")]
         public static string SystemConfigurationFile { get { throw null; } }
         public static bool FromGlobalAccessCache(System.Reflection.Assembly a) { throw null; }
         public static string GetRuntimeDirectory() { throw null; }
+        [System.ObsoleteAttribute("GetRuntimeInterfaceAsIntPtr(Guid, Guid) is no longer supported.")]
         public static System.IntPtr GetRuntimeInterfaceAsIntPtr(System.Guid clsid, System.Guid riid) { throw null; }
+        [System.ObsoleteAttribute("GetRuntimeInterfaceAsObject(Guid, Guid) is no longer supported.")]
         public static object GetRuntimeInterfaceAsObject(System.Guid clsid, System.Guid riid) { throw null; }
         public static string GetSystemVersion() { throw null; }
     }

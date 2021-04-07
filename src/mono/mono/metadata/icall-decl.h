@@ -27,9 +27,6 @@
 #include "mono/utils/mono-forward-internal.h"
 #include "w32event.h"
 #include "w32file.h"
-#include "w32mutex.h"
-#include "w32semaphore.h"
-#include "w32socket.h"
 #include "mono/utils/mono-proclib.h"
 
 /* From MonoProperty.cs */
@@ -75,7 +72,7 @@ ICALL_EXPORT MonoBoolean ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const g
 ICALL_EXPORT MonoBoolean ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char*, MonoAssemblyName*, MonoBoolean*, MonoBoolean* is_token_defined_arg);
 ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_YieldInternal (void);
-ICALL_EXPORT void ves_icall_System_Threading_Thread_GetCurrentThread (MonoThread * volatile *);
+ICALL_EXPORT MonoThread *ves_icall_System_Threading_Thread_GetCurrentThread (void);
 ICALL_EXPORT void ves_icall_System_ArgIterator_Setup (MonoArgIterator*, char*, char*);
 ICALL_EXPORT MonoType* ves_icall_System_ArgIterator_IntGetNextArgType (MonoArgIterator*);
 ICALL_EXPORT void ves_icall_System_ArgIterator_IntGetNextArg (MonoArgIterator*, MonoTypedRef*);
@@ -224,10 +221,6 @@ ICALL_EXPORT gpointer   ves_icall_System_Runtime_InteropServices_Marshal_ReAlloc
 ICALL_EXPORT gpointer   ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal		(gpointer, gsize);
 ICALL_EXPORT      char* ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi    (const gunichar2*, int);
 ICALL_EXPORT gunichar2*	ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni	(const gunichar2*, int);
-
-ICALL_EXPORT gpointer    ves_icall_System_Threading_Semaphore_CreateSemaphore_icall     (gint32 initialCount, gint32 maximumCount, const gunichar2 *name, gint32 name_length, gint32 *win32error);
-ICALL_EXPORT gpointer    ves_icall_System_Threading_Semaphore_OpenSemaphore_icall       (const gunichar2 *name, gint32 name_length, gint32 rights, gint32 *win32error);
-ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle, gint32 releaseCount, gint32 *prevcount);
 
 ICALL_EXPORT gpointer ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (void);
 ICALL_EXPORT void     ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr);

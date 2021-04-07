@@ -39,6 +39,36 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void Vector2CopyToSpanTest()
+        {
+            Vector2 vector = new Vector2(1.0f, 2.0f);
+            Span<float> destination = new float[2];
+
+            Assert.Throws<ArgumentException>(() => vector.CopyTo(new Span<float>(new float[1])));
+            vector.CopyTo(destination);
+
+            Assert.Equal(1.0f, vector.X);
+            Assert.Equal(2.0f, vector.Y);
+            Assert.Equal(vector.X, destination[0]);
+            Assert.Equal(vector.Y, destination[1]);
+        }
+
+        [Fact]
+        public void Vector2TryCopyToTest()
+        {
+            Vector2 vector = new Vector2(1.0f, 2.0f);
+            Span<float> destination = new float[2];
+
+            Assert.False(vector.TryCopyTo(new Span<float>(new float[1])));
+            Assert.True(vector.TryCopyTo(destination));
+
+            Assert.Equal(1.0f, vector.X);
+            Assert.Equal(2.0f, vector.Y);
+            Assert.Equal(vector.X, destination[0]);
+            Assert.Equal(vector.Y, destination[1]);
+        }
+
+        [Fact]
         public void Vector2GetHashCodeTest()
         {
             Vector2 v1 = new Vector2(2.0f, 3.0f);
@@ -832,6 +862,18 @@ namespace System.Numerics.Tests
             target = new Vector2(value);
             expected = new Vector2(value, value);
             Assert.Equal(expected, target);
+        }
+
+        // A test for Vector2f (ReadOnlySpan<float>)
+        [Fact]
+        public void Vector2ConstructorTest5()
+        {
+            float value = 1.0f;
+            Vector2 target = new Vector2(new[] { value, value });
+            Vector2 expected = new Vector2(value);
+
+            Assert.Equal(expected, target);
+            Assert.Throws<IndexOutOfRangeException>(() => new Vector2(new float[1]));
         }
 
         // A test for Add (Vector2f, Vector2f)

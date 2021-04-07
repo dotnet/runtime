@@ -54,7 +54,7 @@ namespace System.Collections.Generic
                 Initialize(capacity);
             }
 
-            if (comparer != null && comparer != EqualityComparer<TKey>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
+            if (comparer is not null && comparer != EqualityComparer<TKey>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
             {
                 _comparer = comparer;
             }
@@ -62,20 +62,12 @@ namespace System.Collections.Generic
             // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
             // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
             // hash buckets become unbalanced.
-
             if (typeof(TKey) == typeof(string))
             {
-                if (_comparer is null)
+                IEqualityComparer<string>? stringComparer = NonRandomizedStringEqualityComparer.GetStringComparer(_comparer);
+                if (stringComparer is not null)
                 {
-                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.WrappedAroundDefaultComparer;
-                }
-                else if (ReferenceEquals(_comparer, StringComparer.Ordinal))
-                {
-                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.WrappedAroundStringComparerOrdinal;
-                }
-                else if (ReferenceEquals(_comparer, StringComparer.OrdinalIgnoreCase))
-                {
-                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.WrappedAroundStringComparerOrdinalIgnoreCase;
+                    _comparer = (IEqualityComparer<TKey>?)stringComparer;
                 }
             }
         }
@@ -360,7 +352,7 @@ namespace System.Collections.Generic
             }
         }
 
-        private ref TValue FindValue(TKey key)
+        internal ref TValue FindValue(TKey key)
         {
             if (key == null)
             {

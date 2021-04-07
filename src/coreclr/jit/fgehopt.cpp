@@ -1323,7 +1323,6 @@ void Compiler::fgDebugCheckTryFinallyExits()
 {
     unsigned  XTnum            = 0;
     EHblkDsc* HBtab            = compHndBBtab;
-    unsigned  cloneCount       = 0;
     bool      allTryExitsValid = true;
     for (; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
@@ -2256,6 +2255,14 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
 
     // Note there is now a jump to the canonical block
     canonicalBlock->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
+
+    // If nonCanonicalBlock has only one pred, all its flow transfers.
+    // If it has multiple preds, then we need edge counts or likelihoods
+    // to figure things out.
+    //
+    // For now just do a minimal update.
+    //
+    newBlock->inheritWeight(nonCanonicalBlock);
 }
 
 //------------------------------------------------------------------------

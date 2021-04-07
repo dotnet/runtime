@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Composition.Hosting.Core
 {
-    internal class CycleBreakingMetadataDictionary : IDictionary<string, object>
+    internal sealed class CycleBreakingMetadataDictionary : IDictionary<string, object>
     {
         private readonly Lazy<ExportDescriptor> _exportDescriptor;
 

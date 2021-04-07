@@ -6,10 +6,12 @@ The [host tests](/src/installer/tests) use [xunit](http://xunit.github.io/) for 
 
 To build the host tests, first build the product:
 
-1.  Build  CoreCLR and libraries:
-
-    * [CoreCLR](../../building/coreclr/README.md)
-    * [Libraries](../../building/libraries/README.md)
+1.  Build CoreCLR and libraries (`clr` and `libs` subsets):
+    ```
+    build.cmd/sh -subset clr+libs -c Release
+    ```
+    * [CoreCLR](../../building/coreclr/README.md) build instructions
+    * [Libraries](../../building/libraries/README.md) build instructions
 
 2.  Build the host and packs:
     ```
@@ -58,6 +60,8 @@ By default, the above command will also build the tests before running them. To 
 
 ### Running specific tests
 
+If all tests have not been previously run, make sure the [test context](#test-context) is set up for the test library.
+
 Tests from a specific test project can be run using [`dotnet test`](https://docs.microsoft.com/dotnet/core/tools/dotnet-test) targeting the built test binary. For example:
 ```
 dotnet test artifacts/bin/HostActivation.Tests/Debug/net5.0/HostActivation.Tests.dll
@@ -67,8 +71,6 @@ To filter to specific tests within the test library, use the [filter options](ht
 ```
 dotnet test artifacts/bin/HostActivation.Tests/Debug/net5.0/HostActivation.Tests.dll --filter DependencyResolution
 ```
-
-If all tests have not been previously run, make sure the [test context](#test-context) is set up for the test library.
 
 ### Visual Studio
 

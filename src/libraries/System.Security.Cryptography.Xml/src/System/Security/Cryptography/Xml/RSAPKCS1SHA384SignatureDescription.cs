@@ -3,7 +3,7 @@
 
 namespace System.Security.Cryptography.Xml
 {
-    internal class RSAPKCS1SHA384SignatureDescription : RSAPKCS1SignatureDescription
+    internal sealed class RSAPKCS1SHA384SignatureDescription : RSAPKCS1SignatureDescription
     {
         public RSAPKCS1SHA384SignatureDescription() : base("SHA384")
         {

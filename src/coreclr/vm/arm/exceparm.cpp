@@ -61,7 +61,7 @@ AdjustContextForVirtualStub(
 {
     LIMITED_METHOD_CONTRACT;
 
-    Thread * pThread = GetThread();
+    Thread * pThread = GetThreadNULLOk();
 
     // We may not have a managed thread object. Example is an AV on the helper thread.
     // (perhaps during StubManager::IsStub)

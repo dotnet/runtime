@@ -9,6 +9,8 @@
     <TargetPlatformIdentifier>$(TargetFrameworkSuffix)</TargetPlatformIdentifier>
     <TargetPlatformVersion>1.0</TargetPlatformVersion>
     <TargetPlatformMoniker>$(TargetFrameworkSuffix),Version=$(TargetPlatformVersion)</TargetPlatformMoniker>
+    <!-- Value of 0.0 produces versionless SupportedOSPlatform attribute, which is important for platforms not expected to have a version -->
+    <SupportedOSPlatformVersion>0.0</SupportedOSPlatformVersion>
   </PropertyGroup>
   
   <Choose>

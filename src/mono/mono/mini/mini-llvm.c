@@ -1462,7 +1462,12 @@ emit_volatile_store (EmitContext *ctx, int vreg)
 
 	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
 		g_assert (ctx->addresses [vreg]);
+#ifdef TARGET_WASM
+		/* Need volatile stores otherwise the compiler might move them */
+		mono_llvm_build_store (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg], TRUE, LLVM_BARRIER_NONE);
+#else
 		LLVMBuildStore (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]);
+#endif
 	}
 }
 
@@ -11260,11 +11265,14 @@ is_linkonce_method (MonoMethod *method)
 	 * FIXME: Fails System.Core tests
 	 * -> amodule->sorted_methods contains duplicates, screwing up jit tables.
 	 */
+	// FIXME: This works, but the aot data for the methods is still kept, so size still increases
+#if 0
 	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
 			return TRUE;
 	}
+#endif
 #endif
 	return FALSE;
 }
@@ -12391,18 +12399,6 @@ mono_llvm_init (gboolean enable_jit)
 
 	if (enable_jit)
 		mono_llvm_jit_init ();
-}
-
-void
-mono_llvm_cleanup (void)
-{
-	MonoLLVMModule *module = &aot_module;
-
-	if (module->lmodule)
-		LLVMDisposeModule (module->lmodule);
-
-	if (module->context)
-		LLVMContextDispose (module->context);
 }
 
 void
@@ -13705,6 +13701,10 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 #endif
 #if defined(TARGET_WASM)
 		{ "simd",	MONO_CPU_WASM_SIMD },
+#endif
+// flags_map cannot be zero length in MSVC, so add useless dummy entry for arm32
+#if defined(TARGET_ARM) && defined(HOST_WIN32)
+		{ "inited",	MONO_CPU_INITED},
 #endif
 	};
 	if (!cpu_features)

@@ -10,7 +10,7 @@ TEST_NAME=$4
 XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
 if [ -n "$5" ]; then
-    EXPECTED_EXIT_CODE="--expected-exit-code $5"
+    ADDITIONAL_ARGS=${@:5}
 fi
 
 cd $EXECUTION_DIR
@@ -40,7 +40,8 @@ $HARNESS_RUNNER android test                \
     --package-name="net.dot.$ASSEMBLY_NAME" \
     --app="$EXECUTION_DIR/bin/$TEST_NAME.apk" \
     --output-directory="$XHARNESS_OUT" \
-    $EXPECTED_EXIT_CODE
+    --timeout=1800 \
+    $ADDITIONAL_ARGS
 
 _exitCode=$?
 

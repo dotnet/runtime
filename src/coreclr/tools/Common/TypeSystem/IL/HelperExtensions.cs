@@ -22,7 +22,7 @@ namespace Internal.IL
 
         public static MetadataType GetOptionalHelperType(this TypeSystemContext context, string name)
         {
-            MetadataType helperType = context.SystemModule.GetType(HelperTypesNamespace, name, throwIfNotFound: false);
+            MetadataType helperType = context.SystemModule.GetType(HelperTypesNamespace, name, NotFoundBehavior.ReturnNull);
             return helperType;
         }
 
@@ -111,7 +111,7 @@ namespace Internal.IL
         /// </summary>
         public static MetadataType GetKnownType(this ModuleDesc module, string @namespace, string name)
         {
-            MetadataType type = module.GetType(@namespace, name, false);
+            MetadataType type = module.GetType(@namespace, name, NotFoundBehavior.ReturnNull);
             if (type == null)
             {
                 throw new InvalidOperationException(

@@ -5769,7 +5769,7 @@ mono_arch_get_patch_offset (guint8 *code)
 }
 
 /**
- * \return TRUE if no sw breakpoint was present.
+ * \return TRUE if no sw breakpoint was present (always).
  *
  * Copy \p size bytes from \p code - \p offset to the buffer \p buf. If the debugger inserted software
  * breakpoints in the original code, they are removed in the copy.
@@ -6069,6 +6069,24 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	case X86_EBP: return ctx->ebp;
 	case X86_ESI: return ctx->esi;
 	case X86_EDI: return ctx->edi;
+	default:
+		g_assert_not_reached ();
+		return 0;
+	}
+}
+
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	switch (reg) {
+	case X86_EAX: return &ctx->eax;
+	case X86_EBX: return &ctx->ebx;
+	case X86_ECX: return &ctx->ecx;
+	case X86_EDX: return &ctx->edx;
+	case X86_ESP: return &ctx->esp;
+	case X86_EBP: return &ctx->ebp;
+	case X86_ESI: return &ctx->esi;
+	case X86_EDI: return &ctx->edi;
 	default:
 		g_assert_not_reached ();
 		return 0;

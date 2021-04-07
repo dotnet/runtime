@@ -86,7 +86,7 @@ Crst ArgBasedStubCache
 End
 
 Crst AssemblyLoader
-    AcquiredBefore DeadlockDetection UniqueStack
+    AcquiredBefore DeadlockDetection UniqueStack DebuggerMutex
 End
 
 Crst AvailableClass

@@ -9,7 +9,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal class XPathParser
+    internal sealed class XPathParser
     {
         private readonly XPathScanner _scanner;
 
@@ -797,7 +797,7 @@ namespace MS.Internal.Xml.XPath
         private static readonly XPathResultType[] s_temparray8 = { XPathResultType.Boolean };
         private static readonly XPathResultType[] s_temparray9 = { XPathResultType.Number };
 
-        private class ParamInfo
+        private sealed class ParamInfo
         {
             private readonly Function.FunctionType _ftype;
             private readonly int _minargs;

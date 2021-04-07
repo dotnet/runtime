@@ -22,7 +22,7 @@ namespace System.Threading
         }
     }
 
-    internal partial class PortableThreadPool
+    internal sealed partial class PortableThreadPool
     {
         /// <summary>
         /// A linked list of <see cref="WaitThread"/>s.
@@ -136,7 +136,7 @@ namespace System.Threading
             }
         }
 
-        private class WaitThreadNode
+        private sealed class WaitThreadNode
         {
             public WaitThread Thread { get; }
             public WaitThreadNode? Next { get; set; }
@@ -147,7 +147,7 @@ namespace System.Threading
         /// <summary>
         /// A thread pool wait thread.
         /// </summary>
-        internal class WaitThread
+        internal sealed class WaitThread
         {
             /// <summary>
             /// The wait handles registered on this wait thread.

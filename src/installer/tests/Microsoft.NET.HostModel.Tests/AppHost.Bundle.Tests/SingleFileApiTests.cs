@@ -91,7 +91,7 @@ namespace AppHost.Bundle.Tests
         public void AppContext_Native_Search_Dirs_Contains_Bundle_Dir()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile);
+            Bundler bundler = BundleSelfContainedApp(fixture, out string singleFile);
             string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).Name;
             string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
 
@@ -110,7 +110,7 @@ namespace AppHost.Bundle.Tests
         public void AppContext_Native_Search_Dirs_Contains_Bundle_And_Extraction_Dirs()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
+            Bundler bundler = BundleSelfContainedApp(fixture, out string singleFile, BundleOptions.BundleNativeBinaries);
             string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).Name;
             string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
 

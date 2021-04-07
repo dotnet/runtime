@@ -8743,19 +8743,6 @@ MethodTableBuilder::HandleGCForExplicitLayout()
 
     MethodTable *pMT = GetHalfBakedMethodTable();
 
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    if (bmtFP->NumGCPointerSeries == 0 && pMT->Collectible())
-    {
-        // For collectible types, insert empty gc series
-        CGCDescSeries *pSeries;
-
-        CGCDesc::Init( (PVOID) pMT, 1);
-        pSeries = ((CGCDesc*)pMT)->GetLowestSeries();
-        pSeries->SetSeriesSize( (size_t) (0) - (size_t) pMT->GetBaseSize());
-        pSeries->SetSeriesOffset(OBJECT_SIZE);
-    }
-    else
-#endif // FEATURE_COLLECTIBLE_TYPES
     if (bmtFP->NumGCPointerSeries != 0)
     {
         pMT->SetContainsPointers();
@@ -9024,7 +9011,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
         pMT->GetAssembly()->ThrowTypeLoadException(pMT->GetMDImport(), pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
     }
 #ifdef _DEBUG
-    duplicates |= EEConfig::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AlwaysUseMetadataInterfaceMapLayout, FALSE);
+    duplicates |= CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AlwaysUseMetadataInterfaceMapLayout);
 
     //#InjectInterfaceDuplicates_LoadExactInterfaceMap
     // If we are injecting duplicates also for non-generic interfaces in check builds, we have to use
@@ -10087,10 +10074,6 @@ MethodTableBuilder::SetupMethodTable2(
         cbDictAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout(), &cbDictSlotSize);
     }
 
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    BOOL fCollectible = pLoaderModule->IsCollectible();
-#endif // FEATURE_COLLECTIBLE_TYPES
-
     DWORD dwGCSize;
 
     if (bmtFP->NumGCPointerSeries > 0)
@@ -10099,12 +10082,7 @@ MethodTableBuilder::SetupMethodTable2(
     }
     else
     {
-#ifdef FEATURE_COLLECTIBLE_TYPES
-        if (fCollectible)
-            dwGCSize = (DWORD)CGCDesc::ComputeSize(1);
-        else
-#endif // FEATURE_COLLECTIBLE_TYPES
-            dwGCSize = 0;
+        dwGCSize = 0;
     }
 
     pClass->SetNumMethods(bmtVT->cTotalSlots);
@@ -11200,19 +11178,6 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
 
     // Note that for value classes, the following calculation is only appropriate
     // when the instance is in its "boxed" state.
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    if (bmtFP->NumGCPointerSeries == 0 && pMT->Collectible())
-    {
-        // For collectible types, insert empty gc series
-        CGCDescSeries *pSeries;
-
-        CGCDesc::Init( (PVOID) pMT, 1);
-        pSeries = ((CGCDesc*)pMT)->GetLowestSeries();
-        pSeries->SetSeriesSize( (size_t) (0) - (size_t) pMT->GetBaseSize());
-        pSeries->SetSeriesOffset(OBJECT_SIZE);
-    }
-    else
-#endif // FEATURE_COLLECTIBLE_TYPES
     if (bmtFP->NumGCPointerSeries != 0)
     {
         CGCDescSeries *pSeries;
@@ -11627,7 +11592,7 @@ MethodTableBuilder::GatherGenericsInfo(
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(bmtGenericsInfo));
     }
@@ -11875,7 +11840,7 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     CONTRACT(TypeHandle)
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(CheckPointer(pModule));
         POSTCONDITION(!RETVAL.IsNull());
         POSTCONDITION(CheckPointer(RETVAL.GetMethodTable()));

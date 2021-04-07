@@ -96,7 +96,7 @@ namespace System.Net
             Default = AllowAutoRedirect | AllowWriteStreamBuffering | ExpectContinue
         }
 
-        private class HttpClientParameters
+        private sealed class HttpClientParameters
         {
             public readonly bool Async;
             public readonly DecompressionMethods AutomaticDecompression;

@@ -119,7 +119,6 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
 #endif
     m_nextAvailableModuleIndex(1),
     m_pLoaderAllocator(NULL),
-    m_isDisabledPrivateReflection(0),
 #ifdef FEATURE_COMINTEROP
     m_pITypeLib(NULL),
 #endif // FEATURE_COMINTEROP
@@ -217,34 +216,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 
         return;  // Explicit return to let you know you are NOT welcome to add code after the CANNOTTHROW/FAULT_FORBID expires
     }
-}
-
-BOOL Assembly::IsDisabledPrivateReflection()
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    enum { UNINITIALIZED, ENABLED, DISABLED};
-
-    if (m_isDisabledPrivateReflection == UNINITIALIZED)
-    {
-        HRESULT hr = GetManifestModule()->GetCustomAttribute(GetManifestToken(), WellKnownAttribute::DisablePrivateReflectionType, NULL, 0);
-        IfFailThrow(hr);
-
-        if (hr == S_OK)
-        {
-            m_isDisabledPrivateReflection = DISABLED;
-        }
-        else
-        {
-            m_isDisabledPrivateReflection = ENABLED;
-        }
-    }
-
-    return m_isDisabledPrivateReflection == DISABLED;
 }
 
 #ifndef CROSSGEN_COMPILE
@@ -1280,7 +1251,7 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
     CONTRACTL_END
 
     ReleaseHolder<FriendAssemblyDescriptor> pOldFriendAssemblyDescriptor;
-    
+
     {
         CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
         if (m_pFriendAssemblyDescriptor != NULL)
@@ -1361,11 +1332,6 @@ bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
         PRECONDITION(CheckPointer(pAccessedAssembly));
     }
     CONTRACTL_END;
-
-    if (pAccessedAssembly->IsDisabledPrivateReflection())
-    {
-        return false;
-    }
 
     return GetFriendAssemblyInfo()->IgnoresAccessChecksTo(pAccessedAssembly);
 }
@@ -1593,7 +1559,7 @@ static void RunMainPre()
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(GetThread() != 0);
+    _ASSERTE(GetThreadNULLOk() != 0);
     g_fWeControlLifetime = TRUE;
 }
 
@@ -1605,7 +1571,7 @@ static void RunMainPost()
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(GetThread()));
+        PRECONDITION(CheckPointer(GetThreadNULLOk()));
     }
     CONTRACTL_END
 
@@ -2020,7 +1986,7 @@ bool Assembly::TrySetTypeLib(_In_ ITypeLib *pNew)
 // Add an assembly to the assemblyref list. pAssemEmitter specifies where
 // the AssemblyRef is emitted to.
 //***********************************************************
-mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter, BOOL fUsePublicKeyToken)
+mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter)
 {
     CONTRACT(mdAssemblyRef)
     {
@@ -2048,7 +2014,7 @@ mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssembl
     }
 
     mdAssemblyRef ar;
-    IfFailThrow(spec.EmitToken(pAssemEmitter, &ar, fUsePublicKeyToken));
+    IfFailThrow(spec.EmitToken(pAssemEmitter, &ar));
 
     RETURN ar;
 }   // Assembly::AddAssemblyRef

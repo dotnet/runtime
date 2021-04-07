@@ -75,7 +75,7 @@ namespace System.Diagnostics
             else
             {
                 // local case: do not use performance counter and also attempt to get the matching (by pid) process only
-                ProcessInfo[] processInfos = NtProcessInfoHelper.GetProcessInfos(pid => pid == processId);
+                ProcessInfo[] processInfos = NtProcessInfoHelper.GetProcessInfos(processId);
                 if (processInfos.Length == 1)
                 {
                     return processInfos[0];

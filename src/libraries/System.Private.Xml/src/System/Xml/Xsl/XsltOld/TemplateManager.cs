@@ -9,13 +9,13 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Collections;
 
-    internal class TemplateManager
+    internal sealed class TemplateManager
     {
         private readonly XmlQualifiedName _mode;
         internal ArrayList? templates;
         private readonly Stylesheet _stylesheet;    // Owning stylesheet
 
-        private class TemplateComparer : IComparer
+        private sealed class TemplateComparer : IComparer
         {
             public int Compare(object? x, object? y)
             {

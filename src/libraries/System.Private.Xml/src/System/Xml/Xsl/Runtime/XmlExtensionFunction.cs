@@ -9,6 +9,7 @@ using System.Xml.Schema;
 using System.Reflection;
 using System.Globalization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -16,7 +17,7 @@ namespace System.Xml.Xsl.Runtime
     /// Table of bound extension functions.  Once an extension function is bound and entered into the table, future bindings
     /// will be very fast.  This table is not thread-safe.
     /// </summary>
-    internal class XmlExtensionFunctionTable
+    internal sealed class XmlExtensionFunctionTable
     {
         private readonly Dictionary<XmlExtensionFunction, XmlExtensionFunction> _table;
         private XmlExtensionFunction _funcCached;
@@ -26,7 +27,12 @@ namespace System.Xml.Xsl.Runtime
             _table = new Dictionary<XmlExtensionFunction, XmlExtensionFunction>();
         }
 
-        public XmlExtensionFunction Bind(string name, string namespaceUri, int numArgs, Type objectType, BindingFlags flags)
+        public XmlExtensionFunction Bind(
+            string name,
+            string namespaceUri,
+            int numArgs,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type objectType,
+            BindingFlags flags)
         {
             XmlExtensionFunction func;
 
@@ -52,11 +58,12 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// This internal class contains methods that allow binding to extension functions and invoking them.
     /// </summary>
-    internal class XmlExtensionFunction
+    internal sealed class XmlExtensionFunction
     {
         private string _namespaceUri;                // Extension object identifier
         private string _name;                        // Name of this method
         private int _numArgs;                        // Argument count
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         private Type _objectType;                    // Type of the object which will be searched for matching methods
         private BindingFlags _flags;                 // Modifiers that were used to search for a matching signature
         private int _hashCode;                       // Pre-computed hashcode
@@ -87,7 +94,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Constructor.
         /// </summary>
-        public XmlExtensionFunction(string name, string namespaceUri, int numArgs, Type objectType, BindingFlags flags)
+        public XmlExtensionFunction(string name, string namespaceUri, int numArgs, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicMethods)] Type objectType, BindingFlags flags)
         {
             Init(name, namespaceUri, numArgs, objectType, flags);
         }
@@ -95,7 +102,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Initialize, but do not bind.
         /// </summary>
-        public void Init(string name, string namespaceUri, int numArgs, Type objectType, BindingFlags flags)
+        public void Init(string name, string namespaceUri, int numArgs, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicMethods)] Type objectType, BindingFlags flags)
         {
             _name = name;
             _namespaceUri = namespaceUri;

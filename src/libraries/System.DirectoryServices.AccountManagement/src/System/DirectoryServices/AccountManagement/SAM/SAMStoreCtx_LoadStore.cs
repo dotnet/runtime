@@ -17,7 +17,7 @@ using System.DirectoryServices;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal partial class SAMStoreCtx : StoreCtx
+    internal sealed partial class SAMStoreCtx : StoreCtx
     {
         //
         // Native <--> Principal
@@ -743,7 +743,7 @@ namespace System.DirectoryServices.AccountManagement
             Principal = User | Computer | Group
         }
 
-        private class PropertyMappingTableEntry
+        private sealed class PropertyMappingTableEntry
         {
             internal string propertyName;                  // PAPI name
             internal string suggestedWinNTPropertyName;    // WinNT attribute name

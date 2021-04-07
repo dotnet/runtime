@@ -523,7 +523,6 @@ MONO_API void
 mono_install_ftnptr_eh_callback (MonoFtnPtrEHCallback callback);
 
 void      mini_jit_init                    (void);
-void      mini_jit_cleanup                 (void);
 void      mono_disable_optimizations       (guint32 opts);
 void      mono_set_optimizations           (guint32 opts);
 void      mono_precompile_assemblies        (void);
@@ -534,7 +533,9 @@ MonoLMF * mono_get_lmf                      (void);
 void      mono_set_lmf                      (MonoLMF *lmf);
 void      mono_push_lmf                     (MonoLMFExt *ext);
 void      mono_pop_lmf                      (MonoLMF *lmf);
-MONO_API void      mono_jit_set_domain      (MonoDomain *domain);
+
+MONO_API MONO_RT_EXTERNAL_ONLY void
+mono_jit_set_domain      (MonoDomain *domain);
 
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee);
 gpointer  mono_create_ftnptr                (gpointer addr);
@@ -607,13 +608,7 @@ void
 mono_runtime_install_custom_handlers_usage (void);
 
 void
-mono_runtime_cleanup_handlers (void);
-
-void
 mono_runtime_setup_stat_profiler (void);
-
-void
-mono_runtime_shutdown_stat_profiler (void);
 
 void
 mono_runtime_posix_install_handlers (void);
@@ -626,9 +621,6 @@ mono_cross_helpers_run (void);
 
 void
 mono_init_native_crash_info (void);
-
-void
-mono_cleanup_native_crash_info (void);
 
 void
 mono_dump_native_crash_info (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info);
