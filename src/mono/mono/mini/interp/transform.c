@@ -2279,7 +2279,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				|| !strcmp (klass_name_space, "System.Runtime.CompilerServices"))
 			   && !strcmp (klass_name, "Unsafe")) {
 		if (!strcmp (tm, "AddByteOffset"))
-			*op = MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET;
+#if SIZEOF_VOID_P == 4
+			*op = MINT_ADD_I4;
+#else
+			*op = MINT_ADD_I8;
+#endif
 		else if (!strcmp (tm, "ByteOffset"))
 			*op = MINT_INTRINS_UNSAFE_BYTE_OFFSET;
 		else if (!strcmp (tm, "As") || !strcmp (tm, "AsRef"))
