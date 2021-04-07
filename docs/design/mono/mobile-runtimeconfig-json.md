@@ -15,7 +15,7 @@ To minimize the impact on the app startup time, the design constraints are as fo
 
 We break up runtimeconfig.json loading into two parts:
 1. A new MSBuild task called `RuntimeConfigParser` will run after the `runtimeconfig.json` is created by the `dotnet build` process. The task will convert the properties and their values into a binary blob format. The resulting `runtimeconfig.blob` file will be bundled with the application.
-2. The runtime will expose a new API entrypoint `monovm_runtimeconfig_initialize` that gets either a path to pass to `mono_file_map_open` or a pointer to the blob in memory. Then, the runtime will read the binary data and populate the managed AppContext with the properties.
+2. The runtime will expose a new API entrypoint `monovm_runtimeconfig_initialize` that gets either a path to pass to `mono_file_map_open` or a pointer to the blob in memory. When called, the runtime will read the binary data and populate the managed AppContext with the properties.
 
 We will only take the `runtimeOptions→configProperties` json key. Its content is a json dictionary with string keys and string/bool/numeric values.  We convert the values to strings when we store them in the binary runtimeconfig.blob.
 
