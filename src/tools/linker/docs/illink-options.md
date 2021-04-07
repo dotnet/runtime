@@ -191,6 +191,13 @@ The `--warn VERSION` option prevents the linker from displaying warnings newer t
 version. Valid versions are in the range 0-9999, where 9999 will display all current and future
 warnings.
 
+### Emit single warnings per assembly
+
+The `--singlewarn` (or `--singlewarn+`) option will show at most one trim analysis warning per
+assembly which represents all of the warnings produced by code in the assembly. The default is to show all trim analysis warnings.
+
+You may also pass `--singlewarn Assembly` (or `--singlewarn- Assembly`) to control this behavior for a particular assembly.
+
 ### Generating warning suppressions
 
 For each of the linked assemblies that triggered any warnings during linking, the

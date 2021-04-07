@@ -500,6 +500,41 @@ namespace Mono.Linker
 
 						continue;
 
+					case "--singlewarn":
+					case "--singlewarn+": {
+							string assemblyName = GetNextStringValue ();
+							if (assemblyName != null) {
+								if (!IsValidAssemblyName (assemblyName)) {
+									context.LogError ($"Invalid assembly name '{assemblyName}'", 1036);
+									return -1;
+								}
+
+								context.SingleWarn[assemblyName] = true;
+							} else {
+								context.GeneralSingleWarn = true;
+								context.SingleWarn.Clear ();
+							}
+
+							continue;
+						}
+
+					case "--singlewarn-": {
+							string assemblyName = GetNextStringValue ();
+							if (assemblyName != null) {
+								if (!IsValidAssemblyName (assemblyName)) {
+									context.LogError ($"Invalid assembly name '{assemblyName}'", 1036);
+									return -1;
+								}
+
+								context.SingleWarn[assemblyName] = false;
+							} else {
+								context.GeneralSingleWarn = false;
+								context.SingleWarn.Clear ();
+							}
+
+							continue;
+						}
+
 					case "--version":
 						Version ();
 						return 1;
@@ -1188,6 +1223,8 @@ namespace Mono.Linker
 			Console.WriteLine ("                              VERSION is an integer in the range 0-9999.");
 			Console.WriteLine ("  --warnaserror[+|-]        Report all warnings as errors");
 			Console.WriteLine ("  --warnaserror[+|-] WARN   Report specific warnings as errors");
+			Console.WriteLine ("  --singlewarn[+|-]         Show at most one analysis warning per assembly");
+			Console.WriteLine ("  --singlewarn[+|-] ASM     Show at most one analysis warning for a specific assembly");
 			Console.WriteLine ("  --version                 Print the version number of the {0}", _linker);
 
 			Console.WriteLine ();
