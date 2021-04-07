@@ -253,10 +253,9 @@ if ($os -eq "Browser") {
   # override default arch for Browser, we only support wasm
   $arch = "wasm"
 
-  if ($ninja -ne $True) {
-    # we need ninja for emscripten on windows
-    $ninja = $True
-    $arguments += " /p:Ninja=$ninja"
+  if ($msbuild -eq $True) {
+    Write-Error "Using the -msbuild option isn't supported when building for Browser on Windows, we need need ninja for Emscripten."
+    exit 1
   }
 }
 
