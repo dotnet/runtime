@@ -89,8 +89,171 @@ indivisible unit.  Mixing components from different versions of the runtime is n
 
 ## Detailed design - C code organization
 
-** TODO ** Copy from draft document
+### Base component contract
+
+Each component may use the following types and preprocessor definitions:
+
+- (from `mono/component/component.h`) `MonoComponent` a struct that is the "base vtable" of all components.  It provides a single member `cleanup` that each component must implement.
+   - The component cleanup function should be prepared to be called multiple
+     times.  Second and subsequent calls should be ignored.
+- (from `mono/utils/mono-compiler.h`) `MONO_COMPONENT_API` when a component
+  needs to call a runtime function that is not part of the public Mono API, it
+  can only call a `MONO_COMPONENT_API` function.  Care should be taken to use
+  the most general version of a group of functions so that we can keep the
+  total number of exposed functions to a minimum.
+- (from `mono/utils/mono-compiler.h`) `MONO_COMPONENT_EXPORT_ENTRYPOINT` each
+  component must expose a function named `mono_component_<component_name>_init`
+  that is tagged with this macro.  When the component is compiled dynamically,
+  the build will ensure that the entrypoint is exported and visible.
+- (set by cmake) `COMPILING_COMPONENT_DYNAMIC` defined if the component is
+  being compiled into a shared library.  Generally components don't need to
+  explicitly act on this define.
+- (set by cmake) `STATIC_COMPONENTS` defined if all components are being
+  compiled statically.  If this is set, the component stub should export an
+  entrypoint with the name `mono_component_<component_name>_init` rather than
+  `mono_component_<component_name>_stub_init`.
+
+### To implement a component
+
+To implement `feature_X` as a component.  Carry out the following steps:
+
+* Add a new entry to the `components` list in `src/mono/mono/component/CMakeLists.txt`:
+  ```
+  set(components
+    hot_reload
+	...
+	feature_X
+  )
+  ```
+* Add a new list `feature_X-sources_base` to `src/mono/mono/component/CMakeLists.txt` that lists the source files of the component:
+  ```
+  set(feature_X-sources_base feature_X.h feature_X.c)
+  ```
+* Add a new list `featrue_X-stub-sources_base` to `src/mono/mono/component/CMakeLists.txt` that lists the source files for the component stub:
+  ```
+  set(feature_X-stub-sources_base feature_X-stub.c)
+  ```
+* Declare a struct `_MonoComponentFeatureX` in `src/mono/mono/component/feature_X.h`
+  ```
+  typedef struct _MonoComponentFeatureX {
+    MonoComponent component; /* First member _must_ be MonoComponent */
+	void (*hello)(void); /* Additional function pointers for each method for feature_X */
+  } MonoComponentFeatureX;
+  ```
+* Declare an entrypoint `mono_component_feature_X_init` in `src/mono/mono/component/feature_X.h`
+  that takes no arguments and returns the component vtable:
+  ```
+  #ifdef STATIC_COMPONENTS
+  MONO_COMPONENT_EXPORT_ENTRYPOINT
+  MonoComponentFeatureX *
+  mono_component_feature_X_init (void);
+  #endif
+  ```
+* Implement the component in `src/mono/mono/component/feature_X.c` (and other sources, if necessary).
+  Re-declare and then dcefine the component entrypoint and populate a function table:
+    ```
+	#ifndef STATIC_COMPONENTS
+    MONO_COMPONENT_EXPORT_ENTRYPOINT
+    MonoComponentFeatureX *
+    mono_component_feature_X_init (void);
+    #endif
+
+	/* declare static functions that implement the feature_X vtable */
+    static void feature_X_cleanup (MonoComponent *self);
+	static void feature_X_hello (void);
+
+    static MonoComponentFeatureX fn_table = {
+	  { feature_X_cleanup },
+	  feature_X_hello,
+    };
+	
+	MonoComponentFeatureX *
+	mono_component_feature_X_init (void) { return &fn_table; }
+	
+	void feature_X_cleanup (MonoComponent *self)
+	{
+	  static int cleaned = 0;
+	  if (cleaned)
+	    return;
+	  /* do cleanup */
+	  cleaned = 1;
+	}
+
+    void feature_X_hello (void)
+	{
+	   /* implement the feature_X hello functionality */
+	}
+    ```
+* Implement a component stub in `src/mono/mono/component/feature_X-stub.c`.  This looks exactly like the component, except most function will be no-ops or `g_assert_not_reached`.
+   One tricky point is that the entrypoint is exported as `mono_component_feature_X_stub_init` and *also* as `mono_component_feature_X_init` if the component is being compiled statically.
+    ```
+    #ifdef STATIC_COMPONENTS
+    MONO_COMPONENT_EXPORT_ENTRYPOINT
+    MonoComponentHotReload *
+    mono_component_hot_reload_init (void)
+    {
+        return mono_component_hot_reload_stub_init ();
+    }
+    #endif
+	#ifndef STATIC_COMPONENTS
+    MONO_COMPONENT_EXPORT_ENTRYPOINT
+    MonoComponentFeatureX *
+    mono_component_feature_X_stub_init (void);
+    #endif
+
+	/* declare static functions that implement the feature_X vtable */
+    static void feature_X_cleanup (MonoComponent *self);
+	static void feature_X_hello (void);
+
+    static MonoComponentFeatureX fn_table = {
+	  { feature_X_cleanup },
+	  feature_X_hello,
+    };
+	
+	MonoComponentFeatureX *
+	mono_component_feature_X_init (void) { return &fn_table; }
+	
+	void feature_X_cleanup (MonoComponent *self)
+	{
+	  static int cleaned = 0;
+	  if (cleaned)
+	    return;
+	  /* do cleanup */
+	  cleaned = 1;
+	}
+
+    void feature_X_hello (void)
+	{
+	   /* implement the feature_X hello functionality */
+	}
+    ```
+* Add a getter for the component to `mono/metadata/components.h`, and add code to load the component to `mono/metadata/components.h`
+  ```c
+    MonoComponentFeatureX*
+	mono_component_feature_X (void);
+  ```
+* Call the component functions through the getter.
+   ```c
+     mono_component_feature_X()->hello()
+   ```
+* To call runtime functions from the component, use either `MONO_API` functions
+  from the runtime, or `MONO_COMPONENT_API` functions.  It is permissible to
+  mark additional functions with `MONO_COMPONENT_API`, provided they have a
+  `mono_`- or `m_`-prefixed name.
 
 ## Detailed design - Packaging and runtime packs
 
-** TODO ** Write this up
+The components are building blocks to put together a functional runtime.  The
+runtime pack includes the base runtime and the components and additional
+properties and targets that enable the workload to construct a runtime for
+various scenarios.
+
+In each runtime pack we include:
+
+- The compiled compnents for the apropriate host architectures in a well-known subdirectory
+- An MSBuild props file that defines an item group that list each component name and has metadata that indicates:
+   - the path to the component in the runtime pack
+   - the path to the stub component in the runtime pack (if components are static)
+- An MSBuild targets file that defines targets to copy a specified set of components to the app publish folder (if components are dynamic); or to link the runtime together with stubs and a set of enabled components (if components are static)
+
+** TODO ** Write this up in more detail
