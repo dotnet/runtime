@@ -22,7 +22,7 @@ namespace System.Threading
         }
     }
 
-    internal partial class PortableThreadPool
+    internal sealed partial class PortableThreadPool
     {
         /// <summary>
         /// A linked list of <see cref="WaitThread"/>s.

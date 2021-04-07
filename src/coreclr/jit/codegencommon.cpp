@@ -31,30 +31,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) sz,
-#include "typelist.h"
-#undef DEF_TP
-};
-
-const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) al,
-#include "typelist.h"
-#undef DEF_TP
-};
-
-const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) st,
-#include "typelist.h"
-#undef DEF_TP
-};
-
-const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) jitType,
-#include "typelist.h"
-#undef DEF_TP
-};
-
 void CodeGenInterface::setFramePointerRequiredEH(bool value)
 {
     m_cgFramePointerRequired = value;
@@ -2203,13 +2179,19 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileData())
         {
-            printf("; with IBC profile data, edge weights are %s, and fgCalledCount is %.0f\n",
+            printf("; with PGO: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
                    compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
         }
 
         if (compiler->fgPgoFailReason != nullptr)
         {
             printf("; %s\n", compiler->fgPgoFailReason);
+        }
+
+        if ((compiler->fgPgoInlineePgo + compiler->fgPgoInlineeNoPgo + compiler->fgPgoInlineeNoPgoSingleBlock) > 0)
+        {
+            printf("; %u inlinees with PGO data; %u single block inlinees; %u inlinees without PGO data\n",
+                   compiler->fgPgoInlineePgo, compiler->fgPgoInlineeNoPgoSingleBlock, compiler->fgPgoInlineeNoPgo);
         }
 
         if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))

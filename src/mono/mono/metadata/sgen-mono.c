@@ -2729,19 +2729,6 @@ mono_gchandle_new_weakref_internal (GCObject *obj, gboolean track_resurrection)
 }
 
 /**
- * mono_gchandle_is_in_domain:
- * \param gchandle a GCHandle's handle.
- * \param domain An application domain.
- * \returns TRUE if the object wrapped by the \p gchandle belongs to the specific \p domain.
- */
-gboolean
-mono_gchandle_is_in_domain (MonoGCHandle gchandle, MonoDomain *domain)
-{
-	MonoDomain *gchandle_domain = (MonoDomain *)sgen_gchandle_get_metadata (MONO_GC_HANDLE_TO_UINT (gchandle));
-	return domain->domain_id == gchandle_domain->domain_id;
-}
-
-/**
  * mono_gchandle_free_internal:
  * \param gchandle a GCHandle's handle.
  *
@@ -2753,18 +2740,6 @@ void
 mono_gchandle_free_internal (MonoGCHandle gchandle)
 {
 	sgen_gchandle_free (MONO_GC_HANDLE_TO_UINT (gchandle));
-}
-
-/**
- * mono_gchandle_free_domain:
- * \param unloading domain that is unloading
- *
- * Function used internally to cleanup any GC handle for objects belonging
- * to the specified domain during appdomain unload.
- */
-void
-mono_gchandle_free_domain (MonoDomain *unloading)
-{
 }
 
 /**

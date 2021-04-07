@@ -17,9 +17,6 @@ namespace System.Net.WebSockets
 {
     internal sealed class WebSocketHandle
     {
-        /// <summary>GUID appended by the server as part of the security key response.  Defined in the RFC.</summary>
-        private const string WSServerGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-
         /// <summary>Shared, lazily-initialized handler for when using default options.</summary>
         private static SocketsHttpHandler? s_defaultHandler;
 
@@ -165,7 +162,18 @@ namespace System.Net.WebSockets
                     string[] subprotocolArray = (string[])subprotocolEnumerableValues;
                     if (subprotocolArray.Length > 0 && !string.IsNullOrEmpty(subprotocolArray[0]))
                     {
-                        subprotocol = options.RequestedSubProtocols.Find(requested => string.Equals(requested, subprotocolArray[0], StringComparison.OrdinalIgnoreCase));
+                        if (options._requestedSubProtocols is not null)
+                        {
+                            foreach (string requestedProtocol in options._requestedSubProtocols)
+                            {
+                                if (requestedProtocol.Equals(subprotocolArray[0], StringComparison.OrdinalIgnoreCase))
+                                {
+                                    subprotocol = requestedProtocol;
+                                    break;
+                                }
+                            }
+                        }
+
                         if (subprotocol == null)
                         {
                             throw new WebSocketException(
@@ -242,10 +250,35 @@ namespace System.Net.WebSockets
         [SuppressMessage("Microsoft.Security", "CA5350", Justification = "Required by RFC6455")]
         private static KeyValuePair<string, string> CreateSecKeyAndSecWebSocketAccept()
         {
-            string secKey = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+            // GUID appended by the server as part of the security key response.  Defined in the RFC.
+            ReadOnlySpan<byte> wsServerGuidBytes = new byte[]
+            {
+                (byte)'2', (byte)'5', (byte)'8', (byte)'E', (byte)'A', (byte)'F', (byte)'A', (byte)'5', (byte)'-',
+                (byte)'E', (byte)'9', (byte)'1', (byte)'4', (byte)'-',
+                (byte)'4', (byte)'7', (byte)'D', (byte)'A', (byte)'-',
+                (byte)'9', (byte)'5', (byte)'C', (byte)'A', (byte)'-',
+                (byte)'C', (byte)'5', (byte)'A', (byte)'B', (byte)'0', (byte)'D', (byte)'C', (byte)'8', (byte)'5', (byte)'B', (byte)'1', (byte)'1'
+            };
+
+            Span<byte> bytes = stackalloc byte[24 /* Base64 guid length */ + wsServerGuidBytes.Length];
+
+            // Base64-encode a new Guid's bytes to get the security key
+            bool success = Guid.NewGuid().TryWriteBytes(bytes);
+            Debug.Assert(success);
+            string secKey = Convert.ToBase64String(bytes.Slice(0, 16 /*sizeof(Guid)*/));
+
+            // Get the corresponding ASCII bytes for seckey+wsServerGuidBytes
+            for (int i = 0; i < secKey.Length; i++) bytes[i] = (byte)secKey[i];
+            wsServerGuidBytes.CopyTo(bytes.Slice(secKey.Length));
+
+            // Hash the seckey+wsServerGuidBytes bytes
+            SHA1.TryHashData(bytes, bytes, out int bytesWritten);
+            Debug.Assert(bytesWritten == 20 /* SHA1 hash length */);
+
+            // Return the security key + the base64 encoded hashed bytes
             return new KeyValuePair<string, string>(
                 secKey,
-                Convert.ToBase64String(SHA1.HashData(Encoding.ASCII.GetBytes(secKey + WSServerGuid))));
+                Convert.ToBase64String(bytes.Slice(0, bytesWritten)));
         }
 
         private static void ValidateHeader(HttpHeaders headers, string name, string expectedValue)

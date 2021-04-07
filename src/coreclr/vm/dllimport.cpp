@@ -4037,9 +4037,9 @@ static void CreateNDirectStubAccessMetadata(
     }
     else
     {
-        if (unmgdCallConv != CorInfoCallConvExtension::Stdcall &&
-            unmgdCallConv != CorInfoCallConvExtension::C &&
-            unmgdCallConv != CorInfoCallConvExtension::Thiscall)
+        if (unmgdCallConv == CorInfoCallConvExtension::Managed ||
+            unmgdCallConv == CorInfoCallConvExtension::Fastcall ||
+            unmgdCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
         {
             COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
         }

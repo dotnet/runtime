@@ -276,7 +276,7 @@ namespace Internal.TypeSystem
                 namespaceName = fullName.Substring(0, split);
                 typeName = fullName.Substring(split + 1);
             }
-            return module.GetType(namespaceName, typeName, throwIfNotFound);
+            return module.GetType(namespaceName, typeName, throwIfNotFound ? NotFoundBehavior.Throw : NotFoundBehavior.ReturnNull);
         }
 
         private static AssemblyName FindAssemblyIfNamePresent(string name)

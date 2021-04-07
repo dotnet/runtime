@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    internal class PropertyManager
+    internal static class PropertyManager
     {
         public static string DefaultNamingContext = "defaultNamingContext";
         public static string SchemaNamingContext = "schemaNamingContext";

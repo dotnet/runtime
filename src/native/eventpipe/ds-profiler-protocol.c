@@ -93,7 +93,7 @@ profiler_protocol_helper_unknown_command (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream)
 {
-	DS_LOG_WARNING_1 ("Received unknown request type (%d)\n", ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (message)));
+	DS_LOG_WARNING_1 ("Received unknown request type (%d)", ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (message)));
 	ds_ipc_message_send_error (stream, DS_IPC_E_UNKNOWN_COMMAND);
 	ds_ipc_stream_free (stream);
 	return true;
@@ -182,7 +182,7 @@ ds_profiler_protocol_helper_handle_ipc_message (
 	EP_ASSERT (message != NULL);
 	EP_ASSERT (stream != NULL);
 
-	DS_LOG_WARNING_0 ("Attach profiler not implemented\n");
+	DS_LOG_WARNING_0 ("Attach profiler not implemented");
 	ds_ipc_message_send_error (stream, DS_IPC_E_NOTSUPPORTED);
 	ds_ipc_stream_free (stream);
 

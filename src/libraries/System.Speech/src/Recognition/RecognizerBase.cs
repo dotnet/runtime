@@ -888,7 +888,7 @@ ISpGrammarResourceLoader
                     return new PlatformNotSupportedException(SR.Get(srid));
 
                 default:
-                    Exception exReturn = null; ;
+                    Exception exReturn = null;
                     if (srid >= 0)
                     {
                         exReturn = new InvalidOperationException(SR.Get(srid));
@@ -3068,7 +3068,7 @@ ISpGrammarResourceLoader
         private RecognizerBaseThunk _recoThunk;
         #endregion
 
-        private class RecognizerBaseThunk : ISpGrammarResourceLoader
+        private sealed class RecognizerBaseThunk : ISpGrammarResourceLoader
         {
             internal RecognizerBaseThunk(RecognizerBase recognizer)
             {

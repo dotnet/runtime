@@ -14,7 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // interfaces, and structs. Parent is a namespace or class. Children are methods,
     // properties, and member variables, and types (including its own AGGTYPESYMs).
 
-    internal class AggregateSymbol : NamespaceOrAggregateSymbol
+    internal sealed class AggregateSymbol : NamespaceOrAggregateSymbol
     {
         public Type AssociatedSystemType;
         public Assembly AssociatedAssembly;

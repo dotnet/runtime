@@ -321,7 +321,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
         return ETW::SamplingLog::UnInitialized;
     }
 #endif // TARGET_AMD64
-    Thread *pThread = GetThread();
+    Thread *pThread = GetThreadNULLOk();
     if (pThread == NULL)
     {
         return ETW::SamplingLog::UnInitialized;
@@ -3340,7 +3340,7 @@ BOOL ETW::TypeSystemLog::ShouldLogType(TypeHandle th)
 
     // When we have a thread context, default to calling the API that requires one which
     // reduces the cost of locking.
-    if (GetThread() != NULL)
+    if (GetThreadNULLOk() != NULL)
     {
         LookupOrCreateTypeLoggingInfo(th, &fCreatedNew);
     }
@@ -4701,7 +4701,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
     CONTRACTL {
         NOTHROW;
         GC_TRIGGERS;
-        PRECONDITION(GetThread() != NULL);
+        PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(GetThread()->GetThrowable() != NULL);
     } CONTRACTL_END;
 

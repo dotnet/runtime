@@ -607,9 +607,6 @@ VOID MethodTableBuilder::BuildInteropVTable_InterfaceList(
     *pcBuildingInterfaceList = 0;
     *ppBuildingInterfaceList = NULL;
 
-    // Get the thread for stacking allocator
-    Thread *pThread = GetThread();
-
     // Get the metadata for enumerating the interfaces of the class
     IMDInternalImport *pMDImport = GetModule()->GetMDImport();
 
@@ -1048,7 +1045,6 @@ VOID MethodTableBuilder::BuildInteropVTable_ResolveInterfaces(
 
     HRESULT hr = S_OK;
     DWORD i;
-    Thread *pThread = GetThread();
 
     // resolve unresolved interfaces, determine an upper bound on the size of the interface map,
     // and determine the size of the largest interface (in # slots)
@@ -1754,7 +1750,6 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceInterfaceDeclaration(
                 // laying out the method table.
                 if(bmtInterface->pdwOriginalStart == NULL)
                 {
-                    Thread *pThread = GetThread();
                     bmtInterface->pdwOriginalStart = new (GetStackingAllocator()) DWORD[bmtInterface->dwMaxExpandedInterfaces];
                     memset(bmtInterface->pdwOriginalStart, 0, sizeof(DWORD)*bmtInterface->dwMaxExpandedInterfaces);
                 }

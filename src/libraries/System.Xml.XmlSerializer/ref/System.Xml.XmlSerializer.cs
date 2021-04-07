@@ -128,13 +128,21 @@ namespace System.Xml.Serialization
         public SoapReflectionImporter(string? defaultNamespace) { }
         public SoapReflectionImporter(System.Xml.Serialization.SoapAttributeOverrides? attributeOverrides) { }
         public SoapReflectionImporter(System.Xml.Serialization.SoapAttributeOverrides? attributeOverrides, string? defaultNamespace) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, System.Xml.Serialization.XmlReflectionMember[] members) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, System.Xml.Serialization.XmlReflectionMember[] members, bool hasWrapperElement, bool writeAccessors) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, System.Xml.Serialization.XmlReflectionMember[] members, bool hasWrapperElement, bool writeAccessors, bool validate) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, System.Xml.Serialization.XmlReflectionMember[] members, bool hasWrapperElement, bool writeAccessors, bool validate, System.Xml.Serialization.XmlMappingAccess access) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlTypeMapping ImportTypeMapping(System.Type type) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlTypeMapping ImportTypeMapping(System.Type type, string? defaultNamespace) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void IncludeType(System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void IncludeTypes(System.Reflection.ICustomAttributeProvider provider) { }
     }
     public partial class SoapSchemaMember
@@ -349,15 +357,25 @@ namespace System.Xml.Serialization
         public XmlReflectionImporter(string? defaultNamespace) { }
         public XmlReflectionImporter(System.Xml.Serialization.XmlAttributeOverrides? attributeOverrides) { }
         public XmlReflectionImporter(System.Xml.Serialization.XmlAttributeOverrides? attributeOverrides, string? defaultNamespace) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, System.Xml.Serialization.XmlReflectionMember[] members, bool hasWrapperElement) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, System.Xml.Serialization.XmlReflectionMember[] members, bool hasWrapperElement, bool rpc) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, System.Xml.Serialization.XmlReflectionMember[] members, bool hasWrapperElement, bool rpc, bool openModel) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, System.Xml.Serialization.XmlReflectionMember[] members, bool hasWrapperElement, bool rpc, bool openModel, System.Xml.Serialization.XmlMappingAccess access) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlTypeMapping ImportTypeMapping(System.Type type) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlTypeMapping ImportTypeMapping(System.Type type, string? defaultNamespace) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlTypeMapping ImportTypeMapping(System.Type type, System.Xml.Serialization.XmlRootAttribute? root) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlTypeMapping ImportTypeMapping(System.Type type, System.Xml.Serialization.XmlRootAttribute? root, string? defaultNamespace) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void IncludeType(System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void IncludeTypes(System.Reflection.ICustomAttributeProvider provider) { }
     }
     public partial class XmlReflectionMember
@@ -391,18 +409,31 @@ namespace System.Xml.Serialization
     }
     public partial class XmlSchemaImporter : System.Xml.Serialization.SchemaImporter
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public XmlSchemaImporter(System.Xml.Serialization.XmlSchemas schemas) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public XmlSchemaImporter(System.Xml.Serialization.XmlSchemas schemas, System.Xml.Serialization.CodeIdentifiers? typeIdentifiers) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping? ImportAnyType(System.Xml.XmlQualifiedName typeName, string elementName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlTypeMapping ImportDerivedTypeMapping(System.Xml.XmlQualifiedName name, System.Type? baseType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlTypeMapping ImportDerivedTypeMapping(System.Xml.XmlQualifiedName name, System.Type? baseType, bool baseTypeCanBeIndirect) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping ImportMembersMapping(string name, string? ns, System.Xml.Serialization.SoapSchemaMember[] members) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping ImportMembersMapping(System.Xml.XmlQualifiedName name) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping ImportMembersMapping(System.Xml.XmlQualifiedName[] names) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlMembersMapping ImportMembersMapping(System.Xml.XmlQualifiedName[] names, System.Type? baseType, bool baseTypeCanBeIndirect) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlTypeMapping ImportSchemaType(System.Xml.XmlQualifiedName typeName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlTypeMapping ImportSchemaType(System.Xml.XmlQualifiedName typeName, System.Type? baseType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlTypeMapping ImportSchemaType(System.Xml.XmlQualifiedName typeName, System.Type? baseType, bool baseTypeCanBeIndirect) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlTypeMapping ImportTypeMapping(System.Xml.XmlQualifiedName name) { throw null; }
     }
     public partial class XmlSchemas : System.Collections.CollectionBase, System.Collections.Generic.IEnumerable<System.Xml.Schema.XmlSchema>, System.Collections.IEnumerable
@@ -415,6 +446,7 @@ namespace System.Xml.Serialization
         public int Add(System.Xml.Schema.XmlSchema schema, System.Uri? baseUri) { throw null; }
         public void Add(System.Xml.Serialization.XmlSchemas schemas) { }
         public void AddReference(System.Xml.Schema.XmlSchema schema) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Compile(System.Xml.Schema.ValidationEventHandler? handler, bool fullCompile) { }
         public bool Contains(string? targetNamespace) { throw null; }
         public bool Contains(System.Xml.Schema.XmlSchema schema) { throw null; }
@@ -470,6 +502,7 @@ namespace System.Xml.Serialization
         protected bool GetNullAttr() { throw null; }
         protected object GetTarget(string id) { throw null; }
         protected System.Xml.XmlQualifiedName? GetXsiType() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected abstract void InitCallbacks();
         protected abstract void InitIDs();
         protected bool IsXmlnsAttribute(string name) { throw null; }
@@ -480,11 +513,17 @@ namespace System.Xml.Serialization
         protected System.Xml.XmlQualifiedName? ReadNullableQualifiedName() { throw null; }
         protected string? ReadNullableString() { throw null; }
         protected bool ReadReference([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? fixupReference) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected object? ReadReferencedElement() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected object? ReadReferencedElement(string? name, string? ns) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected void ReadReferencedElements() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected object? ReadReferencingElement(string? name, string? ns, bool elementCanBeType, out string? fixupReference) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected object? ReadReferencingElement(string? name, string? ns, out string? fixupReference) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected object? ReadReferencingElement(out string? fixupReference) { throw null; }
         protected System.Xml.Serialization.IXmlSerializable ReadSerializable(System.Xml.Serialization.IXmlSerializable serializable) { throw null; }
         protected System.Xml.Serialization.IXmlSerializable ReadSerializable(System.Xml.Serialization.IXmlSerializable serializable, bool wrappedAny) { throw null; }
@@ -557,7 +596,9 @@ namespace System.Xml.Serialization
         protected System.Exception CreateInvalidEnumValueException(object value, string typeName) { throw null; }
         protected System.Exception CreateMismatchChoiceException(string value, string elementName, string enumValue) { throw null; }
         protected System.Exception CreateUnknownAnyElementException(string name, string ns) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected System.Exception CreateUnknownTypeException(object o) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected System.Exception CreateUnknownTypeException(System.Type type) { throw null; }
         protected static byte[] FromByteArrayBase64(byte[] value) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
@@ -578,6 +619,7 @@ namespace System.Xml.Serialization
         protected static string? FromXmlNmTokens(string? nmTokens) { throw null; }
         protected string? FromXmlQualifiedName(System.Xml.XmlQualifiedName? xmlQualifiedName) { throw null; }
         protected string? FromXmlQualifiedName(System.Xml.XmlQualifiedName? xmlQualifiedName, bool ignoreEmpty) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected abstract void InitCallbacks();
         protected static System.Reflection.Assembly? ResolveDynamicAssembly(string assemblyFullName) { throw null; }
         protected void TopLevelElement() { }
@@ -622,10 +664,15 @@ namespace System.Xml.Serialization
         protected void WriteNullTagEncoded(string? name, string? ns) { }
         protected void WriteNullTagLiteral(string? name) { }
         protected void WriteNullTagLiteral(string? name, string? ns) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected void WritePotentiallyReferencingElement(string? n, string? ns, object? o) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected void WritePotentiallyReferencingElement(string? n, string? ns, object? o, System.Type? ambientType) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected void WritePotentiallyReferencingElement(string n, string? ns, object? o, System.Type? ambientType, bool suppressReference) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected void WritePotentiallyReferencingElement(string? n, string? ns, object? o, System.Type? ambientType, bool suppressReference, bool isNullable) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected void WriteReferencedElements() { }
         protected void WriteReferencingElement(string n, string? ns, object? o) { }
         protected void WriteReferencingElement(string n, string? ns, object? o, bool isNullable) { }
@@ -639,6 +686,7 @@ namespace System.Xml.Serialization
         protected void WriteStartElement(string name, string? ns, object? o) { }
         protected void WriteStartElement(string name, string? ns, object? o, bool writePrefixed) { }
         protected void WriteStartElement(string name, string? ns, object? o, bool writePrefixed, System.Xml.Serialization.XmlSerializerNamespaces? xmlns) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         protected void WriteTypedPrimitive(string? name, string? ns, object o, bool xsiType) { }
         protected void WriteValue(byte[]? value) { }
         protected void WriteValue(string? value) { }
@@ -649,13 +697,21 @@ namespace System.Xml.Serialization
     public partial class XmlSerializer
     {
         protected XmlSerializer() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public XmlSerializer(System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public XmlSerializer(System.Type type, string? defaultNamespace) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public XmlSerializer(System.Type type, System.Type[]? extraTypes) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public XmlSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides? overrides) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public XmlSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides? overrides, System.Type[]? extraTypes, System.Xml.Serialization.XmlRootAttribute? root, string? defaultNamespace) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public XmlSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides? overrides, System.Type[]? extraTypes, System.Xml.Serialization.XmlRootAttribute? root, string? defaultNamespace, string? location) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public XmlSerializer(System.Type type, System.Xml.Serialization.XmlRootAttribute? root) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public XmlSerializer(System.Xml.Serialization.XmlTypeMapping xmlTypeMapping) { }
         public event System.Xml.Serialization.XmlAttributeEventHandler UnknownAttribute { add { } remove { } }
         public event System.Xml.Serialization.XmlElementEventHandler UnknownElement { add { } remove { } }
@@ -664,26 +720,43 @@ namespace System.Xml.Serialization
         public virtual bool CanDeserialize(System.Xml.XmlReader xmlReader) { throw null; }
         protected virtual System.Xml.Serialization.XmlSerializationReader CreateReader() { throw null; }
         protected virtual System.Xml.Serialization.XmlSerializationWriter CreateWriter() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from deserialized types may be trimmed if not referenced directly")]
         public object? Deserialize(System.IO.Stream stream) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from deserialized types may be trimmed if not referenced directly")]
         public object? Deserialize(System.IO.TextReader textReader) { throw null; }
         protected virtual object Deserialize(System.Xml.Serialization.XmlSerializationReader reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from deserialized types may be trimmed if not referenced directly")]
         public object? Deserialize(System.Xml.XmlReader xmlReader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from deserialized types may be trimmed if not referenced directly")]
         public object? Deserialize(System.Xml.XmlReader xmlReader, string? encodingStyle) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from deserialized types may be trimmed if not referenced directly")]
         public object? Deserialize(System.Xml.XmlReader xmlReader, string? encodingStyle, System.Xml.Serialization.XmlDeserializationEvents events) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from deserialized types may be trimmed if not referenced directly")]
         public object? Deserialize(System.Xml.XmlReader xmlReader, System.Xml.Serialization.XmlDeserializationEvents events) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public static System.Xml.Serialization.XmlSerializer[] FromMappings(System.Xml.Serialization.XmlMapping[]? mappings) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public static System.Xml.Serialization.XmlSerializer[] FromMappings(System.Xml.Serialization.XmlMapping[]? mappings, System.Type? type) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public static System.Xml.Serialization.XmlSerializer[] FromTypes(System.Type[]? types) { throw null; }
         public static string GetXmlSerializerAssemblyName(System.Type type) { throw null; }
         public static string GetXmlSerializerAssemblyName(System.Type type, string? defaultNamespace) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Serialize(System.IO.Stream stream, object? o) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Serialize(System.IO.Stream stream, object? o, System.Xml.Serialization.XmlSerializerNamespaces? namespaces) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Serialize(System.IO.TextWriter textWriter, object? o) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Serialize(System.IO.TextWriter textWriter, object? o, System.Xml.Serialization.XmlSerializerNamespaces? namespaces) { }
         protected virtual void Serialize(object? o, System.Xml.Serialization.XmlSerializationWriter writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Serialize(System.Xml.XmlWriter xmlWriter, object? o) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Serialize(System.Xml.XmlWriter xmlWriter, object? o, System.Xml.Serialization.XmlSerializerNamespaces? namespaces) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Serialize(System.Xml.XmlWriter xmlWriter, object? o, System.Xml.Serialization.XmlSerializerNamespaces? namespaces, string? encodingStyle) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Serialize(System.Xml.XmlWriter xmlWriter, object? o, System.Xml.Serialization.XmlSerializerNamespaces? namespaces, string? encodingStyle, string? id) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, AllowMultiple=false)]
@@ -698,13 +771,21 @@ namespace System.Xml.Serialization
     public partial class XmlSerializerFactory
     {
         public XmlSerializerFactory() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Type type) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Type type, string? defaultNamespace) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Type type, System.Type[]? extraTypes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides? overrides) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides? overrides, System.Type[]? extraTypes, System.Xml.Serialization.XmlRootAttribute? root, string? defaultNamespace) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides? overrides, System.Type[]? extraTypes, System.Xml.Serialization.XmlRootAttribute? root, string? defaultNamespace, string? location) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Type type, System.Xml.Serialization.XmlRootAttribute? root) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Xml.Serialization.XmlTypeMapping xmlTypeMapping) { throw null; }
     }
     public abstract partial class XmlSerializerImplementation

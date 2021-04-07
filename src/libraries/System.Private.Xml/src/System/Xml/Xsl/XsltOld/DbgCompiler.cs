@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Xml.Xsl.XsltOld.Debugger;
 
-    internal class DbgData
+    internal sealed class DbgData
     {
         private VariableAction[] _variables;
         public XPathNavigator StyleSheet { get; }
@@ -32,7 +32,7 @@ namespace System.Xml.Xsl.XsltOld
         public static DbgData Empty { get { return s_nullDbgData; } }
     }
 
-    internal class DbgCompiler : Compiler
+    internal sealed class DbgCompiler : Compiler
     {
         private readonly IXsltDebugger _debugger;
 
@@ -54,7 +54,7 @@ namespace System.Xml.Xsl.XsltOld
         private readonly ArrayList _localVars = new ArrayList();
         private VariableAction[]? _globalVarsCache, _localVarsCache;
 
-        public virtual VariableAction[] GlobalVariables
+        public VariableAction[] GlobalVariables
         {
             get
             {
@@ -66,7 +66,7 @@ namespace System.Xml.Xsl.XsltOld
                 return _globalVarsCache;
             }
         }
-        public virtual VariableAction[] LocalVariables
+        public VariableAction[] LocalVariables
         {
             get
             {
@@ -316,7 +316,7 @@ namespace System.Xml.Xsl.XsltOld
 
         // Debugger enabled implemetation of most compiled actions
 
-        private class ApplyImportsActionDbg : ApplyImportsAction
+        private sealed class ApplyImportsActionDbg : ApplyImportsAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -333,7 +333,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class ApplyTemplatesActionDbg : ApplyTemplatesAction
+        private sealed class ApplyTemplatesActionDbg : ApplyTemplatesAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -350,7 +350,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class AttributeActionDbg : AttributeAction
+        private sealed class AttributeActionDbg : AttributeAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -367,7 +367,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class AttributeSetActionDbg : AttributeSetAction
+        private sealed class AttributeSetActionDbg : AttributeSetAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -384,7 +384,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class CallTemplateActionDbg : CallTemplateAction
+        private sealed class CallTemplateActionDbg : CallTemplateAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -401,7 +401,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class CommentActionDbg : CommentAction
+        private sealed class CommentActionDbg : CommentAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -418,7 +418,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class CopyActionDbg : CopyAction
+        private sealed class CopyActionDbg : CopyAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -435,7 +435,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class CopyOfActionDbg : CopyOfAction
+        private sealed class CopyOfActionDbg : CopyOfAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -452,7 +452,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class ElementActionDbg : ElementAction
+        private sealed class ElementActionDbg : ElementAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -469,7 +469,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class ForEachActionDbg : ForEachAction
+        private sealed class ForEachActionDbg : ForEachAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -491,7 +491,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class IfActionDbg : IfAction
+        private sealed class IfActionDbg : IfAction
         {
             internal IfActionDbg(ConditionType type) : base(type) { }
 
@@ -510,7 +510,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class MessageActionDbg : MessageAction
+        private sealed class MessageActionDbg : MessageAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -527,7 +527,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class NewInstructionActionDbg : NewInstructionAction
+        private sealed class NewInstructionActionDbg : NewInstructionAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -544,7 +544,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class NumberActionDbg : NumberAction
+        private sealed class NumberActionDbg : NumberAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -561,7 +561,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class ProcessingInstructionActionDbg : ProcessingInstructionAction
+        private sealed class ProcessingInstructionActionDbg : ProcessingInstructionAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -578,7 +578,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class RootActionDbg : RootAction
+        private sealed class RootActionDbg : RootAction
         {
             private DbgData? _dbgData;
 
@@ -618,7 +618,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class SortActionDbg : SortAction
+        private sealed class SortActionDbg : SortAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -635,7 +635,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class TemplateActionDbg : TemplateAction
+        private sealed class TemplateActionDbg : TemplateAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -657,7 +657,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class TextActionDbg : TextAction
+        private sealed class TextActionDbg : TextAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -674,7 +674,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class UseAttributeSetsActionDbg : UseAttributeSetsAction
+        private sealed class UseAttributeSetsActionDbg : UseAttributeSetsAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -691,7 +691,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class ValueOfActionDbg : ValueOfAction
+        private sealed class ValueOfActionDbg : ValueOfAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -708,7 +708,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class VariableActionDbg : VariableAction
+        private sealed class VariableActionDbg : VariableAction
         {
             internal VariableActionDbg(VariableType type) : base(type) { }
             private DbgData? _dbgData;
@@ -730,7 +730,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class WithParamActionDbg : WithParamAction
+        private sealed class WithParamActionDbg : WithParamAction
         {
             internal override void Compile(Compiler compiler)
             {
@@ -749,7 +749,7 @@ namespace System.Xml.Xsl.XsltOld
 
         // ---------------- Events: ---------------
 
-        private class BeginEventDbg : BeginEvent
+        private sealed class BeginEventDbg : BeginEvent
         {
             private readonly DbgData _dbgData;
             internal override DbgData DbgData { get { return _dbgData; } }
@@ -765,7 +765,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        private class TextEventDbg : TextEvent
+        private sealed class TextEventDbg : TextEvent
         {
             private readonly DbgData _dbgData;
             internal override DbgData DbgData { get { return _dbgData; } }

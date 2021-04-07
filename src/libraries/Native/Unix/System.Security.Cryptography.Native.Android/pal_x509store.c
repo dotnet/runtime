@@ -10,20 +10,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define INIT_LOCALS(name, ...) \
-    enum { __VA_ARGS__, count_##name }; \
-    jobject name[count_##name] = { 0 } \
-
-#define RELEASE_LOCALS(name, env) \
-do { \
-    for (int i_##name = 0; i_##name < count_##name; ++i_##name) \
-    { \
-        jobject local = name[i_##name]; \
-        if (local != NULL) \
-            (*env)->DeleteLocalRef(env, local); \
-    } \
-} while (0)
-
 typedef enum
 {
     EntryFlags_None = 0,
@@ -112,6 +98,7 @@ int32_t AndroidCryptoNative_X509StoreAddCertificate(jobject /*KeyStore*/ store,
     EntryFlags flags;
     if (ContainsEntryForAlias(env, store, cert, alias, &flags))
     {
+        ReleaseLRef(env, alias);
         EntryFlags matchesFlags = EntryFlags_HasCertificate & EntryFlags_MatchesCertificate;
         if ((flags & matchesFlags) != matchesFlags)
         {
@@ -155,12 +142,14 @@ int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyS
         EntryFlags matchesFlags = EntryFlags_HasCertificate & EntryFlags_MatchesCertificate;
         if ((flags & matchesFlags) != matchesFlags)
         {
+            RELEASE_LOCALS(loc, env);
             LOG_ERROR("Store already contains alias with entry that does not match the expected certificate");
             return FAIL;
         }
 
         if ((flags & EntryFlags_HasPrivateKey) == EntryFlags_HasPrivateKey)
         {
+            RELEASE_LOCALS(loc, env);
             // Certificate with private key is already in store - nothing to do
             LOG_DEBUG("Store already contains certificate with private key");
             return SUCCESS;
@@ -168,7 +157,7 @@ int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyS
 
         // Delete existing entry. We will replace the existing cert with the cert + private key.
         // store.deleteEntry(alias);
-        (*env)->CallVoidMethod(env, store, g_KeyStoreDeleteEntry, alias);
+        (*env)->CallVoidMethod(env, store, g_KeyStoreDeleteEntry, loc[alias]);
     }
 
     bool releasePrivateKey = true;

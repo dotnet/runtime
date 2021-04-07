@@ -3,7 +3,7 @@
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonEnumDataContract : JsonDataContract
+    internal sealed class JsonEnumDataContract : JsonDataContract
     {
         private readonly JsonEnumDataContractCriticalHelper _helper;
 
@@ -46,7 +46,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        private class JsonEnumDataContractCriticalHelper : JsonDataContractCriticalHelper
+        private sealed class JsonEnumDataContractCriticalHelper : JsonDataContractCriticalHelper
         {
             private readonly bool _isULong;
 

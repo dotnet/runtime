@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdIPv4GlobalStatistics : IPGlobalStatistics
+    internal sealed class BsdIPv4GlobalStatistics : IPGlobalStatistics
     {
         private readonly long _outboundPackets;
         private readonly long _outputPacketsNoRoute;
@@ -91,7 +91,7 @@ namespace System.Net.NetworkInformation
 
         public override long PacketReassemblyFailures { get { return _cantFrags; } }
 
-        public override long PacketReassemblyTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); ; } }
+        public override long PacketReassemblyTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long PacketsFragmented { get { return _datagramsFragmented; } }
 

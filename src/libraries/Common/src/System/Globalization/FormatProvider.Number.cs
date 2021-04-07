@@ -281,10 +281,8 @@ namespace System.Globalization
         //
         // This class contains only static members and does not need to be serializable
 
-        private partial class Number
+        private static partial class Number
         {
-            private Number() { }
-
             // Constants used by number parsing
             private const int NumberMaxDigits = 32;
 

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdIpInterfaceProperties : UnixIPInterfaceProperties
+    internal sealed class BsdIpInterfaceProperties : UnixIPInterfaceProperties
     {
         private readonly BsdIPv4InterfaceProperties _ipv4Properties;
         private readonly BsdIPv6InterfaceProperties _ipv6Properties;

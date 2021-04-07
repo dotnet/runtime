@@ -13,7 +13,7 @@ namespace System.Threading.Tasks
     // the scheduler, and if it starts running we queue another one, etc., up to some (potentially) user-defined
     // limit.
     //
-    internal class TaskReplicator
+    internal sealed class TaskReplicator
     {
         public delegate void ReplicatableUserAction<TState>(ref TState replicaState, int timeout, out bool yieldedBeforeCompletion);
 
