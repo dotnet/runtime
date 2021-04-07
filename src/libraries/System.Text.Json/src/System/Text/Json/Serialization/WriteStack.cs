@@ -197,7 +197,7 @@ namespace System.Text.Json
                 {
                     // we have completed serialization of an AsyncEnumerator,
                     // pop from the stack and schedule for async disposal.
-                    PendingAsyncDisposables ??= new List<AsyncDisposable>();
+                    PendingAsyncDisposables ??= new List<IAsyncDisposable>();
                     PendingAsyncDisposables.Add(Current.AsyncEnumerator);
                 }
             }
