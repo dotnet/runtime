@@ -561,6 +561,7 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50870", TestPlatforms.Android)]
         public void ThrowExceptionWhenFindDTD()
         {
             var xml =
