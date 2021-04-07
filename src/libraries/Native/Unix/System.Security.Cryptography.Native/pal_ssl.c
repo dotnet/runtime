@@ -397,7 +397,7 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
-    return SSL_get_peer_certificate(ssl);
+    return SSL_get1_peer_certificate(ssl);
 }
 
 X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
