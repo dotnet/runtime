@@ -1,11 +1,13 @@
 <Project>
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(HELIX_CORRELATION_PAYLOAD)' != ''">
     <WasmBuildSupportDir Condition="'$(WasmBuildSupportDir)' == ''">$(HELIX_CORRELATION_PAYLOAD)\build\</WasmBuildSupportDir>
-
-    <_WasmTargetsDir Condition="'$(RuntimeSrcDir)' != ''">$(RuntimeSrcDir)\src\mono\wasm\build\</_WasmTargetsDir>
     <_WasmTargetsDir Condition="'$(WasmBuildSupportDir)' != ''">$(WasmBuildSupportDir)\wasm\</_WasmTargetsDir>
-    <EMSDK_PATH Condition="'$(WasmBuildSupportDir)' != ''">$(WasmBuildSupportDir)\emsdk\</EMSDK_PATH>
   </PropertyGroup>
+
+  <PropertyGroup >
+    <_WasmTargetsDir Condition="'$(_WasmTargetsDir)' == '' and '$(RuntimeSrcDir)' != ''">$(RuntimeSrcDir)\src\mono\wasm\build\</_WasmTargetsDir>
+  </PropertyGroup>
+
   <Import Project="$(_WasmTargetsDir)WasmApp.LocalBuild.props" Condition="Exists('$(_WasmTargetsDir)WasmApp.LocalBuild.props')" />
   <PropertyGroup>
     <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>

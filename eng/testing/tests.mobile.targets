@@ -15,15 +15,17 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <BuildWasmTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(Scenario)' == 'BuildWasmApps'">helix</BuildWasmTestsOn>
-    <BuildWasmTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(BuildWasmAOTTestsOnHelix)' == 'true'">helix</BuildWasmTestsOn>
+    <BuildWasmTestsOn Condition="'$(BuildWasmAOTTestsOnHelix)' == 'true'">helix</BuildWasmTestsOn>
     <BuildWasmTestsOn Condition="'$(BuildWasmTestsOn)' == ''">local</BuildWasmTestsOn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildWasmAOTTestsOnHelix)' == 'true'">
-    <RunScriptCommand>dotnet msbuild publish/aot-build.proj /p:WasmBuildSupportDir=$HELIX_CORRELATION_PAYLOAD/build /bl:$XHARNESS_OUT/AOTBuild.binlog</RunScriptCommand>
-    <RunScriptCommand Condition="'$(RunAOTCompilation)' != ''">$(RunScriptCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</RunScriptCommand>
+    <RunScriptCommand                                             >dotnet msbuild publish/aot-build.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</RunScriptCommand>
+    <RunScriptCommand Condition="'$(BuildWasmTestsOn)' == 'helix' and '$(ContinuousIntegrationBuild)' != 'true'">$(RunScriptCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(BuildWasmTestsOn)' == 'helix' and '$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) /p:WasmBuildSupportDir=$HELIX_CORRELATION_PAYLOAD/build</RunScriptCommand>
+    <RunScriptCommand                                          >$(RunScriptCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</RunScriptCommand>
 
-    <RunScriptCommand>$(RunScriptCommand) &amp;&amp; cd AppBundle &amp;&amp;</RunScriptCommand>
+    <RunScriptCommand>$(RunScriptCommand) &amp;&amp; cd wasm_build/AppBundle &amp;&amp;</RunScriptCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">

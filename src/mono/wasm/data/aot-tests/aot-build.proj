@@ -2,9 +2,10 @@
   <Import Project="Directory.Build.props" />
   <PropertyGroup>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
-    <TestRootDir>$(HELIX_WORKITEM_ROOT)\</TestRootDir>
-    <BundleDir>$(TestRootDir)AppBundle\</BundleDir>
-    <IntermediateOutputPath>$(HELIX_WORKITEM_ROOT)\obj</IntermediateOutputPath>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$(HELIX_WORKITEM_ROOT)\wasm_build\</TestRootDir>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\wasm_build\</TestRootDir>
+    <OriginalPublishDir>$(TestRootDir)..\publish\</OriginalPublishDir>
+    <IntermediateOutputPath>$(TestRootDir)\obj</IntermediateOutputPath>
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
     <WasmNativeBuild>false</WasmNativeBuild>
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
@@ -17,19 +18,18 @@
 
   <Target Name="PrepareForWasmBuildApp">
     <PropertyGroup>
-      <WasmAppDir>$(BundleDir)</WasmAppDir>
-      <WasmMainAssemblyFileName>$(TestRootDir)\publish\WasmTestRunner.dll</WasmMainAssemblyFileName>
-      <WasmMainJSPath>$(TestRootDir)\publish\runtime-test.js</WasmMainJSPath>
-      <WasmInvariantGlobalization>true</WasmInvariantGlobalization>
-      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+      <WasmAppDir>>$(TestRootDir)AppBundle\</WasmAppDir>
+      <WasmMainAssemblyFileName>$(OriginalPublishDir)WasmTestRunner.dll</WasmMainAssemblyFileName>
+      <WasmMainJSPath>$(OriginalPublishDir)runtime-test.js</WasmMainJSPath>
+      <WasmGenerateRunV8Script Condition="'$(WasmGenerateRunV8Script)' == ''">true</WasmGenerateRunV8Script>
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmSatelliteAssemblies Include="$(TestRootDir)\publish\*.resources.dll" />
+      <WasmSatelliteAssemblies Include="$(OriginalPublishDir)*.resources.dll" />
       <WasmSatelliteAssemblies>
         <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
       </WasmSatelliteAssemblies>
-      <WasmAssembliesToBundle Include="$(TestRootDir)\publish\*.dll"/>
+      <WasmAssembliesToBundle Include="$(OriginalPublishDir)*.dll"/>
 
       <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)"
              TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
