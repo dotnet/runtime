@@ -180,9 +180,8 @@
 #define IDS_VERSION                     491
 #define IDS_W_CREATEDMRES               492
 #define IDS_E_READINGMRES               493
-#define IDS_E_SUPPRESSED                494
-#define IDS_LEGALCOPYRIGHT              495
-#define IDS_E_INVALIDRECORD             496
+#define IDS_LEGALCOPYRIGHT              494
+#define IDS_E_INVALIDRECORD             495
 
 #define IDC_CHECK1                      1000
 #define IDC_CHECK2                      1001
