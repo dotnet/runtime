@@ -238,7 +238,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [InlineData(null, 1)]
         [InlineData("missingFormatter", 0)]
         [InlineData("missingFormatter", 1)]
-        public void Options_FormatterNameNull_UsesDeprecatedProperties(string formatterName, int formatNumber)
+        public void Options_FormatterNameNull_UsesDeprecatedProperties_UnlessDefaultsToJsonInContainer(string formatterName, int formatNumber)
         {
             // Arrange
             ConsoleLoggerFormat format = (ConsoleLoggerFormat)formatNumber;
@@ -260,7 +260,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     {
                         Assert.Equal(ConsoleFormatterNames.Json, logger.Formatter.Name);
                         var formatter = Assert.IsType<JsonConsoleFormatter>(logger.Formatter);
-                        Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
+                        Assert.Null(formatter.FormatterOptions.TimestampFormat);
                     }
                     else
                     {
@@ -1301,7 +1301,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49110 ", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
-        public void ConsoleLoggerOptions_IncludeScopes_IsReadFromLoggingConfiguration()
+        public void ConsoleLoggerOptions_IncludeScopes_IsReadFromLoggingConfiguration_UnlessDefaultsToJsonInContainer()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Console:IncludeScopes", "true") }).Build();
 
@@ -1316,18 +1316,16 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
             Assert.NotNull(logger.ScopeProvider);
 
-            ConsoleFormatterOptions formatterOptions;
             if (ContainerUtils.IsContainer)
             {
                 var formatter = Assert.IsType<JsonConsoleFormatter>(logger.Formatter);
-                formatterOptions = formatter.FormatterOptions;
+                Assert.False(formatter.FormatterOptions.IncludeScopes);
             }
             else
             {
                 var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
-                formatterOptions = formatter.FormatterOptions;
+                Assert.True(formatter.FormatterOptions.IncludeScopes);
             }
-            Assert.True(formatterOptions.IncludeScopes);
         }
 
         public static TheoryData<ConsoleLoggerFormat, LogLevel> FormatsAndLevels

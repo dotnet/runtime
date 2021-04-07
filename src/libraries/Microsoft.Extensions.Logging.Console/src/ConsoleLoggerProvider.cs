@@ -157,16 +157,7 @@ namespace Microsoft.Extensions.Logging.Console
         private void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)
         {
             // kept for deprecated apis:
-            if (ContainerUtils.IsContainer && formatter is JsonConsoleFormatter jsonFormatter)
-            {
-                jsonFormatter.FormatterOptions = new JsonConsoleFormatterOptions()
-                {
-                    IncludeScopes = deprecatedFromOptions.IncludeScopes,
-                    TimestampFormat = deprecatedFromOptions.TimestampFormat,
-                    UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp,
-                };
-            }
-            else if (formatter is SimpleConsoleFormatter defaultFormatter)
+            if (formatter is SimpleConsoleFormatter defaultFormatter)
             {
                 defaultFormatter.FormatterOptions = new SimpleConsoleFormatterOptions()
                 {

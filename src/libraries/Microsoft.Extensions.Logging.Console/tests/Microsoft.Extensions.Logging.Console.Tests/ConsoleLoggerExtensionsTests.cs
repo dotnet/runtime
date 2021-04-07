@@ -423,7 +423,7 @@ namespace Microsoft.Extensions.Logging.Test
             {
                 var formatter = Assert.IsType<JsonConsoleFormatter>(logger.Formatter);
 
-                Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);  // ignore FormatterOptions, using deprecated one
+                Assert.Equal("HH:mm ", formatter.FormatterOptions.TimestampFormat);  // ignore deprecated one, pick from FormarrerOptions
                 Assert.False(formatter.FormatterOptions.UseUtcTimestamp);               // not set anywhere, defaulted to false
                 Assert.False(formatter.FormatterOptions.IncludeScopes);                 // setup using lambda wins over config
             }
