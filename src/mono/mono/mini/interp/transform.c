@@ -8364,6 +8364,20 @@ retry:
 						dump_interp_inst (ins);
 					}
 				}
+			} else if (opcode == MINT_LDOBJ_VT) {
+				InterpInst *ldloca = local_defs [sregs [0]].ins;
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int local = ldloca->sregs [0];
+					// Replace LDLOCA + LDOBJ_VT with MOV_VT
+					ins->opcode = MINT_MOV_VT;
+					local_ref_count [sregs [0]]--;
+					sregs [0] = local;
+
+					if (td->verbose_level) {
+						g_print ("Replace ldloca/ldobj_vt pair :\n\t");
+						dump_interp_inst (ins);
+					}
+				}
 			} else if (MINT_IS_STFLD (opcode) && ins->data [0] == 0) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S &&
