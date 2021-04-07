@@ -177,7 +177,7 @@ namespace System.Net.Http.Functional.Tests.Socks
             buffer[0] = 90;
             await ns.WriteAsync(buffer).ConfigureAwait(false);
 
-            await ProcessConnect(clientSocket, ns, remoteHost, port).ConfigureAwait(false);
+            await RelayHttpTraffic(clientSocket, ns, remoteHost, port).ConfigureAwait(false);
         }
 
         private async Task ProcessSocks5Request(Socket clientSocket, NetworkStream ns)
@@ -227,7 +227,7 @@ namespace System.Net.Http.Functional.Tests.Socks
             {
                 case 1:
                     await ReadToFillAsync(ns, buffer.AsMemory(0, 4)).ConfigureAwait(false);
-                    remoteHost = $"{buffer[0]}.{buffer[1]}.{buffer[2]}.{buffer[3]}";
+                    remoteHost = new IPAddress(buffer.AsSpan(0, 4)).ToString();
                     break;
                 case 4:
                     await ReadToFillAsync(ns, buffer.AsMemory(0, 16)).ConfigureAwait(false);
@@ -250,16 +250,15 @@ namespace System.Net.Http.Functional.Tests.Socks
 
             await ns.WriteAsync(new byte[] { 5, 0, 0, 1, 0, 0, 0, 0, 0, 0 }).ConfigureAwait(false);
 
-            await ProcessConnect(clientSocket, ns, remoteHost, port).ConfigureAwait(false);
+            await RelayHttpTraffic(clientSocket, ns, remoteHost, port).ConfigureAwait(false);
         }
 
-        private async Task ProcessConnect(Socket clientSocket, NetworkStream clientStream, string remoteHost, int remotePort)
+        private async Task RelayHttpTraffic(Socket clientSocket, NetworkStream clientStream, string remoteHost, int remotePort)
         {
-
             // Open connection to destination server.
-            using Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            using var serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
             await serverSocket.ConnectAsync(remoteHost, remotePort).ConfigureAwait(false);
-            NetworkStream serverStream = new NetworkStream(serverSocket);
+            var serverStream = new NetworkStream(serverSocket);
 
             // Relay traffic to/from client and destination server.
             Task clientCopyTask = Task.Run(async () =>

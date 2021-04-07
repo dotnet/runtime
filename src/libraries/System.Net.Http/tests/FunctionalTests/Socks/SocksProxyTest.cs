@@ -14,16 +14,20 @@ namespace System.Net.Http.Functional.Tests.Socks
     {
         public SocksProxyTest(ITestOutputHelper helper) : base(helper) { }
 
+        private static string[] Hosts(string socksScheme) => socksScheme == "socks5"
+            ? new[] { "localhost", "127.0.0.1", "::1" }
+            : new[] { "localhost", "127.0.0.1" };
+
         public static IEnumerable<object[]> TestLoopbackAsync_MemberData() =>
             from scheme in new[] { "socks4", "socks4a", "socks5" }
             from useSsl in BoolValues
             from useAuth in BoolValues
-            from host in new[] { "localhost", IPAddress.Loopback.ToString() }
+            from host in Hosts(scheme)
             select new object[] { scheme, useSsl, useAuth, host };
 
         [Theory]
         [MemberData(nameof(TestLoopbackAsync_MemberData))]
-        public async Task TestLoopbackAsync(string schema, bool useSsl, bool useAuth, string host)
+        public async Task TestLoopbackAsync(string scheme, bool useSsl, bool useAuth, string host)
         {
             if (useSsl && UseVersion == HttpVersion.Version20 && !PlatformDetection.SupportsAlpn)
             {
@@ -39,7 +43,7 @@ namespace System.Net.Http.Functional.Tests.Socks
 
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-                    handler.Proxy = new WebProxy($"{schema}://localhost:{proxy.Port}");
+                    handler.Proxy = new WebProxy($"{scheme}://localhost:{proxy.Port}");
                     handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                     if (useAuth)
@@ -52,7 +56,11 @@ namespace System.Net.Http.Functional.Tests.Socks
                     Assert.Equal("Echo", await client.GetStringAsync(uri));
                 },
                 async server => await server.HandleRequestAsync(content: "Echo"),
-                options: new GenericLoopbackOptions { UseSsl = useSsl });
+                options: new GenericLoopbackOptions
+                {
+                    UseSsl = useSsl,
+                    Address = host == "::1" ? IPAddress.IPv6Loopback : IPAddress.Loopback
+                });
         }
     }
 
