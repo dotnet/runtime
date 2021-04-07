@@ -65,6 +65,9 @@
     <!-- https://github.com/dotnet/runtime/issues/50864 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp\tests\Microsoft.CSharp.Tests.csproj" />
 
+    <!-- https://github.com/dotnet/runtime/issues/50871 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
+
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
 
     <!-- Execution may be compromised -->
