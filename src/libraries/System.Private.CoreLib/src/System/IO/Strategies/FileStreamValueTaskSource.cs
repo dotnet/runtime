@@ -20,7 +20,6 @@ namespace System.IO.Strategies
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
 
             private readonly AsyncWindowsFileStreamStrategy _strategy;
-            private readonly int _numBufferedBytes;
 
             private ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
             private NativeOverlapped* _overlapped;
@@ -33,7 +32,6 @@ namespace System.IO.Strategies
             public static FileStreamValueTaskSource Create(
                 AsyncWindowsFileStreamStrategy strategy,
                 PreAllocatedOverlapped? preallocatedOverlapped,
-                int numBufferedBytes,
                 ReadOnlyMemory<byte> memory)
             {
                 // If the memory passed in is the strategy's internal buffer, we can use the base AwaitableProvider,
@@ -43,18 +41,16 @@ namespace System.IO.Strategies
                 return preallocatedOverlapped != null &&
                        MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer) &&
                        preallocatedOverlapped.IsUserObject(buffer.Array) ?
-                            new FileStreamValueTaskSource(strategy, preallocatedOverlapped, numBufferedBytes, buffer.Array) :
-                            new MemoryFileStreamValueTaskSource(strategy, numBufferedBytes, memory);
+                            new FileStreamValueTaskSource(strategy, preallocatedOverlapped, buffer.Array) :
+                            new MemoryFileStreamValueTaskSource(strategy, memory);
             }
 
             protected FileStreamValueTaskSource(
                 AsyncWindowsFileStreamStrategy strategy,
                 PreAllocatedOverlapped? preallocatedOverlapped,
-                int numBufferedBytes,
                 byte[]? bytes)
             {
                 _strategy = strategy;
-                _numBufferedBytes = numBufferedBytes;
 
                 _result = FileStreamHelpers.NoResult;
 
@@ -71,7 +67,6 @@ namespace System.IO.Strategies
             }
 
             internal NativeOverlapped* Overlapped => _overlapped;
-            internal int NumBufferedBytes => _numBufferedBytes;
             public ValueTaskSourceStatus GetStatus(short token) => _source.GetStatus(token);
             public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _source.OnCompleted(continuation, state, token, flags);
             void IValueTaskSource.GetResult(short token) => _source.GetResult(token);
@@ -203,7 +198,7 @@ namespace System.IO.Strategies
                 else
                 {
                     Debug.Assert(result == FileStreamHelpers.ResultSuccess, "Unknown result");
-                    _source.SetResult((int)(packedResult & uint.MaxValue) + _numBufferedBytes);
+                    _source.SetResult((int)(packedResult & uint.MaxValue));
                 }
             }
 
@@ -236,8 +231,8 @@ namespace System.IO.Strategies
             private MemoryHandle _handle; // mutable struct; do not make this readonly
 
             // this type handles the pinning, so bytes are null
-            internal unsafe MemoryFileStreamValueTaskSource(AsyncWindowsFileStreamStrategy strategy, int numBufferedBytes, ReadOnlyMemory<byte> memory)
-                : base(strategy, null, numBufferedBytes, null) // this type handles the pinning, so null is passed for bytes to the base
+            internal unsafe MemoryFileStreamValueTaskSource(AsyncWindowsFileStreamStrategy strategy, ReadOnlyMemory<byte> memory)
+                : base(strategy, null, null) // this type handles the pinning, so null is passed for bytes to the base
             {
                 _handle = memory.Pin();
             }
