@@ -31,6 +31,21 @@
        extends BaseScenario1
 {
 } // end of class DerivedScenario1
+.class public auto ansi BaseScenario2
+       extends [System.Runtime]System.Object
+{
+  .method public static string Method() cil managed noinlining
+  {
+    ldstr "BaseScenario2.Method"
+    ret
+  } // end of method Method
+} // end of class BaseScenario2
+.class public auto ansi DerivedScenario2
+       extends class BaseScenario2
+       implements class InterfaceScenario1
+{
+    .override method string class InterfaceScenario1::Method() with method string class BaseScenario2::Method()
+} // end of class DerivedScenario2
 .class public auto ansi TestEntrypoint
        extends [System.Runtime]System.Object
 {
@@ -53,11 +68,21 @@
     call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
     ret
   } // end of method Test_Scenario2
+  .method public static void Test_Scenario3() cil managed noinlining
+  {
+    ldstr "Test_Scenario3"
+    ldstr "BaseScenario2.Method"
+    constrained. class DerivedScenario2
+    call string class InterfaceScenario1::Method()
+    call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string,string)
+    ret
+  } // end of method Test_Scenario3
   .method public static int32 Main() cil managed noinlining
   {
     .entrypoint
     call void TestEntrypoint::Test_Scenario1()
     call void TestEntrypoint::Test_Scenario2()
+    call void TestEntrypoint::Test_Scenario3()
     call int32 [TypeHierarchyCommonCs]Statics::ReportResults()
     ret
   } // end of method Main

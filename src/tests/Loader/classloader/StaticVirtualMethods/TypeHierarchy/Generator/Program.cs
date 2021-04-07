@@ -77,6 +77,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                 foreach (string interfaceTypeGenericParams in new string[] { "", "<U>" })
                 {
                     List<string> possibleInterfaceReturnTypes = new List<string>();
+                    // TODO: void?
                     possibleInterfaceReturnTypes.Add("int32");
                     possibleInterfaceReturnTypes.Add("object");
                     if (interfaceTypeGenericParams == "<U>")
@@ -457,7 +458,7 @@ namespace VirtualStaticInterfaceMethodTestGen
                         break;
 
                     default:
-                        throw new Exception("Unkonwn interface approach");
+                        throw new Exception("Unknown interface approach");
                 }
                 EmitEndClass(twOutputTest, derivedType);
 
