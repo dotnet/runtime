@@ -639,14 +639,27 @@ interp_unlink_bblocks (InterpBasicBlock *from, InterpBasicBlock *to)
 	to->in_count--;
 }
 
-static void
+static gboolean
 interp_remove_bblock (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *prev_bb)
 {
+	gboolean needs_cprop = FALSE;
+
 	g_assert (!bb->in_count);
+	for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
+		if (ins->opcode == MINT_LDLOCA_S) {
+			td->locals [ins->sregs [0]].indirects--;
+			if (!td->locals [ins->sregs [0]].indirects) {
+				// We can do cprop now through this local. Run cprop again.
+				needs_cprop = TRUE;
+			}
+		}
+	}
 	while (bb->out_count)
 		interp_unlink_bblocks (bb, bb->out_bb [0]);
 	prev_bb->next_bb = bb->next_bb;
 	mark_bb_as_dead (td, bb);
+
+	return needs_cprop;
 }
 
 static void
@@ -7706,7 +7719,7 @@ interp_optimize_bblocks (TransformData *td)
 		if (next_bb->in_count == 0 && !next_bb->eh_block) {
 			if (td->verbose_level)
 				g_print ("Removed BB%d\n", next_bb->index);
-			interp_remove_bblock (td, next_bb, bb);
+			needs_cprop |= interp_remove_bblock (td, next_bb, bb);
 			continue;
 		} else if (bb->out_count == 1 && bb->out_bb [0] == next_bb && next_bb->in_count == 1 && !next_bb->eh_block) {
 			g_assert (next_bb->in_bb [0] == bb);
