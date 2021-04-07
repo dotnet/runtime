@@ -141,12 +141,12 @@ that includes the expensive AOT step.
 - Instead, we take the built test assembly+dependencies, and enough related bits to be able to run the `WasmBuildApp` target, with the original
 inputs.
 
-- To recreate a similar build+test run locally, add `/p:BuildWasmAOTTestsOnHelix=true` to the usual command line.
+- To recreate a similar build+test run locally, add `/p:BuildAOTTestsOnHelix=true` to the usual command line.
 - For example, with `./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release`
 
-    - AOT:  add `/p:EnableAggressiveTrimming=true /p:RunAOTCompilation=true /p:BuildWasmAOTTestsOnHelix=true`
+    - AOT:  add `/p:EnableAggressiveTrimming=true /p:RunAOTCompilation=true /p:BuildAOTTestsOnHelix=true`
     - Only trimming (helpful to isolate issues caused by trimming):
-        - add `/p:EnableAggressiveTrimming=true /p:BuildWasmAOTTestsOnHelix=true`
+        - add `/p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true`
 
 ## Kicking off outer loop tests from GitHub Interface
 

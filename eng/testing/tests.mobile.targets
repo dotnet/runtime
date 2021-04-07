@@ -14,19 +14,16 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <BuildWasmTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(Scenario)' == 'BuildWasmApps'">helix</BuildWasmTestsOn>
-    <BuildWasmTestsOn Condition="'$(BuildWasmAOTTestsOnHelix)' == 'true'">helix</BuildWasmTestsOn>
-    <BuildWasmTestsOn Condition="'$(BuildWasmTestsOn)' == ''">local</BuildWasmTestsOn>
+    <BuildAOTTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(Scenario)' == 'BuildWasmApps'">helix</BuildAOTTestsOn>
+    <BuildAOTTestsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">helix</BuildAOTTestsOn>
+    <BuildAOTTestsOn Condition="'$(BuildAOTTestsOn)' == ''">local</BuildAOTTestsOn>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildWasmAOTTestsOnHelix)' == 'true'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true'">
     <RunScriptCommand                                                      >dotnet msbuild publish/AOTTestProjectForHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</RunScriptCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(RunScriptCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</RunScriptCommand>
-
-    <!-- running aot-helix tests on helix! -->
-    <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) /p:WasmBuildSupportDir=$HELIX_CORRELATION_PAYLOAD/build</RunScriptCommand>
 
     <RunScriptCommand                                                      >$(RunScriptCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</RunScriptCommand>
     <RunScriptCommand                                                      >$(RunScriptCommand) &amp;&amp; cd wasm_build/AppBundle</RunScriptCommand>
@@ -270,23 +267,25 @@
 
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.props"
-          Condition="'$(TargetOS)' == 'Browser' and '$(BuildWasmTestsOn)' == 'local'" />
+          Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOn)' == 'local'" />
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets"
-          Condition="'$(TargetOS)' == 'Browser' and '$(BuildWasmTestsOn)' == 'local'" />
+          Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOn)' == 'local'" />
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
       <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
 
-      <BundleTestWasmAppDependsOn Condition="'$(BuildWasmTestsOn)' == 'local'">WasmBuildApp</BundleTestWasmAppDependsOn>
-      <BundleTestWasmAppDependsOn Condition="'$(BuildWasmTestsOn)' == 'helix'">StageEmSdkForHelix</BundleTestWasmAppDependsOn>
+      <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'local'">WasmBuildApp</BundleTestWasmAppDependsOn>
+      <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'helix'">StageEmSdkForHelix</BundleTestWasmAppDependsOn>
 
-      <BundleTestWasmAppDependsOn Condition="'$(BuildWasmAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
+      <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
   </PropertyGroup>
 
   <Target Name="BundleTestWasmApp" Condition="'$(TargetOS)' == 'Browser'" DependsOnTargets="$(BundleTestWasmAppDependsOn)" />
 
-  <UsingTask Condition="'$(BuildWasmAOTTestsOnHelix)' == 'true'" TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateAOTProps" AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
+  <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true' and '$(TargetOS)' == 'Browser'"
+             TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateAOTProps"
+             AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="PrepareForWasmBuildApp">
     <ItemGroup>
       <BundleFiles Include="$(WasmMainJSPath)"                  TargetDir="publish" />
