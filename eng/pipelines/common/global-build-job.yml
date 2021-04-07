@@ -114,6 +114,9 @@ jobs:
         displayName: Disk Usage before Build
 
     - ${{ if eq(parameters.nameSuffix, 'Browser_wasm_Windows') }}:
+      - script: $(Build.SourcesDirectory)\eng\common\install-v8-engine.cmd
+        displayName: Install v8 JavaScript engine
+
       # Update machine certs
       - task: PowerShell@2
         displayName: Update machine certs
@@ -140,6 +143,10 @@ jobs:
           df -h
         displayName: Disk Usage after Build
         condition: always()
+
+    - ${{ if eq(parameters.nameSuffix, 'Browser_wasm_Windows') }}:
+      - script: $(Build.SourcesDirectory)\dotnet.cmd build -p:Configuration=Release -t:RunTests -p:Library="System.Collections.Concurrent" -p:VSEngine="v8" $(Build.SourcesDirectory)\src\mono\wasm\wasm.proj
+        displayName: Smoke test
 
       # If intended to send extra steps after regular build add them here.
     - ${{ if ne(parameters.extraStepsTemplate, '') }}:
