@@ -113,7 +113,7 @@ public: // Functions operating on a registered global instance for tracker suppo
 class ObjCBridgeNative
 {
 public:
-    using BeginEndCallback = void(STDMETHODCALLTYPE *)(_In_ int);
+    using BeginEndCallback = void(STDMETHODCALLTYPE *)(void);
     using IsReferencedCallback = int(STDMETHODCALLTYPE *)(_In_ void*);
     using EnteredFinalizationCallback = void(STDMETHODCALLTYPE *)(_In_ void*);
 
@@ -157,8 +157,8 @@ public: // Exceptions
         _Outptr_ void** context);
 
 public: // GC interaction
-    static void OnFullGCStarted();
-    static void OnFullGCFinished();
+    static void BeforeRefCountedHandleCallbacks();
+    static void AfterRefCountedHandleCallbacks();
     static void OnEnteredFinalizerQueue(_In_ OBJECTREF object);
 };
 

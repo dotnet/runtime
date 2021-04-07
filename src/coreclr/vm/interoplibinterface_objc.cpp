@@ -21,14 +21,6 @@ namespace
     ObjCBridgeNative::BeginEndCallback g_BeginEndCallback;
     ObjCBridgeNative::IsReferencedCallback g_IsReferencedCallback;
     ObjCBridgeNative::EnteredFinalizationCallback g_TrackedObjectEnteredFinalizationCallback;
-
-    // Right now the begin/end values are defined to be
-    // positive for begin and negative for end. The actual
-    // value isn't important. Since CoreCLR is calling this
-    // during a gen2 that will be used but it isn't defined
-    // at this point. See documentation for further details.
-    const int BeginValue = 2;
-    const int EndValue = -BeginValue;
 }
 
 BOOL QCALLTYPE ObjCBridgeNative::TryInitializeReferenceTracker(
@@ -352,7 +344,7 @@ void* ObjCBridgeNative::GetPropagatingExceptionCallback(
     RETURN callback;
 }
 
-void ObjCBridgeNative::OnFullGCStarted()
+void ObjCBridgeNative::BeforeRefCountedHandleCallbacks()
 {
     CONTRACTL
     {
@@ -362,10 +354,10 @@ void ObjCBridgeNative::OnFullGCStarted()
     CONTRACTL_END;
 
     if (g_BeginEndCallback != NULL)
-        g_BeginEndCallback(BeginValue);
+        g_BeginEndCallback();
 }
 
-void ObjCBridgeNative::OnFullGCFinished()
+void ObjCBridgeNative::AfterRefCountedHandleCallbacks()
 {
     CONTRACTL
     {
@@ -375,7 +367,7 @@ void ObjCBridgeNative::OnFullGCFinished()
     CONTRACTL_END;
 
     if (g_BeginEndCallback != NULL)
-        g_BeginEndCallback(EndValue);
+        g_BeginEndCallback();
 }
 
 void ObjCBridgeNative::OnEnteredFinalizerQueue(_In_ OBJECTREF object)

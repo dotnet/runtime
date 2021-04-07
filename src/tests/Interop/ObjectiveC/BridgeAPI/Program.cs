@@ -15,7 +15,7 @@ namespace BridgeTests
     {
         [DllImport(nameof(NativeBridgeTests))]
         public static extern unsafe void GetBridgeExports(
-            out delegate* unmanaged<int, void> beginEndCallback,
+            out delegate* unmanaged<void> beginEndCallback,
             out delegate* unmanaged<IntPtr, int> isReferencedCallback,
             out delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
 
@@ -35,7 +35,7 @@ namespace BridgeTests
         {
             Console.WriteLine($"Running {nameof(Validate_ReferenceTrackingAPIs_InvalidArgs)}...");
 
-            delegate* unmanaged<int, void> beginEndCallback;
+            delegate* unmanaged<void> beginEndCallback;
             delegate* unmanaged<IntPtr, int> isReferencedCallback;
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization;
             NativeBridgeTests.GetBridgeExports(out beginEndCallback, out isReferencedCallback, out trackedObjectEnteredFinalization);
@@ -126,7 +126,7 @@ namespace BridgeTests
 
         static void InitializeReferenceTracking()
         {
-            delegate* unmanaged<int, void> beginEndCallback;
+            delegate* unmanaged<void> beginEndCallback;
             delegate* unmanaged<IntPtr, int> isReferencedCallback;
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization;
             NativeBridgeTests.GetBridgeExports(out beginEndCallback, out isReferencedCallback, out trackedObjectEnteredFinalization);

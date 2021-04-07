@@ -1814,7 +1814,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
     public static class Bridge
     {
         public static unsafe void InitializeReferenceTracking(
-            delegate* unmanaged<int, void> beginEndCallback,
+            delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<System.IntPtr, int> isReferencedCallback,
             delegate* unmanaged<System.IntPtr, void> trackedObjectEnteredFinalization) { }
         public static GCHandle CreateReferenceTrackingHandle(

@@ -301,6 +301,9 @@ void GCToEEInterface::RefCountedHandleCallbacksBefore()
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_OBJCBRIDGE
+    ObjCBridgeNative::BeforeRefCountedHandleCallbacks();
+#endif // FEATURE_OBJCBRIDGE
 }
 
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
@@ -344,6 +347,10 @@ void GCToEEInterface::RefCountedHandleCallbacksAfter()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+
+#ifdef FEATURE_OBJCBRIDGE
+    ObjCBridgeNative::AfterRefCountedHandleCallbacks();
+#endif // FEATURE_OBJCBRIDGE
 
 }
 

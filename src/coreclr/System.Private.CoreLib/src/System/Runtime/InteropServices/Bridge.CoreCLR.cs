@@ -30,7 +30,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
 
         [DllImport(RuntimeHelpers.QCall)]
         private static unsafe extern bool TryInitializeReferenceTracker(
-            delegate* unmanaged<int, void> beginEndCallback,
+            delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
 

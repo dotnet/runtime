@@ -3,52 +3,29 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cassert>
+#include <atomic>
 #include <exception>
 #include <platformdefines.h>
 
-using BeginEndCallback = void(STDMETHODCALLTYPE *)(int);
+using BeginEndCallback = void(STDMETHODCALLTYPE *)(void);
 using IsReferencedCallback = int(STDMETHODCALLTYPE *)(void*);
 using EnteredFinalizationCallback = void(STDMETHODCALLTYPE *)(void*);
 
-// #define REF_TRACKER_DEBUG_CALLBACKS
+//#define REF_TRACKER_DEBUG_CALLBACKS
 
 namespace
 {
-    [[noreturn]] void fatal_state_error(int last, int state, const char* msg)
-    {
-        std::printf("Invalid state:%d -> %d\n%s\n", last, state, msg);
-        std::abort();
-    }
+    std::atomic_bool state = { false };
 
-    const int UnknownBeginState = 0;
-    int lastBeginState = UnknownBeginState;
-
-    void STDMETHODCALLTYPE BeginEndCb(int state)
+    void STDMETHODCALLTYPE BeginEndCb()
     {
 #ifdef REF_TRACKER_DEBUG_CALLBACKS
-        ::printf("BeginEndCb: %d\n", state);
+        ::printf("BeginEndCb: %s -> %s\n",
+            state ? "true" : "false",
+            !state ? "true" : "false");
 #endif // REF_TRACKER_DEBUG_CALLBACKS
 
-        if (state == 0)
-        {
-            fatal_state_error(lastBeginState, state, "Invalid begin/end state");
-        }
-        else if (state > 0)
-        {
-            // Begin
-            if (lastBeginState != UnknownBeginState)
-                fatal_state_error(lastBeginState, state, "Invalid begin state");
-
-            lastBeginState = state;
-        }
-        else
-        {
-            // End
-            if (std::abs(state) != lastBeginState)
-                fatal_state_error(lastBeginState, state, "Invalid end state");
-
-            lastBeginState = UnknownBeginState;
-        }
+        state = !state;
     }
 
     // See contract in managed portion of test.
@@ -63,6 +40,13 @@ namespace
 #ifdef REF_TRACKER_DEBUG_CALLBACKS
         ::printf("IsRefCb: %p\n", mem);
 #endif // REF_TRACKER_DEBUG_CALLBACKS
+
+        if (!state)
+        {
+            ::printf("Invalid callback state!\n");
+            ::abort();
+        }
+
 
         assert(mem != nullptr);
         auto cxt = (ScratchContract*)mem;
