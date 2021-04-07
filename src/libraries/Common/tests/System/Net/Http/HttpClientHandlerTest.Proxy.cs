@@ -342,6 +342,8 @@ namespace System.Net.Http.Functional.Tests
                     var options = new LoopbackServer.Options { UseSsl = true };
                     await LoopbackServer.CreateServerAsync(async (server, uri) =>
                     {
+                        Assert.Equal(proxyServer.Uri, handler.Proxy.GetProxy(uri));
+                        
                         Task<HttpResponseMessage> clientTask = client.GetAsync(uri);
                         await server.AcceptConnectionSendResponseAndCloseAsync(content: Content);
                         using (var response = await clientTask)
@@ -379,6 +381,9 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await LoopbackServer.CreateServerAsync(async (server2, uri2) =>
                         {
+                            Assert.Equal(proxyServer.Uri, handler.Proxy.GetProxy(uri1));
+                            Assert.Equal(proxyServer.Uri, handler.Proxy.GetProxy(uri2));
+
                             Task<HttpResponseMessage> clientTask1 = client.GetAsync(uri1);
                             Task<HttpResponseMessage> clientTask2 = client.GetAsync(uri2);
                             await server1.AcceptConnectionAsync(async connection1 =>
@@ -428,6 +433,8 @@ namespace System.Net.Http.Functional.Tests
                     var options = new LoopbackServer.Options { UseSsl = true };
                     await LoopbackServer.CreateServerAsync(async (server, uri) =>
                     {
+                        Assert.Equal(proxyServer.Uri, handler.Proxy.GetProxy(uri));
+
                         Task<HttpResponseMessage> clientTask = client.GetAsync(uri);
                         await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.ProxyAuthenticationRequired, additionalHeaders: "Proxy-Authenticate: Basic");
                         using (var response = await clientTask)
