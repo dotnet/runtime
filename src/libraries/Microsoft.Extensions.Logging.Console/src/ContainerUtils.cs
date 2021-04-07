@@ -11,13 +11,12 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal static class ContainerUtils
     {
-        private static Lazy<bool> _isContainer = new Lazy<bool>(IsProcessRunningInContainer);
         private const string RunningInContainerVariableName = "DOTNET_RUNNING_IN_CONTAINER";
         private const string DeprecatedRunningInContainerVariableName = "DOTNET_RUNNING_IN_CONTAINERS";
 
-        public static bool IsContainer => _isContainer.Value;
+        public static bool IsContainer { get; } = IsProcessRunningInContainer();
 
-        private static bool IsProcessRunningInContainer()
+        public static bool IsProcessRunningInContainer()
         {
             // Official .NET Core images (Windows and Linux) set this. So trust it if it's there.
             // We check both DOTNET_RUNNING_IN_CONTAINER (the current name) and DOTNET_RUNNING_IN_CONTAINERS (a deprecated name used in some images).
