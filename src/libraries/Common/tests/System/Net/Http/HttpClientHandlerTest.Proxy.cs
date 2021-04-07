@@ -325,6 +325,11 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ProxyTunnelRequest_GetAsync_Success()
         {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
             const string Content = "Hello world";
 
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
@@ -354,6 +359,11 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ProxyTunnelRequest_MaxConnectionsSetButDoesNotApplyToProxyConnect_Success()
         {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
             const string Content = "Hello world";
 
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
@@ -403,6 +413,11 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ProxyTunnelRequest_OriginServerSendsProxyAuthChallenge_NoProxyAuthPerformed()
         {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
