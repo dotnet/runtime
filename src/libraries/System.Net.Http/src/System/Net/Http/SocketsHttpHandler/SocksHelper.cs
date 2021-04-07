@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -167,7 +168,7 @@ namespace System.Net.Http
 
                 if (IPAddress.TryParse(host, out var hostIP))
                 {
-                    if (hostIP.AddressFamily == Sockets.AddressFamily.InterNetwork)
+                    if (hostIP.AddressFamily == AddressFamily.InterNetwork)
                     {
                         buffer[3] = ATYP_IPV4;
                         hostIP.TryWriteBytes(buffer.AsSpan(4), out int bytesWritten);
@@ -176,7 +177,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        Debug.Assert(hostIP.AddressFamily == Sockets.AddressFamily.InterNetworkV6);
+                        Debug.Assert(hostIP.AddressFamily == AddressFamily.InterNetworkV6);
                         buffer[3] = ATYP_IPV6;
                         hostIP.TryWriteBytes(buffer.AsSpan(4), out int bytesWritten);
                         Debug.Assert(bytesWritten == 16);
@@ -245,7 +246,7 @@ namespace System.Net.Http
                 IPAddress? ipv4Address = null;
                 if (IPAddress.TryParse(host, out var hostIP))
                 {
-                    if (hostIP.AddressFamily == Sockets.AddressFamily.InterNetwork)
+                    if (hostIP.AddressFamily == AddressFamily.InterNetwork)
                     {
                         ipv4Address = hostIP;
                     }
@@ -262,8 +263,8 @@ namespace System.Net.Http
                 {
                     // SOCKS4 requires DNS resolution locally
                     var addresses = async
-                        ? await Dns.GetHostAddressesAsync(host, Sockets.AddressFamily.InterNetwork, cancellationToken).ConfigureAwait(false)
-                        : Dns.GetHostAddresses(host);
+                        ? await Dns.GetHostAddressesAsync(host, AddressFamily.InterNetwork, cancellationToken).ConfigureAwait(false)
+                        : Dns.GetHostAddresses(host, AddressFamily.InterNetwork);
 
                     if (addresses.Length == 0)
                     {
