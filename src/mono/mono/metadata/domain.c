@@ -67,7 +67,6 @@
 		mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
 } while (FALSE)
 
-static MonoDomain **appdomains_list;
 static MonoImage *exe_image;
 static MonoDomain *mono_root_domain;
 
@@ -107,25 +106,6 @@ get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image);
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
 
-//g_malloc on sgen and mono_gc_alloc_fixed on boehm
-static void*
-gc_alloc_fixed_non_heap_list (size_t size)
-{
-	if (mono_gc_is_moving ())
-		return g_malloc0 (size);
-	else
-		return mono_gc_alloc_fixed (size, MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_DOMAIN, NULL, "Domain List");
-}
-
-static void
-gc_free_fixed_non_heap_list (void *ptr)
-{
-	if (mono_gc_is_moving ())
-		g_free (ptr);
-	else
-		mono_gc_free_fixed (ptr);
-}
-
 static MonoDomain *
 create_root_domain (void)
 {
@@ -147,10 +127,6 @@ create_root_domain (void)
 		domain = (MonoDomain *)mono_gc_alloc_fixed (sizeof (MonoDomain), domain_gc_desc, MONO_ROOT_SOURCE_DOMAIN, NULL, "Domain Structure");
 
 	MONO_PROFILER_RAISE (domain_loading, (domain));
-
-	// FIXME: why is this needed ?
-	appdomains_list = (MonoDomain **)gc_alloc_fixed_non_heap_list (sizeof (void*));
-	appdomains_list [0] = domain;
 
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_inc_i32 (&mono_perfcounters->loader_appdomains);
