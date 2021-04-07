@@ -26,8 +26,18 @@ namespace System.Net.Http.Functional.Tests.Socks
 
         public int Port { get; }
 
-        private LoopbackSocksServer()
+        private string? _username, _password;
+
+        private LoopbackSocksServer(string? username = null, string? password = null)
         {
+            if (password != null && username == null)
+            {
+                throw new ArgumentException("Password must be used together with username.", nameof(password));
+            }
+
+            _username = username;
+            _password = password;
+
             _listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
             _listener.Listen(int.MaxValue);
@@ -123,6 +133,8 @@ namespace System.Net.Http.Functional.Tests.Socks
             // formats ip into string to ensure we get the correct order
             string remoteHost = $"{buffer[3]}.{buffer[4]}.{buffer[5]}.{buffer[6]}";
 
+            byte[] usernameBuffer = new byte[1024];
+            int usernameBytes = 0;
             while (true)
             {
                 int usernameByte = await ns.ReadByteAsync().ConfigureAwait(false);
@@ -130,6 +142,16 @@ namespace System.Net.Http.Functional.Tests.Socks
                     break;
                 if (usernameByte == -1)
                     throw new Exception("Early EOF");
+                usernameBuffer[usernameBytes++] = (byte)usernameByte;
+            }
+
+            if (_username != null)
+            {
+                string username = Encoding.UTF8.GetString(usernameBuffer.AsSpan(0, usernameBytes));
+                if (username != _username)
+                {
+                    throw new Exception("Bad username.");
+                }
             }
 
             if (remoteHost.StartsWith("0.0.0") && remoteHost != "0.0.0.0")
@@ -167,13 +189,34 @@ namespace System.Net.Http.Functional.Tests.Socks
             byte[] buffer = new byte[1024];
             await ReadToFillAsync(ns, buffer.AsMemory(0, nMethods)).ConfigureAwait(false);
 
-            if (!buffer.AsSpan(0, nMethods).Contains((byte)0))
+            byte expectedAuthMethod = _username == null ? (byte)0 : (byte)2;
+            if (!buffer.AsSpan(0, nMethods).Contains(expectedAuthMethod))
             {
                 await ns.WriteAsync(new byte[] { 5, 0xFF }).ConfigureAwait(false);
                 return;
             }
 
-            await ns.WriteAsync(new byte[] { 5, 0 }).ConfigureAwait(false);
+            await ns.WriteAsync(new byte[] { 5, expectedAuthMethod }).ConfigureAwait(false);
+
+            if (_username != null)
+            {
+                await ReadToFillAsync(ns, buffer.AsMemory(0, 2)).ConfigureAwait(false);
+                if (buffer[0] != 5)
+                    throw new Exception("Bad protocol version.");
+
+                int uLen = buffer[1];
+                await ReadToFillAsync(ns, buffer.AsMemory(0, uLen)).ConfigureAwait(false);
+                if (Encoding.UTF8.GetString(buffer.AsSpan(0, uLen)) != _username)
+                    throw new Exception("Bad username.");
+
+                await ReadToFillAsync(ns, buffer.AsMemory(0, 1)).ConfigureAwait(false);
+                int pLen = buffer[1];
+                await ReadToFillAsync(ns, buffer.AsMemory(0, pLen)).ConfigureAwait(false);
+                if (_password != null && Encoding.UTF8.GetString(buffer.AsSpan(0, pLen)) != _password)
+                    throw new Exception("Bad password.");
+
+                await ns.WriteAsync(new byte[] { 5, 0 }).ConfigureAwait(false);
+            }
 
             await ReadToFillAsync(ns, buffer.AsMemory(0, 4)).ConfigureAwait(false);
             if (buffer[0] != 5)
@@ -297,7 +340,7 @@ namespace System.Net.Http.Functional.Tests.Socks
             }
         }
 
-        public static LoopbackSocksServer Create()
+        public static LoopbackSocksServer Create(string? username = null, string? password = null)
         {
             var server = new LoopbackSocksServer();
             server.Start();

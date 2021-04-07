@@ -10,26 +10,47 @@ namespace System.Net.Http.Functional.Tests.Socks
 {
     public abstract class SocksProxyTest : HttpClientHandlerTestBase
     {
+        private class Credentials : ICredentials
+        {
+            private readonly string _username, _password;
+
+            public Credentials(string username, string password)
+            {
+                _username = username;
+                _password = password;
+            }
+
+            public NetworkCredential? GetCredential(Uri uri, string authType)
+                => new NetworkCredential(_username, _password);
+        }
+
         public SocksProxyTest(ITestOutputHelper helper) : base(helper) { }
 
         [Theory]
-        [InlineData("socks4", true)]
-        [InlineData("socks4", false)]
-        [InlineData("socks4a", true)]
-        [InlineData("socks4a", false)]
-        [InlineData("socks5", true)]
-        [InlineData("socks5", false)]
-        public async Task TestLoopbackAsync(string schema, bool useSsl)
+        [InlineData("socks4", true, false)]
+        [InlineData("socks4", false, false)]
+        [InlineData("socks4", false, true)]
+        [InlineData("socks4a", true, false)]
+        [InlineData("socks4a", false, false)]
+        [InlineData("socks5", true, false)]
+        [InlineData("socks5", false, false)]
+        [InlineData("socks5", false, true)]
+        public async Task TestLoopbackAsync(string schema, bool useSsl, bool useAuth)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async url =>
                 {
-                    using LoopbackSocksServer proxy = LoopbackSocksServer.Create();
+                    using LoopbackSocksServer proxy = useAuth ? LoopbackSocksServer.Create("DOTNET", "424242") : LoopbackSocksServer.Create();
                     using HttpClientHandler handler = CreateHttpClientHandler();
                     using HttpClient client = CreateHttpClient(handler);
 
                     handler.Proxy = new WebProxy($"{schema}://localhost:{proxy.Port}");
                     handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+                    if (useAuth)
+                    {
+                        handler.Proxy.Credentials = new Credentials("DOTNET", "424242");
+                    }
 
                     var request = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
 
