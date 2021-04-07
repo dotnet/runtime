@@ -173,7 +173,7 @@ namespace System.Net.Quic.Tests
             GatheredSequence
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
+        // will induce failure (byte mixing) in QuicStreamTests_MsQuicProvider.LargeDataSentAndReceived if run in parallel with it
         [Fact]
         public async Task CallDifferentWriteMethodsWorks()
         {
@@ -221,7 +221,7 @@ namespace System.Net.Quic.Tests
                 });
         }
 
-        public static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
+        private static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
         {
             List<byte[]> segments = new List<byte[]>
             {

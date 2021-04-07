@@ -259,7 +259,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_state.ReadState == ReadState.ReadsCompleted)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"[{_state.GetHashCode()}] all reads completed");
                     return 0;
                 }
                 else if (_state.ReadState == ReadState.Aborted)
@@ -322,9 +321,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (_state.ReadState == ReadState.IndividualReadComplete)
                 {
                     _state.ReceiveQuicBuffers.Clear();
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"[{_state.GetHashCode()}] will inform {actual} bytes consumed");
                     ReceiveComplete(actual);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"[{_state.GetHashCode()}] will enable next receive");
                     EnableReceive();
                     _state.ReadState = ReadState.None;
                 }
@@ -500,7 +497,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEvent(State state, ref StreamEvent evt)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[{state.GetHashCode()}] received event {evt.Type}");
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(state, $"[{state.GetHashCode()}] received event {evt.Type}");
+            }
 
             try
             {
@@ -564,7 +564,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldComplete)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[{state.GetHashCode()}] {receiveEvent.TotalBufferLength} bytes available to read");
                 state.ReceiveResettableCompletionSource.Complete((uint)receiveEvent.TotalBufferLength);
             }
 
@@ -658,7 +657,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldReadComplete)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[{state.GetHashCode()}] no more data available to read");
                 state.ReceiveResettableCompletionSource.Complete(0);
             }
 

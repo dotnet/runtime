@@ -109,7 +109,7 @@ namespace System.Net.Quic.Tests
                 Console.Write("Actual:   ");
                 PrintAroundIndex(actual, i);
 
-                Assert.False(true);
+                Assert.Equal(expected[i], actual[i]);
             }
         }
 
