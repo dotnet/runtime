@@ -8276,6 +8276,9 @@ private:
         CORINFO_CLASS_HANDLE SIMDLongHandle;
         CORINFO_CLASS_HANDLE SIMDUIntHandle;
         CORINFO_CLASS_HANDLE SIMDULongHandle;
+        CORINFO_CLASS_HANDLE SIMDNIntHandle;
+        CORINFO_CLASS_HANDLE SIMDNUIntHandle;
+
         CORINFO_CLASS_HANDLE SIMDVector2Handle;
         CORINFO_CLASS_HANDLE SIMDVector3Handle;
         CORINFO_CLASS_HANDLE SIMDVector4Handle;
@@ -8383,6 +8386,10 @@ private:
                 return m_simdHandleCache->SIMDUIntHandle;
             case CORINFO_TYPE_ULONG:
                 return m_simdHandleCache->SIMDULongHandle;
+            case CORINFO_TYPE_NATIVEINT:
+                return m_simdHandleCache->SIMDNIntHandle;
+            case CORINFO_TYPE_NATIVEUINT:
+                return m_simdHandleCache->SIMDNUIntHandle;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }

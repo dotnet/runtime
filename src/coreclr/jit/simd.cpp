@@ -248,6 +248,18 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
             size            = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<ulong>\n");
         }
+        else if (typeHnd == m_simdHandleCache->SIMDNIntHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_NATIVEINT;
+            size            = getSIMDVectorRegisterByteLength();
+            JITDUMP("  Known type SIMD Vector<nint>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->SIMDNUIntHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_NATIVEUINT;
+            size            = getSIMDVectorRegisterByteLength();
+            JITDUMP("  Known type SIMD Vector<nuint>\n");
+        }
 
         // slow path search
         if (simdBaseJitType == CORINFO_TYPE_UNDEF)
@@ -328,6 +340,18 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                         m_simdHandleCache->SIMDULongHandle = typeHnd;
                         simdBaseJitType                    = CORINFO_TYPE_ULONG;
                         JITDUMP("  Found type SIMD Vector<ulong>\n");
+                    }
+                    else if (wcsncmp(&(className[25]), W("System.IntPtr"), 13) == 0)
+                    {
+                        m_simdHandleCache->SIMDNIntHandle = typeHnd;
+                        simdBaseJitType                   = CORINFO_TYPE_NATIVEINT;
+                        JITDUMP("  Found type SIMD Vector<nint>\n");
+                    }
+                    else if (wcsncmp(&(className[25]), W("System.UIntPtr"), 14) == 0)
+                    {
+                        m_simdHandleCache->SIMDNUIntHandle = typeHnd;
+                        simdBaseJitType                    = CORINFO_TYPE_NATIVEUINT;
+                        JITDUMP("  Found type SIMD Vector<nuint>\n");
                     }
                     else
                     {

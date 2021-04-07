@@ -17478,6 +17478,12 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, CorInfoType simdBaseJitType
             case CORINFO_TYPE_ULONG:
                 found = (simdHandle == m_simdHandleCache->SIMDULongHandle);
                 break;
+            case CORINFO_TYPE_NATIVEINT:
+                found = (simdHandle == m_simdHandleCache->SIMDNIntHandle);
+                break;
+            case CORINFO_TYPE_NATIVEUINT:
+                found = (simdHandle == m_simdHandleCache->SIMDNUIntHandle);
+                break;
             default:
                 break;
         }
