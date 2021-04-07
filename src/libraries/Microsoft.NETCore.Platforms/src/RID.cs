@@ -51,7 +51,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         {
             Base = 0,
             Version,
-            Architcture,
+            Architecture,
             Qualifier,
             Max = Qualifier
         }
@@ -91,13 +91,13 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
                         else if (current == ArchitectureDelimiter)
                         {
                             // ensure there's no version later in the string
-                            if (-1 != runtimeIdentifier.IndexOf(VersionDelimiter, i))
+                            if (runtimeIdentifier.IndexOf(VersionDelimiter, i) != -1)
                             {
                                 break;
                             }
                             SetPart();
                             partStart = i + 1;  // skip delimiter
-                            parseState = RIDPart.Architcture;
+                            parseState = RIDPart.Architecture;
                         }
                         break;
                     case RIDPart.Version:
@@ -105,10 +105,10 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
                         {
                             SetPart();
                             partStart = i + 1;  // skip delimiter
-                            parseState = RIDPart.Architcture;
+                            parseState = RIDPart.Architecture;
                         }
                         break;
-                    case RIDPart.Architcture:
+                    case RIDPart.Architecture:
                         if (current == QualifierDelimiter)
                         {
                             SetPart();
@@ -136,7 +136,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             {
                 if (partLength == 0)
                 {
-                    throw new ArgumentException($"unexpected delimiter at position {partStart} in {runtimeIdentifier}");
+                    throw new ArgumentException($"Unexpected delimiter at position {partStart} in \"{runtimeIdentifier}\"");
                 }
 
                 parts[(int)parseState] = runtimeIdentifier.Substring(partStart, partLength);
@@ -154,7 +154,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
                 BaseRID = GetPart(RIDPart.Base),
                 OmitVersionDelimiter = omitVersionDelimiter,
                 Version = version == null ? null : new RuntimeVersion(version),
-                Architecture = GetPart(RIDPart.Architcture),
+                Architecture = GetPart(RIDPart.Architecture),
                 Qualifier = GetPart(RIDPart.Qualifier)
             };
         }
@@ -173,7 +173,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         public bool Equals(RID obj)
         {
             return object.ReferenceEquals(obj, this) ||
-                (!(obj is null) &&
+                (obj is not null &&
                 BaseRID == obj.BaseRID &&
                 (Version == null || OmitVersionDelimiter == obj.OmitVersionDelimiter) &&
                 Version == obj.Version &&
