@@ -547,7 +547,8 @@ namespace System
                 typeof(T) != typeof(short) && typeof(T) != typeof(ushort) &&
                 typeof(T) != typeof(int) && typeof(T) != typeof(uint) &&
                 typeof(T) != typeof(long) && typeof(T) != typeof(ulong) &&
-                typeof(T) != typeof(float) && typeof(T) != typeof(double))
+                typeof(T) != typeof(float) && typeof(T) != typeof(double) &&
+                typeof(T) != typeof(nint) && typeof(T) != typeof(nuint))
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }

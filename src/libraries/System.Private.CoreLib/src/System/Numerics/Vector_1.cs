@@ -638,6 +638,27 @@ namespace System.Numerics
             return Unsafe.As<Vector<T>, Vector<double>>(ref value);
         }
 
+        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
+        /// <param name="value">The source vector</param>
+        /// <returns>The reinterpreted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static explicit operator Vector<nuint>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return Unsafe.As<Vector<T>, Vector<nuint>>(ref value);
+        }
+
+        /// <summary>Reinterprets the bits of the given vector into those of another type.</summary>
+        /// <param name="value">The source vector</param>
+        /// <returns>The reinterpreted vector.</returns>
+        [Intrinsic]
+        public static explicit operator Vector<nint>(Vector<T> value)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return Unsafe.As<Vector<T>, Vector<nint>>(ref value);
+        }
+
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector<T> Equals(Vector<T> left, Vector<T> right)
@@ -740,6 +761,10 @@ namespace System.Numerics
                 return value;
             }
             else if (typeof(T) == typeof(ulong))
+            {
+                return value;
+            }
+            else if (typeof(T) == typeof(nuint))
             {
                 return value;
             }
@@ -879,6 +904,14 @@ namespace System.Numerics
             {
                 return (double)(object)left == (double)(object)right;
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (nuint)(object)left == (nuint)(object)right;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (nint)(object)left == (nint)(object)right;
+            }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
@@ -927,6 +960,14 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (double)(object)left < (double)(object)right;
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (nuint)(object)left < (nuint)(object)right;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (nint)(object)left < (nint)(object)right;
             }
             else
             {
@@ -977,6 +1018,14 @@ namespace System.Numerics
             {
                 return (double)(object)left <= (double)(object)right;
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (nuint)(object)left <= (nuint)(object)right;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (nint)(object)left <= (nint)(object)right;
+            }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
@@ -1025,6 +1074,14 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (double)(object)left > (double)(object)right;
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (nuint)(object)left > (nuint)(object)right;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (nint)(object)left > (nint)(object)right;
             }
             else
             {
@@ -1075,6 +1132,14 @@ namespace System.Numerics
             {
                 return (double)(object)left >= (double)(object)right;
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (nuint)(object)left >= (nuint)(object)right;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (nint)(object)left >= (nint)(object)right;
+            }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
@@ -1123,6 +1188,14 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)(double)((double)(object)left + (double)(object)right);
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)((nuint)(object)left + (nuint)(object)right);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)((nint)(object)left + (nint)(object)right);
             }
             else
             {
@@ -1173,6 +1246,14 @@ namespace System.Numerics
             {
                 return (T)(object)(double)((double)(object)left - (double)(object)right);
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)((nuint)(object)left - (nuint)(object)right);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)((nint)(object)left - (nint)(object)right);
+            }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
@@ -1221,6 +1302,14 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)(double)((double)(object)left * (double)(object)right);
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)((nuint)(object)left * (nuint)(object)right);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)((nint)(object)left * (nint)(object)right);
             }
             else
             {
@@ -1271,6 +1360,14 @@ namespace System.Numerics
             {
                 return (T)(object)(double)((double)(object)left / (double)(object)right);
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)((nuint)(object)left / (nuint)(object)right);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)((nint)(object)left / (nint)(object)right);
+            }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
@@ -1319,6 +1416,14 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)(double)1;
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)1;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)1;
             }
             else
             {
@@ -1369,6 +1474,14 @@ namespace System.Numerics
             {
                 return (T)(object)BitConverter.Int64BitsToDouble(-1);
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)nuint.MaxValue;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)(-1);
+            }
             else
             {
                 throw new NotSupportedException(SR.Arg_TypeNotSupported);
@@ -1403,6 +1516,10 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)Math.Abs((double)(object)value);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)Math.Abs((nint)(object)value);
             }
             else
             {
@@ -1452,6 +1569,14 @@ namespace System.Numerics
             else if (typeof(T) == typeof(double))
             {
                 return (T)(object)(double)Math.Sqrt((double)(object)value);
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)Math.Sqrt((nuint)(object)value);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)Math.Sqrt((nint)(object)value);
             }
             else
             {
