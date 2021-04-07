@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "workloads": {
+      "microsoft-net-runtime-monoaotcompiler-workload": {
+        "description": "The MonoAOTCompiler MSBuild task workload",
+        "packs": [
+          "Microsoft.NET.Runtime.MonoAOTCompiler.Task"
+        ]
+      }
+    },
+    "packs": {
+      "Microsoft.NET.Runtime.MonoAOTCompiler.Task": {
+        "kind": "Sdk",
+        "version": "6.0.0-preview.4.21205.3"
+      }
+    }
+  }
+  
