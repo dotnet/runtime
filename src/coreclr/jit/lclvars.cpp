@@ -467,13 +467,13 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
 #ifdef FEATURE_SIMD
             if (supportSIMDTypes())
             {
-                var_types simdBaseType = TYP_UNKNOWN;
-                var_types type         = impNormStructType(info.compClassHnd, &simdBaseType);
-                if (simdBaseType != TYP_UNKNOWN)
+                CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+                var_types   type            = impNormStructType(info.compClassHnd, &simdBaseJitType);
+                if (simdBaseJitType != CORINFO_TYPE_UNDEF)
                 {
                     assert(varTypeIsSIMD(type));
-                    varDsc->lvSIMDType  = true;
-                    varDsc->SetSimdBaseType(simdBaseType);
+                    varDsc->lvSIMDType = true;
+                    varDsc->SetSimdBaseJitType(simdBaseJitType);
                     varDsc->lvExactSize = genTypeSize(type);
                 }
             }
@@ -579,8 +579,9 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         {
             varDsc->lvSIMDType = true;
 
-            var_types simdBaseType = getBaseTypeAndSizeOfSIMDType(info.compMethodInfo->args.retTypeClass, &varDsc->lvExactSize);
-            varDsc->SetSimdBaseType(simdBaseType);
+            CorInfoType simdBaseJitType =
+                getBaseJitTypeAndSizeOfSIMDType(info.compMethodInfo->args.retTypeClass, &varDsc->lvExactSize);
+            varDsc->SetSimdBaseJitType(simdBaseJitType);
 
             assert(varDsc->GetSimdBaseType() != TYP_UNKNOWN);
         }
@@ -2173,10 +2174,10 @@ Compiler::lvaStructFieldInfo Compiler::StructPromotionHelper::GetFieldInfo(CORIN
     // we have encountered any SIMD intrinsics.
     if (compiler->usesSIMDTypes() && (fieldInfo.fldSize == 0) && compiler->isSIMDorHWSIMDClass(fieldInfo.fldTypeHnd))
     {
-        unsigned  simdSize;
-        var_types simdBaseType = compiler->getBaseTypeAndSizeOfSIMDType(fieldInfo.fldTypeHnd, &simdSize);
+        unsigned    simdSize;
+        CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(fieldInfo.fldTypeHnd, &simdSize);
         // We will only promote fields of SIMD types that fit into a SIMD register.
-        if (simdBaseType != TYP_UNKNOWN)
+        if (simdBaseJitType != CORINFO_TYPE_UNDEF)
         {
             if ((simdSize >= compiler->minSIMDStructBytes()) && (simdSize <= compiler->maxSIMDStructBytes()))
             {
@@ -2791,8 +2792,8 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
 
         if (layout->IsValueClass())
         {
-            var_types simdBaseType = TYP_UNKNOWN;
-            varDsc->lvType         = impNormStructType(typeHnd, &simdBaseType);
+            CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+            varDsc->lvType              = impNormStructType(typeHnd, &simdBaseJitType);
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
             // Mark implicit byref struct parameters
@@ -2810,11 +2811,11 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
 #if FEATURE_SIMD
-            if (simdBaseType != TYP_UNKNOWN)
+            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
             {
                 assert(varTypeIsSIMD(varDsc));
                 varDsc->lvSIMDType = true;
-                varDsc->SetSimdBaseType(simdBaseType);
+                varDsc->SetSimdBaseJitType(simdBaseJitType);
             }
 #endif // FEATURE_SIMD
             if (GlobalJitOptions::compFeatureHfa)
@@ -3698,6 +3699,19 @@ void LclVarDsc::lvaDisqualifyVar()
     this->lvDefStmt    = nullptr;
 }
 #endif // ASSERTION_PROP
+
+#ifdef FEATURE_SIMD
+var_types LclVarDsc::GetSimdBaseType() const
+{
+    CorInfoType simdBaseJitType = GetSimdBaseJitType();
+
+    if (simdBaseJitType == CORINFO_TYPE_UNDEF)
+    {
+        return TYP_UNKNOWN;
+    }
+    return JitType2PreciseVarType(simdBaseJitType);
+}
+#endif // FEATURE_SIMD
 
 unsigned LclVarDsc::lvSize() const // Size needed for storage representation. Only used for structs or TYP_BLK.
 {

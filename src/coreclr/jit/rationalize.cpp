@@ -400,13 +400,13 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
         {
             if (location->OperGet() == GT_LCL_VAR)
             {
-                var_types simdType = location->TypeGet();
-                GenTree*  initVal  = assignment->AsOp()->gtOp2;
-                var_types baseType = comp->getBaseTypeOfSIMDLocal(location);
-                if (baseType != TYP_UNKNOWN)
+                var_types   simdType        = location->TypeGet();
+                GenTree*    initVal         = assignment->AsOp()->gtOp2;
+                CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(location);
+                if (simdBaseJitType != CORINFO_TYPE_UNDEF)
                 {
                     GenTreeSIMD* simdTree = new (comp, GT_SIMD)
-                        GenTreeSIMD(simdType, initVal, SIMDIntrinsicInit, baseType, genTypeSize(simdType));
+                        GenTreeSIMD(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, genTypeSize(simdType));
                     assignment->AsOp()->gtOp2 = simdTree;
                     value                     = simdTree;
                     initVal->gtNext           = simdTree;

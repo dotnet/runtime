@@ -505,20 +505,22 @@ public:
     // type of an arg node is TYP_BYREF and a local node is TYP_SIMD*.
     unsigned char lvSIMDType : 1;            // This is a SIMD struct
     unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
-    var_types     lvSimdBaseType : 5;        // Note: this only packs because var_types is a typedef of unsigned char
+    unsigned char lvSimdBaseJitType : 5;     // Note: this only packs because CorInfoType has less than 32 entries
 
-    var_types GetSimdBaseType() const
+    CorInfoType GetSimdBaseJitType() const
     {
-        return lvSimdBaseType;
+        return (CorInfoType)lvSimdBaseJitType;
     }
 
-    void SetSimdBaseType(var_types simdBaseType)
+    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
     {
-        assert(simdBaseType < (1 << 5));
-        lvSimdBaseType = simdBaseType;
+        assert(simdBaseJitType < (1 << 5));
+        lvSimdBaseJitType = (unsigned char)simdBaseJitType;
     }
-#endif                                       // FEATURE_SIMD
-    unsigned char lvRegStruct : 1;           // This is a reg-sized non-field-addressed struct.
+
+    var_types GetSimdBaseType() const;
+#endif                             // FEATURE_SIMD
+    unsigned char lvRegStruct : 1; // This is a reg-sized non-field-addressed struct.
 
     unsigned char lvClassIsExact : 1; // lvClassHandle is the exact type
 
@@ -2766,7 +2768,7 @@ public:
     GenTreeLclVar* gtNewStoreLclVar(unsigned dstLclNum, GenTree* src);
 
 #ifdef FEATURE_SIMD
-    GenTree* gtNewSIMDVectorZero(var_types simdType, var_types baseType, unsigned size);
+    GenTree* gtNewSIMDVectorZero(var_types simdType, CorInfoType simdBaseJitType, unsigned simdSize);
 #endif
 
     GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock);
@@ -2823,62 +2825,74 @@ public:
 
 #ifdef FEATURE_SIMD
     GenTreeSIMD* gtNewSIMDNode(
-        var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size);
-    GenTreeSIMD* gtNewSIMDNode(
-        var_types type, GenTree* op1, GenTree* op2, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size);
+        var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTreeSIMD* gtNewSIMDNode(var_types       type,
+                               GenTree*        op1,
+                               GenTree*        op2,
+                               SIMDIntrinsicID simdIntrinsicID,
+                               CorInfoType     simdBaseJitType,
+                               unsigned        simdSize);
     void SetOpLclRelatedToSIMDIntrinsic(GenTree* op);
 #endif
 
 #ifdef FEATURE_HW_INTRINSICS
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
                                                  NamedIntrinsic hwIntrinsicID,
-                                                 var_types      baseType,
-                                                 unsigned       size);
+                                                 CorInfoType    simdBaseJitType,
+                                                 unsigned       simdSize);
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(
-        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size);
-    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(
-        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size);
+        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
+                                                 GenTree*       op1,
+                                                 GenTree*       op2,
+                                                 NamedIntrinsic hwIntrinsicID,
+                                                 CorInfoType    simdBaseJitType,
+                                                 unsigned       simdSize);
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
                                                  GenTree*       op1,
                                                  GenTree*       op2,
                                                  GenTree*       op3,
                                                  NamedIntrinsic hwIntrinsicID,
-                                                 var_types      baseType,
-                                                 unsigned       size);
+                                                 CorInfoType    simdBaseJitType,
+                                                 unsigned       simdSize);
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
                                                  GenTree*       op1,
                                                  GenTree*       op2,
                                                  GenTree*       op3,
                                                  GenTree*       op4,
                                                  NamedIntrinsic hwIntrinsicID,
-                                                 var_types      baseType,
-                                                 unsigned       size);
+                                                 CorInfoType    simdBaseJitType,
+                                                 unsigned       simdSize);
 
     GenTreeHWIntrinsic* gtNewSimdCreateBroadcastNode(
-        var_types type, GenTree* op1, var_types baseType, unsigned size, bool isSimdAsHWIntrinsic);
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
                                                    NamedIntrinsic hwIntrinsicID,
-                                                   var_types      baseType,
-                                                   unsigned       size)
+                                                   CorInfoType    simdBaseJitType,
+                                                   unsigned       simdSize)
     {
-        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, hwIntrinsicID, baseType, size);
+        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, hwIntrinsicID, simdBaseJitType, simdSize);
         node->gtFlags |= GTF_SIMDASHW_OP;
         return node;
     }
 
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(
-        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
+        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
     {
-        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, baseType, size);
+        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdBaseJitType, simdSize);
         node->gtFlags |= GTF_SIMDASHW_OP;
         return node;
     }
 
-    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(
-        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
+    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
+                                                   GenTree*       op1,
+                                                   GenTree*       op2,
+                                                   NamedIntrinsic hwIntrinsicID,
+                                                   CorInfoType    simdBaseJitType,
+                                                   unsigned       simdSize)
     {
-        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, op1, op2, hwIntrinsicID, baseType, size);
+        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, op1, op2, hwIntrinsicID, simdBaseJitType, simdSize);
         node->gtFlags |= GTF_SIMDASHW_OP;
         return node;
     }
@@ -2888,10 +2902,11 @@ public:
                                                    GenTree*       op2,
                                                    GenTree*       op3,
                                                    NamedIntrinsic hwIntrinsicID,
-                                                   var_types      baseType,
-                                                   unsigned       size)
+                                                   CorInfoType    simdBaseJitType,
+                                                   unsigned       simdSize)
     {
-        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, baseType, size);
+        GenTreeHWIntrinsic* node =
+            gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseJitType, simdSize);
         node->gtFlags |= GTF_SIMDASHW_OP;
         return node;
     }
@@ -2903,11 +2918,11 @@ public:
                                                    NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(
         var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID);
-    CORINFO_CLASS_HANDLE gtGetStructHandleForHWSIMD(var_types simdType, var_types simdBaseType);
-    var_types getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
-                                         CORINFO_CLASS_HANDLE clsHnd,
-                                         CORINFO_SIG_INFO*    sig,
-                                         var_types            baseType);
+    CORINFO_CLASS_HANDLE gtGetStructHandleForHWSIMD(var_types simdType, CorInfoType simdBaseJitType);
+    CorInfoType getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
+                                              CORINFO_CLASS_HANDLE clsHnd,
+                                              CORINFO_SIG_INFO*    sig,
+                                              CorInfoType          simdBaseJitType);
 #endif // FEATURE_HW_INTRINSICS
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
@@ -4032,13 +4047,13 @@ protected:
                                          CORINFO_CLASS_HANDLE clsHnd,
                                          CORINFO_SIG_INFO*    sig,
                                          var_types            retType,
-                                         var_types            baseType,
+                                         CorInfoType          simdBaseJitType,
                                          unsigned             simdSize,
                                          GenTree*             newobjThis);
 
     GenTree* impSimdAsHWIntrinsicCndSel(CORINFO_CLASS_HANDLE clsHnd,
                                         var_types            retType,
-                                        var_types            baseType,
+                                        CorInfoType          simdBaseJitType,
                                         unsigned             simdSize,
                                         GenTree*             op1,
                                         GenTree*             op2,
@@ -4048,7 +4063,7 @@ protected:
                                  CORINFO_CLASS_HANDLE  clsHnd,
                                  CORINFO_METHOD_HANDLE method,
                                  CORINFO_SIG_INFO*     sig,
-                                 var_types             baseType,
+                                 CorInfoType           simdBaseJitType,
                                  var_types             retType,
                                  unsigned              simdSize);
 
@@ -4056,7 +4071,7 @@ protected:
                                   CORINFO_CLASS_HANDLE argClass,
                                   bool                 expectAddr = false,
                                   GenTree*             newobjThis = nullptr);
-    GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
+    GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, CorInfoType simdBaseJitType);
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
 
@@ -4065,7 +4080,7 @@ protected:
                               CORINFO_CLASS_HANDLE  clsHnd,
                               CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig,
-                              var_types             baseType,
+                              CorInfoType           simdBaseJitType,
                               var_types             retType,
                               unsigned              simdSize);
     GenTree* impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
@@ -4076,7 +4091,7 @@ protected:
     GenTree* impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
                                        CORINFO_CLASS_HANDLE clsHnd,
                                        var_types            retType,
-                                       var_types            baseType,
+                                       CorInfoType          simdBaseJitType,
                                        unsigned             simdSize,
                                        GenTree*             op1,
                                        GenTree*             op2);
@@ -4153,7 +4168,7 @@ public:
 
     GenTree* impGetStructAddr(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel, bool willDeref);
 
-    var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* simdBaseType = nullptr);
+    var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoType* simdBaseJitType = nullptr);
 
     GenTree* impNormStructVal(GenTree*             structVal,
                               CORINFO_CLASS_HANDLE structHnd,
@@ -5832,11 +5847,11 @@ private:
     static MorphAddrContext s_CopyBlockMAC;
 
 #ifdef FEATURE_SIMD
-    GenTree* getSIMDStructFromField(GenTree*   tree,
-                                    var_types* baseTypeOut,
-                                    unsigned*  indexOut,
-                                    unsigned*  simdSizeOut,
-                                    bool       ignoreUsedInSIMDIntrinsic = false);
+    GenTree* getSIMDStructFromField(GenTree*     tree,
+                                    CorInfoType* simdBaseJitTypeOut,
+                                    unsigned*    indexOut,
+                                    unsigned*    simdSizeOut,
+                                    bool         ignoreUsedInSIMDIntrinsic = false);
     GenTree* fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree);
     GenTree* fgMorphFieldToSIMDIntrinsicGet(GenTree* tree);
     bool fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* stmt);
@@ -8312,19 +8327,19 @@ private:
     SIMDHandlesCache* m_simdHandleCache;
 
     // Get an appropriate "zero" for the given type and class handle.
-    GenTree* gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO_CLASS_HANDLE simdHandle);
+    GenTree* gtGetSIMDZero(var_types simdType, CorInfoType simdBaseJitType, CORINFO_CLASS_HANDLE simdHandle);
 
     // Get the handle for a SIMD type.
-    CORINFO_CLASS_HANDLE gtGetStructHandleForSIMD(var_types simdType, var_types simdBaseType)
+    CORINFO_CLASS_HANDLE gtGetStructHandleForSIMD(var_types simdType, CorInfoType simdBaseJitType)
     {
         if (m_simdHandleCache == nullptr)
         {
             // This may happen if the JIT generates SIMD node on its own, without importing them.
-            // Otherwise getBaseTypeAndSizeOfSIMDType should have created the cache.
+            // Otherwise getBaseJitTypeAndSizeOfSIMDType should have created the cache.
             return NO_CLASS_HANDLE;
         }
 
-        if (simdBaseType == TYP_FLOAT)
+        if (simdBaseJitType == CORINFO_TYPE_FLOAT)
         {
             switch (simdType)
             {
@@ -8346,27 +8361,27 @@ private:
             }
         }
         assert(emitTypeSize(simdType) <= largestEnregisterableStructSize());
-        switch (simdBaseType)
+        switch (simdBaseJitType)
         {
-            case TYP_FLOAT:
+            case CORINFO_TYPE_FLOAT:
                 return m_simdHandleCache->SIMDFloatHandle;
-            case TYP_DOUBLE:
+            case CORINFO_TYPE_DOUBLE:
                 return m_simdHandleCache->SIMDDoubleHandle;
-            case TYP_INT:
+            case CORINFO_TYPE_INT:
                 return m_simdHandleCache->SIMDIntHandle;
-            case TYP_USHORT:
+            case CORINFO_TYPE_USHORT:
                 return m_simdHandleCache->SIMDUShortHandle;
-            case TYP_UBYTE:
+            case CORINFO_TYPE_UBYTE:
                 return m_simdHandleCache->SIMDUByteHandle;
-            case TYP_SHORT:
+            case CORINFO_TYPE_SHORT:
                 return m_simdHandleCache->SIMDShortHandle;
-            case TYP_BYTE:
+            case CORINFO_TYPE_BYTE:
                 return m_simdHandleCache->SIMDByteHandle;
-            case TYP_LONG:
+            case CORINFO_TYPE_LONG:
                 return m_simdHandleCache->SIMDLongHandle;
-            case TYP_UINT:
+            case CORINFO_TYPE_UINT:
                 return m_simdHandleCache->SIMDUIntHandle;
-            case TYP_ULONG:
+            case CORINFO_TYPE_ULONG:
                 return m_simdHandleCache->SIMDULongHandle;
             default:
                 assert(!"Didn't find a class handle for simdType");
@@ -8408,16 +8423,16 @@ private:
         return (intrinsicId == SIMDIntrinsicEqual);
     }
 
-    // Returns base type of a TYP_SIMD local.
-    // Returns TYP_UNKNOWN if the local is not TYP_SIMD.
-    var_types getBaseTypeOfSIMDLocal(GenTree* tree)
+    // Returns base JIT type of a TYP_SIMD local.
+    // Returns CORINFO_TYPE_UNDEF if the local is not TYP_SIMD.
+    CorInfoType getBaseJitTypeOfSIMDLocal(GenTree* tree)
     {
         if (isSIMDTypeLocal(tree))
         {
-            return lvaTable[tree->AsLclVarCommon()->GetLclNum()].GetSimdBaseType();
+            return lvaTable[tree->AsLclVarCommon()->GetLclNum()].GetSimdBaseJitType();
         }
 
-        return TYP_UNKNOWN;
+        return CORINFO_TYPE_UNDEF;
     }
 
     bool isSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
@@ -8468,13 +8483,13 @@ private:
         return isSIMDClass(pTypeInfo) || isHWSIMDClass(pTypeInfo);
     }
 
-    // Get the base (element) type and size in bytes for a SIMD type. Returns TYP_UNKNOWN
-    // if it is not a SIMD type or is an unsupported base type.
-    var_types getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);
+    // Get the base (element) type and size in bytes for a SIMD type. Returns CORINFO_TYPE_UNDEF
+    // if it is not a SIMD type or is an unsupported base JIT type.
+    CorInfoType getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);
 
-    var_types getBaseTypeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd)
+    CorInfoType getBaseJitTypeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd)
     {
-        return getBaseTypeAndSizeOfSIMDType(typeHnd, nullptr);
+        return getBaseJitTypeAndSizeOfSIMDType(typeHnd, nullptr);
     }
 
     // Get SIMD Intrinsic info given the method handle.
@@ -8484,7 +8499,7 @@ private:
                                                   CORINFO_SIG_INFO*     sig,
                                                   bool                  isNewObj,
                                                   unsigned*             argCount,
-                                                  var_types*            baseType,
+                                                  CorInfoType*          simdBaseJitType,
                                                   unsigned*             sizeBytes);
 
     // Pops and returns GenTree node from importers type stack.
@@ -8492,14 +8507,14 @@ private:
     GenTree* impSIMDPopStack(var_types type, bool expectAddr = false, CORINFO_CLASS_HANDLE structType = nullptr);
 
     // Create a GT_SIMD tree for a Get property of SIMD vector with a fixed index.
-    GenTreeSIMD* impSIMDGetFixed(var_types simdType, var_types baseType, unsigned simdSize, int index);
+    GenTreeSIMD* impSIMDGetFixed(var_types simdType, CorInfoType simdBaseJitType, unsigned simdSize, int index);
 
     // Transforms operands and returns the SIMD intrinsic to be applied on
     // transformed operands to obtain given relop result.
     SIMDIntrinsicID impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
                                  CORINFO_CLASS_HANDLE typeHnd,
                                  unsigned             simdVectorSize,
-                                 var_types*           baseType,
+                                 CorInfoType*         inOutBaseJitType,
                                  GenTree**            op1,
                                  GenTree**            op2);
 
@@ -8586,14 +8601,14 @@ private:
     int getSIMDTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)
     {
         unsigned sizeBytes = 0;
-        (void)getBaseTypeAndSizeOfSIMDType(typeHnd, &sizeBytes);
+        (void)getBaseJitTypeAndSizeOfSIMDType(typeHnd, &sizeBytes);
         return sizeBytes;
     }
 
-    // Get the the number of elements of basetype of SIMD vector given by its size and baseType
+    // Get the the number of elements of baseType of SIMD vector given by its size and baseType
     static int getSIMDVectorLength(unsigned simdSize, var_types baseType);
 
-    // Get the the number of elements of basetype of SIMD vector given by its type handle
+    // Get the the number of elements of baseType of SIMD vector given by its type handle
     int getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd);
 
     // Get preferred alignment of SIMD type.

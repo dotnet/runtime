@@ -2098,7 +2098,8 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             }
             else
 #endif
-                if ((compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported) || (simdTree->GetSimdBaseType() == TYP_ULONG))
+                if ((compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported) ||
+                    (simdTree->GetSimdBaseType() == TYP_ULONG))
             {
                 buildInternalFloatRegisterDefForNode(simdTree);
             }

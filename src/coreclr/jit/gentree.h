@@ -4850,15 +4850,15 @@ private:
     ClassLayout* m_layout;
 
     union {
-        var_types gtAuxiliaryType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
-        regNumberSmall gtOtherReg; // For intrinsics that return 2 registers
+        unsigned char gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by
+                                          // element))
+        regNumberSmall gtOtherReg;        // For intrinsics that return 2 registers
     };
 
-    var_types     gtSimdBaseType; // SIMD vector base type
-    unsigned char gtSimdSize;     // SIMD vector size in bytes, use 0 for scalar intrinsics
+    unsigned char gtSimdBaseJitType; // SIMD vector base JIT type
+    unsigned char gtSimdSize;        // SIMD vector size in bytes, use 0 for scalar intrinsics
 
 public:
-
 #if defined(FEATURE_SIMD)
     union {
         SIMDIntrinsicID gtSIMDIntrinsicID; // operation Id
@@ -4883,31 +4883,38 @@ public:
     {
         return (regNumber)gtOtherReg;
     }
+
     void SetOtherReg(regNumber reg)
     {
         gtOtherReg = (regNumberSmall)reg;
         assert(gtOtherReg == reg);
     }
 
-    var_types GetAuxiliaryType() const
+    CorInfoType GetAuxiliaryJitType() const
     {
-        return gtAuxiliaryType;
+        return (CorInfoType)gtAuxiliaryJitType;
     }
 
-    void SetAuxiliaryType(var_types type)
+    void SetAuxiliaryJitType(CorInfoType auxiliaryJitType)
     {
-        gtAuxiliaryType = type;
+        gtAuxiliaryJitType = (unsigned char)auxiliaryJitType;
+        assert(gtAuxiliaryJitType == auxiliaryJitType);
     }
 
-    var_types GetSimdBaseType() const
+    var_types GetAuxiliaryType() const;
+
+    CorInfoType GetSimdBaseJitType() const
     {
-        return gtSimdBaseType;
+        return (CorInfoType)gtSimdBaseJitType;
     }
 
-    void SetSimdBaseType(var_types simdBaseType)
+    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
     {
-        gtSimdBaseType = simdBaseType;
+        gtSimdBaseJitType = (unsigned char)simdBaseJitType;
+        assert(gtSimdBaseJitType == simdBaseJitType);
     }
+
+    var_types GetSimdBaseType() const;
 
     unsigned char GetSimdSize() const
     {
@@ -4920,12 +4927,14 @@ public:
         assert(gtSimdSize == simdSize);
     }
 
-    GenTreeJitIntrinsic(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
+    GenTreeJitIntrinsic(
+        genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
         : GenTreeOp(oper, type, op1, op2)
-        , gtSimdBaseType(simdBaseType)
+        , gtSimdBaseJitType((unsigned char)simdBaseJitType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
     {
+        assert(gtSimdBaseJitType == simdBaseJitType);
         assert(gtSimdSize == simdSize);
     }
 
@@ -4947,15 +4956,20 @@ public:
 struct GenTreeSIMD : public GenTreeJitIntrinsic
 {
 
-    GenTreeSIMD(var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, var_types simdBaseType, unsigned simdSize)
-        : GenTreeJitIntrinsic(GT_SIMD, type, op1, nullptr, simdBaseType, simdSize)
+    GenTreeSIMD(
+        var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+        : GenTreeJitIntrinsic(GT_SIMD, type, op1, nullptr, simdBaseJitType, simdSize)
     {
         gtSIMDIntrinsicID = simdIntrinsicID;
     }
 
-    GenTreeSIMD(
-        var_types type, GenTree* op1, GenTree* op2, SIMDIntrinsicID simdIntrinsicID, var_types simdBaseType, unsigned simdSize)
-        : GenTreeJitIntrinsic(GT_SIMD, type, op1, op2, simdBaseType, simdSize)
+    GenTreeSIMD(var_types       type,
+                GenTree*        op1,
+                GenTree*        op2,
+                SIMDIntrinsicID simdIntrinsicID,
+                CorInfoType     simdBaseJitType,
+                unsigned        simdSize)
+        : GenTreeJitIntrinsic(GT_SIMD, type, op1, op2, simdBaseJitType, simdSize)
     {
         gtSIMDIntrinsicID = simdIntrinsicID;
     }
@@ -4974,14 +4988,15 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
 #ifdef FEATURE_HW_INTRINSICS
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 {
-    GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, var_types simdBaseType, unsigned simdSize)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, nullptr, nullptr, simdBaseType, simdSize)
+    GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, nullptr, nullptr, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
     }
 
-    GenTreeHWIntrinsic(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types simdBaseType, unsigned simdSize)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, nullptr, simdBaseType, simdSize)
+    GenTreeHWIntrinsic(
+        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, nullptr, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
         if (OperIsMemoryStore())
@@ -4990,9 +5005,13 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         }
     }
 
-    GenTreeHWIntrinsic(
-        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types simdBaseType, unsigned simdSize)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, op2, simdBaseType, simdSize)
+    GenTreeHWIntrinsic(var_types      type,
+                       GenTree*       op1,
+                       GenTree*       op2,
+                       NamedIntrinsic hwIntrinsicID,
+                       CorInfoType    simdBaseJitType,
+                       unsigned       simdSize)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, op2, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
         if (OperIsMemoryStore())
