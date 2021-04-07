@@ -34,40 +34,40 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
+                [MethodImpl(MethodImplOptions.NoInlining)] // move lazy invocation flags population out of the hot path
+                INVOCATION_FLAGS LazyCreateInvocationFlags()
+                {
+                    INVOCATION_FLAGS invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_UNKNOWN;
+
+                    Type? declaringType = DeclaringType;
+
+                    //
+                    // first take care of all the NO_INVOKE cases.
+                    if (ContainsGenericParameters ||
+                         IsDisallowedByRefType(ReturnType) ||
+                         (declaringType != null && declaringType.ContainsGenericParameters) ||
+                         ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs))
+                    {
+                        // We don't need other flags if this method cannot be invoked
+                        invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
+                    }
+                    else
+                    {
+                        // Check for byref-like types
+                        if ((declaringType != null && declaringType.IsByRefLike) || ReturnType.IsByRefLike)
+                            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
+                    }
+
+                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
+                    m_invocationFlags = invocationFlags; // accesses are guaranteed atomic
+                    return invocationFlags;
+                }
+
                 INVOCATION_FLAGS flags = m_invocationFlags;
                 if ((flags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
                 {
-                    [MethodImpl(MethodImplOptions.NoInlining)] // move lazy invocation flags population out of the hot path
-                    INVOCATION_FLAGS LazyCreateInvocationFlags()
-                    {
-                        INVOCATION_FLAGS invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_UNKNOWN;
-
-                        Type? declaringType = DeclaringType;
-
-                        //
-                        // first take care of all the NO_INVOKE cases.
-                        if (ContainsGenericParameters ||
-                             IsDisallowedByRefType(ReturnType) ||
-                             (declaringType != null && declaringType.ContainsGenericParameters) ||
-                             ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs))
-                        {
-                            // We don't need other flags if this method cannot be invoked
-                            invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
-                        }
-                        else
-                        {
-                            // Check for byref-like types
-                            if ((declaringType != null && declaringType.IsByRefLike) || ReturnType.IsByRefLike)
-                                invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
-                        }
-
-                        invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
-                        m_invocationFlags = invocationFlags; // accesses are guaranteed atomic
-                        return invocationFlags;
-                    }
                     flags = LazyCreateInvocationFlags();
                 }
-
                 return flags;
             }
         }
@@ -120,20 +120,15 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                Signature? signature = m_signature;
-                if (signature is null)
+                [MethodImpl(MethodImplOptions.NoInlining)] // move lazy sig generation out of the hot path
+                Signature LazyCreateSignature()
                 {
-                    [MethodImpl(MethodImplOptions.NoInlining)] // move lazy sig generation out of the hot path
-                    Signature LazyCreateSignature()
-                    {
-                        Signature newSig = new Signature(this, m_declaringType);
-                        Volatile.Write(ref m_signature, newSig);
-                        return newSig;
-                    }
-                    signature = LazyCreateSignature();
+                    Signature newSig = new Signature(this, m_declaringType);
+                    Volatile.Write(ref m_signature, newSig);
+                    return newSig;
                 }
 
-                return signature;
+                return m_signature ?? LazyCreateSignature();
             }
         }
 
@@ -366,18 +361,19 @@ namespace System.Reflection
             // only test instance methods
             if ((m_methodAttributes & MethodAttributes.Static) == 0)
             {
-                [MethodImpl(MethodImplOptions.NoInlining)] // move check out of hot path when invoking static methods
-                void CheckConsistencyInstance(object? target)
-                {
-                    if (!m_declaringType.IsInstanceOfType(target))
-                    {
-                        if (target == null)
-                            throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
-                        else
-                            throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
-                    }
-                }
                 CheckConsistencyInstance(target);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)] // move check out of hot path when invoking static methods
+            void CheckConsistencyInstance(object? target)
+            {
+                if (!m_declaringType.IsInstanceOfType(target))
+                {
+                    if (target == null)
+                        throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
+                    else
+                        throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+                }
             }
         }
 
