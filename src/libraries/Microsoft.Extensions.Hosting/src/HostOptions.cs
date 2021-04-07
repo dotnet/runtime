@@ -21,7 +21,11 @@ namespace Microsoft.Extensions.Hosting
         /// The behavior the <see cref="IHost"/> will follow when any of
         /// its <see cref="BackgroundService"/> instances throw an unhandled exception.
         /// </summary>
-        public BackgroundServiceExceptionBehavior BackgroundServiceExceptionBehavior { get; set; }
+        /// <remarks>
+        /// Defaults to <see cref="BackgroundServiceExceptionBehavior.StopHost"/>.
+        /// </remarks>
+        public BackgroundServiceExceptionBehavior BackgroundServiceExceptionBehavior { get; set; } =
+            BackgroundServiceExceptionBehavior.StopHost;
 
         internal void Initialize(IConfiguration configuration)
         {
