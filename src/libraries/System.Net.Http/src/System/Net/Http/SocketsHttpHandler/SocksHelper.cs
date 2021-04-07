@@ -18,6 +18,7 @@ namespace System.Net.Http
         private const int BufferSize = 512;
         private const int ProtocolVersion4 = 4;
         private const int ProtocolVersion5 = 5;
+        private const int SubnegotiationVersion = 1;
         private const byte METHOD_NO_AUTH = 0;
         // private const byte METHOD_GSSAPI = 1;
         private const byte METHOD_USERNAME_PASSWORD = 2;
@@ -85,7 +86,7 @@ namespace System.Net.Http
                 // +----+----------+----------+
                 buffer[0] = ProtocolVersion5;
                 var credentials = proxyCredentials?.GetCredential(proxyUri, "");
-                if (credentials != null)
+                if (credentials is null)
                 {
                     buffer[1] = 1;
                     buffer[2] = METHOD_NO_AUTH;
@@ -125,12 +126,12 @@ namespace System.Net.Http
                             // +----+------+----------+------+----------+
                             // | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
                             // +----+------+----------+------+----------+
-                            buffer[0] = ProtocolVersion5;
+                            buffer[0] = SubnegotiationVersion;
                             byte usernameLength = checked((byte)Encoding.UTF8.GetBytes(credentials.UserName, buffer.AsSpan(2)));
                             buffer[1] = usernameLength;
                             byte passwordLength = checked((byte)Encoding.UTF8.GetBytes(credentials.Password, buffer.AsSpan(3 + usernameLength)));
                             buffer[2 + usernameLength] = passwordLength;
-                            await WriteAsync(stream, buffer.AsMemory(0, 4 + usernameLength + passwordLength), async).ConfigureAwait(false);
+                            await WriteAsync(stream, buffer.AsMemory(0, 3 + usernameLength + passwordLength), async).ConfigureAwait(false);
 
                             // +----+--------+
                             // |VER | STATUS |
@@ -138,8 +139,7 @@ namespace System.Net.Http
                             // | 1  |   1    |
                             // +----+--------+
                             await ReadToFillAsync(stream, buffer.AsMemory(0, 2), async).ConfigureAwait(false);
-                            VerifyProtocolVersion(ProtocolVersion5, buffer[0]);
-                            if (buffer[1] != REP_SUCCESS)
+                            if (buffer[0] != SubnegotiationVersion || buffer[1] != REP_SUCCESS)
                             {
                                 throw new SocksException(SR.net_socks_auth_failed);
                             }

@@ -200,22 +200,20 @@ namespace System.Net.Http.Functional.Tests.Socks
 
             if (_username != null)
             {
-                await ReadToFillAsync(ns, buffer.AsMemory(0, 2)).ConfigureAwait(false);
-                if (buffer[0] != 5)
-                    throw new Exception("Bad protocol version.");
+                if (await ns.ReadByteAsync().ConfigureAwait(false) != 1)
+                    throw new Exception("Bad subnegotiation version.");
 
-                int uLen = buffer[1];
-                await ReadToFillAsync(ns, buffer.AsMemory(0, uLen)).ConfigureAwait(false);
-                if (Encoding.UTF8.GetString(buffer.AsSpan(0, uLen)) != _username)
+                int usernameLength = await ns.ReadByteAsync().ConfigureAwait(false);
+                await ReadToFillAsync(ns, buffer.AsMemory(0, usernameLength)).ConfigureAwait(false);
+                if (Encoding.UTF8.GetString(buffer.AsSpan(0, usernameLength)) != _username)
                     throw new Exception("Bad username.");
 
-                await ReadToFillAsync(ns, buffer.AsMemory(0, 1)).ConfigureAwait(false);
-                int pLen = buffer[1];
-                await ReadToFillAsync(ns, buffer.AsMemory(0, pLen)).ConfigureAwait(false);
-                if (_password != null && Encoding.UTF8.GetString(buffer.AsSpan(0, pLen)) != _password)
+                int passwordLength = await ns.ReadByteAsync().ConfigureAwait(false);
+                await ReadToFillAsync(ns, buffer.AsMemory(0, passwordLength)).ConfigureAwait(false);
+                if (Encoding.UTF8.GetString(buffer.AsSpan(0, passwordLength)) != _password)
                     throw new Exception("Bad password.");
 
-                await ns.WriteAsync(new byte[] { 5, 0 }).ConfigureAwait(false);
+                await ns.WriteAsync(new byte[] { 1, 0 }).ConfigureAwait(false);
             }
 
             await ReadToFillAsync(ns, buffer.AsMemory(0, 4)).ConfigureAwait(false);
@@ -342,7 +340,7 @@ namespace System.Net.Http.Functional.Tests.Socks
 
         public static LoopbackSocksServer Create(string? username = null, string? password = null)
         {
-            var server = new LoopbackSocksServer();
+            var server = new LoopbackSocksServer(username, password);
             server.Start();
 
             return server;
