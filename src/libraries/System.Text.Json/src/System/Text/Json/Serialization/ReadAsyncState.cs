@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization
 
         public ReadAsyncState(Type returnType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
-            Options = options ??= JsonSerializerOptions.s_defaultOptions;
+            Options = options ?? JsonSerializerOptions.s_defaultOptions;
             Buffer = ArrayPool<byte>.Shared.Rent(Math.Max(Options.DefaultBufferSize, JsonConstants.Utf8Bom.Length));
             ReadStack.Initialize(returnType, Options, supportContinuation: true);
             Converter = ReadStack.Current.JsonPropertyInfo!.ConverterBase;
