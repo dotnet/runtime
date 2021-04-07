@@ -13,11 +13,11 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal sealed class IAsyncEnumerableConverterFactory : JsonConverterFactory
     {
-        public override bool CanConvert(Type typeToConvert) => TryGetAsyncEnumerableInterface(typeToConvert, out _);
+        public override bool CanConvert(Type typeToConvert) => GetAsyncEnumerableInterface(typeToConvert) is not null;
 
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            TryGetAsyncEnumerableInterface(typeToConvert, out Type? asyncEnumerableInterface);
+            Type? asyncEnumerableInterface = GetAsyncEnumerableInterface(typeToConvert);
             Debug.Assert(asyncEnumerableInterface is not null, $"{typeToConvert} not supported by converter.");
 
             Type elementType = asyncEnumerableInterface.GetGenericArguments()[0];
@@ -25,16 +25,7 @@ namespace System.Text.Json.Serialization
             return (JsonConverter)Activator.CreateInstance(converterType)!;
         }
 
-        internal static bool TryGetAsyncEnumerableInterface(Type type, [NotNullWhen(true)] out Type? asyncEnumerableInterface)
-        {
-            if (IEnumerableConverterFactoryHelpers.GetCompatibleGenericInterface(type, typeof(IAsyncEnumerable<>)) is Type interfaceTy)
-            {
-                asyncEnumerableInterface = interfaceTy;
-                return true;
-            }
-
-            asyncEnumerableInterface = null;
-            return false;
-        }
+        private static Type? GetAsyncEnumerableInterface(Type type)
+            => IEnumerableConverterFactoryHelpers.GetCompatibleGenericInterface(type, typeof(IAsyncEnumerable<>));
     }
 }

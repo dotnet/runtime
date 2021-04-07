@@ -9,18 +9,7 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal abstract class JsonObjectConverter<T> : JsonResumableConverter<T>
     {
-        internal JsonObjectConverter()
-        {
-            // Populate ElementType if the runtime type implements IAsyncEnumerable.
-            // Used to feed the (converter-agnostic) JsonClassInfo.ElementType instace
-            // which is subsequently consulted by custom enumerable converters fed via JsonConverterAttribute.
-            if (IAsyncEnumerableConverterFactory.TryGetAsyncEnumerableInterface(typeof(T), out Type? asyncEnumerableInterface))
-            {
-                ElementType = asyncEnumerableInterface.GetGenericArguments()[0];
-            }
-        }
-
         internal sealed override ClassType ClassType => ClassType.Object;
-        internal sealed override Type? ElementType { get; }
+        internal sealed override Type? ElementType => null;
     }
 }
