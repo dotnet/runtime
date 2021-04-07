@@ -20,21 +20,22 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true'">
-    <RunScriptCommand                                                      >dotnet msbuild publish/AOTTestProjectForHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</RunScriptCommand>
+    <RunScriptCommand>dotnet msbuild publish/AOTTestProjectForHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</RunScriptCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(RunScriptCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</RunScriptCommand>
 
-    <RunScriptCommand                                                      >$(RunScriptCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</RunScriptCommand>
-    <RunScriptCommand                                                      >$(RunScriptCommand) &amp;&amp; cd wasm_build/AppBundle</RunScriptCommand>
+    <RunScriptCommand>$(RunScriptCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</RunScriptCommand>
+    <RunScriptCommand>$(RunScriptCommand) &amp;&amp; cd wasm_build/AppBundle</RunScriptCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(RunScriptCommand) &amp;&amp;</RunScriptCommand>
-
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
-    <RunScriptCommand Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">$(RunScriptCommand) $HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
-    <RunScriptCommand Condition="'$(IsFunctionalTest)' == 'true'">$(RunScriptCommand) $HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --expected-exit-code=$(ExpectedExitCode) --  $(RunTestsJSArguments) --run $(AssemblyName).dll --testing</RunScriptCommand>
+    <_XHarnessCommandLine Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</_XHarnessCommandLine>
+    <_XHarnessCommandLine Condition="'$(IsFunctionalTest)' == 'true'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --expected-exit-code=$(ExpectedExitCode) --  $(RunTestsJSArguments) --run $(AssemblyName).dll --testing</_XHarnessCommandLine>
+
+    <RunScriptCommand Condition="'$(_XHarnessCommandLine)' != '' and '$(RunScriptCommand)' != ''">$(RunScriptCommand) &amp;&amp; $(_XHarnessCommandLine)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(_XHarnessCommandLine)' != '' and '$(RunScriptCommand)' == ''">$(_XHarnessCommandLine)</RunScriptCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' And '$(UseDefaultBlazorWASMFeatureSwitches)' == 'true'">
