@@ -27,40 +27,42 @@ namespace System.Net.Http.Functional.Tests.Socks
         public SocksProxyTest(ITestOutputHelper helper) : base(helper) { }
 
         [Fact]
-        public async Task TestSocks4Async() => await TestLoopbackAsync("socks4", useSsl: false, useAuth: false, "localhost");
+        public async Task TestSocks4HostAsync() => await TestLoopbackAsync("socks4", useSsl: false, useAuth: false, "localhost");
 
         [Fact]
         public async Task TestSocks4IPAsync() => await TestLoopbackAsync("socks4", useSsl: false, useAuth: false, "127.0.0.1");
 
         [Fact]
-        public async Task TestSocks4SslAsync() => await TestLoopbackAsync("socks4", useSsl: true, useAuth: false, "localhost");
+        public async Task TestSocks4SslAsync() => await TestLoopbackAsync("socks4", useSsl: true, useAuth: false);
 
         [Fact]
-        public async Task TestSocks4AuthAsync() => await TestLoopbackAsync("socks4", useSsl: false, useAuth: true, "localhost");
+        public async Task TestSocks4AuthAsync() => await TestLoopbackAsync("socks4", useSsl: false, useAuth: true);
 
         [Fact]
-        public async Task TestSocks4aAsync() => await TestLoopbackAsync("socks4a", useSsl: false, useAuth: false, "localhost");
+        public async Task TestSocks4aHostAsync() => await TestLoopbackAsync("socks4a", useSsl: false, useAuth: false, "localhost");
 
         [Fact]
         public async Task TestSocks4aIPAsync() => await TestLoopbackAsync("socks4a", useSsl: false, useAuth: false, "127.0.0.1");
 
         [Fact]
-        public async Task TestSocks4aSslAsync() => await TestLoopbackAsync("socks4a", useSsl: true, useAuth: false, "localhost");
+        public async Task TestSocks4aSslAsync() => await TestLoopbackAsync("socks4a", useSsl: true, useAuth: false);
 
         [Fact]
-        public async Task TestSocks5Async() => await TestLoopbackAsync("socks5", useSsl: false, useAuth: false, "localhost");
+        public async Task TestSocks5HostAsync() => await TestLoopbackAsync("socks5", useSsl: false, useAuth: false, "localhost");
 
         [Fact]
         public async Task TestSocks5IPAsync() => await TestLoopbackAsync("socks5", useSsl: false, useAuth: false, "127.0.0.1");
 
         [Fact]
-        public async Task TestSocks5SslAsync() => await TestLoopbackAsync("socks5", useSsl: true, useAuth: false, "localhost");
+        public async Task TestSocks5SslAsync() => await TestLoopbackAsync("socks5", useSsl: true, useAuth: false);
 
         [Fact]
-        public async Task TestSocks5AuthAsync() => await TestLoopbackAsync("socks5", useSsl: false, useAuth: true, "localhost");
+        public async Task TestSocks5AuthAsync() => await TestLoopbackAsync("socks5", useSsl: false, useAuth: true);
 
-        private async Task TestLoopbackAsync(string schema, bool useSsl, bool useAuth, string host)
+        private async Task TestLoopbackAsync(string schema, bool useSsl, bool useAuth, string? overrideHost = null)
         {
+            Assert.False(useSsl && (overrideHost != null));
+
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async url =>
                 {
@@ -76,7 +78,12 @@ namespace System.Net.Http.Functional.Tests.Socks
                         handler.Proxy.Credentials = new Credentials("DOTNET", "424242");
                     }
 
-                    var request = new HttpRequestMessage(HttpMethod.Get, new UriBuilder(url) { Host = host }.Uri) { Version = UseVersion };
+                    if (overrideHost != null)
+                    {
+                        url = new UriBuilder(url) { Host = overrideHost }.Uri;
+                    }
+
+                    var request = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
 
                     if (UseVersion == HttpVersion.Version20 && !useSsl)
                     {
