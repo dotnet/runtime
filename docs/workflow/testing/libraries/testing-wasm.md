@@ -96,6 +96,18 @@ The following shows how to run tests for a specific library
     make -C src/mono/wasm/ run-browser-tests-System.AppContext
     ```
 
+### Passing arguments to xharness
+
+- `$(WasmXHarnessArgs)` - xharness command arguments
+
+    Example: `WasmXHarnessArgs="--xyz"` -> becomes `dotnet xharness wasm test --xyz`
+
+- `$(WasmXHarnessMonoArgs)` - arguments to mono
+
+    Example: `WasmXHarnessMonoArgs="--runtime-arg=--trace=E"`
+
+- `$(WasmTestAppArgs)` - arguments for the test app itself
+
 ### Running outer loop tests using Browser instance
 
 To run all tests, including "outer loop" tests (which are typically slower and in some test suites less reliable, but which are more comprehensive):
