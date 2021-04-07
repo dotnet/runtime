@@ -13,11 +13,27 @@ namespace PInvokeTests
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public class EmptyBase2 : EmptyBase
+    {
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public class SeqDerivedClass : EmptyBase
     {
         public int a;
 
         public SeqDerivedClass(int _a)
+        {
+            a = _a;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class SeqDerivedClass2 : EmptyBase2
+    {
+        public int a;
+
+        public SeqDerivedClass2(int _a)
         {
             a = _a;
         }
@@ -185,8 +201,8 @@ namespace PInvokeTests
             Console.WriteLine($"Running {nameof(DerivedClassWithEmptyBase)}...");
 
             string s = "before";
-            var p = new SeqDerivedClass(42);
-            Assert.IsTrue(DerivedSeqLayoutClassByRef(p, 42));
+            Assert.IsTrue(DerivedSeqLayoutClassByRef(new SeqDerivedClass(42), 42));
+            Assert.IsTrue(DerivedSeqLayoutClassByRef(new SeqDerivedClass2(42), 42));
         }
 
         public static void ExplicitClass()
