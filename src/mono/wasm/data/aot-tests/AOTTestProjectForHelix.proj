@@ -6,19 +6,20 @@
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\wasm_build\</TestRootDir>
     <OriginalPublishDir>$(TestRootDir)..\publish\</OriginalPublishDir>
     <IntermediateOutputPath>$(TestRootDir)\obj</IntermediateOutputPath>
+
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
-    <WasmNativeBuild>false</WasmNativeBuild>
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
-
     <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
 
   <Target Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
 
   <Target Name="PrepareForWasmBuildApp">
     <PropertyGroup>
-      <WasmAppDir>>$(TestRootDir)AppBundle\</WasmAppDir>
+      <WasmAppDir>$(TestRootDir)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName>$(OriginalPublishDir)WasmTestRunner.dll</WasmMainAssemblyFileName>
       <WasmMainJSPath>$(OriginalPublishDir)runtime-test.js</WasmMainJSPath>
       <WasmGenerateRunV8Script Condition="'$(WasmGenerateRunV8Script)' == ''">true</WasmGenerateRunV8Script>

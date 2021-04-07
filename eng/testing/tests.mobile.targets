@@ -20,15 +20,21 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildWasmAOTTestsOnHelix)' == 'true'">
-    <RunScriptCommand                                             >dotnet msbuild publish/aot-build.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</RunScriptCommand>
-    <RunScriptCommand Condition="'$(BuildWasmTestsOn)' == 'helix' and '$(ContinuousIntegrationBuild)' != 'true'">$(RunScriptCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</RunScriptCommand>
-    <RunScriptCommand Condition="'$(BuildWasmTestsOn)' == 'helix' and '$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) /p:WasmBuildSupportDir=$HELIX_CORRELATION_PAYLOAD/build</RunScriptCommand>
-    <RunScriptCommand                                          >$(RunScriptCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</RunScriptCommand>
+    <RunScriptCommand                                                      >dotnet msbuild publish/AOTTestProjectForHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</RunScriptCommand>
 
-    <RunScriptCommand>$(RunScriptCommand) &amp;&amp; cd wasm_build/AppBundle &amp;&amp;</RunScriptCommand>
+    <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
+    <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(RunScriptCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</RunScriptCommand>
+
+    <!-- running aot-helix tests on helix! -->
+    <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) /p:WasmBuildSupportDir=$HELIX_CORRELATION_PAYLOAD/build</RunScriptCommand>
+
+    <RunScriptCommand                                                      >$(RunScriptCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</RunScriptCommand>
+    <RunScriptCommand                                                      >$(RunScriptCommand) &amp;&amp; cd wasm_build/AppBundle</RunScriptCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(RunScriptCommand) &amp;&amp;</RunScriptCommand>
+
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
     <RunScriptCommand Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">$(RunScriptCommand) $HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
     <RunScriptCommand Condition="'$(IsFunctionalTest)' == 'true'">$(RunScriptCommand) $HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --expected-exit-code=$(ExpectedExitCode) --  $(RunTestsJSArguments) --run $(AssemblyName).dll --testing</RunScriptCommand>
@@ -280,6 +286,7 @@
 
   <Target Name="BundleTestWasmApp" Condition="'$(TargetOS)' == 'Browser'" DependsOnTargets="$(BundleTestWasmAppDependsOn)" />
 
+  <UsingTask Condition="'$(BuildWasmAOTTestsOnHelix)' == 'true'" TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateAOTProps" AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="PrepareForWasmBuildApp">
     <ItemGroup>
       <BundleFiles Include="$(WasmMainJSPath)"                  TargetDir="publish" />
@@ -288,6 +295,28 @@
 
       <BundleFiles Include="$(MonoProjectRoot)\wasm\data\aot-tests\*" TargetDir="publish" />
     </ItemGroup>
+
+    <!-- To recreate the original project on helix, we need to set the wasm properties also, same as the
+         library test project. Eg. $(InvariantGlobalization) -->
+    <ItemGroup>
+      <_WasmPropertyNames Include="InvariantGlobalization" />
+      <_WasmPropertyNames Include="AOTMode" />
+      <_WasmPropertyNames Include="WasmDebugLevel" />
+      <_WasmPropertyNames Include="WasmBuildNative" />
+      <_WasmPropertyNames Include="_WasmDevel" />
+      <_WasmPropertyNames Include="WasmLinkIcalls" />
+      <_WasmPropertyNames Include="WasmDedup" />
+
+      <_WasmPropertiesToPass
+        Include="$(%(_WasmPropertyNames.Identity))"
+        Name="%(_WasmPropertyNames.Identity)"
+        ConditionToUse="%(_WasmPropertyNames.ConditionToUse)" />
+    </ItemGroup>
+
+    <!-- This file gets imported by the project file on helix -->
+    <GenerateAOTProps
+        Properties="@(_WasmPropertiesToPass)"
+        OutputFile="$(BundleDir)publish\AOTTestProjectForHelix.props" />
 
     <Copy SourceFiles="@(BundleFiles)" DestinationFolder="$(BundleDir)%(TargetDir)" />
     <Copy SourceFiles="@(WasmFilesToIncludeInFileSystem)"  DestinationFiles="$(BundleDir)\extraFiles\%(WasmFilesToIncludeInFileSystem.TargetPath)" Condition="'%(WasmFilesToIncludeInFileSystem.TargetPath)' != ''" />
