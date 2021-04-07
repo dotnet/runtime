@@ -35,7 +35,7 @@
       <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)"
              TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
 
-      <_ExtraFiles Include="$(TestRootDir)\extraFiles\**\*" />
+      <_ExtraFiles Include="$(OriginalPublishDir)..\extraFiles\**\*" />
       <WasmFilesToIncludeInFileSystem Include="@(_ExtraFiles)" TargetPath="%(RecursiveDir)%(FileName)%(Extension)" />
     </ItemGroup>
   </Target>
