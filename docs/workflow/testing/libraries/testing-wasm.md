@@ -132,6 +132,22 @@ At the moment supported values are:
 
 By default, `chrome` browser is used.
 
+## AOT library tests
+
+- Building library tests with AOT, and (even) with `EnableAggressiveTrimming` takes 3-9mins on CI, and that adds up for all the assemblies, causing
+a large build time. To circumvent that on CI, we build the test assemblies on the build machine, but skip the WasmApp build part of it, since
+that includes the expensive AOT step.
+
+- Instead, we take the built test assembly+dependencies, and enough related bits to be able to run the `WasmBuildApp` target, with the original
+inputs.
+
+- To recreate a similar build+test run locally, add `/p:BuildWasmAOTTestsOnHelix=true` to the usual command line.
+- For example, with `./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release`
+
+    - AOT:  add `/p:EnableAggressiveTrimming=true /p:RunAOTCompilation=true /p:BuildWasmAOTTestsOnHelix=true`
+    - Only trimming (helpful to isolate issues caused by trimming):
+        - add `/p:EnableAggressiveTrimming=true /p:BuildWasmAOTTestsOnHelix=true`
+
 ## Kicking off outer loop tests from GitHub Interface
 
 Add the following to the comment of a PR.
