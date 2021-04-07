@@ -208,18 +208,6 @@ namespace System.Text.Json
             }
         }
 
-        // asynchronously await any pending stacks that resumable converters depend on.
-        public Task AwaitPendingTask()
-        {
-            Debug.Assert(PendingTask != null);
-            return PendingTask.IsCompleted ?
-                Task.CompletedTask :
-                Task.WhenAny(PendingTask); // wrap with Task.WhenAny to avoid surfacing any exceptions here
-
-            // Do not clear the `PendingTask` field here since the result
-            // will need to be consumed by a resumable converter.
-        }
-
         // Asynchronously dispose of any AsyncDisposables that have been scheduled for disposal
         public async ValueTask DisposePendingAsyncDisposables()
         {
@@ -258,10 +246,10 @@ namespace System.Text.Json
         /// </summary>
         public void DisposePendingDisposablesOnException()
         {
-            List<Exception>? exceptions = null;
+            Exception? exception = null;
 
             Debug.Assert(Current.AsyncEnumerator is null);
-            DisposeFrame(Current.CollectionEnumerator, ref exceptions);
+            DisposeFrame(Current.CollectionEnumerator, ref exception);
 
             int stackSize = Math.Max(_count, _continuationCount);
             if (stackSize > 1)
@@ -269,16 +257,16 @@ namespace System.Text.Json
                 for (int i = 0; i < stackSize - 1; i++)
                 {
                     Debug.Assert(_previous[i].AsyncEnumerator is null);
-                    DisposeFrame(_previous[i].CollectionEnumerator, ref exceptions);
+                    DisposeFrame(_previous[i].CollectionEnumerator, ref exception);
                 }
             }
 
-            if (exceptions is not null)
+            if (exception is not null)
             {
-                ThrowHelper.ThrowAggregateExceptions(exceptions);
+                ExceptionDispatchInfo.Capture(exception).Throw();
             }
 
-            static void DisposeFrame(IEnumerator? collectionEnumerator, ref List<Exception>? exceptions)
+            static void DisposeFrame(IEnumerator? collectionEnumerator, ref Exception? exception)
             {
                 try
                 {
@@ -289,8 +277,7 @@ namespace System.Text.Json
                 }
                 catch (Exception e)
                 {
-                    exceptions ??= new();
-                    exceptions.Add(e);
+                    exception = e;
                 }
             }
         }
@@ -301,25 +288,25 @@ namespace System.Text.Json
         /// </summary>
         public async ValueTask DisposePendingDisposablesOnExceptionAsync()
         {
-            List<Exception>? exceptions = null;
+            Exception? exception = null;
 
-            exceptions = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncEnumerator, exceptions).ConfigureAwait(false);
+            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncEnumerator, exception).ConfigureAwait(false);
 
             int stackSize = Math.Max(_count, _continuationCount);
             if (stackSize > 1)
             {
                 for (int i = 0; i < stackSize - 1; i++)
                 {
-                    exceptions = await DisposeFrame(_previous[i].CollectionEnumerator, _previous[i].AsyncEnumerator, exceptions).ConfigureAwait(false);
+                    exception = await DisposeFrame(_previous[i].CollectionEnumerator, _previous[i].AsyncEnumerator, exception).ConfigureAwait(false);
                 }
             }
 
-            if (exceptions is not null)
+            if (exception is not null)
             {
-                ThrowHelper.ThrowAggregateExceptions(exceptions);
+                ExceptionDispatchInfo.Capture(exception).Throw();
             }
 
-            static async ValueTask<List<Exception>?> DisposeFrame(IEnumerator? collectionEnumerator, IAsyncDisposable? asyncDisposable, List<Exception>? exceptions)
+            static async ValueTask<Exception?> DisposeFrame(IEnumerator? collectionEnumerator, IAsyncDisposable? asyncDisposable, Exception? exception)
             {
                 Debug.Assert(!(collectionEnumerator is not null && asyncDisposable is not null));
 
@@ -336,11 +323,10 @@ namespace System.Text.Json
                 }
                 catch (Exception e)
                 {
-                    exceptions ??= new();
-                    exceptions.Add(e);
+                    exception = e;
                 }
 
-                return exceptions;
+                return exception;
             }
         }
 

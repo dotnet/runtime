@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -94,20 +95,41 @@ namespace System.Text.Json
         /// <returns>An <see cref="IAsyncEnumerable{TValue}" /> representation of the provided JSON array.</returns>
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
+        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.</param>
         /// <returns>An <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
         public static IAsyncEnumerable<TValue> DeserializeAsyncEnumerable<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(
             Stream utf8Json,
-            JsonSerializerOptions? options = null)
+            JsonSerializerOptions? options = null,
+            CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
             {
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            return new AsyncEnumerableStreamingDeserializer<TValue>(utf8Json, options);
+            return CreateAsyncEnumerableDeserializer(utf8Json, options, cancellationToken);
+
+            static async IAsyncEnumerable<TValue> CreateAsyncEnumerableDeserializer(Stream utf8Json, JsonSerializerOptions? options, [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                using var asyncState = new ReadAsyncState(typeof(Queue<TValue>), options, cancellationToken);
+                bool isFinalBlock = false;
+                do
+                {
+                    isFinalBlock = await JsonSerializer.ReadFromStreamAsync(utf8Json, asyncState).ConfigureAwait(false);
+                    JsonSerializer.ContinueDeserialize<Queue<TValue>>(asyncState, isFinalBlock);
+                    if (asyncState.ReadStack.Current.ReturnValue is Queue<TValue> queue)
+                    {
+                        while (queue.Count > 0)
+                        {
+                            yield return queue.Dequeue();
+                        }
+                    }
+                }
+                while (!isFinalBlock);
+            }
         }
 
         internal static async ValueTask<TValue?> ReadAllAsync<TValue>(

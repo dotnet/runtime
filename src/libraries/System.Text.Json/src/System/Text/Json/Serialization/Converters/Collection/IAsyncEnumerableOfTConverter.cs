@@ -112,33 +112,15 @@ namespace System.Text.Json.Serialization.Converters
         {
             public readonly List<TElement> _buffer = new();
 
-            public IAsyncEnumerator<TElement> GetAsyncEnumerator(CancellationToken _) =>
-                new BufferedAsyncEnumerator(_buffer);
-
-            private sealed class BufferedAsyncEnumerator : IAsyncEnumerator<TElement>
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+            public async IAsyncEnumerator<TElement> GetAsyncEnumerator(CancellationToken _)
             {
-                private readonly List<TElement> _buffer;
-                private int _index;
-
-                public BufferedAsyncEnumerator(List<TElement> buffer)
+                foreach (TElement element in _buffer)
                 {
-                    _buffer = buffer;
-                    _index = -1;
-                }
-
-                public TElement Current => _index < 0 ? default! : _buffer[_index];
-                public ValueTask DisposeAsync() => default;
-                public ValueTask<bool> MoveNextAsync()
-                {
-                    if (_index == _buffer.Count - 1)
-                    {
-                        return new ValueTask<bool>(false);
-                    }
-
-                    _index++;
-                    return new ValueTask<bool>(true);
+                    yield return element;
                 }
             }
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         }
     }
 }

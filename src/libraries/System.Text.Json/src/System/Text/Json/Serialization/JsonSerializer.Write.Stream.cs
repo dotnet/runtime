@@ -141,7 +141,15 @@ namespace System.Text.Json
 
                         if (state.PendingTask is not null)
                         {
-                            await state.AwaitPendingTask().ConfigureAwait(false);
+                            try
+                            {
+                                await state.PendingTask.ConfigureAwait(false);
+                            }
+                            catch
+                            {
+                                // Exceptions will be propagated elsewhere
+                                // TODO https://github.com/dotnet/runtime/issues/22144
+                            }
                         }
 
                     } while (!isFinalBlock);

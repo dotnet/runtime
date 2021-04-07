@@ -91,11 +91,33 @@ namespace System.Text.Json.Serialization.Tests
 
             var token = new CancellationToken(canceled: true);
             using var stream = new MemoryStream(data);
-            IAsyncEnumerable<int> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<int>(stream, options);
+            var cancellableAsyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<int>(stream, options, token);
 
             await Assert.ThrowsAsync<TaskCanceledException>(async () =>
             {
-                await foreach (int element in asyncEnumerable.WithCancellation(token))
+                await foreach (int element in cancellableAsyncEnumerable)
+                {
+                }
+            });
+        }
+
+        [Fact]
+        public static async Task DeserializeAsyncEnumerable_EnumeratorWithCancellationToken_ThrowsOnCancellation()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                DefaultBufferSize = 1
+            };
+
+            byte[] data = JsonSerializer.SerializeToUtf8Bytes(Enumerable.Range(1, 100));
+
+            var token = new CancellationToken(canceled: true);
+            using var stream = new MemoryStream(data);
+            var cancellableAsyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<int>(stream, options).WithCancellation(token);
+
+            await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+            {
+                await foreach (int element in cancellableAsyncEnumerable)
                 {
                 }
             });

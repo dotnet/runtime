@@ -669,19 +669,5 @@ namespace System.Text.Json
                 ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, reader);
             }
         }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void ThrowAggregateExceptions(List<Exception> exceptions)
-        {
-            Debug.Assert(exceptions?.Count > 0);
-
-            if (exceptions.Count == 1)
-            {
-                ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
-            }
-
-            throw new AggregateException(exceptions);
-        }
     }
 }

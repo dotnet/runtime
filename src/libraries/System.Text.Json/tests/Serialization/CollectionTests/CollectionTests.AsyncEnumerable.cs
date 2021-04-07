@@ -73,7 +73,7 @@ namespace System.Text.Json.Tests.Serialization
             Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
         }
 
-        [Fact]
+        [Fact, OuterLoop]
         public static async Task WriteAsyncEnumerable_LongRunningEnumeration_Cancellation()
         {
             var longRunningEnumerable = new MockedAsyncEnumerable<int>(
