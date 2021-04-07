@@ -9183,12 +9183,36 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         JITDUMP(" (%s)\n", resolveTypeName[resolveType]);
                         location[source[otherTargetReg]] = REG_STK;
 
+                        regMaskTP otherTargetRegMask = genRegMask(otherTargetReg);
+                        targetRegsFromStack |= otherTargetRegMask;
+                        stackToRegIntervals[otherTargetReg] = otherInterval;
+                        targetRegsToDo &= ~otherTargetRegMask;
+
                         // Now, move the interval that is going to targetReg, and add its "fromReg" to
-                        // "targetRegsReady".
+                        // "targetRegsReady", only if it was one of the target register we originally determined.
                         addResolution(block, insertionPoint, sourceIntervals[sourceReg], targetReg, fromReg);
                         JITDUMP(" (%s)\n", resolveTypeName[resolveType]);
                         location[sourceReg] = REG_NA;
-                        targetRegsReady |= genRegMask(fromReg);
+
+                        if (source[fromReg] != REG_NA)
+                        {
+                            regMaskTP fromRegMask = genRegMask(fromReg);
+                            targetRegsReady |= fromRegMask;
+#ifdef TARGET_ARM
+                            if (genIsValidDoubleReg(fromReg))
+                            {
+                                // Ensure that either:
+                                // - the Interval targeting fromReg is not double, or
+                                // - the other half of the double is free.
+                                Interval* otherInterval = sourceIntervals[source[fromReg]];
+                                regNumber upperHalfReg  = REG_NEXT(fromReg);
+                                if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
+                                {
+                                    targetRegsReady &= ~fromRegMask;
+                                }
+                            }
+#endif // TARGET_ARM
+                        }
                     }
                     targetRegsToDo &= ~targetRegMask;
                 }
