@@ -336,14 +336,30 @@ namespace System.Text.Tests
 
             Assert.Equal(-1, transcodingStream.ReadByte()); // should've reached EOF
 
-            // Now put some invalid data into the inner stream as EOF.
+            // Now put some invalid data into the inner stream, followed by EOF, and ensure we get U+FFFD back out.
 
             innerStream.SetLength(0); // reset
-            innerStream.WriteByte(0xC0);
+            innerStream.WriteByte(0xC0); // [ C0 ] is never valid in UTF-8
             innerStream.Position = 0;
 
             sink.SetLength(0); // reset
             int numBytesReadJustNow;
+            do
+            {
+                numBytesReadJustNow = callback(transcodingStream, sink);
+                Assert.True(numBytesReadJustNow >= 0);
+            } while (numBytesReadJustNow > 0);
+
+            Assert.Equal("[FFFD]", ErrorCheckingAsciiEncoding.GetString(sink.ToArray()));
+            Assert.Equal(-1, transcodingStream.ReadByte()); // should've reached EOF
+
+            // Now put some incomplete data into the inner stream, followed by EOF, and ensure we get U+FFFD back out.
+
+            innerStream.SetLength(0); // reset
+            innerStream.WriteByte(0xC2); // [ C2 ] must be followed by [ 80..BF ] in UTF-8
+            innerStream.Position = 0;
+
+            sink.SetLength(0); // reset
             do
             {
                 numBytesReadJustNow = callback(transcodingStream, sink);
@@ -510,14 +526,30 @@ namespace System.Text.Tests
 
             Assert.Equal(-1, await transcodingStream.ReadByteAsync(expectedCancellationToken)); // should've reached EOF
 
-            // Now put some invalid data into the inner stream as EOF.
+            // Now put some invalid data into the inner stream, followed by EOF, and ensure we get U+FFFD back out.
 
             innerStream.SetLength(0); // reset
-            innerStream.WriteByte(0xC0);
+            innerStream.WriteByte(0xC0); // [ C0 ] is never valid in UTF-8
             innerStream.Position = 0;
 
             sink.SetLength(0); // reset
             int numBytesReadJustNow;
+            do
+            {
+                numBytesReadJustNow = await callback(transcodingStream, expectedCancellationToken, sink);
+                Assert.True(numBytesReadJustNow >= 0);
+            } while (numBytesReadJustNow > 0);
+
+            Assert.Equal("[FFFD]", ErrorCheckingAsciiEncoding.GetString(sink.ToArray()));
+            Assert.Equal(-1, await transcodingStream.ReadByteAsync(expectedCancellationToken)); // should've reached EOF
+
+            // Now put some incomplete data into the inner stream, followed by EOF, and ensure we get U+FFFD back out.
+
+            innerStream.SetLength(0); // reset
+            innerStream.WriteByte(0xC2); // [ C2 ] must be followed by [ 80..BF ] in UTF-8
+            innerStream.Position = 0;
+
+            sink.SetLength(0); // reset
             do
             {
                 numBytesReadJustNow = await callback(transcodingStream, expectedCancellationToken, sink);
