@@ -159,9 +159,17 @@ void GCToEEInterface::GcDone(int condemned)
 {
 }
 
+void GCToEEInterface::RefCountedHandleCallbacksBefore()
+{
+}
+
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 {
     return false;
+}
+
+void GCToEEInterface::RefCountedHandleCallbacksAfter()
+{
 }
 
 bool GCToEEInterface::IsPreemptiveGCDisabled()

@@ -36,8 +36,14 @@ public:
     // post-gc callback.
     static void GcDone(int condemned);
 
+    // Called before calling refcounted handle callback
+    static void RefCountedHandleCallbacksBefore();
+
     // Promote refcounted handle callback
     static bool RefCountedHandleCallbacks(Object * pObject);
+
+    // Called after calling refcounted handle callback
+    static void RefCountedHandleCallbacksAfter();
 
     // Sync block cache management
     static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);

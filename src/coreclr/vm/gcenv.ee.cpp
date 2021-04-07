@@ -292,6 +292,17 @@ void GCToEEInterface::GcDone(int condemned)
     Interop::OnGCFinished(condemned);
 }
 
+void GCToEEInterface::RefCountedHandleCallbacksBefore()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+}
+
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 {
     CONTRACTL
@@ -323,6 +334,17 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 #endif
 
     return false;
+}
+
+void GCToEEInterface::RefCountedHandleCallbacksAfter()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
 }
 
 void GCToEEInterface::GcBeforeBGCSweepWork()

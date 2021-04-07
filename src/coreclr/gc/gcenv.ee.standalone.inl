@@ -60,10 +60,22 @@ inline void GCToEEInterface::GcDone(int condemned)
     g_theGCToCLR->GcDone(condemned);
 }
 
+inline void GCToEEInterface::RefCountedHandleCallbacksBefore()
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->RefCountedHandleCallbacksBefore();
+}
+
 inline bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 {
     assert(g_theGCToCLR != nullptr);
     return g_theGCToCLR->RefCountedHandleCallbacks(pObject);
+}
+
+inline void GCToEEInterface::RefCountedHandleCallbacksAfter()
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->RefCountedHandleCallbacksAfter();
 }
 
 inline void GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)

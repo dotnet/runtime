@@ -211,10 +211,18 @@ public:
     virtual
     void GcDone(int condemned) = 0;
 
+    // Called before calling RefCountedHandleCallbacks() on RefCounted handles.
+    virtual
+    void RefCountedHandleCallbacksBefore() = 0;
+
     // Predicate for the GC to query whether or not a given refcounted handle should
     // be promoted.
     virtual
     bool RefCountedHandleCallbacks(Object * pObject) = 0;
+
+    // Called after calling RefCountedHandleCallbacks() on RefCounted handles.
+    virtual
+    void RefCountedHandleCallbacksAfter() = 0;
 
     // Performs a weak pointer scan of the sync block cache.
     virtual
