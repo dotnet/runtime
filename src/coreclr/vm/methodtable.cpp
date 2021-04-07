@@ -9308,16 +9308,16 @@ MethodTable::TryResolveConstraintMethodApprox(
         GC_TRIGGERS;
     } CONTRACTL_END;
 
+    if (pInterfaceMD->IsInterface() && pInterfaceMD->IsStatic() && pInterfaceMD->IsVirtual())
+    {
+        return TryResolveStaticVirtualConstraintMethodApprox(thInterfaceType, pInterfaceMD, pfForceUseRuntimeLookup);
+    }
+
     // We can't resolve constraint calls effectively for reference types, and there's
     // not a lot of perf. benefit in doing it anyway.
     //
     if (!IsValueType())
     {
-        if (pInterfaceMD->IsInterface() && pInterfaceMD->IsStatic() && pInterfaceMD->IsVirtual())
-        {
-            return TryResolveStaticVirtualConstraintMethodApprox(thInterfaceType, pInterfaceMD, pfForceUseRuntimeLookup);
-        }
-
         LOG((LF_JIT, LL_INFO10000, "TryResolveConstraintmethodApprox: not a value type %s\n", GetDebugClassName()));
         return NULL;
     }
