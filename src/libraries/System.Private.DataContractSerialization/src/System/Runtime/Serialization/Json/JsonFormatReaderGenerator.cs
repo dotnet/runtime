@@ -169,12 +169,9 @@ namespace System.Runtime.Serialization.Json
                 return _ilg;
             }
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The trimmer will never remove the Invoke method from delegates.")]
             private void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
             {
-                Debug.Assert(typeof(Delegate).IsAssignableFrom(delegateType));
-                MethodInfo signature = delegateType.GetMethod("Invoke")!;
+                MethodInfo signature = JsonFormatWriterGenerator.GetInvokeMethod(delegateType);
                 ParameterInfo[] parameters = signature.GetParameters();
                 Type[] paramTypes = new Type[parameters.Length];
                 for (int i = 0; i < parameters.Length; i++)
