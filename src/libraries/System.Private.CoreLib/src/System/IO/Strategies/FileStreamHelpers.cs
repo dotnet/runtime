@@ -7,11 +7,7 @@ namespace System.IO.Strategies
 {
     internal static partial class FileStreamHelpers
     {
-        // It's enabled by default. We are going to change that once we fix #16354, #25905 and #24847.
-        internal static bool UseNet5CompatStrategy { get; } = GetNet5CompatFileStreamSetting();
-
-        private static bool GetNet5CompatFileStreamSetting()
-            => AppContextConfigHelper.GetBooleanConfig("System.IO.UseNet5CompatFileStream", "DOTNET_SYSTEM_IO_USENET5COMPATFILESTREAM");
+        internal static bool UseNet5CompatStrategy { get; } = AppContextConfigHelper.GetBooleanConfig("System.IO.UseNet5CompatFileStream", "DOTNET_SYSTEM_IO_USENET5COMPATFILESTREAM");
 
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
             => WrapIfDerivedType(fileStream, ChooseStrategyCore(handle, access, share, bufferSize, isAsync));
