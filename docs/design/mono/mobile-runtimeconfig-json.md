@@ -5,7 +5,7 @@
 `runtimeconfig.json` is a file used by .NET 5+ applications to pass arbitrary configuration parameters via the application host to the .NET runtime.  On mobile and WebAssembly, we would like to support passing configuration properties from the Mono embedder to the runtime.
 
 To minimize the impact on the app startup time, the design constraints are as follows:
-1. Don’t parse JSON file at runtime at application startup
+1. Don’t parse JSON at runtime during application startup
 2. Don’t need to support full set of well-known properties, just the ones that make sense on mobile
 3. Don’t need to support shared framework configuration parameters
 4. Don't need to support the desktop host environment variables, startup hooks, or other configuration mechanisms that do not make sense on mobile.
