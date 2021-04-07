@@ -75,7 +75,7 @@ namespace System.Net.Quic.Tests
             }.WhenAllOrAnyFailed(millisecondsTimeout);
         }
 
-        internal async Task<int> ReadAll(QuicStream stream, byte[] buffer)
+        internal static async Task<int> ReadAll(QuicStream stream, byte[] buffer)
         {
             Memory<byte> memory = buffer;
             int bytesRead = 0;
@@ -93,7 +93,7 @@ namespace System.Net.Quic.Tests
             return bytesRead;
         }
 
-        internal void AssertArrayEqual(byte[] expected, byte[] actual)
+        internal static void AssertArrayEqual(byte[] expected, byte[] actual)
         {
             for (int i = 0; i < expected.Length; ++i)
             {
@@ -113,7 +113,7 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        private void PrintAroundIndex(byte[] arr, int idx, int dl = 3, int dr = 7)
+        private static void PrintAroundIndex(byte[] arr, int idx, int dl = 3, int dr = 7)
         {
             Console.Write(idx - (dl+1) >= 0 ? "[..., " : "[");
 
