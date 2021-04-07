@@ -27,6 +27,11 @@ void Compiler::optInit()
     optLoopCount = 0;
     optLoopTable = nullptr;
 
+#ifdef DEBUG
+    loopAlignCandidates = 0;
+    loopsAligned        = 0;
+#endif
+
     /* Keep track of the number of calls and indirect calls made by this method */
     optCallCount         = 0;
     optIndirectCallCount = 0;

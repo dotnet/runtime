@@ -9434,6 +9434,8 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     {
         assert(paddingToAdd == paddingNeeded);
     }
+
+    emitComp->loopsAligned++;
 #endif
 
     return emitOutputNOP(dst, paddingToAdd);
