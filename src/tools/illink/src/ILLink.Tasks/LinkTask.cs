@@ -23,7 +23,9 @@ namespace ILLink.Tasks
 		///       UnusedInterfaces
 		///       IPConstProp
 		///       Sealer
-		///   Maps to '-reference', and possibly '--action', '--enable-opt', '--disable-opt'
+		///   Optional metadata "TrimmerSingleWarn" may also be set to "True"/"False" to control
+		///   whether the linker produces granular warnings for this assembly.
+		///   Maps to '-reference', and possibly '--action', '--enable-opt', '--disable-opt', '--verbose'
 		/// </summary>
 		[Required]
 		public ITaskItem[] AssemblyPaths { get; set; }
@@ -72,6 +74,13 @@ namespace ILLink.Tasks
 		/// </summary>
 		public bool TreatWarningsAsErrors { set => _treatWarningsAsErrors = value; }
 		bool? _treatWarningsAsErrors;
+
+		/// <summary>
+		/// Produce at most one trim analysis warning per assembly.
+		/// Maps to '--singlewarn' if true, '--singlewarn-' if false.
+		/// </summary>
+		public bool SingleWarn { set => _singleWarn = value; }
+		bool? _singleWarn;
 
 		/// <summary>
 		/// The list of warnings to report as errors.
@@ -288,6 +297,13 @@ namespace ILLink.Tasks
 				args.AppendLine ();
 			}
 
+			if (_singleWarn is bool generalSingleWarn) {
+				if (generalSingleWarn)
+					args.AppendLine ("--singlewarn");
+				else
+					args.AppendLine ("--singlewarn-");
+			}
+
 			HashSet<string> assemblyNames = new HashSet<string> (StringComparer.OrdinalIgnoreCase);
 			foreach (var assembly in AssemblyPaths) {
 				var assemblyPath = assembly.ItemSpec;
@@ -316,6 +332,18 @@ namespace ILLink.Tasks
 						throw new ArgumentException ($"optimization metadata {optimization} must be True or False");
 
 					SetOpt (args, optimization, assemblyName, enabled);
+				}
+
+				// Add per-assembly verbosity arguments
+				string singleWarn = assembly.GetMetadata ("TrimmerSingleWarn");
+				if (!String.IsNullOrEmpty (singleWarn)) {
+					if (!Boolean.TryParse (singleWarn, out bool value))
+						throw new ArgumentException ($"TrimmerSingleWarn metadata must be True or False");
+
+					if (value)
+						args.Append ("--singlewarn ").AppendLine (Quote (assemblyName));
+					else
+						args.Append ("--singlewarn- ").AppendLine (Quote (assemblyName));
 				}
 			}
 

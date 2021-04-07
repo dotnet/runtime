@@ -187,6 +187,12 @@ namespace Mono.Linker
 
 		public List<IMarkHandler> MarkHandlers { get; }
 
+		public Dictionary<string, bool> SingleWarn { get; set; }
+
+		public bool GeneralSingleWarn { get; set; }
+
+		public HashSet<string> AssembliesWithGeneratedSingleWarning { get; set; }
+
 		public LinkContext (Pipeline pipeline, ILogger logger)
 		{
 			_pipeline = pipeline;
@@ -214,6 +220,9 @@ namespace Mono.Linker
 			WarnAsError = new Dictionary<int, bool> ();
 			WarnVersion = WarnVersion.Latest;
 			MarkHandlers = new List<IMarkHandler> ();
+			GeneralSingleWarn = false;
+			SingleWarn = new Dictionary<string, bool> ();
+			AssembliesWithGeneratedSingleWarning = new HashSet<string> ();
 
 			const CodeOptimizations defaultOptimizations =
 				CodeOptimizations.BeforeFieldInit |
@@ -618,6 +627,15 @@ namespace Mono.Linker
 				return !WarnAsError.TryGetValue (warningCode, out value) || value;
 
 			return WarnAsError.TryGetValue (warningCode, out value) && value;
+		}
+
+		public bool IsSingleWarn (string assemblyName)
+		{
+			bool value;
+			if (GeneralSingleWarn)
+				return !SingleWarn.TryGetValue (assemblyName, out value) || value;
+
+			return SingleWarn.TryGetValue (assemblyName, out value) && value;
 		}
 
 		static WarnVersion GetWarningVersion ()

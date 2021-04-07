@@ -240,6 +240,41 @@ namespace ILLink.Tasks.Tests
 			}
 		}
 
+		public static IEnumerable<object[]> SingleWarnCases => new List<object[]> {
+			new object[] {
+				true,
+				new ITaskItem [] {
+					new TaskItem ("AssemblyTrue.dll", new Dictionary<string, string> { { "TrimmerSingleWarn", "true" } } ),
+					new TaskItem ("AssemblyFalse.dll", new Dictionary<string, string> { { "TrimmerSingleWarn", "false" } } )
+				},
+			},
+			new object [] {
+				false,
+				new ITaskItem [] {
+					new TaskItem ("AssemblyTrue.dll", new Dictionary<string, string> { { "TrimmerSingleWarn", "true" } } ),
+					new TaskItem ("AssemblyFalse.dll", new Dictionary<string, string> { { "TrimmerSingleWarn", "false" } } )
+				}
+			}
+		};
+
+		[Theory]
+		[MemberData (nameof (SingleWarnCases))]
+		public void TestSingleWarn (bool singleWarn, ITaskItem[] assemblyPaths)
+		{
+			var task = new MockTask () {
+				AssemblyPaths = assemblyPaths,
+				SingleWarn = singleWarn
+			};
+			using (var driver = task.CreateDriver ()) {
+				Assert.Equal (singleWarn, driver.Context.GeneralSingleWarn);
+				var expectedSingleWarn = assemblyPaths.ToDictionary (
+					p => Path.GetFileNameWithoutExtension (p.ItemSpec),
+					p => bool.Parse (p.GetMetadata ("TrimmerSingleWarn"))
+				);
+				Assert.Equal (expectedSingleWarn, driver.Context.SingleWarn);
+			}
+		}
+
 		[Fact]
 		public void TestInvalidPerAssemblyOptimizations ()
 		{
