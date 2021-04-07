@@ -2611,7 +2611,7 @@ def process_mch_files_arg(coreclr_args):
         # Only include the directories corresponding to the current JIT/EE version, target OS, and MCH architecture (this is the
         # same filtering done for Azure storage). Only include them if they actually exist (e.g., the private store might have
         # windows x64 but not Linux arm).
-        target_specific_stores = [ os.path.abspath(os.path.join(store, coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)).lower() for store in coreclr_args.private_store ]
+        target_specific_stores = [ os.path.abspath(os.path.join(store, coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)) for store in coreclr_args.private_store ]
         filtered_stores = [ s for s in target_specific_stores if os.path.isdir(s) ]
         local_mch_paths += process_local_mch_files(coreclr_args, filtered_stores, mch_cache_dir)
 
