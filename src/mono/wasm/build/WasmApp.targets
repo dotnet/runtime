@@ -198,11 +198,6 @@
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <Error Condition="@(WasmAssembliesToBundle->Count()) == 0" Text="WasmAssembliesToBundle item is empty. No assemblies to process" />
 
-    <Error Condition="'$(RunAOTCompilation)' == 'true' and ('$(EMSDK_PATH)' == '' or !Exists('$(EMSDK_PATH)'))"
-           Text="Cannot find emscripten sdk, required for AOT'ing assemblies. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
-    <Error Condition="'$(WasmBuildNative)' == 'true' and ('$(EMSDK_PATH)' == '' or !Exists('$(EMSDK_PATH)'))"
-           Text="Cannot find emscripten sdk, required for native relinking. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
-
     <PropertyGroup>
       <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
@@ -537,7 +532,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunV8ScriptPath)" />
   </Target>
 
-  <Target Name="_CheckEmccIsExpectedVersion" Condition="'$(WasmBuildNative)' == 'true'">
+  <Target Name="_CheckEmccIsExpectedVersion">
     <ReadLinesFromFile File="$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-version.txt'))">
         <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
     </ReadLinesFromFile>
