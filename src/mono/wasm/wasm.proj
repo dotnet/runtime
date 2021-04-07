@@ -252,7 +252,7 @@
       </Libraries>
     </ItemGroup>
 
-    <Exec Command="dotnet build %(Libraries.RootDir)%(Libraries.Directory) /p:JSEngine=%(Libraries.Engine) /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm" />
+    <Exec Command="dotnet build %(Libraries.RootDir)%(Libraries.Directory) /p:Configuration=$(Configuration) /p:JSEngine=%(Libraries.Engine) /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm" />
   </Target>
 
 </Project>
