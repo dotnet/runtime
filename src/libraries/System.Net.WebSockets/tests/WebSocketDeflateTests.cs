@@ -276,6 +276,83 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50235")]
+        public async Task LargeMessageSplitInMultipleFramesActiveIssue()
+        {
+            // This test is exactly the same as LargeMessageSplitInMultipleFrames, but
+            // for the data seed it uses Random(0) where the other uses Random(10). This is done
+            // only because it was found that there is a bug in the deflate somewhere and it only appears
+            // so far when using 10 window bits and data generated using Random(0). Once
+            // the issue is resolved this test can be deleted and LargeMessageSplitInMultipleFrames should be
+            // updated to use Random(0).
+            WebSocketTestStream stream = new();
+            using WebSocket server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                IsServer = true,
+                DangerousDeflateOptions = new()
+                {
+                    ClientMaxWindowBits = 10
+                }
+            });
+            using WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            {
+                DangerousDeflateOptions = new()
+                {
+                    ClientMaxWindowBits = 10
+                }
+            });
+
+            Memory<byte> testData = new byte[ushort.MaxValue];
+            Memory<byte> receivedData = new byte[testData.Length];
+
+            // Make the data incompressible to make sure that the output is larger than the input
+            var rng = new Random(0);
+            rng.NextBytes(testData.Span);
+
+            // Test it a few times with different frame sizes
+            for (var i = 0; i < 10; ++i)
+            {
+                var frameSize = rng.Next(1024, 2048);
+                var position = 0;
+
+                while (position < testData.Length)
+                {
+                    var currentFrameSize = Math.Min(frameSize, testData.Length - position);
+                    var eof = position + currentFrameSize == testData.Length;
+
+                    await server.SendAsync(testData.Slice(position, currentFrameSize), WebSocketMessageType.Binary, eof, CancellationToken);
+                    position += currentFrameSize;
+                }
+
+                Assert.True(testData.Length < stream.Remote.Available, "The compressed data should be bigger.");
+                Assert.Equal(testData.Length, position);
+
+                // Receive the data from the client side
+                receivedData.Span.Clear();
+                position = 0;
+
+                // Intentionally receive with a frame size that is less than what the sender used
+                frameSize /= 3;
+
+                while (true)
+                {
+                    int currentFrameSize = Math.Min(frameSize, testData.Length - position);
+                    ValueWebSocketReceiveResult result = await client.ReceiveAsync(receivedData.Slice(position, currentFrameSize), CancellationToken);
+
+                    Assert.Equal(WebSocketMessageType.Binary, result.MessageType);
+                    position += result.Count;
+
+                    if (result.EndOfMessage)
+                        break;
+                }
+
+                Assert.Equal(0, stream.Remote.Available);
+                Assert.Equal(testData.Length, position);
+                Assert.True(testData.Span.SequenceEqual(receivedData.Span));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(SupportedWindowBits))]
         public async Task LargeMessageSplitInMultipleFrames(int windowBits)
@@ -301,7 +378,7 @@ namespace System.Net.WebSockets.Tests
             Memory<byte> receivedData = new byte[testData.Length];
 
             // Make the data incompressible to make sure that the output is larger than the input
-            var rng = new Random(0);
+            var rng = new Random(10);
             rng.NextBytes(testData.Span);
 
             // Test it a few times with different frame sizes
