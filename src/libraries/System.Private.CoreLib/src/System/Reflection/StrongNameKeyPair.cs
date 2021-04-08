@@ -29,9 +29,11 @@ namespace System.Reflection
         protected StrongNameKeyPair(SerializationInfo info, StreamingContext context) =>
             throw new PlatformNotSupportedException();
 
+        [Obsolete("Strong-name signing is not supported on this platform.")]
         public StrongNameKeyPair(string keyPairContainer) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
 
+        [Obsolete("Strong-name signing is not supported on this platform.")]
         public byte[] PublicKey =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
 

@@ -541,6 +541,7 @@ namespace System
         }
         public virtual bool Equals(Type? o) => o == null ? false : object.ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
 
+        [Obsolete("ReflectionOnly loading is not supported on this platform.")]
         public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly);
 
         public static Binder DefaultBinder

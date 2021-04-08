@@ -4427,6 +4427,7 @@ namespace System
         public virtual System.Type MakePointerType() { throw null; }
         public static bool operator ==(System.Type? left, System.Type? right) { throw null; }
         public static bool operator !=(System.Type? left, System.Type? right) { throw null; }
+        [System.ObsoleteAttribute("ReflectionOnly loading is not supported on this platform.")]
         public static System.Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw null; }
         public override string ToString() { throw null; }
     }
@@ -7798,10 +7799,13 @@ namespace System.Reflection
         public static System.Reflection.Assembly? LoadWithPartialName(string partialName) { throw null; }
         public static bool operator ==(System.Reflection.Assembly? left, System.Reflection.Assembly? right) { throw null; }
         public static bool operator !=(System.Reflection.Assembly? left, System.Reflection.Assembly? right) { throw null; }
+        [System.ObsoleteAttribute("ReflectionOnly loading is not supported on this platform.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw null; }
+        [System.ObsoleteAttribute("ReflectionOnly loading is not supported on this platform.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly ReflectionOnlyLoad(string assemblyString) { throw null; }
+        [System.ObsoleteAttribute("ReflectionOnly loading is not supported on this platform.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw null; }
         public override string ToString() { throw null; }
@@ -8773,7 +8777,9 @@ namespace System.Reflection
         public StrongNameKeyPair(byte[] keyPairArray) { }
         public StrongNameKeyPair(System.IO.FileStream keyPairFile) { }
         protected StrongNameKeyPair(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        [System.ObsoleteAttribute("Strong-name signing is not supported on this platform.")]
         public StrongNameKeyPair(string keyPairContainer) { }
+        [System.ObsoleteAttribute("Strong-name signing is not supported on this platform.")]
         public byte[] PublicKey { get { throw null; } }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
