@@ -280,9 +280,8 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
         [Fact]
-        public async Task AuthenticatedProxyTunnelRequest_PostAsyncWithNoCreds_ProxyAuthenticationRequiredStatusCode()
+        public async Task AuthenticatedProxyTunnelRequest_PostAsyncWithNoCreds_Throws()
         {
             if (IsWinHttpHandler)
             {
@@ -300,13 +299,12 @@ namespace System.Net.Http.Functional.Tests
                 handler.Proxy = new WebProxy(proxyServer.Uri);
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 using (HttpClient client = CreateHttpClient(handler))
-                using (HttpResponseMessage response = await client.PostAsync(Configuration.Http.SecureRemoteEchoServer, new StringContent(content)))
                 {
-                    Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, response.StatusCode);
+                    HttpRequestException e = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.PostAsync("https://nosuchhost.invalid", new StringContent(content)));
+                    Assert.Contains("407", e.Message);
                 }
             }
         }
-
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public async Task Proxy_SslProxyUnsupported_Throws()

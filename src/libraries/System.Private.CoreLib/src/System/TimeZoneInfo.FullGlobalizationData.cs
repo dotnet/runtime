@@ -7,6 +7,7 @@ namespace System
 {
     public sealed partial class TimeZoneInfo
     {
+        private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
         private const string FallbackCultureName = "en-US";
         private const string GmtId = "GMT";
 
@@ -51,6 +52,12 @@ namespace System
                 standardDisplayName = InvariantUtcStandardDisplayName;
 
             return standardDisplayName;
+        }
+
+        // Helper function to get the full display name for the UTC static time zone instance
+        private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
+        {
+            return $"(UTC) {standardDisplayName}";
         }
 
         // Helper function that retrieves various forms of time zone display names from ICU

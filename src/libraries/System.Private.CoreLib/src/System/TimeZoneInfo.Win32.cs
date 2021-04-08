@@ -34,6 +34,7 @@ namespace System
         private const string LastEntryValue = "LastEntry";
 
         private const int MaxKeyLength = 255;
+        private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
 
         private sealed partial class CachedData
         {
@@ -1037,6 +1038,12 @@ namespace System
                 standardDisplayName = InvariantUtcStandardDisplayName;
 
             return standardDisplayName;
+        }
+
+        // Helper function to get the full display name for the UTC static time zone instance
+        private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
+        {
+            return $"(UTC) {standardDisplayName}";
         }
     }
 }

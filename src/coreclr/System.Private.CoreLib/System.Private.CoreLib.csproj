@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -300,7 +300,11 @@
   <!-- Include additional sources shared files in the compilation -->
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
 
-  <ItemGroup>
+  <!--
+  TODO https://github.com/dotnet/roslyn/pull/51964: EventSource generator is currently disabled for design time builds as it is
+  causing impactful slowdowns while typing in the Corelib project.
+  -->
+  <ItemGroup Condition="'$(DesignTimeBuild)'!='true'">
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 

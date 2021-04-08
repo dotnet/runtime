@@ -130,8 +130,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
     platforms:
-    - Linux_x64
-    - Linux_x64_SourceBuild
+    - SourceBuild_Linux_x64
     jobParameters:
       nameSuffix: SourceBuild
       buildArgs: /p:DotNetBuildFromSource=true
