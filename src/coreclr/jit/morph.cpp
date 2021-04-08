@@ -7733,7 +7733,31 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             //
             if (nextBlock->bbJumpKind != BBJ_RETURN)
             {
-                BasicBlock* const nextNextBlock = nextBlock->GetUniqueSucc();
+                BasicBlock* nextNextBlock = nextBlock->GetUniqueSucc();
+
+                // Check if we have a sequence of GT_ASG blocks where the same variable is assigned to temps over
+                // and over (can happen after multiple GDVs of potential tall calls).
+                // TODO-CQ: Don't introduce new temps when we replace GT_RET_EXPR which is already assigned to a
+                // local.
+                if (nextNextBlock->bbJumpKind != BBJ_RETURN)
+                {
+                    assert(nextBlock->firstStmt() == nextBlock->lastStmt());
+                    GenTree* asgNode = nextBlock->firstStmt()->GetRootNode();
+                    assert(asgNode->OperIs(GT_ASG));
+
+                    unsigned lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+
+                    while (nextNextBlock->bbJumpKind != BBJ_RETURN)
+                    {
+                        assert(nextNextBlock->firstStmt() == nextNextBlock->lastStmt());
+                        asgNode = nextNextBlock->firstStmt()->GetRootNode();
+                        assert(asgNode->OperIs(GT_ASG));
+                        assert(lcl == asgNode->gtGetOp2()->AsLclVarCommon()->GetLclNum());
+                        lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+                        nextNextBlock = nextNextBlock->GetUniqueSucc();
+                    }
+                }
+
                 assert(nextNextBlock->bbJumpKind == BBJ_RETURN);
 
                 if (nextNextBlock->hasProfileWeight())
