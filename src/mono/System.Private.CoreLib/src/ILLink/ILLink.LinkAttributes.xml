@@ -225,7 +225,7 @@
     <type fullname="System.Reflection.AssemblyMetadataAttribute">
       <attribute internal="RemoveAttributeInstances">
         <argument type="System.Object">
-          <argument>ReceiveHotReloadDeltaNotification</argument>
+          <argument>IsTrimmable</argument>
         </argument>
       </attribute>
     </type>
