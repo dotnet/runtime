@@ -446,8 +446,6 @@ namespace System.Net.Quic.Tests
             byte[] testBuffer = new byte[8192];
             Random.Shared.NextBytes(testBuffer);
 
-            var dataConsumedByServer = new ManualResetEventSlim();
-
             await RunClientServer(
                 async clientConnection =>
                 {
@@ -463,8 +461,6 @@ namespace System.Net.Quic.Tests
 
                     await clientStream.WriteAsync(Memory<byte>.Empty, endStream: true);
                     await clientStream.ShutdownWriteCompleted();
-
-                    dataConsumedByServer.Wait();
                     await clientStream.ShutdownCompleted();
                 },
                 async serverConnection =>
@@ -488,7 +484,6 @@ namespace System.Net.Quic.Tests
 
                     Assert.Equal(testBuffer.Length, totalBytesRead);
                     AssertArrayEqual(testBuffer, receiveBuffer);
-                    dataConsumedByServer.Set();
 
                     await serverStream.ShutdownCompleted();
                 });

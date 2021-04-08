@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Net.Security;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Quic.Tests
@@ -49,12 +50,17 @@ namespace System.Net.Quic.Tests
         {
             using QuicListener listener = CreateQuicListener();
 
+            var serverFinished = new ManualResetEventSlim();
+            var clientFinished = new ManualResetEventSlim();
+
             await new[]
             {
                 Task.Run(async () =>
                 {
                     using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
                     await serverFunction(serverConnection);
+                    serverFinished.Set();
+                    clientFinished.Wait();
                     if (serverConnection.Connected)
                     {
                         await serverConnection.CloseAsync(0);
@@ -65,6 +71,8 @@ namespace System.Net.Quic.Tests
                     using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
                     await clientConnection.ConnectAsync();
                     await clientFunction(clientConnection);
+                    clientFinished.Set();
+                    serverFinished.Wait();
                     if (clientConnection.Connected)
                     {
                         await clientConnection.CloseAsync(0);

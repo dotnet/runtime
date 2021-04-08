@@ -87,8 +87,6 @@ namespace System.Net.Quic.Tests
         [MemberData(nameof(WriteData))]
         public async Task WriteTests(int[][] writes, WriteType writeType)
         {
-            var dataConsumedByServer = new ManualResetEventSlim();
-
             await RunClientServer(
                 async clientConnection =>
                 {
@@ -131,7 +129,6 @@ namespace System.Net.Quic.Tests
                     stream.Shutdown();
                     await stream.ShutdownWriteCompleted();
                     await stream.ShutdownCompleted();
-                    dataConsumedByServer.Wait();
                 },
                 async serverConnection =>
                 {
@@ -147,7 +144,6 @@ namespace System.Net.Quic.Tests
 
                     int expectedTotalBytes = writes.SelectMany(x => x).Sum();
                     Assert.Equal(expectedTotalBytes, totalBytes);
-                    dataConsumedByServer.Set();
 
                     stream.Shutdown();
                     await stream.ShutdownWriteCompleted();
@@ -217,10 +213,9 @@ namespace System.Net.Quic.Tests
             var serverFinished = new ManualResetEventSlim();
 
             await RunClientServer(
-                async clientConnection =>
+                clientConnection =>
                 {
-                    serverFinished.Wait();
-                    await Task.CompletedTask;
+                    return Task.CompletedTask;
                 },
                 async serverConnection =>
                 {
@@ -228,7 +223,6 @@ namespace System.Net.Quic.Tests
                     await serverConnection.CloseAsync(errorCode: 0);
                     // make sure 
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask.AsTask());
-                    serverFinished.Set();
                 });
         }
 
