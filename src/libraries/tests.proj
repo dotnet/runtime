@@ -80,6 +80,9 @@
     <!-- https://github.com/dotnet/runtime/issues/50923 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common/tests/System.Data.Common.Tests.csproj" />
 
+    <!-- https://github.com/dotnet/runtime/issues/50926 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
+
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
 
     <!-- Execution may be compromised -->
