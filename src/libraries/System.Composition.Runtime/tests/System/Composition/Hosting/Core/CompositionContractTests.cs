@@ -279,6 +279,7 @@ namespace System.Composition.Runtime.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50918", TestPlatforms.Android)]
         public void ToString_Get_ReturnsExpected(CompositionContract contract, string expected)
         {
             Assert.Equal(expected, contract.ToString());
