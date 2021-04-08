@@ -8,7 +8,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Buffers.Binary;
 
 namespace System.Diagnostics
 {
