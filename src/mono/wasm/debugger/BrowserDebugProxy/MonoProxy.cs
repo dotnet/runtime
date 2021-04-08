@@ -490,8 +490,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             ExecutionContext ctx = GetContext(id);
             Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId);
+            if (scope == null)
+                return false;
             var varIds = scope.Method.GetLiveVarsAt(scope.Location.CliLocation.Offset);
+            if (varIds == null)
+                return false;
             var varToSetValue = varIds.FirstOrDefault(v => v.Name == varName);
+            if (varToSetValue == null)
+                return false;
             Result res = await SendMonoCommand(id, MonoCommands.SetVariableValue(scopeId, varToSetValue.Index, varName, varValue["value"].Value<string>()), token);
             if (res.Value["result"]?["value"].Value<int>() == 1)
                 SendResponse(id, Result.Ok(new JObject()), token);

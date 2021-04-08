@@ -1532,49 +1532,88 @@ decode_value (MonoType *t, guint8 *addr, const char* variableValue)
 	char* endptr;
 	errno = 0;
 	switch (t->type) {
-	case MONO_TYPE_BOOLEAN:
-		if (!strcmp(variableValue, "True"))
-			*(guint8*)addr = 1;
-		else if (!strcmp(variableValue, "False"))
-			*(guint8*)addr = 0;
-		else 
-			return FALSE;
-		break;
-	case MONO_TYPE_CHAR:
-		*(gunichar2*)addr = variableValue[0];
-		break;
-	case MONO_TYPE_I1:
-		*(gint8*)addr = strtoimax(variableValue, &endptr, 10);
-		break;
-	case MONO_TYPE_U1:
-		*(guint8*)addr = strtoimax(variableValue, &endptr, 10);
-		break;
-	case MONO_TYPE_I2:
-		*(gint16*)addr = strtoimax(variableValue, &endptr, 10);
-		break;
-	case MONO_TYPE_U2:
-		*(guint16*)addr = strtoimax(variableValue, &endptr, 10);
-		break;
-	case MONO_TYPE_I4:
-		*(gint32*)addr = strtoimax(variableValue, &endptr, 10);
-		break;
-	case MONO_TYPE_U4:
-		*(guint32*)addr = strtoimax(variableValue, &endptr, 10);
-		break;
-	case MONO_TYPE_I8:
-		*(gint64*)addr = strtoimax(variableValue, &endptr, 10);
-		break;
-	case MONO_TYPE_U8:
-		*(guint64*)addr = strtol(variableValue, &endptr, 10);
-		break;
-	case MONO_TYPE_R4:
-		*(gfloat*)addr = strtof(variableValue, &endptr);
-		break;
-	case MONO_TYPE_R8:
-		*(gdouble*)addr = strtof(variableValue, &endptr);
+		case MONO_TYPE_BOOLEAN:
+			if (!strcasecmp (variableValue, "True"))
+				*(guint8*)addr = 1;
+			else if (!strcasecmp (variableValue, "False"))
+				*(guint8*)addr = 0;
+			else 
+				return FALSE;
+			break;
+		case MONO_TYPE_CHAR:
+			*(gunichar2*)addr = variableValue [0];
+			break;
+		case MONO_TYPE_I1: {
+			gint8 val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			*(gint8*)addr = val;
+			break;
+		}
+		case MONO_TYPE_U1: {
+			guint8 val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			*(guint8*)addr = val;
+			break;
+		}
+		case MONO_TYPE_I2: {
+			gint16 val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			*(gint16*)addr = val;
+			break;
+		}
+		case MONO_TYPE_U2: {
+			guint16 val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			*(guint16*)addr = val;
+			break;
+		}
+		case MONO_TYPE_I4: {
+			gint32 val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			*(gint32*)addr = val;
+			break;
+		}
+		case MONO_TYPE_U4: {
+			guint32 val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			*(guint32*)addr = val;
+			break;
+		}
+		case MONO_TYPE_I8: {
+			gint64 val = strtoimax (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			*(gint64*)addr = val;
+			break;
+		}
+		case MONO_TYPE_U8: {
+			guint64 val = strtol (variableValue, &endptr, 10);
+			if (errno != 0)
+				return FALSE;
+			*(guint64*)addr = val;
+			break;
+		}
+		case MONO_TYPE_R4: {
+			gfloat val = strtof (variableValue, &endptr);
+			if (errno != 0)
+				return FALSE;
+			*(gfloat*)addr = val;
+			break;
+		}
+		case MONO_TYPE_R8: {
+			gdouble val = strtof (variableValue, &endptr);
+			if (errno != 0)
+				return FALSE;
+			*(gdouble*)addr = val;
+			break;
+		}
 	}
-	if (errno != 0)
-		return FALSE;
 	return TRUE;
 }
 
@@ -1781,8 +1820,8 @@ handle_parent:
 		if (!p->name || strcasecmp (p->name, name) != 0)
 			continue;
 		if (!p->set)
-			continue;
-		MonoType *type = mono_method_signature_internal(p->set)->params[0];
+			break;
+		MonoType *type = mono_method_signature_internal (p->set)->params [0];
 		guint8 *val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (type)));
 	
 		if (!decode_value(type, val_buf, value)) {
@@ -1791,8 +1830,11 @@ handle_parent:
 		mono_runtime_try_invoke (p->set, obj, (void **)&val_buf, &exc, error);
 		if (!is_ok (error) && exc == NULL)
 			exc = (MonoObject*) mono_error_convert_to_exception (error);
-		if (exc)
+		if (exc) {
+			const char *error_message = mono_string_to_utf8_checked_internal (((MonoException *)exc)->message, error);
+			PRINT_DEBUG_MSG (2, "mono_wasm_set_value_on_object exception: %s\n", error_message);
 			return FALSE;
+		}
 		return TRUE;
 	}
 

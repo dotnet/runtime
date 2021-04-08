@@ -763,10 +763,7 @@ var MonoSupportLib = {
 
 		mono_wasm_set_variable_value: function (scope, index, name, newValue) {
 			console.debug (">> mono_wasm_set_variable_value " + name + " - " + newValue);
-			if (!this.mono_wasm_set_variable_value_native)
-				this.mono_wasm_set_variable_value_native = Module.cwrap ("mono_wasm_set_variable_value_native", 'number', ['number', 'number', 'string', 'string']);
-
-			var ret = this.mono_wasm_set_variable_value_native(scope, index, name, newValue);
+			var ret = this._c_fn_table.mono_wasm_set_variable_value_native_wrapper(scope, index, name, newValue);
             return ret;
         },
 
@@ -1243,20 +1240,20 @@ var MonoSupportLib = {
 			if (id === undefined)
 				throw new Error (`Invalid object id: ${objectIdStr}`);
 
-			let getter_res;
+			let setter_res;
 			if (id.scheme == 'object') {
 				if (isNaN (id.o) || id.o < 0)
 					throw new Error (`Invalid object id: ${objectIdStr}`);
 
-				let { res_ok, res } = this.mono_wasm_set_value_on_object_info (id.o, name, newvalue);
-				if (!res_ok)
+				var ret = this._c_fn_table.mono_wasm_set_value_on_object_wrapper (id.o, name, newvalue);
+				if (!ret)
 					throw new Error (`Invoking setter on ${objectIdStr} failed`);
 
-				getter_res = res;
+				setter_res = ret;
 			}
 			else
 				throw new Error (`Only object is supported for setters, id: ${objectIdStr}`);
-			return getter_res;
+			return setter_res;
 		},
 
 		_create_proxy_from_object_id: function (objectId) {
@@ -1422,13 +1419,14 @@ var MonoSupportLib = {
 			this._call_function_res_cache = {};
 
 			this._c_fn_table = {};
-			this._register_c_var_fn ('mono_wasm_get_object_properties',   'bool', [ 'number', 'number' ]);
-			this._register_c_var_fn ('mono_wasm_get_array_values',        'bool', [ 'number', 'number', 'number', 'number' ]);
-			this._register_c_var_fn ('mono_wasm_invoke_getter_on_object', 'bool', [ 'number', 'string' ]);
-			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  'bool', [ 'number', 'number', 'string' ]);
-			this._register_c_var_fn ('mono_wasm_get_local_vars',          'bool', [ 'number', 'number', 'number']);
-			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     'bool', [ 'number', 'number']);
-			this._register_c_var_fn ('mono_wasm_set_value_on_object', 'bool', [ 'number', 'string', 'string' ]);
+			this._register_c_var_fn ('mono_wasm_get_object_properties',   	'bool', [ 'number', 'number' ]);
+			this._register_c_var_fn ('mono_wasm_get_array_values',        	'bool', [ 'number', 'number', 'number', 'number' ]);
+			this._register_c_var_fn ('mono_wasm_invoke_getter_on_object', 	'bool', [ 'number', 'string' ]);
+			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  	'bool', [ 'number', 'number', 'string' ]);
+			this._register_c_var_fn ('mono_wasm_get_local_vars',          	'bool', [ 'number', 'number', 'number']);
+			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     	'bool', [ 'number', 'number']);
+			this._register_c_fn     ('mono_wasm_set_value_on_object',     	'bool', [ 'number', 'string', 'string' ]);
+			this._register_c_fn     ('mono_wasm_set_variable_value_native', 'bool', [ 'number', 'number', 'string', 'string']);
 			// DO NOT REMOVE - magic debugger init function
 			if (globalThis.dotnetDebugger)
 				debugger;

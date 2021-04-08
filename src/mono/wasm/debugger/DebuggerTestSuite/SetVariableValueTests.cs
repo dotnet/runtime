@@ -20,7 +20,7 @@ namespace DebuggerTests
         [InlineData(1, "b", 20, 30)]
         [InlineData(2, "c", 30, 60)]
         [InlineData(3, "d", 50, 70)]
-        public async Task SetVariableValuesAtBreakpointSite(int offset, string variableName, int originalValue, int newValue){
+        public async Task SetLocalPrimitiveTypeVariable(int offset, string variableName, int originalValue, int newValue){
             await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", offset);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
@@ -72,7 +72,7 @@ namespace DebuggerTests
         [Theory]
         [InlineData(5, "f", true, false)]
         [InlineData(5, "f", true, true)]
-        public async Task SetVariableValuesAtBreakpointSiteBool(int offset, string variableName, bool originalValue, bool newValue){
+        public async Task SetLocalBoolTypeVariable(int offset, string variableName, bool originalValue, bool newValue){
             await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", offset);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
