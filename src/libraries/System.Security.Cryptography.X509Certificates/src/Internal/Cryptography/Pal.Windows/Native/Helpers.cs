@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
 using System.Diagnostics;
-using System.Security.Cryptography;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Internal.Cryptography.Pal.Native
 {
@@ -73,11 +73,12 @@ namespace Internal.Cryptography.Pal.Native
         }
 
         public unsafe delegate void DecodedObjectReceiver(void* pvDecodedObject, int cbDecodedObject);
+        public unsafe delegate TResult DecodedObjectReceiver<TResult>(void* pvDecodedObject, int cbDecodedObject);
 
-        public static void DecodeObject(
+        public static TResult DecodeObject<TResult>(
             this byte[] encoded,
             CryptDecodeObjectStructType lpszStructType,
-            DecodedObjectReceiver receiver)
+            DecodedObjectReceiver<TResult> receiver)
         {
             unsafe
             {
@@ -109,14 +110,14 @@ namespace Internal.Cryptography.Pal.Native
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
                 }
 
-                receiver(decoded, cb);
+                return receiver(decoded, cb);
             }
         }
 
-        public static void DecodeObject(
+        public static TResult DecodeObject<TResult>(
             this byte[] encoded,
             string lpszStructType,
-            DecodedObjectReceiver receiver)
+            DecodedObjectReceiver<TResult> receiver)
         {
             unsafe
             {
@@ -148,7 +149,7 @@ namespace Internal.Cryptography.Pal.Native
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
                 }
 
-                receiver(decoded, cb);
+                return receiver(decoded, cb);
             }
         }
 

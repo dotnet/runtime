@@ -454,7 +454,7 @@ jobs:
           - jitstressregs0x1000
           - jitminopts
           - forcerelocs
-          - gcstress15
+          - gcstress0xf
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:

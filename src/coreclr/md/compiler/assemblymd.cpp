@@ -444,7 +444,7 @@ STDMETHODIMP RegMeta::EnumExportedTypes(           // S_OK or error
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    HENUMInternal       *pEnum;
+    HENUMInternal       *pEnum = NULL;
 
     LOG((LOGMD, "MD RegMeta::EnumExportedTypes(%#08x, %#08x, %#08x, %#08x)\n",
         phEnum, rExportedTypes, cMax, pcTokens));
@@ -488,14 +488,14 @@ STDMETHODIMP RegMeta::EnumExportedTypes(           // S_OK or error
 
         // set the output parameter.
         *ppmdEnum = pEnum;
+        pEnum = NULL;
     }
-    else
-        pEnum = *ppmdEnum;
 
     // we can only fill the minimum of what the caller asked for or what we have left.
-    IfFailGo(HENUMInternal::EnumWithCount(pEnum, cMax, rExportedTypes, pcTokens));
+    IfFailGo(HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rExportedTypes, pcTokens));
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
+    HENUMInternal::DestroyEnum(pEnum);
 
     STOP_MD_PERF(EnumExportedTypes);
     END_ENTRYPOINT_NOTHROW;

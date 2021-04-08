@@ -60,17 +60,13 @@ namespace System.Net.Http
             }
         }
 
-        private long CreationTickCount { get; } = Environment.TickCount64;
+        public long CreationTickCount { get; } = Environment.TickCount64;
 
         // Check if lifetime expired on connection.
         public bool LifetimeExpired(long nowTicks, TimeSpan lifetime)
         {
-            bool expired =
-                lifetime != Timeout.InfiniteTimeSpan &&
+            return lifetime != Timeout.InfiniteTimeSpan &&
                 (lifetime == TimeSpan.Zero || (nowTicks - CreationTickCount) > lifetime.TotalMilliseconds);
-
-            if (expired && NetEventSource.Log.IsEnabled()) Trace($"Connection no longer usable. Alive {TimeSpan.FromMilliseconds((nowTicks - CreationTickCount))} > {lifetime}.");
-            return expired;
         }
 
         internal static bool IsDigit(byte c) => (uint)(c - '0') <= '9' - '0';

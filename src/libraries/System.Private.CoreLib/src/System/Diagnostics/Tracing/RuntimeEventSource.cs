@@ -28,6 +28,7 @@ namespace System.Diagnostics.Tracing
         private IncrementingPollingCounter? _allocRateCounter;
         private PollingCounter? _timerCounter;
         private PollingCounter? _fragmentationCounter;
+        private PollingCounter? _committedCounter;
 
 #if !MONO
         private IncrementingPollingCounter? _exceptionCounter;
@@ -76,6 +77,7 @@ namespace System.Diagnostics.Tracing
                     var gcInfo = GC.GetGCMemoryInfo();
                     return gcInfo.HeapSizeBytes != 0 ? gcInfo.FragmentedBytes * 100d / gcInfo.HeapSizeBytes : 0;
                  }) { DisplayName = "GC Fragmentation", DisplayUnits = "%" };
+                _committedCounter ??= new PollingCounter("gc-committed", this, () => GC.GetGCMemoryInfo().TotalCommittedBytes) { DisplayName = "GC Committed Bytes", DisplayUnits = "B" };
 #if !MONO
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _gcTimeCounter ??= new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };

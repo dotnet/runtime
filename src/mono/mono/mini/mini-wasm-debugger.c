@@ -1632,14 +1632,12 @@ mono_wasm_set_is_debugger_attached (gboolean is_attached)
 	mono_set_is_debugger_attached (is_attached);
 	if (is_attached && has_pending_lazy_loaded_assemblies)
 	{
-		MonoDomain* domain =  mono_domain_get ();
-		mono_domain_assemblies_lock (domain);
-		GSList *tmp;
-		for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-			MonoAssembly *ass = (MonoAssembly *)tmp->data;
+		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
+		for (int i = 0; i < assemblies->len; ++i) {
+			MonoAssembly *ass = (MonoAssembly*)g_ptr_array_index (assemblies, i);
 			assembly_loaded (NULL, ass);
 		}
-		mono_domain_assemblies_unlock (domain);
+		g_ptr_array_free (assemblies, TRUE);
 		has_pending_lazy_loaded_assemblies = FALSE;
 	}
 }

@@ -58,7 +58,7 @@ namespace System.Net.WebSockets
                 char ch = subProtocol[i];
                 if (ch < 0x21 || ch > 0x7e)
                 {
-                    invalidChar = string.Format(CultureInfo.InvariantCulture, "[{0}]", (int)ch);
+                    invalidChar = $"[{(int)ch}]";
                     break;
                 }
 

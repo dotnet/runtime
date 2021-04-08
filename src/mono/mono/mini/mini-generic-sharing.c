@@ -2901,7 +2901,6 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 {
 	gpointer info;
 	int i, first_slot, size;
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoClass *klass = class_vtable->klass;
 	MonoGenericContext *class_context;
 	MonoRuntimeGenericContextInfoTemplate oti;
@@ -2963,7 +2962,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	class_context = mono_class_is_ginst (klass) ? &mono_class_get_generic_class (klass)->context : NULL;
 	MonoGenericContext context = { class_context ? class_context->class_inst : NULL, method_inst };
 
-	mono_domain_lock (domain);
+	mono_mem_manager_lock (jit_mm->mem_manager);
 
 	/* First check whether that slot isn't already instantiated.
 	   This might happen because lookup doesn't lock.  Allocate
@@ -2984,7 +2983,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 			rgctx_index = slot - first_slot + 1 + offset;
 			info = (MonoRuntimeGenericContext*)rgctx [rgctx_index];
 			if (info) {
-				mono_domain_unlock (domain);
+				mono_mem_manager_unlock (jit_mm->mem_manager);
 				return info;
 			}
 			break;
@@ -3002,7 +3001,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 
 	g_assert (!rgctx [rgctx_index]);
 
-	mono_domain_unlock (domain);
+	mono_mem_manager_unlock (jit_mm->mem_manager);
 
 	oti = class_get_rgctx_template_oti (get_shared_class (klass),
 										method_inst ? method_inst->type_argc : 0, slot, TRUE, TRUE, &do_free);
@@ -3017,7 +3016,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	*/
 
 	/*FIXME We should use CAS here, no need to take a lock.*/
-	mono_domain_lock (domain);
+	mono_mem_manager_lock (jit_mm->mem_manager);
 
 	/* Check whether the slot hasn't been instantiated in the
 	   meantime. */
@@ -3029,7 +3028,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 		rgctx [rgctx_index] = info;
 	}
 
-	mono_domain_unlock (domain);
+	mono_mem_manager_unlock (jit_mm->mem_manager);
 
 	if (do_free)
 		free_inflated_info (oti.info_type, oti.data);
