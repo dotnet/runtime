@@ -7,13 +7,12 @@ namespace System.Drawing
 {
     internal static class KnownColorTable
     {
-        public const int KnownColorCount = 176;
         public const byte KnownColorKindSystem = 0;
         public const byte KnownColorKindWeb = 1;
         public const byte KnownColorKindUnknown = 2;
 
         // All known color values (in order of definition in the KnownColor enum).
-        public static readonly uint[] s_colorValueTable = new uint[KnownColorCount]
+        public static readonly uint[] s_colorValueTable = new uint[]
         {
             // "not a known color"
             0,
@@ -239,7 +238,7 @@ namespace System.Drawing
         };
 
         // All known color kinds (in order of definition in the KnownColor enum).
-        public static readonly byte[] s_colorKindTable = new byte[KnownColorCount]
+        public static readonly byte[] s_colorKindTable = new byte[]
         {
             // "not a known color"
             KnownColorKindUnknown,
@@ -467,8 +466,9 @@ namespace System.Drawing
         internal static Color ArgbToKnownColor(uint argb)
         {
             Debug.Assert((argb & Color.ARGBAlphaMask) == Color.ARGBAlphaMask);
+            Debug.Assert(s_colorValueTable.Length == s_colorKindTable.Length);
 
-            for (int index = 1; index < KnownColorCount; ++index)
+            for (int index = 1; index < s_colorValueTable.Length; ++index)
             {
                 if (s_colorKindTable[index] == KnownColorKindWeb && s_colorValueTable[index] == argb)
                 {
