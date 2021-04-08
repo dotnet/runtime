@@ -58,7 +58,7 @@ namespace System.Net.WebSockets
                 new ValueTask(SendAsync(arraySegment, messageType, endOfMessage, cancellationToken)) :
                 SendWithArrayPoolAsync(buffer, messageType, endOfMessage, cancellationToken);
 
-        public virtual ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, WebSocketMessageFlags messageFlags = WebSocketMessageFlags.EndOfMessage, CancellationToken cancellationToken = default)
+        public virtual ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, WebSocketMessageFlags messageFlags, CancellationToken cancellationToken = default)
         {
             return SendAsync(buffer, messageType, messageFlags.HasFlag(WebSocketMessageFlags.EndOfMessage), cancellationToken);
         }
