@@ -242,7 +242,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
 
             ValueTask connectTask = clientConnection.ConnectAsync();
-            QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await connectTask;
 
             Assert.True(clientConnection.Connected);
