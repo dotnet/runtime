@@ -89,6 +89,9 @@
     <!-- https://github.com/dotnet/runtime/issues/50946 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSchema/XmlSchemaValidatorApi/System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj" />
 
+    <!-- https://github.com/dotnet/runtime/issues/50947 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSchema/XmlSchemaSet/System.Xml.XmlSchemaSet.Tests.csproj" />
+
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
 
     <!-- Execution may be compromised -->
