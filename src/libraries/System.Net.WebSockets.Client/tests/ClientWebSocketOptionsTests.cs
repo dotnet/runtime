@@ -234,12 +234,17 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ConditionalTheory(nameof(WebSocketsSupported))]
+        [ConditionalFact(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+<<<<<<< HEAD
         [InlineData("ws://")]
         [InlineData("wss://")]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials not supported on browser")]
         public async Task NonSecureConnect_ConnectThruProxy_CONNECTisUsed(string connectionType)
+=======
+        [PlatformSpecific(~TestPlatforms.Browser)] // Credentials not supported on browser
+        public async Task NonSecureConnect_ConnectThruProxy_CONNECTisUsed()
+>>>>>>> 4a979d820a8... fix bogus websocket test
         {
             if (PlatformDetection.IsWindows7)
             {
@@ -253,7 +258,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cws = new ClientWebSocket())
                 {
                     cws.Options.Proxy = new WebProxy(proxyUri);
-                    try { await cws.ConnectAsync(new Uri(connectionType + Guid.NewGuid().ToString("N")), default); } catch { }
+                    try { await cws.ConnectAsync(new Uri("ws://doesntmatter.invalid"), default); } catch { }
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
