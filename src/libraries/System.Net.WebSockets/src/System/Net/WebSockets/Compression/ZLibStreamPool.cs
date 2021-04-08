@@ -15,23 +15,13 @@ namespace System.Net.WebSockets.Compression
             = new ZLibStreamPool[WebSocketValidate.MaxDeflateWindowBits - WebSocketValidate.MinDeflateWindowBits + 1];
 
         /// <summary>
-        /// The maximum number of cached items.
-        /// </summary>
-        private static readonly int MaximumRetained = Environment.ProcessorCount * 2;
-
-        /// <summary>
         /// The amount of time after which a cached item will be removed.
         /// </summary>
-        private static readonly TimeSpan CacheTimeout = TimeSpan.FromMinutes(1);
-
-        /// <summary>
-        /// The <see cref="CacheTimeout"/> in <see cref="Stopwatch"/> ticks.
-        /// </summary>
-        private static readonly long CacheTimeoutRawTicks = (long)(CacheTimeout.Ticks / (double)TimeSpan.TicksPerSecond * Stopwatch.Frequency);
+        private const int TimeoutMilliseconds = 60_000;
 
         private readonly int _windowBits;
-        private readonly List<CacheItem> _inflaters = new(MaximumRetained);
-        private readonly List<CacheItem> _deflaters = new(MaximumRetained);
+        private readonly List<CacheItem> _inflaters = new();
+        private readonly List<CacheItem> _deflaters = new();
         private readonly Timer _cleaningTimer;
 
         /// <summary>
@@ -133,21 +123,13 @@ namespace System.Net.WebSockets.Compression
         {
             lock (cache)
             {
-                if (cache.Count < MaximumRetained)
-                {
-                    cache.Add(new CacheItem(stream));
+                cache.Add(new CacheItem(stream));
 
-                    if (Interlocked.Increment(ref _activeCount) == 1)
-                    {
-                        _cleaningTimer.Change(CacheTimeout, Timeout.InfiniteTimeSpan);
-                    }
-                    return;
+                if (Interlocked.Increment(ref _activeCount) == 1)
+                {
+                    _cleaningTimer.Change(TimeoutMilliseconds, Timeout.Infinite);
                 }
             }
-
-            // If we've reached the maximum retained capacity, we will destroy the stream.
-            // It is important that we do this outside of the cache lock.
-            stream.Dispose();
         }
 
         private bool TryGet(List<CacheItem> cache, [NotNullWhen(true)] out ZLibStreamHandle? stream)
@@ -181,31 +163,47 @@ namespace System.Net.WebSockets.Compression
             // would eventually do nothing.
             if (_activeCount > 0)
             {
-                _cleaningTimer.Change(CacheTimeout, Timeout.InfiniteTimeSpan);
+                _cleaningTimer.Change(TimeoutMilliseconds, Timeout.Infinite);
             }
         }
 
         private void RemoveStaleItems(List<CacheItem> cache)
         {
-            long currentTimestamp = Stopwatch.GetTimestamp();
+            long currentTimestamp = Environment.TickCount64;
+            List<ZLibStreamHandle>? removedStreams = null;
 
             lock (cache)
             {
-                for (int index = cache.Count; index >= 0;)
+                for (int index = 0; index < cache.Count; ++index)
                 {
                     CacheItem item = cache[index];
 
-                    if (currentTimestamp - item.Timestamp > CacheTimeoutRawTicks)
+                    if (currentTimestamp - item.Timestamp > TimeoutMilliseconds)
                     {
-                        item.Stream.Dispose();
-                        cache.RemoveAt(index);
+                        removedStreams ??= new List<ZLibStreamHandle>();
+                        removedStreams.Add(item.Stream);
                         Interlocked.Decrement(ref _activeCount);
                     }
                     else
                     {
-                        --index;
+                        // The freshest streams are in the back of the collection.
+                        // If we've reached a stream that is not timed out, all
+                        // other after it will not be as well.
+                        break;
                     }
                 }
+
+                if (removedStreams is null)
+                {
+                    return;
+                }
+
+                cache.RemoveRange(0, removedStreams.Count);
+            }
+
+            foreach (ZLibStreamHandle stream in removedStreams)
+            {
+                stream.Dispose();
             }
         }
 
@@ -269,7 +267,7 @@ namespace System.Net.WebSockets.Compression
             public CacheItem(ZLibStreamHandle stream)
             {
                 Stream = stream;
-                Timestamp = Stopwatch.GetTimestamp();
+                Timestamp = Environment.TickCount64;
             }
 
             public ZLibStreamHandle Stream { get; }
