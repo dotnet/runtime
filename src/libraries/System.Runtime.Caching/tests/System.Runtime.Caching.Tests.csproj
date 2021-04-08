@@ -11,6 +11,8 @@
     <Compile Include="System.Runtime.Caching\HostFileChangeMonitorTest.cs" />
     <Compile Include="System.Runtime.Caching\ObjectCacheTest.cs" />
     <Compile Include="System.Runtime.Caching\MemoryCacheTest.cs" />
+
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <ProjectReference Include="..\src\System.Runtime.Caching.csproj" />
