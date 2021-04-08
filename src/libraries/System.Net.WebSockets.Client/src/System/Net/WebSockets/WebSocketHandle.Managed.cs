@@ -23,6 +23,7 @@ namespace System.Net.WebSockets
 
         private readonly CancellationTokenSource _abortSource = new CancellationTokenSource();
         private WebSocketState _state = WebSocketState.Connecting;
+        private WebSocketDeflateOptions? _negotiatedDeflateOptions;
 
         public WebSocket? WebSocket { get; private set; }
         public WebSocketState State => WebSocket?.State ?? _state;
@@ -215,6 +216,7 @@ namespace System.Net.WebSockets
                     KeepAliveInterval = options.KeepAliveInterval,
                     DangerousDeflateOptions = negotiatedDeflateOptions
                 });
+                _negotiatedDeflateOptions = negotiatedDeflateOptions;
             }
             catch (Exception exc)
             {

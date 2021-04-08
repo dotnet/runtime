@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Net.Test.Common;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,12 +47,15 @@ namespace System.Net.WebSockets.Client.Tests
 
                 await client.ConnectAsync(uri, cancellation.Token);
 
-                // Uncomment this if we expose DangerousDeflateOptions directly in the websocket to represent the
-                // negotiated settings. Otherise we can't verify if compression is negotiated successfully.
-                // Assert.Equal(clientWindowBits - 1, client.DangerousDeflateOptions.ClientMaxWindowBits);
-                // Assert.Equal(clientContextTakeover, client.DangerousDeflateOptions.ClientContextTakeover);
-                // Assert.Equal(serverWindowBits - 1, client.DangerousDeflateOptions.ServerMaxWindowBits);
-                // Assert.Equal(serverContextTakover, client.DangerousDeflateOptions.ServerContextTakeover);
+                object webSocketHandle = client.GetType().GetField("_innerWebSocket", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(client);
+                WebSocketDeflateOptions negotiatedDeflateOptions = (WebSocketDeflateOptions)webSocketHandle.GetType()
+                    .GetField("_negotiatedDeflateOptions", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(webSocketHandle);
+
+                Assert.Equal(clientWindowBits - 1, negotiatedDeflateOptions.ClientMaxWindowBits);
+                Assert.Equal(clientContextTakeover, negotiatedDeflateOptions.ClientContextTakeover);
+                Assert.Equal(serverWindowBits - 1, negotiatedDeflateOptions.ServerMaxWindowBits);
+                Assert.Equal(serverContextTakover, negotiatedDeflateOptions.ServerContextTakeover);
             }, server => server.AcceptConnectionAsync(async connection =>
             {
                 var extensionsReply = CreateDeflateOptionsHeader(new WebSocketDeflateOptions
