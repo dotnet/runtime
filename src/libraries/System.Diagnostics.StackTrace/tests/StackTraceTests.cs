@@ -9,6 +9,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.IO;
 using Microsoft.DotNet.RemoteExecutor;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace System.Diagnostics
@@ -306,10 +307,12 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ToString_ShowILOffset()
         {
-            string SourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "ExceptionTestAssembly.dll");
+            string AssemblyName = "ExceptionTestAssembly.dll";
+            string SourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, AssemblyName);
+            string regPattern = @":token 0x([a-f0-9]*)\+0x([a-f0-9]*)";
 
             // Normal loading case
-            RemoteExecutor.Invoke((asmPath) =>
+            RemoteExecutor.Invoke((asmPath, asmName, p) =>
             {
                 AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
                 var asm = Assembly.LoadFrom(asmPath);
@@ -319,12 +322,13 @@ namespace System.Diagnostics.Tests
                 }
                 catch (Exception e)
                 {
-                    Assert.Contains(":token ", e.InnerException.StackTrace);
+                    Assert.Contains(asmName, e.InnerException.StackTrace);
+                    Assert.True(Regex.Match(e.InnerException.StackTrace, p).Success);
                 }
-            }, SourceTestAssemblyPath).Dispose();
+            }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
 
             // Assembly.Load(Byte[]) case
-            RemoteExecutor.Invoke((asmPath) =>
+            RemoteExecutor.Invoke((asmPath, asmName, p) =>
             {
                 AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
                 var inMemBlob = File.ReadAllBytes(asmPath);
@@ -335,12 +339,13 @@ namespace System.Diagnostics.Tests
                 }
                 catch (Exception e)
                 {
-                    Assert.Contains(":token ", e.InnerException.StackTrace);
+                    Assert.Contains(asmName, e.InnerException.StackTrace);
+                    Assert.True(Regex.Match(e.InnerException.StackTrace, p).Success);
                 }
-            }, SourceTestAssemblyPath).Dispose();
+            }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
 
             // AssmblyBuilder.DefineDynamicAssembly() case
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke((p) =>
             {
                 AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
                 AssemblyName asmName = new AssemblyName("ExceptionTestAssembly");
@@ -358,9 +363,10 @@ namespace System.Diagnostics.Tests
                 }
                 catch (Exception e)
                 {
-                    Assert.Contains(":token ", e.InnerException.StackTrace);
+                    Assert.Contains("RefEmit_InMemoryManifestModule", e.InnerException.StackTrace);
+                    Assert.True(Regex.Match(e.InnerException.StackTrace, p).Success);
                 }
-            }).Dispose();
+            }, regPattern).Dispose();
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
