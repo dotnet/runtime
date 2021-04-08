@@ -55,12 +55,20 @@ namespace System.Net.Quic.Tests
                 {
                     using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
                     await serverFunction(serverConnection);
+                    if (serverConnection.Connected)
+                    {
+                        await serverConnection.CloseAsync(0);
+                    }
                 }),
                 Task.Run(async () =>
                 {
                     using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
                     await clientConnection.ConnectAsync();
                     await clientFunction(clientConnection);
+                    if (clientConnection.Connected)
+                    {
+                        await clientConnection.CloseAsync(0);
+                    }
                 })
             }.WhenAllOrAnyFailed(millisecondsTimeout);
         }

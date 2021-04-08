@@ -160,6 +160,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             state.Connection = null;
 
+            state.Connected = false; // TODO: is this the right way to let the user know the connection was shut down? should there be a lock on state?
             state.ShutdownTcs.SetResult(MsQuicStatusCodes.Success);
 
             // Stop accepting new streams.
