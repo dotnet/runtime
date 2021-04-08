@@ -123,6 +123,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task HttpWebResponse_Serialize_ExpectedResult()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
