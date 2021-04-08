@@ -1992,6 +1992,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public void HttpWebRequest_Serialize_Fails()
         {
             using (MemoryStream fs = new MemoryStream())
