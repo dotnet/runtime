@@ -5,10 +5,26 @@
     <PackageDescription>The workload that contains the MonoAOTCompiler MSBuild task</PackageDescription>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageFile Include="WorkloadManifest.json" TargetPath="\" />
-    <PackageFile Include="WorkloadManifest.targets" TargetPath="\" />
-  </ItemGroup>
+  <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles" Returns="@(PackageFile)">
+    <PropertyGroup>
+      <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
+      <PackagePathVersion>PackageVersion=$(PackageVersion);</PackagePathVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_WorkloadManifestValues Include="PackageVersion" Value="$(PackageVersion)" />
+    </ItemGroup>
+
+    <GenerateFileFromTemplate
+      TemplateFile="WorkloadManifest.json.in"
+      Properties="@(_WorkloadManifestValues)"
+      OutputPath="$(WorkloadManifestPath)" />
+
+    <ItemGroup>
+      <PackageFile Include="$(WorkloadManifestPath)" Pack="true" PackagePath="\" />
+      <PackageFile Include="WorkloadManifest.targets" TargetPath="\" />
+    </ItemGroup>
+  </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

@@ -11,7 +11,7 @@
     "packs": {
       "Microsoft.NET.Runtime.MonoAOTCompiler.Task": {
         "kind": "Sdk",
-        "version": "6.0.0-preview.4.21205.3"
+        "version": "${PackageVersion}"
       }
     }
   }
