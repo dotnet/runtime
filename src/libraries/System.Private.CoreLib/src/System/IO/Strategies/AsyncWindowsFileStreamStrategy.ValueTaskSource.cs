@@ -10,6 +10,8 @@ using System.Threading.Tasks.Sources;
 
 namespace System.IO.Strategies
 {
+    using TaskSourceCodes = FileStreamHelpers.TaskSourceCodes;
+
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
         /// <summary>
@@ -52,7 +54,7 @@ namespace System.IO.Strategies
             {
                 _strategy = strategy;
 
-                _result = FileStreamHelpers.NoResult;
+                _result = TaskSourceCodes.NoResult;
 
                 _source = default;
                 // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
@@ -85,23 +87,23 @@ namespace System.IO.Strategies
                 if (_overlapped != null)
                 {
                     // Register the cancellation only if the IO hasn't completed
-                    long packedResult = Interlocked.CompareExchange(ref _result, FileStreamHelpers.RegisteringCancellation, FileStreamHelpers.NoResult);
-                    if (packedResult == FileStreamHelpers.NoResult)
+                    long packedResult = Interlocked.CompareExchange(ref _result, TaskSourceCodes.RegisteringCancellation, TaskSourceCodes.NoResult);
+                    if (packedResult == TaskSourceCodes.NoResult)
                     {
                         _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) => ((ValueTaskSource)s!).Cancel(token), this);
 
                         // Switch the result, just in case IO completed while we were setting the registration
-                        packedResult = Interlocked.Exchange(ref _result, FileStreamHelpers.NoResult);
+                        packedResult = Interlocked.Exchange(ref _result, TaskSourceCodes.NoResult);
                     }
-                    else if (packedResult != FileStreamHelpers.CompletedCallback)
+                    else if (packedResult != TaskSourceCodes.CompletedCallback)
                     {
                         // Failed to set the result, IO is in the process of completing
                         // Attempt to take the packed result
-                        packedResult = Interlocked.Exchange(ref _result, FileStreamHelpers.NoResult);
+                        packedResult = Interlocked.Exchange(ref _result, TaskSourceCodes.NoResult);
                     }
 
                     // If we have a callback that needs to be completed
-                    if ((packedResult != FileStreamHelpers.NoResult) && (packedResult != FileStreamHelpers.CompletedCallback) && (packedResult != FileStreamHelpers.RegisteringCancellation))
+                    if ((packedResult != TaskSourceCodes.NoResult) && (packedResult != TaskSourceCodes.CompletedCallback) && (packedResult != TaskSourceCodes.RegisteringCancellation))
                     {
                         CompleteCallback((ulong)packedResult);
                     }
@@ -151,19 +153,19 @@ namespace System.IO.Strategies
                 ulong packedResult;
                 if (errorCode != 0 && errorCode != Interop.Errors.ERROR_BROKEN_PIPE && errorCode != Interop.Errors.ERROR_NO_DATA)
                 {
-                    packedResult = ((ulong)FileStreamHelpers.ResultError | errorCode);
+                    packedResult = ((ulong)TaskSourceCodes.ResultError | errorCode);
                 }
                 else
                 {
-                    packedResult = ((ulong)FileStreamHelpers.ResultSuccess | numBytes);
+                    packedResult = ((ulong)TaskSourceCodes.ResultSuccess | numBytes);
                 }
 
                 // Stow the result so that other threads can observe it
                 // And, if no other thread is registering cancellation, continue
-                if (Interlocked.Exchange(ref valueTaskSource._result, (long)packedResult) == FileStreamHelpers.NoResult)
+                if (Interlocked.Exchange(ref valueTaskSource._result, (long)packedResult) == TaskSourceCodes.NoResult)
                 {
                     // Successfully set the state, attempt to take back the callback
-                    if (Interlocked.Exchange(ref valueTaskSource._result, FileStreamHelpers.CompletedCallback) != FileStreamHelpers.NoResult)
+                    if (Interlocked.Exchange(ref valueTaskSource._result, TaskSourceCodes.CompletedCallback) != TaskSourceCodes.NoResult)
                     {
                         // Successfully got the callback, finish the callback
                         valueTaskSource.CompleteCallback(packedResult);
@@ -180,8 +182,8 @@ namespace System.IO.Strategies
                 ReleaseNativeResource();
 
                 // Unpack the result and send it to the user
-                long result = (long)(packedResult & FileStreamHelpers.ResultMask);
-                if (result == FileStreamHelpers.ResultError)
+                long result = (long)(packedResult & TaskSourceCodes.ResultMask);
+                if (result == TaskSourceCodes.ResultError)
                 {
                     int errorCode = unchecked((int)(packedResult & uint.MaxValue));
                     if (errorCode == Interop.Errors.ERROR_OPERATION_ABORTED)
@@ -197,7 +199,7 @@ namespace System.IO.Strategies
                 }
                 else
                 {
-                    Debug.Assert(result == FileStreamHelpers.ResultSuccess, "Unknown result");
+                    Debug.Assert(result == TaskSourceCodes.ResultSuccess, "Unknown result");
                     _source.SetResult((int)(packedResult & uint.MaxValue));
                 }
             }
