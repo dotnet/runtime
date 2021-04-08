@@ -92,6 +92,9 @@
     <!-- https://github.com/dotnet/runtime/issues/50947 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSchema/XmlSchemaSet/System.Xml.XmlSchemaSet.Tests.csproj" />
 
+    <!-- https://github.com/dotnet/runtime/issues/50948 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/Xslt/XslCompiledTransformApi/System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" />
+
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
 
     <!-- Execution may be compromised -->
