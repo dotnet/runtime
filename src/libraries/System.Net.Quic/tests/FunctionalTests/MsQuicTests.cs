@@ -210,8 +210,6 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task CloseAsync_ByServer_AcceptThrows()
         {
-            var serverFinished = new ManualResetEventSlim();
-
             await RunClientServer(
                 clientConnection =>
                 {

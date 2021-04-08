@@ -20,57 +20,37 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task BasicTest()
         {
-            using QuicListener listener = CreateQuicListener();
-
-            var dataConsumedByServer = new ManualResetEventSlim();
-            var dataConsumedByClient = new ManualResetEventSlim();
-
-            for (int i = 0; i < 100; i++)
-            {
-                dataConsumedByServer.Reset();
-                dataConsumedByClient.Reset();
-
-                Task listenTask = Task.Run(async () =>
+            await RunClientServer(
+                iterations: 100,
+                serverFunction: async connection =>
                 {
-                    using QuicConnection connection = await listener.AcceptConnectionAsync();
                     await using QuicStream stream = await connection.AcceptStreamAsync();
 
                     byte[] buffer = new byte[s_data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
-                    dataConsumedByServer.Set();
 
                     Assert.Equal(s_data.Length, bytesRead);
                     Assert.True(s_data.Span.SequenceEqual(buffer));
 
                     await stream.WriteAsync(s_data, endStream: true);
-
                     await stream.ShutdownCompleted();
-                    dataConsumedByClient.Wait();
-                    await connection.CloseAsync(errorCode: 0);
-                });
-
-                Task clientTask = Task.Run(async () =>
+                },
+                clientFunction: async connection =>
                 {
-                    using QuicConnection connection = CreateQuicConnection(listener.ListenEndPoint);
-                    await connection.ConnectAsync();
                     await using QuicStream stream = connection.OpenBidirectionalStream();
 
                     await stream.WriteAsync(s_data, endStream: true);
+                    await stream.ShutdownWriteCompleted();
 
                     byte[] buffer = new byte[s_data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
-                    dataConsumedByClient.Set();
 
                     Assert.Equal(s_data.Length, bytesRead);
                     Assert.True(s_data.Span.SequenceEqual(buffer));
 
                     await stream.ShutdownCompleted();
-                    dataConsumedByServer.Wait();
-                    await connection.CloseAsync(errorCode: 0);
-                });
-
-                await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 10000);
-            }
+                }
+            );
         }
 
         [Fact]
@@ -86,27 +66,16 @@ namespace System.Net.Quic.Tests
                 m = m[s_data.Length..];
             }
 
-            using QuicListener listener = CreateQuicListener();
-
-            var dataConsumedByServer = new ManualResetEventSlim();
-            var dataConsumedByClient = new ManualResetEventSlim();
-
-            for (int j = 0; j < 100; j++)
-            {
-                dataConsumedByServer.Reset();
-                dataConsumedByClient.Reset();
-
-                Task listenTask = Task.Run(async () =>
+            await RunClientServer(
+                iterations: 100,
+                serverFunction: async connection =>
                 {
-                    // Connection isn't being accepted, interesting.
-                    using QuicConnection connection = await listener.AcceptConnectionAsync();
                     await using QuicStream stream = await connection.AcceptStreamAsync();
 
                     byte[] buffer = new byte[expectedBytesCount];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(expectedBytesCount, bytesRead);
                     Assert.True(expected.SequenceEqual(buffer));
-                    dataConsumedByServer.Set();
 
                     for (int i = 0; i < sendCount; i++)
                     {
@@ -116,14 +85,9 @@ namespace System.Net.Quic.Tests
                     await stream.ShutdownWriteCompleted();
 
                     await stream.ShutdownCompleted();
-                    dataConsumedByClient.Wait();
-                    await connection.CloseAsync(errorCode: 0);
-                });
-
-                Task clientTask = Task.Run(async () =>
+                },
+                clientFunction: async connection =>
                 {
-                    using QuicConnection connection = CreateQuicConnection(listener.ListenEndPoint);
-                    await connection.ConnectAsync();
                     await using QuicStream stream = connection.OpenBidirectionalStream();
 
                     for (int i = 0; i < sendCount; i++)
@@ -137,29 +101,18 @@ namespace System.Net.Quic.Tests
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(expectedBytesCount, bytesRead);
                     Assert.True(expected.SequenceEqual(buffer));
-                    dataConsumedByClient.Set();
 
                     await stream.ShutdownCompleted();
-                    dataConsumedByServer.Wait();
-                    await connection.CloseAsync(errorCode: 0);
-                });
-
-                await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
-            }
+                }
+            );
         }
 
         [Fact]
         public async Task MultipleStreamsOnSingleConnection()
         {
-            using QuicListener listener = CreateQuicListener();
-
-            var dataConsumedByServer = new ManualResetEventSlim();
-            var dataConsumedByClient = new ManualResetEventSlim();
-
-            Task listenTask = Task.Run(async () =>
-            {
+            await RunClientServer(
+                serverFunction: async connection =>
                 {
-                    using QuicConnection connection = await listener.AcceptConnectionAsync();
                     await using QuicStream stream = await connection.AcceptStreamAsync();
                     await using QuicStream stream2 = await connection.AcceptStreamAsync();
 
@@ -174,8 +127,6 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(s_data.Length, bytesRead2);
                     Assert.True(s_data.Span.SequenceEqual(buffer2));
 
-                    dataConsumedByServer.Set();
-
                     await stream.WriteAsync(s_data, endStream: true);
                     await stream.ShutdownWriteCompleted();
                     await stream2.WriteAsync(s_data, endStream: true);
@@ -183,43 +134,32 @@ namespace System.Net.Quic.Tests
 
                     await stream.ShutdownCompleted();
                     await stream2.ShutdownCompleted();
-                    dataConsumedByClient.Wait();
-                    await connection.CloseAsync(errorCode: 0);
+                },
+                clientFunction: async connection =>
+                {
+                    await using QuicStream stream = connection.OpenBidirectionalStream();
+                    await using QuicStream stream2 = connection.OpenBidirectionalStream();
+
+                    await stream.WriteAsync(s_data, endStream: true);
+                    await stream.ShutdownWriteCompleted();
+                    await stream2.WriteAsync(s_data, endStream: true);
+                    await stream2.ShutdownWriteCompleted();
+
+                    byte[] buffer = new byte[s_data.Length];
+                    byte[] buffer2 = new byte[s_data.Length];
+
+                    int bytesRead = await ReadAll(stream, buffer);
+                    Assert.Equal(s_data.Length, bytesRead);
+                    Assert.True(s_data.Span.SequenceEqual(buffer));
+
+                    int bytesRead2 = await ReadAll(stream2, buffer2);
+                    Assert.Equal(s_data.Length, bytesRead2);
+                    Assert.True(s_data.Span.SequenceEqual(buffer2));
+
+                    await stream.ShutdownCompleted();
+                    await stream2.ShutdownCompleted();
                 }
-            });
-
-            Task clientTask = Task.Run(async () =>
-            {
-                using QuicConnection connection = CreateQuicConnection(listener.ListenEndPoint);
-                await connection.ConnectAsync();
-                await using QuicStream stream = connection.OpenBidirectionalStream();
-                await using QuicStream stream2 = connection.OpenBidirectionalStream();
-
-                await stream.WriteAsync(s_data, endStream: true);
-                await stream.ShutdownWriteCompleted();
-                await stream2.WriteAsync(s_data, endStream: true);
-                await stream2.ShutdownWriteCompleted();
-
-                byte[] buffer = new byte[s_data.Length];
-                byte[] buffer2 = new byte[s_data.Length];
-
-                int bytesRead = await ReadAll(stream, buffer);
-                Assert.Equal(s_data.Length, bytesRead);
-                Assert.True(s_data.Span.SequenceEqual(buffer));
-
-                int bytesRead2 = await ReadAll(stream2, buffer2);
-                Assert.Equal(s_data.Length, bytesRead2);
-                Assert.True(s_data.Span.SequenceEqual(buffer2));
-
-                dataConsumedByClient.Set();
-
-                await stream.ShutdownCompleted();
-                await stream2.ShutdownCompleted();
-                dataConsumedByServer.Wait();
-                await connection.CloseAsync(errorCode: 0);
-            });
-
-            await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 60000);
+            );
         }
 
         [Fact]
@@ -249,26 +189,16 @@ namespace System.Net.Quic.Tests
             const int NumberOfWrites = 256;       // total sent = 16M
             byte[] data = Enumerable.Range(0, writeSize * NumberOfWrites).Select(x => (byte)x).ToArray();
 
-            using QuicListener listener = CreateQuicListener();
-
-            var dataConsumedByServer = new ManualResetEventSlim();
-            var dataConsumedByClient = new ManualResetEventSlim();
-
-            for (int j = 0; j < 5; j++)
-            {
-                dataConsumedByServer.Reset();
-                dataConsumedByClient.Reset();
-
-                Task listenTask = Task.Run(async () =>
+            await RunClientServer(
+                iterations: 5,
+                serverFunction: async connection =>
                 {
-                    using QuicConnection connection = await listener.AcceptConnectionAsync();
                     await using QuicStream stream = await connection.AcceptStreamAsync();
 
                     byte[] buffer = new byte[data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(data.Length, bytesRead);
                     AssertArrayEqual(data, buffer);
-                    dataConsumedByServer.Set();
 
                     for (int pos = 0; pos < data.Length; pos += writeSize)
                     {
@@ -278,14 +208,9 @@ namespace System.Net.Quic.Tests
                     await stream.ShutdownWriteCompleted();
 
                     await stream.ShutdownCompleted();
-                    dataConsumedByClient.Wait();
-                    await connection.CloseAsync(errorCode: 0);
-                });
-
-                Task clientTask = Task.Run(async () =>
+                },
+                clientFunction: async connection =>
                 {
-                    using QuicConnection connection = CreateQuicConnection(listener.ListenEndPoint);
-                    await connection.ConnectAsync();
                     await using QuicStream stream = connection.OpenBidirectionalStream();
 
                     for (int pos = 0; pos < data.Length; pos += writeSize)
@@ -294,20 +219,15 @@ namespace System.Net.Quic.Tests
                     }
                     await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
                     await stream.ShutdownWriteCompleted();
-                    dataConsumedByServer.Wait();
 
                     byte[] buffer = new byte[data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(data.Length, bytesRead);
                     AssertArrayEqual(data, buffer);
 
-                    dataConsumedByClient.Set();
                     await stream.ShutdownCompleted();
-                    await connection.CloseAsync(errorCode: 0);
-                });
-
-                await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
-            }
+                }
+            );
         }
 
         [Fact]

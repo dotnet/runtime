@@ -54,33 +54,39 @@ namespace System.Net.Quic.Tests
             return listener;
         }
 
-        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int millisecondsTimeout = 10_000)
+        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
         {
             using QuicListener listener = CreateQuicListener();
 
             var serverFinished = new ManualResetEventSlim();
             var clientFinished = new ManualResetEventSlim();
 
-            await new[]
+            for (int i = 0; i < iterations; ++i)
             {
-                Task.Run(async () =>
+                serverFinished.Reset();
+                clientFinished.Reset();
+
+                await new[]
                 {
-                    using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-                    await serverFunction(serverConnection);
-                    serverFinished.Set();
-                    clientFinished.Wait();
-                    await serverConnection.CloseAsync(0);
-                }),
-                Task.Run(async () =>
-                {
-                    using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
-                    await clientConnection.ConnectAsync();
-                    await clientFunction(clientConnection);
-                    clientFinished.Set();
-                    serverFinished.Wait();
-                    await clientConnection.CloseAsync(0);
-                })
-            }.WhenAllOrAnyFailed(millisecondsTimeout);
+                    Task.Run(async () =>
+                    {
+                        using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                        await serverFunction(serverConnection);
+                        serverFinished.Set();
+                        clientFinished.Wait();
+                        await serverConnection.CloseAsync(0);
+                    }),
+                    Task.Run(async () =>
+                    {
+                        using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+                        await clientConnection.ConnectAsync();
+                        await clientFunction(clientConnection);
+                        clientFinished.Set();
+                        serverFinished.Wait();
+                        await clientConnection.CloseAsync(0);
+                    })
+                }.WhenAllOrAnyFailed(millisecondsTimeout);
+            }
         }
 
         internal static async Task<int> ReadAll(QuicStream stream, byte[] buffer)
