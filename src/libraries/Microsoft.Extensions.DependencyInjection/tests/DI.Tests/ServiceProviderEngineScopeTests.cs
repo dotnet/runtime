@@ -21,6 +21,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Assert.Throws<ObjectDisposedException>(() => serviceProviderEngineScope.ResolvedServices);
         }
 
+        [Fact]
+        public void DoubleDisposeWorks()
+        {
+            var engine = new FakeEngine();
+            var serviceProviderEngineScope = new ServiceProviderEngineScope(engine);
+            serviceProviderEngineScope.ResolvedServices.Add(new ServiceCacheKey(typeof(IFakeService), 0), null);
+            serviceProviderEngineScope.Dispose();
+            serviceProviderEngineScope.Dispose();
+        }
+
         private class FakeEngine : ServiceProviderEngine
         {
             public FakeEngine() :
