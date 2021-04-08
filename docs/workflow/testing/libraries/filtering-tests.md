@@ -71,7 +71,7 @@ Use this attribute over test methods to skip failing tests only on the specific 
 #### SkipOnPlatformAttribute
 This attribute is intended to disable a test permanently on a platform where an API is not available or there is an intentional difference in behavior in between the tested platform and the skipped platform.
 
-This attribute can be applied either to a test class (will disable all the tests in that class) or to a test method. It allows multiple usages on the same member.
+This attribute can be applied either to a test assembly/class (will disable all the tests in that assembly/class) or to a test method. It allows multiple usages on the same member.
 
 ```cs
 [SkipOnPlatform(TestPlatforms platforms, string reason)]
@@ -80,6 +80,9 @@ This attribute can be applied either to a test class (will disable all the tests
 Use this attribute over test methods to skip tests only on the specific target platforms. The reason parameter doesn't affect the traits but we rather always use it so that when we see this attribute we know why it is being skipped on that platform.
 
 If it needs to be skipped in multiple platforms and the reasons are different please use two attributes on the same test so that you can specify different reasons for each platform.
+
+When you add the attribute on the whole test assembly it's a good idea to also add `<IgnoreForCI Condition="'$(TargetOS)' == '...'">true</IgnoreForCI>` to the test .csproj.
+That allows the CI build to skip sending this test assembly to Helix completely since it'd run zero tests anyway.
 
 **Currently these are the [Test Platforms](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/TestPlatforms.cs) that we support through our test execution infrastructure**
 
