@@ -1724,7 +1724,7 @@ CHECK PEDecoder::CheckILOnlyEntryPoint() const
 
 #ifndef DACCESS_COMPILE
 
-void PEDecoder::LayoutILOnly(void *base) const
+void PEDecoder::LayoutILOnly(void *base, bool enableExecution) const
 {
     CONTRACT_VOID
     {
@@ -1773,18 +1773,22 @@ void PEDecoder::LayoutILOnly(void *base) const
     for (section = sectionStart; section < sectionEnd; section++)
     {
         // Add appropriate page protection.
-#if defined(CROSSGEN_COMPILE) || defined(TARGET_UNIX)
-        if (section->Characteristics & IMAGE_SCN_MEM_WRITE)
-            continue;
+        DWORD newProtection;
+        if (!enableExecution)
+        {
+            if (section->Characteristics & IMAGE_SCN_MEM_WRITE)
+                continue;
 
-        DWORD newProtection = PAGE_READONLY;
-#else
-        DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-            PAGE_EXECUTE_READ :
-            section->Characteristics & IMAGE_SCN_MEM_WRITE ?
-                PAGE_READWRITE :
-                PAGE_READONLY;
-#endif
+            newProtection = PAGE_READONLY;
+        }
+        else
+        {
+            newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
+                PAGE_EXECUTE_READ :
+                section->Characteristics & IMAGE_SCN_MEM_WRITE ?
+                    PAGE_READWRITE :
+                    PAGE_READONLY;
+        }
 
         if (!ClrVirtualProtect((void*)((BYTE*)base + VAL32(section->VirtualAddress)),
             VAL32(section->Misc.VirtualSize),

@@ -417,14 +417,24 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
         EEFileLoadException::Throw(GetPath(), COR_E_BADIMAGEFORMAT);
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening manually mapped stream\n"));
 
+    // in bundle we may want to enable execution if the image contains R2R sections
+    // so must ensure the mapping is compatible with that
+    bool enableExecution = isInBundle &&
+        source->HasCorHeader() &&
+        (source->HasNativeHeader() || source->HasReadyToRunHeader()) &&
+        g_fAllowNativeImages;
+    
     DWORD mapAccess;
     DWORD viewAccess;
-    if (isInBundle && (HasNativeHeader() || HasReadyToRunHeader()))
+    if (enableExecution)
     {
-        // in bundle we may want to enable execution if the image contains R2R sections
-        // so must ensure the mapping is compatible with that
         mapAccess = PAGE_EXECUTE_READWRITE;
+
+#if defined(CROSSGEN_COMPILE) || defined(TARGET_UNIX)
+        viewAccess = FILE_MAP_ALL_ACCESS;
+#else
         viewAccess = FILE_MAP_EXECUTE | FILE_MAP_WRITE;
+#endif
     }
     else
     {
@@ -447,7 +457,7 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
     if (m_FileView == NULL)
         ThrowLastError();
 
-    source->LayoutILOnly(m_FileView);
+    source->LayoutILOnly(m_FileView, enableExecution);
     IfFailThrow(Init(m_FileView));
 
 #if defined(CROSSGEN_COMPILE)
@@ -455,11 +465,9 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
     {
         ApplyBaseRelocations();
     }
-#elif !defined(TARGET_UNIX)
-    if (isInBundle &&
-        HasCorHeader() &&
-        (HasNativeHeader() || HasReadyToRunHeader()) &&
-        g_fAllowNativeImages)
+
+#else
+    if (enableExecution)
     {
         if (!IsNativeMachineFormat())
             ThrowHR(COR_E_BADIMAGEFORMAT);
@@ -468,8 +476,8 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
         // otherwise R2R will be disabled for this image.
         ApplyBaseRelocations();
 
-        // Check if there is a static function table and install it. (except x86)
-#if !defined(TARGET_X86)
+        // Check if there is a static function table and install it. (Windows only, except x86)
+#if !defined(TARGET_UNIX) && !defined(TARGET_X86)
         COUNT_T cbSize = 0;
         PT_RUNTIME_FUNCTION   pExceptionDir = (PT_RUNTIME_FUNCTION)GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_EXCEPTION, &cbSize);
         DWORD tableSize = cbSize / sizeof(T_RUNTIME_FUNCTION);
