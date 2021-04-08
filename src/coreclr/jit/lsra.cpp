@@ -9026,7 +9026,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             assert(targetReg < REG_COUNT);
             regNumber sourceReg = (regNumber)source[targetReg];
             assert(sourceReg < REG_COUNT);
-            regNumber fromReg   = (regNumber)location[sourceReg];
+            regNumber fromReg = (regNumber)location[sourceReg];
             // stack to reg movs should be done last as part of "targetRegsFromStack"
             assert(fromReg < REG_STK);
             Interval* interval = sourceIntervals[sourceReg];
@@ -9061,9 +9061,9 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 {
                     // We may have freed up the other half of a double where the lower half
                     // was already free.
-                    regNumber lowerHalfReg    = REG_PREV(fromReg);
-                    regNumber lowerHalfSrcReg = (regNumber)source[lowerHalfReg];
-                    regNumber lowerHalfSrcLoc = (regNumber)location[lowerHalfReg];
+                    regNumber lowerHalfReg     = REG_PREV(fromReg);
+                    regNumber lowerHalfSrcReg  = (regNumber)source[lowerHalfReg];
+                    regNumber lowerHalfSrcLoc  = (regNumber)location[lowerHalfReg];
                     regMaskTP lowerHalfRegMask = genRegMask(lowerHalfReg);
                     // Necessary conditions:
                     // - There is a source register for this reg (lowerHalfSrcReg != REG_NA)
@@ -9071,7 +9071,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     // - The source interval isn't yet completed (sourceIntervals[lowerHalfSrcReg] != nullptr)
                     // - It's not in the ready set               ((targetRegsReady & lowerHalfRegMask) ==
                     //                                            RBM_NONE)
-                    // - It's not resolved from stack             ((targetRegsFromStack & lowerHalfRegMask) != lowerHalfRegMask)
+                    // - It's not resolved from stack            ((targetRegsFromStack & lowerHalfRegMask) !=
+                    //                                            lowerHalfRegMask)
                     if ((lowerHalfSrcReg != REG_NA) && (lowerHalfSrcLoc == REG_NA) &&
                         (sourceIntervals[lowerHalfSrcReg] != nullptr) &&
                         ((targetRegsReady & lowerHalfRegMask) == RBM_NONE) &&
