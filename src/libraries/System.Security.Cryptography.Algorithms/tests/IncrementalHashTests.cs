@@ -511,8 +511,8 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Theory]
-        [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
-        [PlatformSpecific(~TestPlatforms.Android)] // Android doesn't support cloning the current state for HMAC, so it doesn't support GetCurrentHash
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "Android doesn't support cloning the current state for HMAC, so it doesn't support GetCurrentHash.")]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyGetCurrentHash_HMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -526,8 +526,8 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Theory]
-        [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
-        [PlatformSpecific(~TestPlatforms.Android)] // Android doesn't support cloning the current state for HMAC, so it doesn't support GetCurrentHash
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "Android doesn't support cloning the current state for HMAC, so it doesn't support GetCurrentHash.")]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyBounds_GetCurrentHash_HMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {

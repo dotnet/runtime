@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
 
         [ConditionalTheory(nameof(SupportsKeyGeneration))]
-        [PlatformSpecific(~TestPlatforms.Android)] // Android only supports key sizes that are a multiple of 1024
+        [SkipOnPlatform(TestPlatforms.Android, "Android only supports key sizes that are a multiple of 1024")]
         [InlineData(512)]
         [InlineData(960)]
         public static void CreateWithKeysize_SmallKeys(int keySizeInBits)
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [ConditionalTheory(nameof(SupportsKeyGeneration), nameof(SupportsFips186_3))]
-        [PlatformSpecific(~TestPlatforms.Android)] // Android only supports key sizes that are a multiple of 1024
+        [SkipOnPlatform(TestPlatforms.Android, "Android only supports key sizes that are a multiple of 1024")]
         [InlineData(1088)]
         public static void CreateWithKeysize_BigKeys(int keySizeInBits)
         {
