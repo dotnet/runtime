@@ -292,6 +292,7 @@ type_is_unsigned (MonoType *type) {
 	case MONO_TYPE_U2:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_U8:
+	case MONO_TYPE_U:
 		return TRUE;
 	}
 	return FALSE;
@@ -427,6 +428,7 @@ emit_hardware_intrinsics (
 		case MONO_TYPE_U2:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_U8:
+		case MONO_TYPE_U:
 			is_unsigned = TRUE;
 			break;
 		case MONO_TYPE_R4:
@@ -759,6 +761,9 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			opcode = OP_XEXTRACT_R4;
 			dreg = alloc_freg (cfg);
 			break;
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+			g_assert_not_reached ();
 		default:
 			opcode = OP_XEXTRACT_I32;
 			dreg = alloc_ireg (cfg);
@@ -2694,7 +2699,7 @@ emit_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	g_assert (size);
 	len = 16 / size;
 
-	if (!MONO_TYPE_IS_PRIMITIVE (etype) || etype->type == MONO_TYPE_CHAR || etype->type == MONO_TYPE_BOOLEAN)
+	if (!MONO_TYPE_IS_PRIMITIVE (etype) || etype->type == MONO_TYPE_CHAR || etype->type == MONO_TYPE_BOOLEAN || etype->type == MONO_TYPE_I || etype->type == MONO_TYPE_U)
 		return NULL;
 
 	if (cfg->verbose_level > 1) {
@@ -2742,7 +2747,7 @@ emit_vector256_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	g_assert (size);
 	len = 32 / size;
 
-	if (!MONO_TYPE_IS_PRIMITIVE (etype) || etype->type == MONO_TYPE_CHAR || etype->type == MONO_TYPE_BOOLEAN)
+	if (!MONO_TYPE_IS_PRIMITIVE (etype) || etype->type == MONO_TYPE_CHAR || etype->type == MONO_TYPE_BOOLEAN || etype->type == MONO_TYPE_I || etype->type == MONO_TYPE_U)
 		return NULL;
 
 	if (cfg->verbose_level > 1) {
