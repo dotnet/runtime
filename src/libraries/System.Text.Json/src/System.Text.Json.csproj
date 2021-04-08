@@ -175,7 +175,7 @@
     <Compile Include="System\Text\Json\Serialization\PreserveReferenceHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\PreserveReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\PropertyRef.cs" />
-    <Compile Include="System\Text\Json\Serialization\ReadAsyncState.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReadAsyncBufferState.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStack.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceHandler.cs" />

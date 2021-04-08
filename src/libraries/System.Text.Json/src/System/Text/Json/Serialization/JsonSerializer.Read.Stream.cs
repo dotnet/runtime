@@ -110,25 +110,40 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
+            options ??= JsonSerializerOptions.s_defaultOptions;
             return CreateAsyncEnumerableDeserializer(utf8Json, options, cancellationToken);
 
-            static async IAsyncEnumerable<TValue> CreateAsyncEnumerableDeserializer(Stream utf8Json, JsonSerializerOptions? options, [EnumeratorCancellation] CancellationToken cancellationToken)
+            static async IAsyncEnumerable<TValue> CreateAsyncEnumerableDeserializer(
+                Stream utf8Json,
+                JsonSerializerOptions options,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                using var asyncState = new ReadAsyncState(typeof(Queue<TValue>), options, cancellationToken);
-                bool isFinalBlock = false;
-                do
+                var bufferState = new ReadAsyncBufferState(options.DefaultBufferSize);
+                ReadStack readStack = default;
+                readStack.Initialize(typeof(Queue<TValue>), options, supportContinuation: true);
+                JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
+                var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
+
+                try
                 {
-                    isFinalBlock = await JsonSerializer.ReadFromStreamAsync(utf8Json, asyncState).ConfigureAwait(false);
-                    JsonSerializer.ContinueDeserialize<Queue<TValue>>(asyncState, isFinalBlock);
-                    if (asyncState.ReadStack.Current.ReturnValue is Queue<TValue> queue)
+                    do
                     {
-                        while (queue.Count > 0)
+                        bufferState = await ReadFromStreamAsync(utf8Json, bufferState, cancellationToken).ConfigureAwait(false);
+                        ContinueDeserialize<Queue<TValue>>(ref bufferState, ref jsonReaderState, ref readStack, converter, options);
+                        if (readStack.Current.ReturnValue is Queue<TValue> queue)
                         {
-                            yield return queue.Dequeue();
+                            while (queue.Count > 0)
+                            {
+                                yield return queue.Dequeue();
+                            }
                         }
                     }
+                    while (!bufferState.IsFinalBlock);
                 }
-                while (!isFinalBlock);
+                finally
+                {
+                    bufferState.Dispose();
+                }
             }
         }
 
@@ -138,17 +153,29 @@ namespace System.Text.Json
             JsonSerializerOptions? options,
             CancellationToken cancellationToken)
         {
-            using var asyncState = new ReadAsyncState(inputType, options, cancellationToken);
+            options ??= JsonSerializerOptions.s_defaultOptions;
+            var asyncState = new ReadAsyncBufferState(options.DefaultBufferSize);
+            ReadStack readStack = default;
+            readStack.Initialize(inputType, options, supportContinuation: true);
+            JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
+            var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
 
-            while (true)
+            try
             {
-                bool isFinalBlock = await ReadFromStreamAsync(utf8Json, asyncState).ConfigureAwait(false);
-                TValue value = ContinueDeserialize<TValue>(asyncState, isFinalBlock);
-
-                if (isFinalBlock)
+                while (true)
                 {
-                    return value!;
+                    asyncState = await ReadFromStreamAsync(utf8Json, asyncState, cancellationToken).ConfigureAwait(false);
+                    TValue value = ContinueDeserialize<TValue>(ref asyncState, ref jsonReaderState, ref readStack, converter, options);
+
+                    if (asyncState.IsFinalBlock)
+                    {
+                        return value!;
+                    }
                 }
+            }
+            finally
+            {
+                asyncState.Dispose();
             }
         }
 
@@ -157,98 +184,104 @@ namespace System.Text.Json
         /// Calling ReadCore is relatively expensive, so we minimize the number of times
         /// we need to call it.
         /// </summary>
-        internal static async ValueTask<bool> ReadFromStreamAsync(Stream utf8Json, ReadAsyncState asyncState)
+        internal static async ValueTask<ReadAsyncBufferState> ReadFromStreamAsync(
+            Stream utf8Json,
+            ReadAsyncBufferState bufferState,
+            CancellationToken cancellationToken)
         {
-            bool isFinalBlock = false;
-            while (!isFinalBlock)
+            while (true)
             {
                 int bytesRead = await utf8Json.ReadAsync(
 #if BUILDING_INBOX_LIBRARY
-                    asyncState.Buffer.AsMemory(asyncState.BytesInBuffer),
+                    bufferState.Buffer.AsMemory(bufferState.BytesInBuffer),
 #else
-                    asyncState.Buffer, asyncState.BytesInBuffer, asyncState.Buffer.Length - asyncState.BytesInBuffer,
+                    bufferState.Buffer, bufferState.BytesInBuffer, bufferState.Buffer.Length - bufferState.BytesInBuffer,
 #endif
-                    asyncState.CancellationToken).ConfigureAwait(false);
+                    cancellationToken).ConfigureAwait(false);
 
                 if (bytesRead == 0)
                 {
-                    isFinalBlock = true;
+                    bufferState.IsFinalBlock = true;
                     break;
                 }
 
-                asyncState.TotalBytesRead += bytesRead;
-                asyncState.BytesInBuffer += bytesRead;
+                bufferState.BytesInBuffer += bytesRead;
 
-                if (asyncState.BytesInBuffer == asyncState.Buffer.Length)
+                if (bufferState.BytesInBuffer == bufferState.Buffer.Length)
                 {
                     break;
                 }
             }
 
-            return isFinalBlock;
+            return bufferState;
         }
 
-        internal static TValue ContinueDeserialize<TValue>(ReadAsyncState asyncState, bool isFinalBlock)
+        internal static TValue ContinueDeserialize<TValue>(
+            ref ReadAsyncBufferState bufferState,
+            ref JsonReaderState jsonReaderState,
+            ref ReadStack readStack,
+            JsonConverter converter,
+            JsonSerializerOptions options)
         {
-            if (asyncState.BytesInBuffer > asyncState.ClearMax)
+            if (bufferState.BytesInBuffer > bufferState.ClearMax)
             {
-                asyncState.ClearMax = asyncState.BytesInBuffer;
+                bufferState.ClearMax = bufferState.BytesInBuffer;
             }
 
             int start = 0;
-            if (asyncState.IsFirstIteration)
+            if (bufferState.IsFirstIteration)
             {
-                asyncState.IsFirstIteration = false;
+                bufferState.IsFirstIteration = false;
 
                 // Handle the UTF-8 BOM if present
-                Debug.Assert(asyncState.Buffer.Length >= JsonConstants.Utf8Bom.Length);
-                if (asyncState.Buffer.AsSpan().StartsWith(JsonConstants.Utf8Bom))
+                Debug.Assert(bufferState.Buffer.Length >= JsonConstants.Utf8Bom.Length);
+                if (bufferState.Buffer.AsSpan().StartsWith(JsonConstants.Utf8Bom))
                 {
                     start += JsonConstants.Utf8Bom.Length;
-                    asyncState.BytesInBuffer -= JsonConstants.Utf8Bom.Length;
+                    bufferState.BytesInBuffer -= JsonConstants.Utf8Bom.Length;
                 }
             }
 
             // Process the data available
             TValue value = ReadCore<TValue>(
-                ref asyncState.ReaderState,
-                isFinalBlock,
-                new ReadOnlySpan<byte>(asyncState.Buffer, start, asyncState.BytesInBuffer),
-                asyncState.Options,
-                ref asyncState.ReadStack,
-                asyncState.Converter);
+                ref jsonReaderState,
+                bufferState.IsFinalBlock,
+                new ReadOnlySpan<byte>(bufferState.Buffer, start, bufferState.BytesInBuffer),
+                options,
+                ref readStack,
+                converter);
 
-            Debug.Assert(asyncState.ReadStack.BytesConsumed <= asyncState.BytesInBuffer);
-            int bytesConsumed = checked((int)asyncState.ReadStack.BytesConsumed);
+            Debug.Assert(readStack.BytesConsumed <= bufferState.BytesInBuffer);
+            int bytesConsumed = checked((int)readStack.BytesConsumed);
 
-            asyncState.BytesInBuffer -= bytesConsumed;
+            bufferState.BytesInBuffer -= bytesConsumed;
 
             // The reader should have thrown if we have remaining bytes.
-            Debug.Assert(!isFinalBlock || asyncState.BytesInBuffer == 0);
+            Debug.Assert(!bufferState.IsFinalBlock || bufferState.BytesInBuffer == 0);
 
-            if (!isFinalBlock)
+            if (!bufferState.IsFinalBlock)
             {
                 // Check if we need to shift or expand the buffer because there wasn't enough data to complete deserialization.
-                if ((uint)asyncState.BytesInBuffer > ((uint)asyncState.Buffer.Length / 2))
+                if ((uint)bufferState.BytesInBuffer > ((uint)bufferState.Buffer.Length / 2))
                 {
                     // We have less than half the buffer available, double the buffer size.
-                    byte[] oldBuffer = asyncState.Buffer;
-                    int oldClearMax = asyncState.ClearMax;
-                    byte[] newBuffer = ArrayPool<byte>.Shared.Rent((asyncState.Buffer.Length < (int.MaxValue / 2)) ? asyncState.Buffer.Length * 2 : int.MaxValue);
+                    byte[] oldBuffer = bufferState.Buffer;
+                    int oldClearMax = bufferState.ClearMax;
+                    byte[] newBuffer = ArrayPool<byte>.Shared.Rent((bufferState.Buffer.Length < (int.MaxValue / 2)) ? bufferState.Buffer.Length * 2 : int.MaxValue);
 
                     // Copy the unprocessed data to the new buffer while shifting the processed bytes.
-                    Buffer.BlockCopy(oldBuffer, bytesConsumed + start, newBuffer, 0, asyncState.BytesInBuffer);
-                    asyncState.Buffer = newBuffer;
-                    asyncState.ClearMax = asyncState.BytesInBuffer;
+                    Buffer.BlockCopy(oldBuffer, bytesConsumed + start, newBuffer, 0, bufferState.BytesInBuffer);
+                    bufferState.Buffer = newBuffer;
+                    bufferState.ClearMax = bufferState.BytesInBuffer;
 
                     // Clear and return the old buffer
                     new Span<byte>(oldBuffer, 0, oldClearMax).Clear();
                     ArrayPool<byte>.Shared.Return(oldBuffer);
                 }
-                else if (asyncState.BytesInBuffer != 0)
+                else if (bufferState.BytesInBuffer != 0)
                 {
                     // Shift the processed bytes to the beginning of buffer to make more room.
-                    Buffer.BlockCopy(asyncState.Buffer, bytesConsumed + start, asyncState.Buffer, 0, asyncState.BytesInBuffer);
+                    Buffer.BlockCopy(bufferState.Buffer, bytesConsumed + start, bufferState.Buffer, 0, bufferState.BytesInBuffer);
                 }
             }
 
