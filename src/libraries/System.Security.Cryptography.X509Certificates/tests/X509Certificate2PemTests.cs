@@ -29,6 +29,7 @@ MII
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public static void CreateFromPem_CryptographicException_InvalidKeyAlgorithm()
         {
             CryptographicException ce = Assert.Throws<CryptographicException>(() =>
@@ -205,6 +206,7 @@ MII
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public static void CreateFromEncryptedPem_Rsa_InvalidPassword_Fail()
         {
             CryptographicException ce = Assert.Throws<CryptographicException>(() =>
