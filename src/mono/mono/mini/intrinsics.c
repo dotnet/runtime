@@ -1954,30 +1954,59 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 	if (in_corlib &&
 		!strcmp ("System", cmethod_klass_name_space) &&
-		!strcmp ("ThrowHelper", cmethod_klass_name) &&
-		!strcmp ("ThrowForUnsupportedVectorBaseType", cmethod->name)) {
-		/* The mono JIT can't optimize the body of this method away */
-		MonoGenericContext *ctx = mono_method_get_context (cmethod);
-		g_assert (ctx);
-		g_assert (ctx->method_inst);
+		!strcmp ("ThrowHelper", cmethod_klass_name)) {
 
-		MonoType *t = ctx->method_inst->type_argv [0];
-		switch (t->type) {
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-			MONO_INST_NEW (cfg, ins, OP_NOP);
-			MONO_ADD_INS (cfg->cbb, ins);
-			return ins;
-		default:
-			break;
+		if (!strcmp ("ThrowForUnsupportedNumericsVectorBaseType", cmethod->name)) {
+			/* The mono JIT can't optimize the body of this method away */
+			MonoGenericContext *ctx = mono_method_get_context (cmethod);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+
+			MonoType *t = ctx->method_inst->type_argv [0];
+			switch (t->type) {
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+				MONO_INST_NEW (cfg, ins, OP_NOP);
+				MONO_ADD_INS (cfg->cbb, ins);
+				return ins;
+			default:
+				break;
+			}
+		}
+		else if (!strcmp ("ThrowForUnsupportedIntrinsicsVectorBaseType", cmethod->name)) {
+			/* The mono JIT can't optimize the body of this method away */
+			MonoGenericContext *ctx = mono_method_get_context (cmethod);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+
+			MonoType *t = ctx->method_inst->type_argv [0];
+			switch (t->type) {
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+				MONO_INST_NEW (cfg, ins, OP_NOP);
+				MONO_ADD_INS (cfg->cbb, ins);
+				return ins;
+			default:
+				break;
+			}
 		}
 	}
 
