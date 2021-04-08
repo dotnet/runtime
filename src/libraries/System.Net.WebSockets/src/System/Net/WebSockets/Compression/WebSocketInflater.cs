@@ -237,20 +237,14 @@ namespace System.Net.WebSockets.Compression
                 }
             }
 
-            switch (errorCode)
+            string message = errorCode switch
             {
-                case ErrorCode.MemError:     // Not enough memory to complete the operation
-                    throw new WebSocketException(SR.ZLibErrorNotEnoughMemory);
-
-                case ErrorCode.DataError:    // The input data was corrupted (input stream not conforming to the zlib format or incorrect check value)
-                    throw new WebSocketException(SR.ZLibUnsupportedCompression);
-
-                case ErrorCode.StreamError:  //the stream structure was inconsistent (for example if next_in or next_out was NULL),
-                    throw new WebSocketException(SR.ZLibErrorInconsistentStream);
-
-                default:
-                    throw new WebSocketException(string.Format(SR.ZLibErrorUnexpected, (int)errorCode));
-            }
+                ErrorCode.MemError => SR.ZLibErrorNotEnoughMemory,
+                ErrorCode.DataError => SR.ZLibUnsupportedCompression,
+                ErrorCode.StreamError => SR.ZLibErrorInconsistentStream,
+                _ => string.Format(SR.ZLibErrorUnexpected, (int)errorCode)
+            };
+            throw new WebSocketException(message);
         }
     }
 }

@@ -38,11 +38,11 @@ namespace System.Net.WebSockets.Tests
         {
             get
             {
-                var available = 0;
+                int available = 0;
 
                 lock (_inputQueue)
                 {
-                    foreach (var x in _inputQueue)
+                    foreach (Block x in _inputQueue)
                     {
                         available += x.AvailableLength;
                     }
@@ -100,30 +100,28 @@ namespace System.Net.WebSockets.Tests
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            using (var cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposed.Token))
+            using CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposed.Token);
+            try
             {
-                try
-                {
-                    await _inputLock.WaitAsync(cancellation.Token).ConfigureAwait(false);
-                }
-                catch (TaskCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    throw new OperationCanceledException(cancellationToken);
-                }
-                catch (OperationCanceledException) when (_disposed.IsCancellationRequested)
-                {
-                    return 0;
-                }
+                await _inputLock.WaitAsync(cancellation.Token).ConfigureAwait(false);
+            }
+            catch (TaskCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
+            catch (OperationCanceledException) when (_disposed.IsCancellationRequested)
+            {
+                return 0;
             }
 
             lock (_inputQueue)
             {
-                var block = _inputQueue.Peek();
+                Block block = _inputQueue.Peek();
                 if (block == Block.ConnectionClosed)
                 {
                     return 0;
                 }
-                var count = Math.Min(block.AvailableLength, buffer.Length);
+                int count = Math.Min(block.AvailableLength, buffer.Length);
 
                 block.Available.Slice(0, count).CopyTo(buffer.Span);
                 block.Advance(count);

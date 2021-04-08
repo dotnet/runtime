@@ -66,6 +66,7 @@ namespace System.Net.WebSockets.Compression
 
                 if (!needsMoreOutput)
                 {
+                    Debug.Assert(consumed == payload.Length);
                     break;
                 }
 
@@ -154,7 +155,7 @@ namespace System.Net.WebSockets.Compression
         {
             Debug.Assert(_stream is not null);
             Debug.Assert(_stream.AvailIn == 0);
-            Debug.Assert(output.Length >= 6, "We neede at least 6 bytes guarantee the completion of the deflate block.");
+            Debug.Assert(output.Length >= 6, "We need at least 6 bytes to guarantee the completion of the deflate block.");
 
             fixed (byte* fixedOutput = output)
             {
