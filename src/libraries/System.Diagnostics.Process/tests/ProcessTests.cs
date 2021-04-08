@@ -550,7 +550,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Getting MaxWorkingSet is not supported on OSX and BSD.")]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.FreeBSD)]
         public void MaxValueWorkingSet_GetSetMacos_ThrowsPlatformSupportedException()
         {
             var process = new Process();
@@ -605,7 +605,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Getting MinWorkingSet is not supported on OSX and BSD.")]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.FreeBSD)]
         public void MinWorkingSet_GetMacos_ThrowsPlatformSupportedException()
         {
             var process = new Process();
