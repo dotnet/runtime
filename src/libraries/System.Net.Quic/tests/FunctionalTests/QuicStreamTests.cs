@@ -234,6 +234,11 @@ namespace System.Net.Quic.Tests
 
             using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
             Assert.Equal(0, clientStream.StreamId);
+
+            // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer
+            // explicitly closing the connections seems to help, but the problem should still be investigated, we should have a meaningful
+            // exception instead of AccessViolationException
+            await clientConnection.CloseAsync(0);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
