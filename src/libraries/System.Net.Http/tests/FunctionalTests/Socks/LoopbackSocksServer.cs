@@ -150,6 +150,9 @@ namespace System.Net.Http.Functional.Tests.Socks
                 string username = Encoding.UTF8.GetString(usernameBuffer.AsSpan(0, usernameBytes));
                 if (username != _username)
                 {
+                    ns.WriteByte(4);
+                    buffer[0] = 93;
+                    await ns.WriteAsync(buffer).ConfigureAwait(false);
                     throw new Exception("Bad username.");
                 }
             }
@@ -205,13 +208,17 @@ namespace System.Net.Http.Functional.Tests.Socks
 
                 int usernameLength = await ns.ReadByteAsync().ConfigureAwait(false);
                 await ReadToFillAsync(ns, buffer.AsMemory(0, usernameLength)).ConfigureAwait(false);
-                if (Encoding.UTF8.GetString(buffer.AsSpan(0, usernameLength)) != _username)
-                    throw new Exception("Bad username.");
+                string username = Encoding.UTF8.GetString(buffer.AsSpan(0, usernameLength));
 
                 int passwordLength = await ns.ReadByteAsync().ConfigureAwait(false);
                 await ReadToFillAsync(ns, buffer.AsMemory(0, passwordLength)).ConfigureAwait(false);
-                if (Encoding.UTF8.GetString(buffer.AsSpan(0, passwordLength)) != _password)
-                    throw new Exception("Bad password.");
+                string password = Encoding.UTF8.GetString(buffer.AsSpan(0, passwordLength));
+
+                if (username != _username || password != _password)
+                {
+                    await ns.WriteAsync(new byte[] { 1, 1 }).ConfigureAwait(false);
+                    throw new Exception("Invalid credentials.");
+                }
 
                 await ns.WriteAsync(new byte[] { 1, 0 }).ConfigureAwait(false);
             }
