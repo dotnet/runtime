@@ -33,6 +33,7 @@ namespace System
         private static ConsoleCancelEventHandler? s_cancelCallbacks;
         private static ConsolePal.ControlCHandlerRegistrar? s_registrar;
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static TextReader In
         {
@@ -57,6 +58,7 @@ namespace System
             }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static Encoding InputEncoding
         {
@@ -113,6 +115,7 @@ namespace System
                 }
                 return encoding;
             }
+            [UnsupportedOSPlatform("android")]
             set
             {
                 CheckNonNull(value, nameof(value));
@@ -154,12 +157,14 @@ namespace System
             }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static ConsoleKeyInfo ReadKey()
         {
             return ConsolePal.ReadKey(false);
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static ConsoleKeyInfo ReadKey(bool intercept)
         {
@@ -280,6 +285,7 @@ namespace System
 
         public static int CursorSize
         {
+            [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.CursorSize; }
             [SupportedOSPlatform("windows")]
@@ -300,6 +306,7 @@ namespace System
 
         internal const ConsoleColor UnknownColor = (ConsoleColor)(-1);
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static ConsoleColor BackgroundColor
         {
@@ -307,6 +314,7 @@ namespace System
             set { ConsolePal.BackgroundColor = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static ConsoleColor ForegroundColor
         {
@@ -314,6 +322,7 @@ namespace System
             set { ConsolePal.ForegroundColor = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static void ResetColor()
         {
@@ -322,6 +331,7 @@ namespace System
 
         public static int BufferWidth
         {
+            [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.BufferWidth; }
             [SupportedOSPlatform("windows")]
@@ -330,6 +340,7 @@ namespace System
 
         public static int BufferHeight
         {
+            [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.BufferHeight; }
             [SupportedOSPlatform("windows")]
@@ -358,6 +369,7 @@ namespace System
 
         public static int WindowWidth
         {
+            [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.WindowWidth; }
             [SupportedOSPlatform("windows")]
@@ -366,6 +378,7 @@ namespace System
 
         public static int WindowHeight
         {
+            [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.WindowHeight; }
             [SupportedOSPlatform("windows")]
@@ -384,12 +397,14 @@ namespace System
             ConsolePal.SetWindowSize(width, height);
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static int LargestWindowWidth
         {
             get { return ConsolePal.LargestWindowWidth; }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static int LargestWindowHeight
         {
@@ -400,6 +415,7 @@ namespace System
         {
             [SupportedOSPlatform("windows")]
             get { return ConsolePal.CursorVisible; }
+            [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             set { ConsolePal.CursorVisible = value; }
         }
@@ -423,6 +439,7 @@ namespace System
         /// <remarks>
         /// Columns are numbered from left to right starting at 0. Rows are numbered from top to bottom starting at 0.
         /// </remarks>
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static (int Left, int Top) GetCursorPosition()
         {
@@ -433,6 +450,7 @@ namespace System
         {
             [SupportedOSPlatform("windows")]
             get { return ConsolePal.Title; }
+            [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
             set
             {
@@ -440,6 +458,7 @@ namespace System
             }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static void Beep()
         {
@@ -464,11 +483,13 @@ namespace System
             ConsolePal.MoveBufferArea(sourceLeft, sourceTop, sourceWidth, sourceHeight, targetLeft, targetTop, sourceChar, sourceForeColor, sourceBackColor);
         }
 
+        [UnsupportedOSPlatform("android")]
         public static void Clear()
         {
             ConsolePal.Clear();
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static void SetCursorPosition(int left, int top)
         {
@@ -481,6 +502,7 @@ namespace System
             ConsolePal.SetCursorPosition(left, top);
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static event ConsoleCancelEventHandler? CancelKeyPress
         {
@@ -515,6 +537,7 @@ namespace System
             }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static bool TreatControlCAsInput
         {
@@ -522,6 +545,7 @@ namespace System
             set { ConsolePal.TreatControlCAsInput = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static Stream OpenStandardInput()
         {
