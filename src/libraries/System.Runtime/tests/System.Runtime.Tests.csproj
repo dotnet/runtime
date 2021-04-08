@@ -263,6 +263,8 @@
     <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs"
              Link="System\RealParserTestsBase.cs" />
     <Compile Include="System\RealParserTests.cs" />
+
+    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Castle.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs"
