@@ -6495,7 +6495,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         regNumber tmpReg = treeNode->GetSingleTempReg(RBM_ALLINT);
         assert(genIsValidIntReg(tmpReg));
 
-        GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpReg, -0x8000000000000000i64);
+        genSetRegToIcon(tmpReg, (ssize_t) -0x8000000000000000i64, TYP_I_IMPL);
 
         // clear the sign bit
         inst_RV_RV(INS_xor, srcReg, tmpReg, srcType);

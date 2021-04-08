@@ -188,7 +188,7 @@ partial class VectorTest
                 Int64 int64Val = (Int64)A[i];
                 Double cvtDblVal = (Double)int64Val;
 
-                Console.WriteLine("A[{0}] = {1}, B[{0}] = {2}, C[{0}] = {3}, int64Val = {4}, cvtDblVal = {5}",
+                Console.WriteLine("A[{0}] = {1}, B[{0}] = {2}, C[{0}] = {3}, int64Val ={4,9:X}, cvtDblVal = {5}",
                                   i, A[i], B[i], C[i], int64Val, cvtDblVal);
 
                 if (B[i] != int64Val)
@@ -221,14 +221,14 @@ partial class VectorTest
                 UInt64 uint64Val = (UInt64)A[i];
                 Double cvtDblVal = (Double)uint64Val;
 
-                Console.WriteLine("A[{0}] = {1}, B[{0}] = {2}, C[{0}] = {3}, uint64Val = {4}, cvtDblVal = {5}",
+                Console.WriteLine("A[{0}] = {1}, B[{0}] = {2}, C[{0}] = {3}, uint64Val ={4,9:X}, cvtDblVal = {5}",
                                   i, A[i], B[i], C[i], uint64Val, cvtDblVal);
 
                 if ((B[i] != uint64Val) || (C[i] != cvtDblVal))
                 {
                     if (B[i] != uint64Val)
                     {
-                        Console.WriteLine("Fail: B[i] != uint64Val :  B[i] and {0}", uint64Val);
+                        Console.WriteLine("Fail: B[i] != uint64Val :  B[i] and {0,9:X}", uint64Val);
                     }
                     if (C[i] != cvtDblVal)
                     {
@@ -534,18 +534,6 @@ partial class VectorTest
             }
         }
         
-// Reordered start
-
-        for (int i = 0; i < 10; i++)
-        {
-            Vector<Double> doubleVector = getRandomVector<Double>(doubles, i);
-            if (VectorConvertTest.VectorConvertDoubleUInt64(doubleVector) != Pass)
-            {
-                Console.WriteLine("Testing Converts between Double and UInt64 failed");
-                returnVal = Fail;
-            }
-        }
-        
         for (int i = 0; i < 10; i++)
         {
             Vector<Double> doubleVector = getRandomVector<Double>(doubles, i);
@@ -556,7 +544,16 @@ partial class VectorTest
             }
         }
         
-// Reordered end
+        for (int i = 0; i < 10; i++)
+        {
+            Vector<Double> doubleVector = getRandomVector<Double>(doubles, i);
+            if (VectorConvertTest.VectorConvertDoubleUInt64(doubleVector) != Pass)
+            {
+                Console.WriteLine("Testing Converts between Double and UInt64 failed");
+                returnVal = Fail;
+            }
+        }
+
 
         for (int i = 0; i < 10; i++)
         {
