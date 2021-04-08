@@ -237,7 +237,6 @@
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/50710 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Http\tests\Microsoft.Extensions.Http.Tests\Microsoft.Extensions.Http.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.TypeConverter\tests\System.ComponentModel.TypeConverter.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/50713 -->
@@ -292,9 +291,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Extensions\tests\System.Threading.Tasks.Extensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ObjectModel/tests/System.ObjectModel.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing/tests/System.Diagnostics.Tracing.Tests.csproj" />
-
-    <!-- Issue: https://github.com/dotnet/runtime/issues/50726 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Caching/tests/System.Runtime.Caching.Tests.csproj" />
 
     <!-- Issue: https://github.com/dotnet/runtime/issues/51211 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.VisualC\tests\System.Runtime.CompilerServices.VisualC.Tests.csproj" />
