@@ -232,6 +232,7 @@ namespace System.Resources.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(EnglishNonStringResourceData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50935", TestPlatforms.Android)]
         public static void GetObject(string key, object expectedValue, bool requiresBinaryFormatter)
         {
             _ = requiresBinaryFormatter;
@@ -305,6 +306,7 @@ namespace System.Resources.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(EnglishNonStringResourceData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50935", TestPlatforms.Android)]
         public static void GetResourceSet_NonStrings(string key, object expectedValue, bool requiresBinaryFormatter)
         {
             _ = requiresBinaryFormatter;
@@ -317,6 +319,7 @@ namespace System.Resources.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(EnglishNonStringResourceData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50935", TestPlatforms.Android)]
         public static void GetResourceSet_NonStringsIgnoreCase(string key, object expectedValue, bool requiresBinaryFormatter)
         {
             _ = requiresBinaryFormatter;
