@@ -649,7 +649,6 @@ struct _MonoDynamicAssembly {
 	MonoAssembly assembly;
 	char *strong_name;
 	guint32 strong_name_size;
-	MonoDomain *domain;
 };
 
 struct _MonoDynamicImage {

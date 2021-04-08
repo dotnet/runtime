@@ -56,6 +56,12 @@ DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleSeqLayoutClassByRef(SeqClass* p)
 }
 
 extern "C"
+DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleSeqLayoutClassByRefNull(SeqClass* p)
+{
+    return p == NULL ? TRUE : FALSE;
+}
+
+extern "C"
 DLL_EXPORT BOOL STDMETHODCALLTYPE DerivedSeqLayoutClassByRef(EmptyBase* p, int expected)
 {
     if(((DerivedSeqClass*)p)->a != expected)
@@ -88,6 +94,12 @@ DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleBlittableSeqLayoutClass_UpdateField(Blit
 
     p->a++;
     return TRUE;
+}
+
+extern "C"
+DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleBlittableSeqLayoutClass_Null(BlittableClass* p)
+{
+    return p == NULL ? TRUE : FALSE;
 }
 
 extern "C"

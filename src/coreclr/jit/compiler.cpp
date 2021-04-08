@@ -8255,7 +8255,12 @@ void JitTimer::PrintCsvHeader()
             fprintf(s_csvFile, "\"Min Opts\",");
             fprintf(s_csvFile, "\"Loops\",");
             fprintf(s_csvFile, "\"Loops Cloned\",");
-
+#if FEATURE_LOOP_ALIGN
+#ifdef DEBUG
+            fprintf(s_csvFile, "\"Alignment Candidates\",");
+            fprintf(s_csvFile, "\"Loops Aligned\",");
+#endif // DEBUG
+#endif // FEATURE_LOOP_ALIGN
             for (int i = 0; i < PHASE_NUMBER_OF; i++)
             {
                 fprintf(s_csvFile, "\"%s\",", PhaseNames[i]);
@@ -8329,6 +8334,12 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
     fprintf(s_csvFile, "%u,", comp->optLoopCount);
     fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
+#if FEATURE_LOOP_ALIGN
+#ifdef DEBUG
+    fprintf(s_csvFile, "%u,", comp->loopAlignCandidates);
+    fprintf(s_csvFile, "%u,", comp->loopsAligned);
+#endif // DEBUG
+#endif // FEATURE_LOOP_ALIGN
     unsigned __int64 totCycles = 0;
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
     {

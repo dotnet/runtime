@@ -9171,7 +9171,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	save_seq_points (td, jinfo);
 #ifdef ENABLE_EXPERIMENT_TIERED
 	/* debugging aid, it makes `mono_pmip` work. */
-	mono_jit_info_table_add (mono_get_root_domain (), jinfo);
+	mono_jit_info_table_add (jinfo);
 #endif
 
 exit:

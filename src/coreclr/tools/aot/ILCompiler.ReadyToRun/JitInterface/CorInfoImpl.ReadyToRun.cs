@@ -2336,7 +2336,7 @@ namespace Internal.JitInterface
                 }
 
                 // ENCODE_FIELD_BASE_OFFSET
-                int fieldBaseOffset = pMT.FieldBaseOffset().AsInt;
+                int fieldBaseOffset = ((MetadataType)pMT).FieldBaseOffset().AsInt;
                 Debug.Assert(pResult->offset >= (uint)fieldBaseOffset);
                 pResult->offset -= (uint)fieldBaseOffset;
                 pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;

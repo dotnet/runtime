@@ -468,6 +468,7 @@
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(EMSDK_PATH)/upstream/lib/libclang.so</MonoLibClang>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'bin', 'libclang.dll'))</MonoLibClang>
       <PythonCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; python</PythonCmd>
+      <_ForceRelease Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' == 'wasm' and '$(Configuration)' == 'Debug'">true</_ForceRelease>
     </PropertyGroup>
 
     <!-- Windows specific options -->
@@ -478,8 +479,8 @@
       <_MonoAOTCPPFLAGS Include="-DWIN32_LEAN_AND_MEAN" />
       <!--<_MonoAOTCPPFLAGS Include="-D_WINDOWS" />--> <!-- set in monow.vcxproj, not sure we really need it -->
       <_MonoAOTCPPFLAGS Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'arm64'" Include="-DWIN64" />
-      <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Release'" Include="-DNDEBUG" />
-      <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Debug'" Include="-D_DEBUG" />
+      <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Release' or '$(_ForceRelease)' == 'true'" Include="-DNDEBUG" />
+      <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Debug' and '$(_ForceRelease)' != 'true'" Include="-D_DEBUG" />
       <!-- <_MonoAOTCPPFLAGS Include="-D__default_codegen__" /> --> <!-- doesn't seem to be used -->
       <_MonoAOTCPPFLAGS Include="-D_CRT_SECURE_NO_WARNINGS" />
       <_MonoAOTCPPFLAGS Include="-D_CRT_NONSTDC_NO_DEPRECATE" />
@@ -539,7 +540,8 @@
       <MonoAOTCMakeArgs Include="-DAOT_TARGET_TRIPLE=$(MonoAotAbi)"/>
       <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' == 'true'" Include="-G Ninja"/>
       <MonoAOTCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$([MSBuild]::NormalizePath('$(MonoObjCrossDir)', 'out'))"/>
-      <MonoAOTCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
+      <MonoAOTCMakeArgs Condition="'$(_ForceRelease)' != 'true'" Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
+      <MonoAOTCMakeArgs Condition="'$(_ForceRelease)' == 'true'" Include="-DCMAKE_BUILD_TYPE=Release"/>
       <!-- FIXME: Disable more -->
       <MonoAOTCMakeArgs Include="-DENABLE_MINIMAL=" />
       <MonoAOTCMakeArgs Include="-DENABLE_ICALL_SYMBOL_MAP=1" />
