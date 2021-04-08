@@ -7,7 +7,7 @@ using Test.Cryptography;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class ECDsaImportExportTests : ECDsaTestsBase
     {
         internal static bool CanDeriveNewPublicKey { get; }
