@@ -118,11 +118,10 @@ jobs:
         inputs:
           versionSpec: 14.x
 
-      - script: npm install jsvu -g
-        displayName: Install jsvu
-
-      - script: $(Build.SourcesDirectory)\eng\common\install-v8-engine.cmd
-        displayName: Install v8 JavaScript engine
+      - script: |
+          npm install jsvu -g
+          npm exec -c 'jsvu --engines=v8'
+        displayName: Install jsvu and v8 JavaScript engine
 
       # Update machine certs
       - task: PowerShell@2
