@@ -1480,13 +1480,43 @@ ep_rt_lock_requires_lock_not_held (const ep_rt_lock_handle_t *lock)
 * SpinLock.
 */
 
+#ifdef EP_CHECKED_BUILD
+static
+inline
+void
+ep_rt_spin_lock_set_owning_thread_id (
+	ep_rt_spin_lock_handle_t *spin_lock,
+	MonoNativeThreadId thread_id)
+{
+	if (sizeof (spin_lock->owning_thread_id) == sizeof (uint32_t))
+		ep_rt_volatile_store_uint32_t ((uint32_t *)&spin_lock->owning_thread_id, MONO_NATIVE_THREAD_ID_TO_UINT (thread_id));
+	else if (sizeof (spin_lock->owning_thread_id) == sizeof (uint64_t))
+		ep_rt_volatile_store_uint64_t ((uint64_t *)&spin_lock->owning_thread_id, MONO_NATIVE_THREAD_ID_TO_UINT (thread_id));
+	else
+		spin_lock->owning_thread_id = thread_id;
+}
+
+static
+inline
+MonoNativeThreadId
+ep_rt_spin_lock_get_owning_thread_id (const ep_rt_spin_lock_handle_t *spin_lock)
+{
+	if (sizeof (spin_lock->owning_thread_id) == sizeof (uint32_t))
+		return MONO_UINT_TO_NATIVE_THREAD_ID (ep_rt_volatile_load_uint32_t ((const uint32_t *)&spin_lock->owning_thread_id));
+	else if (sizeof (spin_lock->owning_thread_id) == sizeof (uint64_t))
+		return MONO_UINT_TO_NATIVE_THREAD_ID (ep_rt_volatile_load_uint64_t ((const uint64_t *)&spin_lock->owning_thread_id));
+	else
+		return spin_lock->owning_thread_id;
+}
+#endif
+
 static
 inline
 void
 ep_rt_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
 {
 #ifdef EP_CHECKED_BUILD
-	spin_lock->lock_is_held = false;
+	ep_rt_spin_lock_set_owning_thread_id (spin_lock, MONO_UINT_TO_NATIVE_THREAD_ID (0));
 #endif
 	spin_lock->lock = g_new0 (MonoCoopMutex, 1);
 	if (spin_lock->lock)
@@ -1513,8 +1543,7 @@ ep_rt_spin_lock_aquire (ep_rt_spin_lock_handle_t *spin_lock)
 	if (spin_lock && spin_lock->lock) {
 		mono_coop_mutex_lock (spin_lock->lock);
 #ifdef EP_CHECKED_BUILD
-		spin_lock->owning_thread_id = ep_rt_mono_native_thread_id_get ();
-		spin_lock->lock_is_held = true;
+		ep_rt_spin_lock_set_owning_thread_id (spin_lock, ep_rt_mono_native_thread_id_get ());
 #endif
 	}
 	return true;
@@ -1527,8 +1556,7 @@ ep_rt_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
 {
 	if (spin_lock && spin_lock->lock) {
 #ifdef EP_CHECKED_BUILD
-		spin_lock->lock_is_held = false;
-		spin_lock->owning_thread_id = MONO_UINT_TO_NATIVE_THREAD_ID (0);
+		ep_rt_spin_lock_set_owning_thread_id (spin_lock, MONO_UINT_TO_NATIVE_THREAD_ID (0));
 #endif
 		mono_coop_mutex_unlock (spin_lock->lock);
 	}
@@ -1541,7 +1569,7 @@ inline
 void
 ep_rt_spin_lock_requires_lock_held (const ep_rt_spin_lock_handle_t *spin_lock)
 {
-	g_assert (spin_lock->lock_is_held && ep_rt_mono_native_thread_id_equals (spin_lock->owning_thread_id, ep_rt_mono_native_thread_id_get ()));
+	g_assert (ep_rt_mono_native_thread_id_equals (ep_rt_spin_lock_get_owning_thread_id (spin_lock), ep_rt_mono_native_thread_id_get ()));
 }
 
 static
@@ -1549,7 +1577,7 @@ inline
 void
 ep_rt_spin_lock_requires_lock_not_held (const ep_rt_spin_lock_handle_t *spin_lock)
 {
-	g_assert (!spin_lock->lock_is_held || (spin_lock->lock_is_held && !ep_rt_mono_native_thread_id_equals (spin_lock->owning_thread_id, ep_rt_mono_native_thread_id_get ())));
+	g_assert (!ep_rt_mono_native_thread_id_equals (ep_rt_spin_lock_get_owning_thread_id (spin_lock), ep_rt_mono_native_thread_id_get ()));
 }
 #endif
 
