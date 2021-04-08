@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             // Linux: we fail
             // Windows and Mac, probing succeeds but
             // Windows: probing returns the original name
-            // Mac: probing return the new name including 2 assembly probing with the same new name and the changed deps file
+            // Mac: probing return the new name including 2 assembly probing with the original and new name, and the changed deps file
 
             var component = sharedTestState.ComponentWithNoDependencies.Copy();
 
@@ -89,7 +89,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
                     .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{changeFile}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
                     .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
                     .And.HaveStdErrContaining($"deps='{changeDepsFile}'")
                     .And.HaveStdErrContaining($"mgd_app='{changeFile}'");
@@ -115,7 +115,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             // Linux: we fail
             // Windows and Mac, probing succeeds but
             // Windows: probing returns the original name
-            // Mac: probing return the new name including 2 assembly probing with the same new name and the changed deps file
+            // Mac: probing return the new name including 2 assembly probing with the original and new name, and the changed deps file
 
             var component = sharedTestState.ComponentWithNoDependencies.Copy();
 
@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
                     .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
-                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{changeFile}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
+                    .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{component.AppDll}{Path.PathSeparator}{changeFile}{Path.PathSeparator}]")
                     .And.HaveStdErrContaining($"app_root='{component.Location}{Path.DirectorySeparatorChar}'")
                     .And.HaveStdErrContaining($"deps='{changeDepsFile}'")
                     .And.HaveStdErrContaining($"mgd_app='{changeFile}'");
