@@ -12,7 +12,7 @@ namespace System.Net.WebSockets.Compression
     internal sealed class ZLibStreamPool
     {
         private static readonly ZLibStreamPool?[] s_pools
-            = new ZLibStreamPool[WebSocketDeflateOptions.MaxWindowBits - WebSocketDeflateOptions.MinWindowBits + 1];
+            = new ZLibStreamPool[WebSocketValidate.MaxDeflateWindowBits - WebSocketValidate.MinDeflateWindowBits + 1];
 
         /// <summary>
         /// The maximum number of cached items.
@@ -70,10 +70,10 @@ namespace System.Net.WebSockets.Compression
 
         public static ZLibStreamPool GetOrCreate(int windowBits)
         {
-            Debug.Assert(windowBits >= WebSocketDeflateOptions.MinWindowBits
-                      && windowBits <= WebSocketDeflateOptions.MaxWindowBits);
+            Debug.Assert(windowBits >= WebSocketValidate.MinDeflateWindowBits
+                      && windowBits <= WebSocketValidate.MaxDeflateWindowBits);
 
-            int index = windowBits - WebSocketDeflateOptions.MinWindowBits;
+            int index = windowBits - WebSocketValidate.MinDeflateWindowBits;
             ref ZLibStreamPool? pool = ref s_pools[index];
 
             return Volatile.Read(ref pool) ?? EnsureInitialized(windowBits, ref pool);

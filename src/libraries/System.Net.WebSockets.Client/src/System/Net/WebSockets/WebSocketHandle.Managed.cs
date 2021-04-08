@@ -278,8 +278,8 @@ namespace System.Net.WebSockets
 
                         if (startIndex < 0 ||
                             !int.TryParse(value.Slice(startIndex + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out int windowBits) ||
-                            windowBits < 9 ||
-                            windowBits > 15)
+                            windowBits < WebSocketValidate.MinDeflateWindowBits ||
+                            windowBits > WebSocketValidate.MaxDeflateWindowBits)
                         {
                             throw new WebSocketException(WebSocketError.HeaderError,
                                 SR.Format(SR.net_WebSockets_InvalidResponseHeader, ClientWebSocketDeflateConstants.Extension, value.ToString()));
@@ -333,7 +333,7 @@ namespace System.Net.WebSockets
                     var builder = new StringBuilder(ClientWebSocketDeflateConstants.MaxExtensionLength);
                     builder.Append(ClientWebSocketDeflateConstants.Extension).Append("; ");
 
-                    if (options.ClientMaxWindowBits != 15)
+                    if (options.ClientMaxWindowBits != WebSocketValidate.MaxDeflateWindowBits)
                     {
                         builder.Append(ClientWebSocketDeflateConstants.ClientMaxWindowBits).Append('=')
                                .Append(options.ClientMaxWindowBits.ToString(CultureInfo.InvariantCulture));
@@ -351,7 +351,7 @@ namespace System.Net.WebSockets
 
                     builder.Append("; ");
 
-                    if (options.ServerMaxWindowBits != 15)
+                    if (options.ServerMaxWindowBits != WebSocketValidate.MaxDeflateWindowBits)
                     {
                         builder.Append(ClientWebSocketDeflateConstants.ServerMaxWindowBits).Append('=')
                                .Append(options.ServerMaxWindowBits.ToString(CultureInfo.InvariantCulture));

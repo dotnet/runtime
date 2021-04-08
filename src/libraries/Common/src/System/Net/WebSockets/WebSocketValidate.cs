@@ -9,6 +9,21 @@ namespace System.Net.WebSockets
 {
     internal static partial class WebSocketValidate
     {
+        /// <summary>
+        /// The minimum value for window bits that the websocket per-message-deflate extension can support.<para />
+        /// The underlying zlib component doesn't support 8 bits in deflater (see https://github.com/madler/zlib/issues/94#issuecomment-125832411
+        /// and https://zlib.net/manual.html). Quote from the manual:
+        /// "For the current implementation of deflate(), a windowBits value of 8 (a window size of 256 bytes) is not supported.".
+        /// We cannot use silently 9 instead of 8, because the websocket produces raw deflate stream
+        /// and thus it needs to know the window bits in advance. Also take a look at https://github.com/madler/zlib/issues/171.
+        /// </summary>
+        internal const int MinDeflateWindowBits = 9;
+
+        /// <summary>
+        /// The maximum value for window bits that the websocket per-message-deflate extension can support.
+        /// </summary>
+        internal const int MaxDeflateWindowBits = 15;
+
         internal const int MaxControlFramePayloadLength = 123;
         private const int CloseStatusCodeAbort = 1006;
         private const int CloseStatusCodeFailedTLSHandshake = 1015;
