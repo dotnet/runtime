@@ -77,6 +77,9 @@
     <!-- https://github.com/dotnet/runtime/issues/50916 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.TypeConverter/tests/System.ComponentModel.TypeConverter.Tests.csproj" />
 
+    <!-- https://github.com/dotnet/runtime/issues/50923 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common/tests/System.Data.Common.Tests.csproj" />
+
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
 
     <!-- Execution may be compromised -->
