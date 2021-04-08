@@ -251,7 +251,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     bool success = connection._remoteCertificateValidationCallback(connection, certificate, chain, sslPolicyErrors);
                     if (!success && NetEventSource.Log.IsEnabled())
-                        NetEventSource.Error(state.Connection, $"Remote certificate rejected by verification callback");
+                        NetEventSource.Error(state.Connection, "Remote certificate rejected by verification callback");
                     return success ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
                 }
 

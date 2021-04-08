@@ -130,7 +130,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                         fixed (void* ptr = asn1)
                         {
                             pkcs12Config.Asn1Blob = (IntPtr)ptr;
-                            pkcs12Config.Asn1BlobLength = asn1.Length;
+                            pkcs12Config.Asn1BlobLength = (uint)asn1.Length;
                             pkcs12Config.PrivateKeyPassword = IntPtr.Zero;
 
                             config.Type = QUIC_CREDENTIAL_TYPE.PKCS12;

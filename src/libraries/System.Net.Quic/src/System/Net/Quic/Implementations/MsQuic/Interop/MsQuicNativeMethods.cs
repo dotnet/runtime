@@ -280,9 +280,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             internal IntPtr Asn1Blob;
 
-            internal int Asn1BlobLength;
+            internal uint Asn1BlobLength;
 
-            //[MarshalAs(UnmanagedType.LPUTF8Str)]
             internal IntPtr PrivateKeyPassword;
         }
 
@@ -426,7 +425,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             internal IntPtr PlatformCertificateHandle;
             internal uint DeferredErrorFlags;
-            internal int DeferredStatus;
+            internal uint DeferredStatus;
         }
 
         [StructLayout(LayoutKind.Explicit)]
