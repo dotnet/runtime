@@ -15,6 +15,10 @@ if(NOT MONO_LIB_NAME)
   set(MONO_LIB_NAME "monosgen-2.0")
 endif()
 
+if(NOT MONO_SHARED_LIB_NAME)
+  set(MONO_SHARED_LIB_NAME "$(MONO_LIB_NAME)")
+endif()
+
 include(GNUInstallDirs)
 include(CheckIncludeFile)
 include(CheckFunctionExists)

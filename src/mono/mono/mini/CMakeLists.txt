@@ -335,7 +335,7 @@ if(NOT DISABLE_SHARED_LIBS)
     target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
   endif()
   target_link_libraries(monosgen-shared PRIVATE eglib_objects)
-  set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
+  set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME})
   if(TARGET_WIN32)
     # on Windows the import library for the shared mono library will have the same name as the static library,
     # to avoid a conflict we rename the import library with the .import.lib suffix
@@ -362,7 +362,7 @@ if(NOT DISABLE_SHARED_LIBS)
   install(TARGETS monosgen-shared LIBRARY)
   if(HOST_WIN32 AND TARGET_AMD64)
     add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
-    set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME}-dac)
+    set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME}-dac)
   endif()
 endif()
 

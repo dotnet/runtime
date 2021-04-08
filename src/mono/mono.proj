@@ -29,16 +29,16 @@
     <PythonCmd Condition="'$(OS)' != 'Windows_NT'">python3</PythonCmd>
     <PythonCmd Condition="'$(OS)' == 'Windows_NT'">python</PythonCmd>
     <CoreClrLibName>coreclr</CoreClrLibName>
-    <MonoLibName>monosgen-2.0</MonoLibName>
     <CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">$(CoreClrLibName).dll</CoreClrFileName>
     <CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">lib$(CoreClrLibName).dylib</CoreClrFileName>
     <CoreClrFileName Condition="'$(TargetsMacCatalyst)' == 'true'">lib$(CoreClrLibName).dylib</CoreClrFileName>
     <CoreClrFileName Condition="'$(CoreClrFileName)' == ''">lib$(CoreClrLibName).so</CoreClrFileName>
-    <MonoFileName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">lib$(MonoLibName).dylib</MonoFileName>
-    <MonoFileName Condition="'$(TargetsAndroid)' == 'true'">lib$(MonoLibName).so</MonoFileName>
+    <MonoLibName>monosgen-2.0</MonoLibName>
+    <MonoSharedLibName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true'">$(MonoLibName)</MonoSharedLibName>
+    <MonoSharedLibName Condition="'$(MonoSharedLibName)' == ''">$(CoreClrLibName)</MonoSharedLibName>
+    <MonoFileName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">lib$(MonoSharedLibName).dylib</MonoFileName>
+    <MonoFileName Condition="'$(TargetsAndroid)' == 'true'">lib$(MonoSharedLibName).so</MonoFileName>
     <MonoFileName Condition="'$(TargetsBrowser)' == 'true'">lib$(MonoLibName).a</MonoFileName>
-    <MonoCMakeLibName Condition="'$(MonoFileName)' != ''">$(MonoLibName)</MonoCMakeLibName>
-    <MonoCMakeLibName Condition="'$(MonoFileName)' == ''">$(CoreClrLibName)</MonoCMakeLibName>
     <MonoFileName Condition="'$(MonoFileName)' == ''">$(CoreClrFileName)</MonoFileName>
     <MonoStaticFileName Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">lib$(MonoLibName).a</MonoStaticFileName>
     <SharedNativeLibrarySuffix Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">.dylib</SharedNativeLibrarySuffix>
@@ -209,7 +209,8 @@
       <_MonoCMakeArgs Condition="'$(CMakeArgs)' != ''" Include="$(CMakeArgs)"/>
       <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir.TrimEnd('\/'))" />
       <_MonoCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
-      <_MonoCMakeArgs Include="-DMONO_LIB_NAME=$(MonoCMakeLibName)" />
+      <_MonoCMakeArgs Include="-DMONO_LIB_NAME=$(MonoLibName)" />
+      <_MonoCMakeArgs Include="-DMONO_SHARED_LIB_NAME=$(MonoSharedLibName)" />
     </ItemGroup>
 
     <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
@@ -638,14 +639,14 @@
   <!-- General targets -->
   <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="$(MonoDependsOnTargets)">
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'">
-      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true'">$(MonoObjDir)out\bin\$(MonoCMakeLibName).dll</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)out\lib\lib$(MonoCMakeLibName).dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsMacCatalyst)' == 'true'">$(MonoObjDir)out\lib\lib$(MonoCMakeLibName).dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsiOS)' == 'true'">$(MonoObjDir)out\lib\lib$(MonoCMakeLibName).dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetstvOS)' == 'true'">$(MonoObjDir)out\lib\lib$(MonoCMakeLibName).dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true'">$(MonoObjDir)out\lib\lib$(MonoCMakeLibName).a</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)out\lib\lib$(MonoCMakeLibName).so</_MonoRuntimeFilePath>
-      <_MonoRuntimeStaticFilePath Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\lib$(MonoCMakeLibName).a</_MonoRuntimeStaticFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true'">$(MonoObjDir)out\bin\$(MonoSharedLibName).dll</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)out\lib\lib$(MonoSharedLibName).dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsMacCatalyst)' == 'true'">$(MonoObjDir)out\lib\lib$(MonoSharedLibName).dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsiOS)' == 'true'">$(MonoObjDir)out\lib\lib$(MonoSharedLibName).dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetstvOS)' == 'true'">$(MonoObjDir)out\lib\lib$(MonoSharedLibName).dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true'">$(MonoObjDir)out\lib\lib$(MonoLibName).a</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)out\lib\lib$(MonoSharedLibName).so</_MonoRuntimeFilePath>
+      <_MonoRuntimeStaticFilePath Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\lib$(MonoLibName).a</_MonoRuntimeStaticFilePath>
       <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true'">true</_MonoIncludeInterpStaticFiles>
       <_MonoIncludeIcuFiles Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</_MonoIncludeIcuFiles>
     </PropertyGroup>
