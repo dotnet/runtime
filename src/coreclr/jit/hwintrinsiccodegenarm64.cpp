@@ -55,8 +55,22 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
 
         if (category == HW_Category_SIMDByIndexedElement)
         {
-            assert(varTypeIsSIMD(intrin->GetAuxiliaryType()));
-            const unsigned int indexedElementSimdSize = genTypeSize(intrin->GetAuxiliaryType());
+            const HWIntrinsic intrinInfo(intrin);
+            var_types indexedElementOpType;
+
+            if (intrinInfo.numOperands == 3)
+            {
+                indexedElementOpType = intrinInfo.op2->TypeGet();
+            }
+            else
+            {
+                assert(intrinInfo.numOperands == 4);
+                indexedElementOpType = intrinInfo.op3->TypeGet();
+            }
+
+            assert(varTypeIsSIMD(indexedElementOpType));
+
+            const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
             HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, indexedElementSimdSize, intrin->GetSimdBaseType(),
                                              &immLowerBound, &immUpperBound);
         }

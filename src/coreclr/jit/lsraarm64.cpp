@@ -978,7 +978,21 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
         if (intrin.category == HW_Category_SIMDByIndexedElement)
         {
-            const unsigned int indexedElementSimdSize = genTypeSize(intrinsicTree->GetAuxiliaryType());
+            var_types indexedElementOpType;
+
+            if (intrin.numOperands == 3)
+            {
+                indexedElementOpType = intrin.op2->TypeGet();
+            }
+            else
+            {
+                assert(intrin.numOperands == 4);
+                indexedElementOpType = intrin.op3->TypeGet();
+            }
+
+            assert(varTypeIsSIMD(indexedElementOpType));
+
+            const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
             HWIntrinsicInfo::lookupImmBounds(intrin.id, indexedElementSimdSize, intrin.baseType, &immLowerBound,
                                              &immUpperBound);
         }

@@ -1153,12 +1153,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     assert(varTypeIsSIMD(op2->TypeGet()));
                     retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
                 }
-#elif defined(TARGET_ARM64)
-                if (category == HW_Category_SIMDByIndexedElement)
-                {
-                    assert(varTypeIsSIMD(op2->TypeGet()));
-                    retNode->AsHWIntrinsic()->SetAuxiliaryJitType(sigReader.op2JitType);
-                }
 #endif
                 break;
 
@@ -1172,12 +1166,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                 assert(!isScalar);
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
-
-                if (category == HW_Category_SIMDByIndexedElement)
-                {
-                    assert(varTypeIsSIMD(op3->TypeGet()));
-                    retNode->AsHWIntrinsic()->SetAuxiliaryJitType(sigReader.op3JitType);
-                }
                 break;
 #endif
 
