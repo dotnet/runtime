@@ -296,11 +296,6 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/50726 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Caching/tests/System.Runtime.Caching.Tests.csproj" />
 
-    <!-- Issue: https://github.com/dotnet/runtime/issues/50730 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json\tests\System.Runtime.Serialization.Json.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json\tests\ReflectionOnly\System.Runtime.Serialization.Json.ReflectionOnly.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Xml\tests\ReflectionOnly\System.Runtime.Serialization.Xml.ReflectionOnly.Tests.csproj" />
-
     <!-- Issue: https://github.com/dotnet/runtime/issues/51211 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.VisualC\tests\System.Runtime.CompilerServices.VisualC.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.TypeExtensions\tests\System.Reflection.TypeExtensions.Tests.csproj" />
