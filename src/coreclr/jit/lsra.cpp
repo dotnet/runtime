@@ -9194,13 +9194,16 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         stackToRegIntervals[otherTargetReg] = otherInterval;
                         targetRegsToDo &= ~otherTargetRegMask;
 
-                        // Now, move the interval that is going to targetReg, and add its "fromReg" to
-                        // "targetRegsReady", only if it was one of the target register we originally determined.
+                        // Now, move the interval that is going to targetReg.
                         addResolution(block, insertionPoint, sourceIntervals[sourceReg], targetReg, fromReg);
                         JITDUMP(" (%s)\n", resolveTypeName[resolveType]);
                         location[sourceReg] = REG_NA;
 
-                        if (source[fromReg] != REG_NA)
+                        // Add its "fromReg" to "targetRegsReady", only if:
+                        // - It was one of the target register we originally determined.
+                        // - It is not the eventual target (otherTargetReg) because its
+                        //   value will be retrieved from STK.
+                        if (source[fromReg] != REG_NA && fromReg != otherTargetReg)
                         {
                             regMaskTP fromRegMask = genRegMask(fromReg);
                             targetRegsReady |= fromRegMask;
