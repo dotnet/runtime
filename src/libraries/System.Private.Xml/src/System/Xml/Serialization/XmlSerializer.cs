@@ -660,7 +660,12 @@ namespace System.Xml.Serialization
                 }
                 else if (type.Assembly != assembly)
                 {
-                    throw new ArgumentException(SR.Format(SR.XmlPregenOrphanType, type.FullName, assembly.Location), nameof(types));
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
+                    string? nameOrLocation = assembly.Location;
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
+                    if (nameOrLocation == string.Empty)
+                        nameOrLocation = assembly.FullName;
+                    throw new ArgumentException(SR.Format(SR.XmlPregenOrphanType, type.FullName, nameOrLocation), nameof(types));
                 }
             }
 

@@ -698,7 +698,10 @@ namespace System.Diagnostics
             if (machineName == "." && !File.Exists(dllPath))
             {
                 // use this assembly directory
+                // The code handles if the path is null by calling AppContext.BaseDirectory
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
                 string assmLocation = typeof(EventLog).Assembly.Location;
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
                 if (!string.IsNullOrEmpty(assmLocation))
                 {
                     dllPath = Path.Combine(Path.GetDirectoryName(assmLocation), AltDllName);

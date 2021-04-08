@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -74,6 +75,7 @@ namespace Microsoft.Extensions.DependencyModel
                 );
         }
 
+        [RequiresAssemblyFiles(Message = "Calls GetDepsJsonPath")]
         private static DependencyContext LoadDefault()
         {
             var entryAssembly = Assembly.GetEntryAssembly();
@@ -85,6 +87,7 @@ namespace Microsoft.Extensions.DependencyModel
             return Load(entryAssembly);
         }
 
+        [RequiresAssemblyFiles(Message = "Calls GetDepsJsonPath")]
         public static DependencyContext Load(Assembly assembly)
         {
             return DependencyContextLoader.Default.Load(assembly);

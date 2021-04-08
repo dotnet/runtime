@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Configuration.Assemblies;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Text;
 using CultureInfo = System.Globalization.CultureInfo;
@@ -59,12 +60,14 @@ namespace System.Reflection
             set => _cultureInfo = (value == null) ? null : new CultureInfo(value);
         }
 
+        [RequiresAssemblyFiles (Message = "'System.Reflection.AssemblyName.CodeBase' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3000")]
         public string? CodeBase
         {
             get => _codeBase;
             set => _codeBase = value;
         }
 
+        [RequiresAssemblyFiles (Message = "'System.Reflection.AssemblyName.EscapedCodeBase' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3000")]
         public string? EscapedCodeBase
         {
             get

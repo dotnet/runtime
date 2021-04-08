@@ -12,7 +12,12 @@ namespace System.Diagnostics.CodeAnalysis
                     AttributeTargets.Property,
                     Inherited = false,
                     AllowMultiple = false)]
-    public sealed class RequiresAssemblyFilesAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class RequiresAssemblyFilesAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="RequiresAssemblyFilesAttribute"/> class.

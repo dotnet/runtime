@@ -155,13 +155,18 @@ namespace System.Xml.Serialization
                 serializerName = Compiler.GetTempAssemblyName(name, defaultNamespace);
                 // use strong name
                 name.Name = serializerName;
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
                 name.CodeBase = null;
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
                 name.CultureInfo = CultureInfo.InvariantCulture;
 
                 string? serializerPath = null;
 
                 try
                 {
+                    // Annotating this as dangerous will make the core of the serializer to be marked as not safe, instead
+                    // this pattern is only dangerous if using sgen only. See https://github.com/dotnet/runtime/issues/50820
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
                     if (!string.IsNullOrEmpty(type.Assembly.Location))
                     {
                         serializerPath = Path.Combine(Path.GetDirectoryName(type.Assembly.Location)!, serializerName + ".dll");
@@ -171,7 +176,7 @@ namespace System.Xml.Serialization
                     {
                         serializerPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, serializerName + ".dll");
                     }
-
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
                     if (!string.IsNullOrEmpty(serializerPath))
                     {
                         serializer = Assembly.LoadFile(serializerPath);

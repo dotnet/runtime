@@ -50,7 +50,9 @@ namespace System.Configuration
                 exeAssembly = Assembly.GetEntryAssembly();
 
                 // in case of SingleFile deployment, Assembly.Location is empty.
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
                 if (exeAssembly?.Location.Length == 0)
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
                 {
                     isSingleFile = true;
                     HasEntryAssembly = true;

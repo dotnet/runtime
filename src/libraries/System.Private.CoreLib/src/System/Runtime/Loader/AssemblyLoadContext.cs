@@ -629,7 +629,10 @@ namespace System.Runtime.Loader
                             handler.Method.Name,
                             this != AssemblyLoadContext.Default ? ToString() : Name,
                             resolvedAssembly?.FullName,
+                            // This call is fine because the code handles the Assembly.Location equals null
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
                             resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null);
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
                     }
 #endif // CORECLR
                     if (resolvedAssembly != null)
@@ -738,7 +741,10 @@ namespace System.Runtime.Loader
                         name,
                         handler.Method.Name,
                         asm?.FullName,
+                        // This call is fine because the code handles the Assembly.Location equals null
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
                         asm != null && !asm.IsDynamic ? asm.Location : null);
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
                 }
 #endif // CORECLR
                 RuntimeAssembly? ret = GetRuntimeAssembly(asm);
@@ -768,7 +774,10 @@ namespace System.Runtime.Loader
 
             AssemblyLoadContext parentALC = GetLoadContext(parentAssembly)!;
 
+            // This call is fine because native call runs before this and checks BindSatelliteResourceFromBundle
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
             string? parentDirectory = Path.GetDirectoryName(parentAssembly.Location);
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
             if (parentDirectory == null)
                  return null;
 

@@ -35,7 +35,10 @@ namespace System.Reflection.TypeLoading.Ecma
         private FileStream? FindModuleNextToAssembly(string moduleName)
         {
             Assembly containingAssembly = this;
+            // The code has a fallback using a ModuleResolveEventHandler
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
             string location = containingAssembly.Location;
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
             if (location == null || location.Length == 0)
                 return null;
             string? directoryPath = Path.GetDirectoryName(location);

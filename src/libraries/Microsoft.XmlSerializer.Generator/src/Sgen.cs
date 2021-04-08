@@ -293,6 +293,12 @@ namespace Microsoft.XmlSerializer.Generator
                     ImportType(type, mappings, importedTypes, warnings, importer, parsableerrors);
                 }
             }
+            // Only used in diagnostics
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
+            string nameOrLocation = assembly.Location;
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
+            if (nameOrLocation == string.Empty)
+                nameOrLocation = assembly.FullName;
 
             if (importedTypes.Count > 0)
             {
@@ -300,7 +306,10 @@ namespace Microsoft.XmlSerializer.Generator
                 var allMappings = (XmlMapping[])mappings.ToArray(typeof(XmlMapping));
 
                 bool gac = assembly.GlobalAssemblyCache;
-                outputDirectory = outputDirectory == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
+                // Code has a fallback in case the location is null
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
+                 outputDirectory = outputDirectory == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
 
                 if (!Directory.Exists(outputDirectory))
                 {
@@ -369,17 +378,17 @@ namespace Microsoft.XmlSerializer.Generator
                     if (!silent)
                     {
                         Console.Out.WriteLine(SR.Format(SR.InfoFileName, codePath));
-                        Console.Out.WriteLine(SR.Format(SR.InfoGeneratedFile, assembly.Location, codePath));
+                        Console.Out.WriteLine(SR.Format(SR.InfoGeneratedFile, nameOrLocation, codePath));
                     }
                 }
                 else
                 {
-                    Console.Out.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrGenerationFailed, assembly.Location)));
+                    Console.Out.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrGenerationFailed, nameOrLocation)));
                 }
             }
             else
             {
-                Console.Out.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoNoSerializableTypes, assembly.Location)));
+                Console.Out.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoNoSerializableTypes, nameOrLocation)));
             }
         }
 

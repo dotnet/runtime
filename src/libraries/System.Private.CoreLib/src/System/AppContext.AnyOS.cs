@@ -14,7 +14,10 @@ namespace System
 #if CORERT
             string? path = Environment.ProcessPath;
 #else
+            // Single File apps should always set APP_CONTEXT_BASE_DIRECTORY therefore code handles Assembly.Location equals null
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
             string? path = Assembly.GetEntryAssembly()?.Location;
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
 #endif
 
             string? directory = Path.GetDirectoryName(path);

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 
@@ -50,6 +51,7 @@ namespace Microsoft.Extensions.DependencyModel
             return assembly.GetManifestResourceStream(name);
         }
 
+        [RequiresAssemblyFiles(Message = "Calls GetDepsJsonPath")]
         public DependencyContext Load(Assembly assembly)
         {
             if (assembly == null)
@@ -103,6 +105,7 @@ namespace Microsoft.Extensions.DependencyModel
             return null;
         }
 
+        [RequiresAssemblyFiles (Message = "Calls GetDepsJsonPath")]
         private DependencyContext LoadAssemblyContext(Assembly assembly, IDependencyContextReader reader)
         {
             using (Stream stream = GetResourceStream(assembly, assembly.GetName().Name + DepsJsonExtension))
@@ -125,6 +128,7 @@ namespace Microsoft.Extensions.DependencyModel
             return null;
         }
 
+        [RequiresAssemblyFiles (Message = "Needs additional support for reading .deps.json in single file", Url = "https://github.com/dotnet/runtime/issues/41265")]
         private string GetDepsJsonPath(Assembly assembly)
         {
             // Assemblies loaded in memory (e.g. single file) return empty string from Location.

@@ -78,7 +78,10 @@ namespace System.ComponentModel.Design
                     foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
                     {
                         // Assemblies loaded in memory return empty string from Location.
+                        // Suppressing the warning until gets fixed, see https://github.com/dotnet/runtime/issues/50821
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
                         string location = asm.Location;
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
                         if (location == string.Empty)
                             continue;
 
@@ -101,7 +104,10 @@ namespace System.ComponentModel.Design
                 }
                 else
                 {
+                    // Suppressing the warning until gets fixed, see https://github.com/dotnet/runtime/issues/50821
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
                     string location = resourceAssembly.Location;
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
                     if (location != string.Empty)
                     {
                         string fileName = Path.GetFileName(location);

@@ -15,7 +15,10 @@ namespace System.Runtime.InteropServices
 
         public static string GetRuntimeDirectory()
         {
+            // This call is fine because the code handles the Assembly.Location equals null by calling AppDomain.CurrentDomain.BaseDirectory
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
             string? runtimeDirectory = typeof(object).Assembly.Location;
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
             if (!Path.IsPathRooted(runtimeDirectory))
             {
                 runtimeDirectory = AppDomain.CurrentDomain.BaseDirectory;
