@@ -134,4 +134,5 @@ jobs:
     jobParameters:
       nameSuffix: SourceBuild
       buildArgs: /p:DotNetBuildFromSource=true
+      buildingOnSourceBuildImage: true
       timeoutInMinutes: 90
