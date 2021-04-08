@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.Data.Common">
+    <type fullname="System.Data.DataColumn">
+      <method signature="System.Void .ctor()" />
+    </type>
+  </assembly>
+</linker>
