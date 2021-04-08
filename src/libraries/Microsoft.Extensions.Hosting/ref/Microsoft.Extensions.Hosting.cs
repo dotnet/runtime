@@ -15,8 +15,8 @@ namespace Microsoft.Extensions.Hosting
 {
     public enum BackgroundServiceExceptionBehavior
     {
-        Ignore,
-        StopHost
+        StopHost,
+        Ignore
     }
     public partial class ConsoleLifetimeOptions
     {

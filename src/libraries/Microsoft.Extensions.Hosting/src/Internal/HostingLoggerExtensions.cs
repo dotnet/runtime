@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 foreach (Exception ex in reflectionTypeLoadException.LoaderExceptions)
                 {
-                    message = $"{message}{Environment.NewLine}{ex.Message}";
+                    message = message + Environment.NewLine + ex.Message;
                 }
             }
 

@@ -664,7 +664,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 .ConfigureServices(
                     services =>
                     {
-                        services.AddHostedService<AsyncThrowingService>();
+                        services.AddHostedService(_ => new AsyncThrowingService(Task.CompletedTask));
                         services.Configure<HostOptions>(
                             options =>
                             options.BackgroundServiceExceptionBehavior =
@@ -1434,9 +1434,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         private class AsyncThrowingService : BackgroundService
         {
-            private readonly Task? _executeDelayTask;
-
-            public AsyncThrowingService() { }
+            private readonly Task _executeDelayTask;
 
             public AsyncThrowingService(Task executeDelayTask)
             {
@@ -1445,13 +1443,9 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             {
-                while (true)
-                {
-                    if (_executeDelayTask is { })
-                        await _executeDelayTask;
+                await _executeDelayTask;
 
-                    throw new Exception("Background Exception");
-                }
+                throw new Exception("Background Exception");
             }
         }
     }
