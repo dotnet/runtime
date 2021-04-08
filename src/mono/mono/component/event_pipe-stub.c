@@ -97,6 +97,10 @@ event_pipe_stub_thread_ctrl_activity_id (
 	uint8_t *activity_id,
 	uint32_t activity_id_len);
 
+static bool
+event_pipe_stub_write_event_ee_startup_start (void);
+
+
 static MonoComponentEventPipe fn_table = {
 	{ &event_pipe_stub_cleanup },
 	&event_pipe_stub_init,
@@ -107,13 +111,14 @@ static MonoComponentEventPipe fn_table = {
 	&event_pipe_stub_get_next_event,
 	&event_pipe_stub_get_wait_handle,
 	&event_pipe_stub_start_streaming,
-	event_pipe_stub_write_event_2,
-	event_pipe_stub_create_provider,
-	event_pipe_stub_delete_provider,
-	event_pipe_stub_get_provider,
-	event_pipe_stub_provider_add_event,
-	event_pipe_stub_get_session_info,
-	event_pipe_stub_thread_ctrl_activity_id
+	&event_pipe_stub_write_event_2,
+	&event_pipe_stub_create_provider,
+	&event_pipe_stub_delete_provider,
+	&event_pipe_stub_get_provider,
+	&event_pipe_stub_provider_add_event,
+	&event_pipe_stub_get_session_info,
+	&event_pipe_stub_thread_ctrl_activity_id,
+	&event_pipe_stub_write_event_ee_startup_start
 };
 
 static void
@@ -235,6 +240,12 @@ event_pipe_stub_thread_ctrl_activity_id (
 	uint32_t activity_id_len)
 {
 	return false;
+}
+
+static bool
+event_pipe_stub_write_event_ee_startup_start (void)
+{
+	return true;
 }
 
 #ifdef STATIC_COMPONENTS

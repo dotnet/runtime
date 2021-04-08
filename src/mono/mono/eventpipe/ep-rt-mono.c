@@ -59,6 +59,10 @@ EventPipeEvent *EventPipeEventAssemblyDCEnd_V1 = NULL;
 EventPipeEvent *EventPipeEventAppDomainDCEnd_V1 = NULL;
 EventPipeEvent *EventPipeEventRuntimeInformationDCStart = NULL;
 
+// Runtime private events.
+EventPipeProvider *EventPipeProviderDotNETRuntimePrivate = NULL;
+EventPipeEvent *EventPipeEventEEStartupStart_V1 = NULL;
+
 // Rundown types.
 typedef
 bool
@@ -363,6 +367,17 @@ void
 init_dotnet_runtime_rundown (void);
 
 static
+bool
+write_event_ee_startup_start_v1 (
+	const uint16_t clr_instance_id,
+	const uint8_t *activity_id,
+	const uint8_t *related_activity_id);
+
+static
+void
+init_dotnet_runtime_private (void);
+
+static
 void
 eventpipe_fire_method_events (
 	MonoJitInfo *ji,
@@ -462,9 +477,6 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	ep_rt_thread_handle_t sampling_thread,
 	EventPipeEvent *sampling_event);
 
-void
-ep_rt_mono_execute_rundown (void);
-
 bool
 ep_rt_mono_walk_managed_stack_for_thread (
 	ep_rt_thread_handle_t thread,
@@ -481,6 +493,9 @@ ep_rt_mono_method_get_full_name (
 	ep_rt_method_desc_t *method,
 	ep_char8_t *name,
 	size_t name_len);
+
+void
+ep_rt_mono_execute_rundown (void);
 
 static
 inline
@@ -1086,6 +1101,41 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
+static
+bool
+write_event_ee_startup_start_v1 (
+	const uint16_t clr_instance_id,
+	const uint8_t *activity_id,
+	const uint8_t *related_activity_id)
+{
+	EP_ASSERT (EventPipeEventEEStartupStart_V1 != NULL);
+
+	if (!ep_event_is_enabled (EventPipeEventEEStartupStart_V1))
+		return true;
+
+	uint8_t stack_buffer [32];
+	uint8_t *buffer = stack_buffer;
+	size_t offset = 0;
+	size_t size = sizeof (stack_buffer);
+	bool fixed_buffer = true;
+	bool success = true;
+
+	success &= write_buffer_uint16_t (&clr_instance_id, &buffer, &offset, &size, &fixed_buffer);
+
+	ep_raise_error_if_nok (success);
+
+	ep_write_event (EventPipeEventEEStartupStart_V1, buffer, (uint32_t)offset, activity_id, related_activity_id);
+
+ep_on_exit:
+	if (!fixed_buffer)
+		ep_rt_byte_array_free (buffer);
+	return success;
+
+ep_on_error:
+	EP_ASSERT (!success);
+	ep_exit_error_handler ();
+}
+
 // Mapping FireEtw* CoreClr functions.
 #define FireEtwRuntimeInformationDCStart(...) write_runtime_info_dc_start(__VA_ARGS__,NULL,NULL)
 #define FireEtwDCEndInit_V1(...) write_event_dc_end_init_v1(__VA_ARGS__,NULL,NULL)
@@ -1096,6 +1146,7 @@ ep_on_error:
 #define FireEtwAssemblyDCEnd_V1(...) write_event_assembly_dc_end_v1(__VA_ARGS__,NULL,NULL)
 #define FireEtwAppDomainDCEnd_V1(...) write_event_domain_dc_end_v1(__VA_ARGS__,NULL,NULL)
 #define FireEtwDCEndComplete_V1(...) write_event_dc_end_complete_v1(__VA_ARGS__,NULL,NULL)
+#define FireEtwEEStartupStart_V1(...) write_event_ee_startup_start_v1(__VA_ARGS__,NULL,NULL)
 
 static
 bool
@@ -1246,6 +1297,18 @@ init_dotnet_runtime_rundown (void)
 
 	EP_ASSERT (EventPipeEventRuntimeInformationDCStart == NULL);
 	EventPipeEventRuntimeInformationDCStart = ep_provider_add_event (EventPipeProviderDotNETRuntimeRundown, 187, 0, 0, EP_EVENT_LEVEL_INFORMATIONAL, true, NULL, 0);
+}
+
+static
+void
+init_dotnet_runtime_private (void)
+{
+	//TODO: Add callback method to enable/disable more native events getting into EventPipe (when enabled).
+	EP_ASSERT (EventPipeProviderDotNETRuntimePrivate == NULL);
+	EventPipeProviderDotNETRuntimePrivate = ep_create_provider (ep_config_get_private_provider_name_utf8 (), NULL, NULL, NULL);
+
+	EP_ASSERT (EventPipeEventEEStartupStart_V1 == NULL);
+	EventPipeEventEEStartupStart_V1 = ep_provider_add_event (EventPipeProviderDotNETRuntimePrivate, 80, 2147483648, 1, EP_EVENT_LEVEL_INFORMATIONAL, true, NULL, 0);
 }
 
 static
@@ -1914,6 +1977,7 @@ void
 ep_rt_mono_init_providers_and_events (void)
 {
 	init_dotnet_runtime_rundown ();
+	init_dotnet_runtime_private ();
 }
 
 void
@@ -1923,6 +1987,7 @@ ep_rt_mono_fini_providers_and_events (void)
 	// Deallocating providers/events here might cause AV if a WriteEvent
 	// was to occur. Thus, we are not doing this cleanup.
 
+	// ep_delete_provider (EventPipeProviderDotNETRuntimePrivate);
 	// ep_delete_provider (EventPipeProviderDotNETRuntimeRundown);
 }
 
@@ -2079,6 +2144,12 @@ ep_rt_mono_execute_rundown (void)
 		fire_method_rundown_events_func);
 
 	FireEtwDCEndComplete_V1 (clr_instance_get_id ());
+}
+
+bool
+ep_rt_mono_write_event_ee_startup_start (void)
+{
+	return FireEtwEEStartupStart_V1 (clr_instance_get_id ());
 }
 
 #endif /* ENABLE_PERFTRACING */

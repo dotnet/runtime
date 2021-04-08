@@ -88,7 +88,8 @@ static MonoComponentEventPipe fn_table = {
 	&ep_get_provider,
 	&ep_provider_add_event,
 	&event_pipe_get_session_info,
-	&event_pipe_thread_ctrl_activity_id
+	&event_pipe_thread_ctrl_activity_id,
+	&ep_rt_mono_write_event_ee_startup_start
 };
 
 static void
@@ -174,6 +175,25 @@ event_pipe_get_next_event (
 }
 
 static bool
+event_pipe_get_session_info (
+	EventPipeSessionID session_id,
+	EventPipeSessionInfo *instance)
+{
+	bool result = false;
+	if (instance) {
+		EventPipeSession *session = ep_get_session ((EventPipeSessionID)session_id);
+		if (session) {
+			instance->starttime_as_utc_filetime = ep_session_get_session_start_time (session);
+			instance->start_timestamp = ep_session_get_session_start_timestamp (session);
+			instance->timestamp_frequency = ep_perf_frequency_query ();
+			result = true;
+		}
+	}
+
+	return result;
+}
+
+static bool
 event_pipe_thread_ctrl_activity_id (
 	EventPipeActivityControlCode activity_control_code,
 	uint8_t *activity_id,
@@ -209,25 +229,6 @@ event_pipe_thread_ctrl_activity_id (
 	default:
 		result = false;
 		break;
-	}
-
-	return result;
-}
-
-static bool
-event_pipe_get_session_info (
-	EventPipeSessionID session_id,
-	EventPipeSessionInfo *instance)
-{
-	bool result = false;
-	if (instance) {
-		EventPipeSession *session = ep_get_session ((EventPipeSessionID)session_id);
-		if (session) {
-			instance->starttime_as_utc_filetime = ep_session_get_session_start_time (session);
-			instance->start_timestamp = ep_session_get_session_start_timestamp (session);
-			instance->timestamp_frequency = ep_perf_frequency_query ();
-			result = true;
-		}
 	}
 
 	return result;

@@ -2106,5 +2106,12 @@ ep_rt_volatile_store_ptr_without_barrier (
 	*ptr = value;
 }
 
+/*
+ * EventPipe Native Events.
+ */
+
+bool
+ep_rt_mono_write_event_ee_startup_start (void);
+
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_RT_MONO_H__ */
