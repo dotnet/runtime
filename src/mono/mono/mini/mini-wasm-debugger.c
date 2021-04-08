@@ -557,7 +557,7 @@ handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch
 	ERROR_DECL (error);
 	const char *default_error_message = "Failed to get exception message.";
 
-	PRINT_DEBUG_MSG (1, "handle exception - %d - %p - %p - %p\n", pause_on_exc, exc, throw_ctx, catch_ctx);
+	PRINT_DEBUG_MSG (2, "handle exception - %d - %p - %p - %p\n", pause_on_exc, exc, throw_ctx, catch_ctx);
 	
     //normal mono_runtime_try_invoke does not capture the exception and this is a temporary workaround.
 	exception_on_runtime_invoke = (MonoObject*)exc;
