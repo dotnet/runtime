@@ -59,6 +59,7 @@
     <Compile Include="System\ByteTests.cs" />
     <Compile Include="System\CharTests.cs" />
     <Compile Include="System\CLSCompliantAttributeTests.cs" />
+    <Compile Include="System\DateOnlyTests.cs" />
     <Compile Include="System\DateTimeTests.cs" />
     <Compile Include="System\DateTimeOffsetTests.cs" />
     <Compile Include="System\DBNullTests.cs" />
@@ -127,6 +128,7 @@
     <Compile Include="System\StringSplitExtensions.cs" />
     <Compile Include="System\StringTests.cs" />
     <Compile Include="System\SystemExceptionTests.cs" />
+    <Compile Include="System\TimeOnlyTests.cs" />
     <Compile Include="System\TimeoutExceptionTests.cs" />
     <Compile Include="System\TimeSpanTests.cs" />
     <Compile Include="System\TimeZoneInfoTests.cs" />

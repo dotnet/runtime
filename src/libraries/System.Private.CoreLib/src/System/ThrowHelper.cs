@@ -157,6 +157,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_DayNumber(int dayNumber)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dayNumber), dayNumber, SR.ArgumentOutOfRange_DayNumber);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRange_BadYearMonthDay()
         {
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
@@ -639,6 +645,8 @@ namespace System
                     return "start";
                 case ExceptionArgument.format:
                     return "format";
+                case ExceptionArgument.formats:
+                    return "formats";
                 case ExceptionArgument.culture:
                     return "culture";
                 case ExceptionArgument.comparer:
@@ -960,6 +968,7 @@ namespace System
         pointer,
         start,
         format,
+        formats,
         culture,
         comparer,
         comparable,
