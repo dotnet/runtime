@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks.Sources;
@@ -53,17 +52,12 @@ namespace System.IO.Strategies
                 byte[]? bytes)
             {
                 _strategy = strategy;
-
                 _result = TaskSourceCodes.NoResult;
-
-                _source = default;
-                // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
-                _source.RunContinuationsAsynchronously = true;
 
                 _overlapped = bytes != null &&
                               _strategy.CompareExchangeCurrentOverlappedOwner(this, null) == null ?
                               _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(preallocatedOverlapped!) : // allocated when buffer was created, and buffer is non-null
-                              strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(s_ioCallback, this, bytes);
+                              _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(s_ioCallback, this, bytes);
 
                 Debug.Assert(_overlapped != null, "AllocateNativeOverlapped returned null");
             }
@@ -137,7 +131,7 @@ namespace System.IO.Strategies
                 // be directly the AwaitableProvider that's completing (in the case where the preallocated
                 // overlapped was already in use by another operation).
                 object? state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
-                Debug.Assert(state is (AsyncWindowsFileStreamStrategy or ValueTaskSource));
+                Debug.Assert(state is AsyncWindowsFileStreamStrategy or ValueTaskSource);
                 ValueTaskSource valueTaskSource = state switch
                 {
                     AsyncWindowsFileStreamStrategy strategy => strategy._currentOverlappedOwner!, // must be owned
@@ -177,8 +171,8 @@ namespace System.IO.Strategies
 
             private void CompleteCallback(ulong packedResult)
             {
-                // Free up the native resource and cancellation registration
-                CancellationToken cancellationToken = _cancellationRegistration.Token; // access before disposing registration
+                CancellationToken cancellationToken = _cancellationRegistration.Token;
+
                 ReleaseNativeResource();
 
                 // Unpack the result and send it to the user
@@ -186,16 +180,18 @@ namespace System.IO.Strategies
                 if (result == TaskSourceCodes.ResultError)
                 {
                     int errorCode = unchecked((int)(packedResult & uint.MaxValue));
+                    Exception e;
                     if (errorCode == Interop.Errors.ERROR_OPERATION_ABORTED)
                     {
-                        _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(canceled: true))));
+                        CancellationToken ct = cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(canceled: true);
+                        e = new OperationCanceledException(ct);
                     }
                     else
                     {
-                        Exception e = Win32Marshal.GetExceptionForWin32Error(errorCode);
-                        e.SetCurrentStackTrace();
-                        _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(e));
+                        e = Win32Marshal.GetExceptionForWin32Error(errorCode);
                     }
+                    e.SetCurrentStackTrace();
+                    _source.SetException(e);
                 }
                 else
                 {
@@ -206,6 +202,9 @@ namespace System.IO.Strategies
 
             private void Cancel(CancellationToken token)
             {
+                // WARNING: This may potentially be called under a lock (during cancellation registration)
+                Debug.Assert(_overlapped != null && GetStatus(Version) != ValueTaskSourceStatus.Succeeded, "IO should not have completed yet");
+
                 // If the handle is still valid, attempt to cancel the IO
                 if (!_strategy._fileHandle.IsInvalid &&
                     !Interop.Kernel32.CancelIoEx(_strategy._fileHandle, _overlapped))
@@ -216,8 +215,9 @@ namespace System.IO.Strategies
                     // This probably means that the IO operation has completed.
                     if (errorCode != Interop.Errors.ERROR_NOT_FOUND)
                     {
-                        _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace( // TODO: Resource string for exception
-                            new OperationCanceledException("IO operation cancelled.", Win32Marshal.GetExceptionForWin32Error(errorCode), token)));
+                        Exception e = new OperationCanceledException(SR.OperationCanceled, Win32Marshal.GetExceptionForWin32Error(errorCode), token);
+                        e.SetCurrentStackTrace();
+                        _source.SetException(e);
                     }
                 }
             }

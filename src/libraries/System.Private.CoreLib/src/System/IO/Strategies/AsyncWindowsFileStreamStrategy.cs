@@ -122,7 +122,7 @@ namespace System.IO.Strategies
                     vt.AsTask().GetAwaiter().GetResult();
         }
 
-    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             => ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
 
         public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
