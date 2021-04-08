@@ -1724,12 +1724,11 @@ CHECK PEDecoder::CheckILOnlyEntryPoint() const
 
 #ifndef DACCESS_COMPILE
 
-void PEDecoder::LayoutILOnly(void *base, BOOL allowFullPE) const
+void PEDecoder::LayoutILOnly(void *base) const
 {
     CONTRACT_VOID
     {
         INSTANCE_CHECK;
-        PRECONDITION(allowFullPE || CheckILOnlyFormat());
         PRECONDITION(CheckZeroedMemory(base, VAL32(FindNTHeaders()->OptionalHeader.SizeOfImage)));
         // Ideally we would require the layout address to honor the section alignment constraints.
         // However, we do have 8K aligned IL only images which we load on 32 bit platforms. In this
