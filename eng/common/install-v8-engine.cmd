@@ -1,3 +1,1 @@
-pip install npm
-npm install jsvu -g
-jsvu --engines=v8
+%APPDATA%\npm\jsvu --engines=v8
