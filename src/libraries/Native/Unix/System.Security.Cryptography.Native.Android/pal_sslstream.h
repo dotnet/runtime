@@ -6,6 +6,8 @@
 #include "pal_jni.h"
 #include "pal_x509.h"
 
+#include <pal_ssl_types.h>
+
 typedef void (*STREAM_WRITER)(uint8_t*, int32_t);
 typedef int (*STREAM_READER)(uint8_t*, int32_t*);
 
@@ -140,6 +142,15 @@ Returns 1 on success, 0 otherwise
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream,
                                                                    jobject** /*X509Certificate[]*/ out,
                                                                    int* outLen);
+
+/*
+Set enabled protocols
+  - protocols : array of protocols to enable
+  - count     : number of elements in protocols
+
+Returns 1 on success, 0 otherwise
+*/
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamSetEnabledProtocols(SSLStream* sslStream, PAL_SslProtocol* protocols, int32_t count);
 
 /*
 Verify hostname using the peer certificate for the current session

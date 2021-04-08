@@ -18,6 +18,17 @@ namespace System.Net
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
         private const int InitialBufferSize = 2048;
+        private static readonly SslProtocols[] s_orderedSslProtocols = new SslProtocols[]
+        {
+#pragma warning disable 0618 // 'SslProtocols.Ssl3' is obsolete
+            SslProtocols.Ssl3,
+#pragma warning restore 0618
+            SslProtocols.Tls,
+            SslProtocols.Tls11,
+            SslProtocols.Tls12,
+            SslProtocols.Tls13,
+        };
+        private static readonly Lazy<SslProtocols> s_supportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
 
         private readonly SafeSslHandle _sslContext;
         private readonly Interop.AndroidCrypto.SSLReadCallback _readCallback;
@@ -198,7 +209,6 @@ namespace System.Net
 
             if (authOptions.ApplicationProtocols != null
                 || authOptions.CipherSuitesPolicy != null
-                || credential.Protocols != SslProtocols.None
                 || (isServer && authOptions.RemoteCertRequired))
             {
                 // TODO: [AndroidCrypto] Handle non-system-default options
@@ -206,6 +216,18 @@ namespace System.Net
             }
 
             Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, readCallback, writeCallback, InitialBufferSize);
+
+            if (credential.Protocols != SslProtocols.None)
+            {;
+                SslProtocols protocolsToEnable = credential.Protocols & s_supportedSslProtocols.Value;
+                if (protocolsToEnable == 0)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_security_sslprotocol_notsupported, credential.Protocols));
+                }
+
+                (int minIndex, int maxIndex) = protocolsToEnable.ValidateContiguous(s_orderedSslProtocols);
+                Interop.AndroidCrypto.SSLStreamSetEnabledProtocols(handle, s_orderedSslProtocols.AsSpan(minIndex, maxIndex - minIndex + 1));
+            }
 
             if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
             {
