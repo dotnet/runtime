@@ -6,6 +6,7 @@ using System.Xml;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -13,6 +14,7 @@ namespace System.Runtime.Serialization.Json
     {
         private readonly JsonClassDataContractCriticalHelper _helper;
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public JsonClassDataContract(ClassDataContract traditionalDataContract)
             : base(new JsonClassDataContractCriticalHelper(traditionalDataContract))
         {
@@ -26,6 +28,7 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatClassReaderDelegate JsonFormatReaderDelegate
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (_helper.JsonFormatReaderDelegate == null)
@@ -60,6 +63,7 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatClassWriterDelegate JsonFormatWriterDelegate
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (_helper.JsonFormatWriterDelegate == null)
@@ -93,6 +97,7 @@ namespace System.Runtime.Serialization.Json
 
         private ClassDataContract TraditionalClassDataContract => _helper.TraditionalClassDataContract;
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             jsonReader.Read();
@@ -101,6 +106,7 @@ namespace System.Runtime.Serialization.Json
             return o;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             Debug.Assert(context != null);
@@ -116,6 +122,7 @@ namespace System.Runtime.Serialization.Json
             private readonly ClassDataContract _traditionalClassDataContract;
             private readonly string _typeName;
 
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             public JsonClassDataContractCriticalHelper(ClassDataContract traditionalDataContract)
                 : base(traditionalDataContract)
             {
