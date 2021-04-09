@@ -85,7 +85,7 @@ namespace System
 
             }
         }
-        
+
         public static bool IsLineNumbersSupported => true;
 
         public static bool IsInContainer => GetIsInContainer();
@@ -281,6 +281,12 @@ namespace System
                 // Alternatively the returned values must have been some other types.
                 return !IsWindows10Version2004OrGreater;
             }
+            else if (IsAndroid)
+            {
+#pragma warning disable 0618 // 'SslProtocols.Ssl3' is obsolete
+                return AndroidGetSslProtocolSupport(SslProtocols.Ssl3);
+#pragma warning restore 0618
+            }
 
             return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
         }
@@ -291,6 +297,13 @@ namespace System
 
             int ret = Interop.OpenSsl.OpenSslGetProtocolSupport((int)protocol);
             return ret == 1;
+        }
+
+        private static readonly Lazy<SslProtocols> s_androidSupportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
+        private static bool AndroidGetSslProtocolSupport(SslProtocols protocol)
+        {
+            Debug.Assert(IsAndroid);
+            return (protocol & s_androidSupportedSslProtocols.Value) == protocol;
         }
 
         private static bool GetTls10Support()
@@ -358,6 +371,10 @@ namespace System
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
                 return false;
+            }
+            else if (IsAndroid)
+            {
+                return AndroidGetSslProtocolSupport(SslProtocols.Tls13);
             }
             else if (IsOpenSslSupported)
             {
