@@ -6574,21 +6574,27 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                                     CORINFO_CLASS_HANDLE nullableCls   = pResolvedToken->hClass;
                                     CORINFO_CLASS_HANDLE underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
 
-                                    TypeCompareState castResult = info.compCompHnd->compareTypesForCast(
-                                        underlyingCls, isInstResolvedToken.hClass);
+                                    TypeCompareState castResult =
+                                        info.compCompHnd->compareTypesForCast(underlyingCls,
+                                                                              isInstResolvedToken.hClass);
 
                                     if (castResult == TypeCompareState::Must)
                                     {
-                                        CORINFO_FIELD_HANDLE hasValueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 0);
-                                        GenTree*             objToBox       = impPopStack().val;
-
-                                        // Spill struct to get its address (to access hasValue field)
-                                        objToBox = impGetStructAddr(objToBox, nullableCls, (unsigned)CHECK_SPILL_ALL, true);
+                                        const CORINFO_FIELD_HANDLE hasValueFldHnd =
+                                            info.compCompHnd->getFieldInClass(nullableCls, 0);
 
                                         INDEBUG(assert(info.compCompHnd->getFieldOffset(hasValueFldHnd) == 0));
-                                        INDEBUG(assert(!strcmp(info.compCompHnd->getFieldName(hasValueFldHnd, nullptr), "hasValue")));
+                                        INDEBUG(assert(!strcmp(info.compCompHnd->getFieldName(hasValueFldHnd, nullptr),
+                                                               "hasValue")));
 
-                                        impPushOnStack(gtNewFieldRef(TYP_BOOL, hasValueFldHnd, objToBox, 0), typeInfo(TI_INT));
+                                        GenTree* objToBox  = impPopStack().val;
+
+                                        // Spill struct to get its address (to access hasValue field)
+                                        objToBox =
+                                            impGetStructAddr(objToBox, nullableCls, (unsigned)CHECK_SPILL_ALL, true);
+
+                                        impPushOnStack(gtNewFieldRef(TYP_BOOL, hasValueFldHnd, objToBox, 0),
+                                                       typeInfo(TI_INT));
                                         return 1 + sizeof(mdToken);
                                     }
                                     else if (castResult == TypeCompareState::MustNot)
