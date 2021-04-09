@@ -1,0 +1,9 @@
+<linker>
+  <assembly fullname="System.Private.DataContractSerialization">
+    <type fullname="System.Runtime.Serialization.KeyValue`2" />
+    <type fullname="System.Runtime.Serialization.DateTimeOffsetAdapter" />
+  </assembly>
+  <assembly fullname="System.Private.Xml.Linq">
+    <type fullname="System.Xml.Linq.XElement" />
+  </assembly>
+</linker>

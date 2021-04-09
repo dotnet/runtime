@@ -152,6 +152,9 @@
     <Compile Include="Design\DesignerTransactionTests.cs" />
     <Compile Include="Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverterTests.cs" />
     <Compile Include="XTypeDescriptionProviderTests.cs" />
+
+    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Castle.xml" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.ComponentModel.TypeConverter.TestData" Version="$(SystemComponentModelTypeConverterTestDataVersion)" />

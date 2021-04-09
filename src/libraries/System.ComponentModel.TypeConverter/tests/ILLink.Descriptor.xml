@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="Moq">
+    <type fullname="Moq.Internals.InterfaceProxy">
+      <method signature="System.Void .ctor()" />
+    </type>
+  </assembly>
+</linker>
