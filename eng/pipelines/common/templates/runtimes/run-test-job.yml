@@ -501,6 +501,9 @@ jobs:
         ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
           scenarios:
           - clrinterpreter
+        ${{ if in(parameters.testGroup, 'gc-largepages') }}:
+          scenarios:
+          - gclargepages
 
     # Publish Logs
     - task: PublishPipelineArtifact@1

@@ -1,0 +1,42 @@
+trigger: none
+
+# schedules:
+# - cron: "0 11 * * 2,4"
+#   displayName: Every Tuesday and Thursday at 3:00 AM (UTC-8:00)
+#   branches:
+#     include:
+#     - main
+#   always: true
+
+jobs:
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+    buildConfig: release
+    platforms:
+    - windows_x64
+    jobParameters:
+      testGroup: gc-largepages
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: release
+    platforms:
+    - windows_x64
+    jobParameters:
+      testGroup: gc-largepages
+      liveLibrariesBuildConfig: Release
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: release
+    platforms:
+    - windows_x64
+    helixQueueGroup: gc-largepages
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: gc-largepages
+      liveLibrariesBuildConfig: Release
