@@ -44,6 +44,16 @@ namespace Microsoft.NET.HostModel
                                                      [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=5)] byte[] lpData,
                                                      uint cbData);
 
+            // Update a resource with data from a managed byte[]
+            [DllImport(nameof(Kernel32), SetLastError=true)]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            public static extern bool UpdateResource(SafeUpdateHandle hUpdate,
+                                                     string lpType,
+                                                     IntPtr lpName,
+                                                     ushort wLanguage,
+                                                     [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=5)] byte[] lpData,
+                                                     uint cbData);
+
             [DllImport(nameof(Kernel32), SetLastError=true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool EndUpdateResource(SafeUpdateHandle hUpdate,
@@ -296,6 +306,32 @@ namespace Microsoft.NET.HostModel
             }
 
             if (!IsIntResource(lpType) || !IsIntResource(lpName))
+            {
+                throw new ArgumentException("AddResource can only be used with integer resource types");
+            }
+
+            if (!Kernel32.UpdateResource(hUpdate, lpType, lpName, Kernel32.LangID_LangNeutral_SublangNeutral, data, (uint)data.Length))
+            {
+                ThrowExceptionForLastWin32Error();
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Add a language-neutral integer resource from a byte[] with
+        /// a particular type and name. This will not modify the
+        /// target until Update() is called.
+        /// Throws an InvalidOperationException if Update() was already called.
+        /// </summary>
+        public ResourceUpdater AddResource(byte[] data, string lpType, IntPtr lpName)
+        {
+            if (hUpdate.IsInvalid)
+            {
+                ThrowExceptionForInvalidUpdate();
+            }
+
+            if (!IsIntResource(lpName))
             {
                 throw new ArgumentException("AddResource can only be used with integer resource types");
             }
