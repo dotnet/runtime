@@ -13,6 +13,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public class DeflateTests : ClientWebSocketTestBase
     {
         public DeflateTests(ITestOutputHelper output) : base(output)
