@@ -68,7 +68,7 @@ Add `~/.jsvu` to your `PATH`:
 
 `npm install jsvu -g`
 
-* Run jsvu and install `v8`, `SpiderMonkey`,or `JavaScriptCore` engines:
+* Run jsvu and install `v8`, `SpiderMonkey`, or `JavaScriptCore` engines:
 
 `jsvu`
 
