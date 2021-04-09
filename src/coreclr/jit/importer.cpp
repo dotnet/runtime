@@ -6599,6 +6599,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                                     }
                                     else if (castResult == TypeCompareState::MustNot)
                                     {
+                                        impPopStack();
                                         impPushOnStack(gtNewIconNode(0), typeInfo(TI_INT));
                                         return 1 + sizeof(mdToken);
                                     }
