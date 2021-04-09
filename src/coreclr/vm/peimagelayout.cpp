@@ -752,6 +752,9 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         if (uncompressedSize > 0)
         {
 #if defined(CORECLR_EMBEDDED)
+            // The mapping we have just created refers to the region in the bundle that contains compressed data.
+            // We will create another anonymous memory-only mapping and uncompress file there.
+            // The flat image will refer to the anonimous mapping instead and we will release the original mapping.
             HandleHolder anonMap = WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL);
             if (anonMap == NULL)
                 ThrowLastError();
@@ -760,15 +763,15 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             if (anonView == NULL)
                 ThrowLastError();
 
-            //NB: PE cannot be larger than 4GB, conversions are ok
+            //NB: PE cannot be larger than 4GB and we are decompressing a managed assembly, which is a PE image,
+            //    thus converting sizes to uint32 is ok.
             PAL_ZStream zStream;
             zStream.nextIn = (uint8_t*)addr;
             zStream.availIn = (uint32_t)size;
             zStream.nextOut = (uint8_t*)anonView;
             zStream.availOut = (uint32_t)uncompressedSize;
 
-            // Legal values are 8..15 and -8..-15. 15 is the window size,
-            // negative val causes deflate to produce raw deflate data (no zlib header).
+            // we match the compression side here. 15 is the window sise, negative means no zlib header.
             const int Deflate_DefaultWindowBits = -15;
             if (CompressionNative_InflateInit2_(&zStream, Deflate_DefaultWindowBits) != PAL_Z_OK)
                 ThrowLastError();
@@ -780,7 +783,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 
             addr = anonView;
             size = uncompressedSize;
-            // Replace file handles with handles to anonymous map. This will release the handles to the source view and map.
+            // Replace file handles with the handles to anonymous map. This will release the handles to the original view and map.
             m_FileView.Assign(anonView);
             m_FileMap.Assign(anonMap);
 
