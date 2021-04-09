@@ -89,16 +89,16 @@ For example, for `System.Collections.Concurrent`: `make run-tests-v8-System.Coll
 
 ### Windows
 
-To run the libraries tests on windows, we have the `RunTests` target. Without setting additional properties, it will run tests for all libraries on `v8` and `SpiderMonkey` engines:
+Library tests on windows can be run as described in [testing-libraries](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing.md#testing-libraries) documentation. Without setting additional properties, it will run tests for all libraries on `v8` engine:
 
-`dotnet build /t:RunTests wasm.proj`
+`.\build.cmd libs.tests -test -os browser`
 
-* `Library` property can be used to specify which library tests to run
-* `JSEngine` property can be used to specify which engine to use
+* `JSEngine` property can be used to specify which engine to use. Right now `v8` and `SpiderMonkey` engines can be used.
 
-For example to run tests for `System.Collections.Concurrent` on the `v8` engine, use:
+Examples of running tests for individual libraries:
 
-`dotnet build /t:RunTests /p:Library="System.Collections.Concurrent" /p:JSEngine="v8" wasm.proj`
+`.\dotnet.cmd build /t:Test /p:TargetOS=Browser src\libraries\System.Collections.Concurrent\tests`
+`.\dotnet.cmd build /t:Test /p:TargetOS=Browser /p:JSEngine="SpiderMonkey" src\libraries\System.Text.Json\tests`
 
 ### Browser tests
 

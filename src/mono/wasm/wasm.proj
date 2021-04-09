@@ -231,28 +231,4 @@
           SkipUnchangedFiles="true" />
   </Target>
 
-  <Target Name="RunTests">
-    <ItemGroup Condition="'$(JSEngine)' == ''">
-      <JSEngines Include="V8" />
-      <JSEngines Include="SpiderMonkey" />
-      <!-- <JSEngines Include="JavaScriptCore" /> -->
-    </ItemGroup>
-    <ItemGroup Condition="'$(JSEngine)' != ''">
-      <JSEngines Include="$(JSEngine)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(Library)' == ''">
-      <Libraries Include="$(RepoRoot)src\libraries\*\tests\*.csproj">
-        <Engine>%(JSEngines.Identity)</Engine>
-      </Libraries>
-    </ItemGroup>
-    <ItemGroup Condition="'$(Library)' != ''">
-      <Libraries Include="$(RepoRoot)src\libraries\$(Library)\tests\">
-        <Engine>%(JSEngines.Identity)</Engine>
-      </Libraries>
-    </ItemGroup>
-
-    <Exec Command="dotnet build %(Libraries.RootDir)%(Libraries.Directory) /p:Configuration=$(Configuration) /p:JSEngine=%(Libraries.Engine) /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm" />
-  </Target>
-
 </Project>
