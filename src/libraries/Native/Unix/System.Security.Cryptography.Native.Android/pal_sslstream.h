@@ -9,7 +9,7 @@
 #include <pal_ssl_types.h>
 
 typedef void (*STREAM_WRITER)(uint8_t*, int32_t);
-typedef int (*STREAM_READER)(uint8_t*, int32_t*);
+typedef int32_t (*STREAM_READER)(uint8_t*, int32_t*);
 
 typedef struct SSLStream
 {
@@ -47,7 +47,11 @@ Create an SSL context with the specified certificates
 
 Returns NULL on failure
 */
-PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8PrivateKey, int32_t pkcs8PrivateKeyLen, PAL_KeyAlgorithm algorithm, jobject* /*X509Certificate[]*/ certs, int32_t certsLen);
+PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8PrivateKey,
+                                                                         int32_t pkcs8PrivateKeyLen,
+                                                                         PAL_KeyAlgorithm algorithm,
+                                                                         jobject* /*X509Certificate[]*/ certs,
+                                                                         int32_t certsLen);
 
 /*
 Initialize an SSL context
@@ -58,11 +62,8 @@ Initialize an SSL context
 
 Returns 1 on success, 0 otherwise
 */
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamInitialize(SSLStream* sslStream,
-                                                             bool isServer,
-                                                             STREAM_READER streamReader,
-                                                             STREAM_WRITER streamWriter,
-                                                             int32_t appBufferSize);
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamInitialize(
+    SSLStream* sslStream, bool isServer, STREAM_READER streamReader, STREAM_WRITER streamWriter, int32_t appBufferSize);
 
 /*
 Set configuration parameters
@@ -108,7 +109,9 @@ Get the negotiated application protocol for the current session
 
 Returns 1 on success, 0 otherwise
 */
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int32_t* outLen);
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream,
+                                                                      uint8_t* out,
+                                                                      int32_t* outLen);
 
 /*
 Get the name of the cipher suite for the current session
@@ -150,7 +153,9 @@ Set enabled protocols
 
 Returns 1 on success, 0 otherwise
 */
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamSetEnabledProtocols(SSLStream* sslStream, PAL_SslProtocol* protocols, int32_t count);
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamSetEnabledProtocols(SSLStream* sslStream,
+                                                                   PAL_SslProtocol* protocols,
+                                                                   int32_t count);
 
 /*
 Verify hostname using the peer certificate for the current session
