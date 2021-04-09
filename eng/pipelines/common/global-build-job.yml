@@ -116,7 +116,7 @@ jobs:
     - ${{ if eq(parameters.nameSuffix, 'Browser_wasm_Windows') }}:
       - task: NodeTool@0
         inputs:
-          versionSpec: 14.x
+          versionSpec: 15.x
 
       - script: |
           call npm install jsvu -g
