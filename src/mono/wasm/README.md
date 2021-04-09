@@ -89,7 +89,7 @@ For example, for `System.Collections.Concurrent`: `make run-tests-v8-System.Coll
 
 ### Windows
 
-To run the libraries tests on windows, we have `RunTests` target. Without setting additional properties, it will run tests for all libraries on `V8` and `SpiderMonkey` engines:
+To run the libraries tests on windows, we have the `RunTests` target. Without setting additional properties, it will run tests for all libraries on `v8` and `SpiderMonkey` engines:
 
 `dotnet build /t:RunTests wasm.proj`
 
