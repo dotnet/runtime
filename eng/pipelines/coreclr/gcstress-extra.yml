@@ -33,7 +33,6 @@ jobs:
       testGroup: gcstress-extra
       liveLibrariesBuildConfig: Release
 
-# I assume we need to do something here?
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
