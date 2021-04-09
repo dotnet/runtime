@@ -426,6 +426,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal IntPtr PlatformCertificateHandle;
             internal uint DeferredErrorFlags;
             internal uint DeferredStatus;
+            internal IntPtr PlatformCertificateChainHandle;
         }
 
         [StructLayout(LayoutKind.Explicit)]
