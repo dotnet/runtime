@@ -9,7 +9,7 @@ namespace System
     /// <summary>
     /// Represents a time of day, as would be read from a clock, within the range 00:00:00 to 23:59:59.9999999
     /// </summary>
-    public readonly struct TimeOnly : IComparable, IComparable<TimeOnly>, IEquatable<TimeOnly>, IFormattable
+    public readonly struct TimeOnly : IComparable, IComparable<TimeOnly>, IEquatable<TimeOnly>, IFormattable, ISpanFormattable
     {
         // represent the number of ticks map to the time of the day. 1 ticks = 100-nanosecond in time measurements.
         private readonly long _ticks;
@@ -23,12 +23,12 @@ namespace System
         /// <summary>
         /// Represents the smallest possible value of TimeOnly.
         /// </summary>
-        public static TimeOnly MinValue { get; } = new TimeOnly((ulong) MinTimeTicks);
+        public static TimeOnly MinValue => new TimeOnly((ulong) MinTimeTicks);
 
         /// <summary>
         /// Represents the largest possible value of TimeOnly.
         /// </summary>
-        public static TimeOnly MaxValue { get; } = new TimeOnly((ulong) MaxTimeTicks);
+        public static TimeOnly MaxValue => new TimeOnly((ulong) MaxTimeTicks);
 
         /// <summary>
         /// Initializes a new instance of the timeOnly structure to the specified hour and the minute.
@@ -292,12 +292,12 @@ namespace System
         public int CompareTo(object? value)
         {
             if (value == null) return 1;
-            if (!(value is TimeOnly))
+            if (value is not TimeOnly timeOnly)
             {
                 throw new ArgumentException(SR.Arg_MustBeTimeOnly);
             }
 
-            return CompareTo((TimeOnly)value);
+            return CompareTo(timeOnly);
         }
 
         /// <summary>
@@ -360,12 +360,12 @@ namespace System
 
             if (!DateTimeParse.TryParse(s, DateTimeFormatInfo.GetInstance(provider), style, ref result))
             {
-                throw new FormatException(SR.Format(SR.GetResourceString(SR.Format_BadTimeOnly)!, s.ToString()));
+                throw new FormatException(SR.Format(SR.Format_BadTimeOnly, s.ToString()));
             }
 
             if ((result.flags & ParseFlagsTimeMask) != 0)
             {
-                throw new FormatException(SR.Format(SR.GetResourceString(SR.Format_TimeOnlyContainsNoneTimeParts)!, s.ToString()));
+                throw new FormatException(SR.Format(SR.Format_TimeOnlyContainsNoneTimeParts, s.ToString()));
             }
 
             return new TimeOnly(result.parsedDate.TimeOfDay.Ticks);
@@ -416,12 +416,12 @@ namespace System
 
             if (!DateTimeParse.TryParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style, ref result))
             {
-                throw new FormatException(SR.Format(SR.GetResourceString(SR.Format_BadTimeOnly)!, s.ToString()));
+                throw new FormatException(SR.Format(SR.Format_BadTimeOnly, s.ToString()));
             }
 
             if ((result.flags & ParseFlagsTimeMask) != 0)
             {
-                throw new FormatException(SR.Format(SR.GetResourceString(SR.Format_TimeOnlyContainsNoneTimeParts)!, s.ToString()));
+                throw new FormatException(SR.Format(SR.Format_TimeOnlyContainsNoneTimeParts, s.ToString()));
             }
 
             return new TimeOnly(result.parsedDate.TimeOfDay.Ticks);
@@ -461,7 +461,7 @@ namespace System
                 string? format = formats[i];
                 if (string.IsNullOrEmpty(format))
                 {
-                    throw new FormatException(SR.GetResourceString(SR.Argument_BadFormatSpecifier));
+                    throw new FormatException(SR.Argument_BadFormatSpecifier);
                 }
 
                 if (format.Length == 1)
@@ -486,7 +486,7 @@ namespace System
                 }
             }
 
-            throw new FormatException(SR.Format(SR.GetResourceString(SR.Format_BadTimeOnly)!, s.ToString()));
+            throw new FormatException(SR.Format(SR.Format_BadTimeOnly, s.ToString()));
         }
 
         /// <summary>

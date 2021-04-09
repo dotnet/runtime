@@ -480,9 +480,11 @@
   </data>
   <data name="Arg_MustBeDateOnly" xml:space="preserve">
     <value>Object must be of type DateOnly.</value>
+    <comment>{Locked="DateOnly"}</comment>
   </data>
   <data name="Arg_MustBeTimeOnly" xml:space="preserve">
     <value>Object must be of type TimeOnly.</value>
+    <comment>{Locked="TimeOnly"}</comment>
   </data>
   <data name="Arg_MustBeDateTime" xml:space="preserve">
     <value>Object must be of type DateTime.</value>
@@ -2190,15 +2192,18 @@
   </data>
   <data name="Format_BadDateOnly" xml:space="preserve">
     <value>String '{0}' was not recognized as a valid DateOnly.</value>
+    <comment>{Locked="DateOnly"}</comment>
   </data>
   <data name="Format_BadTimeOnly" xml:space="preserve">
     <value>String '{0}' was not recognized as a valid TimeOnly.</value>
+    <comment>{Locked="TimeOnly"}</comment>
   </data>
   <data name="Format_DateOnlyContainsNoneDateParts" xml:space="preserve">
     <value>String '{0}' contains parts which are not specific to the Date.</value>
   </data>
   <data name="Format_TimeOnlyContainsNoneTimeParts" xml:space="preserve">
     <value>String '{0}' contains parts which are not specific to the TimeOnly.</value>
+    <comment>{Locked="TimeOnly"}</comment>
   </data>
   <data name="Format_BadDateTimeCalendar" xml:space="preserve">
     <value>The DateTime represented by the string '{0}' is not supported in calendar '{1}'.</value>

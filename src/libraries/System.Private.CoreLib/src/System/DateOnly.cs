@@ -9,7 +9,7 @@ namespace System
     /// <summary>
     /// represents dates with values ranging from January 1, 0001 Anno Domini (Common Era) through December 31, 9999 A.D. (C.E.) in the Gregorian calendar.
     /// </summary>
-    public readonly struct DateOnly : IComparable, IComparable<DateOnly>, IEquatable<DateOnly>, IFormattable
+    public readonly struct DateOnly : IComparable, IComparable<DateOnly>, IEquatable<DateOnly>, IFormattable, ISpanFormattable
     {
         private readonly int _dayNumber;
 
@@ -32,12 +32,12 @@ namespace System
         /// <summary>
         /// Return the instance of the DateOnly structure representing the minimal possible date can be created.
         /// </summary>
-        public static DateOnly MinValue { get; } = new DateOnly(MinDayNumber);
+        public static DateOnly MinValue => new DateOnly(MinDayNumber);
 
         /// <summary>
         /// Return the instance of the DateOnly structure representing the maximal possible date can be created.
         /// </summary>
-        public static DateOnly MaxValue { get; } = new DateOnly(MaxDayNumber);
+        public static DateOnly MaxValue => new DateOnly(MaxDayNumber);
 
         /// <summary>
         /// Initializes a new instance of the DateOnly structure to the specified year, month, and day.
@@ -173,7 +173,7 @@ namespace System
         public static bool operator <(DateOnly left, DateOnly right) => left._dayNumber < right._dayNumber;
 
         /// <summary>
-        /// Determines whether one specified DateOnly represents a datethat is the same as or earlier than another specified DateOnly.
+        /// Determines whether one specified DateOnly represents a date that is the same as or earlier than another specified DateOnly.
         /// </summary>
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
@@ -222,12 +222,12 @@ namespace System
         public int CompareTo(object? value)
         {
             if (value == null) return 1;
-            if (!(value is DateOnly))
+            if (value is not DateOnly dateOnly)
             {
                 throw new ArgumentException(SR.Arg_MustBeDateOnly);
             }
 
-            return CompareTo((DateOnly)value);
+            return CompareTo(dateOnly);
         }
 
         /// <summary>
@@ -289,12 +289,12 @@ namespace System
 
             if (!DateTimeParse.TryParse(s, DateTimeFormatInfo.GetInstance(provider), style, ref result))
             {
-                throw new FormatException(SR.Format(SR.GetResourceString(SR.Format_BadDateOnly)!, s.ToString()));
+                throw new FormatException(SR.Format(SR.Format_BadDateOnly, s.ToString()));
             }
 
             if ((result.flags & ParseFlagsDateMask) != 0)
             {
-                throw new FormatException(SR.Format(SR.GetResourceString(SR.Format_DateOnlyContainsNoneDateParts)!, s.ToString()));
+                throw new FormatException(SR.Format(SR.Format_DateOnlyContainsNoneDateParts, s.ToString()));
             }
 
             return new DateOnly(DayNumberFromDateTime(result.parsedDate));
@@ -345,12 +345,12 @@ namespace System
 
             if (!DateTimeParse.TryParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style, ref result))
             {
-                throw new FormatException(SR.Format(SR.GetResourceString(SR.Format_BadDateOnly)!, s.ToString()));
+                throw new FormatException(SR.Format(SR.Format_BadDateOnly, s.ToString()));
             }
 
             if ((result.flags & ParseFlagsDateMask) != 0)
             {
-                throw new FormatException(SR.Format(SR.GetResourceString(SR.Format_DateOnlyContainsNoneDateParts)!, s.ToString()));
+                throw new FormatException(SR.Format(SR.Format_DateOnlyContainsNoneDateParts, s.ToString()));
             }
 
             return new DateOnly(DayNumberFromDateTime(result.parsedDate));
@@ -390,7 +390,7 @@ namespace System
                 string? format = formats[i];
                 if (string.IsNullOrEmpty(format))
                 {
-                    throw new FormatException(SR.GetResourceString(SR.Argument_BadFormatSpecifier));
+                    throw new FormatException(SR.Argument_BadFormatSpecifier);
                 }
 
                 if (format.Length == 1)
@@ -415,7 +415,7 @@ namespace System
                 }
             }
 
-            throw new FormatException(SR.Format(SR.GetResourceString(SR.Format_BadDateOnly)!, s.ToString()));
+            throw new FormatException(SR.Format(SR.Format_BadDateOnly, s.ToString()));
         }
 
         /// <summary>
