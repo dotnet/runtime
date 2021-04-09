@@ -131,7 +131,7 @@ jobs:
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
           name: NetCorePublic-Pool
-          queue: BuildPool.Windows.10.Amd64.VS2019.Open
+          queue: BuildPool.Windows.10.Amd64.VS2019.Pre.Open
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:

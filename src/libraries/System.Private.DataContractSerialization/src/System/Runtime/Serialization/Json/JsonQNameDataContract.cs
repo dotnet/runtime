@@ -6,16 +6,19 @@ using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
 using System.Xml;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
     internal sealed class JsonQNameDataContract : JsonDataContract
     {
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public JsonQNameDataContract(QNameDataContract traditionalQNameDataContract)
             : base(traditionalQNameDataContract)
         {
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             if (context == null)
