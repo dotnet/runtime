@@ -114,16 +114,6 @@ jobs:
         displayName: Disk Usage before Build
 
     - ${{ if eq(parameters.nameSuffix, 'Browser_wasm_Windows') }}:
-      - task: NodeTool@0
-        inputs:
-          versionSpec: 15.x
-
-      - script: |
-          call npm install jsvu -g
-          call npm exec -c "jsvu --os=win64 --engines=v8"
-          set PATH=%HOMEDRIVE%%HOMEPATH%\.jsvu;%PATH% && call v8 --help
-        displayName: Install jsvu and v8 JavaScript engine
-
       # Update machine certs
       - task: PowerShell@2
         displayName: Update machine certs
@@ -145,13 +135,6 @@ jobs:
           df -h
         displayName: Disk Usage after Build
         condition: always()
-
-    - ${{ if eq(parameters.nameSuffix, 'Browser_wasm_Windows') }}:
-      - script: $(Build.SourcesDirectory)\dotnet.cmd tool restore
-        displayName: Restore tools
-
-      - script: set PATH=%HOMEDRIVE%%HOMEPATH%\.jsvu;%PATH% && $(Build.SourcesDirectory)\dotnet.cmd build -p:Configuration=Release -t:RunTests -p:Library="System.Collections.Concurrent" -p:VSEngine="v8" $(Build.SourcesDirectory)\src\mono\wasm\wasm.proj
-        displayName: Smoke test
 
       # If intended to send extra steps after regular build add them here.
     - ${{ if ne(parameters.extraStepsTemplate, '') }}:
