@@ -333,7 +333,7 @@ namespace Microsoft.NET.HostModel
 
             if (!IsIntResource(lpName))
             {
-                throw new ArgumentException("AddResource can only be used with integer resource types");
+                throw new ArgumentException("AddResource can only be used with integer resource names");
             }
 
             if (!Kernel32.UpdateResource(hUpdate, lpType, lpName, Kernel32.LangID_LangNeutral_SublangNeutral, data, (uint)data.Length))

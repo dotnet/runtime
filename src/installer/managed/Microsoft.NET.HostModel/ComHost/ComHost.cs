@@ -21,12 +21,12 @@ namespace Microsoft.NET.HostModel.ComHost
         /// <param name="comHostSourceFilePath">The path of Apphost template, which has the place holder</param>
         /// <param name="comHostDestinationFilePath">The destination path for desired location to place, including the file name</param>
         /// <param name="clsidmapFilePath">The path to the *.clsidmap file.</param>
-        /// <param name="typeLibraries">A resource ids for tlbs and paths to the tlb files to be embedded.</param>
+        /// <param name="typeLibraries">Resource ids for tlbs and paths to the tlb files to be embedded.</param>
         public static void Create(
             string comHostSourceFilePath,
             string comHostDestinationFilePath,
             string clsidmapFilePath,
-            Dictionary<int, string> typeLibraries = null)
+            IReadOnlyDictionary<int, string> typeLibraries = null)
         {
             var destinationDirectory = new FileInfo(comHostDestinationFilePath).Directory.FullName;
             if (!Directory.Exists(destinationDirectory))
