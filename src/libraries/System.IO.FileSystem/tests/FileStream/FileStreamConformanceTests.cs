@@ -176,7 +176,7 @@ namespace System.IO.Tests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-    [PlatformSpecific(~TestPlatforms.Browser)] // copied from base class due to https://github.com/xunit/xunit/issues/2186
+    [SkipOnPlatform(TestPlatforms.Browser, "lots of operations aren't supported on browser")] // copied from StreamConformanceTests base class due to https://github.com/xunit/xunit/issues/2186
     public class UnbufferedAsyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
     {
         protected override FileOptions Options => FileOptions.Asynchronous;
@@ -184,7 +184,7 @@ namespace System.IO.Tests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-    [PlatformSpecific(~TestPlatforms.Browser)] // copied from base class due to https://github.com/xunit/xunit/issues/2186
+    [SkipOnPlatform(TestPlatforms.Browser, "lots of operations aren't supported on browser")] // copied from StreamConformanceTests base class due to https://github.com/xunit/xunit/issues/2186
     public class BufferedAsyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
     {
         protected override FileOptions Options => FileOptions.Asynchronous;

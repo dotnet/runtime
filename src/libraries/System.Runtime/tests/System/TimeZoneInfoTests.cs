@@ -1839,7 +1839,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]
+        [SkipOnPlatform(TestPlatforms.Windows, "Not supported on Windows.")]
         public static void TestSplittingRulesWhenReported()
         {
             // This test confirm we are splitting the rules which span multiple years on Linux

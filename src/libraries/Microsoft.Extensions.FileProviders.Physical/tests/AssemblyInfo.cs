@@ -4,4 +4,4 @@
 using System;
 using Xunit;
 
-[assembly: SkipOnMono("Microsoft.Extensions.FileProviders.Physical is not supported on wasm", TestPlatforms.Browser)]
+[assembly: SkipOnPlatform(TestPlatforms.Browser, "Microsoft.Extensions.FileProviders.Physical is not supported on Browser")]

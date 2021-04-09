@@ -981,7 +981,7 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
     }
 
-    [SkipOnMono("Tests hang with chrome. To be investigated", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Tests hang with chrome. To be investigated")]
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
