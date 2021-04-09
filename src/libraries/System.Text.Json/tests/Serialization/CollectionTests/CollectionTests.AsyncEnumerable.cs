@@ -28,7 +28,7 @@ namespace System.Text.Json.Tests.Serialization
             var asyncEnumerable = new MockedAsyncEnumerable<TElement>(source, delayInterval);
             await JsonSerializer.SerializeAsync(stream, asyncEnumerable, options);
 
-            Assert.Equal(expectedJson, stream.ToString());
+            JsonTestHelper.AssertJsonEqual(expectedJson, stream.ToString());
             Assert.Equal(1, asyncEnumerable.TotalCreatedEnumerators);
             Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
         }
@@ -48,7 +48,7 @@ namespace System.Text.Json.Tests.Serialization
             var asyncEnumerable = new MockedAsyncEnumerable<TElement>(source, delayInterval);
             await JsonSerializer.SerializeAsync(stream, new { Data = asyncEnumerable }, options);
 
-            Assert.Equal(expectedJson, stream.ToString());
+            JsonTestHelper.AssertJsonEqual(expectedJson, stream.ToString());
             Assert.Equal(1, asyncEnumerable.TotalCreatedEnumerators);
             Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
         }
@@ -68,7 +68,7 @@ namespace System.Text.Json.Tests.Serialization
             var asyncEnumerable = new MockedAsyncEnumerable<TElement>(source, delayInterval);
             await JsonSerializer.SerializeAsync(stream, new AsyncEnumerableDto<TElement> { Data = asyncEnumerable }, options);
 
-            Assert.Equal(expectedJson, stream.ToString());
+            JsonTestHelper.AssertJsonEqual(expectedJson, stream.ToString());
             Assert.Equal(1, asyncEnumerable.TotalCreatedEnumerators);
             Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
         }
@@ -110,7 +110,7 @@ namespace System.Text.Json.Tests.Serialization
             var asyncEnumerable = new MockedAsyncEnumerable<TElement>(source, delayInterval);
             await JsonSerializer.SerializeAsync(stream, new { Data1 = asyncEnumerable, Data2 = asyncEnumerable }, options);
 
-            Assert.Equal(expectedJson, stream.ToString());
+            JsonTestHelper.AssertJsonEqual(expectedJson, stream.ToString());
             Assert.Equal(2, asyncEnumerable.TotalCreatedEnumerators);
             Assert.Equal(2, asyncEnumerable.TotalDisposedEnumerators);
         }
@@ -135,7 +135,7 @@ namespace System.Text.Json.Tests.Serialization
             using var stream = new Utf8MemoryStream();
             await JsonSerializer.SerializeAsync(stream, outerAsyncEnumerable, options);
 
-            Assert.Equal(expectedJson, stream.ToString());
+            JsonTestHelper.AssertJsonEqual(expectedJson, stream.ToString());
             Assert.Equal(1, outerAsyncEnumerable.TotalCreatedEnumerators);
             Assert.Equal(1, outerAsyncEnumerable.TotalDisposedEnumerators);
             Assert.Equal(OuterEnumerableCount, innerAsyncEnumerable.TotalCreatedEnumerators);
