@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+B
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -29,7 +30,7 @@ public class WasmLoadAssembliesAndReferences : Task
 
     private SortedDictionary<string, Assembly> _assemblies = new();
 
-    [RequiresAssemblyFiles (Message = "Using 'System.Reflection.Assembly.Location' will make ReferencedAssemblies to be empty")]
+    [RequiresAssemblyFiles(Message = "Using 'System.Reflection.Assembly.Location' will make ReferencedAssemblies to be empty")]
     public override bool Execute ()
     {
         string? badPath = AssemblySearchPaths.FirstOrDefault(path => !Directory.Exists(path));

@@ -270,7 +270,7 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        [RequiresAssemblyFiles (Message = "Calling 'System.Reflection.Assembly.LoadFromResolveHandler' will return a null assembly for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles(Message = "Calling 'System.Reflection.Assembly.LoadFromResolveHandler' will return a null assembly for assemblies embedded in a single-file app")]
         private static Assembly? LoadFromResolveHandler(object? sender, ResolveEventArgs args)
         {
             Assembly? requestingAssembly = args.RequestingAssembly;

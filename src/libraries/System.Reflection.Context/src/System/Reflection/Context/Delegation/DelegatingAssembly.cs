@@ -22,7 +22,7 @@ namespace System.Reflection.Context.Delegation
             UnderlyingAssembly = assembly;
         }
 
-        [RequiresAssemblyFiles (Message = "Calling 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3000")]
+        [RequiresAssemblyFiles(Message = "Calling 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3000")]
         public override string Location
         {
             get { return UnderlyingAssembly.Location; }
