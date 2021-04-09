@@ -29,7 +29,7 @@ if(NOT CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_OSX AND NOT FEATURE_CROSSBITN
     install_clr (TARGETS
         mscordaccore
         mscordbi
-        DESTINATIONS .
+        DESTINATIONS . sharedFramework
         COMPONENT crosscomponents
     )
 endif()
