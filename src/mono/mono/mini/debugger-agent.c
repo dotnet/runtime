@@ -2298,7 +2298,7 @@ debugger_interrupt_critical (MonoThreadInfo *info, gpointer user_data)
 		/* not attached */
 		ji = NULL;
 	} else {
-		ji = mono_jit_info_table_find_internal (domain, MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx)), TRUE, TRUE);
+		ji = mono_jit_info_table_find_internal (MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx)), TRUE, TRUE);
 	}
 
 	/* This is signal safe */
