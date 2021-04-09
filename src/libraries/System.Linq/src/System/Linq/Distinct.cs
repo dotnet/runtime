@@ -50,7 +50,6 @@ namespace System.Linq
                     {
                         yield return element;
                     }
-
                 }
                 while (enumerator.MoveNext());
             }
