@@ -19,8 +19,10 @@ namespace System.Text.Unicode
             Debug.Assert(outputCharsRemaining >= 0, "Destination length must not be negative.");
             Debug.Assert(pOutputBuffer != null || outputCharsRemaining == 0, "Destination length must be zero if destination buffer pointer is null.");
 
-            var input = new ReadOnlySpan<byte>(pInputBuffer, inputLength);
-            var output = new Span<char>(pOutputBuffer, outputCharsRemaining);
+            // try fast-tracking ASCII first before falling back to the standard loop
+            int numAsciiBytesTranscoded = (int)ASCIIUtility.WidenAsciiToUtf16(pInputBuffer, pOutputBuffer, (uint)Math.Min(inputLength, outputCharsRemaining));
+            var input = new ReadOnlySpan<byte>(pInputBuffer, inputLength).Slice(numAsciiBytesTranscoded);
+            var output = new Span<char>(pOutputBuffer, outputCharsRemaining).Slice(numAsciiBytesTranscoded);
 
             OperationStatus opStatus = OperationStatus.Done;
             while (!input.IsEmpty)
@@ -49,9 +51,10 @@ namespace System.Text.Unicode
             Debug.Assert(outputBytesRemaining >= 0, "Destination length must not be negative.");
             Debug.Assert(pOutputBuffer != null || outputBytesRemaining == 0, "Destination length must be zero if destination buffer pointer is null.");
 
-
-            var input = new ReadOnlySpan<char>(pInputBuffer, inputLength);
-            var output = new Span<byte>(pOutputBuffer, outputBytesRemaining);
+            // try fast-tracking ASCII first before falling back to the standard loop
+            int numAsciiCharsTranscoded = (int)ASCIIUtility.NarrowUtf16ToAscii(pInputBuffer, pOutputBuffer, (uint)Math.Min(inputLength, outputBytesRemaining));
+            var input = new ReadOnlySpan<char>(pInputBuffer, inputLength).Slice(numAsciiCharsTranscoded);
+            var output = new Span<byte>(pOutputBuffer, outputBytesRemaining).Slice(numAsciiCharsTranscoded);
 
             OperationStatus opStatus = OperationStatus.Done;
             while (!input.IsEmpty)
@@ -86,9 +89,12 @@ namespace System.Text.Unicode
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");
             Debug.Assert(pInputBuffer != null || inputLength == 0, "Input length must be zero if input buffer pointer is null.");
 
-            var input = new ReadOnlySpan<byte>(pInputBuffer, inputLength);
-            int cumulativeUtf16CodeUnitCount = 0;
-            int cumulativeScalarValueCount = 0;
+            // try fast-tracking ASCII first before falling back to the standard loop
+            int numLeadingAsciiBytes = (int)ASCIIUtility.GetIndexOfFirstNonAsciiByte(pInputBuffer, (uint)inputLength);
+            var input = new ReadOnlySpan<byte>(pInputBuffer, inputLength).Slice(numLeadingAsciiBytes);
+            int cumulativeUtf16CodeUnitCount = numLeadingAsciiBytes;
+            int cumulativeScalarValueCount = numLeadingAsciiBytes;
+
             while (!input.IsEmpty)
             {
                 if (Rune.DecodeFromUtf8(input, out Rune rune, out int bytesConsumed) != OperationStatus.Done)
