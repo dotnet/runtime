@@ -116,6 +116,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, Co
                 return m_simdHandleCache->Vector128UIntHandle;
             case CORINFO_TYPE_ULONG:
                 return m_simdHandleCache->Vector128ULongHandle;
+            case CORINFO_TYPE_NATIVEINT:
+                break;
+            case CORINFO_TYPE_NATIVEUINT:
+                break;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
@@ -145,6 +149,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, Co
                 return m_simdHandleCache->Vector256UIntHandle;
             case CORINFO_TYPE_ULONG:
                 return m_simdHandleCache->Vector256ULongHandle;
+            case CORINFO_TYPE_NATIVEINT:
+                break;
+            case CORINFO_TYPE_NATIVEUINT:
+                break;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
@@ -175,6 +183,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, Co
                 return m_simdHandleCache->Vector64LongHandle;
             case CORINFO_TYPE_ULONG:
                 return m_simdHandleCache->Vector64ULongHandle;
+            case CORINFO_TYPE_NATIVEINT:
+                break;
+            case CORINFO_TYPE_NATIVEUINT:
+                break;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
