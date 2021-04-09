@@ -7735,13 +7735,13 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             {
                 BasicBlock* nextNextBlock = nextBlock->GetUniqueSucc();
 
-                // Check if we have a sequence of GT_ASG blocks where the same variable is assigned to temps over
-                // and over (can happen after multiple GDVs of potential tall calls).
-                // TODO-CQ: Don't introduce new temps when we replace GT_RET_EXPR which is already assigned to a
-                // local.
+                // Check if we have a sequence of GT_ASG blocks where the same variable is assigned 
+                // to temp locals over and over.
                 if (nextNextBlock->bbJumpKind != BBJ_RETURN)
                 {
+                    // Make sure the block has a single statement
                     assert(nextBlock->firstStmt() == nextBlock->lastStmt());
+                    // And the root node is "ASG(LCL_VAR, LCL_VAR)"
                     GenTree* asgNode = nextBlock->firstStmt()->GetRootNode();
                     assert(asgNode->OperIs(GT_ASG));
 
