@@ -27,12 +27,15 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
         [LoggerMessage(6, LogLevel.Error, "M6{p0}{p1}{p2}{p3}{p4}{p5}")]
         public static partial void M6(ILogger logger, int p0, int p1, int p2, int p3, int p4, int p5);
 
-        [LoggerMessage(7, LogLevel.Error, "M7{p0}{p1}{p2}{p3}{p4}{p5}{p6}")]
 #pragma warning disable S107 // Methods should not have too many parameters
+        [LoggerMessage(7, LogLevel.Error, "M7{p0}{p1}{p2}{p3}{p4}{p5}{p6}")]
         public static partial void M7(ILogger logger, int p0, int p1, int p2, int p3, int p4, int p5, int p6);
+
+        [LoggerMessage(8, LogLevel.Error, "M8{p0}{p1}{p2}{p3}{p4}{p5}{p6}{p7}")]
+        public static partial void M8(ILogger logger, int p0, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
 #pragma warning restore S107 // Methods should not have too many parameters
 
-        [LoggerMessage(8, "M8{p0}{p1}")]
-        public static partial void M8(ILogger logger, LogLevel level, int p0, System.Exception ex, int p1);
+        [LoggerMessage(9, "M8{p0}{p1}")]
+        public static partial void M9(ILogger logger, LogLevel level, int p0, System.Exception ex, int p1);
     }
 }

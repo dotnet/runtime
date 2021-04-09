@@ -1,6 +1,7 @@
 // © Microsoft Corporation. All rights reserved.
 
 #pragma warning disable CA1801 // Review unused parameters
+#pragma warning disable LG0015
 
 namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
 {
@@ -17,5 +18,8 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
 
         [LoggerMessage(3, LogLevel.Debug, "")]
         public static partial void M3(ILogger logger, string p1, int p2);
+
+//        [LoggerMessage(4, LogLevel.Debug, "{p1}")]
+//        public static partial void M4(ILogger logger, string p1, int p2, int p3);
     }
 }

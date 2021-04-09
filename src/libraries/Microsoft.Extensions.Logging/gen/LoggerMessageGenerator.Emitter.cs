@@ -1,7 +1,5 @@
 // © Microsoft Corporation. All rights reserved.
 
-//#define LOGGER_MESSAGE_DEFINE
-
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -12,13 +10,8 @@ namespace Microsoft.Extensions.Logging.Generators
     {
         internal class Emitter
         {
-            // The maximum arity of the LogValues-family of types. Beyond this number, parameters are just kepts in an array (which implies an allocation
-            // for the array and boxing of all logging method arguments.
-            private const int MaxLogValuesArity = 6;
-#if !LOGGER_MESSAGE_DEFINE
-            private const int MinLogValuesWithNameArray = 2;
-#endif
-            private const string InternalNamespace = "Microsoft.Extensions.Logging.Internal";
+            // The maximum arity of LoggerMessage.Define.
+            private const int MaxLoggerMessageDefineArguments = 6;
 
             private readonly string _generatedCodeAttribute =
                 $"global::System.CodeDom.Compiler.GeneratedCodeAttribute(" +
@@ -27,7 +20,7 @@ namespace Microsoft.Extensions.Logging.Generators
             private readonly Stack<StringBuilder> _builders = new ();
             private readonly bool _pascalCaseArguments;
             private readonly bool _emitDefaultMessage;
-            
+
             public Emitter(bool pascalCaseArguments, bool emitDefaultMessage = true)
             {
                 _pascalCaseArguments = pascalCaseArguments;
@@ -64,6 +57,13 @@ namespace Microsoft.Extensions.Logging.Generators
                     .Replace("\"", "\\\"");
             }
 
+            private static bool UseLoggerMessageDefine(LoggerMethod lm)
+            {
+                return (lm.RegularParameters.Count <= MaxLoggerMessageDefineArguments)
+                    && (lm.Level != null)
+                    && (lm.Templates.Count == lm.RegularParameters.Count);
+            }
+
             private string GenType(LoggerClass lc)
             {
                 var sb = GetStringBuilder();
@@ -74,21 +74,17 @@ namespace Microsoft.Extensions.Logging.Generators
                         AutoGenerateMessage(lm);
                     }
 
-#if !LOGGER_MESSAGE_DEFINE
                     foreach (var lm in lc.Methods)
                     {
-                        _ = sb.Append(GenNameArray(lm));
-                    }
+                        if (!UseLoggerMessageDefine(lm))
+                        {
+                            _ = sb.Append(GenStruct(lm));
+                        }
 
-                    foreach (var lm in lc.Methods)
-                    {
-                        _ = sb.Append(GenFormatFunc(lm));
-                    }
-#endif
-                    foreach (var lm in lc.Methods)
-                    {
                         _ = sb.Append(GenLogMethod(lm));
                     }
+
+                    _ = sb.Append(GenEnumerationHelper(lc));
 
                     if (string.IsNullOrWhiteSpace(lc.Namespace))
                     {
@@ -116,136 +112,67 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
             }
 
-#if !LOGGER_MESSAGE_DEFINE
-            private string GenFormatFunc(LoggerMethod lm)
+            private string GenStruct(LoggerMethod lm)
             {
-                if (lm.Templates.Count == 0)
+                var constructor = string.Empty;
+                if (lm.RegularParameters.Count > 0)
                 {
-                    return string.Empty;
+                    constructor = $@"
+                                public __{lm.Name}Struct({GenArguments(lm)})
+                                {{
+{GenFieldAssignments(lm)}
+                                }}
+";
                 }
 
-                var sb = GetStringBuilder();
-                try
-                {
-                    string typeName;
-                    if (lm.RegularParameters.Count == 1)
-                    {
-                        typeName = $"global::{InternalNamespace}.LogValues<{lm.RegularParameters[0].Type}>";
-                    }
-                    else if (lm.RegularParameters.Count > MaxLogValuesArity)
-                    {
-                        typeName = $"global::{InternalNamespace}.LogValuesN";
-                    }
-                    else
-                    {
-                        _ = sb.Append($"global::{InternalNamespace}.LogValues<");
+                var toString = $@"
+                                public override string ToString()
+                                {{
+{GenVariableAssignments(lm)}
+                                    return $""{lm.Message}"";
+                                }}
+";
 
-                        foreach (var p in lm.RegularParameters)
-                        {
-                            if (p != lm.RegularParameters[0])
-                            {
-                                _ = sb.Append(", ");
-                            }
-
-                            _ = sb.Append(p.Type);
-                        }
-
-                        _ = sb.Append('>');
-                        typeName = sb.ToString();
-                        _ = sb.Clear();
-                    }
-
-                    foreach (var t in lm.Templates)
-                    {
-                        if (lm.RegularParameters.Count == 1)
-                        {
-                            if (lm.RegularParameters[0].IsEnumerable)
-                            {
-                                _ = sb.Append($"                                var {t} = global::{InternalNamespace}.ArgumentFormatter.Enumerate(_holder.Value);\n");
-                            }
-                            else
-                            {
-                                _ = sb.Append($"                                var {t} = _holder.Value;\n");
-                            }
-                        }
-                        else
-                        {
-                            int index = 0;
-                            foreach (var p in lm.RegularParameters)
-                            {
-                                if (p.Name == t)
-                                {
-                                    break;
-                                }
-
-                                index++;
-                            }
-
-                            // check for an index that's too big, this can happen in some cases of malformed input
-                            if (index < lm.RegularParameters.Count)
-                            {
-                                if (lm.RegularParameters.Count > MaxLogValuesArity)
-                                {
-                                    if (lm.RegularParameters[index].IsEnumerable)
-                                    {
-                                        _ = sb.Append($"                                var {t} = "
-                                            + $"global::{InternalNamespace}.ArgumentFormatter.Enumerate((global::System.Collections.IEnumerable ?)_holder[{index}].Value);\n");
-                                    }
-                                    else
-                                    {
-                                        _ = sb.Append($"                                var {t} = _holder[{index}].Value;\n");
-                                    }
-                                }
-                                else
-                                {
-                                    if (lm.RegularParameters[index].IsEnumerable)
-                                    {
-                                        _ = sb.Append($"                                var {t} = "
-                                            + $"global::{InternalNamespace}.ArgumentFormatter.Enumerate((global::System.Collections.IEnumerable ?)_holder.Value{index + 1});\n");
-                                    }
-                                    else
-                                    {
-                                        _ = sb.Append($"                                var {t} = _holder.Value{index + 1};\n");
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    return $@"
+                return $@"
                             [{_generatedCodeAttribute}]
-                            private static readonly global::System.Func<{typeName}, global::System.Exception?, string> _format{lm.Name} = (_holder, _) =>
+                            private readonly struct __{lm.Name}Struct : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
                             {{
-{sb}
-                                global::System.FormattableString fs = $""{EscapeMessageString(lm.Message!)}"";
-                                return global::System.FormattableString.Invariant(fs);
-                            }};
-                ";
-                }
-                finally
-                {
-                    ReturnStringBuilder(sb);
-                }
+{GenFields(lm)}
+{constructor}
+{toString}
+                                public static string Format(__{lm.Name}Struct state, global::System.Exception? ex) => state.ToString();
+
+                                public int Count => {lm.RegularParameters.Count + 1};
+
+                                public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index]
+                                {{
+                                    get => index switch
+                                    {{
+{GenCases(lm)}
+                                        _ => throw new global::System.IndexOutOfRangeException(nameof(index)),  // return the same exception LoggerMessage.Define returns in this case
+                                    }};
+                                }}
+
+                                public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+                                {{
+{GenEnumerator(lm)}
+                                }}
+
+                                global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+                            }}
+";
             }
 
-            private string GenNameArray(LoggerMethod lm)
+            private string GenFields(LoggerMethod lm)
             {
-                if (lm.RegularParameters.Count is < MinLogValuesWithNameArray or > MaxLogValuesArity)
-                {
-                    return string.Empty;
-                }
-
                 var sb = GetStringBuilder();
                 try
                 {
-                    _ = sb.Append($"\n                            [{_generatedCodeAttribute}]\n");
-                    _ = sb.Append($"                            private static readonly string[] _names{lm.Name} = new[] {{ ");
                     foreach (var p in lm.RegularParameters)
                     {
-                        _ = sb.Append($"\"{NormalizeArgumentName(p.Name)}\", ");
+                        _ = sb.Append($"                                private readonly {p.Type} _{p.Name};\n");
                     }
 
-                    _ = sb.Append("};\n");
                     return sb.ToString();
                 }
                 finally
@@ -253,7 +180,276 @@ namespace Microsoft.Extensions.Logging.Generators
                     ReturnStringBuilder(sb);
                 }
             }
-#endif
+
+            private string GenFieldAssignments(LoggerMethod lm)
+            {
+                var sb = GetStringBuilder();
+                try
+                {
+                    foreach (var p in lm.RegularParameters)
+                    {
+                        _ = sb.Append($"                                    this._{p.Name} = {p.Name};\n");
+                    }
+
+                    return sb.ToString();
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
+
+            private string GenVariableAssignments(LoggerMethod lm)
+            {
+                var sb = GetStringBuilder();
+                try
+                {
+                    foreach (var t in lm.Templates)
+                    {
+                        int index = 0;
+                        foreach (var p in lm.RegularParameters)
+                        {
+                            if (p.Name == t)
+                            {
+                                break;
+                            }
+
+                            index++;
+                        }
+
+                        // check for an index that's too big, this can happen in some cases of malformed input
+                        if (index < lm.RegularParameters.Count)
+                        {
+                            if (lm.RegularParameters[index].IsEnumerable)
+                            {
+                                _ = sb.Append($"                                    var {t} = "
+                                    + $"__Enumerate((global::System.Collections.IEnumerable ?)this._{t});\n");
+                            }
+                            else
+                            {
+                                _ = sb.Append($"                                    var {t} = this._{t};\n");
+                            }
+                        }
+                    }
+
+                    return sb.ToString();
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
+
+            private string GenEnumerator(LoggerMethod lm)
+            {
+                var sb = GetStringBuilder();
+                try
+                {
+                    foreach (var p in lm.RegularParameters)
+                    {
+                        _ = sb.Append($"                                    yield return new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{NormalizeArgumentName(p.Name)}\", this._{p.Name});\n");
+                    }
+
+                    _ = sb.Append($"                                    yield return new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{EscapeMessageString(lm.Message!)}\");\n");
+                    return sb.ToString();
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
+
+            private string GenCases(LoggerMethod lm)
+            {
+                var sb = GetStringBuilder();
+                try
+                {
+                    var index = 0;
+                    foreach (var p in lm.RegularParameters)
+                    {
+                        _ = sb.Append($"                                        {index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{NormalizeArgumentName(p.Name)}\", this._{p.Name}),\n");
+                    }
+
+                    _ = sb.Append($"                                        {index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{EscapeMessageString(lm.Message!)}\"),\n");
+                    return sb.ToString();
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
+
+            private void AutoGenerateMessage(LoggerMethod lm)
+            {
+                if (!string.IsNullOrEmpty(lm.Message))
+                {
+                    // already got a message
+                    return;
+                }
+
+                if (!_emitDefaultMessage)
+                {
+                    lm.Message = string.Empty;
+                    return;
+                }
+
+                if (lm.RegularParameters.Count == 0)
+                {
+                    lm.Message = "";
+                    return;
+                }
+
+                var sb = GetStringBuilder();
+                try
+                {
+                    _ = sb.Append("{{");
+                    foreach (var p in lm.RegularParameters)
+                    {
+                        if (p != lm.RegularParameters[0])
+                        {
+                            _ = sb.Append(',');
+                        }
+
+                        _ = sb.Append($"\"{p.Name}\":\"{{{p.Name}}}\"");
+                        _ = lm.Templates.Add(p.Name);
+                    }
+
+                    _ = sb.Append("}}");
+                    lm.Message = sb.ToString();
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
+
+            private string GenCallbackArguments(LoggerMethod lm)
+            {
+                var sb = GetStringBuilder();
+                try
+                {
+                    foreach (var p in lm.RegularParameters)
+                    {
+                        _ = sb.Append($"{p.Name}, ");
+                    }
+
+                    return sb.ToString();
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
+
+            private string GenDefineTypes(LoggerMethod lm, bool brackets)
+            {
+                var sb = GetStringBuilder();
+                try
+                {
+                    foreach (var p in lm.RegularParameters)
+                    {
+                        if (sb.Length > 0)
+                        {
+                            _ = sb.Append(", ");
+                        }
+
+                        _ = sb.Append($"{p.Type}");
+                    }
+
+                    var result = sb.ToString();
+                    if (!string.IsNullOrEmpty(result))
+                    {
+                        if (brackets)
+                        {
+                            result = "<" + result + ">";
+                        }
+                        else
+                        {
+                            result += ", ";
+                        }
+                    }
+
+                    return result;
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
+
+            private string GenParameters(LoggerMethod lm)
+            {
+                var sb = GetStringBuilder();
+                try
+                {
+                    foreach (var p in lm.AllParameters)
+                    {
+                        if (sb.Length > 0)
+                        {
+                            _ = sb.Append(", ");
+                        }
+
+                        _ = sb.Append($"{p.Type} {p.Name}");
+                    }
+
+                    return sb.ToString();
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
+
+            private string GenArguments(LoggerMethod lm)
+            {
+                var sb = GetStringBuilder();
+                try
+                {
+                    foreach (var p in lm.RegularParameters)
+                    {
+                        if (sb.Length > 0)
+                        {
+                            _ = sb.Append(", ");
+                        }
+
+                        _ = sb.Append($"{p.Type} {p.Name}");
+                    }
+
+                    return sb.ToString();
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
+
+            private string GenHolder(LoggerMethod lm)
+            {
+                var typeName = $"__{lm.Name}Struct";
+
+                var sb = GetStringBuilder();
+                try
+                {
+                    _ = sb.Append($"new {typeName}(");
+                    foreach (var p in lm.RegularParameters)
+                    {
+                        if (p != lm.RegularParameters[0])
+                        {
+                            _ = sb.Append(", ");
+                        }
+
+                        _ = sb.Append(p.Name);
+                    }
+
+                    _ = sb.Append(')');
+
+                    return sb.ToString();
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
 
             private string GenLogMethod(LoggerMethod lm)
             {
@@ -261,9 +457,6 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 if (lm.Level == null)
                 {
-#if LOGGER_MESSAGE_DEFINE
-                    level = "global::Microsoft.Extensions.Logging.LogLevel.Debug";
-#else
                     foreach (var p in lm.AllParameters)
                     {
                         if (p.IsLogLevel)
@@ -272,7 +465,6 @@ namespace Microsoft.Extensions.Logging.Generators
                             break;
                         }
                     }
-#endif
                 }
                 else
                 {
@@ -311,16 +503,6 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                 }
 
-                string formatFunc;
-                if (lm.Templates.Count != 0)
-                {
-                    formatFunc = $"_format{lm.Name}";
-                }
-                else
-                {
-                    formatFunc = $"(_, _) => \"{EscapeMessageString(lm.Message!)}\"";
-                }
-
                 string logger = lm.LoggerField;
                 foreach (var p in lm.AllParameters)
                 {
@@ -331,248 +513,103 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                 }
 
-#if LOGGER_MESSAGE_DEFINE
-                return $@"
-                        [{_generatedCodeAttribute}]
-                        private static readonly global::System.Action<global::Microsoft.Extensions.Logging.ILogger, {GenDefineTypes(lm, false)}global::System.Exception?> _{lm.Name}Callback =
-                            global::Microsoft.Extensions.Logging.LoggerMessage.Define{GenDefineTypes(lm, true)}({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), ""{EscapeMessageString(lm.Message!)}""); 
+                var extension = (lm.IsExtensionMethod ? "this " : string.Empty);
 
-                        [{_generatedCodeAttribute}]
-                        {lm.Modifiers} void {lm.Name}({(lm.IsExtensionMethod ? "this " : string.Empty)}{GenParameters(lm)})
-                        {{
-                            if ({logger}.IsEnabled({level}))
-                            {{
-                                _{lm.Name}Callback({logger}, {GenCallbackArguments(lm)}{exceptionArg});
-                            }}
-                        }}
-                    ";
-
-#else
-
-                return $@"
+                if (UseLoggerMessageDefine(lm))
+                {
+                    return $@"
                             [{_generatedCodeAttribute}]
-                            {lm.Modifiers} void {lm.Name}({(lm.IsExtensionMethod ? "this " : string.Empty)}{GenParameters(lm)})
+                            private static readonly global::System.Action<global::Microsoft.Extensions.Logging.ILogger, {GenDefineTypes(lm, false)}global::System.Exception?> __{lm.Name}Callback =
+                                global::Microsoft.Extensions.Logging.LoggerMessage.Define{GenDefineTypes(lm, true)}({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), ""{EscapeMessageString(lm.Message!)}""); 
+
+                            [{_generatedCodeAttribute}]
+                            {lm.Modifiers} void {lm.Name}({extension}{GenParameters(lm)})
                             {{
                                 if ({logger}.IsEnabled({level}))
                                 {{
-                                    {logger}.Log(
-                                        {level},
-                                        new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
-                                        {GenHolder(lm, formatFunc)},
-                                        {exceptionArg},
-                                        {formatFunc});
+                                    __{lm.Name}Callback({logger}, {GenCallbackArguments(lm)}{exceptionArg});
                                 }}
                             }}
                         ";
-#endif
+                }
+
+                return $@"
+                        [{_generatedCodeAttribute}]
+                        {lm.Modifiers} void {lm.Name}({extension}{GenParameters(lm)})
+                        {{
+                            if ({logger}.IsEnabled({level}))
+                            {{
+                                {logger}.Log(
+                                    {level},
+                                    new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
+                                    {GenHolder(lm)},
+                                    {exceptionArg},
+                                    __{lm.Name}Struct.Format);
+                            }}
+                        }}
+                    ";
             }
 
-            private void AutoGenerateMessage(LoggerMethod lm)
+            private string GenEnumerationHelper(LoggerClass lc)
             {
-                if (!string.IsNullOrEmpty(lm.Message))
+                foreach (var lm in lc.Methods)
                 {
-                    // already got a message
-                    return;
-                }
-
-                if (!_emitDefaultMessage)
-                {
-                    lm.Message = string.Empty;
-                    return;
-                }
-
-                if (lm.RegularParameters.Count == 0)
-                {
-                    lm.Message = "{}";
-                    return;
-                }
-
-                var sb = GetStringBuilder();
-                try
-                {
-                    _ = sb.Append("{{");
-                    foreach (var p in lm.RegularParameters)
-                    {
-                        if (p != lm.RegularParameters[0])
-                        {
-                            _ = sb.Append(',');
-                        }
-
-                        _ = sb.Append($"\"{p.Name}\":\"{{{p.Name}}}\"");
-                        _ = lm.Templates.Add(p.Name);
-                    }
-
-                    _ = sb.Append("}}");
-                    lm.Message = sb.ToString();
-                }
-                finally
-                {
-                    ReturnStringBuilder(sb);
-                }
-            }
-
-#if LOGGER_MESSAGE_DEFINE
-            private string GenCallbackArguments(LoggerMethod lm)
-            {
-                var sb = GetStringBuilder();
-                try
-                {
-                    int count = 0;
-                    foreach (var p in lm.AllParameters)
-                    {
-                        if (p.IsRegular)
-                        {
-                            _ = sb.Append($"{p.Name}, ");
-
-                            count++;
-                            if (count == 6)
-                            {
-                                break;
-                            }
-                        }
-                    }
-
-                    return sb.ToString();
-                }
-                finally
-                {
-                    ReturnStringBuilder(sb);
-                }
-            }
-
-            private string GenDefineTypes(LoggerMethod lm, bool brackets)
-            {
-                var sb = GetStringBuilder();
-                try
-                {
-                    int count = 0;
-                    foreach (var p in lm.AllParameters)
-                    {
-                        if (p.IsRegular)
-                        {
-                            if (count > 0)
-                            {
-                                _ = sb.Append(", ");
-                            }
-
-                            _ = sb.Append($"{p.Type}");
-
-                            count++;
-                            if (count == 6)
-                            {
-                                break;
-                            }
-                        }
-                    }
-
-                    var result = sb.ToString();
-                    if (!string.IsNullOrEmpty(result))
-                    {
-                        if (brackets)
-                        {
-                            result = "<" + result + ">";
-                        }
-                        else
-                        {
-                            result += ", ";
-                        }
-                    }
-
-                    return result;
-                }
-                finally
-                {
-                    ReturnStringBuilder(sb);
-                }
-            }
-#endif
-
-            private string GenParameters(LoggerMethod lm)
-            {
-                var sb = GetStringBuilder();
-                try
-                {
-                    foreach (var p in lm.AllParameters)
-                    {
-                        if (p != lm.AllParameters[0])
-                        {
-                            _ = sb.Append(", ");
-                        }
-
-                        _ = sb.Append($"{p.Type} {p.Name}");
-                    }
-
-                    return sb.ToString();
-                }
-                finally
-                {
-                    ReturnStringBuilder(sb);
-                }
-            }
-
-            private string GenHolder(LoggerMethod lm, string formatFunc)
-            {
-                var originalFormat = EscapeMessageString(lm.Message!);
-
-                if (lm.RegularParameters.Count == 0)
-                {
-                    return $"new global::{InternalNamespace}.LogValues({formatFunc}, \"{originalFormat}\")";
-                }
-
-                if (lm.RegularParameters.Count == 1)
-                {
-                    return $"new global::{InternalNamespace}.LogValues<{lm.RegularParameters[0].Type}>" +
-                            $"({formatFunc}, \"{originalFormat}\", \"{NormalizeArgumentName(lm.RegularParameters[0].Name)}\", {lm.RegularParameters[0].Name})";
-                }
-
-                var sb = GetStringBuilder();
-                try
-                {
-                    if (lm.RegularParameters.Count > MaxLogValuesArity)
-                    {
-                        _ = sb.Append($"new global::{InternalNamespace}.LogValuesN({formatFunc}, \"{originalFormat}\", new global::System.Collections.Generic.KeyValuePair<string, object?>[] {{ ");
-                        foreach (var p in lm.RegularParameters)
-                        {
-                            _ = sb.Append($"new (\"{NormalizeArgumentName(p.Name)}\", {p.Name}), ");
-                        }
-
-                        _ = sb.Append("})");
-                    }
-                    else
+                    if (UseLoggerMessageDefine(lm))
                     {
                         foreach (var p in lm.RegularParameters)
                         {
-                            if (p != lm.RegularParameters[0])
+                            if (p.IsEnumerable)
                             {
-                                _ = sb.Append(", ");
+                                return $@"
+                            [{_generatedCodeAttribute}]
+                            private static string __Enumerate(global::System.Collections.IEnumerable? enumerable)
+                            {{
+                                if (enumerable == null)
+                                {{
+                                    return ""(null)"";
+                                }}
+
+                                var sb = new global::System.Text.StringBuilder();
+                                _ = sb.Append('[');
+
+                                bool first = true;
+                                foreach (object e in enumerable)
+                                {{
+                                    if (!first)
+                                    {{
+                                        _ = sb.Append("", "");
+                                    }}
+
+                                    if (e == null)
+                                    {{
+                                        _ = sb.Append(""(null)"");
+                                    }}
+                                    else
+                                    {{
+                                        if (e is global::System.IFormattable fmt)
+                                        {{
+                                            _ = sb.Append(fmt.ToString(null, global::System.Globalization.CultureInfo.InvariantCulture));
+                                        }}
+                                        else
+                                        {{
+                                            _ = sb.Append(e);
+                                        }}
+                                    }}
+
+                                    first = false;
+                                }}
+
+                                _ = sb.Append(']');
+
+                                return sb.ToString();
+                            }}
+";
                             }
-
-                            _ = sb.Append(p.Type);
                         }
-
-                        var tp = sb.ToString();
-
-                        _ = sb.Clear();
-                        _ = sb.Append($"new global::{InternalNamespace}.LogValues<{tp}>({formatFunc}, \"{originalFormat}\", _names{lm.Name}, ");
-                        foreach (var p in lm.RegularParameters)
-                        {
-                            if (p != lm.RegularParameters[0])
-                            {
-                                _ = sb.Append(", ");
-                            }
-
-                            _ = sb.Append(p.Name);
-                        }
-
-                        _ = sb.Append(')');
                     }
+                }
 
-                    return sb.ToString();
-                }
-                finally
-                {
-                    ReturnStringBuilder(sb);
-                }
+                return string.Empty;
             }
 
             private string NormalizeArgumentName(string name)

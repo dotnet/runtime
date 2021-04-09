@@ -29,13 +29,11 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
         [LoggerMessage(6, LogLevel.Error, "M7 {p1}")]
         public static partial void Method7(ILogger logger, int p1, System.InvalidOperationException p2);
 
-        [LoggerMessage(7, LogLevel.Error, "M8{p1}{p2}{p3}{p4}{p5}{p6}{p7}")]
 #pragma warning disable S107 // Methods should not have too many parameters
+        [LoggerMessage(7, LogLevel.Error, "M8{p1}{p2}{p3}{p4}{p5}{p6}{p7}")]
         public static partial void Method8(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
-#pragma warning restore S107 // Methods should not have too many parameters
 
         [LoggerMessage(8, LogLevel.Error, "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}")]
-#pragma warning disable S107 // Methods should not have too many parameters
         public static partial void Method9(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
 #pragma warning restore S107 // Methods should not have too many parameters
 

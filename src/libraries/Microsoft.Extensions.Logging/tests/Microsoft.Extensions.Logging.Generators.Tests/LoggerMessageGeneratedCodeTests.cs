@@ -148,7 +148,11 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             TestCollection(8, logger);
 
             logger.Reset();
-            CollectionTestExtensions.M8(logger, LogLevel.Critical, 0, new ArgumentException("Foo"), 1);
+            CollectionTestExtensions.M8(logger, 0, 1, 2, 3, 4, 5, 6, 7);
+            TestCollection(9, logger);
+
+            logger.Reset();
+            CollectionTestExtensions.M9(logger, LogLevel.Critical, 0, new ArgumentException("Foo"), 1);
             TestCollection(3, logger);
 
             Assert.True(true);
@@ -162,14 +166,14 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             logger.Reset();
             MessageTestExtensions.M0(logger);
             Assert.Null(logger.LastException);
-            Assert.Equal("{}", logger.LastFormattedString);
+            Assert.Equal(string.Empty, logger.LastFormattedString);
             Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
             MessageTestExtensions.M1(logger);
             Assert.Null(logger.LastException);
-            Assert.Equal("{}", logger.LastFormattedString);
+            Assert.Equal(string.Empty, logger.LastFormattedString);
             Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
 
@@ -349,7 +353,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             }
 
             Assert.Equal(expected, count);
-            Assert.Throws<ArgumentOutOfRangeException>(() => _ = rol[expected]);
+            _ = Assert.Throws<IndexOutOfRangeException>(() => _ = rol[expected]);
         }
     }
 }
