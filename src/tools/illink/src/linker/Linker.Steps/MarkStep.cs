@@ -59,6 +59,11 @@ namespace Mono.Linker.Steps
 		UnreachableBlocksOptimizer _unreachableBlocksOptimizer;
 		MarkStepContext _markContext;
 		readonly HashSet<TypeDefinition> _entireTypesMarked;
+		DynamicallyAccessedMembersTypeHierarchy _dynamicallyAccessedMembersTypeHierarchy;
+
+		internal DynamicallyAccessedMembersTypeHierarchy DynamicallyAccessedMembersTypeHierarchy {
+			get => _dynamicallyAccessedMembersTypeHierarchy;
+		}
 
 #if DEBUG
 		static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
@@ -185,7 +190,7 @@ namespace Mono.Linker.Steps
 			_dynamicInterfaceCastableImplementationTypes = new List<TypeDefinition> ();
 			_unreachableBodies = new List<MethodBody> ();
 			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
-			_entireTypesMarked = new HashSet<TypeDefinition> (); ;
+			_entireTypesMarked = new HashSet<TypeDefinition> ();
 		}
 
 		public AnnotationStore Annotations => _context.Annotations;
@@ -197,6 +202,7 @@ namespace Mono.Linker.Steps
 			_context = context;
 			_unreachableBlocksOptimizer = new UnreachableBlocksOptimizer (_context);
 			_markContext = new MarkStepContext ();
+			_dynamicallyAccessedMembersTypeHierarchy = new DynamicallyAccessedMembersTypeHierarchy (_context, this);
 
 			Initialize ();
 			Process ();
@@ -1684,6 +1690,12 @@ namespace Mono.Linker.Steps
 				handleMarkType (type);
 
 			MarkType (type.BaseType, new DependencyInfo (DependencyKind.BaseType, type), type);
+
+			// The DynamicallyAccessedMembers hiearchy processing must be done after the base type was marked
+			// (to avoid inconsistencies in the cache), but before anything else as work done below
+			// might need the results of the processing here.
+			_dynamicallyAccessedMembersTypeHierarchy.ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy (type);
+
 			if (type.DeclaringType != null)
 				MarkType (type.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, type), type);
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type), type);
