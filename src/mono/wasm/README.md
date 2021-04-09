@@ -98,7 +98,7 @@ To run the libraries tests on windows, we have the `RunTests` target. Without se
 
 For example to run tests for `System.Collections.Concurrent` on the `v8` engine, use:
 
-`dotnet build /t:RunTests /p:Library="System.Collections.Concurrent" /p:VSEngine="v8" wasm.proj`
+`dotnet build /t:RunTests /p:Library="System.Collections.Concurrent" /p:JSEngine="v8" wasm.proj`
 
 ### Browser tests
 
