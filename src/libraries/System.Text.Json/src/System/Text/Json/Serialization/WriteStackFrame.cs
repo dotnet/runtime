@@ -124,8 +124,9 @@ namespace System.Text.Json
         public void Reset()
         {
             CollectionEnumerator = null;
-            AsyncEnumerator = null;
             EnumeratorIndex = 0;
+            AsyncEnumerator = null;
+            AsyncEnumeratorIsPendingCompletion = false;
             IgnoreDictionaryKeyPolicy = false;
             JsonClassInfo = null!;
             OriginalDepth = 0;
