@@ -3913,20 +3913,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     // Optimize `ldstr + String::get_Length()` to CNS_INT
                     // e.g. "Hello".Length => 5
-                    int             length = -1;
-                    const char16_t* str    = info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd,
-                                                                             op1->AsStrCon()->gtSconCPX, &length);
-                    if (length >= 0)
+                    GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
+                    if (iconNode != nullptr)
                     {
-                        retNode = gtNewIconNode(length);
-                        if (str != nullptr) // can be NULL for dynamic context
-                        {
-                            JITDUMP("Optimizing '\"%ws\".Length' to just '%d'\n", str, length);
-                        }
-                        else
-                        {
-                            JITDUMP("Optimizing 'CNS_STR.Length' to just '%d'\n", length);
-                        }
+                        retNode = iconNode;
                         break;
                     }
                 }
