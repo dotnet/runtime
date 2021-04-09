@@ -1418,14 +1418,14 @@ static SimdIntrinsic advsimd_methods [] = {
 };
 
 static const IntrinGroup supported_arm_intrinsics [] = {
-	{ "AdvSimd", MONO_CPU_ARM64_NEON, advsimd_methods, sizeof (advsimd_methods) },
-	{ "Aes", MONO_CPU_ARM64_CRYPTO, crypto_aes_methods, sizeof (crypto_aes_methods) },
-	{ "ArmBase", MONO_CPU_ARM64_BASE, armbase_methods, sizeof (armbase_methods) },
-	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods) },
+	{ "AdvSimd", MONO_CPU_ARM64_NEON, unsupported, sizeof (unsupported) },
+	{ "Aes", MONO_CPU_ARM64_CRYPTO, unsupported, sizeof (unsupported) },
+	{ "ArmBase", MONO_CPU_ARM64_BASE, unsupported, sizeof (unsupported) },
+	{ "Crc32", MONO_CPU_ARM64_CRC, unsupported, sizeof (unsupported) },
 	{ "Dp", MONO_CPU_ARM64_DP, unsupported, sizeof (unsupported) },
 	{ "Rdm", MONO_CPU_ARM64_RDM, unsupported, sizeof (unsupported) },
-	{ "Sha1", MONO_CPU_ARM64_CRYPTO, sha1_methods, sizeof (sha1_methods) },
-	{ "Sha256", MONO_CPU_ARM64_CRYPTO, sha256_methods, sizeof (sha256_methods) },
+	{ "Sha1", MONO_CPU_ARM64_CRYPTO, unsupported, sizeof (unsupported) },
+	{ "Sha256", MONO_CPU_ARM64_CRYPTO, unsupported, sizeof (unsupported) },
 };
 
 static MonoInst*
