@@ -232,23 +232,23 @@
   </Target>
 
   <Target Name="RunTests">
-    <ItemGroup Condition="'$(VSEngine)' == ''">
-      <VSEngines Include="V8" />
-      <VSEngines Include="SpiderMonkey" />
-      <!-- <VSEngines Include="JavaScriptCore" /> -->
+    <ItemGroup Condition="'$(JSEngine)' == ''">
+      <JSEngines Include="V8" />
+      <JSEngines Include="SpiderMonkey" />
+      <!-- <JSEngines Include="JavaScriptCore" /> -->
     </ItemGroup>
-    <ItemGroup Condition="'$(VSEngine)' != ''">
-      <VSEngines Include="$(VSEngine)" />
+    <ItemGroup Condition="'$(JSEngine)' != ''">
+      <JSEngines Include="$(JSEngine)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(Library)' == ''">
       <Libraries Include="$(RepoRoot)src\libraries\*\tests\*.csproj">
-        <Engine>%(VSEngines.Identity)</Engine>
+        <Engine>%(JSEngines.Identity)</Engine>
       </Libraries>
     </ItemGroup>
     <ItemGroup Condition="'$(Library)' != ''">
       <Libraries Include="$(RepoRoot)src\libraries\$(Library)\tests\">
-        <Engine>%(VSEngines.Identity)</Engine>
+        <Engine>%(JSEngines.Identity)</Engine>
       </Libraries>
     </ItemGroup>
 
