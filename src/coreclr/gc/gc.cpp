@@ -10578,7 +10578,8 @@ bool gc_heap::initial_make_uoh_regions (int gen, gc_heap* hp)
     uint8_t* region_start;
     uint8_t* region_end;
 
-    if (!global_region_allocator.allocate_large_region (&region_start, &region_end, ((gen == poh_generation) ? -1 : 1)))
+    // REGIONS TODO: allocate POH regions on the right
+    if (!global_region_allocator.allocate_large_region (&region_start, &region_end, 1))
         return false;
 
     size_t region_size = region_end - region_start;
@@ -27594,8 +27595,9 @@ heap_segment* gc_heap::allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p
 {
     uint8_t* start = 0;
     uint8_t* end = 0;
+    // REGIONS TODO: allocate POH regions on the right
     bool allocated_p = (uoh_p ? 
-        global_region_allocator.allocate_large_region (&start, &end, ((gen_num == poh_generation) ? -1 : 1)) :
+        global_region_allocator.allocate_large_region (&start, &end, 1) :
         global_region_allocator.allocate_basic_region (&start, &end));
 
     if (!allocated_p)
