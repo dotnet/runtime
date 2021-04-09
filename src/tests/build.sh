@@ -256,7 +256,7 @@ build_Tests()
         fi
     fi
 
-    if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" ]]; then
+    if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" && "$__TargetOS" != "iOSSimulator" ]]; then
         build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
