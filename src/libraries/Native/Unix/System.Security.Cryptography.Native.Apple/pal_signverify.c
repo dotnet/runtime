@@ -84,9 +84,14 @@ static int32_t VerifySignature(SecKeyRef publicKey,
     if (pErrorOut != NULL)
         *pErrorOut = NULL;
 
-    if (publicKey == NULL || pbDataHash == NULL || cbDataHash < 0 || pbSignature == NULL || cbSignature < 0 ||
-        pErrorOut == NULL)
+    if (publicKey == NULL || cbDataHash < 0 || pbSignature == NULL || cbSignature < 0 || pErrorOut == NULL)
         return kErrorBadInput;
+
+    // A null hash is automatically the wrong length, so the signature will fail.
+    if (pbDataHash == NULL)
+    {
+        return 0;
+    }
 
     CFDataRef dataHash = CFDataCreateWithBytesNoCopy(NULL, pbDataHash, cbDataHash, kCFAllocatorNull);
 

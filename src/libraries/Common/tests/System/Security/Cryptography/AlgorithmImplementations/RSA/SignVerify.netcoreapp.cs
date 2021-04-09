@@ -41,10 +41,10 @@ namespace System.Security.Cryptography.Rsa.Tests
                 byte[] signature = new byte[2048 / 8];
 
                 Assert.ThrowsAny<CryptographicException>(
-                    () => rsa.TrySignHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1, out _));
+                    () => rsa.TrySignHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1, out _));
 
                 Assert.ThrowsAny<CryptographicException>(
-                    () => rsa.TrySignHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss, out _));
+                    () => rsa.TrySignHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pss, out _));
             }
         }
 
@@ -56,34 +56,12 @@ namespace System.Security.Cryptography.Rsa.Tests
                 byte[] signature = new byte[2048 / 8];
 
                 Assert.False(
-                    rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+                    rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1));
 
                 if (RSAFactory.SupportsPss)
                 {
                     Assert.False(
                         rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
-                }
-            }
-        }
-
-        [Fact]
-        public static void EncryptDefaultSpan()
-        {
-            using (RSA rsa = RSAFactory.Create())
-            {
-                byte[] dest = new byte[rsa.KeySize / 8];
-
-                Assert.True(
-                    rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.Pkcs1, out int written));
-
-                Assert.Equal(dest.Length, written);
-
-                if (RSAFactory.SupportsPss)
-                {
-                    Assert.True(
-                        rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.OaepSHA256, out written));
-
-                    Assert.Equal(dest.Length, written);
                 }
             }
         }
