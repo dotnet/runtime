@@ -10,7 +10,7 @@ namespace System.IO.Strategies
 {
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
-        private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
+        private PreAllocatedOverlapped? _preallocatedOverlapped; // optimization for async ops to avoid per-op allocations
         private ValueTaskSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
         internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
@@ -116,10 +116,10 @@ namespace System.IO.Strategies
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-                ValueTask<int> vt = ReadAsyncInternal(new Memory<byte>(buffer, offset, count));
-                return vt.IsCompleted?
-                    vt.Result :
-                    vt.AsTask().GetAwaiter().GetResult();
+            ValueTask<int> vt = ReadAsyncInternal(new Memory<byte>(buffer, offset, count), CancellationToken.None);
+            return vt.IsCompleted ?
+                vt.Result :
+                vt.AsTask().GetAwaiter().GetResult();
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)

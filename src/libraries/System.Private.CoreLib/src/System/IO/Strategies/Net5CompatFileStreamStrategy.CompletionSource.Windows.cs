@@ -6,11 +6,10 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using TaskSourceCodes = System.IO.Strategies.FileStreamHelpers.TaskSourceCodes;
 
 namespace System.IO.Strategies
 {
-    using TaskSourceCodes = FileStreamHelpers.TaskSourceCodes;
-
     internal sealed partial class Net5CompatFileStreamStrategy : FileStreamStrategy
     {
         // This is an internal object extending TaskCompletionSource with fields

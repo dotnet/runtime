@@ -6,11 +6,10 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks.Sources;
+using TaskSourceCodes = System.IO.Strategies.FileStreamHelpers.TaskSourceCodes;
 
 namespace System.IO.Strategies
 {
-    using TaskSourceCodes = FileStreamHelpers.TaskSourceCodes;
-
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
         /// <summary>
@@ -84,7 +83,7 @@ namespace System.IO.Strategies
                     long packedResult = Interlocked.CompareExchange(ref _result, TaskSourceCodes.RegisteringCancellation, TaskSourceCodes.NoResult);
                     if (packedResult == TaskSourceCodes.NoResult)
                     {
-                        _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) => ((ValueTaskSource)s!).Cancel(token), this);
+                        _cancellationRegistration = cancellationToken.UnsafeRegister((s, token) => Cancel(token), this);
 
                         // Switch the result, just in case IO completed while we were setting the registration
                         packedResult = Interlocked.Exchange(ref _result, TaskSourceCodes.NoResult);
