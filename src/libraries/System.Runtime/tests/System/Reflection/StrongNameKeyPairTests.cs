@@ -50,7 +50,7 @@ namespace System.Reflection.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("keyPairFile", () => new StrongNameKeyPair((FileStream)null));
         }
-
+#pragma warning disable CS0618 // Strong-name signing is not supported on this platform.
         [Theory]
         [InlineData(null)]
         [InlineData("")]
@@ -72,7 +72,7 @@ namespace System.Reflection.Tests
             var keyPair = new StrongNameKeyPair(new byte[0]);
             Assert.Throws<PlatformNotSupportedException>(() => keyPair.PublicKey);
         }
-
+#pragma warning restore CS0618
         [Fact]
         public void GetObjectData_Invoke_ThrowsPlatformNotSupportedException()
         {

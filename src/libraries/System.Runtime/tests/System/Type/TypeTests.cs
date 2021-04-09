@@ -570,9 +570,11 @@ namespace System.Tests
         [Fact]
         public void ReflectionOnlyGetType()
         {
+#pragma warning disable CS0618 // ReflectionOnly loading is not supported on this platform.
             Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType(null, true, false));
             Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType("", true, true));
             Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType("System.Tests.TypeTests", false, true));
+#pragma warning restore CS0618
         }
 
         [Fact]
