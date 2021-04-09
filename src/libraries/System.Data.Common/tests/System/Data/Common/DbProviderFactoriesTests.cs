@@ -15,7 +15,7 @@ namespace System.Data.Common
         private TestProviderFactory() { }
     }
 
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
     public class DbProviderFactoriesTests
     {
         [Fact]

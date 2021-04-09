@@ -1134,7 +1134,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [PlatformSpecific(~(TestPlatforms.Android | TestPlatforms.OSX))] // Android and macOS do not support offline revocation chain building.
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.OSX, "Android and macOS do not support offline revocation chain building.")]
         public static void TestRevocation_Offline_NotRevoked()
         {
             SimpleTest(
@@ -1178,7 +1178,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [PlatformSpecific(~(TestPlatforms.Android | TestPlatforms.OSX))] // Android and macOS do not support offline revocation chain building.
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.OSX, "Android and macOS do not support offline revocation chain building.")]
         public static void TestRevocation_Offline_Revoked()
         {
             SimpleTest(

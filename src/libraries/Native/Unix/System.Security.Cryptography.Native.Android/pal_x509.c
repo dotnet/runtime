@@ -12,8 +12,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define INSUFFICIENT_BUFFER -1
-
 static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len);
 
 static void FindCertStart(const uint8_t** buffer, int32_t* len);

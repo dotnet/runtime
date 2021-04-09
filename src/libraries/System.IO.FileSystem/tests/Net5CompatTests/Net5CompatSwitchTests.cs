@@ -20,7 +20,7 @@ namespace System.IO.Tests
                     .GetField("_strategy", BindingFlags.NonPublic | BindingFlags.Instance)
                     .GetValue(fileStream);
 
-                Assert.DoesNotContain("Net5Compat", strategy.GetType().FullName);
+                Assert.Contains("Net5Compat", strategy.GetType().FullName);
             }
 
             File.Delete(filePath);
