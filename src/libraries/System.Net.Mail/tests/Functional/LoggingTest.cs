@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Net.Mail.Tests
 {
-    [PlatformSpecific(~TestPlatforms.Browser)]  // SmtpClient is not supported on Browser
+    [SkipOnPlatform(TestPlatforms.Browser, "SmtpClient is not supported on Browser")]
     public class LoggingTest
     {
         [Fact]

@@ -3094,7 +3094,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
         return;
     }
 
-    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    if (addr->OperIsLocalAddr())
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -3152,7 +3152,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         return;
     }
 
-    if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    if (addr->OperIsLocalAddr())
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -3688,10 +3688,19 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
                 break;
         }
 
-        id = emitNewInstrAmdCns(attr, offset, iconVal);
-        emitHandleMemOp(storeInd, id, IF_ARW_CNS, ins);
-        id->idIns(ins);
-        sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
+        if (addr->isContained() && addr->OperIsLocalAddr())
+        {
+            GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
+            emitIns_S_I(ins, attr, lclVar->GetLclNum(), lclVar->GetLclOffs(), iconVal);
+            return;
+        }
+        else
+        {
+            id = emitNewInstrAmdCns(attr, offset, iconVal);
+            emitHandleMemOp(storeInd, id, IF_ARW_CNS, ins);
+            id->idIns(ins);
+            sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
+        }
     }
     else
     {
@@ -3743,6 +3752,13 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     if (addr->OperGet() != GT_CLS_VAR_ADDR)
     {
         offset = storeInd->Offset();
+    }
+
+    if (addr->isContained() && addr->OperIsLocalAddr())
+    {
+        GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
+        emitIns_S(ins, attr, lclVar->GetLclNum(), lclVar->GetLclOffs());
+        return;
     }
 
     instrDesc* id = emitNewInstrAmd(attr, offset);

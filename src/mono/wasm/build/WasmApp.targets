@@ -416,7 +416,6 @@
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
    </ItemGroup>
-   <!--This pinvoke-table.h will be used instead of the one in the runtime pack because of -I$(_WasmIntermediateOutputPath) -->
    <PInvokeTableGenerator
      Modules="@(_WasmPInvokeModules)"
      Assemblies="@(_WasmAssembliesInternal)"
@@ -465,19 +464,16 @@
    <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_AOTAssemblies->Count())"
           Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_AOTAssemblies->Count())" />
 
+   <ItemGroup>
+     <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
+     <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
+     <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)wasm" />
+   </ItemGroup>
+
    <PropertyGroup>
      <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1</EmccCFlags>
+     <EmccCFlags>$(EmccCFlags) @(_EmccIncludePaths -> '&quot;-I%(Identity)&quot;', ' ')</EmccCFlags>
      <EmccCFlags Condition="'$(WasmNativeDebugSymbols)' == 'true'">$(EmccCFlags) -g</EmccCFlags>
-
-     <!--
-          For path c:\foo\bar\ quoting would make it "c:\foo\bar\"
-          .. which escapes the closing quote. So, instead make it
-            c:\foo\bar\ -> "c:\foo\bar\."
-     -->
-     <EmccCFlags Condition="$(_WasmIntermediateOutputPath.EndsWith('\')) ">$(EmccCFlags) "-I$(_WasmIntermediateOutputPath)."</EmccCFlags>
-     <EmccCFlags Condition="!$(_WasmIntermediateOutputPath.EndsWith('\'))">$(EmccCFlags) "-I$(_WasmIntermediateOutputPath)"</EmccCFlags>
-
-     <EmccCFlags>$(EmccCFlags) &quot;-I$(_WasmRuntimePackIncludeDir)mono-2.0&quot; &quot;-I$(_WasmRuntimePackIncludeDir)wasm&quot;</EmccCFlags>
 
      <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
      <_WasmOptCommand>$([MSBuild]::NormalizePath('$(EmSdkUpstreamBinPath)', 'wasm-opt$(_ExeExt)'))</_WasmOptCommand>
