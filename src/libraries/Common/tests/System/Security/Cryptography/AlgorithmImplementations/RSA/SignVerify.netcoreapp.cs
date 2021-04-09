@@ -58,8 +58,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Assert.False(
                     rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
 
-                Assert.False(
-                    rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
+                if (RSAFactory.SupportsPss)
+                {
+                    Assert.False(
+                        rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
+                }
             }
         }
 
@@ -68,17 +71,20 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                byte[] dest = new byte[2048 / 8];
+                byte[] dest = new byte[rsa.KeySize / 8];
 
                 Assert.True(
                     rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.Pkcs1, out int written));
 
                 Assert.Equal(dest.Length, written);
 
-                Assert.True(
-                    rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.OaepSHA256, out written));
+                if (RSAFactory.SupportsPss)
+                {
+                    Assert.True(
+                        rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.OaepSHA256, out written));
 
-                Assert.Equal(dest.Length, written);
+                    Assert.Equal(dest.Length, written);
+                }
             }
         }
     }
