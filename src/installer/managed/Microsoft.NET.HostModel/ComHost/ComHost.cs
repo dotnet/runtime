@@ -52,8 +52,20 @@ namespace Microsoft.NET.HostModel.ComHost
                 {
                     foreach (var typeLibrary in typeLibraries)
                     {
-                        byte[] tlbFileBytes = File.ReadAllBytes(typeLibrary.Value);
-                        updater.AddResource(tlbFileBytes, "typelib", (IntPtr)typeLibrary.Key);
+                        if (!ResourceUpdater.IsIntResource((IntPtr)typeLibrary.Key))
+                        {
+                            throw new InvalidTypeLibraryIdException(typeLibrary.Value, typeLibrary.Key);
+                        }
+
+                        try
+                        {
+                            byte[] tlbFileBytes = File.ReadAllBytes(typeLibrary.Value);
+                            updater.AddResource(tlbFileBytes, "typelib", (IntPtr)typeLibrary.Key);
+                        }
+                        catch (FileNotFoundException ex)
+                        {
+                            throw new TypeLibraryDoesNotExistException(typeLibrary.Value, ex);
+                        }
                     }
                 }
                 updater.Update();

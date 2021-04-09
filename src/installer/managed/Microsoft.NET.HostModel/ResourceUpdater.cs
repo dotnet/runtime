@@ -287,7 +287,7 @@ namespace Microsoft.NET.HostModel
             return this;
         }
 
-        private static bool IsIntResource(IntPtr lpType)
+        internal static bool IsIntResource(IntPtr lpType)
         {
             return ((uint)lpType >> 16) == 0;
         }
