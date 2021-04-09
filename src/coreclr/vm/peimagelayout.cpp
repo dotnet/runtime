@@ -424,23 +424,17 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
         (source->HasNativeHeader() || source->HasReadyToRunHeader()) &&
         g_fAllowNativeImages;
     
-    DWORD mapAccess;
-    DWORD viewAccess;
+    DWORD mapAccess = PAGE_READWRITE;
+    DWORD viewAccess = FILE_MAP_ALL_ACCESS;
+
+#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
     if (enableExecution)
     {
+        // to make sections executable on Windows the view must have EXECUTE permissions
         mapAccess = PAGE_EXECUTE_READWRITE;
-
-#if defined(CROSSGEN_COMPILE) || defined(TARGET_UNIX)
-        viewAccess = FILE_MAP_ALL_ACCESS;
-#else
         viewAccess = FILE_MAP_EXECUTE | FILE_MAP_WRITE;
+    }
 #endif
-    }
-    else
-    {
-        mapAccess = PAGE_READWRITE;
-        viewAccess = FILE_MAP_ALL_ACCESS;
-    }
 
     m_FileMap.Assign(WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL,
         mapAccess, 0,

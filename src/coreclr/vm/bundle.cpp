@@ -80,8 +80,8 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
         }
     }
 
-    INT64 fileSize;
-    INT64 compressedSize;
+    INT64 fileSize = 0;
+    INT64 compressedSize = 0;
 
     m_probe(utf8Path, &loc.Offset, &fileSize, &compressedSize);
 
