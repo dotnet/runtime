@@ -52,7 +52,7 @@ The latest engines can be installed with jsvu (JavaScript engine Version Updater
 
 `npm install jsvu -g`
 
-* Run jsvu and install `v8`, `SpiderMonkey`,or `JavaScriptCore` engines:
+* Run jsvu and install `v8`, `SpiderMonkey`, or `JavaScriptCore` engines:
 
 `jsvu`
 
