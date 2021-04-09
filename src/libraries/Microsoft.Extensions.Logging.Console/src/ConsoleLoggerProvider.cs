@@ -13,6 +13,7 @@ namespace Microsoft.Extensions.Logging.Console
     /// <summary>
     /// A provider of <see cref="ConsoleLogger"/> instances.
     /// </summary>
+    [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
     [ProviderAlias("Console")]
     public class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
