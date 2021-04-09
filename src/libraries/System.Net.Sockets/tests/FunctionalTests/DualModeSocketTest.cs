@@ -1374,7 +1374,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFrom not supported on OSX")]
         public void Socket_ReceiveFromDnsEndPoint_Throws()
         {
             // "The parameter remoteEP must not be of type DnsEndPoint."
@@ -1390,28 +1390,28 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFrom not supported on OSX")]
         public void ReceiveFromV4BoundToSpecificV4_Success()
         {
             ReceiveFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFrom not supported on OSX")]
         public void ReceiveFromV4BoundToAnyV4_Success()
         {
             ReceiveFrom_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFrom not supported on OSX")]
         public void ReceiveFromV6BoundToSpecificV6_Success()
         {
             ReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFrom not supported on OSX")]
         public void ReceiveFromV6BoundToAnyV6_Success()
         {
             ReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
@@ -1454,7 +1454,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFrom not supported on OSX")]
         public void ReceiveFromV4BoundToAnyV6_Success()
         {
             ReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -1505,7 +1505,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveFrom not supported on OSX")]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_BeginReceiveFromDnsEndPoint_Throws()
         {
@@ -1522,28 +1522,28 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveFrom not supported on OSX")]
         public void BeginReceiveFromV4BoundToSpecificV4_Success()
         {
             BeginReceiveFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveFrom not supported on OSX")]
         public void BeginReceiveFromV4BoundToAnyV4_Success()
         {
             BeginReceiveFrom_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveFrom not supported on OSX")]
         public void BeginReceiveFromV6BoundToSpecificV6_Success()
         {
             BeginReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveFrom not supported on OSX")]
         public void BeginReceiveFromV6BoundToAnyV6_Success()
         {
             BeginReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
@@ -1586,7 +1586,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveFrom not supported on OSX")]
         public void BeginReceiveFromV4BoundToAnyV6_Success()
         {
             BeginReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -1655,7 +1655,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFromAsync not supported on OSX")]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_ReceiveFromAsyncDnsEndPoint_Throws()
         {
@@ -1674,35 +1674,35 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFromAsync not supported on OSX")]
         public void ReceiveFromAsyncV4BoundToSpecificV4_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFromAsync not supported on OSX")]
         public void ReceiveFromAsyncV4BoundToAnyV4_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFromAsync not supported on OSX")]
         public void ReceiveFromAsyncV6BoundToSpecificV6_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFromAsync not supported on OSX")]
         public void ReceiveFromAsyncV6BoundToAnyV6_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFromAsync not supported on OSX")]
         public void ReceiveFromAsyncV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1712,7 +1712,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFromAsync not supported on OSX")]
         public void ReceiveFromAsyncV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1722,7 +1722,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFromAsync not supported on OSX")]
         public void ReceiveFromAsyncV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1732,7 +1732,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveFromAsync not supported on OSX")]
         public void ReceiveFromAsyncV4BoundToAnyV6_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -1850,7 +1850,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFrom not supported on OSX")]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_ReceiveMessageFromDnsEndPoint_Throws()
         {
@@ -1868,42 +1868,42 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFrom not supported on OSX")]
         public void ReceiveMessageFromV4BoundToSpecificMappedV4_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFrom not supported on OSX")]
         public void ReceiveMessageFromV4BoundToAnyMappedV4_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.Any.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFrom not supported on OSX")]
         public void ReceiveMessageFromV4BoundToSpecificV4_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFrom not supported on OSX")]
         public void ReceiveMessageFromV4BoundToAnyV4_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFrom not supported on OSX")]
         public void ReceiveMessageFromV6BoundToSpecificV6_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFrom not supported on OSX")]
         public void ReceiveMessageFromV6BoundToAnyV6_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
@@ -1940,7 +1940,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFrom not supported on OSX")]
         public void ReceiveMessageFromV4BoundToAnyV6_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -1949,7 +1949,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFrom not supported on OSX")]
         public void ReceiveMessageFromAsync_SocketAsyncEventArgs_Success(bool ipv4)
         {
             const int DataLength = 10;
@@ -2074,7 +2074,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveMessageFrom not supported on OSX")]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_BeginReceiveMessageFromDnsEndPoint_Throws()
         {
@@ -2092,49 +2092,49 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveMessageFrom not supported on OSX")]
         public void BeginReceiveMessageFromV4BoundToSpecificMappedV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveMessageFrom not supported on OSX")]
         public void BeginReceiveMessageFromV4BoundToAnyMappedV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Any.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveMessageFrom not supported on OSX")]
         public void BeginReceiveMessageFromV4BoundToSpecificV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveMessageFrom not supported on OSX")]
         public void BeginReceiveMessageFromV4BoundToAnyV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveMessageFrom not supported on OSX")]
         public void BeginReceiveMessageFromV6BoundToSpecificV6_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveMessageFrom not supported on OSX")]
         public void BeginReceiveMessageFromV6BoundToAnyV6_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveMessageFrom not supported on OSX")]
         public void BeginReceiveMessageFromV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -2144,7 +2144,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~(TestPlatforms.Linux | TestPlatforms.OSX))]  // Expected behavior is different on OSX and Linux
+        [SkipOnPlatform(TestPlatforms.Linux | TestPlatforms.OSX, "Expected behavior is different on OSX and Linux")]
         public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -2171,7 +2171,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveMessageFrom not supported on OSX")]
         public void BeginReceiveMessageFromV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -2181,7 +2181,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveMessageFrom not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "BeginReceiveMessageFrom not supported on OSX")]
         public void BeginReceiveMessageFromV4BoundToAnyV6_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -2245,7 +2245,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFromAsync not supported on OSX")]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_ReceiveMessageFromAsyncDnsEndPoint_Throws()
         {
@@ -2265,49 +2265,49 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFromAsync not supported on OSX")]
         public void ReceiveMessageFromAsyncV4BoundToSpecificMappedV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFromAsync not supported on OSX")]
         public void ReceiveMessageFromAsyncV4BoundToAnyMappedV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Any.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFromAsync not supported on OSX")]
         public void ReceiveMessageFromAsyncV4BoundToSpecificV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFromAsync not supported on OSX")]
         public void ReceiveMessageFromAsyncV4BoundToAnyV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFromAsync not supported on OSX")]
         public void ReceiveMessageFromAsyncV6BoundToSpecificV6_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFromAsync not supported on OSX")]
         public void ReceiveMessageFromAsyncV6BoundToAnyV6_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFromAsync not supported on OSX")]
         public void ReceiveMessageFromAsyncV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -2317,7 +2317,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~(TestPlatforms.Linux | TestPlatforms.OSX))]  // Expected behavior is different on OSX and Linux
+        [SkipOnPlatform(TestPlatforms.Linux | TestPlatforms.OSX, "Expected behavior is different on OSX and Linux")]
         public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -2344,7 +2344,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFromAsync not supported on OSX")]
         public void ReceiveMessageFromAsyncV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -2354,7 +2354,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFromAsync not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "ReceiveMessageFromAsync not supported on OSX")]
         public void ReceiveMessageFromAsyncV4BoundToAnyV6_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.IPv6Any, IPAddress.Loopback);

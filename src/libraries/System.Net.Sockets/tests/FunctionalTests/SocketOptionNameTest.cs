@@ -121,7 +121,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
-        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
         {
             if (PlatformDetection.IsRedHatFamily7)
@@ -229,7 +229,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // In WSL, the connect() call fails immediately.
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(~TestPlatforms.FreeBSD)] // on FreeBSD Connect may or may not fail immediately based on timing.
+        [SkipOnPlatform(TestPlatforms.FreeBSD, "on FreeBSD Connect may or may not fail immediately based on timing.")]
         public void FailedConnect_GetSocketOption_SocketOptionNameError(bool simpleGet)
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { Blocking = false })

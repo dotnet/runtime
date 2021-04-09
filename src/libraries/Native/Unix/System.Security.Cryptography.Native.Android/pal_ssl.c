@@ -8,7 +8,7 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
     JNIEnv* env = GetJNIEnv();
     jobject sslCtxObj = (*env)->CallStaticObjectMethod(env, g_sslCtxClass, g_sslCtxGetDefaultMethod);
     jobject sslParametersObj = (*env)->CallObjectMethod(env, sslCtxObj, g_sslCtxGetDefaultSslParamsMethod);
-    jobjectArray protocols = (jobjectArray)(*env)->CallObjectMethod(env, sslParametersObj, g_sslParamsGetProtocolsMethod);
+    jobjectArray protocols = (jobjectArray)(*env)->CallObjectMethod(env, sslParametersObj, g_SSLParametersGetProtocols);
 
     int protocolsCount = (*env)->GetArrayLength(env, protocols);
     int supported = 0;

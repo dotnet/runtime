@@ -5278,8 +5278,6 @@ public:
 // and free_large_regions. These decommitted regions will be returned to region_allocator which
 // mark the space as free blocks.
 // 
-// Make configs available to change these.
-#define REGION_SIZE ((size_t)4 * 1024 * 1024)
 #define LARGE_REGION_FACTOR (8)
 
 #define region_alloc_free_bit (1 << (sizeof (uint32_t) * 8 - 1))

@@ -102,3 +102,17 @@ To run a test with `FooBar` in the name:
 (See https://docs.microsoft.com/en-us/dotnet/core/testing/selective-unit-tests?pivots=xunit for filter options)
 
 Additional arguments for `dotnet test` can be passed via `TEST_ARGS`. Though only one of `TEST_ARGS`, or `TEST_FILTER` can be used at a time.
+
+## Run samples
+
+The samples in `src/mono/sample/wasm` can be build and run like this:
+
+* console Hello world sample
+
+`dotnet build /t:RunSample console/Wasm.Console.Sample.csproj`
+
+* browser TestMeaning sample
+
+`dotnet build /t:RunSample browser/Wasm.Browser.Sample.csproj`
+
+To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the above command lines.

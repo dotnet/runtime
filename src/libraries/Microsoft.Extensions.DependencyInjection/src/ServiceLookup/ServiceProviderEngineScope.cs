@@ -176,6 +176,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // try to return to the pool while somebody is trying to access ResolvedServices.
             lock (_scopeLock)
             {
+                // Don't attempt to dispose if we're already disposed
+                if (_state == null)
+                {
+                    return;
+                }
+
                 // ResolvedServices is never cleared for singletons because there might be a compilation running in background
                 // trying to get a cached singleton service. If it doesn't find it
                 // it will try to create a new one which will result in an ObjectDisposedException.

@@ -6,16 +6,19 @@ using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
 using System.Xml;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
     internal sealed class JsonStringDataContract : JsonDataContract
     {
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public JsonStringDataContract(StringDataContract traditionalStringDataContract)
             : base(traditionalStringDataContract)
         {
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             if (context == null)
