@@ -1900,7 +1900,9 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     assert(arg0VN != NoVN && arg1VN != NoVN);
     assert(arg0VN == VNNormalValue(arg0VN)); // Arguments carry no exceptions.
     assert(arg1VN == VNNormalValue(arg1VN)); // Arguments carry no exceptions.
-    assert(VNFuncArity(func) == 2);
+
+    // Some SIMD functions with variable number of arguments are defined with zero arity
+    assert((VNFuncArity(func) == 0) || (VNFuncArity(func) == 2));
     assert(func != VNF_MapSelect); // Precondition: use the special function VNForMapSelect defined for that.
 
     ValueNum resultVN;
@@ -8918,25 +8920,23 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     assert(hwIntrinsicNode != nullptr);
 
     // For safety/correctness we must mutate the global heap valuenumber
-    //  for any HW intrinsic that performs a memory store operation
+    // for any HW intrinsic that performs a memory store operation
     if (hwIntrinsicNode->OperIsMemoryStore())
     {
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
 
-    // Check for any intrintics that have variable number of args or more than 2 args
-    // For now we will generate a unique value number for these cases.
-    //
-    if ((HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId) == -1) ||
-        ((tree->AsOp()->gtOp1 != nullptr) && (tree->AsOp()->gtOp1->OperIs(GT_LIST))))
+    if ((tree->AsOp()->gtOp1 != nullptr) && tree->gtGetOp1()->OperIs(GT_LIST))
     {
-        // We have a HWINTRINSIC node in the GT_LIST form with 3 or more args
-        // Or the numArgs was specified as -1 in the numArgs column
-
-        // Generate unique VN
+        // TODO-CQ: allow intrinsics with GT_LIST to be properly VN'ed, it will
+        // allow use to process things like Vector128.Create(1,2,3,4) etc.
+        // Generate unique VN for now.
         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
         return;
     }
+
+    // We don't expect GT_LIST to be in the second op
+    assert((tree->AsOp()->gtOp2 == nullptr) || !tree->gtGetOp2()->OperIs(GT_LIST));
 
     VNFunc func         = GetVNFuncForNode(tree);
     bool   isMemoryLoad = hwIntrinsicNode->OperIsMemoryLoad();
@@ -8990,9 +8990,14 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
 #endif
     }
 
+    const bool isVariableNumArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId) == -1;
+
     // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector128_Zero
     if (tree->AsOp()->gtOp1 == nullptr)
     {
+        // Currently we don't have intrinsics with variable number of args with a parameter-less option.
+        assert(!isVariableNumArgs);
+
         if (encodeResultType)
         {
             // There are zero arg HWINTRINSICS operations that encode the result type, i.e.  Vector128_AllBitSet
@@ -9018,12 +9023,12 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
             if (encodeResultType)
             {
                 normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, resvnp);
-                assert(vnStore->VNFuncArity(func) == 2);
+                assert((vnStore->VNFuncArity(func) == 2) || isVariableNumArgs);
             }
             else
             {
                 normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp);
-                assert(vnStore->VNFuncArity(func) == 1);
+                assert((vnStore->VNFuncArity(func) == 1) || isVariableNumArgs);
             }
         }
         else
@@ -9036,12 +9041,12 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
             if (encodeResultType)
             {
                 normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, op2vnp, resvnp);
-                assert(vnStore->VNFuncArity(func) == 3);
+                assert((vnStore->VNFuncArity(func) == 3) || isVariableNumArgs);
             }
             else
             {
                 normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, op2vnp);
-                assert(vnStore->VNFuncArity(func) == 2);
+                assert((vnStore->VNFuncArity(func) == 2) || isVariableNumArgs);
             }
         }
     }

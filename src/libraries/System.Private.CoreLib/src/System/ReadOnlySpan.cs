@@ -319,7 +319,7 @@ namespace System
             {
                 return new string(new ReadOnlySpan<char>(ref Unsafe.As<T, char>(ref _pointer.Value), _length));
             }
-            return string.Format("System.ReadOnlySpan<{0}>[{1}]", typeof(T).Name, _length);
+            return $"System.ReadOnlySpan<{typeof(T).Name}>[{_length}]";
         }
 
         /// <summary>

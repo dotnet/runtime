@@ -142,6 +142,9 @@ All libraries should use `<Reference Include="..." />` for all their references 
 
 Other target frameworks than .NETCoreApp latest (i.e. `netstandard2.0`, `net461`, `netcoreapp3.0`) should use ProjectReference items to reference dependencies.
 
+### src\ILLink
+Contains the files used to direct the trimming tool. See [ILLink files](../workflow/trimming/ILLink-files.md).
+
 ### src output
 All src outputs are under
 

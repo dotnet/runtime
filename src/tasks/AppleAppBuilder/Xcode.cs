@@ -83,11 +83,24 @@ internal class Xcode
             }
         }
 
+        var entitlements = new List<KeyValuePair<string, string>>();
+
+        bool hardenedRuntime = false;
+        if (Target == TargetNames.MacCatalyst && !(forceInterpreter || forceAOT)) {
+            hardenedRuntime = true;
+
+            /* for mmmap MAP_JIT */
+            entitlements.Add (KeyValuePair.Create ("com.apple.security.cs.allow-jit", "<true/>"));
+            /* for loading unsigned dylibs like libicu from outside the bundle or libSystem.Native.dylib from inside */
+            entitlements.Add (KeyValuePair.Create ("com.apple.security.cs.disable-library-validation", "<true/>"));
+        }
+
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
             .Replace("%ProjectName%", projectName)
             .Replace("%AppResources%", string.Join(Environment.NewLine, resources.Select(r => "    " + r)))
             .Replace("%MainSource%", nativeMainSource)
-            .Replace("%MonoInclude%", monoInclude);
+            .Replace("%MonoInclude%", monoInclude)
+            .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
 
 
         string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
@@ -152,7 +165,22 @@ internal class Xcode
             .Replace("%BundleIdentifier%", projectName);
 
         File.WriteAllText(Path.Combine(binDir, "Info.plist"), plist);
+
+        var needEntitlements = entitlements.Count != 0;
+        cmakeLists = cmakeLists.Replace("%HardenedRuntimeUseEntitlementsFile%",
+                                        needEntitlements ? "TRUE" : "FALSE");
+
         File.WriteAllText(Path.Combine(binDir, "CMakeLists.txt"), cmakeLists);
+
+        if (needEntitlements) {
+            var ent = new StringBuilder();
+            foreach ((var key, var value) in entitlements) {
+                ent.AppendLine ($"<key>{key}</key>");
+                ent.AppendLine (value);
+            }
+            string entitlementsTemplate = Utils.GetEmbeddedResource("app.entitlements.template");
+            File.WriteAllText(Path.Combine(binDir, "app.entitlements"), entitlementsTemplate.Replace("%Entitlements%", ent.ToString()));
+        }
 
         string targetName;
         switch (Target)

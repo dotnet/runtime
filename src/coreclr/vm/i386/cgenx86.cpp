@@ -109,7 +109,7 @@ void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 
     const DWORD cpuDefault = 0xFFFFFFFF;
     static ConfigDWORD cpuFamily;
-    DWORD configCpuFamily = cpuFamily.val_DontUse_(CLRConfig::INTERNAL_CPUFamily, cpuDefault);
+    DWORD configCpuFamily = cpuFamily.val(CLRConfig::INTERNAL_CPUFamily);
     if (configCpuFamily != cpuDefault)
     {
         assert((configCpuFamily & 0xFFF) == configCpuFamily);
@@ -125,7 +125,7 @@ void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 
     const DWORD cpuFeaturesDefault = 0xFFFFFFFF;
     static ConfigDWORD cpuFeatures;
-    DWORD configCpuFeatures = cpuFeatures.val_DontUse_(CLRConfig::INTERNAL_CPUFeatures, cpuFeaturesDefault);
+    DWORD configCpuFeatures = cpuFeatures.val(CLRConfig::INTERNAL_CPUFeatures);
     if (configCpuFeatures != cpuFeaturesDefault)
     {
         tempVal.dwFeatures = configCpuFeatures;

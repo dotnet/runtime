@@ -1707,6 +1707,11 @@ MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(null
         }
     }
 
+    if (fclose(methodSetFile))
+    {
+        JITDUMP("Unable to close %ws\n", filename);
+    }
+
     if (m_pInfos == nullptr)
     {
         JITDUMP("No methods read from %ws\n", filename);

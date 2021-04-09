@@ -155,6 +155,12 @@ namespace Internal.TypeSystem
                 : base(ExceptionStringID.BadImageFormatGeneric)
             {
             }
+
+            internal BadImageFormatException(string reason)
+                : base(ExceptionStringID.BadImageFormatSpecific, reason)
+            {
+
+            }
         }
     }
 }

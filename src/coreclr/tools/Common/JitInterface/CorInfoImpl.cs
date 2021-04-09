@@ -564,6 +564,7 @@ namespace Internal.JitInterface
             }
 
             bool found = false;
+            bool memberFunctionVariant = false;
             foreach (CustomAttributeTypedArgument<TypeDesc> type in callConvArray)
             {
                 if (!(type.Value is DefType defType))
@@ -571,6 +572,12 @@ namespace Internal.JitInterface
 
                 if (defType.Namespace != "System.Runtime.CompilerServices")
                     continue;
+
+                if (defType.Name == "CallConvMemberFunction")
+                {
+                    memberFunctionVariant = true;
+                    continue;
+                }
 
                 CorInfoCallConvExtension? callConvLocal = GetCallingConventionForCallConvType(defType);
 
@@ -584,17 +591,26 @@ namespace Internal.JitInterface
                     found = true;
                 }
             }
+
+            if (memberFunctionVariant)
+            {
+                callConv = GetMemberFunctionCallingConventionVariant(callConv);
+            }
+
             return callConv;
         }
 
         private bool TryGetUnmanagedCallingConventionFromModOpt(MethodSignature signature, out CorInfoCallConvExtension callConv, out bool suppressGCTransition)
         {
             suppressGCTransition = false;
+            // Default to managed since in the modopt case we need to differentiate explicitly using a calling convention that matches the default
+            // and not specifying a calling convention at all and using the implicit default case in P/Invoke stub inlining.
             callConv = CorInfoCallConvExtension.Managed;
             if (!signature.HasEmbeddedSignatureData || signature.GetEmbeddedSignatureData() == null)
                 return false;
 
             bool found = false;
+            bool memberFunctionVariant = false;
             foreach (EmbeddedSignatureData data in signature.GetEmbeddedSignatureData())
             {
                 if (data.kind != EmbeddedSignatureDataKind.OptionalCustomModifier)
@@ -616,6 +632,11 @@ namespace Internal.JitInterface
                     suppressGCTransition = true;
                     continue;
                 }
+                else if (defType.Name == "CallConvMemberFunction")
+                {
+                    memberFunctionVariant = true;
+                    continue;
+                }
 
                 CorInfoCallConvExtension? callConvLocal = GetCallingConventionForCallConvType(defType);
 
@@ -630,6 +651,11 @@ namespace Internal.JitInterface
                 }
             }
 
+            if (memberFunctionVariant)
+            {
+                callConv = GetMemberFunctionCallingConventionVariant(found ? callConv : (CorInfoCallConvExtension)PlatformDefaultUnmanagedCallingConvention());
+            }
+
             return found;
         }
 
@@ -642,6 +668,15 @@ namespace Internal.JitInterface
                 "CallConvFastcall" => CorInfoCallConvExtension.Fastcall,
                 "CallConvThiscall" => CorInfoCallConvExtension.Thiscall,
                 _ => null
+            };
+
+        private static CorInfoCallConvExtension GetMemberFunctionCallingConventionVariant(CorInfoCallConvExtension baseCallConv) =>
+            baseCallConv switch
+            {
+                CorInfoCallConvExtension.C => CorInfoCallConvExtension.CMemberFunction,
+                CorInfoCallConvExtension.Stdcall => CorInfoCallConvExtension.StdcallMemberFunction,
+                CorInfoCallConvExtension.Fastcall => CorInfoCallConvExtension.FastcallMemberFunction,
+                var c => c
             };
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig)

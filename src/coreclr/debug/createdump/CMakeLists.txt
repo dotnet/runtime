@@ -19,7 +19,7 @@ if(CLR_CMAKE_HOST_WIN32)
         createdump.rc
     )
 
-    _add_executable(createdump
+    add_executable_clr(createdump
         ${CREATEDUMP_SOURCES}
     )
 
@@ -60,13 +60,13 @@ else(CLR_CMAKE_HOST_WIN32)
     )
 
 if(CLR_CMAKE_HOST_OSX)
-    _add_executable(createdump
+    add_executable_clr(createdump
         crashinfomac.cpp
         threadinfomac.cpp
         ${CREATEDUMP_SOURCES}
     )
 else()
-    _add_executable(createdump
+    add_executable_clr(createdump
         crashinfounix.cpp
         threadinfounix.cpp
         ${CREATEDUMP_SOURCES}
@@ -86,4 +86,4 @@ endif(CLR_CMAKE_HOST_OSX)
 
 endif(CLR_CMAKE_HOST_WIN32)
 
-install_clr(TARGETS createdump ADDITIONAL_DESTINATIONS sharedFramework)
+install_clr(TARGETS createdump DESTINATIONS . sharedFramework COMPONENT runtime)

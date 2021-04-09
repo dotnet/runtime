@@ -22,4 +22,4 @@ target_link_libraries(CoreShim
     ${STATIC_MT_VCRT_LIB}
 )
 
-install_clr(TARGETS CoreShim)
+install_clr(TARGETS CoreShim DESTINATIONS . COMPONENT runtime)

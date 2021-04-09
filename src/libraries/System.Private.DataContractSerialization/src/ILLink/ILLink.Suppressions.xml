@@ -21,6 +21,42 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Runtime.Serialization.Json.DataContractJsonSerializerImpl.InternalReadObject(System.Runtime.Serialization.XmlReaderDelegator,System.Boolean)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Runtime.Serialization.Json.DataContractJsonSerializerImpl.InternalWriteObject(System.Runtime.Serialization.XmlWriterDelegator,System.Object)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Runtime.Serialization.Json.DataContractJsonSerializerImpl.InternalWriteObjectContent(System.Runtime.Serialization.XmlWriterDelegator,System.Object)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Runtime.Serialization.Json.ReflectionJsonReader.ReflectionReadDictionaryItem(System.Runtime.Serialization.XmlReaderDelegator,System.Runtime.Serialization.XmlObjectSerializerReadContext,System.Runtime.Serialization.CollectionDataContract)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Runtime.Serialization.Json.XmlObjectSerializerReadContextComplexJson.ReadDataContractValue(System.Runtime.Serialization.DataContract,System.Runtime.Serialization.XmlReaderDelegator)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2046</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Runtime.Serialization.Json.XmlObjectSerializerWriteContextComplexJson.WriteDataContractValue(System.Runtime.Serialization.DataContract,System.Runtime.Serialization.XmlWriterDelegator,System.Object,System.RuntimeTypeHandle)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
       <argument>IL2055</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Runtime.Serialization.ClassDataContract.ClassDataContractCriticalHelper.SetKeyValuePairAdapterFlags(System.Type)</property>
@@ -60,48 +96,6 @@
       <argument>IL2055</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Runtime.Serialization.Globals.get_TypeOfHashtable</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.DataContractJsonSerializerImpl.AddCollectionItemTypeToKnownTypes(System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonDataContract.JsonDataContractCriticalHelper.AddCollectionItemContractsToKnownDataContracts</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatReaderGenerator.CriticalHelper.GenerateClassReader(System.Runtime.Serialization.ClassDataContract)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatReaderGenerator.CriticalHelper.ReadCollection(System.Runtime.Serialization.CollectionDataContract)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatReaderGenerator.CriticalHelper.WrapNullableObject(System.Reflection.Emit.LocalBuilder,System.Reflection.Emit.LocalBuilder,System.Int32)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatWriterGenerator.CriticalHelper.InitArgs(System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2055</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatWriterGenerator.CriticalHelper.WriteCollection(System.Runtime.Serialization.CollectionDataContract)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -173,18 +167,6 @@
       <argument>ILLink</argument>
       <argument>IL2060</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatReaderGenerator.CriticalHelper.ReadCollection(System.Runtime.Serialization.CollectionDataContract)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2060</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatWriterGenerator.CriticalHelper.WriteCollection(System.Runtime.Serialization.CollectionDataContract)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2060</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.Runtime.Serialization.ReflectionReader.GetCollectionSetItemDelegate``1(System.Runtime.Serialization.CollectionDataContract,System.Object,System.Boolean)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -231,12 +213,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2067</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.SurrogateDataContract.GetUninitializedObject(System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Runtime.Serialization.ClassDataContract.ClassDataContractCriticalHelper.SetKeyValuePairAdapterFlags(System.Type)</property>
@@ -270,18 +246,6 @@
       <argument>IL2070</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Runtime.Serialization.DataContract.ImportKnownTypeAttributes(System.Type,System.Collections.Generic.Dictionary{System.Type,System.Type},System.Collections.Generic.Dictionary{System.Xml.XmlQualifiedName,System.Runtime.Serialization.DataContract}@)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatReaderGenerator.CriticalHelper.BeginMethod(System.Runtime.Serialization.CodeGenerator,System.String,System.Type,System.Boolean)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatWriterGenerator.CriticalHelper.BeginMethod(System.Runtime.Serialization.CodeGenerator,System.String,System.Type,System.Boolean)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -360,36 +324,6 @@
       <argument>IL2075</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Runtime.Serialization.EnumDataContract.EnumDataContractCriticalHelper.ImportDataMembers</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatReaderGenerator.CriticalHelper.CreateObject(System.Runtime.Serialization.ClassDataContract)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatReaderGenerator.CriticalHelper.ReadCollection(System.Runtime.Serialization.CollectionDataContract)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatReaderGenerator.CriticalHelper.ReadISerializable(System.Runtime.Serialization.ClassDataContract)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatReaderGenerator.CriticalHelper.WrapNullableObject(System.Reflection.Emit.LocalBuilder,System.Reflection.Emit.LocalBuilder,System.Int32)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Runtime.Serialization.Json.JsonFormatWriterGenerator.CriticalHelper.WriteCollection(System.Runtime.Serialization.CollectionDataContract)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
