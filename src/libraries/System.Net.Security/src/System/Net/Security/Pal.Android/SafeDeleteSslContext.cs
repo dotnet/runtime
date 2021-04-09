@@ -205,6 +205,15 @@ namespace System.Net
             SafeFreeSslCredentials credential,
             SslAuthenticationOptions authOptions)
         {
+            switch (credential.Policy)
+            {
+                case EncryptionPolicy.RequireEncryption:
+                case EncryptionPolicy.AllowNoEncryption:
+                    break;
+                default:
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
+            }
+
             bool isServer = authOptions.IsServer;
 
             if (authOptions.ApplicationProtocols != null
