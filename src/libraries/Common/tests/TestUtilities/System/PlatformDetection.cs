@@ -374,7 +374,11 @@ namespace System
             }
             else if (IsAndroid)
             {
+#if NETFRAMEWORK
+                return false;
+#else
                 return AndroidGetSslProtocolSupport(SslProtocols.Tls13);
+#endif
             }
             else if (IsOpenSslSupported)
             {
