@@ -31,7 +31,8 @@ namespace System.Net.Quic.Tests
         {
             return new SslClientAuthenticationOptions()
             {
-                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol }
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => { return true; }
             };
         }
 

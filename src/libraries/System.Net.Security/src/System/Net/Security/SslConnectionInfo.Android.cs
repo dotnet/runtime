@@ -11,7 +11,24 @@ namespace System.Net.Security
     {
         public SslConnectionInfo(SafeSslHandle sslContext)
         {
-            throw new NotImplementedException(nameof(SslConnectionInfo));
+            string protocolString = Interop.AndroidCrypto.SSLStreamGetProtocol(sslContext);
+            SslProtocols protocol = protocolString switch
+            {
+#pragma warning disable 0618 // Ssl2 and Ssl3 are deprecated.
+                "SSLv2" => SslProtocols.Ssl2,
+                "SSLv3" => SslProtocols.Ssl3,
+#pragma warning restore
+                "TLSv1" => SslProtocols.Tls,
+                "TLSv1.1" => SslProtocols.Tls11,
+                "TLSv1.2" => SslProtocols.Tls12,
+                "TLSv1.3" => SslProtocols.Tls13,
+                _ => SslProtocols.None,
+            };
+            Protocol = (int)protocol;
+
+            // Enum value names should match the cipher suite name, so we just parse the
+            string cipherSuite = Interop.AndroidCrypto.SSLStreamGetCipherSuite(sslContext);
+            MapCipherSuite(Enum.Parse<TlsCipherSuite>(cipherSuite));
         }
     }
 }

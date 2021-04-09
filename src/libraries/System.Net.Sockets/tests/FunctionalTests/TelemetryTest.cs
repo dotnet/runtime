@@ -164,7 +164,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Same as Connect.ConnectGetsCanceledByDispose
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Same as Connect.ConnectGetsCanceledByDispose")]
         [MemberData(nameof(SocketMethods_WithBools_MemberData))]
         public void EventSource_SocketConnectFailure_LogsConnectFailed(string connectMethod, bool useDnsEndPoint)
         {
