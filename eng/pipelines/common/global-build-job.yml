@@ -120,7 +120,7 @@ jobs:
 
       - script: |
           call npm install jsvu -g
-          call npm exec -c "jsvu --engines=v8"
+          call npm exec -c "jsvu --os=win64 --engines=v8"
           set PATH=%HOMEDRIVE%%HOMEPATH%\.jsvu;%PATH% && call v8 --help
         displayName: Install jsvu and v8 JavaScript engine
 
