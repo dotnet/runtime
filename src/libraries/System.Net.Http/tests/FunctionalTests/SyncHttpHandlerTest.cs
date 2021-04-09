@@ -102,7 +102,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    [SkipOnMono("System.Net.Sockets is not supported on this platform.", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
     public sealed class SyncHttpHandlerTest_HttpClientHandlerTest_Headers : HttpClientHandlerTest_Headers
     {
         public SyncHttpHandlerTest_HttpClientHandlerTest_Headers(ITestOutputHelper output) : base(output) { }

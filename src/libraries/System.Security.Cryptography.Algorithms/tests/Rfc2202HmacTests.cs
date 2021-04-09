@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class Rfc2202HmacTests : HmacTests
     {
         private static readonly byte[][] s_testData2202 =
