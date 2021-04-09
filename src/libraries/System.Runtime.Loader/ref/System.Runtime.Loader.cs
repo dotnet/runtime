@@ -16,6 +16,7 @@ namespace System.Reflection.Metadata
     public sealed class MetadataUpdateHandlerAttribute : System.Attribute
     {
         public MetadataUpdateHandlerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type handlerType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Type HandlerType { get { throw null; } }
     }
 }
