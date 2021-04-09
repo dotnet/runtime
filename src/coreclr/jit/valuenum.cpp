@@ -2675,7 +2675,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             {
                 assert((typ == TYP_BYREF) || (typ == TYP_LONG));
                 size_t resultVal = EvalOp<size_t>(func, arg0Val, arg1Val);
-                result           = VNForByrefCon((target_size_t) resultVal);
+                result           = VNForByrefCon((target_size_t)resultVal);
             }
         }
     }
