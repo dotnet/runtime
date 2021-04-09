@@ -152,7 +152,9 @@ jobs:
         condition: always()
 
     - ${{ if eq(parameters.nameSuffix, 'Browser_wasm_Windows') }}:
-      - script: set PATH=%HOMEDRIVE%%HOMEPATH%\.jsvu;%PATH% && $(Build.SourcesDirectory)\dotnet.cmd build -p:Configuration=Release -t:RunTests -p:Library="System.Collections.Concurrent" -p:VSEngine="v8" $(Build.SourcesDirectory)\src\mono\wasm\wasm.proj
+      - script: |
+          $(Build.SourcesDirectory)\dotnet.cmd tool restore
+          set PATH=%HOMEDRIVE%%HOMEPATH%\.jsvu;%PATH% && $(Build.SourcesDirectory)\dotnet.cmd build -p:Configuration=Release -t:RunTests -p:Library="System.Collections.Concurrent" -p:VSEngine="v8" $(Build.SourcesDirectory)\src\mono\wasm\wasm.proj
         displayName: Smoke test
 
       # If intended to send extra steps after regular build add them here.
