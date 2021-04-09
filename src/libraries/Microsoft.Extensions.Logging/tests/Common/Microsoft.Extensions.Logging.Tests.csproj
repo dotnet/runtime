@@ -20,7 +20,6 @@
              Link="tests\DI.Common\Common\src\TestLoggerFactory.cs" />
 
     <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Castle.xml" />
-    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Moq.xml" />
   </ItemGroup>
 
   <ItemGroup>

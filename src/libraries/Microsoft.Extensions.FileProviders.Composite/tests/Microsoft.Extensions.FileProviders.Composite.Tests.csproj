@@ -13,7 +13,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
 
     <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Castle.xml" />
-    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Moq.xml" />
   </ItemGroup>
 
 </Project>

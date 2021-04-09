@@ -8,7 +8,6 @@
   <ItemGroup>
     <Compile Include="$(CommonTestPath)Extensions\ConfigurationRootTest.cs" Link="Common\Extensions\ConfigurationRootTest.cs" />
 
-    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Moq.xml" />
     <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Castle.xml" />
   </ItemGroup>
 
