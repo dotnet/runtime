@@ -56,7 +56,7 @@ static PAL_SSLStreamStatus Flush(JNIEnv* env, SSLStream* sslStream)
     PAL_SSLStreamStatus ret = SSLStreamStatus_Error;
 
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->netOutBuffer, g_ByteBufferFlip));
-    int bufferLimit = (*env)->CallIntMethod(env, sslStream->netOutBuffer, g_ByteBufferLimit);
+    int32_t bufferLimit = (*env)->CallIntMethod(env, sslStream->netOutBuffer, g_ByteBufferLimit);
     jbyteArray data = (*env)->NewByteArray(env, bufferLimit);
 
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->netOutBuffer, g_ByteBufferGet, data));
@@ -77,7 +77,7 @@ cleanup:
     return ret;
 }
 
-static jobject ExpandBuffer(JNIEnv* env, jobject oldBuffer, int newCapacity)
+static jobject ExpandBuffer(JNIEnv* env, jobject oldBuffer, int32_t newCapacity)
 {
     // oldBuffer.flip();
     // ByteBuffer newBuffer = ByteBuffer.allocate(newCapacity);
@@ -89,9 +89,9 @@ static jobject ExpandBuffer(JNIEnv* env, jobject oldBuffer, int newCapacity)
     return newBuffer;
 }
 
-static jobject EnsureRemaining(JNIEnv* env, jobject oldBuffer, int newRemaining)
+static jobject EnsureRemaining(JNIEnv* env, jobject oldBuffer, int32_t newRemaining)
 {
-    int oldRemaining = (*env)->CallIntMethod(env, oldBuffer, g_ByteBufferRemaining);
+    int32_t oldRemaining = (*env)->CallIntMethod(env, oldBuffer, g_ByteBufferRemaining);
     if (oldRemaining < newRemaining)
     {
         return ExpandBuffer(env, oldBuffer, oldRemaining + newRemaining);
@@ -137,7 +137,7 @@ static PAL_SSLStreamStatus DoWrap(JNIEnv* env, SSLStream* sslStream, int* handsh
         {
             // Expand buffer
             // int newCapacity = sslSession.getPacketBufferSize() + netOutBuffer.remaining();
-            int newCapacity = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSize)
+            int32_t newCapacity = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSize)
                 + (*env)->CallIntMethod(env, sslStream->netOutBuffer, g_ByteBufferRemaining);
             sslStream->netOutBuffer = ExpandBuffer(env, sslStream->netOutBuffer, newCapacity);
             return SSLStreamStatus_OK;
@@ -208,7 +208,7 @@ static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* sslStream, int* hand
         {
             // Expand buffer
             // int newRemaining = sslSession.getPacketBufferSize();
-            int newRemaining = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSize);
+            int32_t newRemaining = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSize);
             sslStream->netInBuffer = EnsureRemaining(env, sslStream->netInBuffer, newRemaining);
             return SSLStreamStatus_OK;
         }
@@ -216,7 +216,7 @@ static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* sslStream, int* hand
         {
             // Expand buffer
             // int newCapacity = sslSession.getApplicationBufferSize() + appInBuffer.remaining();
-            int newCapacity = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetApplicationBufferSize)
+            int32_t newCapacity = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetApplicationBufferSize)
                 + (*env)->CallIntMethod(env, sslStream->appInBuffer, g_ByteBufferRemaining);
             sslStream->appInBuffer = ExpandBuffer(env, sslStream->appInBuffer, newCapacity);
             return SSLStreamStatus_OK;
@@ -332,7 +332,7 @@ static int32_t AddCertChainToStore(
 
     // X509Certificate[] certArray = new X509Certificate[certsLen];
     loc[certArray] = (*env)->NewObjectArray(env, certsLen, g_X509CertClass, NULL);
-    for (int i = 0; i < certsLen; ++i)
+    for (int32_t i = 0; i < certsLen; ++i)
     {
         (*env)->SetObjectArrayElement(env, loc[certArray], i, certs[i]);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
@@ -414,7 +414,7 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(SSLStream* sslStream,
                                                    bool isServer,
                                                    STREAM_READER streamReader,
                                                    STREAM_WRITER streamWriter,
-                                                   int appBufferSize)
+                                                   int32_t appBufferSize)
 {
     assert(sslStream != NULL);
     assert(sslStream->sslContext != NULL);
@@ -437,14 +437,14 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(SSLStream* sslStream,
 
     // int applicationBufferSize = sslSession.getApplicationBufferSize();
     // int packetBufferSize = sslSession.getPacketBufferSize();
-    int applicationBufferSize = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetApplicationBufferSize);
-    int packetBufferSize = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSize);
+    int32_t applicationBufferSize = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetApplicationBufferSize);
+    int32_t packetBufferSize = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSize);
 
     // ByteBuffer appInBuffer =  ByteBuffer.allocate(Math.max(applicationBufferSize, appBufferSize));
     // ByteBuffer appOutBuffer = ByteBuffer.allocate(appBufferSize);
     // ByteBuffer netOutBuffer = ByteBuffer.allocate(packetBufferSize);
     // ByteBuffer netInBuffer =  ByteBuffer.allocate(packetBufferSize);
-    int appInBufferSize = applicationBufferSize > appBufferSize ? applicationBufferSize : appBufferSize;
+    int32_t appInBufferSize = applicationBufferSize > appBufferSize ? applicationBufferSize : appBufferSize;
     sslStream->appInBuffer =
         ToGRef(env, (*env)->CallStaticObjectMethod(env, g_ByteBuffer, g_ByteBufferAllocate, appInBufferSize));
     sslStream->appOutBuffer =
@@ -512,7 +512,7 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamHandshake(SSLStream* sslStream)
     return DoHandshake(env, sslStream);
 }
 
-PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int length, int* read)
+PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int32_t length, int32_t* read)
 {
     assert(sslStream != NULL);
     assert(read != NULL);
@@ -540,7 +540,7 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint
     */
 
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferFlip));
-    int rem = (*env)->CallIntMethod(env, sslStream->appInBuffer, g_ByteBufferRemaining);
+    int32_t rem = (*env)->CallIntMethod(env, sslStream->appInBuffer, g_ByteBufferRemaining);
     if (rem == 0)
     {
         IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferCompact));
@@ -586,7 +586,7 @@ cleanup:
     return ret;
 }
 
-PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int length)
+PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int32_t length)
 {
     assert(sslStream != NULL);
 
@@ -621,7 +621,7 @@ void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream)
     FreeSSLStream(env, sslStream);
 }
 
-int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int* outLen)
+int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int32_t* outLen)
 {
     assert(sslStream != NULL);
 
@@ -720,7 +720,7 @@ cleanup:
     return ret;
 }
 
-int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream, jobject** out, int* outLen)
+int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream, jobject** out, int32_t* outLen)
 {
     assert(sslStream != NULL);
     assert(out != NULL);
@@ -741,7 +741,7 @@ int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream, j
     if (len > 0)
     {
         *out = malloc(sizeof(jobject) * (size_t)len);
-        for (int i = 0; i < len; i++)
+        for (int32_t i = 0; i < len; i++)
         {
             jobject cert = (*env)->GetObjectArrayElement(env, certs, i);
             (*out)[i] = ToGRef(env, cert);
@@ -784,7 +784,7 @@ int32_t AndroidCryptoNative_SSLStreamSetEnabledProtocols(SSLStream* sslStream, P
 
     // String[] protocolsArray = new String[count];
     jobjectArray protocolsArray = (*env)->NewObjectArray(env, count, g_String, NULL);
-    for (int i = 0; i < count; ++i)
+    for (int32_t i = 0; i < count; ++i)
     {
         jstring protocol = GetSslProtocolAsString(env, protocols[i]);
         (*env)->SetObjectArrayElement(env, protocolsArray, i, protocol);

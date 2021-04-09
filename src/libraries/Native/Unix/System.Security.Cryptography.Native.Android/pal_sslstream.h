@@ -62,7 +62,7 @@ PALEXPORT int32_t AndroidCryptoNative_SSLStreamInitialize(SSLStream* sslStream,
                                                              bool isServer,
                                                              STREAM_READER streamReader,
                                                              STREAM_WRITER streamWriter,
-                                                             int appBufferSize);
+                                                             int32_t appBufferSize);
 
 /*
 Set configuration parameters
@@ -87,8 +87,8 @@ Unless data from a previous incomplete read is present, this will invoke the STR
 */
 PALEXPORT PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream,
                                                                 uint8_t* buffer,
-                                                                int length,
-                                                                int* read);
+                                                                int32_t length,
+                                                                int32_t* read);
 /*
 Encodes bytes from a buffer
   - buffer : data to encode
@@ -96,7 +96,7 @@ Encodes bytes from a buffer
 
 This will invoke the STREAM_WRITER callback with the processed data.
 */
-PALEXPORT PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int length);
+PALEXPORT PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int32_t length);
 
 /*
 Release the SSL context
@@ -108,7 +108,7 @@ Get the negotiated application protocol for the current session
 
 Returns 1 on success, 0 otherwise
 */
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int* outLen);
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int32_t* outLen);
 
 /*
 Get the name of the cipher suite for the current session
@@ -141,7 +141,7 @@ Returns 1 on success, 0 otherwise
 */
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream,
                                                                    jobject** /*X509Certificate[]*/ out,
-                                                                   int* outLen);
+                                                                   int32_t* outLen);
 
 /*
 Set enabled protocols

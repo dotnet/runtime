@@ -17,10 +17,10 @@ PAL_SslProtocol AndroidCryptoNative_SSLGetSupportedProtocols(void)
     loc[protocols] = (*env)->CallObjectMethod(env, loc[params], g_SSLParametersGetProtocols);
 
     const char tlsv1[] = "TLSv1";
-    size_t tlsv1Len = (sizeof(tlsv1) - 1) / sizeof(char);
+    size_t tlsv1Len = (sizeof(tlsv1) / sizeof(*tlsv1)) - 1;
 
-    int count = (*env)->GetArrayLength(env, loc[protocols]);
-    for (int i = 0; i < count; i++)
+    jsize count = (*env)->GetArrayLength(env, loc[protocols]);
+    for (int32_t i = 0; i < count; i++)
     {
         jstring protocol = (*env)->GetObjectArrayElement(env, loc[protocols], i);
         const char* protocolStr = (*env)->GetStringUTFChars(env, protocol, NULL);
