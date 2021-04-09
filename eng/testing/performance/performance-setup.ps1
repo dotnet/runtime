@@ -119,7 +119,7 @@ robocopy $DocsDir $WorkItemDirectory
 # Set variables that we will need to have in future steps
 $ci = $true
 
-. "$PSScriptRoot\..\pipeline-logging-functions.ps1"
+. "$PSScriptRoot\..\..\common\pipeline-logging-functions.ps1"
 
 # Directories
 Write-PipelineSetVariable -Name 'PayloadDirectory' -Value "$PayloadDirectory" -IsMultiJobVariable $false

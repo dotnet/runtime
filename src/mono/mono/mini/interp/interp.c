@@ -7276,7 +7276,7 @@ interp_metadata_update_init (MonoError *error)
 
 #ifdef ENABLE_METADATA_UPDATE
 static void
-metadata_update_backup_frames (MonoDomain *domain, MonoThreadInfo *info, InterpFrame *frame)
+metadata_update_backup_frames (MonoThreadInfo *info, InterpFrame *frame)
 {
 	while (frame) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "threadinfo=%p, copy imethod for method=%s", info, mono_method_full_name (frame->imethod->method, 1));
@@ -7286,7 +7286,7 @@ metadata_update_backup_frames (MonoDomain *domain, MonoThreadInfo *info, InterpF
 }
 
 static void
-metadata_update_prepare_to_invalidate (MonoDomain *domain)
+metadata_update_prepare_to_invalidate (void)
 {
 	/* (1) make a copy of imethod for every interpframe that is on the stack,
 	 * so we do not invalidate currently running methods */
@@ -7302,7 +7302,7 @@ metadata_update_prepare_to_invalidate (MonoDomain *domain)
 		 */
 		if (context && context->safepoint_frame) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "threadinfo=%p, has safepoint frame %p", info, context->safepoint_frame);
-			metadata_update_backup_frames (domain, info, context->safepoint_frame);
+			metadata_update_backup_frames (info, context->safepoint_frame);
 		}
 
 		MonoLMF *lmf = info->jit_data->lmf;
@@ -7311,7 +7311,7 @@ metadata_update_prepare_to_invalidate (MonoDomain *domain)
 				MonoLMFExt *ext = (MonoLMFExt *) lmf;
 				if (ext->kind == MONO_LMFEXT_INTERP_EXIT || ext->kind == MONO_LMFEXT_INTERP_EXIT_WITH_CTX) {
 					InterpFrame *frame = ext->interp_exit_data;
-					metadata_update_backup_frames (domain, info, frame);
+					metadata_update_backup_frames (info, frame);
 				}
 			}
 			lmf = (MonoLMF *)(((gsize) lmf->previous_lmf) & ~3);
@@ -7330,7 +7330,7 @@ interp_invalidate_transformed (void)
 #ifdef ENABLE_METADATA_UPDATE
 	need_stw_restart = TRUE;
 	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC);
-	metadata_update_prepare_to_invalidate (mono_get_root_domain ());
+	metadata_update_prepare_to_invalidate ();
 #endif
 
 	// FIXME: Enumerate all memory managers

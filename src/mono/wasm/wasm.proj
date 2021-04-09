@@ -180,7 +180,7 @@
           Lines="$(ActualEmccVersion)"
           Overwrite="true" />
 
-    <Copy SourceFiles="$(MonoObjDir)\pinvoke-table.h;runtime\pinvoke.h"
+    <Copy SourceFiles="runtime\pinvoke.h"
           DestinationFolder="$(NativeBinDir)\include\wasm"
           SkipUnchangedFiles="true" />
     

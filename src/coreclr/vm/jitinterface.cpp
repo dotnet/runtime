@@ -14107,6 +14107,14 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 actualBaseOffset = ReadyToRunInfo::GetFieldBaseOffset(pEnclosingMT);
             }
 
+            if (baseOffset == 0)
+            {
+                // Relative verification of just the field offset when the base class
+                // is outside of the current R2R version bubble
+                actualFieldOffset -= actualBaseOffset;
+                actualBaseOffset = 0;
+            }
+
             if ((fieldOffset != actualFieldOffset) || (baseOffset != actualBaseOffset))
             {
                 // Verification failures are failfast events

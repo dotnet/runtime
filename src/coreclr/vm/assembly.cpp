@@ -1251,7 +1251,7 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
     CONTRACTL_END
 
     ReleaseHolder<FriendAssemblyDescriptor> pOldFriendAssemblyDescriptor;
-    
+
     {
         CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
         if (m_pFriendAssemblyDescriptor != NULL)
@@ -1986,7 +1986,7 @@ bool Assembly::TrySetTypeLib(_In_ ITypeLib *pNew)
 // Add an assembly to the assemblyref list. pAssemEmitter specifies where
 // the AssemblyRef is emitted to.
 //***********************************************************
-mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter, BOOL fUsePublicKeyToken)
+mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter)
 {
     CONTRACT(mdAssemblyRef)
     {
@@ -2014,7 +2014,7 @@ mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssembl
     }
 
     mdAssemblyRef ar;
-    IfFailThrow(spec.EmitToken(pAssemEmitter, &ar, fUsePublicKeyToken));
+    IfFailThrow(spec.EmitToken(pAssemEmitter, &ar));
 
     RETURN ar;
 }   // Assembly::AddAssemblyRef
