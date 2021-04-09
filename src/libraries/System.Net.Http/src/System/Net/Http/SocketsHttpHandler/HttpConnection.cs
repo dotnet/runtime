@@ -71,6 +71,7 @@ namespace System.Net.Http
 
         public HttpConnection(
             HttpConnectionPool pool,
+            Socket? socket,
             Stream stream,
             TransportContext? transportContext)
         {
@@ -78,11 +79,8 @@ namespace System.Net.Http
             Debug.Assert(stream != null);
 
             _pool = pool;
+            _socket = socket;
             _stream = stream;
-            if (stream is NetworkStream networkStream)
-            {
-                _socket = networkStream.Socket;
-            }
 
             _transportContext = transportContext;
 
