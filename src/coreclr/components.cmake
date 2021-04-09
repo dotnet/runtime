@@ -19,4 +19,3 @@ add_dependencies(runtime jit iltools)
 
 # The cross-components build is separate, so we don't need to add a dependency on coreclr_misc
 add_component(crosscomponents)
-add_dependencies(crosscomponents jit)
