@@ -69,6 +69,11 @@ namespace Mono.Linker.Dataflow
 			return DynamicallyAccessedMemberTypes.None;
 		}
 
+		public DynamicallyAccessedMemberTypes GetTypeAnnotation (TypeDefinition type)
+		{
+			return GetAnnotations (type).TypeAnnotation;
+		}
+
 		public DynamicallyAccessedMemberTypes GetGenericParameterAnnotation (GenericParameter genericParameter)
 		{
 			TypeDefinition declaringType = genericParameter.DeclaringType?.Resolve ();
@@ -122,6 +127,9 @@ namespace Mono.Linker.Dataflow
 
 		TypeAnnotations BuildTypeAnnotations (TypeDefinition type)
 		{
+			// class, interface, struct can have annotations
+			DynamicallyAccessedMemberTypes typeAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (type);
+
 			var annotatedFields = new ArrayBuilder<FieldAnnotation> ();
 
 			// First go over all fields with an explicit annotation
@@ -338,7 +346,7 @@ namespace Mono.Linker.Dataflow
 				}
 			}
 
-			return new TypeAnnotations (type, annotatedMethods.ToArray (), annotatedFields.ToArray (), typeGenericParameterAnnotations);
+			return new TypeAnnotations (type, typeAnnotation, annotatedMethods.ToArray (), annotatedFields.ToArray (), typeGenericParameterAnnotations);
 		}
 
 		static bool ScanMethodBodyForFieldAccess (MethodBody body, bool write, out FieldDefinition found)
@@ -518,17 +526,21 @@ namespace Mono.Linker.Dataflow
 		readonly struct TypeAnnotations
 		{
 			readonly TypeDefinition _type;
+			readonly DynamicallyAccessedMemberTypes _typeAnnotation;
 			readonly MethodAnnotations[] _annotatedMethods;
 			readonly FieldAnnotation[] _annotatedFields;
 			readonly DynamicallyAccessedMemberTypes[] _genericParameterAnnotations;
 
 			public TypeAnnotations (
 				TypeDefinition type,
+				DynamicallyAccessedMemberTypes typeAnnotation,
 				MethodAnnotations[] annotatedMethods,
 				FieldAnnotation[] annotatedFields,
 				DynamicallyAccessedMemberTypes[] genericParameterAnnotations)
-				=> (_type, _annotatedMethods, _annotatedFields, _genericParameterAnnotations)
-				 = (type, annotatedMethods, annotatedFields, genericParameterAnnotations);
+				=> (_type, _typeAnnotation, _annotatedMethods, _annotatedFields, _genericParameterAnnotations)
+				 = (type, typeAnnotation, annotatedMethods, annotatedFields, genericParameterAnnotations);
+
+			public DynamicallyAccessedMemberTypes TypeAnnotation { get => _typeAnnotation; }
 
 			public bool TryGetAnnotation (MethodDefinition method, out MethodAnnotations annotations)
 			{

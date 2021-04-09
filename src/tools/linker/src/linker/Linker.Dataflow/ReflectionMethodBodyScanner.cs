@@ -76,6 +76,7 @@ namespace Mono.Linker.Dataflow
 					var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (method), method, method.MethodReturnType);
 					reflectionContext.AnalyzingPattern ();
 					RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, MethodReturnValue, method.MethodReturnType);
+					reflectionContext.Dispose ();
 				}
 			}
 		}
@@ -92,6 +93,7 @@ namespace Mono.Linker.Dataflow
 					var reflectionContext = new ReflectionPatternContext (_context, true, source, methodParameter);
 					reflectionContext.AnalyzingPattern ();
 					RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, methodParameter);
+					reflectionContext.Dispose ();
 				}
 			}
 		}
@@ -105,6 +107,15 @@ namespace Mono.Linker.Dataflow
 			var reflectionContext = new ReflectionPatternContext (_context, true, source, field);
 			reflectionContext.AnalyzingPattern ();
 			RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, field);
+			reflectionContext.Dispose ();
+		}
+
+		public void ApplyDynamicallyAccessedMembersToType (ref ReflectionPatternContext reflectionPatternContext, TypeDefinition type, DynamicallyAccessedMemberTypes annotation)
+		{
+			Debug.Assert (annotation != DynamicallyAccessedMemberTypes.None);
+
+			reflectionPatternContext.AnalyzingPattern ();
+			MarkTypeForDynamicallyAccessedMembers (ref reflectionPatternContext, type, annotation);
 		}
 
 		static ValueNode GetValueNodeForCustomAttributeArgument (CustomAttributeArgument argument)
@@ -138,6 +149,7 @@ namespace Mono.Linker.Dataflow
 			var reflectionContext = new ReflectionPatternContext (_context, enableReflectionPatternReporting, source, genericParameter);
 			reflectionContext.AnalyzingPattern ();
 			RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, genericParameter);
+			reflectionContext.Dispose ();
 		}
 
 		ValueNode GetTypeValueNodeFromGenericArgument (TypeReference genericArgument)
@@ -173,7 +185,7 @@ namespace Mono.Linker.Dataflow
 		protected override ValueNode GetMethodParameterValue (MethodDefinition method, int parameterIndex)
 		{
 			DynamicallyAccessedMemberTypes memberTypes = _context.Annotations.FlowAnnotations.GetParameterAnnotation (method, parameterIndex);
-			return new MethodParameterValue (parameterIndex, memberTypes, DiagnosticUtilities.GetMethodParameterFromIndex (method, parameterIndex));
+			return new MethodParameterValue (method, parameterIndex, memberTypes, DiagnosticUtilities.GetMethodParameterFromIndex (method, parameterIndex));
 		}
 
 		protected override ValueNode GetFieldValue (MethodDefinition method, FieldDefinition field)
@@ -200,6 +212,7 @@ namespace Mono.Linker.Dataflow
 				var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (method), method, field, operation);
 				reflectionContext.AnalyzingPattern ();
 				RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, valueToStore, field);
+				reflectionContext.Dispose ();
 			}
 		}
 
@@ -211,6 +224,7 @@ namespace Mono.Linker.Dataflow
 				var reflectionContext = new ReflectionPatternContext (_context, ShouldEnableReflectionPatternReporting (method), method, parameter, operation);
 				reflectionContext.AnalyzingPattern ();
 				RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, valueToStore, parameter);
+				reflectionContext.Dispose ();
 			}
 		}
 
@@ -910,36 +924,42 @@ namespace Mono.Linker.Dataflow
 				// GetType()
 				//
 				case IntrinsicId.Object_GetType: {
-						// We could do better here if we start tracking the static types of values within the method body.
-						// Right now, this can only analyze a couple cases for which we have static information for.
-						TypeDefinition staticType = null;
-						if (methodParams[0] is MethodParameterValue methodParam) {
-							if (callingMethodDefinition.HasThis) {
-								if (methodParam.ParameterIndex == 0) {
-									staticType = callingMethodDefinition.DeclaringType;
-								} else {
-									staticType = callingMethodDefinition.Parameters[methodParam.ParameterIndex - 1].ParameterType.ResolveToMainTypeDefinition ();
-								}
-							} else {
-								staticType = callingMethodDefinition.Parameters[methodParam.ParameterIndex].ParameterType.ResolveToMainTypeDefinition ();
-							}
-						} else if (methodParams[0] is LoadFieldValue loadedField) {
-							staticType = loadedField.Field.FieldType.ResolveToMainTypeDefinition ();
-						}
+						foreach (var valueNode in methodParams[0].UniqueValues ()) {
+							TypeDefinition staticType = valueNode.StaticType;
+							if (staticType is null) {
+								// We don’t know anything about the type GetType was called on. Track this as a usual “result of a method call without any annotations”
+								methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new MethodReturnValue (calledMethod.MethodReturnType, DynamicallyAccessedMemberTypes.None));
+							} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate")) {
+								// We can treat this one the same as if it was a typeof() expression
 
-						if (staticType != null) {
-							// We can only analyze the Object.GetType call with the precise type if the type is sealed.
-							// The type could be a descendant of the type in question, making us miss reflection.
-							bool canUse = staticType.IsSealed;
-
-							if (!canUse) {
 								// We can allow Object.GetType to be modeled as System.Delegate because we keep all methods
 								// on delegates anyway so reflection on something this approximation would miss is actually safe.
-								canUse = staticType.IsTypeOf ("System", "Delegate");
-							}
 
-							if (canUse) {
-								methodReturnValue = new SystemTypeValue (staticType);
+								// We ignore the fact that the type can be annotated (see below for handling of annotated types)
+								// This means the annotations (if any) won't be applied - instead we rely on the exact knowledge
+								// of the type. So for example even if the type is annotated with PublicMethods
+								// but the code calls GetProperties on it - it will work - mark properties, don't mark methods
+								// since we ignored the fact that it's annotated.
+								// This can be seen a little bit as a violation of the annotation, but we already have similar cases
+								// where a parameter is annotated and if something in the method sets a specific known type to it
+								// we will also make it just work, even if the annotation doesn't match the usage.
+								methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new SystemTypeValue (staticType));
+							} else {
+								reflectionContext.AnalyzingPattern ();
+
+								// Make sure the type is marked (this will mark it as used via reflection, which is sort of true)
+								// This should already be true for most cases (method params, fields, ...), but just in case
+								MarkType (ref reflectionContext, staticType);
+
+								var annotation = _markStep.DynamicallyAccessedMembersTypeHierarchy
+									.ApplyDynamicallyAccessedMembersToTypeHierarchy (this, ref reflectionContext, staticType);
+
+								reflectionContext.RecordHandledPattern ();
+
+								// Return a value which is "unknown type" with annotation. For now we'll use the return value node
+								// for the method, which means we're loosing the information about which staticType this
+								// started with. For now we don't need it, but we can add it later on.
+								methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new MethodReturnValue (calledMethod.MethodReturnType, annotation));
 							}
 						}
 					}
