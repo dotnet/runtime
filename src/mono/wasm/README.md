@@ -94,7 +94,7 @@ To run the libraries tests on windows, we have the `RunTests` target. Without se
 `dotnet build /t:RunTests wasm.proj`
 
 * `Library` property can be used to specify which library tests to run
-* `VESngine` property can be used to specify which engine to use
+* `JSEngine` property can be used to specify which engine to use
 
 For example to run tests for `System.Collections.Concurrent` on the `v8` engine, use:
 
