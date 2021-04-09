@@ -2160,14 +2160,31 @@ namespace System
         }
 
         // Parses value in base fromBase.  fromBase can only
-        // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
+        // be 2 - 36.  If fromBase is 16, the number may be preceded
         // by 0x; any other leading or trailing characters cause an error.
         //
         public static short ToInt16(string? value, int fromBase)
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                if (fromBase < 2 || fromBase > 36)
+                {
+                    throw new ArgumentException(SR.Arg_InvalidBase);
+                }
+                var status = ParseNumbers.TryStringToInt(value, fromBase, out var result);
+                switch (status)
+                {
+                    case Number.ParsingStatus.Failed:
+                        throw new FormatException(SR.Format_InvalidString);
+                    case Number.ParsingStatus.Overflow:
+                        ThrowInt16OverflowException();
+                        break;
+                }
+                if (result >= short.MinValue && result <= short.MaxValue)
+                {
+                    return (short)result;
+                }
+                ThrowInt16OverflowException();
             }
 
             if (value == null)
@@ -2185,7 +2202,7 @@ namespace System
         }
 
         // Parses value in base fromBase.  fromBase can only
-        // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
+        // be 2 - 36.  If fromBase is 16, the number may be preceded
         // by 0x; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
@@ -2193,7 +2210,27 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                if (fromBase < 2 || fromBase > 36)
+                {
+                    throw new ArgumentException(SR.Arg_InvalidBase);
+                }
+                var status = ParseNumbers.TryStringToInt(value, fromBase, out var result);
+                switch (status)
+                {
+                    case Number.ParsingStatus.Failed:
+                        throw new FormatException(SR.Format_InvalidString);
+                    case Number.ParsingStatus.Overflow:
+                        ThrowUInt16OverflowException();
+                        break;
+                }
+                try
+                {
+                    return (ushort)result;
+                }
+                catch (InvalidCastException)
+                {
+                    ThrowUInt16OverflowException();
+                }
             }
 
             if (value == null)
@@ -2208,14 +2245,27 @@ namespace System
         }
 
         // Parses value in base fromBase.  fromBase can only
-        // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
+        // be 2 - 36.  If fromBase is 16, the number may be preceded
         // by 0x; any other leading or trailing characters cause an error.
         //
         public static int ToInt32(string? value, int fromBase)
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                if (fromBase < 2 || fromBase > 36)
+                {
+                    throw new ArgumentException(SR.Arg_InvalidBase);
+                }
+                var status = ParseNumbers.TryStringToInt(value, fromBase, out var result);
+                switch (status)
+                {
+                    case Number.ParsingStatus.Failed:
+                        throw new FormatException(SR.Format_InvalidString);
+                    case Number.ParsingStatus.Overflow:
+                        ThrowInt32OverflowException();
+                        break;
+                }
+                return result;
             }
             return value != null ?
                 ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.IsTight) :
@@ -2223,7 +2273,7 @@ namespace System
         }
 
         // Parses value in base fromBase.  fromBase can only
-        // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
+        // be 2 - 36.  If fromBase is 16, the number may be preceded
         // by 0x; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
@@ -2231,7 +2281,27 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                if (fromBase < 2 || fromBase > 36)
+                {
+                    throw new ArgumentException(SR.Arg_InvalidBase);
+                }
+                var status = ParseNumbers.TryStringToLong(value, fromBase, out var result);
+                switch (status)
+                {
+                    case Number.ParsingStatus.Failed:
+                        throw new FormatException(SR.Format_InvalidString);
+                    case Number.ParsingStatus.Overflow:
+                        ThrowUInt32OverflowException();
+                        break;
+                }
+                try
+                {
+                    return (uint)result;
+                }
+                catch (InvalidCastException)
+                {
+                    ThrowUInt32OverflowException();
+                }
             }
             return value != null ?
                 (uint)ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight) :
@@ -2239,14 +2309,27 @@ namespace System
         }
 
         // Parses value in base fromBase.  fromBase can only
-        // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
+        // be 2 - 36.  If fromBase is 16, the number may be preceded
         // by 0x; any other leading or trailing characters cause an error.
         //
         public static long ToInt64(string? value, int fromBase)
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                if (fromBase < 2 || fromBase > 36)
+                {
+                    throw new ArgumentException(SR.Arg_InvalidBase);
+                }
+                var status = ParseNumbers.TryStringToLong(value, fromBase, out var result);
+                switch (status)
+                {
+                    case Number.ParsingStatus.Failed:
+                        throw new FormatException(SR.Format_InvalidString);
+                    case Number.ParsingStatus.Overflow:
+                        ThrowInt64OverflowException();
+                        break;
+                }
+                return result;
             }
             return value != null ?
                 ParseNumbers.StringToLong(value.AsSpan(), fromBase, ParseNumbers.IsTight) :
@@ -2284,7 +2367,11 @@ namespace System
         {
             if (toBase != 2 && toBase != 8 && toBase != 10 && toBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                if (toBase < 2 && toBase > 36)
+                {
+                    throw new ArgumentException(SR.Arg_InvalidBase);
+                }
+                return ParseNumbers.IntToString(value, toBase);
             }
             return ParseNumbers.IntToString((int)value, toBase, -1, ' ', ParseNumbers.PrintAsI2);
         }
@@ -2294,7 +2381,11 @@ namespace System
         {
             if (toBase != 2 && toBase != 8 && toBase != 10 && toBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                if (toBase < 2 && toBase > 36)
+                {
+                    throw new ArgumentException(SR.Arg_InvalidBase);
+                }
+                return ParseNumbers.IntToString(value, toBase);
             }
             return ParseNumbers.IntToString(value, toBase, -1, ' ', 0);
         }
@@ -2304,9 +2395,41 @@ namespace System
         {
             if (toBase != 2 && toBase != 8 && toBase != 10 && toBase != 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                if (toBase < 2 && toBase > 36)
+                {
+                    throw new ArgumentException(SR.Arg_InvalidBase);
+                }
+                return ParseNumbers.LongToString(value, toBase);
             }
             return ParseNumbers.LongToString(value, toBase, -1, ' ', 0);
+        }
+
+        // Convert the Single value to a string in base toBase
+        public static string ToString(float value, int toBase)
+        {
+            if (toBase == 10)
+            {
+                return value.ToString();
+            }
+            if (toBase < 2 && toBase > 36)
+            {
+                throw new ArgumentException(SR.Arg_InvalidBase);
+            }
+            return ParseNumbers.DoubleToString(value, toBase);
+        }
+
+        // Convert the Double value to a string in base toBase
+        public static string ToString(double value, int toBase)
+        {
+            if (toBase == 10)
+            {
+                return value.ToString();
+            }
+            if (toBase < 2 && toBase > 36)
+            {
+                throw new ArgumentException(SR.Arg_InvalidBase);
+            }
+            return ParseNumbers.DoubleToString(value, toBase);
         }
 
         public static string ToBase64String(byte[] inArray)

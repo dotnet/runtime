@@ -27,6 +27,10 @@ namespace System
         private const int MinRadix = 2;
         private const int MaxRadix = 36;
 
+        private const string Numbers36 = "0123456789abcdefghijklmnopqrstuvwxyz";
+        private const double PrecisionForParsingWithRadix = 0.00000000001;
+        private const int PrecisionLengthForParsingWithRadix = 10;
+
         public static unsafe long StringToLong(ReadOnlySpan<char> s, int radix, int flags)
         {
             int pos = 0;
@@ -653,6 +657,231 @@ namespace System
             }
 
             return tmp < radix;
+        }
+
+        /// <summary>
+        /// Converts a number to a specific positional notation format string.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <param name="radix">The positional notation. Should be an integer in 2-36.</param>
+        /// <returns>A string of the number in the specific positional notation.</returns>
+        public static string IntToString(int value, int radix)
+        {
+            var integerStr = string.Empty;
+            var integerPart = Math.Abs(value);
+            if (integerPart == 0) return "0";
+            while (integerPart != 0)
+            {
+                integerStr = Numbers36[integerPart % radix] + integerStr;
+                integerPart /= radix;
+            }
+
+            if (value < 0) return "-" + integerStr;
+            return integerStr;
+        }
+
+        /// <summary>
+        /// Converts a number to a specific positional notation format string.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <param name="radix">The positional notation. Should be an integer in 2-36.</param>
+        /// <returns>A string of the number in the specific positional notation.</returns>
+        public static string LongToString(long value, int radix)
+        {
+            var integerStr = string.Empty;
+            var integerPart = Math.Abs(value);
+            if (integerPart == 0) return "0";
+            while (integerPart != 0)
+            {
+                integerStr = Numbers36[(int)(integerPart % radix)] + integerStr;
+                integerPart /= radix;
+            }
+
+            if (value < 0) return "-" + integerStr;
+            return integerStr;
+        }
+
+        /// <summary>
+        /// Converts a number to a specific positional notation format string.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <param name="radix">The positional notation. Should be an integer in 2-36.</param>
+        /// <returns>A string of the number in the specific positional notation.</returns>
+        public static string DoubleToString(double value, int radix)
+        {
+            var integerStr = string.Empty;
+            var fractionalStr = string.Empty;
+            var integerPart = Math.Abs((long)value);
+            var fractionalPart = Math.Abs(value) - integerPart;
+            if (integerPart == 0)
+            {
+                integerStr = "0";
+            }
+
+            while (integerPart != 0)
+            {
+                integerStr = Numbers36[(int)(integerPart % radix)] + integerStr;
+                integerPart /= radix;
+            }
+
+            for (int i = 0; i < PrecisionLengthForParsingWithRadix; i++)
+            {
+                if (fractionalPart == 0)
+                {
+                    break;
+                }
+
+                var pos = (int)(fractionalPart * radix);
+                if (pos < 35 && Math.Abs(pos + 1 - fractionalPart * radix) < PrecisionForParsingWithRadix)
+                {
+                    fractionalStr += Numbers36[pos + 1];
+                    break;
+                }
+
+                fractionalStr += Numbers36[pos];
+                fractionalPart = fractionalPart * radix - pos;
+            }
+
+            // Remove zeros at the end.
+            while (fractionalStr.Length > 0 && fractionalStr.LastIndexOf('0') == (fractionalStr.Length - 1))
+                fractionalStr = fractionalStr.Remove(fractionalStr.Length - 1);
+
+            var str = new Text.StringBuilder();
+            if (value < 0) str.Append('-');
+            str.Append(integerStr);
+            if (!string.IsNullOrEmpty(fractionalStr))
+            {
+                str.Append('.');
+                str.Append(fractionalStr);
+            }
+
+            return str.ToString();
+        }
+
+        /// <summary>
+        /// Tries to parse a string to a number.
+        /// </summary>
+        /// <param name="s">The input string.</param>
+        /// <param name="radix">The positional notation. Should be an integer in 2-36.</param>
+        /// <param name="result">The result.</param>
+        /// <returns>The parsing status.</returns>
+        public static Number.ParsingStatus TryStringToInt(string? s, int radix, out int result)
+        {
+            s = s?.Trim()?.ToLowerInvariant();
+            if (radix < MinRadix || radix > MaxRadix)
+            {
+                result = default;
+                return Number.ParsingStatus.Failed;
+            }
+
+            if (string.IsNullOrEmpty(s))
+            {
+                result = 0;
+                return Number.ParsingStatus.OK;
+            }
+
+            var num = 0;
+            var pos = 0;
+            var negative = false;
+            if (s[0] == '-')
+            {
+                negative = true;
+                pos++;
+            }
+
+            for (; pos < s.Length; pos++)
+            {
+                var c = s[pos];
+                num *= radix;
+                var i = Numbers36.IndexOf(c);
+                if (i < 0)
+                {
+                    // Ignore the split charactors.
+                    if (c == ' ' || c == '_' || c == ',') continue;
+
+                    // Pass failed.
+                    result = default;
+                    return Number.ParsingStatus.Failed;
+                }
+                else if (i >= radix)
+                {
+                    result = default;
+                    return Number.ParsingStatus.Failed;
+                }
+                else if (num < 0)
+                {
+                    result = default;
+                    return Number.ParsingStatus.Overflow;
+                }
+
+                num += i;
+            }
+
+            result = negative ? -num : num;
+            return Number.ParsingStatus.OK;
+        }
+
+        /// <summary>
+        /// Tries to parse a string to a number.
+        /// </summary>
+        /// <param name="s">The input string.</param>
+        /// <param name="radix">The positional notation. Should be an integer in 2-36.</param>
+        /// <param name="result">The result.</param>
+        /// <returns>The parsing status.</returns>
+        public static Number.ParsingStatus TryStringToLong(string? s, int radix, out long result)
+        {
+            s = s?.Trim()?.ToLowerInvariant();
+            if (radix < MinRadix || radix > MaxRadix)
+            {
+                result = default;
+                return Number.ParsingStatus.Failed;
+            }
+
+            if (string.IsNullOrEmpty(s))
+            {
+                result = 0;
+                return Number.ParsingStatus.OK;
+            }
+
+            var num = 0L;
+            var pos = 0;
+            var negative = false;
+            if (s[0] == '-')
+            {
+                negative = true;
+                pos++;
+            }
+
+            for (; pos < s.Length; pos++)
+            {
+                var c = s[pos];
+                num *= radix;
+                var i = Numbers36.IndexOf(c);
+                if (i < 0)
+                {
+                    // Ignore the split charactors.
+                    if (c == ' ' || c == '_' || c == ',') continue;
+
+                    // Pass failed.
+                    result = default;
+                    return Number.ParsingStatus.Failed;
+                }
+                else if (i >= radix)
+                {
+                    result = default;
+                    return Number.ParsingStatus.Failed;
+                }
+                else if (num < 0)
+                {
+                    result = default;
+                    return Number.ParsingStatus.Overflow;
+                }
+
+                num += i;
+            }
+
+            result = negative ? -num : num;
+            return Number.ParsingStatus.OK;
         }
     }
 }

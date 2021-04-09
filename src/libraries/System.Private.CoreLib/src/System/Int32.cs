@@ -97,6 +97,11 @@ namespace System
             return Number.FormatInt32(m_value, ~0, format, provider);
         }
 
+        public string ToString(int toBase)
+        {
+            return Convert.ToString(m_value, toBase);
+        }
+
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatInt32(m_value, ~0, format, provider, destination, out charsWritten);
@@ -142,6 +147,14 @@ namespace System
             return Number.ParseInt32(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
+        // Parses an integer from a String in base fromBase.
+        //
+        public static int Parse(string s, int fromBase)
+        {
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Convert.ToInt32(s, fromBase);
+        }
+
         // Parses an integer from a String. Returns false rather
         // than throwing exceptin if input is invalid
         //
@@ -181,6 +194,11 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+        }
+
+        public static bool TryParse(string? s, int fromBase, out int result)
+        {
+            return ParseNumbers.TryStringToInt(s, fromBase, out result) == Number.ParsingStatus.OK;
         }
 
         //

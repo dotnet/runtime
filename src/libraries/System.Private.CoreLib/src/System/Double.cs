@@ -276,6 +276,11 @@ namespace System
             return Number.FormatDouble(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
+        public string ToString(int toBase)
+        {
+            return Convert.ToString(m_value, toBase);
+        }
+
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatDouble(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);

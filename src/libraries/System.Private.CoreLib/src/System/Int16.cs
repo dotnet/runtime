@@ -87,6 +87,11 @@ namespace System
             return Number.FormatInt32(m_value, 0x0000FFFF, format, provider);
         }
 
+        public string ToString(int toBase)
+        {
+            return Convert.ToString(m_value, toBase);
+        }
+
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatInt32(m_value, 0x0000FFFF, format, provider, destination, out charsWritten);
@@ -141,6 +146,14 @@ namespace System
             return (short)i;
         }
 
+        // Parses an integer from a String in base fromBase.
+        //
+        public static short Parse(string s, int fromBase)
+        {
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Convert.ToInt16(s, fromBase);
+        }
+
         public static bool TryParse([NotNullWhen(true)] string? s, out short result)
         {
             if (s == null)
@@ -188,6 +201,17 @@ namespace System
             }
             result = (short)i;
             return true;
+        }
+
+        public static bool TryParse(string? s, int fromBase, out short result)
+        {
+            if (ParseNumbers.TryStringToInt(s, fromBase, out var num) == Number.ParsingStatus.OK && num >= MinValue && num <= MaxValue)
+            {
+                result = (short)num;
+                return true;
+            }
+            result = default;
+            return false;
         }
 
         //

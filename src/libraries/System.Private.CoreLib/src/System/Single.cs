@@ -268,6 +268,11 @@ namespace System
             return Number.FormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
+        public string ToString(int toBase)
+        {
+            return Convert.ToString(m_value, toBase);
+        }
+
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
