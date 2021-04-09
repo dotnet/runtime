@@ -27,36 +27,13 @@ if(ENABLE_PERFTRACING)
             ep-tests-debug.h
         )
 
-        include_directories(
-            ${PROJECT_SOURCE_DIR}/../../native/
-            ${PROJECT_SOURCE_DIR}/..
-            ${PROJECT_SOURCE_DIR}
-            ${PROJECT_SOURCE_DIR}/eglib
-            ${PROJECT_BINARY_DIR}/..
-            ${PROJECT_BINARY_DIR}/eglib
-        )
-
-        if(HAVE_SYS_ICU)
-            if(ICU_LIBDIR)
-                set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
-            endif()
-        endif()
-
-        if(HOST_DARWIN)
-            set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
-        elseif(HOST_IOS)
-            set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
-        elseif(HOST_ANDROID)
-            set(OS_LIBS m dl log)
-        elseif(HOST_LINUX)
-            set(OS_LIBS pthread m dl)
-        elseif(HOST_WIN32)
-            set(OS_LIBS bcrypt.lib ws2_32.lib version.lib winmm.lib)
-        endif()
+        addprefix(EVENTPIPE_TEST_SOURCES ${MONO_EVENTPIPE_TEST_SOURCE_PATH} "${EVENTPIPE_TEST_SOURCES}")
+        addprefix(EVENTPIPE_TEST_HEADERS ${MONO_EVENTPIPE_TEST_SOURCE_PATH} "${EVENTPIPE_TEST_HEADERS}")
 
         set(CMAKE_SKIP_RPATH 1)
         add_executable(ep-test ${EVENTPIPE_TEST_SOURCES} ${EVENTPIPE_TEST_HEADERS})
-        target_link_libraries(ep-test monosgen-static "mono-components-static" ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+        target_sources(ep-test PRIVATE "${mono-components-objects}")
+        target_link_libraries(ep-test monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
         if(ICU_LDFLAGS)
             set_target_properties(ep-test PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
         endif()

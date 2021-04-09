@@ -313,9 +313,13 @@ endif()
 set(monosgen-sources "${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${mini_sources};${zlib_sources}")
 
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
-add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
+add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>;$<TARGET_OBJECTS:eglib_objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
-target_link_libraries(monosgen-static eglib_objects)
+
+if(DISABLE_COMPONENTS)
+  # add component fallback stubs into static mono library when components have been disabled.
+  target_sources(monosgen-static PRIVATE "${mono-components-stub-objects}")
+endif()
 
 if(NOT DISABLE_LIBS)
   install(TARGETS monosgen-static LIBRARY)
@@ -334,7 +338,7 @@ if(NOT DISABLE_SHARED_LIBS)
     add_library(monosgen-shared SHARED $<TARGET_OBJECTS:monosgen-objects>)
     target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
   endif()
-  target_link_libraries(monosgen-shared PRIVATE eglib_objects)
+  target_sources(monosgen-shared PRIVATE $<TARGET_OBJECTS:eglib_objects>)
   set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME})
   if(TARGET_WIN32)
     # on Windows the import library for the shared mono library will have the same name as the static library,
@@ -351,13 +355,16 @@ if(NOT DISABLE_SHARED_LIBS)
   if(TARGET_DARWIN)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
   endif()
-  if (NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS)
+  if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS)
     # if components are built statically, but we're building a shared lib mono,
     # link them into the library
-    target_link_libraries (monosgen-shared PRIVATE "mono-components-static")
-  else()
-    # if components are built dynamically or disabled, link the fallback stubs into the runtime
-    target_link_libraries (monosgen-shared PRIVATE "mono-components-stubs-static")
+    target_sources(monosgen-shared PRIVATE "${mono-components-objects}")
+  elseif(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
+    # if components are built dynamically, link the fallback stubs into the runtime
+    target_sources(monosgen-shared PRIVATE "${mono-components-stub-objects}")
+  elseif(DISABLE_COMPONENTS)
+    # if components are disabled, link the fallback stubs into the runtime
+    target_sources(monosgen-shared PRIVATE "${mono-components-stub-objects}")
   endif()
   install(TARGETS monosgen-shared LIBRARY)
   if(HOST_WIN32 AND TARGET_AMD64)
@@ -407,15 +414,19 @@ if(NOT DISABLE_EXECUTABLES)
     set(sgen_sources "${sgen_sources};${PROJECT_BINARY_DIR}/../../NativeVersion.rc")
   endif()
   add_executable(mono-sgen "${sgen_sources}")
-  target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
-  if (NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS)
-    target_link_libraries(mono-sgen "mono-components-static")
-  else()
-    target_link_libraries(mono-sgen "mono-components-stubs-static")
+  target_link_libraries(mono-sgen PRIVATE monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+  if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS)
+    # if components are built statically, link them into runtime.
+    target_sources(mono-sgen PRIVATE "${mono-components-objects}")
+  elseif(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
+    # if components are built dynamically, link the fallback stubs into the runtime
+    target_sources(mono-sgen PRIVATE "${mono-components-stub-objects}")
+  elseif(DISABLE_COMPONENTS)
+    # if components are disabled, link the fallback stubs into the runtime
+    # fallback stubs already provided in monosgen-static when components are disabled
   endif()
   if(ICU_LDFLAGS)
     set_property(TARGET mono-sgen APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
   endif()
   install(TARGETS mono-sgen RUNTIME)
 endif()
-

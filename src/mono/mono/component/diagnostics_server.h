@@ -5,9 +5,12 @@
 #ifndef _MONO_COMPONENT_DIAGNOSTICS_SERVER_H
 #define _MONO_COMPONENT_DIAGNOSTICS_SERVER_H
 
-#ifdef ENABLE_PERFTRACING
 #include "mono/component/component.h"
 #include "mono/utils/mono-compiler.h"
+
+#ifndef ENABLE_PERFTRACING
+#define ENABLE_PERFTRACING
+#endif
 
 #include <eventpipe/ep-ipc-pal-types-forward.h>
 #include <eventpipe/ep-types-forward.h>
@@ -26,5 +29,4 @@ MonoComponentDiagnosticsServer *
 mono_component_diagnostics_server_init (void);
 #endif
 
-#endif /* ENABLE_PERFTRACING */
 #endif /*_MONO_COMPONENT_DIAGNOSTICS_SERVER_H*/

@@ -4424,12 +4424,10 @@ mini_init (const char *filename, const char *runtime_version)
 	else
 		domain = mono_init_from_assembly (filename, filename);
 
-#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 	if (mono_compile_aot)
 		mono_component_diagnostics_server ()->disable ();
 
 	mono_component_event_pipe ()->init ();
-#endif
 
 	if (mono_aot_only) {
 		/* This helps catch code allocation requests */
@@ -4496,9 +4494,7 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 	mono_threads_set_runtime_startup_finished ();
 
-#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 	mono_component_event_pipe ()->finish_init ();
-#endif
 
 #ifdef ENABLE_EXPERIMENT_TIERED
 	if (!mono_compile_aot) {
@@ -4879,10 +4875,8 @@ mini_cleanup (MonoDomain *domain)
 	jit_stats_cleanup ();
 	mono_jit_dump_cleanup ();
 	mini_get_interp_callbacks ()->cleanup ();
-#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 	mono_component_event_pipe ()->shutdown ();
 	mono_component_diagnostics_server ()->shutdown ();
-#endif
 }
 
 void

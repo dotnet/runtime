@@ -3,8 +3,6 @@
 //
 
 #include <config.h>
-
-#ifdef ENABLE_PERFTRACING
 #include "mono/component/diagnostics_server.h"
 #include "mono/metadata/components.h"
 
@@ -76,4 +74,3 @@ mono_component_diagnostics_server_stub_init (void)
 {
 	return &fn_table;
 }
-#endif /* ENABLE_PERFTRACING */

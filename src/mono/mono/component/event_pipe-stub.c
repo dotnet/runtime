@@ -3,8 +3,6 @@
 //
 
 #include <config.h>
-
-#ifdef ENABLE_PERFTRACING
 #include "mono/component/event_pipe.h"
 #include "mono/metadata/components.h"
 
@@ -262,4 +260,3 @@ mono_component_event_pipe_stub_init (void)
 {
 	return &fn_table;
 }
-#endif /* ENABLE_PERFTRACING */

@@ -35,7 +35,6 @@ typedef struct _MonoComponentEntry {
 #define HOT_RELOAD_COMPONENT_NAME HOT_RELOAD_LIBRARY_NAME
 MonoComponentHotReload *hot_reload = NULL;
 
-#ifdef ENABLE_PERFTRACING
 MonoComponentEventPipe *event_pipe = NULL;
 MonoComponentDiagnosticsServer *diagnostics_server = NULL;
 
@@ -44,15 +43,12 @@ MonoComponentDiagnosticsServer *diagnostics_server = NULL;
 #define DIAGNOSTICS_SERVER_LIBRARY_NAME EVENT_PIPE_LIBRARY_NAME
 #define EVENT_PIPE_COMPONENT_NAME "event_pipe"
 #define DIAGNOSTICS_SERVER_COMPONENT_NAME "diagnostics_server"
-#endif
 
 /* One per component */
 MonoComponentEntry components[] = {
 	{ HOT_RELOAD_LIBRARY_NAME, HOT_RELOAD_COMPONENT_NAME, COMPONENT_INIT_FUNC (hot_reload), (MonoComponent**)&hot_reload, NULL },
-#ifdef ENABLE_PERFTRACING
 	{ EVENT_PIPE_LIBRARY_NAME, EVENT_PIPE_COMPONENT_NAME, COMPONENT_INIT_FUNC (event_pipe), (MonoComponent**)&event_pipe, NULL },
 	{ DIAGNOSTICS_SERVER_LIBRARY_NAME, DIAGNOSTICS_SERVER_COMPONENT_NAME, COMPONENT_INIT_FUNC (diagnostics_server), (MonoComponent**)&diagnostics_server, NULL },
-#endif
 };
 
 #ifndef STATIC_COMPONENTS
