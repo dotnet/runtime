@@ -3,8 +3,13 @@
 if (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS)
     install_clr (TARGETS
         clrjit
-        jitinterface_${ARCH_HOST_NAME}
         DESTINATIONS . sharedFramework
+        COMPONENT crosscomponents
+    )
+    install_clr (TARGETS
+        clrjit
+        jitinterface_${ARCH_HOST_NAME}
+        DESTINATIONS .
         COMPONENT crosscomponents
     )
 
