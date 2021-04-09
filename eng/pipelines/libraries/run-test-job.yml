@@ -148,6 +148,7 @@ jobs:
             # is run in a regular CI job, so there is no need to duplicate it here. So, add 'no_tiered_compilation'
             # to the 'jitstress' job instead of adding a new job just for 'no_tiered_compilation'.
 
+            # I assume we need to do something here?
             ${{ if in(parameters.coreclrTestGroup, 'jitstress') }}:
               scenarios:
               - no_tiered_compilation
