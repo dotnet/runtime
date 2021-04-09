@@ -13,6 +13,7 @@ namespace System.Net.Mail.Tests
     public class LoggingTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50999", TestPlatforms.Android)]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(SmtpClient).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
