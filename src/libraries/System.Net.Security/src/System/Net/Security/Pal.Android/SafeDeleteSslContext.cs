@@ -213,9 +213,7 @@ namespace System.Net
 
             bool isServer = authOptions.IsServer;
 
-            if (authOptions.ApplicationProtocols != null
-                || authOptions.CipherSuitesPolicy != null
-                || (isServer && authOptions.RemoteCertRequired))
+            if (authOptions.ApplicationProtocols != null || authOptions.CipherSuitesPolicy != null)
             {
                 // TODO: [AndroidCrypto] Handle non-system-default options
                 throw new NotImplementedException(nameof(SafeDeleteSslContext));
@@ -233,6 +231,11 @@ namespace System.Net
 
                 (int minIndex, int maxIndex) = protocolsToEnable.ValidateContiguous(s_orderedSslProtocols);
                 Interop.AndroidCrypto.SSLStreamSetEnabledProtocols(handle, s_orderedSslProtocols.AsSpan(minIndex, maxIndex - minIndex + 1));
+            }
+
+            if (isServer && authOptions.RemoteCertRequired)
+            {
+                Interop.AndroidCrypto.SSLStreamRequestClientAuthentication(handle);
             }
 
             if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))

@@ -761,6 +761,15 @@ cleanup:
     return ret;
 }
 
+void AndroidCryptoNative_SSLStreamRequestClientAuthentication(SSLStream* sslStream)
+{
+    assert(sslStream != NULL);
+    JNIEnv* env = GetJNIEnv();
+
+    // sslEngine.setWantClientAuth(true);
+    (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetWantClientAuth, true);
+}
+
 static jstring GetSslProtocolAsString(JNIEnv* env, PAL_SslProtocol protocol)
 {
     switch (protocol)

@@ -79,6 +79,9 @@ internal static partial class Interop
                 throw new SslException();
         }
 
+        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamRequestClientAuthentication")]
+        internal static extern void SSLStreamRequestClientAuthentication(SafeSslHandle sslHandle);
+
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamSetEnabledProtocols")]
         private static extern int SSLStreamSetEnabledProtocols(SafeSslHandle sslHandle, ref SslProtocols protocols, int length);
         internal static void SSLStreamSetEnabledProtocols(SafeSslHandle sslHandle, ReadOnlySpan<SslProtocols> protocols)

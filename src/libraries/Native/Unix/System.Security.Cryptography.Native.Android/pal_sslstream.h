@@ -147,6 +147,11 @@ PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* ss
                                                                    int32_t* outLen);
 
 /*
+Configure the session to request client authentication
+*/
+PALEXPORT void AndroidCryptoNative_SSLStreamRequestClientAuthentication(SSLStream* sslStream);
+
+/*
 Set enabled protocols
   - protocols : array of protocols to enable
   - count     : number of elements in protocols

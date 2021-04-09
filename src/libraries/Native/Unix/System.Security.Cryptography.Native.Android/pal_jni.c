@@ -397,17 +397,18 @@ jmethodID g_SNIHostNameCtor;
 
 // javax/net/ssl/SSLEngine
 jclass    g_SSLEngine;
-jmethodID g_SSLEngineGetApplicationProtocol;
-jmethodID g_SSLEngineSetUseClientMode;
-jmethodID g_SSLEngineGetSession;
 jmethodID g_SSLEngineBeginHandshake;
-jmethodID g_SSLEngineWrap;
-jmethodID g_SSLEngineUnwrap;
 jmethodID g_SSLEngineCloseOutbound;
+jmethodID g_SSLEngineGetApplicationProtocol;
 jmethodID g_SSLEngineGetHandshakeStatus;
+jmethodID g_SSLEngineGetSession;
 jmethodID g_SSLEngineGetSupportedProtocols;
 jmethodID g_SSLEngineSetEnabledProtocols;
 jmethodID g_SSLEngineSetSSLParameters;
+jmethodID g_SSLEngineSetUseClientMode;
+jmethodID g_SSLEngineSetWantClientAuth;
+jmethodID g_SSLEngineUnwrap;
+jmethodID g_SSLEngineWrap;
 
 // java/nio/ByteBuffer
 jclass    g_ByteBuffer;
@@ -970,17 +971,18 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SNIHostNameCtor = GetMethod(env, false, g_SNIHostName, "<init>", "(Ljava/lang/String;)V");
 
     g_SSLEngine =                       GetClassGRef(env, "javax/net/ssl/SSLEngine");
-    g_SSLEngineGetApplicationProtocol = GetMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
-    g_SSLEngineSetUseClientMode =       GetMethod(env, false, g_SSLEngine, "setUseClientMode", "(Z)V");
-    g_SSLEngineGetSession =             GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
     g_SSLEngineBeginHandshake =         GetMethod(env, false, g_SSLEngine, "beginHandshake", "()V");
-    g_SSLEngineWrap =                   GetMethod(env, false, g_SSLEngine, "wrap", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)Ljavax/net/ssl/SSLEngineResult;");
-    g_SSLEngineUnwrap =                 GetMethod(env, false, g_SSLEngine, "unwrap", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)Ljavax/net/ssl/SSLEngineResult;");
-    g_SSLEngineGetHandshakeStatus =     GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
     g_SSLEngineCloseOutbound =          GetMethod(env, false, g_SSLEngine, "closeOutbound", "()V");
+    g_SSLEngineGetApplicationProtocol = GetMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
+    g_SSLEngineGetHandshakeStatus =     GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
+    g_SSLEngineGetSession =             GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
     g_SSLEngineGetSupportedProtocols =  GetMethod(env, false, g_SSLEngine, "getSupportedProtocols", "()[Ljava/lang/String;");
     g_SSLEngineSetEnabledProtocols =    GetMethod(env, false, g_SSLEngine, "setEnabledProtocols", "([Ljava/lang/String;)V");
     g_SSLEngineSetSSLParameters =       GetMethod(env, false, g_SSLEngine, "setSSLParameters", "(Ljavax/net/ssl/SSLParameters;)V");
+    g_SSLEngineSetUseClientMode =       GetMethod(env, false, g_SSLEngine, "setUseClientMode", "(Z)V");
+    g_SSLEngineSetWantClientAuth =      GetMethod(env, false, g_SSLEngine, "setWantClientAuth", "(Z)V");
+    g_SSLEngineUnwrap =                 GetMethod(env, false, g_SSLEngine, "unwrap", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)Ljavax/net/ssl/SSLEngineResult;");
+    g_SSLEngineWrap =                   GetMethod(env, false, g_SSLEngine, "wrap", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)Ljavax/net/ssl/SSLEngineResult;");
 
     g_ByteBuffer =                          GetClassGRef(env, "java/nio/ByteBuffer");
     g_ByteBufferAllocate =                  GetMethod(env, true,  g_ByteBuffer, "allocate", "(I)Ljava/nio/ByteBuffer;");
