@@ -97,7 +97,10 @@ namespace ILLink.RoslynAnalyzer
 
 				context.RegisterOperationAction (operationContext => {
 					var objectCreation = (IObjectCreationOperation) operationContext.Operation;
-					CheckCalledMember (operationContext, objectCreation.Constructor, dangerousPatterns);
+					var ctor = objectCreation.Constructor;
+					if (ctor is not null) {
+						CheckCalledMember (operationContext, ctor, dangerousPatterns);
+					}
 				}, OperationKind.ObjectCreation);
 
 				context.RegisterOperationAction (operationContext => {
