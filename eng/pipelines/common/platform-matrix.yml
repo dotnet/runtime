@@ -203,6 +203,7 @@ jobs:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
+        buildingOnSourceBuildImage: true
 
 # WebAssembly
 
