@@ -5,7 +5,6 @@ using Xunit;
 
 namespace System.Reflection.Tests
 {
-    [SkipOnMono("Mono doesn't have a reflection cache")]
     public class ReflectionCacheTests
     {
         [Fact]
@@ -20,6 +19,7 @@ namespace System.Reflection.Tests
             Assert.Same(mi1, mi2);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50978", TestRuntimes.Mono)]
         [Fact]
         public void GetMethod_MultipleCalls_ClearCache_DifferentObjects()
         {

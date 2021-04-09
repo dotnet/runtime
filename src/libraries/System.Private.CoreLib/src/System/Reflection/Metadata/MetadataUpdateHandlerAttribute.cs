@@ -15,6 +15,7 @@ namespace System.Reflection.Metadata
             HandlerType = handlerType;
 
         /// <summary>Gets the type that handles metadata updates and that should be notified when any occur.</summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public Type HandlerType { get; }
     }
 }
