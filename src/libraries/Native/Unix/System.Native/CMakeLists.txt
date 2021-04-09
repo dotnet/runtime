@@ -47,9 +47,12 @@ else ()
         pal_log.c)
 endif ()
 
-if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if (CLR_CMAKE_TARGET_MACCATALYST)
     set(NATIVE_SOURCES ${NATIVE_SOURCES}
-        pal_iosversion.m)
+        pal_iossupportversion.m)
+else ()
+    list (APPEND NATIVE_SOURCES
+        pal_iossupportversion.c)
 endif ()
 
 if (NOT CLR_CMAKE_TARGET_BROWSER)

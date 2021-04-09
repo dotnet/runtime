@@ -6,4 +6,4 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 
-PALEXPORT const char* SystemNative_iOSSupportVersion();
+PALEXPORT const char* SystemNative_iOSSupportVersion(void);

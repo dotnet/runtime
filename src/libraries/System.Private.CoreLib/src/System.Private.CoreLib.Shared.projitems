@@ -1925,8 +1925,8 @@
              Link="Common\Interop\OSX\System.Native\Interop.AutoreleasePool.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.iOSVersion.cs"
-             Link="Common\Interop\OSX\System.Native\Interop.iOSVersion.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.iOSSupportVersion.cs"
+             Link="Common\Interop\OSX\System.Native\Interop.iOSSupportVersion.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsX86Intrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />
