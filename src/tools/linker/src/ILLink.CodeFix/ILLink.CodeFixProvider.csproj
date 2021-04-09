@@ -2,15 +2,34 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <IsPackable>false</IsPackable>
+    <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
+  </PropertyGroup>
+
+  <!-- Analyzer package properties -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Microsoft.NET.ILLink.Analyzers</PackageId>
+    <Authors>Microsoft</Authors>
+    <Description>Analyzer utilities for ILLink attributes and single-file</Description>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" />
   </ItemGroup>
+
+  <Target Name="IncludeAnalyzerAssembliesInPkg"
+          DependsOnTargets="InitializeStandardNuspecProperties"
+          AfterTargets="AfterBuild">
+    <ItemGroup>
+      <None Include="$(OutputPath)\**\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+      <None Include="$(OutputPath)\**\Microsoft.NET.ILLink.Analyzers.props" Pack="true" PackagePath="build"/>
+    </ItemGroup>
+  </Target>
 
 </Project>

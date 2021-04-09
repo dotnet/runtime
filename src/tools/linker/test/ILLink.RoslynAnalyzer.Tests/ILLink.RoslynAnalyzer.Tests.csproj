@@ -7,7 +7,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="$(MicrosoftCodeAnalysisCSharpAnalyzerTestingXunitVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(MicrosoftCodeAnalysisCSharpAnalyzerTestingXunitVersion)" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
     <ProjectReference Include="..\..\src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" />
     <ProjectReference Include="..\..\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" />
     <ProjectReference Include="../Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj" />
