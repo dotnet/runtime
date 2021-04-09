@@ -81,6 +81,20 @@ namespace System.Reflection.Tests
         [Fact]
         public void FullyQualifiedName()
         {
+#if SINGLE_FILE_TEST_RUNNER
+            // Documented to either throw or return <Unknown>, so both are fine.
+            string name;
+            try
+            {
+                name = Module.FullyQualifiedName;
+            }
+            catch
+            {
+                return;
+            }
+
+            Assert.Equal("<Unknown>", name, ignoreCase: true);
+#else
             var loc = AssemblyPathHelper.GetAssemblyLocation(Assembly.GetExecutingAssembly());
 
             // Browser will include the path (/), so strip it
@@ -90,12 +104,17 @@ namespace System.Reflection.Tests
             }
 
             Assert.Equal(loc, Module.FullyQualifiedName);
+#endif
         }
 
         [Fact]
         public void Name()
         {
+#if SINGLE_FILE_TEST_RUNNER
+            Assert.Equal("<Unknown>", Module.Name, ignoreCase: true);
+#else
             Assert.Equal("system.runtime.tests.dll", Module.Name, ignoreCase: true);
+#endif
         }
 
         [Fact]

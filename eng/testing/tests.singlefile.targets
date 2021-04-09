@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
 
+    <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
+
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
