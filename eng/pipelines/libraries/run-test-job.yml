@@ -193,4 +193,3 @@ jobs:
               - gcstress0xc_jitstress1
               - gcstress0xc_jitstress2
               - gcstress0xc_jitminopts_heapverify1
-              - gclargepages
