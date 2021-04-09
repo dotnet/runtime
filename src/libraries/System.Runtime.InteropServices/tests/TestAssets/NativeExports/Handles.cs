@@ -29,13 +29,13 @@ namespace NativeExports
         [UnmanagedCallersOnly(EntryPoint = "release_handle")]
         public static byte ReleaseHandle(nint handle)
         {
-            return ActiveHandles.Remove(handle) ? 1 : 0;
+            return (byte)(ActiveHandles.Remove(handle) ? 1 : 0);
         }
 
         [UnmanagedCallersOnly(EntryPoint = "is_handle_alive")]
         public static byte IsHandleAlive(nint handle)
         {
-            return ActiveHandles.Contains(handle) ? 1 : 0;
+            return (byte)(ActiveHandles.Contains(handle) ? 1 : 0);
         }
 
         [UnmanagedCallersOnly(EntryPoint = "modify_handle")]

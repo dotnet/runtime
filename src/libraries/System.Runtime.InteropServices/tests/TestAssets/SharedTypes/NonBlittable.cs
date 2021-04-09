@@ -72,9 +72,9 @@ namespace SharedTypes
         public byte b3;
         public BoolStructNative(BoolStruct bs)
         {
-            b1 = bs.b1 ? 1 : 0;
-            b2 = bs.b2 ? 1 : 0;
-            b3 = bs.b3 ? 1 : 0;
+            b1 = (byte)(bs.b1 ? 1 : 0);
+            b2 = (byte)(bs.b2 ? 1 : 0);
+            b3 = (byte)(bs.b3 ? 1 : 0);
         }
 
         public BoolStruct ToManaged()

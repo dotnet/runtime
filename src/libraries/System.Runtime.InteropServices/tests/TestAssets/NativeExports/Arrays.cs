@@ -151,7 +151,7 @@ namespace NativeExports
                 BoolStruct managed = pArray[i].ToManaged();
                 result &= managed.b1 && managed.b2 && managed.b3;
             }
-            return result ? 1 : 0;
+            return (byte)(result ? 1 : 0);
         }
 
         private static int* CreateRangeImpl(int start, int end, int* numValues)

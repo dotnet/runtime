@@ -38,9 +38,9 @@ namespace NativeExports
         {
             *pBoolStructOut = new BoolStructNative
             {
-                b1 = boolStruct.b1 != 0 ? 0 : 1,
-                b2 = boolStruct.b2 != 0 ? 0 : 1,
-                b3 = boolStruct.b3 != 0 ? 0 : 1,
+                b1 = (byte)(boolStruct.b1 != 0 ? 0 : 1),
+                b2 = (byte)(boolStruct.b2 != 0 ? 0 : 1),
+                b3 = (byte)(boolStruct.b3 != 0 ? 0 : 1),
             };
         }
 
@@ -48,7 +48,7 @@ namespace NativeExports
         public static byte AndBoolsRef(
             [DNNE.C99Type("struct bool_struct*")] BoolStructNative* boolStruct)
         {
-            return boolStruct->b1 != 0 && boolStruct->b2 != 0 && boolStruct->b3 != 0 ? 1 : 0;
+            return (byte)(boolStruct->b1 != 0 && boolStruct->b2 != 0 && boolStruct->b3 != 0 ? 1 : 0);
         }
 
         [UnmanagedCallersOnly(EntryPoint = "double_int_ref")]
