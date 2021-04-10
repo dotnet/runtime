@@ -19057,7 +19057,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     InlineCallsiteFrequency frequency = InlineCallsiteFrequency::UNUSED;
 
     // If this is a prejit root, or a maximally hot block...
-    if ((pInlineInfo == nullptr) || (pInlineInfo->iciBlock->bbWeight >= BB_MAX_WEIGHT))
+    if ((pInlineInfo == nullptr) || (pInlineInfo->iciBlock->isMaxBBWeight()))
     {
         frequency = InlineCallsiteFrequency::HOT;
     }
