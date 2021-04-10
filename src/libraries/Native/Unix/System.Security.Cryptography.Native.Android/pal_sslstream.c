@@ -765,8 +765,6 @@ static jstring GetSslProtocolAsString(JNIEnv* env, PAL_SslProtocol protocol)
 {
     switch (protocol)
     {
-        case PAL_SslProtocol_Ssl3:
-            return JSTRING("SSLv3");
         case PAL_SslProtocol_Tls10:
             return JSTRING("TLSv1");
         case PAL_SslProtocol_Tls11:

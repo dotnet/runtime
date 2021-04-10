@@ -281,12 +281,6 @@ namespace System
                 // Alternatively the returned values must have been some other types.
                 return !IsWindows10Version2004OrGreater;
             }
-            else if (IsAndroid)
-            {
-#pragma warning disable 0618 // 'SslProtocols.Ssl3' is obsolete
-                return AndroidGetSslProtocolSupport(SslProtocols.Ssl3);
-#pragma warning restore 0618
-            }
 
             return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
         }

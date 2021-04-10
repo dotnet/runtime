@@ -43,10 +43,6 @@ PAL_SslProtocol AndroidCryptoNative_SSLGetSupportedProtocols(void)
                 supported |= PAL_SslProtocol_Tls13;
             }
         }
-        else if (strcmp(protocolStr, "SSLv3") == 0)
-        {
-            supported |= PAL_SslProtocol_Ssl3;
-        }
 
         (*env)->ReleaseStringUTFChars(env, protocol, protocolStr);
         (*env)->DeleteLocalRef(env, protocol);

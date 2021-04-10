@@ -20,9 +20,6 @@ namespace System.Net
         private const int InitialBufferSize = 2048;
         private static readonly SslProtocols[] s_orderedSslProtocols = new SslProtocols[]
         {
-#pragma warning disable 0618 // 'SslProtocols.Ssl3' is obsolete
-            SslProtocols.Ssl3,
-#pragma warning restore 0618
             SslProtocols.Tls,
             SslProtocols.Tls11,
             SslProtocols.Tls12,
