@@ -628,17 +628,22 @@ namespace System.Net.Http
             return tcs.Task;
         }
 
-        private static bool IsChunkedModeForSend(HttpRequestMessage requestMessage)
+        private static WinHttpChunkMode GetChunkedModeForSend(HttpRequestMessage requestMessage)
         {
-            bool chunkedMode = requestMessage.Headers.TransferEncodingChunked.HasValue &&
-                requestMessage.Headers.TransferEncodingChunked.Value;
+            WinHttpChunkMode chunkedMode = WinHttpChunkMode.None;
+
+            if (requestMessage.Headers.TransferEncodingChunked.HasValue &&
+                requestMessage.Headers.TransferEncodingChunked.Value)
+            {
+                chunkedMode = WinHttpChunkMode.Manual;
+            }
 
             HttpContent requestContent = requestMessage.Content;
             if (requestContent != null)
             {
                 if (requestContent.Headers.ContentLength.HasValue)
                 {
-                    if (chunkedMode)
+                    if (chunkedMode == WinHttpChunkMode.Manual)
                     {
                         // Deal with conflict between 'Content-Length' vs. 'Transfer-Encoding: chunked' semantics.
                         // Current .NET Desktop HttpClientHandler allows both headers to be specified but ends up
@@ -649,25 +654,36 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    if (!chunkedMode)
+                    if (chunkedMode == WinHttpChunkMode.None)
                     {
                         // Neither 'Content-Length' nor 'Transfer-Encoding: chunked' semantics was given.
                         // Current .NET Desktop HttpClientHandler uses 'Content-Length' semantics and
                         // buffers the content as well in some cases.  But the WinHttpHandler can't access
                         // the protected internal TryComputeLength() method of the content.  So, it
                         // will use'Transfer-Encoding: chunked' semantics.
-                        chunkedMode = true;
-                        requestMessage.Headers.TransferEncodingChunked = true;
+
+                        if (SupportsAutomaticChunking(requestMessage))
+                        {
+                            chunkedMode = WinHttpChunkMode.Automatic;
+                        }
+                        else
+                        {
+                            chunkedMode = WinHttpChunkMode.Manual;
+                            requestMessage.Headers.TransferEncodingChunked = true;
+                        }
                     }
                 }
             }
-            else if (chunkedMode)
+            else if (chunkedMode == WinHttpChunkMode.Manual)
             {
                 throw new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content);
             }
 
             return chunkedMode;
         }
+
+        private static bool SupportsAutomaticChunking(HttpRequestMessage requestMessage) =>
+            requestMessage.Version >= HttpVersion20;
 
         private static void AddRequestHeaders(
             SafeWinHttpHandle requestHandle,
@@ -860,6 +876,7 @@ namespace System.Net.Http
                 return;
             }
 
+            Task sendRequestBodyTask = null;
             SafeWinHttpHandle connectHandle = null;
             try
             {
@@ -888,6 +905,8 @@ namespace System.Net.Http
                     httpVersion = "HTTP/1.1";
                 }
 
+                WinHttpChunkMode chunkedModeForSend = GetChunkedModeForSend(state.RequestMessage);
+
                 // Turn off additional URI reserved character escaping (percent-encoding). This matches
                 // .NET Framework behavior. System.Uri establishes the baseline rules for percent-encoding
                 // of reserved characters.
@@ -895,6 +914,10 @@ namespace System.Net.Http
                 if (state.RequestMessage.RequestUri.Scheme == UriScheme.Https)
                 {
                     flags |= Interop.WinHttp.WINHTTP_FLAG_SECURE;
+                }
+                if (chunkedModeForSend == WinHttpChunkMode.Automatic)
+                {
+                    flags |= Interop.WinHttp.WINHTTP_FLAG_AUTOMATIC_CHUNKING;
                 }
 
                 // Create an HTTP request handle.
@@ -914,8 +937,6 @@ namespace System.Net.Http
 
                 // Set needed options on the request handle.
                 SetRequestHandleOptions(state);
-
-                bool chunkedModeForSend = IsChunkedModeForSend(state.RequestMessage);
 
                 AddRequestHeaders(
                     state.RequestHandle,
@@ -941,12 +962,20 @@ namespace System.Net.Http
 
                         await InternalSendRequestAsync(state);
 
+                        // Start waiting to receive response headers before sending request body.
+                        // This order is important because the response could be returned immediately
+                        // with END_STREAM flag on headers. Trying to send request body after that
+                        // can cause the request to go into a bad state.
+                        var valueTask = InternalReceiveResponseHeadersAsync(state);
+
                         if (state.RequestMessage.Content != null)
                         {
-                            await InternalSendRequestBodyAsync(state, chunkedModeForSend).ConfigureAwait(false);
+                            sendRequestBodyTask = InternalSendRequestBodyAsync(state, chunkedModeForSend);
                         }
 
-                        bool receivedResponse = await InternalReceiveResponseHeadersAsync(state) != 0;
+                        var value = await valueTask;
+
+                        bool receivedResponse = value != 0;
                         if (receivedResponse)
                         {
                             // If we're manually handling cookies, we need to add them to the container after
@@ -995,7 +1024,19 @@ namespace System.Net.Http
             finally
             {
                 SafeWinHttpHandle.DisposeAndClearHandle(ref connectHandle);
-                state.ClearSendRequestState();
+
+                try
+                {
+                    // Wait for request body to finish sending.
+                    if (sendRequestBodyTask != null)
+                    {
+                        await sendRequestBodyTask.ConfigureAwait(false);
+                    }
+                }
+                finally
+                {
+                    state.ClearSendRequestState();
+                }
             }
         }
 
@@ -1527,7 +1568,7 @@ namespace System.Net.Http
             return state.LifecycleAwaitable;
         }
 
-        private async Task InternalSendRequestBodyAsync(WinHttpRequestState state, bool chunkedModeForSend)
+        private async Task InternalSendRequestBodyAsync(WinHttpRequestState state, WinHttpChunkMode chunkedModeForSend)
         {
             using (var requestStream = new WinHttpRequestStream(state, chunkedModeForSend))
             {
