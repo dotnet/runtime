@@ -13,9 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- <PackageFile Include="$(ArtifactsDir)bin\ILVerification\$(TargetArchitecture)\$(Configuration)\ILVerification.dll"> -->
     <PackageFile Include="$(RuntimeBinDir)R2RDump\ILCompiler.Reflection.ReadyToRun.dll">
-       <TargetPath>ILCompiler.Reflection.ReadyToRun.dll</TargetPath>
+       <TargetPath>\lib\netstandard2.0\</TargetPath>
     </PackageFile>
     <Dependency Include="System.Reflection.Metadata">
        <Version>1.8.1</Version>
