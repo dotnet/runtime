@@ -1,5 +1,6 @@
 // © Microsoft Corporation. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -18,14 +19,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 $"\"{typeof(Emitter).Assembly.GetName().Name}\", " +
                 $"\"{typeof(Emitter).Assembly.GetName().Version}\")";
             private readonly Stack<StringBuilder> _builders = new ();
-            private readonly bool _pascalCaseArguments;
-            private readonly bool _emitDefaultMessage;
-
-            public Emitter(bool pascalCaseArguments, bool emitDefaultMessage = true)
-            {
-                _pascalCaseArguments = pascalCaseArguments;
-                _emitDefaultMessage = emitDefaultMessage;
-            }
 
             public string Emit(IReadOnlyList<LoggerClass> logClasses, CancellationToken cancellationToken)
             {
@@ -59,9 +52,26 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private static bool UseLoggerMessageDefine(LoggerMethod lm)
             {
-                return (lm.RegularParameters.Count <= MaxLoggerMessageDefineArguments)
-                    && (lm.Level != null)
-                    && (lm.Templates.Count == lm.RegularParameters.Count);
+                var result =
+                    (lm.RegularParameters.Count <= MaxLoggerMessageDefineArguments) && // more args than LoggerMessage.Define can handle
+                    (lm.Level != null) &&                                              // dynamic log level, which LoggerMessage.Define can't handle
+                    (lm.TemplateList.Count == lm.RegularParameters.Count);             // mismatch in template to args, which LoggerMessage.Define can't handle
+
+                if (result)
+                {
+                    // make sure the order of the templates matches the order of the logging method parameter
+                    int count = 0;
+                    foreach (var t in lm.TemplateList)
+                    {
+                        if (!t.Equals(lm.RegularParameters[count].Name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // order doesn't match, can't use LoggerMessage.Define
+                            return false;
+                        }
+                    }
+                }
+
+                return result;
             }
 
             private string GenType(LoggerClass lc)
@@ -69,11 +79,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 var sb = GetStringBuilder();
                 try
                 {
-                    foreach (var lm in lc.Methods)
-                    {
-                        AutoGenerateMessage(lm);
-                    }
-
                     foreach (var lm in lc.Methods)
                     {
                         if (!UseLoggerMessageDefine(lm))
@@ -155,7 +160,10 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                 public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
                                 {{
-{GenEnumerator(lm)}
+                                    for (int i = 0; i < {lm.RegularParameters.Count + 1}; i++)
+                                    {{
+                                        yield return this[i];
+                                    }}
                                 }}
 
                                 global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
@@ -204,12 +212,12 @@ namespace Microsoft.Extensions.Logging.Generators
                 var sb = GetStringBuilder();
                 try
                 {
-                    foreach (var t in lm.Templates)
+                    foreach (var t in lm.TemplateMap)
                     {
                         int index = 0;
                         foreach (var p in lm.RegularParameters)
                         {
-                            if (p.Name == t)
+                            if (t.Key.Equals(p.Name, System.StringComparison.OrdinalIgnoreCase))
                             {
                                 break;
                             }
@@ -222,35 +230,16 @@ namespace Microsoft.Extensions.Logging.Generators
                         {
                             if (lm.RegularParameters[index].IsEnumerable)
                             {
-                                _ = sb.Append($"                                    var {t} = "
-                                    + $"__Enumerate((global::System.Collections.IEnumerable ?)this._{t});\n");
+                                _ = sb.Append($"                                    var {t.Key} = "
+                                    + $"__Enumerate((global::System.Collections.IEnumerable ?)this._{lm.RegularParameters[index].Name});\n");
                             }
                             else
                             {
-                                _ = sb.Append($"                                    var {t} = this._{t};\n");
+                                _ = sb.Append($"                                    var {t.Key} = this._{lm.RegularParameters[index].Name};\n");
                             }
                         }
                     }
 
-                    return sb.ToString();
-                }
-                finally
-                {
-                    ReturnStringBuilder(sb);
-                }
-            }
-
-            private string GenEnumerator(LoggerMethod lm)
-            {
-                var sb = GetStringBuilder();
-                try
-                {
-                    foreach (var p in lm.RegularParameters)
-                    {
-                        _ = sb.Append($"                                    yield return new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{NormalizeArgumentName(p.Name)}\", this._{p.Name});\n");
-                    }
-
-                    _ = sb.Append($"                                    yield return new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{EscapeMessageString(lm.Message!)}\");\n");
                     return sb.ToString();
                 }
                 finally
@@ -267,55 +256,18 @@ namespace Microsoft.Extensions.Logging.Generators
                     var index = 0;
                     foreach (var p in lm.RegularParameters)
                     {
-                        _ = sb.Append($"                                        {index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{NormalizeArgumentName(p.Name)}\", this._{p.Name}),\n");
-                    }
-
-                    _ = sb.Append($"                                        {index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{EscapeMessageString(lm.Message!)}\"),\n");
-                    return sb.ToString();
-                }
-                finally
-                {
-                    ReturnStringBuilder(sb);
-                }
-            }
-
-            private void AutoGenerateMessage(LoggerMethod lm)
-            {
-                if (!string.IsNullOrEmpty(lm.Message))
-                {
-                    // already got a message
-                    return;
-                }
-
-                if (!_emitDefaultMessage)
-                {
-                    lm.Message = string.Empty;
-                    return;
-                }
-
-                if (lm.RegularParameters.Count == 0)
-                {
-                    lm.Message = "";
-                    return;
-                }
-
-                var sb = GetStringBuilder();
-                try
-                {
-                    _ = sb.Append("{{");
-                    foreach (var p in lm.RegularParameters)
-                    {
-                        if (p != lm.RegularParameters[0])
+                        var name = p.Name;
+                        if (lm.TemplateMap.ContainsKey(name))
                         {
-                            _ = sb.Append(',');
+                            // take the letter casing from the template
+                            name = lm.TemplateMap[name];
                         }
 
-                        _ = sb.Append($"\"{p.Name}\":\"{{{p.Name}}}\"");
-                        _ = lm.Templates.Add(p.Name);
+                        _ = sb.Append($"                                        {index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this._{p.Name}),\n");
                     }
 
-                    _ = sb.Append("}}");
-                    lm.Message = sb.ToString();
+                    _ = sb.Append($"                                        {index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{EscapeMessageString(lm.Message)}\"),\n");
+                    return sb.ToString();
                 }
                 finally
                 {
@@ -520,7 +472,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     return $@"
                             [{_generatedCodeAttribute}]
                             private static readonly global::System.Action<global::Microsoft.Extensions.Logging.ILogger, {GenDefineTypes(lm, false)}global::System.Exception?> __{lm.Name}Callback =
-                                global::Microsoft.Extensions.Logging.LoggerMessage.Define{GenDefineTypes(lm, true)}({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), ""{EscapeMessageString(lm.Message!)}""); 
+                                global::Microsoft.Extensions.Logging.LoggerMessage.Define{GenDefineTypes(lm, true)}({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), ""{EscapeMessageString(lm.Message)}""); 
 
                             [{_generatedCodeAttribute}]
                             {lm.Modifiers} void {lm.Name}({extension}{GenParameters(lm)})
@@ -532,22 +484,24 @@ namespace Microsoft.Extensions.Logging.Generators
                             }}
                         ";
                 }
-
-                return $@"
-                        [{_generatedCodeAttribute}]
-                        {lm.Modifiers} void {lm.Name}({extension}{GenParameters(lm)})
-                        {{
-                            if ({logger}.IsEnabled({level}))
+                else
+                {
+                    return $@"
+                            [{_generatedCodeAttribute}]
+                            {lm.Modifiers} void {lm.Name}({extension}{GenParameters(lm)})
                             {{
-                                {logger}.Log(
-                                    {level},
-                                    new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
-                                    {GenHolder(lm)},
-                                    {exceptionArg},
-                                    __{lm.Name}Struct.Format);
+                                if ({logger}.IsEnabled({level}))
+                                {{
+                                    {logger}.Log(
+                                        {level},
+                                        new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
+                                        {GenHolder(lm)},
+                                        {exceptionArg},
+                                        __{lm.Name}Struct.Format);
+                                }}
                             }}
-                        }}
-                    ";
+                        ";
+                }
             }
 
             private string GenEnumerationHelper(LoggerClass lc)
@@ -610,26 +564,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
 
                 return string.Empty;
-            }
-
-            private string NormalizeArgumentName(string name)
-            {
-                if (_pascalCaseArguments)
-                {
-                    var sb = GetStringBuilder();
-                    try
-                    {
-                        _ = sb.Append(char.ToUpperInvariant(name[0]));
-                        _ = sb.Append(name, 1, name.Length - 1);
-                        name = sb.ToString();
-                    }
-                    finally
-                    {
-                        ReturnStringBuilder(sb);
-                    }
-                }
-
-                return name;
             }
 
             // our own cheezy object pool since we can't use the .NET core version (since this code runs in legacy .NET framework)

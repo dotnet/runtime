@@ -102,13 +102,7 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        public static DiagnosticDescriptor PassingDateTime { get; } = new (
-            id: "LG0012",
-            title: Resources.PassingDateTimeTitle,
-            messageFormat: Resources.PassingDateTimeMessage,
-            category: "LoggingGenerator",
-            DiagnosticSeverity.Warning,
-            isEnabledByDefault: true);
+        // TODO: LG0012 is currently unused
 
         public static DiagnosticDescriptor ShouldntMentionExceptionInMessage { get; } = new (
             id: "LG0013",
@@ -150,12 +144,12 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static DiagnosticDescriptor DontMentionLoggerInMessage { get; } = new (
+        public static DiagnosticDescriptor ShouldntMentionLoggerInMessage { get; } = new (
             id: "LG0018",
-            title: Resources.DontMentionLoggerInMessageTitle,
-            messageFormat: Resources.DontMentionLoggerInMessageMessage,
+            title: Resources.ShouldntMentionLoggerInMessageTitle,
+            messageFormat: Resources.ShouldntMentionLoggerInMessageMessage,
             category: "LoggingGenerator",
-            DiagnosticSeverity.Error,
+            DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor MissingLoggerField { get; } = new (

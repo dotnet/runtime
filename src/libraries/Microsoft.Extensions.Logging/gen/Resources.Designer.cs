@@ -79,24 +79,6 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Don&apos;t include a template for {0} in the logging message since it is implicitly taken care of.
-        /// </summary>
-        internal static string DontMentionLoggerInMessageMessage {
-            get {
-                return ResourceManager.GetString("DontMentionLoggerInMessageMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Don&apos;t include logger parameters as templates in the logging message.
-        /// </summary>
-        internal static string DontMentionLoggerInMessageTitle {
-            get {
-                return ResourceManager.GetString("DontMentionLoggerInMessageTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Logging method names cannot start with _.
         /// </summary>
         internal static string InvalidLoggingMethodNameMessage {
@@ -331,24 +313,6 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to No need to supply a DateTime value as argument since the logging infrastructure inserts one implicitly.
-        /// </summary>
-        internal static string PassingDateTimeMessage {
-            get {
-                return ResourceManager.GetString("PassingDateTimeMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to No need to supply a DateTime value as argument since the logging infrastructure inserts one implicitly.
-        /// </summary>
-        internal static string PassingDateTimeTitle {
-            get {
-                return ResourceManager.GetString("PassingDateTimeTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level..
         /// </summary>
         internal static string RedundantQualifierInMessageMessage {
@@ -381,6 +345,24 @@ namespace Microsoft.Extensions.Logging.Generators {
         internal static string ShouldntMentionExceptionInMessageTitle {
             get {
                 return ResourceManager.GetString("ShouldntMentionExceptionInMessageTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t include a template for {0} in the logging message since it is implicitly taken care of.
+        /// </summary>
+        internal static string ShouldntMentionLoggerInMessageMessage {
+            get {
+                return ResourceManager.GetString("ShouldntMentionLoggerInMessageMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t include logger parameters as templates in the logging message.
+        /// </summary>
+        internal static string ShouldntMentionLoggerInMessageTitle {
+            get {
+                return ResourceManager.GetString("ShouldntMentionLoggerInMessageTitle", resourceCulture);
             }
         }
         

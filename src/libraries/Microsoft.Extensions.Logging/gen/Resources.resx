@@ -183,12 +183,6 @@
   <data name="ShouldntMentionExceptionInMessageTitle" xml:space="preserve">
     <value>Don't include exception parameters as templates in the logging message</value>
   </data>
-  <data name="PassingDateTimeMessage" xml:space="preserve">
-    <value>No need to supply a DateTime value as argument since the logging infrastructure inserts one implicitly</value>
-  </data>
-  <data name="PassingDateTimeTitle" xml:space="preserve">
-    <value>No need to supply a DateTime value as argument since the logging infrastructure inserts one implicitly</value>
-  </data>
   <data name="RedundantQualifierInMessageMessage" xml:space="preserve">
     <value>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</value>
   </data>
@@ -225,10 +219,10 @@
   <data name="ShouldntMentionLogLevelInMessageTitle" xml:space="preserve">
     <value>Don't include log level parameters as templates in the logging message</value>
   </data>
-  <data name="DontMentionLoggerInMessageMessage" xml:space="preserve">
+  <data name="ShouldntMentionLoggerInMessageMessage" xml:space="preserve">
     <value>Don't include a template for {0} in the logging message since it is implicitly taken care of</value>
   </data>
-  <data name="DontMentionLoggerInMessageTitle" xml:space="preserve">
+  <data name="ShouldntMentionLoggerInMessageTitle" xml:space="preserve">
     <value>Don't include logger parameters as templates in the logging message</value>
   </data>
   <data name="MissingLoggerFieldMessage" xml:space="preserve">

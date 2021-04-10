@@ -149,8 +149,58 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             _ = Assert.Single(d);
-            Assert.Equal(DiagDescriptors.DontMentionLoggerInMessage.Id, d[0].Id);
+            Assert.Equal(DiagDescriptors.ShouldntMentionLoggerInMessage.Id, d[0].Id);
         }
+
+#if false
+        // TODO: can't have a log level in both the attribute and as a logging method parameter
+        [Fact]
+        public async Task DoubleLogLevel()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    static partial void M1(ILogger logger, LogLevel level);
+                }
+            ");
+
+            _ = Assert.Single(d);
+            Assert.Equal(DiagDescriptors.XXX.Id, d[0].Id);
+        }
+
+        // TODO: can't have the same template with different casing
+        [Fact]
+        public async Task InconsistentTemplateCasing()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, LogLevel.Debug, ""M1 {p1} {P1}"")]
+                    static partial void M1(ILogger logger, int p1, int P1);
+                }
+            ");
+
+            _ = Assert.Single(d);
+            Assert.Equal(DiagDescriptors.XXX.Id, d[0].Id);
+        }
+
+        // TODO: can't have malformed format strings (like dangling {, etc)
+        [Fact]
+        public async Task MalformedFormatString()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, LogLevel.Debug, ""M1 {p1} {P1}"")]
+                    static partial void M1(ILogger logger, int p1, int P1);
+                }
+            ");
+
+            _ = Assert.Single(d);
+            Assert.Equal(DiagDescriptors.XXX.Id, d[0].Id);
+        }
+#endif
 
         [Fact]
         public async Task InvalidParameterName()
@@ -165,21 +215,6 @@ namespace Microsoft.Extensions.Logging.Generators.Test
 
             _ = Assert.Single(d);
             Assert.Equal(DiagDescriptors.InvalidLoggingMethodParameterName.Id, d[0].Id);
-        }
-
-        [Fact]
-        public async Task DateTimeAsParameterType()
-        {
-            var d = await RunGenerator(@"
-                partial class C
-                {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1 {timeStamp}"")]
-                    static partial void M1(ILogger logger, System.DateTime timeStamp);
-                }
-            ");
-
-            _ = Assert.Single(d);
-            Assert.Equal(DiagDescriptors.PassingDateTime.Id, d[0].Id);
         }
 
         [Fact]
@@ -210,39 +245,6 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                     public class Void {}
                     public class String {}
                     public struct DateTime {}
-                }
-                namespace System.Collections
-                {
-                    public interface IEnumerable {}
-                }
-                namespace Microsoft.Extensions.Logging
-                {
-                    public enum LogLevel {}
-                    public interface ILogger {}
-                }
-                namespace Microsoft.Extensions.Logging
-                {
-                    public class LoggerMessageAttribute {}
-                }
-                partial class C
-                {
-                }
-            ", false, includeBaseReferences: false, includeLoggingReferences: false);
-
-            _ = Assert.Single(d);
-            Assert.Equal(DiagDescriptors.MissingRequiredType.Id, d[0].Id);
-        }
-
-        [Fact]
-        public async Task MissingDateTimeType()
-        {
-            var d = await RunGenerator(@"
-                namespace System
-                {
-                    public class Object {}
-                    public class Void {}
-                    public class Exception {}
-                    public class String {}
                 }
                 namespace System.Collections
                 {

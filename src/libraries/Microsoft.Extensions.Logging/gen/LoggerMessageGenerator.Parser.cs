@@ -74,13 +74,6 @@ namespace Microsoft.Extensions.Logging.Generators
                     return Array.Empty<LoggerClass>();
                 }
 
-                var dateTimeSymbol = _compilation.GetTypeByMetadataName("System.DateTime");
-                if (dateTimeSymbol == null)
-                {
-                    Diag(DiagDescriptors.MissingRequiredType, null, "System.DateTime");
-                    return Array.Empty<LoggerClass>();
-                }
-
                 var results = new List<LoggerClass>();
                 var ids = new HashSet<int>();
 
@@ -130,14 +123,14 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             Name = method.Identifier.ToString(),
                                             Level = level,
-                                            Message = message,
+                                            Message = message ?? string.Empty,
                                             EventId = eventId,
                                             EventName = eventName,
                                             IsExtensionMethod = methodSymbol.IsExtensionMethod,
                                             Modifiers = method.Modifiers.ToString(),
                                         };
 
-                                        ExtractTemplates(message, lm.Templates);
+                                        ExtractTemplates(message, lm.TemplateMap, lm.TemplateList);
 
                                         bool keepMethod = true;   // whether or not we want to keep the method definition or if it's got errors making it so we should discard it instead
                                         if (lm.Name[0] == '_')
@@ -199,25 +192,17 @@ namespace Microsoft.Extensions.Logging.Generators
                                             _ = ids.Add(lm.EventId);
                                         }
 
-                                        if (string.IsNullOrWhiteSpace(lm.Message))
-                                        {
-                                            lm.Message = null;
-                                        }
-
-                                        if (lm.Message != null)
-                                        {
-                                            var msg = lm.Message;
+                                        var msg = lm.Message;
 #pragma warning disable S1067 // Expressions should not be too complex
-                                            if (msg.StartsWith("INFORMATION:", StringComparison.OrdinalIgnoreCase)
-                                                || msg.StartsWith("INFO:", StringComparison.OrdinalIgnoreCase)
-                                                || msg.StartsWith("WARNING:", StringComparison.OrdinalIgnoreCase)
-                                                || msg.StartsWith("WARN:", StringComparison.OrdinalIgnoreCase)
-                                                || msg.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase)
-                                                || msg.StartsWith("ERR:", StringComparison.OrdinalIgnoreCase))
+                                        if (msg.StartsWith("INFORMATION:", StringComparison.OrdinalIgnoreCase)
+                                            || msg.StartsWith("INFO:", StringComparison.OrdinalIgnoreCase)
+                                            || msg.StartsWith("WARNING:", StringComparison.OrdinalIgnoreCase)
+                                            || msg.StartsWith("WARN:", StringComparison.OrdinalIgnoreCase)
+                                            || msg.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase)
+                                            || msg.StartsWith("ERR:", StringComparison.OrdinalIgnoreCase))
 #pragma warning restore S1067 // Expressions should not be too complex
-                                            {
-                                                Diag(DiagDescriptors.RedundantQualifierInMessage, ma.GetLocation(), method.Identifier.ToString());
-                                            }
+                                        {
+                                            Diag(DiagDescriptors.RedundantQualifierInMessage, ma.GetLocation(), method.Identifier.ToString());
                                         }
 
                                         bool foundLogger = false;
@@ -259,69 +244,31 @@ namespace Microsoft.Extensions.Logging.Generators
                                             foundException |= lp.IsException;
                                             foundLogLevel |= lp.IsLogLevel;
 
-                                            if (IsBaseOrIdentity(paramSymbol!, dateTimeSymbol))
+                                            if (lp.IsLogger && lm.TemplateMap.ContainsKey(paramName))
                                             {
-                                                Diag(DiagDescriptors.PassingDateTime, p.Identifier.GetLocation());
+                                                Diag(DiagDescriptors.ShouldntMentionLoggerInMessage, p.Identifier.GetLocation(), paramName);
+                                            }
+                                            else if (lp.IsException && lm.TemplateMap.ContainsKey(paramName))
+                                            {
+                                                Diag(DiagDescriptors.ShouldntMentionExceptionInMessage, p.Identifier.GetLocation(), paramName);
+                                            }
+                                            else if (lp.IsLogLevel && lm.TemplateMap.ContainsKey(paramName))
+                                            {
+                                                Diag(DiagDescriptors.ShouldntMentionLogLevelInMessage, p.Identifier.GetLocation(), paramName);
+                                            }
+                                            else if (lp.IsRegular && !lm.TemplateMap.ContainsKey(paramName))
+                                            {
+                                                Diag(DiagDescriptors.ArgumentHasNoCorrespondingTemplate, p.Identifier.GetLocation(), paramName);
                                             }
 
-                                            if (lp.IsLogger)
-                                            {
-                                                foreach (var t in lm.Templates)
-                                                {
-                                                    if (t == paramName)
-                                                    {
-                                                        Diag(DiagDescriptors.DontMentionLoggerInMessage, p.Identifier.GetLocation(), paramName);
-                                                    }
-                                                }
-                                            }
-                                            else if (lp.IsException)
-                                            {
-                                                foreach (var t in lm.Templates)
-                                                {
-                                                    if (t == paramName)
-                                                    {
-                                                        Diag(DiagDescriptors.ShouldntMentionExceptionInMessage, p.Identifier.GetLocation(), paramName);
-                                                    }
-                                                }
-                                            }
-                                            else if (lp.IsLogLevel)
-                                            {
-                                                foreach (var t in lm.Templates)
-                                                {
-                                                    if (t == paramName)
-                                                    {
-                                                        Diag(DiagDescriptors.ShouldntMentionLogLevelInMessage, p.Identifier.GetLocation(), paramName);
-                                                    }
-                                                }
-                                            }
-
-                                            if (lp.Name[0] == '_')
+                                            if (paramName[0] == '_')
                                             {
                                                 // can't have logging method parameter names that start with _ since that can lead to conflicting symbol names
                                                 // because all generated symbols start with _
                                                 Diag(DiagDescriptors.InvalidLoggingMethodParameterName, p.Identifier.GetLocation());
                                             }
 
-                                            if (lp.IsRegular && !string.IsNullOrEmpty(lm.Message))
-                                            {
-                                                var found = false;
-                                                foreach (var t in lm.Templates)
-                                                {
-                                                    if (t.Equals(lp.Name, StringComparison.Ordinal))
-                                                    {
-                                                        found = true;
-                                                        break;
-                                                    }
-                                                }
-
-                                                if (!found)
-                                                {
-                                                    Diag(DiagDescriptors.ArgumentHasNoCorrespondingTemplate, p.Identifier.GetLocation(), lp.Name);
-                                                }
-                                            }
-
                                             lm.AllParameters.Add(lp);
-
                                             if (lp.IsRegular)
                                             {
                                                 lm.RegularParameters.Add(lp);
@@ -368,12 +315,12 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 keepMethod = false;
                                             }
 
-                                            foreach (var t in lm.Templates)
+                                            foreach (var t in lm.TemplateMap)
                                             {
                                                 bool found = false;
                                                 foreach (var p in lm.AllParameters)
                                                 {
-                                                    if (t.Equals(p.Name, StringComparison.Ordinal))
+                                                    if (t.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
                                                     {
                                                         found = true;
                                                         break;
@@ -570,7 +517,7 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Finds the template arguments contained in the message string.
             /// </summary>
-            private static void ExtractTemplates(string? message, ISet<string> templates)
+            private static void ExtractTemplates(string? message, IDictionary<string, string> templateMap, IList<string> templateList)
             {
                 if (string.IsNullOrEmpty(message))
                 {
@@ -594,7 +541,9 @@ namespace Microsoft.Extensions.Logging.Generators
                         // Format item syntax : { index[,alignment][ :formatString] }.
                         var formatDelimiterIndex = FindIndexOfAny(message, _formatDelimiters, openBraceIndex, closeBraceIndex);
 
-                        _ = templates.Add(message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1));
+                        var templateName = message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
+                        templateMap[templateName] = templateName;
+                        templateList.Add(templateName);
                         scanIndex = closeBraceIndex + 1;
                     }
                 }
@@ -677,9 +626,10 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             public readonly List<LoggerParameter> AllParameters = new ();
             public readonly List<LoggerParameter> RegularParameters = new ();
-            public readonly HashSet<string> Templates = new ();
+            public readonly Dictionary<string, string> TemplateMap = new (StringComparer.OrdinalIgnoreCase);
+            public readonly List<string> TemplateList = new ();
             public string Name = string.Empty;
-            public string? Message;
+            public string Message = string.Empty;
             public int? Level;
             public int EventId;
             public string? EventName;

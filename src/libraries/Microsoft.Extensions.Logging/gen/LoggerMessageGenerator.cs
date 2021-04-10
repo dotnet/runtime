@@ -32,21 +32,8 @@ namespace Microsoft.Extensions.Logging.Generators
                 return;
             }
 
-            var pascalCaseArguments = false;
-            var emitDefaultMessage = true;
-
-            if (context.AnalyzerConfigOptions.GlobalOptions.TryGetValue("PascalCaseArguments", out var pca))
-            {
-                pascalCaseArguments = (pca.ToUpperInvariant() == "TRUE") || (pca.ToUpperInvariant() == "YES");
-            }
-
-            if (context.AnalyzerConfigOptions.GlobalOptions.TryGetValue("EmitDefaultMessage", out var edm))
-            {
-                emitDefaultMessage = (edm.ToUpperInvariant() == "TRUE") || (edm.ToUpperInvariant() == "YES");
-            }
-
             var p = new Parser(context.Compilation, context.ReportDiagnostic, context.CancellationToken);
-            var e = new Emitter(pascalCaseArguments, emitDefaultMessage);
+            var e = new Emitter();
             var logClasses = p.GetLogClasses(receiver.ClassDeclarations);
             var result = e.Emit(logClasses, context.CancellationToken);
 

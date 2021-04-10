@@ -13,13 +13,20 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
         [LoggerMessage(1, LogLevel.Debug, "")]
         public static partial void M1(ILogger logger);
 
+#if false
+        // These are disabled due to https://github.com/dotnet/roslyn/issues/52527
+        //
+        // These are handled fine by the logger generator and generate warnings. Unfortunately, the above warning suppression is
+        // not being observed by the C# compiler at the moment, so having these here causes build warnings.
+
         [LoggerMessage(2, LogLevel.Trace)]
         public static partial void M2(ILogger logger, string p1, string p2);
 
         [LoggerMessage(3, LogLevel.Debug, "")]
         public static partial void M3(ILogger logger, string p1, int p2);
 
-//        [LoggerMessage(4, LogLevel.Debug, "{p1}")]
-//        public static partial void M4(ILogger logger, string p1, int p2, int p3);
+        [LoggerMessage(4, LogLevel.Debug, "{p1}")]
+        public static partial void M4(ILogger logger, string p1, int p2, int p3);
+#endif
     }
 }
