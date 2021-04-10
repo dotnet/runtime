@@ -43,7 +43,7 @@ namespace System
         /// <param name="hour">The hours (0 through 23).</param>
         /// <param name="minute">The minutes (0 through 59).</param>
         /// <param name="second">The seconds (0 through 59).</param>
-        public TimeOnly(int hour, int minute, int second) : this((ulong)new DateTime(1, 1, 1, hour, minute, second).TimeOfDay.Ticks) {}
+        public TimeOnly(int hour, int minute, int second) : this(DateTime.TimeToTicks(hour, minute, second, 0)) {}
 
         /// <summary>
         /// Initializes a new instance of the timeOnly structure to the specified hour, minute, second, and millisecond.
@@ -52,12 +52,12 @@ namespace System
         /// <param name="minute">The minutes (0 through 59).</param>
         /// <param name="second">The seconds (0 through 59).</param>
         /// <param name="millisecond">The millisecond (0 through 999).</param>
-        public TimeOnly(int hour, int minute, int second, int millisecond) : this((ulong)new DateTime(1, 1, 1, hour, minute, second, millisecond).TimeOfDay.Ticks) {}
+        public TimeOnly(int hour, int minute, int second, int millisecond) : this(DateTime.TimeToTicks(hour, minute, second, millisecond)) {}
 
         /// <summary>
-        /// Initializes a new instance of the timeOnly structure to a specified number of ticks.
+        /// Initializes a new instance of the TimeOnly structure using a specified number of ticks.
         /// </summary>
-        /// <param name="ticks">A time expressed in the number of 100-nanosecond intervals that have elapsed since midnight 00:00:00.000 AM.</param>
+        /// <param name="ticks">A time of day expressed in the number of 100-nanosecond units since 00:00:00.0000000.</param>
         public TimeOnly(long ticks)
         {
             if ((ulong)ticks > MaxTimeTicks)
@@ -896,7 +896,7 @@ namespace System
                 }
             }
 
-            DateTimeFormat.IsValidCustomTimeFormat(format.AsSpan(), allowThrow: true);
+            DateTimeFormat.IsValidCustomTimeFormat(format.AsSpan(), throwOnError: true);
             return DateTimeFormat.Format(ToDateTime(), format, provider);
         }
 
@@ -949,7 +949,7 @@ namespace System
                 }
             }
 
-            if (!DateTimeFormat.IsValidCustomTimeFormat(format, allowThrow: false))
+            if (!DateTimeFormat.IsValidCustomTimeFormat(format, throwOnError: false))
             {
                 charsWritten = 0;
                 return false;

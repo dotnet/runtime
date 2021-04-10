@@ -1112,7 +1112,7 @@ namespace System
             return FormatCustomized(dateTime, format, dtfi, offset, result: null);
         }
 
-        internal static bool IsValidCustomDateFormat(ReadOnlySpan<char> format, bool allowThrow)
+        internal static bool IsValidCustomDateFormat(ReadOnlySpan<char> format, bool throwOnError)
         {
             int length = format.Length;
             int i = 0;
@@ -1124,13 +1124,14 @@ namespace System
                     case '\\':
                         if (i == length - 1)
                         {
-                            if (allowThrow)
+                            if (throwOnError)
                             {
                                 throw new FormatException(SR.Format_InvalidString);
                             }
 
                             return false;
                         }
+
                         i += 2;
                         break;
 
@@ -1144,7 +1145,7 @@ namespace System
 
                         if (i >= length)
                         {
-                            if (allowThrow)
+                            if (throwOnError)
                             {
                                 throw new FormatException(SR.Format(SR.Format_BadQuote, quoteChar));
                             }
@@ -1166,7 +1167,7 @@ namespace System
                     case 'z':
                     case 'K':
                         // reject non-date formats
-                        if (allowThrow)
+                        if (throwOnError)
                         {
                             throw new FormatException(SR.Format_InvalidString);
                         }
@@ -1183,7 +1184,7 @@ namespace System
         }
 
 
-        internal static bool IsValidCustomTimeFormat(ReadOnlySpan<char> format, bool allowThrow)
+        internal static bool IsValidCustomTimeFormat(ReadOnlySpan<char> format, bool throwOnError)
         {
             int length = format.Length;
             int i = 0;
@@ -1195,13 +1196,14 @@ namespace System
                     case '\\':
                         if (i == length - 1)
                         {
-                            if (allowThrow)
+                            if (throwOnError)
                             {
                                 throw new FormatException(SR.Format_InvalidString);
                             }
 
                             return false;
                         }
+
                         i += 2;
                         break;
 
@@ -1215,7 +1217,7 @@ namespace System
 
                         if (i >= length)
                         {
-                            if (allowThrow)
+                            if (throwOnError)
                             {
                                 throw new FormatException(SR.Format(SR.Format_BadQuote, quoteChar));
                             }
@@ -1232,7 +1234,7 @@ namespace System
                     case '/':
                     case 'z':
                     case 'k':
-                        if (allowThrow)
+                        if (throwOnError)
                         {
                             throw new FormatException(SR.Format_InvalidString);
                         }

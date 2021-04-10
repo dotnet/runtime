@@ -418,7 +418,7 @@ namespace System.Tests
         public static void CustomFormattingTest()
         {
             TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Now);
-            string format = "hh 'dash' mm \"dash\" ss'....'fffffff tt";
+            string format = "HH 'dash' mm \"dash\" ss'....'fffffff";
             string formatted = timeOnly.ToString(format);
             TimeOnly parsedTimeOnly = TimeOnly.ParseExact(formatted, format);
             Assert.Equal(timeOnly, parsedTimeOnly);
@@ -436,13 +436,22 @@ namespace System.Tests
             TimeOnly timeOnly = new TimeOnly((DateTime.Now.TimeOfDay.Ticks / TimeSpan.TicksPerMinute) * TimeSpan.TicksPerMinute);
             foreach (CultureInfo ci in CultureInfo.GetCultures(CultureTypes.SpecificCultures))
             {
+                if (string.IsNullOrEmpty(ci.DateTimeFormat.TimeSeparator))
+                {
+                    // cannot parse concatenated time part numbers.
+                    continue;
+                }
+
                 string formatted = timeOnly.ToString("t", ci);
                 TimeOnly parsedTimeOnly = TimeOnly.ParseExact(formatted, "t", ci);
                 Assert.Equal(timeOnly, parsedTimeOnly);
+                Assert.Equal(timeOnly.Hour % 12, parsedTimeOnly.Hour % 12);
+                Assert.Equal(timeOnly.Minute, parsedTimeOnly.Minute);
 
                 formatted = timeOnly.ToString("T", ci);
                 parsedTimeOnly = TimeOnly.ParseExact(formatted, "T", ci);
-                Assert.Equal(timeOnly, parsedTimeOnly);
+                Assert.Equal(timeOnly.Hour % 12, parsedTimeOnly.Hour % 12);
+                Assert.Equal(timeOnly.Minute, parsedTimeOnly.Minute);
             }
         }
 

@@ -611,6 +611,19 @@ namespace System
             return (uint)totalSeconds * (ulong)TicksPerSecond;
         }
 
+        internal static ulong TimeToTicks(int hour, int minute, int second, int millisecond)
+        {
+            ulong ticks = TimeToTicks(hour, minute, second);
+
+            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
+
+            ticks += (uint)millisecond * (uint)TicksPerMillisecond;
+
+            Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
+
+            return ticks;
+        }
+
         // Returns the number of days in the month given by the year and
         // month arguments.
         //

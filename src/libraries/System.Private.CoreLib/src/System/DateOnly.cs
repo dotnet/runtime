@@ -7,7 +7,7 @@ using System.Globalization;
 namespace System
 {
     /// <summary>
-    /// represents dates with values ranging from January 1, 0001 Anno Domini (Common Era) through December 31, 9999 A.D. (C.E.) in the Gregorian calendar.
+    /// Represents dates with values ranging from January 1, 0001 Anno Domini (Common Era) through December 31, 9999 A.D. (C.E.) in the Gregorian calendar.
     /// </summary>
     public readonly struct DateOnly : IComparable, IComparable<DateOnly>, IEquatable<DateOnly>, IFormattable, ISpanFormattable
     {
@@ -17,7 +17,7 @@ namespace System
         private const int MinDayNumber = 0;
 
         // Maps to December 31 year 9999. The value calculated from "new DateTime(9999, 12, 31).Ticks / TimeSpan.TicksPerDay"
-        private const int MaxDayNumber = 3652058;
+        private const int MaxDayNumber = 3_652_058;
 
         private static int DayNumberFromDateTime(DateTime dt) => (int)(dt.Ticks / TimeSpan.TicksPerDay);
 
@@ -25,41 +25,41 @@ namespace System
 
         private DateOnly(int dayNumber)
         {
-            Debug.Assert((uint)dayNumber <= 3652058);
+            Debug.Assert((uint)dayNumber <= MaxDayNumber);
             _dayNumber = dayNumber;
         }
 
         /// <summary>
-        /// Return the instance of the DateOnly structure representing the minimal possible date can be created.
+        /// Gets the earliest possible date that can be created.
         /// </summary>
         public static DateOnly MinValue => new DateOnly(MinDayNumber);
 
         /// <summary>
-        /// Return the instance of the DateOnly structure representing the maximal possible date can be created.
+        /// Gets the latest possible date that can be created.
         /// </summary>
         public static DateOnly MaxValue => new DateOnly(MaxDayNumber);
 
         /// <summary>
-        /// Initializes a new instance of the DateOnly structure to the specified year, month, and day.
+        /// Creates a new instance of the DateOnly structure to the specified year, month, and day.
         /// </summary>
         /// <param name="year">The year (1 through 9999).</param>
         /// <param name="month">The month (1 through 12).</param>
-        /// <param name="day">The day (1 through the number of days in month).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month" />).</param>
         public DateOnly(int year, int month, int day) => _dayNumber = DayNumberFromDateTime(new DateTime(year, month, day));
 
         /// <summary>
-        /// Initializes a new instance of the DateOnly structure to the specified year, month, and day for the specified calendar.
+        /// Creates a new instance of the DateOnly structure to the specified year, month, and day for the specified calendar.
         /// </summary>
         /// <param name="year">The year (1 through the number of years in calendar).</param>
         /// <param name="month">The month (1 through the number of months in calendar).</param>
-        /// <param name="day">The day (1 through the number of days in month).<paramref name="month"/>.</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
         /// <param name="calendar">The calendar that is used to interpret year, month, and day.<paramref name="month"/>.</param>
         public DateOnly(int year, int month, int day, Calendar calendar) => _dayNumber = DayNumberFromDateTime(new DateTime(year, month, day, calendar));
 
         /// <summary>
-        /// Initializes a new instance of the DateOnly structure to the specified number of days.
+        /// Creates a new instance of the DateOnly structure to the specified number of days.
         /// </summary>
-        /// <param name="dayNumber">The number of days since January 1, 0001 in the Gregorian calendar.</param>
+        /// <param name="dayNumber">The number of days since January 1, 0001 in the Proleptic Gregorian calendar.</param>
         public static DateOnly FromDayNumber(int dayNumber)
         {
             if ((uint)dayNumber > MaxDayNumber)
@@ -96,15 +96,15 @@ namespace System
         public int DayOfYear => GetEquivalentDateTime().DayOfYear;
 
         /// <summary>
-        /// Gets the number if days since January 1, 0001 in the Gregorian calendar represented by this instance.
+        /// Gets the number of days since January 1, 0001 in the Proleptic Gregorian calendar represented by this instance.
         /// </summary>
         public int DayNumber => _dayNumber;
 
         /// <summary>
-        /// Returns a new DateOnly that adds the specified number of days to the value of this instance.
+        /// Adds the specified number of days to the value of this instance.
         /// </summary>
-        /// <param name="value">A number of days. The value parameter can be negative or positive.</param>
-        /// <returns>An object whose value is the sum of the date represented by this instance and the number of days represented by value.</returns>
+        /// <param name="value">The number of days to add. To subtract days, specify a negative number.</param>
+        /// <returns>An instance whose value is the sum of the date represented by this instance and the number of days represented by value.</returns>
         public DateOnly AddDays(int value)
         {
             int newDayNumber = _dayNumber + value;
@@ -119,14 +119,14 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a new DateOnly that adds the specified number of months to the value of this instance.
+        /// Adds the specified number of months to the value of this instance.
         /// </summary>
         /// <param name="value">A number of months. The months parameter can be negative or positive.</param>
         /// <returns>An object whose value is the sum of the date represented by this instance and months.</returns>
         public DateOnly AddMonths(int value) => new DateOnly(DayNumberFromDateTime(GetEquivalentDateTime().AddMonths(value)));
 
         /// <summary>
-        /// Returns a new DateOnly that adds the specified number of years to the value of this instance.
+        /// Adds the specified number of years to the value of this instance.
         /// </summary>
         /// <param name="value">A number of years. The value parameter can be negative or positive.</param>
         /// <returns>An object whose value is the sum of the date represented by this instance and the number of years represented by value.</returns>
@@ -184,7 +184,7 @@ namespace System
         /// Returns a DateTime that is set to the date of this DateOnly instance and the time of specified input time.
         /// </summary>
         /// <param name="time">The time of the day.</param>
-        /// <returns>The DateTime instance composed of the date of the current DateOnly instance and teh time specified by the input time.</returns>
+        /// <returns>The DateTime instance composed of the date of the current DateOnly instance and the time specified by the input time.</returns>
         public DateTime ToDateTime(TimeOnly time) => new DateTime(_dayNumber * TimeSpan.TicksPerDay + time.Ticks);
 
         /// <summary>
@@ -192,7 +192,7 @@ namespace System
         /// </summary>
         /// <param name="time">The time of the day.</param>
         /// <param name="kind">One of the enumeration values that indicates whether ticks specifies a local time, Coordinated Universal Time (UTC), or neither.</param>
-        /// <returns>The DateTime instance composed of the date of the current DateOnly instance and teh time specified by the input time.</returns>
+        /// <returns>The DateTime instance composed of the date of the current DateOnly instance and the time specified by the input time.</returns>
         public DateTime ToDateTime(TimeOnly time, DateTimeKind kind) => new DateTime(_dayNumber * TimeSpan.TicksPerDay + time.Ticks, kind);
 
         /// <summary>
@@ -242,22 +242,13 @@ namespace System
         /// </summary>
         /// <param name="value">The object to compare to this instance.</param>
         /// <returns>true if value is an instance of DateOnly and equals the value of this instance; otherwise, false.</returns>
-        public override bool Equals(object? value)
-        {
-            if (value is DateOnly)
-            {
-                return _dayNumber == ((DateOnly)value)._dayNumber;
-            }
-            return false;
-        }
+        public override bool Equals(object? value) => value is DateOnly dateOnly && _dayNumber == dateOnly._dayNumber;
 
         /// <summary>
         /// Returns the hash code for this instance.
         /// </summary>
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode() => _dayNumber;
-
-        // Only Allowed DateTimeStyles: AllowWhiteSpaces, AllowTrailingWhite, AllowLeadingWhite, and AllowInnerWhite
 
         /// <summary>
         /// Converts a memory span that contains string representation of a date to its DateOnly equivalent by using the conventions of the current culture.
@@ -284,7 +275,7 @@ namespace System
                 throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
             }
 
-            DateTimeResult result = default;       // The buffer to store the parsing result.
+            DateTimeResult result = default;
             result.Init(s);
 
             if (!DateTimeParse.TryParse(s, DateTimeFormatInfo.GetInstance(provider), style, ref result))
@@ -294,7 +285,8 @@ namespace System
 
             if ((result.flags & ParseFlagsDateMask) != 0)
             {
-                throw new FormatException(SR.Format(SR.Format_DateOnlyContainsNoneDateParts, s.ToString()));
+                // Adding temporary logging the flags to the exception to get more info from the failure case in CI. This code should be removed before merging the change:
+                throw new FormatException(SR.Format(SR.Format_DateOnlyContainsNoneDateParts, s.ToString()) + " - " + result.flags);
             }
 
             return new DateOnly(DayNumberFromDateTime(result.parsedDate));
@@ -350,7 +342,8 @@ namespace System
 
             if ((result.flags & ParseFlagsDateMask) != 0)
             {
-                throw new FormatException(SR.Format(SR.Format_DateOnlyContainsNoneDateParts, s.ToString()));
+                // Adding temporary logging the flags to the exception to get more info from the failure case in CI. This code should be removed before merging the change:
+                throw new FormatException(SR.Format(SR.Format_DateOnlyContainsNoneDateParts, s.ToString())  + " - " + result.flags);
             }
 
             return new DateOnly(DayNumberFromDateTime(result.parsedDate));
@@ -407,7 +400,7 @@ namespace System
 
                 // Create a new result each time to ensure the runs are independent. Carry through
                 // flags from the caller and return the result.
-                DateTimeResult result = default;       // The buffer to store the parsing result.
+                DateTimeResult result = default;
                 result.Init(s);
                 if (DateTimeParse.TryParseExact(s, format, dtfi, style, ref result) && ((result.flags & ParseFlagsDateMask) == 0))
                 {
@@ -415,6 +408,7 @@ namespace System
                 }
             }
 
+            // Adding temporary logging the flags to the exception to get more info from the failure case in CI. This code should be removed before merging the change:
             throw new FormatException(SR.Format(SR.Format_BadDateOnly, s.ToString()));
         }
 
@@ -832,7 +826,7 @@ namespace System
                 }
             }
 
-            DateTimeFormat.IsValidCustomDateFormat(format.AsSpan(), allowThrow: true);
+            DateTimeFormat.IsValidCustomDateFormat(format.AsSpan(), throwOnError: true);
             return DateTimeFormat.Format(GetEquivalentDateTime(), format, provider);
         }
 
@@ -890,7 +884,7 @@ namespace System
                 }
             }
 
-            if (!DateTimeFormat.IsValidCustomDateFormat(format, allowThrow: false))
+            if (!DateTimeFormat.IsValidCustomDateFormat(format, throwOnError: false))
             {
                 charsWritten = 0;
                 return false;

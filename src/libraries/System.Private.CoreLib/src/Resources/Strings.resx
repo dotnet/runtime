@@ -1133,6 +1133,7 @@
   </data>
   <data name="Argument_InvalidDateStyles" xml:space="preserve">
     <value>The only allowed values for the styles are AllowWhiteSpaces, AllowTrailingWhite, AllowLeadingWhite, and AllowInnerWhite.</value>
+    <comment>{Locked="AllowWhiteSpaces, AllowTrailingWhite, AllowLeadingWhite, and AllowInnerWhite"}</comment>
   </data>
   <data name="Argument_InvalidDigitSubstitution" xml:space="preserve">
     <value>The DigitSubstitution property must be of a valid member of the DigitShapes enumeration. Valid entries include Context, NativeNational or None.</value>
@@ -1663,7 +1664,7 @@
     <value>Ticks must be between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
   </data>
   <data name="ArgumentOutOfRange_TimeOnlyBadTicks" xml:space="preserve">
-    <value>Ticks must be between 0 and 863999999999.</value>
+    <value>Ticks must be between 0 and 863_999_999_999.</value>
   </data>
   <data name="ArgumentOutOfRange_DateTimeBadYears" xml:space="preserve">
     <value>Years value must be between +/-10000.</value>
@@ -1762,7 +1763,7 @@
     <value>Month must be between one and twelve.</value>
   </data>
   <data name="ArgumentOutOfRange_DayNumber" xml:space="preserve">
-    <value>Day bumber must be between 0 and 3652058.</value>
+    <value>Day number must be between 0 and 36_520_58.</value>
   </data>
   <data name="ArgumentOutOfRange_MonthParam" xml:space="preserve">
     <value>The Month parameter must be in the range 1 through 12.</value>
