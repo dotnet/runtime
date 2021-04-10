@@ -69,7 +69,7 @@
   </ItemGroup>
     <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
-    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
+    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" SkipIfNotFound="true" />
   </ItemGroup>
   <ItemGroup>
     <!-- Assemblies that should be excluded from the bundle -->
