@@ -1029,7 +1029,8 @@ namespace InteropLibImports
         CONTRACTL
         {
             NOTHROW;
-            MODE_PREEMPTIVE;
+            GC_NOTRIGGER;
+            MODE_ANY;
             PRECONDITION(handle != NULL);
         }
         CONTRACTL_END;
@@ -1037,14 +1038,11 @@ namespace InteropLibImports
         bool isValid = false;
         ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
 
-        HRESULT hr = S_OK;
-        BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
             // Switch to cooperative mode so the handle can be safely inspected.
-            GCX_COOP();
+            GCX_COOP_THREAD_EXISTS(GET_THREAD());
             isValid = ObjectFromHandle(objectHandle) != NULL;
         }
-        END_EXTERNAL_ENTRYPOINT;
 
         return isValid;
     }

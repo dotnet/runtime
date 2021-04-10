@@ -203,9 +203,17 @@ namespace
             {
                 assert(c != nullptr && id != nullptr);
 
+                ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
+                if (S_OK == c->QueryInterface(&mowMaybe))
+                {
+                    (void)mowMaybe->AddRefFromReferenceTracker();
+                    c = mowMaybe.p;
+                }
+
                 try
                 {
                     *id = _elementId;
+
                     if (!_elements.insert(std::make_pair(*id, ComSmartPtr<IUnknown>{ c })).second)
                         return S_FALSE;
 
@@ -215,10 +223,6 @@ namespace
                 {
                     return E_OUTOFMEMORY;
                 }
-
-                ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
-                if (S_OK == c->QueryInterface(&mowMaybe))
-                    (void)mowMaybe->AddRefFromReferenceTracker();
 
                 return S_OK;
             }
