@@ -444,7 +444,6 @@ namespace System.Tests
 
                 string formatted = timeOnly.ToString("t", ci);
                 TimeOnly parsedTimeOnly = TimeOnly.ParseExact(formatted, "t", ci);
-                Assert.Equal(timeOnly, parsedTimeOnly);
                 Assert.Equal(timeOnly.Hour % 12, parsedTimeOnly.Hour % 12);
                 Assert.Equal(timeOnly.Minute, parsedTimeOnly.Minute);
 
