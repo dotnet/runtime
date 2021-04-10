@@ -35,7 +35,7 @@ namespace System
         /// </summary>
         /// <param name="hour">The hours (0 through 23).</param>
         /// <param name="minute">The minutes (0 through 59).</param>
-        public TimeOnly(int hour, int minute) : this((ulong)new DateTime(1, 1, 1, hour, minute, 0).TimeOfDay.Ticks) {}
+        public TimeOnly(int hour, int minute) : this(DateTime.TimeToTicks(hour, minute, 0, 0)) {}
 
         /// <summary>
         /// Initializes a new instance of the timeOnly structure to the specified hour, minute, and second.
@@ -404,10 +404,12 @@ namespace System
                 if (format[0] == 'o' || format[0] == 'O')
                 {
                     format = OFormat;
+                    provider = CultureInfo.InvariantCulture.DateTimeFormat;
                 }
                 else if (format[0] == 'r' || format[0] == 'R')
                 {
                     format = RFormat;
+                    provider = CultureInfo.InvariantCulture.DateTimeFormat;
                 }
             }
 
@@ -468,11 +470,13 @@ namespace System
                 {
                     if (format[0] == 'o' || format[0] == 'O')
                     {
-                        format = "HH':'mm':'ss'.'fffffff";
+                        format = OFormat;
+                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
                     }
                     else if (format[0] == 'r' || format[0] == 'R')
                     {
-                        format = "HH':'mm':'ss";
+                        format = RFormat;
+                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
                     }
                 }
 
@@ -635,10 +639,12 @@ namespace System
                 if (format[0] == 'o' || format[0] == 'O')
                 {
                     format = OFormat;
+                    provider = CultureInfo.InvariantCulture.DateTimeFormat;
                 }
                 else if (format[0] == 'r' || format[0] == 'R')
                 {
                     format = RFormat;
+                    provider = CultureInfo.InvariantCulture.DateTimeFormat;
                 }
             }
 
@@ -701,10 +707,12 @@ namespace System
                     if (format[0] == 'o' || format[0] == 'O')
                     {
                         format = OFormat;
+                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
                     }
                     else if (format[0] == 'r' || format[0] == 'R')
                     {
                         format = RFormat;
+                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
                     }
                 }
 

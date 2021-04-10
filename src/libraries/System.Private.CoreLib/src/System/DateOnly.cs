@@ -21,7 +21,7 @@ namespace System
 
         private static int DayNumberFromDateTime(DateTime dt) => (int)(dt.Ticks / TimeSpan.TicksPerDay);
 
-        private DateTime GetEquivalentDateTime() => new DateTime(_dayNumber * TimeSpan.TicksPerDay);
+        private DateTime GetEquivalentDateTime() => DateTime.UnsafeCreate(_dayNumber * TimeSpan.TicksPerDay);
 
         private DateOnly(int dayNumber)
         {
@@ -285,8 +285,7 @@ namespace System
 
             if ((result.flags & ParseFlagsDateMask) != 0)
             {
-                // Adding temporary logging the flags to the exception to get more info from the failure case in CI. This code should be removed before merging the change:
-                throw new FormatException(SR.Format(SR.Format_DateOnlyContainsNoneDateParts, s.ToString()) + " - " + result.flags);
+                throw new FormatException(SR.Format(SR.Format_DateOnlyContainsNoneDateParts, s.ToString()));
             }
 
             return new DateOnly(DayNumberFromDateTime(result.parsedDate));
@@ -325,10 +324,12 @@ namespace System
                 if (format[0] == 'o' || format[0] == 'O')
                 {
                     format = OFormat;
+                    provider = CultureInfo.InvariantCulture.DateTimeFormat;
                 }
                 else if (format[0] == 'r' || format[0] == 'R')
                 {
                     format = RFormat;
+                    provider = CultureInfo.InvariantCulture.DateTimeFormat;
                 }
             }
 
@@ -342,8 +343,7 @@ namespace System
 
             if ((result.flags & ParseFlagsDateMask) != 0)
             {
-                // Adding temporary logging the flags to the exception to get more info from the failure case in CI. This code should be removed before merging the change:
-                throw new FormatException(SR.Format(SR.Format_DateOnlyContainsNoneDateParts, s.ToString())  + " - " + result.flags);
+                throw new FormatException(SR.Format(SR.Format_DateOnlyContainsNoneDateParts, s.ToString()));
             }
 
             return new DateOnly(DayNumberFromDateTime(result.parsedDate));
@@ -391,10 +391,12 @@ namespace System
                     if (format[0] == 'o' || format[0] == 'O')
                     {
                         format = OFormat;
+                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
                     }
                     else if (format[0] == 'r' || format[0] == 'R')
                     {
                         format = RFormat;
+                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
                     }
                 }
 
@@ -408,7 +410,6 @@ namespace System
                 }
             }
 
-            // Adding temporary logging the flags to the exception to get more info from the failure case in CI. This code should be removed before merging the change:
             throw new FormatException(SR.Format(SR.Format_BadDateOnly, s.ToString()));
         }
 
@@ -556,10 +557,12 @@ namespace System
                 if (format[0] == 'o' || format[0] == 'O')
                 {
                     format = OFormat;
+                    provider = CultureInfo.InvariantCulture.DateTimeFormat;
                 }
                 else if (format[0] == 'r' || format[0] == 'R')
                 {
                     format = RFormat;
+                    provider = CultureInfo.InvariantCulture.DateTimeFormat;
                 }
             }
 
@@ -621,10 +624,12 @@ namespace System
                     if (format[0] == 'o' || format[0] == 'O')
                     {
                         format = OFormat;
+                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
                     }
                     else if (format[0] == 'r' || format[0] == 'R')
                     {
                         format = RFormat;
+                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
                     }
                 }
 
