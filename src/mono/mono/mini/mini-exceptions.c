@@ -3445,7 +3445,7 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 	mono_walk_stack_with_ctx (print_stack_frame_to_string, &ctx, MONO_UNWIND_LOOKUP_ALL, text);
 
 #if HOST_WASM
-	mono_runtime_printf_err ("%s", text->str); //to print the native callstack
+	mono_runtime_printf_err ("%s\n", text->str); //to print the native callstack
 #else
 	mono_runtime_printf ("%s", text->str);
 #endif	
