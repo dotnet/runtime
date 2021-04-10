@@ -190,7 +190,7 @@ public:
 
     UNATIVE_OFFSET GetFuncletPrologOffset(emitter* emit) const;
 
-    bool emitLocation::IsPreviousInsNum(emitter* emit) const;
+    bool IsPreviousInsNum(emitter* emit) const;
 
 #ifdef DEBUG
     void Print(LONG compMethodID) const;
