@@ -3486,6 +3486,10 @@ void emitter::emitDispIGflags(unsigned flags)
     {
         printf(", extend");
     }
+    if (flags & IGF_LOOP_ALIGN)
+    {
+        printf(", align");
+    }
 }
 
 void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
@@ -4672,6 +4676,10 @@ void emitter::emitLoopAlignment()
 
     JITDUMP("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u.\n", paddingBytes, emitComp->compMethodID,
             emitCurIG->igNum);
+
+#ifdef DEBUG
+    emitComp->loopAlignCandidates++;
+#endif // DEBUG
 }
 
 //-----------------------------------------------------------------------------

@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    internal class ComClassMetaObject : DynamicMetaObject
+    internal sealed class ComClassMetaObject : DynamicMetaObject
     {
         internal ComClassMetaObject(Expression expression, ComTypeClassDesc cls)
             : base(expression, BindingRestrictions.Empty, cls)

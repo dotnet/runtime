@@ -2179,13 +2179,19 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileData())
         {
-            printf("; with IBC profile data, edge weights are %s, and fgCalledCount is %.0f\n",
+            printf("; with PGO: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
                    compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
         }
 
         if (compiler->fgPgoFailReason != nullptr)
         {
             printf("; %s\n", compiler->fgPgoFailReason);
+        }
+
+        if ((compiler->fgPgoInlineePgo + compiler->fgPgoInlineeNoPgo + compiler->fgPgoInlineeNoPgoSingleBlock) > 0)
+        {
+            printf("; %u inlinees with PGO data; %u single block inlinees; %u inlinees without PGO data\n",
+                   compiler->fgPgoInlineePgo, compiler->fgPgoInlineeNoPgoSingleBlock, compiler->fgPgoInlineeNoPgo);
         }
 
         if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))

@@ -649,7 +649,6 @@ struct _MonoDynamicAssembly {
 	MonoAssembly assembly;
 	char *strong_name;
 	guint32 strong_name_size;
-	MonoDomain *domain;
 };
 
 struct _MonoDynamicImage {
@@ -965,9 +964,6 @@ mono_metadata_clean_for_image (MonoImage *image);
 
 void
 mono_metadata_clean_generic_classes_for_image (MonoImage *image);
-
-MONO_API void
-mono_metadata_cleanup (void);
 
 #ifndef ENABLE_METADATA_UPDATE
 static inline gboolean

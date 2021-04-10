@@ -100,6 +100,8 @@
     <PlatformManifestFileEntry Include="clretwrc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="clrjit.dll" IsNative="true" />
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="pgort140.dll" IsNative="true" />
+    <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="coreclr.pgd" IsNative="true" />
+    <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="clrjit.pgd" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="dbgshim.dll" IsNative="true" />
@@ -192,7 +194,6 @@
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
-    <PlatformManifestFileEntry Include="pinvoke-table.h" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-flags.txt" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-version.txt" IsNative="true" />

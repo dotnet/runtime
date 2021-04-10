@@ -42,9 +42,6 @@ typedef enum {
 
 #if defined (TARGET_IOS) || defined (TARGET_ANDROID)
 
-MONO_API MONO_RT_EXTERNAL_ONLY gint64
-mono_filesize_from_path (MonoString *path);
-
 extern gint64
 mono_filesize_from_fd (int fd);
 
@@ -144,9 +141,6 @@ typedef struct {
 
 void
 mono_w32file_init (void);
-
-void
-mono_w32file_cleanup (void);
 
 gpointer
 mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs);

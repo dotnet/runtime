@@ -6212,6 +6212,38 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     return tree;
 }
 
+//------------------------------------------------------------------------
+// gtNewStringLiteralLength: create GenTreeIntCon node for the given string
+//    literal to store its length.
+//
+// Arguments:
+//    node  - string literal node.
+//
+// Return Value:
+//    GenTreeIntCon node with string's length as a value or null.
+//
+GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
+{
+    int             length = -1;
+    const char16_t* str    = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, &length);
+    if (length >= 0)
+    {
+        GenTreeIntCon* iconNode = gtNewIconNode(length);
+
+        // str can be NULL for dynamic context
+        if (str != nullptr)
+        {
+            JITDUMP("String '\"%ws\".Length' is '%d'\n", str, length)
+        }
+        else
+        {
+            JITDUMP("String 'CNS_STR.Length' is '%d'\n", length)
+        }
+        return iconNode;
+    }
+    return nullptr;
+}
+
 /*****************************************************************************/
 
 GenTree* Compiler::gtNewLconNode(__int64 value)
@@ -10016,8 +10048,15 @@ void Compiler::gtDispNodeName(GenTree* tree)
         switch (tree->AsBoundsChk()->gtThrowKind)
         {
             case SCK_RNGCHK_FAIL:
-                sprintf_s(bufp, sizeof(buf), " %s_Rng", name);
+            {
+                bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " %s_Rng", name);
+                if (tree->AsBoundsChk()->gtIndRngFailBB != nullptr)
+                {
+                    bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " -> " FMT_BB,
+                                            tree->AsBoundsChk()->gtIndRngFailBB->bbNum);
+                }
                 break;
+            }
             case SCK_ARG_EXCPN:
                 sprintf_s(bufp, sizeof(buf), " %s_Arg", name);
                 break;
@@ -10603,7 +10642,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                     {
                         // Promoted implicit by-refs can have this state during
                         // global morph while they are being rewritten
-                        assert(fgGlobalMorph);
                         printf("(P?!)"); // Promoted struct
                     }
                 }
@@ -11303,7 +11341,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                 {
                     // Promoted implicit byrefs can get in this state while they are being rewritten
                     // in global morph.
-                    assert(fgGlobalMorph);
                 }
                 else
                 {

@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
 {
-    internal class ObjectToIdCache
+    internal sealed class ObjectToIdCache
     {
         internal int m_currentCount;
         internal int[] m_ids;

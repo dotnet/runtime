@@ -539,6 +539,10 @@ public:
     unsigned char lvFldOffset;
     unsigned char lvFldOrdinal;
 
+#ifdef DEBUG
+    unsigned char lvDisqualifyEHVarReason = 'H';
+#endif
+
 #if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
     {
@@ -2738,6 +2742,7 @@ public:
     GenTree* gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd);
 
     GenTree* gtNewStringLiteralNode(InfoAccessType iat, void* pValue);
+    GenTreeIntCon* gtNewStringLiteralLength(GenTreeStrCon* node);
 
     GenTree* gtNewLconNode(__int64 value);
 
@@ -3839,6 +3844,26 @@ public:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
+
+private:
+    // For prefixFlags
+    enum
+    {
+        PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
+        PREFIX_TAILCALL_IMPLICIT =
+            0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
+        PREFIX_TAILCALL_STRESS =
+            0x00000100, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
+        PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
+        PREFIX_VOLATILE    = 0x00001000,
+        PREFIX_UNALIGNED   = 0x00010000,
+        PREFIX_CONSTRAINED = 0x00100000,
+        PREFIX_READONLY    = 0x01000000
+    };
+
+    static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
+    static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp);
+    static bool impOpcodeIsCallOpcode(OPCODE opcode);
 
 public:
     void impInit();
@@ -5640,6 +5665,7 @@ protected:
 
 public:
     const char*                            fgPgoFailReason;
+    bool                                   fgPgoDisabled;
     ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
     BYTE*                                  fgPgoData;
     UINT32                                 fgPgoSchemaCount;
@@ -5648,6 +5674,9 @@ public:
     UINT32                                 fgPgoBlockCounts;
     UINT32                                 fgPgoEdgeCounts;
     UINT32                                 fgPgoClassProfiles;
+    unsigned                               fgPgoInlineePgo;
+    unsigned                               fgPgoInlineeNoPgo;
+    unsigned                               fgPgoInlineeNoPgoSingleBlock;
 
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
     void fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t weight);
@@ -6406,6 +6435,11 @@ protected:
 public:
     LoopDsc*      optLoopTable; // loop descriptor table
     unsigned char optLoopCount; // number of tracked loops
+
+#ifdef DEBUG
+    unsigned char loopAlignCandidates; // number of loops identified for alignment
+    unsigned char loopsAligned;        // number of loops actually aligned
+#endif                                 // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
                        BasicBlock*   first,
@@ -9394,7 +9428,7 @@ public:
     const char* compGetTieringName(bool wantShortName = false) const;
     const char* compGetStressMessage() const;
 
-    codeOptimize compCodeOpt()
+    codeOptimize compCodeOpt() const
     {
 #if 0
         // Switching between size & speed has measurable throughput impact

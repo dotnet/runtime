@@ -18,7 +18,7 @@ using Xunit;
 namespace System.IO.Tests
 {
     /// <summary>Base class providing tests for any Stream-derived type.</summary>
-    [PlatformSpecific(~TestPlatforms.Browser)] // lots of operations aren't supported on browser
+    [SkipOnPlatform(TestPlatforms.Browser, "lots of operations aren't supported on browser")]
     public abstract class StreamConformanceTests : FileCleanupTestBase
     {
         /// <summary>Gets the name of the byte[] argument to Read/Write methods.</summary>
@@ -2240,7 +2240,7 @@ namespace System.IO.Tests
                 Assert.Equal(1024, writeBuffer.Memory.Length);
                 Assert.Equal(writeBuffer.Memory.Length, readBuffer.Memory.Length);
 
-                new Random().NextBytes(writeBuffer.Memory.Span);
+                Random.Shared.NextBytes(writeBuffer.Memory.Span);
                 readBuffer.Memory.Span.Clear();
 
                 Task write = useAsync ?

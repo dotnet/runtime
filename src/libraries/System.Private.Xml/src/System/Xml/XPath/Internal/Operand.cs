@@ -5,7 +5,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal class Operand : AstNode
+    internal sealed class Operand : AstNode
     {
         private readonly XPathResultType _type;
         private readonly object _val;

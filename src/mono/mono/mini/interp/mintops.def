@@ -14,7 +14,6 @@ OPDEF(MINT_DEF, "def", 2, 1, 0, MintOpNoArgs)
 OPDEF(MINT_DUMMY_USE, "dummy_use", 2, 0, 1, MintOpNoArgs)
 OPDEF(MINT_BREAK, "break", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_BREAKPOINT, "breakpoint", 1, 0, 0, MintOpNoArgs)
-OPDEF(MINT_LDNULL, "ldnull", 2, 1, 0, MintOpNoArgs)
 
 OPDEF(MINT_RET, "ret", 2, 0, 1, MintOpNoArgs)
 OPDEF(MINT_RET_VOID, "ret.void", 1, 0, 0, MintOpNoArgs)
@@ -33,11 +32,12 @@ OPDEF(MINT_LDC_I4_5, "ldc.i4.5", 2, 1, 0, MintOpNoArgs)
 OPDEF(MINT_LDC_I4_6, "ldc.i4.6", 2, 1, 0, MintOpNoArgs)
 OPDEF(MINT_LDC_I4_7, "ldc.i4.7", 2, 1, 0, MintOpNoArgs)
 OPDEF(MINT_LDC_I4_8, "ldc.i4.8", 2, 1, 0, MintOpNoArgs)
-
 OPDEF(MINT_LDC_I4_S, "ldc.i4.s", 3, 1, 0, MintOpShortInt)
 OPDEF(MINT_LDC_I4, "ldc.i4", 4, 1, 0, MintOpInt)
-OPDEF(MINT_LDC_I8, "ldc.i8", 6, 1, 0, MintOpLongInt)
+
+OPDEF(MINT_LDC_I8_0, "ldc.i8.0", 2, 1, 0, MintOpNoArgs)
 OPDEF(MINT_LDC_I8_S, "ldc.i8.s", 3, 1, 0, MintOpShortInt)
+OPDEF(MINT_LDC_I8, "ldc.i8", 6, 1, 0, MintOpLongInt)
 
 OPDEF(MINT_LDC_R4, "ldc.r4", 4, 1, 0, MintOpFloat)
 OPDEF(MINT_LDC_R8, "ldc.r8", 6, 1, 0, MintOpDouble)
@@ -422,6 +422,7 @@ OPDEF(MINT_REM_R8, "rem.r8", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_REM_UN_I4, "rem.un.i4", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_REM_UN_I8, "rem.un.i8", 4, 1, 2, MintOpNoArgs)
 
+// Shifts, keep in order with imm versions
 OPDEF(MINT_SHR_UN_I4, "shr.un.i4", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_SHR_UN_I8, "shr.un.i8", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_SHL_I4, "shl.i4", 4, 1, 2, MintOpNoArgs)
@@ -595,6 +596,21 @@ OPDEF(MINT_CONV_OVF_U8_R8, "conv.ovf.u8.r8", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CEQ0_I4, "ceq0.i4", 3, 1, 1, MintOpNoArgs)
 /* unops end */
 
+/* super instructions */
+OPDEF(MINT_RET_I4_IMM, "ret.i4.imm", 2, 0, 0, MintOpShortInt)
+OPDEF(MINT_RET_I8_IMM, "ret.i8.imm", 2, 0, 0, MintOpShortInt)
+
+OPDEF(MINT_ADD_I4_IMM, "add.i4.imm", 4, 1, 1, MintOpShortInt)
+OPDEF(MINT_ADD_I8_IMM, "add.i8.imm", 4, 1, 1, MintOpShortInt)
+
+OPDEF(MINT_SHR_UN_I4_IMM, "shr.un.i4.imm", 4, 1, 1, MintOpShortInt)
+OPDEF(MINT_SHR_UN_I8_IMM, "shr.un.i8.imm", 4, 1, 1, MintOpShortInt)
+OPDEF(MINT_SHL_I4_IMM, "shl.i4.imm", 4, 1, 1, MintOpShortInt)
+OPDEF(MINT_SHL_I8_IMM, "shl.i8.imm", 4, 1, 1, MintOpShortInt)
+OPDEF(MINT_SHR_I4_IMM, "shr.i4.imm", 4, 1, 1, MintOpShortInt)
+OPDEF(MINT_SHR_I8_IMM, "shr.i8.imm", 4, 1, 1, MintOpShortInt)
+
+
 OPDEF(MINT_CKFINITE, "ckfinite", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_MKREFANY, "mkrefany", 4, 1, 1, MintOpClassToken)
 OPDEF(MINT_REFANYTYPE, "refanytype", 3, 1, 1, MintOpNoArgs)
@@ -714,6 +730,7 @@ OPDEF(MINT_TANHF, "tanhf", 3, 1, 1, MintOpNoArgs)
 
 OPDEF(MINT_PROF_ENTER, "prof_enter", 2, 0, 0, MintOpShortInt)
 OPDEF(MINT_PROF_EXIT, "prof_exit", 5, 0, 1, MintOpShortAndInt)
+OPDEF(MINT_PROF_EXIT_VOID, "prof_exit_void", 2, 0, 0, MintOpNoArgs)
 OPDEF(MINT_PROF_COVERAGE_STORE, "prof_coverage_store", 5, 0, 0, MintOpLongInt)
 
 OPDEF(MINT_INTRINS_ENUM_HASFLAG, "intrins_enum_hasflag", 5, 1, 2, MintOpClassToken)

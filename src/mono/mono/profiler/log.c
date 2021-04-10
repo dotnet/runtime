@@ -3505,7 +3505,7 @@ handle_dumper_queue_entry (void)
 				g_assert (domain && "What happened to the domain pointer?");
 				g_assert (address && "What happened to the instruction pointer?");
 
-				MonoJitInfo *ji = mono_jit_info_table_find (domain, address);
+				MonoJitInfo *ji = mono_jit_info_table_find_internal (address, TRUE, FALSE);
 
 				if (ji)
 					method = mono_jit_info_get_method (ji);
@@ -4198,8 +4198,6 @@ mono_profiler_init_log (const char *desc)
 	 * allocations, exceptions) are dynamically enabled/disabled.
 	 */
 
-	mono_profiler_set_runtime_shutdown_begin_callback (handle, log_early_shutdown);
-	mono_profiler_set_runtime_shutdown_end_callback (handle, log_shutdown);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 
 	mono_profiler_set_gc_event_callback (handle, gc_event);

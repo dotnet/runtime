@@ -6,7 +6,7 @@ using System.Collections;
 
 namespace System.Security.Cryptography.Xml
 {
-    internal class CanonicalXmlNodeList : XmlNodeList, IList
+    internal sealed class CanonicalXmlNodeList : XmlNodeList, IList
     {
         private readonly ArrayList _nodeArray;
 

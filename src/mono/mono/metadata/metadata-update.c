@@ -85,7 +85,7 @@ mono_metadata_update_enabled (int *modifiable_assemblies_out)
 
 	if (!inited) {
 		char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
-		if (!g_strcasecmp (val, "debug"))
+		if (val && !g_strcasecmp (val, "debug"))
 			modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
 		g_free (val);
 		inited = TRUE;
@@ -246,12 +246,6 @@ mono_metadata_update_init (void)
 	mono_metadata_update_has_updates_private = 0;
 	table_to_image_init ();
 	mono_native_tls_alloc (&exposed_generation_id, NULL);
-}
-
-void
-mono_metadata_update_cleanup (void)
-{
-	mono_native_tls_free (exposed_generation_id);
 }
 
 /* Inform the execution engine that updates are coming */
@@ -635,11 +629,17 @@ mono_image_relative_delta_index (MonoImage *image_dmeta, int token)
 	g_assert (delta_info);
 
 	int index_map = delta_info->enc_recs [table];
+	int encmap_rows = table_info_get_rows (encmap);
+
+	/* if the table didn't have any updates in this generation and the
+	 * table index is bigger than the last table that got updates,
+	 * enc_recs will point past the last row */
+	if (index_map - 1 == encmap_rows)
+		return -1;
 	guint32 cols[MONO_ENCMAP_SIZE];
 	mono_metadata_decode_row (encmap, index_map - 1, cols, MONO_ENCMAP_SIZE);
 	int map_entry = cols [MONO_ENCMAP_TOKEN];
 
-	int encmap_rows = table_info_get_rows (encmap);
 	while (mono_metadata_token_table (map_entry) == table && mono_metadata_token_index (map_entry) < index && index_map < encmap_rows) {
 		mono_metadata_decode_row (encmap, ++index_map - 1, cols, MONO_ENCMAP_SIZE);
 		map_entry = cols [MONO_ENCMAP_TOKEN];
@@ -849,6 +849,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 static void
 set_update_method (MonoImage *image_base, uint32_t generation, MonoImage *image_dmeta, uint32_t token_index, const char* il_address)
 {
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "setting method 0x%08x in g=%d IL=%p", token_index, generation, (void*)il_address);
 	/* FIXME: this is a race if other threads are doing a lookup. */
 	g_hash_table_insert (image_base->method_table_update, GUINT_TO_POINTER (token_index), GUINT_TO_POINTER (generation));
 	g_hash_table_insert (image_dmeta->method_table_update, GUINT_TO_POINTER (token_index), (gpointer) il_address);

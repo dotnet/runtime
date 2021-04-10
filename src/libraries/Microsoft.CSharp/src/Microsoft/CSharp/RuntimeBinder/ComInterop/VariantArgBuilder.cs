@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    internal class VariantArgBuilder : SimpleArgBuilder
+    internal sealed class VariantArgBuilder : SimpleArgBuilder
     {
         private readonly bool _isWrapper;
 

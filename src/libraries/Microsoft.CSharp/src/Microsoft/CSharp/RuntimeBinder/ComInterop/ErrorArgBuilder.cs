@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    internal class ErrorArgBuilder : SimpleArgBuilder
+    internal sealed class ErrorArgBuilder : SimpleArgBuilder
     {
         internal ErrorArgBuilder(Type parameterType)
             : base(parameterType)

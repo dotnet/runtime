@@ -331,8 +331,12 @@
              Link="Common\System\Net\Security\Unix\SafeFreeSslCredentials.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
+             Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
     <Compile Include="System\Net\CertificateValidationPal.Android.cs" />
     <Compile Include="System\Net\Security\Pal.Android\SafeDeleteSslContext.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SafeFreeSslCredentials.cs" />

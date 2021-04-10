@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Expressions.Compiler
 {
-    internal partial class StackSpiller
+    internal sealed partial class StackSpiller
     {
         /// <summary>
         /// The source of temporary variables introduced during stack spilling.

@@ -178,7 +178,7 @@ namespace System.Reflection.Tests
             bool expectedDefaultValue = true;
 
             Type et = typeof(long).Project();
-            Type t = typeof(long[]).Project(); ;
+            Type t = typeof(long[]).Project();
             TypeInfo ti = t.GetTypeInfo();
             MethodInfo m = ti.GetDeclaredMethod("Set");
             Assert.Equal(MethodAttributes.Public | MethodAttributes.PrivateScope, m.Attributes);
@@ -213,8 +213,8 @@ namespace System.Reflection.Tests
         {
             bool expectedDefaultValue = true;
 
-            Type et = typeof(long).Project(); ;
-            Type t = typeof(long[]).Project(); ;
+            Type et = typeof(long).Project();
+            Type t = typeof(long[]).Project();
             TypeInfo ti = t.GetTypeInfo();
             MethodInfo m = ti.GetDeclaredMethod("Address");
             Assert.Equal(MethodAttributes.Public | MethodAttributes.PrivateScope, m.Attributes);
@@ -240,8 +240,8 @@ namespace System.Reflection.Tests
         {
             bool expectedDefaultValue = true;
 
-            Type et = typeof(long).Project(); ;
-            Type t = typeof(long[]).Project(); ;
+            Type et = typeof(long).Project();
+            Type t = typeof(long[]).Project();
             TypeInfo ti = t.GetTypeInfo();
             ConstructorInfo[] ctors = ti.DeclaredConstructors.ToArray();
             Assert.Equal(1, ctors.Length);

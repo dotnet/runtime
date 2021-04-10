@@ -85,6 +85,8 @@ namespace System
 
             }
         }
+        
+        public static bool IsLineNumbersSupported => true;
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime; // matches definitions in clr.featuredefines.props
@@ -235,9 +237,9 @@ namespace System
                               version & 0xFF);
         }
 
-        private static readonly Lazy<bool> _legacyFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.FileStreamHelpers", "UseLegacyStrategy"));
+        private static readonly Lazy<bool> _net5CompatFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.FileStreamHelpers", "UseNet5CompatStrategy"));
 
-        public static bool IsLegacyFileStreamEnabled => _legacyFileStream.Value;
+        public static bool IsNet5CompatFileStreamEnabled => _net5CompatFileStream.Value;
 
         private static bool GetIsInContainer()
         {

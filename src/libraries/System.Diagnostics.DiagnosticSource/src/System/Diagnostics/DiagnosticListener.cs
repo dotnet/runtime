@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -255,6 +256,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Override abstract method
         /// </summary>
+        [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
         public override void Write(string name, object? value)
         {
             for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
@@ -409,7 +411,7 @@ namespace System.Diagnostics
             /// One node in the linked list of subscriptions that AllListenerObservable keeps.   It is
             /// IDisposable, and when that is called it removes itself from the list.
             /// </summary>
-            internal class AllListenerSubscription : IDisposable
+            internal sealed class AllListenerSubscription : IDisposable
             {
                 internal AllListenerSubscription(AllListenerObservable owner, IObserver<DiagnosticListener> subscriber, AllListenerSubscription? next)
                 {

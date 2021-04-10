@@ -228,7 +228,7 @@
     <RepositoryUrl>https://github.com/dotnet/$(GitHubRepositoryName)</RepositoryUrl>
     <PackageProjectUrl>https://dot.net</PackageProjectUrl>
     <Owners>microsoft,dotnetframework</Owners>
-    <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'pkg', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
+    <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
     <LicenseFile>$(MSBuildThisFileDirectory)LICENSE.TXT</LicenseFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>$(CopyrightNetFoundation)</Copyright>
