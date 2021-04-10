@@ -140,6 +140,7 @@ namespace System.Tests
                 (0, int.MaxValue),
                 (-1, int.MaxValue),
                 (int.MinValue, 0),
+                (int.MinValue, int.MaxValue),
             }
             select new object[] { derived, seeded, pair.min, pair.max };
 
@@ -212,6 +213,7 @@ namespace System.Tests
                 (2147483648, 2147483658),
                 (-1L, long.MaxValue),
                 (long.MinValue, 0L),
+                (long.MinValue, long.MaxValue),
             }
             select new object[] { derived, seeded, pair.min, pair.max };
 
