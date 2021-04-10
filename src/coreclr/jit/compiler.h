@@ -78,9 +78,7 @@ struct InitVarDscInfo;     // defined in register_arg_convention.h
 class FgStack;             // defined in fgbasic.cpp
 class Instrumentor;        // defined in fgprofile.cpp
 class SpanningTreeVisitor; // defined in fgprofile.cpp
-#if FEATURE_ANYCSE
-class CSE_DataFlow; // defined in OptCSE.cpp
-#endif
+class CSE_DataFlow;        // defined in OptCSE.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -6579,8 +6577,6 @@ protected:
     bool optAvoidIncDec(BasicBlock::weight_t bbWeight);
     bool optAvoidIntMult(void);
 
-#if FEATURE_ANYCSE
-
 protected:
     //  The following is the upper limit on how many expressions we'll keep track
     //  of for the CSE analysis.
@@ -6740,9 +6736,6 @@ protected:
         return (enckey & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
     }
 
-#endif // FEATURE_ANYCSE
-
-#if FEATURE_VALNUM_CSE
     /**************************************************************************
      *                   Value Number based CSEs
      *************************************************************************/
@@ -6759,9 +6752,6 @@ protected:
     void     optValnumCSE_Availablity();
     void     optValnumCSE_Heuristic();
 
-#endif // FEATURE_VALNUM_CSE
-
-#if FEATURE_ANYCSE
     bool                 optDoCSE;             // True when we have found a duplicate CSE tree
     bool                 optValnumCSE_phase;   // True when we are executing the optValnumCSE_phase
     unsigned             optCSECandidateTotal; // Grand total of CSE candidates for both Lexical and ValNum
@@ -6791,8 +6781,6 @@ protected:
     bool optConfigDisableCSE2();
 #endif
     void optOptimizeCSEs();
-
-#endif // FEATURE_ANYCSE
 
     struct isVarAssgDsc
     {

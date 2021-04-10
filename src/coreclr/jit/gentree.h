@@ -414,8 +414,6 @@ struct GenTree
     genTreeOps gtOperSave; // Only used to save gtOper when we destroy a node, to aid debugging.
 #endif
 
-#if FEATURE_ANYCSE
-
 #define NO_CSE (0)
 
 #define IS_CSE_INDEX(x) ((x) != 0)
@@ -426,8 +424,6 @@ struct GenTree
 
     signed char gtCSEnum; // 0 or the CSE index (negated if def)
                           // valid only for CSE expressions
-
-#endif // FEATURE_ANYCSE
 
     unsigned char gtLIRFlags; // Used for nodes that are in LIR. See LIR::Flags in lir.h for the various flags.
 
