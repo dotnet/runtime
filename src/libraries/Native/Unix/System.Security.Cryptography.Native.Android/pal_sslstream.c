@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_sslstream.h"
+#include "pal_ssl.h"
 
 // javax/net/ssl/SSLEngineResult$HandshakeStatus
 enum
@@ -20,6 +21,12 @@ enum
     STATUS__BUFFER_OVERFLOW = 1,
     STATUS__OK = 2,
     STATUS__CLOSED = 3,
+};
+
+struct ApplicationProtocolData_t
+{
+    uint8_t* data;
+    int32_t length;
 };
 
 static uint16_t* AllocateString(JNIEnv* env, jstring source);
@@ -277,10 +284,6 @@ static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
 SSLStream* AndroidCryptoNative_SSLStreamCreate(void)
 {
     JNIEnv* env = GetJNIEnv();
-
-    // TODO: [AndroidCrypto] If we have certificates, get an SSLContext instance with the highest available
-    // protocol - TLSv1.2 (API level 16+) or TLSv1.3 (API level 29+), use KeyManagerFactory to create key
-    // managers that will return the certificates, and initialize the SSLContext with the key managers.
 
     // SSLContext sslContext = SSLContext.getDefault();
     jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetDefault);
@@ -768,6 +771,50 @@ void AndroidCryptoNative_SSLStreamRequestClientAuthentication(SSLStream* sslStre
 
     // sslEngine.setWantClientAuth(true);
     (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetWantClientAuth, true);
+}
+
+int32_t AndroidCryptoNative_SSLStreamSetApplicationProtocols(SSLStream* sslStream,
+                                                             ApplicationProtocolData* protocolData,
+                                                             int32_t count)
+{
+    assert(sslStream != NULL);
+    assert(protocolData != NULL);
+    assert(AndroidCryptoNative_SSLSupportsApplicationProtocolsConfiguration());
+
+    JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, protocols, params);
+
+    // String[] protocols = new String[count];
+    loc[protocols] = (*env)->NewObjectArray(env, count, g_String, NULL);
+    for (int32_t i = 0; i < count; ++i)
+    {
+        // Data length + 1 for null terminator
+        int32_t len = protocolData[i].length;
+        char* data = (char*)malloc((size_t)(len + 1) * sizeof(char));
+        memcpy(data, protocolData[i].data, (size_t)len);
+        data[len] = '\0';
+
+        jstring protocol = JSTRING(data);
+        free(data);
+        (*env)->SetObjectArrayElement(env, loc[protocols], i, protocol);
+        (*env)->DeleteLocalRef(env, protocol);
+    }
+
+    // SSLParameters params = new SSLParameters();
+    // params.setApplicationProtocols(protocols);
+    // sslEngine.setSSLParameters(params);
+    loc[params] = (*env)->NewObject(env, g_SSLParametersClass, g_SSLParametersCtor);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, loc[params], g_SSLParametersSetApplicationProtocols, loc[protocols]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, loc[params]);
+
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 static jstring GetSslProtocolAsString(JNIEnv* env, PAL_SslProtocol protocol)

@@ -90,6 +90,7 @@ extern jmethodID g_sigNumMethod;
 extern jclass    g_SSLParametersClass;
 extern jmethodID g_SSLParametersCtor;
 extern jmethodID g_SSLParametersGetProtocols;
+extern jmethodID g_SSLParametersSetApplicationProtocols;
 extern jmethodID g_SSLParametersSetServerNames;
 
 // javax/net/ssl/SSLContext

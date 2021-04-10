@@ -213,7 +213,7 @@ namespace System.Net
 
             bool isServer = authOptions.IsServer;
 
-            if (authOptions.ApplicationProtocols != null || authOptions.CipherSuitesPolicy != null)
+            if (authOptions.CipherSuitesPolicy != null)
             {
                 // TODO: [AndroidCrypto] Handle non-system-default options
                 throw new NotImplementedException(nameof(SafeDeleteSslContext));
@@ -241,6 +241,16 @@ namespace System.Net
             if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
             {
                 Interop.AndroidCrypto.SSLStreamConfigureParameters(handle, authOptions.TargetHost);
+            }
+
+            if (authOptions.ApplicationProtocols != null)
+            {
+                if (!Interop.AndroidCrypto.SSLSupportsApplicationProtocolsConfiguration())
+                {
+                    throw new PlatformNotSupportedException(SR.net_ssl_app_protocol_config_notsupported);
+                }
+
+                Interop.AndroidCrypto.SSLStreamSetApplicationProtocols(handle, authOptions.ApplicationProtocols);
             }
         }
     }

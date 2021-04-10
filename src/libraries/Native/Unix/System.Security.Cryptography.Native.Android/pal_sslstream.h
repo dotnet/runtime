@@ -24,6 +24,8 @@ typedef struct SSLStream
     STREAM_WRITER streamWriter;
 } SSLStream;
 
+typedef struct ApplicationProtocolData_t ApplicationProtocolData;
+
 // Matches managed PAL_SSLStreamStatus enum
 enum
 {
@@ -150,6 +152,16 @@ PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* ss
 Configure the session to request client authentication
 */
 PALEXPORT void AndroidCryptoNative_SSLStreamRequestClientAuthentication(SSLStream* sslStream);
+
+/*
+Set application protocols
+  - protocolData : array of application protocols to set
+  - count        : number of elements in protocolData
+Returns 1 on success, 0 otherwise
+*/
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamSetApplicationProtocols(SSLStream* sslStream,
+                                                                       ApplicationProtocolData* protocolData,
+                                                                       int32_t count);
 
 /*
 Set enabled protocols

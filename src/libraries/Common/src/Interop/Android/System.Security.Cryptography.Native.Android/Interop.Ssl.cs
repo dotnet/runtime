@@ -3,6 +3,8 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Generic;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -81,6 +83,47 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamRequestClientAuthentication")]
         internal static extern void SSLStreamRequestClientAuthentication(SafeSslHandle sslHandle);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private unsafe struct ApplicationProtocolData
+        {
+            public byte* Data;
+            public int Length;
+        }
+
+        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamSetApplicationProtocols")]
+        private static unsafe extern int SSLStreamSetApplicationProtocols(SafeSslHandle sslHandle, ApplicationProtocolData[] protocolData, int count);
+        internal static unsafe void SSLStreamSetApplicationProtocols(SafeSslHandle sslHandle, List<SslApplicationProtocol> protocols)
+        {
+            int count = protocols.Count;
+            MemoryHandle[] memHandles = new MemoryHandle[count];
+            ApplicationProtocolData[] protocolData = new ApplicationProtocolData[count];
+            try
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    ReadOnlyMemory<byte> protocol = protocols[i].Protocol;
+                    memHandles[i] = protocol.Pin();
+                    protocolData[i] = new ApplicationProtocolData
+                    {
+                        Data = (byte*)memHandles[i].Pointer,
+                        Length = protocol.Length
+                    };
+                }
+                int ret = SSLStreamSetApplicationProtocols(sslHandle, protocolData, count);
+                if (ret != SUCCESS)
+                {
+                    throw new SslException();
+                }
+            }
+            finally
+            {
+                foreach (MemoryHandle memHandle in memHandles)
+                {
+                    memHandle.Dispose();
+                }
+            }
+        }
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamSetEnabledProtocols")]
         private static extern int SSLStreamSetEnabledProtocols(SafeSslHandle sslHandle, ref SslProtocols protocols, int length);

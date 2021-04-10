@@ -10,3 +10,8 @@
 Get the supported protocols
 */
 PALEXPORT PAL_SslProtocol AndroidCryptoNative_SSLGetSupportedProtocols(void);
+
+/*
+Returns whether or not configuration of application protocols is supported
+*/
+PALEXPORT bool AndroidCryptoNative_SSLSupportsApplicationProtocolsConfiguration(void);
