@@ -268,12 +268,16 @@ namespace System.Tests
             string s = timeOnly.ToString(pattern);
             TimeOnly parsedTimeOnly = TimeOnly.Parse(s);
             Assert.True(TimeOnly.TryParse(s, out TimeOnly parsedTimeOnly1));
-            Assert.Equal(timeOnly, parsedTimeOnly);
-            Assert.Equal(timeOnly, parsedTimeOnly1);
+            Assert.Equal(timeOnly.Hour % 12, parsedTimeOnly.Hour % 12);
+            Assert.Equal(timeOnly.Minute, parsedTimeOnly.Minute);
+            Assert.Equal(timeOnly.Hour % 12, parsedTimeOnly1.Hour % 12);
+            Assert.Equal(timeOnly.Minute, parsedTimeOnly1.Minute);
             parsedTimeOnly = TimeOnly.Parse(s.AsSpan());
             Assert.True(TimeOnly.TryParse(s.AsSpan(), out parsedTimeOnly1));
-            Assert.Equal(timeOnly, parsedTimeOnly);
-            Assert.Equal(timeOnly, parsedTimeOnly1);
+            Assert.Equal(timeOnly.Hour % 12, parsedTimeOnly.Hour % 12);
+            Assert.Equal(timeOnly.Minute, parsedTimeOnly.Minute);
+            Assert.Equal(timeOnly.Hour % 12, parsedTimeOnly1.Hour % 12);
+            Assert.Equal(timeOnly.Minute, parsedTimeOnly1.Minute);
 
             s = timeOnly.ToString(pattern, CultureInfo.InvariantCulture);
             parsedTimeOnly = TimeOnly.Parse(s, CultureInfo.InvariantCulture);

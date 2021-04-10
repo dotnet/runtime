@@ -380,6 +380,8 @@ namespace System
 
             for (int i = 0; i < formats.Length; i++)
             {
+                DateTimeFormatInfo dtfiToUse = dtfi;
+
                 string? format = formats[i];
                 if (string.IsNullOrEmpty(format))
                 {
@@ -391,12 +393,12 @@ namespace System
                     if (format[0] == 'o' || format[0] == 'O')
                     {
                         format = OFormat;
-                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
+                        dtfiToUse = CultureInfo.InvariantCulture.DateTimeFormat;
                     }
                     else if (format[0] == 'r' || format[0] == 'R')
                     {
                         format = RFormat;
-                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
+                        dtfiToUse = CultureInfo.InvariantCulture.DateTimeFormat;
                     }
                 }
 
@@ -404,7 +406,7 @@ namespace System
                 // flags from the caller and return the result.
                 DateTimeResult result = default;
                 result.Init(s);
-                if (DateTimeParse.TryParseExact(s, format, dtfi, style, ref result) && ((result.flags & ParseFlagsDateMask) == 0))
+                if (DateTimeParse.TryParseExact(s, format, dtfiToUse, style, ref result) && ((result.flags & ParseFlagsDateMask) == 0))
                 {
                     return new DateOnly(DayNumberFromDateTime(result.parsedDate));
                 }
@@ -507,7 +509,7 @@ namespace System
                 return false;
             }
 
-            DateTimeResult dtResult = default;       // The buffer to store the parsing result.
+            DateTimeResult dtResult = default;
             dtResult.Init(s);
 
             if (!DateTimeParse.TryParse(s, DateTimeFormatInfo.GetInstance(provider), style, ref dtResult))
@@ -566,7 +568,7 @@ namespace System
                 }
             }
 
-            DateTimeResult dtResult = default;       // The buffer to store the parsing result.
+            DateTimeResult dtResult = default;
             dtResult.Init(s);
 
             if (!DateTimeParse.TryParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style, ref dtResult))
@@ -613,6 +615,7 @@ namespace System
 
             for (int i = 0; i < formats.Length; i++)
             {
+                DateTimeFormatInfo dtfiToUse = dtfi;
                 string? format = formats[i];
                 if (string.IsNullOrEmpty(format))
                 {
@@ -624,20 +627,20 @@ namespace System
                     if (format[0] == 'o' || format[0] == 'O')
                     {
                         format = OFormat;
-                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
+                        dtfiToUse = CultureInfo.InvariantCulture.DateTimeFormat;
                     }
                     else if (format[0] == 'r' || format[0] == 'R')
                     {
                         format = RFormat;
-                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
+                        dtfiToUse = CultureInfo.InvariantCulture.DateTimeFormat;
                     }
                 }
 
                 // Create a new result each time to ensure the runs are independent. Carry through
                 // flags from the caller and return the result.
-                DateTimeResult dtResult = default;       // The buffer to store the parsing result.
+                DateTimeResult dtResult = default;
                 dtResult.Init(s);
-                if (DateTimeParse.TryParseExact(s, format, dtfi, style, ref dtResult) && ((dtResult.flags & ParseFlagsDateMask) == 0))
+                if (DateTimeParse.TryParseExact(s, format, dtfiToUse, style, ref dtResult) && ((dtResult.flags & ParseFlagsDateMask) == 0))
                 {
                     result = new DateOnly(DayNumberFromDateTime(dtResult.parsedDate));
                     return true;
@@ -671,7 +674,7 @@ namespace System
                 return false;
             }
 
-            DateTimeResult dtResult = default;       // The buffer to store the parsing result.
+            DateTimeResult dtResult = default;
             dtResult.Init(s);
 
             if (!DateTimeParse.TryParse(s, DateTimeFormatInfo.GetInstance(provider), style, ref dtResult))
