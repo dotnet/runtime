@@ -176,8 +176,8 @@ namespace
 
             ManagedObjectWrapper* mow = ManagedObjectWrapper::MapFromIUnknown(target);
 
-            // Not a target we implemented.
-            if (mow == nullptr)
+            // Not a target we implemented or wrapper is marked to be destroyed.
+            if (mow == nullptr || mow->IsMarkedToDestroy())
                 return S_OK;
 
             // Notify the runtime a reference path was found.
