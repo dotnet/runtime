@@ -231,36 +231,11 @@ namespace System
             return timeZoneId.Substring(i + 1).Replace('_', ' ');
         }
 
-        // Helper function that returns an alternative ID using ICU data.  Used primarily for converting from Windows IDs.
-        private static unsafe string? GetAlternativeId(string id)
+        // Helper function that returns an alternative ID using ICU data. Used primarily for converting from Windows IDs.
+        private static unsafe string? GetAlternativeId(string id, out bool idIsIana)
         {
-            if (!GlobalizationMode.Invariant)
-            {
-                if (id.Equals("utc", StringComparison.OrdinalIgnoreCase))
-                {
-                    // Special case UTC, as previously ICU would convert it to "Etc/GMT" which is incorrect name for UTC.
-                    return "Etc/UTC";
-                }
-
-                foreach (char c in id)
-                {
-                    // ICU uses some characters as a separator and trim the id at that character.
-                    // while we should fail if the Id contained one of these characters.
-                    if (c == '\\' || c == '\n' || c == '\r')
-                    {
-                        return null;
-                    }
-                }
-
-                char* buffer = stackalloc char[100];
-                int length = Interop.Globalization.WindowsIdToIanaId(id, buffer, 100);
-                if (length > 0)
-                {
-                    return new string(buffer, 0, length);
-                }
-            }
-
-            return null;
+            idIsIana = false;
+            return TryConvertWindowsIdToIanaId(id, null, out string? ianaId) ? ianaId : null;
         }
     }
 }
