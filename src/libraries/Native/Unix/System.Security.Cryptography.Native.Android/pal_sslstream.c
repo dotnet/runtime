@@ -602,18 +602,35 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uin
     JNIEnv* env = GetJNIEnv();
     PAL_SSLStreamStatus ret = SSLStreamStatus_Error;
 
-    // byte[] data = new byte[] { <buffer> }
-    // appOutBuffer.put(data);
-    jbyteArray data = (*env)->NewByteArray(env, length);
-    (*env)->SetByteArrayRegion(env, data, 0, length, (jbyte*)buffer);
-    IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferPutByteArray, data));
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    // int remaining = appOutBuffer.remaining();
+    // int arraySize = length > remaining ? remaining : length;
+    // byte[] data = new byte[arraySize];
+    int32_t remaining = (*env)->CallIntMethod(env, sslStream->appOutBuffer, g_ByteBufferRemaining);
+    int32_t arraySize = length > remaining ? remaining : length;
+    jbyteArray data = (*env)->NewByteArray(env, arraySize);
 
-    int handshakeStatus;
-    ret = DoWrap(env, sslStream, &handshakeStatus);
-    if (ret == SSLStreamStatus_OK && IsHandshaking(handshakeStatus))
+    int32_t written = 0;
+    while (written < length)
     {
-        ret = SSLStreamStatus_Renegotiate;
+        int32_t toWrite = length - written > arraySize ? arraySize : length - written;
+        (*env)->SetByteArrayRegion(env, data, 0, toWrite, (jbyte*)(buffer + written));
+
+        // appOutBuffer.put(data, 0, toWrite);
+        IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferPutByteArrayWithLength, data, 0, toWrite));
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+        written += toWrite;
+
+        int handshakeStatus;
+        ret = DoWrap(env, sslStream, &handshakeStatus);
+        if (ret != SSLStreamStatus_OK)
+        {
+            goto cleanup;
+        }
+        else if (IsHandshaking(handshakeStatus))
+        {
+            ret = SSLStreamStatus_Renegotiate;
+            goto cleanup;
+        }
     }
 
 cleanup:
