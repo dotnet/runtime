@@ -334,7 +334,6 @@ bool Compiler::optCSEcostCmpSz::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
     return dsc1->csdIndex < dsc2->csdIndex;
 }
 
-
 /*****************************************************************************
  *
  *  Initialize the Value Number CSE tracking logic.
