@@ -31,6 +31,9 @@ namespace System
 
             public TransitionTime DaylightTransitionEnd => _daylightTransitionEnd;
 
+            /// <summary>
+            /// Gets the time difference with the particular time zone base Utc offset during the adjustment rule period.
+            /// </summary>
             public TimeSpan BaseUtcOffsetDelta => _baseUtcOffsetDelta;
 
             /// <summary>
@@ -76,6 +79,16 @@ namespace System
                 _noDaylightTransitions = noDaylightTransitions;
             }
 
+            /// <summary>
+            /// Creates a new adjustment rule for a particular time zone.
+            /// </summary>
+            /// <param name="dateStart">The effective date of the adjustment rule. If the value of the dateStart parameter is DateTime.MinValue.Date, this is the first adjustment rule in effect for a time zone.</param>
+            /// <param name="dateEnd">The last date that the adjustment rule is in force. If the value of the dateEnd parameter is DateTime.MaxValue.Date, the adjustment rule has no end date.</param>
+            /// <param name="daylightDelta">The time change that results from the adjustment. This value is added to the time zone's BaseUtcOffset+BaseUtcOffsetDelta properties to obtain the correct daylight offset from Coordinated Universal Time (UTC). This value can range from -14 to 14.</param>
+            /// <param name="daylightTransitionStart">An object that defines the start of daylight saving time.</param>
+            /// <param name="daylightTransitionEnd">An object that defines the end of daylight saving time.</param>
+            /// <param name="baseUtcOffsetDelta">The time difference with the particular time zone base Utc offset during this adjustment rule period.</param>
+            /// <returns>An object that represents the new adjustment rule.</returns>
             public static AdjustmentRule CreateAdjustmentRule(
                 DateTime dateStart,
                 DateTime dateEnd,
