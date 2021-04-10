@@ -227,6 +227,7 @@ jobs:
         /p:CrossBuild=${{ parameters.crossBuild }}
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
+        $(pgoInstrumentArg)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(OutputRidArg)
