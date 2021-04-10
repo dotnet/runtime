@@ -439,8 +439,17 @@ namespace Microsoft.Extensions.Logging.Generators
                     {
                         switch (a.NameEquals.Name.ToString())
                         {
+                            case "EventId":
+                                eventId = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                                break;
                             case "EventName":
                                 eventName = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
+                                break;
+                            case "Level":
+                                level = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                                break;
+                            case "Message":
+                                message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
                                 break;
                         }
                     }

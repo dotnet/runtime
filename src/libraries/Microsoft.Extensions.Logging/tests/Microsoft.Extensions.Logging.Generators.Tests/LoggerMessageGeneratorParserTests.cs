@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                     static partial void __M1(ILogger logger);
                 }
             ");
@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, ""M1"")]
+                    [LoggerMessage(EventId = 0, Message = ""M1"")]
                     static partial void M1(ILogger logger);
                 }
             ");
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 {
                     static partial void M1(ILogger logger);
 
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                     static partial void M1(ILogger logger)
                     {
                     }
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""This is a message without foo"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""This is a message without foo"")]
                     static partial void M1(ILogger logger, string foo);
                 }
             ");
@@ -83,7 +83,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""{foo}"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""{foo}"")]
                     static partial void M1(ILogger logger);
                 }
             ");
@@ -98,7 +98,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Information, ""INFO: this is an informative message"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Information, Message = ""INFO: this is an informative message"")]
                     static partial void M1(ILogger logger);
                 }
             ");
@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1 {ex} {ex2}"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {ex} {ex2}"")]
                     static partial void M1(ILogger logger, System.Exception ex, System.Exception ex2);
                 }
             ");
@@ -128,7 +128,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, ""M1 {l1} {l2}"")]
+                    [LoggerMessage(EventId = 0, Message = ""M1 {l1} {l2}"")]
                     static partial void M1(ILogger logger, LogLevel l1, LogLevel l2);
                 }
             ");
@@ -143,7 +143,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1 {logger}"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {logger}"")]
                     static partial void M1(ILogger logger);
                 }
             ");
@@ -160,7 +160,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                     static partial void M1(ILogger logger, LogLevel level);
                 }
             ");
@@ -176,7 +176,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1 {p1} {P1}"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {p1} {P1}"")]
                     static partial void M1(ILogger logger, int p1, int P1);
                 }
             ");
@@ -192,7 +192,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1 {p1} {P1}"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {p1} {P1}"")]
                     static partial void M1(ILogger logger, int p1, int P1);
                 }
             ");
@@ -208,7 +208,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1 {__foo}"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {__foo}"")]
                     static partial void M1(ILogger logger, string __foo);
                 }
             ");
@@ -225,7 +225,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 {
                     public partial class Nested
                     {
-                        [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                        [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                         static partial void M1(ILogger logger);
                     }
                 }
@@ -385,10 +385,10 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class MyClass
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                     static partial void M1(ILogger logger);
 
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                     static partial void M2(ILogger logger);
                 }
             ");
@@ -404,7 +404,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                     public static partial int M1(ILogger logger);
 
                     public static partial int M1(ILogger logger) { return 0; }
@@ -421,7 +421,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1 {p1}"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {p1}"")]
                     static partial void M1(int p1);
                 }
             ");
@@ -436,7 +436,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                     partial void M1(ILogger logger);
                 }
             ");
@@ -451,7 +451,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                     public partial void M1();
                 }
             ");
@@ -469,7 +469,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                     public ILogger _logger1;
                     public ILogger _logger2;
 
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                     public partial void M1();
                 }
             ");
@@ -484,7 +484,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                     static void M1(ILogger logger) {}
                 }
             ");
@@ -500,7 +500,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                     static partial void M1<T>(ILogger logger);
                 }
             ");
@@ -515,25 +515,25 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(1, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""M1"")]
                     static partial void M1(ILogger logger);
 
-                    [LoggerMessage(2, LogLevel.Debug, ""M2 {arg1} {arg2}"")]
+                    [LoggerMessage(EventId = 2, Level = LogLevel.Debug, Message = ""M2 {arg1} {arg2}"")]
                     static partial void M2(ILogger logger, string arg1, string arg2);
 
-                    [LoggerMessage(3, LogLevel.Debug, ""M3 {arg1"")]
+                    [LoggerMessage(EventId = 3, Level = LogLevel.Debug, Message = ""M3 {arg1"")]
                     static partial void M3(ILogger logger);
 
-                    [LoggerMessage(4, LogLevel.Debug, ""M4 arg1}"")]
+                    [LoggerMessage(EventId = 4, Level = LogLevel.Debug, Message = ""M4 arg1}"")]
                     static partial void M4(ILogger logger);
 
-                    [LoggerMessage(5, LogLevel.Debug, ""M5 {"")]
+                    [LoggerMessage(EventId = 5, Level = LogLevel.Debug, Message = ""M5 {"")]
                     static partial void M5(ILogger logger);
 
-                    [LoggerMessage(6, LogLevel.Debug, ""}M6 "")]
+                    [LoggerMessage(EventId = 6, Level = LogLevel.Debug, Message = ""}M6 "")]
                     static partial void M6(ILogger logger);
 
-                    [LoggerMessage(7, LogLevel.Debug, ""M7 {{arg1}}"")]
+                    [LoggerMessage(EventId = 7, Level = LogLevel.Debug, Message = ""M7 {{arg1}}"")]
                     static partial void M7(ILogger logger);
                 }
             ");
@@ -548,7 +548,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 _ = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
                     static partial void M1(ILogger logger);
                 }
             ", cancellationToken: new CancellationToken(true)));
@@ -561,23 +561,19 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 static partial class C
                 {
                     // bogus argument type
-                    [LoggerMessage(0, "", ""Hello"")]
+                    [LoggerMessage(EventId = 0, Level = "", Message = ""Hello"")]
                     static partial void M1(ILogger logger);
 
                     // missing parameter name
-                    [LoggerMessage(1, LogLevel.Debug, ""Hello"")]
+                    [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""Hello"")]
                     static partial void M2(ILogger);
 
                     // bogus parameter type
-                    [LoggerMessage(2, LogLevel.Debug, ""Hello"")]
+                    [LoggerMessage(EventId = 2, Level = LogLevel.Debug, Message = ""Hello"")]
                     static partial void M3(XILogger logger);
 
-                    // bogus enum value
-                    [LoggerMessage(3, LogLevel.Foo, ""Hello"")]
-                    static partial void M4(ILogger logger);
-
                     // attribute applied to something other than a method
-                    [LoggerMessage(4, "", ""Hello"")]
+                    [LoggerMessage(EventId = 4, Message = ""Hello"")]
                     int M5;
                 }
             ");

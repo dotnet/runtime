@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
     internal static partial class SignatureTestExtensions
     {
         // extension method
-        [LoggerMessage(eventId: 10, level: LogLevel.Critical, message: "Message11")]
+        [LoggerMessage(EventId = 10, Level = LogLevel.Critical, Message = "Message11")]
         internal static partial void M11(this ILogger logger);
 
         public static void Combo(ILogger logger)
@@ -37,47 +37,47 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
         }
 
         // normal public method
-        [LoggerMessage(0, LogLevel.Critical, "Message1")]
+        [LoggerMessage(EventId = 0, Level = LogLevel.Critical, Message = "Message1")]
         public static partial void M1(ILogger logger);
 
         // internal method
-        [LoggerMessage(1, LogLevel.Critical, "Message2")]
+        [LoggerMessage(EventId = 1, Level = LogLevel.Critical, Message = "Message2")]
         internal static partial void M2(ILogger logger);
 
         // private method
-        [LoggerMessage(2, LogLevel.Critical, "Message3")]
+        [LoggerMessage(EventId = 2, Level = LogLevel.Critical, Message = "Message3")]
         private static partial void M3(ILogger logger);
 
         // generic ILogger
-        [LoggerMessage(3, LogLevel.Critical, "Message4")]
+        [LoggerMessage(EventId = 3, Level = LogLevel.Critical, Message = "Message4")]
         private static partial void M4(ILogger<int> logger);
 
         // random type method parameter
-        [LoggerMessage(4, LogLevel.Critical, "Message5 {items}")]
+        [LoggerMessage(EventId = 4, Level = LogLevel.Critical, Message = "Message5 {items}")]
         private static partial void M5(ILogger logger, System.Collections.IEnumerable items);
 
         // line feeds and quotes in the message string
-        [LoggerMessage(5, LogLevel.Critical, "Message6\n\"\r")]
+        [LoggerMessage(EventId = 5, Level = LogLevel.Critical, Message = "Message6\n\"\r")]
         private static partial void M6(ILogger logger);
 
         // generic parameter
-        [LoggerMessage(6, LogLevel.Critical, "Message7 {p1}\n\"\r")]
+        [LoggerMessage(EventId = 6, Level = LogLevel.Critical, Message = "Message7 {p1}\n\"\r")]
         private static partial void M7(ILogger logger, T p1);
 
         // normal public method
-        [LoggerMessage(7, LogLevel.Critical, "Message8")]
+        [LoggerMessage(EventId = 7, Level = LogLevel.Critical, Message = "Message8")]
         private protected static partial void M8(ILogger logger);
 
         // internal method
-        [LoggerMessage(8, LogLevel.Critical, "Message9")]
+        [LoggerMessage(EventId = 8, Level = LogLevel.Critical, Message = "Message9")]
         protected internal static partial void M9(ILogger logger);
 
         // nullable parameter
-        [LoggerMessage(9, LogLevel.Critical, "Message10 {optional}")]
+        [LoggerMessage(EventId = 9, Level = LogLevel.Critical, Message = "Message10 {optional}")]
         internal static partial void M10(ILogger logger, string? optional);
 
         // dynamic log level
-        [LoggerMessage(10, "Message11 {p1} {p2}")]
+        [LoggerMessage(EventId = 10, Message = "Message11 {p1} {p2}")]
         internal static partial void M11(ILogger logger, string p1, LogLevel level, string p2);
     }
 }

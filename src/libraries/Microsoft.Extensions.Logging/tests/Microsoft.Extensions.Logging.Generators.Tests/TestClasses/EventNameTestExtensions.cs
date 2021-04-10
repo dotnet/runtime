@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
 {
     internal static partial class EventNameTestExtensions
     {
-        [LoggerMessage(0, LogLevel.Trace, "M0", EventName = "CustomEventName")]
+        [LoggerMessage(EventId = 0, Level = LogLevel.Trace, Message = "M0", EventName = "CustomEventName")]
         public static partial void M0(ILogger logger);
     }
 }

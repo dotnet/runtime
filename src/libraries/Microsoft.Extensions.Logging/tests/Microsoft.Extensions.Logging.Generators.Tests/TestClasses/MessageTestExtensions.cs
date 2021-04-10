@@ -7,10 +7,10 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
 {
     internal static partial class MessageTestExtensions
     {
-        [LoggerMessage(0, LogLevel.Trace)]
+        [LoggerMessage(EventId = 0, Level = LogLevel.Trace)]
         public static partial void M0(ILogger logger);
 
-        [LoggerMessage(1, LogLevel.Debug, "")]
+        [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = "")]
         public static partial void M1(ILogger logger);
 
 #if false
@@ -19,13 +19,13 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
         // These are handled fine by the logger generator and generate warnings. Unfortunately, the above warning suppression is
         // not being observed by the C# compiler at the moment, so having these here causes build warnings.
 
-        [LoggerMessage(2, LogLevel.Trace)]
+        [LoggerMessage(EventId = 2, Level = LogLevel.Trace)]
         public static partial void M2(ILogger logger, string p1, string p2);
 
-        [LoggerMessage(3, LogLevel.Debug, "")]
+        [LoggerMessage(EventId = 3, Level = LogLevel.Debug, Message = "")]
         public static partial void M3(ILogger logger, string p1, int p2);
 
-        [LoggerMessage(4, LogLevel.Debug, "{p1}")]
+        [LoggerMessage(EventId = 4, Level = LogLevel.Debug, Message = "{p1}")]
         public static partial void M4(ILogger logger, string p1, int p2, int p3);
 #endif
     }

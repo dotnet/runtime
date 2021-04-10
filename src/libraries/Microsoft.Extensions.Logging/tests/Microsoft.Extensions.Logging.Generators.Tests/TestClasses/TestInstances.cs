@@ -14,10 +14,10 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
             _myLogger = logger;
         }
 
-        [LoggerMessage(0, LogLevel.Error, "M0")]
+        [LoggerMessage(EventId = 0, Level = LogLevel.Error, Message = "M0")]
         public partial void M0();
 
-        [LoggerMessage(1, LogLevel.Trace, "M1 {p1}")]
+        [LoggerMessage(EventId = 1, Level = LogLevel.Trace, Message = "M1 {p1}")]
         public partial void M1(string p1);
     }
 }
