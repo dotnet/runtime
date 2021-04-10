@@ -31,5 +31,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
+
+    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Serialization.xml" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" />
   </ItemGroup>
 </Project>
