@@ -16,7 +16,7 @@ mono_llvm_cpp_throw_exception (void)
 	gint32 *ex = NULL;
 
 	if (mono_trace_is_enabled ())
-		mono_runtime_printf_err ("Native Stacktrace (mono_llvm_cpp_throw_exception)"); 
+		mono_runtime_printf_err ("Native Stacktrace (mono_llvm_cpp_throw_exception)\n"); 
 		
 	/* The generated code catches an int32* */
 	throw ex;
