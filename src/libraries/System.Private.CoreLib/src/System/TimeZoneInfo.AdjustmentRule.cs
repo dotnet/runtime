@@ -31,7 +31,7 @@ namespace System
 
             public TransitionTime DaylightTransitionEnd => _daylightTransitionEnd;
 
-            internal TimeSpan BaseUtcOffsetDelta => _baseUtcOffsetDelta;
+            public TimeSpan BaseUtcOffsetDelta => _baseUtcOffsetDelta;
 
             /// <summary>
             /// Gets a value indicating that this AdjustmentRule fixes the time zone offset
@@ -76,7 +76,7 @@ namespace System
                 _noDaylightTransitions = noDaylightTransitions;
             }
 
-            internal static AdjustmentRule CreateAdjustmentRule(
+            public static AdjustmentRule CreateAdjustmentRule(
                 DateTime dateStart,
                 DateTime dateEnd,
                 TimeSpan daylightDelta,
