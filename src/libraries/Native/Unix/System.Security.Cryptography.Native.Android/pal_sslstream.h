@@ -6,8 +6,10 @@
 #include "pal_jni.h"
 #include "pal_x509.h"
 
+#include <pal_ssl_types.h>
+
 typedef void (*STREAM_WRITER)(uint8_t*, int32_t);
-typedef int (*STREAM_READER)(uint8_t*, int32_t*);
+typedef int32_t (*STREAM_READER)(uint8_t*, int32_t*);
 
 typedef struct SSLStream
 {
@@ -45,7 +47,11 @@ Create an SSL context with the specified certificates
 
 Returns NULL on failure
 */
-PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8PrivateKey, int32_t pkcs8PrivateKeyLen, PAL_KeyAlgorithm algorithm, jobject* /*X509Certificate[]*/ certs, int32_t certsLen);
+PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8PrivateKey,
+                                                                         int32_t pkcs8PrivateKeyLen,
+                                                                         PAL_KeyAlgorithm algorithm,
+                                                                         jobject* /*X509Certificate[]*/ certs,
+                                                                         int32_t certsLen);
 
 /*
 Initialize an SSL context
@@ -56,11 +62,8 @@ Initialize an SSL context
 
 Returns 1 on success, 0 otherwise
 */
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamInitialize(SSLStream* sslStream,
-                                                             bool isServer,
-                                                             STREAM_READER streamReader,
-                                                             STREAM_WRITER streamWriter,
-                                                             int appBufferSize);
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamInitialize(
+    SSLStream* sslStream, bool isServer, STREAM_READER streamReader, STREAM_WRITER streamWriter, int32_t appBufferSize);
 
 /*
 Set configuration parameters
@@ -85,8 +88,8 @@ Unless data from a previous incomplete read is present, this will invoke the STR
 */
 PALEXPORT PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream,
                                                                 uint8_t* buffer,
-                                                                int length,
-                                                                int* read);
+                                                                int32_t length,
+                                                                int32_t* read);
 /*
 Encodes bytes from a buffer
   - buffer : data to encode
@@ -94,7 +97,7 @@ Encodes bytes from a buffer
 
 This will invoke the STREAM_WRITER callback with the processed data.
 */
-PALEXPORT PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int length);
+PALEXPORT PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int32_t length);
 
 /*
 Release the SSL context
@@ -106,7 +109,9 @@ Get the negotiated application protocol for the current session
 
 Returns 1 on success, 0 otherwise
 */
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int* outLen);
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream,
+                                                                      uint8_t* out,
+                                                                      int32_t* outLen);
 
 /*
 Get the name of the cipher suite for the current session
@@ -139,7 +144,18 @@ Returns 1 on success, 0 otherwise
 */
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream,
                                                                    jobject** /*X509Certificate[]*/ out,
-                                                                   int* outLen);
+                                                                   int32_t* outLen);
+
+/*
+Set enabled protocols
+  - protocols : array of protocols to enable
+  - count     : number of elements in protocols
+
+Returns 1 on success, 0 otherwise
+*/
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamSetEnabledProtocols(SSLStream* sslStream,
+                                                                   PAL_SslProtocol* protocols,
+                                                                   int32_t count);
 
 /*
 Verify hostname using the peer certificate for the current session
