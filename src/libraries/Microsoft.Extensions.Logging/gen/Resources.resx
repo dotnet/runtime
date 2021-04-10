@@ -178,7 +178,7 @@
     <value>Logging methods cannot be generic</value>
   </data>
   <data name="ShouldntMentionExceptionInMessageMessage" xml:space="preserve">
-    <value>Don't include a template for {0} in the logging message since it is implicitly taken care</value>
+    <value>Don't include a template for {0} in the logging message since it is implicitly taken care of</value>
   </data>
   <data name="ShouldntMentionExceptionInMessageTitle" xml:space="preserve">
     <value>Don't include exception parameters as templates in the logging message</value>

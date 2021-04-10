@@ -320,7 +320,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 {
                     public class LoggerMessageAttribute {}
                 }
-R9                partial class C
+                partial class C
                 {
                 }
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
