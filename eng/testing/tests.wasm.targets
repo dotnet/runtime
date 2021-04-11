@@ -186,7 +186,6 @@
     <ItemGroup>
       <_PdbFilesToCheck Include="$([System.IO.Path]::ChangeExtension('%(ResolvedFileToPublish.Identity)', '.pdb'))"
                         Condition="'%(ResolvedFileToPublish.Extension)' == '.dll'" />
-
       <ResolvedFileToPublish Include="@(_PdbFilesToCheck)"
                              Condition="Exists(%(_PdbFilesToCheck.Identity))"
                              RelativePath="%(_PdbFilesToCheck.FileName)%(_PdbFilesToCheck.Extension)" />

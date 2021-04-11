@@ -75,6 +75,7 @@
     <!-- Assemblies that should be excluded from the bundle -->
     <__ExcludeFromBundle Include="TestAssembly.dll" />
 
+    <TrimmerRootAssembly Include="TestAssembly" />
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" />
   </ItemGroup>
 </Project>
