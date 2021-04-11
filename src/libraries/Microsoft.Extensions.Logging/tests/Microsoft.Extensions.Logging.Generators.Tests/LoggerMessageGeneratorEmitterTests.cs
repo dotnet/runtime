@@ -14,25 +14,8 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task TestEmitter()
         {
-            // This test exists strictly to calculate the code coverage
-            // attained by processing Definitions.cs. The functionality of the
-            // resulting code is tested via LoggerMessageGeneratedCodeTests.cs
-            string testProjectFolder = Path.Combine("..", "..", "..", "..", "src", "libraries", "Microsoft.Extensions.Logging", "tests", "Microsoft.Extensions.Logging.Generators.Tests", "TestClasses");
-
-            var sources = new[]
-            {
-                Path.Combine(testProjectFolder, "MiscTestExtensions.cs"),
-                Path.Combine(testProjectFolder, "LevelTestExtensions.cs"),
-                Path.Combine(testProjectFolder, "ArgTestExtensions.cs"),
-                Path.Combine(testProjectFolder, "EventNameTestExtensions.cs"),
-                Path.Combine(testProjectFolder, "SignatureTestExtensions.cs"),
-                Path.Combine(testProjectFolder, "MessageTestExtensions.cs"),
-                Path.Combine(testProjectFolder, "EnumerableTestExtensions.cs"),
-                Path.Combine(testProjectFolder, "TestInstances.cs"),
-                Path.Combine(testProjectFolder, "CollectionTestExtensions.cs"),
-                Path.Combine(testProjectFolder, "TemplateTestExtensions.cs"),
-            };
-
+            // The functionality of the resulting code is tested via LoggerMessageGeneratedCodeTests.cs
+            string[] sources = Directory.GetFiles("TestClasses");
             foreach (var src in sources)
             {
                 var testSourceCode = await File.ReadAllTextAsync(src).ConfigureAwait(false);
