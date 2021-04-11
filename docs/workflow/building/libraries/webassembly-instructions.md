@@ -4,7 +4,7 @@
 
 If you haven't already done so, please read [this document](../../README.md#Build_Requirements) to understand the build requirements for your operating system.
 
-The [expected version](..\..\..\..\src\mono\wasm\emscripten-version.txt) of Emscripten SDK (emsdk) needs to be installed.  
+The [expected version](..\..\..\..\src\mono\wasm\emscripten-version.txt) of Emscripten SDK (emsdk) needs to be installed.
 * Run `make -C src/mono/wasm provision-wasm` to install emsdk into `src/mono/wasm/emsdk`.
 * Alternatively follow the [installation guide](https://emscripten.org/docs/getting_started/downloads.html#sdk-download-and-install).
 Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.12`
