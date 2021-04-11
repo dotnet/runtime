@@ -307,7 +307,7 @@ namespace System.Tests
         [ConditionalFact(nameof(IsNotArabicCulture))]
         public static void FormatParseTest()
         {
-            string [] patterns = new string[] { CultureInfo.CurrentCulture.DateTimeFormat.ShortTimePattern, CultureInfo.CurrentCulture.DateTimeFormat.LongTimePattern, "t", "T", "o", "r" };
+            string[] patterns = new string[] { CultureInfo.CurrentCulture.DateTimeFormat.ShortTimePattern, CultureInfo.CurrentCulture.DateTimeFormat.LongTimePattern, "t", "T", "o", "r" };
 
             TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Now);
 

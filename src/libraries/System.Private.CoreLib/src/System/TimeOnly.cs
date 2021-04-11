@@ -7,7 +7,7 @@ using System.Globalization;
 namespace System
 {
     /// <summary>
-    /// Represents a time of day, as would be read from a clock, within the range 00:00:00 to 23:59:59.9999999
+    /// Represents a time of day, as would be read from a clock, within the range 00:00:00 to 23:59:59.9999999.
     /// </summary>
     public readonly struct TimeOnly : IComparable, IComparable<TimeOnly>, IEquatable<TimeOnly>, IFormattable, ISpanFormattable
     {
@@ -18,7 +18,7 @@ namespace System
         private const long MinTimeTicks = 0;
 
         // MaxTimeTicks is the max tick value for the time in the day. It is calculated using DateTime.Today.AddTicks(-1).TimeOfDay.Ticks.
-        private const long MaxTimeTicks = 863999999999;
+        private const long MaxTimeTicks = 863_999_999_999;
 
         /// <summary>
         /// Represents the smallest possible value of TimeOnly.
@@ -149,7 +149,7 @@ namespace System
         /// <param name="value">A number of whole and fractional hours. The value parameter can be negative or positive.</param>
         /// <param name="wrappedDays">When this method returns, contains the number of circulated days resulted from this addition operation.</param>
         /// <returns>An object whose value is the sum of the time represented by this instance and the number of hours represented by value.</returns>
-        public TimeOnly AddHours(double value, out int wrappedDays)=> AddTicks((long)(value * TimeSpan.TicksPerHour), out wrappedDays);
+        public TimeOnly AddHours(double value, out int wrappedDays) => AddTicks((long)(value * TimeSpan.TicksPerHour), out wrappedDays);
 
         /// <summary>
         /// Returns a new TimeOnly that adds the specified number of minutes to the value of this instance.
@@ -312,14 +312,7 @@ namespace System
         /// </summary>
         /// <param name="value">The object to compare to this instance.</param>
         /// <returns>true if value is an instance of TimeOnly and equals the value of this instance; otherwise, false.</returns>
-        public override bool Equals(object? value)
-        {
-            if (value is TimeOnly)
-            {
-                return _ticks == ((TimeOnly)value)._ticks;
-            }
-            return false;
-        }
+        public override bool Equals(object? value) => value is TimeOnly timeOnly && _ticks == timeOnly._ticks;
 
         /// <summary>
         /// Returns the hash code for this instance.
@@ -437,7 +430,7 @@ namespace System
         /// <param name="s">A span containing the characters that represent a time to convert.</param>
         /// <param name="formats">An array of allowable formats of s.</param>
         /// <returns>An object that is equivalent to the time contained in s, as specified by format, provider, and style.</returns>
-        public static TimeOnly ParseExact(ReadOnlySpan<char> s, string [] formats) => ParseExact(s, formats, DateTimeFormatInfo.CurrentInfo, DateTimeStyles.None);
+        public static TimeOnly ParseExact(ReadOnlySpan<char> s, string[] formats) => ParseExact(s, formats, DateTimeFormatInfo.CurrentInfo, DateTimeStyles.None);
 
         /// <summary>
         /// Converts the specified span representation of a time to its TimeOnly equivalent using the specified array of formats, culture-specific format information, and style.
@@ -448,7 +441,7 @@ namespace System
         /// <param name="provider">An object that supplies culture-specific formatting information about s.</param>
         /// <param name="style">A bitwise combination of enumeration values that indicates the permitted format of s. A typical value to specify is None.</param>
         /// <returns>An object that is equivalent to the time contained in s, as specified by format, provider, and style.</returns>
-        public static TimeOnly ParseExact(ReadOnlySpan<char> s, string [] formats, IFormatProvider? provider, DateTimeStyles style = DateTimeStyles.None)
+        public static TimeOnly ParseExact(ReadOnlySpan<char> s, string[] formats, IFormatProvider? provider, DateTimeStyles style = DateTimeStyles.None)
         {
             if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
             {
@@ -547,7 +540,7 @@ namespace System
         /// <param name="s">A span containing the characters that represent a time to convert.</param>
         /// <param name="formats">An array of allowable formats of s.</param>
         /// <returns>An object that is equivalent to the time contained in s, as specified by format, provider, and style.</returns>
-        public static TimeOnly ParseExact(string s, string [] formats) => ParseExact(s, formats, DateTimeFormatInfo.CurrentInfo, DateTimeStyles.None);
+        public static TimeOnly ParseExact(string s, string[] formats) => ParseExact(s, formats, DateTimeFormatInfo.CurrentInfo, DateTimeStyles.None);
 
         /// <summary>
         /// Converts the specified string representation of a time to its TimeOnly equivalent using the specified array of formats, culture-specific format information, and style.
@@ -558,7 +551,7 @@ namespace System
         /// <param name="provider">An object that supplies culture-specific formatting information about s.</param>
         /// <param name="style">A bitwise combination of enumeration values that indicates the permitted format of s. A typical value to specify is None.</param>
         /// <returns>An object that is equivalent to the time contained in s, as specified by format, provider, and style.</returns>
-        public static TimeOnly ParseExact(string s, string [] formats, IFormatProvider? provider, DateTimeStyles style = DateTimeStyles.None)
+        public static TimeOnly ParseExact(string s, string[] formats, IFormatProvider? provider, DateTimeStyles style = DateTimeStyles.None)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return ParseExact(s.AsSpan(), formats, provider, style);
@@ -676,7 +669,7 @@ namespace System
         /// <param name="formats">An array of allowable formats of s.</param>
         /// <param name="result">When this method returns, contains the TimeOnly value equivalent to the time contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s parameter is Empty, or does not contain a valid string representation of a time. This parameter is passed uninitialized.</param>
         /// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
-        public static bool TryParseExact(ReadOnlySpan<char> s, string [] formats, out TimeOnly result) => TryParseExact(s, formats, DateTimeFormatInfo.CurrentInfo, DateTimeStyles.None, out result);
+        public static bool TryParseExact(ReadOnlySpan<char> s, string[] formats, out TimeOnly result) => TryParseExact(s, formats, DateTimeFormatInfo.CurrentInfo, DateTimeStyles.None, out result);
 
         /// <summary>
         /// Converts the specified char span of a time to its TimeOnly equivalent and returns a value that indicates whether the conversion succeeded.
@@ -687,7 +680,7 @@ namespace System
         /// <param name="style">A bitwise combination of enumeration values that defines how to interpret the parsed time. A typical value to specify is None.</param>
         /// <param name="result">When this method returns, contains the TimeOnly value equivalent to the time contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s parameter is Empty, or does not contain a valid string representation of a time. This parameter is passed uninitialized.</param>
         /// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
-        public static bool TryParseExact(ReadOnlySpan<char> s, string [] formats, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
+        public static bool TryParseExact(ReadOnlySpan<char> s, string[] formats, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
         {
             result = default;
             if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0 || formats == null)
@@ -799,7 +792,7 @@ namespace System
         /// <param name="formats">An array of allowable formats of s.</param>
         /// <param name="result">When this method returns, contains the timeOnly value equivalent to the time contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s parameter is Empty, or does not contain a valid string representation of a time. This parameter is passed uninitialized.</param>
         /// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
-        public static bool TryParseExact(string s, string [] formats, out TimeOnly result) => TryParseExact(s, formats, DateTimeFormatInfo.CurrentInfo, DateTimeStyles.None, out result);
+        public static bool TryParseExact(string s, string[] formats, out TimeOnly result) => TryParseExact(s, formats, DateTimeFormatInfo.CurrentInfo, DateTimeStyles.None, out result);
 
         /// <summary>
         /// Converts the specified string of a time to its TimeOnly equivalent and returns a value that indicates whether the conversion succeeded.
@@ -810,7 +803,7 @@ namespace System
         /// <param name="style">A bitwise combination of enumeration values that defines how to interpret the parsed date. A typical value to specify is None.</param>
         /// <param name="result">When this method returns, contains the TimeOnly value equivalent to the time contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s parameter is Empty, or does not contain a valid string representation of a time. This parameter is passed uninitialized.</param>
         /// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
-        public static bool TryParseExact(string s, string [] formats, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
+        public static bool TryParseExact(string s, string[] formats, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
         {
             if (s == null)
             {
@@ -820,14 +813,6 @@ namespace System
 
             return TryParseExact(s.AsSpan(), formats, provider, style, out result);
         }
-
-
-        // Acceptable formats:
-        //      Sortable date/time pattern      s   Time part only
-        //      RFC1123 pattern                 r/R Time part only like o
-        //      round-trip date/time pattern    o/O Time part only
-        //      Short time pattern              t
-        //      Long time pattern               T
 
         /// <summary>
         /// Converts the value of the current TimeOnly object to its equivalent long date string representation.
@@ -853,6 +838,7 @@ namespace System
         /// </summary>
         /// <param name="format">A standard or custom time format string.</param>
         /// <returns>A string representation of value of the current TimeOnly object as specified by format.</returns>
+        /// <remarks>The accepted standard formats are 'r', 'R', 'o', 'O', 't' and 'T'. </remarks>
         public string ToString(string? format) => ToString(format, DateTimeFormatInfo.CurrentInfo);
 
         /// <summary>
@@ -868,6 +854,7 @@ namespace System
         /// <param name="format">A standard or custom time format string.</param>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <returns>A string representation of value of the current TimeOnly object as specified by format and provider.</returns>
+        /// <remarks>The accepted standard formats are 'r', 'R', 'o', 'O', 't' and 'T'. </remarks>
         public string ToString(string? format, IFormatProvider? provider)
         {
             if (format == null || format.Length == 0)
@@ -920,6 +907,7 @@ namespace System
         /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for destination.</param>
         /// <param name="provider">An optional object that supplies culture-specific formatting information for destination.</param>
         /// <returns>true if the formatting was successful; otherwise, false.</returns>
+        /// <remarks>The accepted standard formats are 'r', 'R', 'o', 'O', 't' and 'T'. </remarks>
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default(ReadOnlySpan<char>), IFormatProvider? provider = null)
         {
             if (format.Length == 0)

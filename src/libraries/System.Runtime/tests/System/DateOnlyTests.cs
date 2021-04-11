@@ -354,7 +354,7 @@ namespace System.Tests
         [ConditionalFact(nameof(IsNotArabicCulture))]
         public static void FormatParseTest()
         {
-            string [] patterns = new string[] { CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern, CultureInfo.CurrentCulture.DateTimeFormat.LongDatePattern, "d", "D", "o", "r" };
+            string[] patterns = new string[] { CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern, CultureInfo.CurrentCulture.DateTimeFormat.LongDatePattern, "d", "D", "o", "r" };
 
             DateOnly dateOnly = DateOnly.FromDateTime(DateTime.Today);
 
