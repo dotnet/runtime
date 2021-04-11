@@ -153,7 +153,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.Diagnost
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.AccessControl", "..\System.Threading.AccessControl\ref\System.Threading.AccessControl.csproj", "{5FF1A443-F491-428F-9121-51523AA65052}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Tests", "tests\Microsoft.Extensions.Logging.Generator.Tests\Microsoft.Extensions.Logging.Generators.Tests.csproj", "{8C0151F9-1FC9-4D9B-A5B1-60C7B8E7B761}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Tests", "tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Tests.csproj", "{8C0151F9-1FC9-4D9B-A5B1-60C7B8E7B761}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -10,7 +11,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
-[assembly: InternalsVisibleTo("Microsoft.Extensions.Logging.Generators.Test")]
 
 namespace Microsoft.Extensions.Logging.Generators
 {
@@ -18,12 +18,14 @@ namespace Microsoft.Extensions.Logging.Generators
     public partial class LoggerMessageGenerator : ISourceGenerator
     {
         [ExcludeFromCodeCoverage]
+        [CLSCompliant(false)]
         public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(SyntaxReceiver.Create);
         }
 
         [ExcludeFromCodeCoverage]
+        [CLSCompliant(false)]
         public void Execute(GeneratorExecutionContext context)
         {
             var receiver = context.SyntaxReceiver as SyntaxReceiver;

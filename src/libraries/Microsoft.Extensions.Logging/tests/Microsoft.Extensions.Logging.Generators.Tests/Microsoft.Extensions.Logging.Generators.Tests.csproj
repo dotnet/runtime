@@ -1,31 +1,44 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <EnableNETAnalyzers>true</EnableNETAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="3.8.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.0" />
-    <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    
-    <PackageReference Include="coverlet.collector" Version="1.3.0">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel.Tests" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Extensions.Logging.Extras\Microsoft.Extensions.Logging.Extras.csproj" />
-    <ProjectReference Include="..\Microsoft.Extensions.Logging.Generators\Microsoft.Extensions.Logging.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="3.8.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.8.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.8.0" PrivateAssets="all" />
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq\src\System.Linq.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\src\System.Text.RegularExpressions.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Console\src\Microsoft.Extensions.Logging.Console.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.EventLog\src\Microsoft.Extensions.Logging.EventLog.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Json\src\Microsoft.Extensions.Configuration.Json.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Debug\src\Microsoft.Extensions.Logging.Debug.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.TraceSource\src\Microsoft.Extensions.Logging.TraceSource.csproj" />
+    <ProjectReference Include="..\..\gen\Microsoft.Extensions.Logging.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" SkipUseReferenceAssembly="true" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\src\System.Diagnostics.DiagnosticSource.csproj" />
+  </ItemGroup>
+
+  <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <CustomAdditionalCompileInputs Include="@(Analyzer)" />
+    </ItemGroup>
+  </Target>
 
 </Project>

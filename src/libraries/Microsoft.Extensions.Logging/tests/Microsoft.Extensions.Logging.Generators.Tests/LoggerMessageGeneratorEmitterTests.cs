@@ -16,19 +16,20 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             // This test exists strictly to calculate the code coverage
             // attained by processing Definitions.cs. The functionality of the
             // resulting code is tested via LoggerMessageGeneratedCodeTests.cs
+            string testProjectFolder = @"..\..\..\..\src\libraries\Microsoft.Extensions.Logging\tests\Microsoft.Extensions.Logging.Generators.Tests";
 
             var sources = new[]
             {
-                @"..\..\..\TestClasses\MiscTestExtensions.cs",
-                @"..\..\..\TestClasses\LevelTestExtensions.cs",
-                @"..\..\..\TestClasses\ArgTestExtensions.cs",
-                @"..\..\..\TestClasses\EventNameTestExtensions.cs",
-                @"..\..\..\TestClasses\SignatureTestExtensions.cs",
-                @"..\..\..\TestClasses\MessageTestExtensions.cs",
-                @"..\..\..\TestClasses\EnumerableTestExtensions.cs",
-                @"..\..\..\TestClasses\TestInstances.cs",
-                @"..\..\..\TestClasses\CollectionTestExtensions.cs",
-                @"..\..\..\TestClasses\TemplateTestExtensions.cs",
+                Path.Combine(testProjectFolder, @"TestClasses\MiscTestExtensions.cs"),
+                Path.Combine(testProjectFolder, @"TestClasses\LevelTestExtensions.cs"),
+                Path.Combine(testProjectFolder, @"TestClasses\ArgTestExtensions.cs"),
+                Path.Combine(testProjectFolder, @"TestClasses\EventNameTestExtensions.cs"),
+                Path.Combine(testProjectFolder, @"TestClasses\SignatureTestExtensions.cs"),
+                Path.Combine(testProjectFolder, @"TestClasses\MessageTestExtensions.cs"),
+                Path.Combine(testProjectFolder, @"TestClasses\EnumerableTestExtensions.cs"),
+                Path.Combine(testProjectFolder, @"TestClasses\TestInstances.cs"),
+                Path.Combine(testProjectFolder, @"TestClasses\CollectionTestExtensions.cs"),
+                Path.Combine(testProjectFolder, @"TestClasses\TemplateTestExtensions.cs"),
             };
 
             foreach (var src in sources)
