@@ -1830,7 +1830,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     bRangeAllowStress = false;
 #endif
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
     // Initialize the method name and related info, as it is used early in determining whether to
     // apply stress modes, and which ones to apply.
     // Note that even allocating memory can invoke the stress mechanism, so ensure that both
@@ -1852,7 +1852,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     info.compFullName  = eeGetMethodFullName(methodHnd);
     info.compPerfScore = 0.0;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     info.compMethodHashPrivate = 0;

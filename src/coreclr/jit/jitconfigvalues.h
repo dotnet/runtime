@@ -9,10 +9,11 @@
 #define OPT_CONFIG // Enable optimization level configuration.
 #endif
 
+#if defined(DEBUG)
+
 ///
 /// JIT
 ///
-#if defined(DEBUG)
 CONFIG_INTEGER(AltJitLimit, W("AltJitLimit"), 0)               // Max number of functions to use altjit for (decimal)
 CONFIG_INTEGER(AltJitSkipOnAssert, W("AltJitSkipOnAssert"), 0) // If AltJit hits an assert, fall back to the fallback
                                                                // JIT. Useful in conjunction with
@@ -64,9 +65,8 @@ CONFIG_INTEGER(JitAlignLoopAdaptive,
 
 CONFIG_INTEGER(JitDirectAlloc, W("JitDirectAlloc"), 0)
 CONFIG_INTEGER(JitDoubleAlign, W("JitDoubleAlign"), 1)
-CONFIG_INTEGER(JitDumpASCII, W("JitDumpASCII"), 1)         // Uses only ASCII characters in tree dumps
-CONFIG_INTEGER(JitDumpFgDot, W("JitDumpFgDot"), 0)         // Set to non-zero to emit Dot instead of Xml Flowgraph dump
-CONFIG_INTEGER(JitDumpTerseLsra, W("JitDumpTerseLsra"), 1) // Produce terse dump output for LSRA
+CONFIG_INTEGER(JitDumpASCII, W("JitDumpASCII"), 1)               // Uses only ASCII characters in tree dumps
+CONFIG_INTEGER(JitDumpTerseLsra, W("JitDumpTerseLsra"), 1)       // Produce terse dump output for LSRA
 CONFIG_INTEGER(JitDumpToDebugger, W("JitDumpToDebugger"), 0)     // Output JitDump output to the debugger
 CONFIG_INTEGER(JitDumpVerboseSsa, W("JitDumpVerboseSsa"), 0)     // Produce especially verbose dump output for SSA
 CONFIG_INTEGER(JitDumpVerboseTrees, W("JitDumpVerboseTrees"), 0) // Enable more verbose tree dumps
@@ -195,13 +195,14 @@ CONFIG_METHODSET(NgenUnwindDump, W("NgenUnwindDump")) // Dump the unwind codes f
 ///
 /// JIT
 ///
-CONFIG_STRING(JitDumpFg, W("JitDumpFg"))           // Dumps Xml/Dot Flowgraph for specified method
+CONFIG_METHODSET(JitDumpFg, W("JitDumpFg"))        // Dumps Xml/Dot Flowgraph for specified method
 CONFIG_STRING(JitDumpFgDir, W("JitDumpFgDir"))     // Directory for Xml/Dot flowgraph dump(s)
-CONFIG_STRING(JitDumpFgFile, W("JitDumpFgFile"))   // Filename for Xml/Dot flowgraph dump(s)
+CONFIG_STRING(JitDumpFgFile, W("JitDumpFgFile"))   // Filename for Xml/Dot flowgraph dump(s) (default: "default")
 CONFIG_STRING(JitDumpFgPhase, W("JitDumpFgPhase")) // Phase-based Xml/Dot flowgraph support. Set to the short name of a
                                                    // phase to see the flowgraph after that phase. Leave unset to dump
                                                    // after COLD-BLK (determine first cold block) or set to * for all
                                                    // phases
+CONFIG_INTEGER(JitDumpFgDot, W("JitDumpFgDot"), 1) // 0 == dump XML format; non-zero == dump DOT format
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
 CONFIG_STRING(JitStressModeNames, W("JitStressModeNames")) // Internal Jit stress mode: stress using the given set of
@@ -213,15 +214,16 @@ CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit
 ///
 /// NGEN
 ///
-CONFIG_STRING(NgenDumpFg, W("NgenDumpFg"))         // Ngen Xml Flowgraph support
-CONFIG_STRING(NgenDumpFgDir, W("NgenDumpFgDir"))   // Ngen Xml Flowgraph support
-CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile")) // Ngen Xml Flowgraph support
+CONFIG_METHODSET(NgenDumpFg, W("NgenDumpFg"))      // Ngen Xml/Dot flowgraph dump support
+CONFIG_STRING(NgenDumpFgDir, W("NgenDumpFgDir"))   // Ngen Xml/Dot flowgraph dump support
+CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile")) // Ngen Xml/Dot flowgraph dump support
 ///
 /// JIT Hardware Intrinsics
 ///
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
                                                                            // intrinsic classes
-#endif                                                                     // defined(DEBUG)
+
+#endif // defined(DEBUG)
 
 #if FEATURE_LOOP_ALIGN
 CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loops
