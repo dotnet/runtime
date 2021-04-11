@@ -230,7 +230,7 @@ namespace System
 
             Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
             string name = names[foundItems[--foundItemsCount]];
-            name.AsSpan().CopyTo(resultSpan);
+            name.CopyTo(resultSpan);
             resultSpan = resultSpan.Slice(name.Length);
             while (--foundItemsCount >= 0)
             {
@@ -239,7 +239,7 @@ namespace System
                 resultSpan = resultSpan.Slice(2);
 
                 name = names[foundItems[foundItemsCount]];
-                name.AsSpan().CopyTo(resultSpan);
+                name.CopyTo(resultSpan);
                 resultSpan = resultSpan.Slice(name.Length);
             }
             Debug.Assert(resultSpan.IsEmpty);
