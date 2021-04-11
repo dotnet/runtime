@@ -593,7 +593,6 @@ namespace Microsoft.Extensions.Configuration
                 throw new ArgumentNullException(nameof(property));
             }
 
-
             // Check for a custom property name used for configuration key binding
             foreach (var attributeData in property.GetCustomAttributesData())
             {
