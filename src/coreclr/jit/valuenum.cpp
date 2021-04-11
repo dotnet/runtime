@@ -5847,8 +5847,8 @@ struct ValueNumberState
     }
 
     ValueNumberState(Compiler* comp)
-        : m_toDoAllPredsDone(comp->getAllocator(), /*minSize*/ 4)
-        , m_toDoNotAllPredsDone(comp->getAllocator(), /*minSize*/ 4)
+        : m_toDoAllPredsDone(comp->getAllocator(CMK_ValueNumber), /*minSize*/ 4)
+        , m_toDoNotAllPredsDone(comp->getAllocator(CMK_ValueNumber), /*minSize*/ 4)
         , m_comp(comp)
         , m_visited(new (comp, CMK_ValueNumber) BYTE[comp->fgBBNumMax + 1]())
     {
