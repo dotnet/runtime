@@ -932,7 +932,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocHGlobal((IntPtr)nb);
 
-            s.AsSpan().CopyTo(new Span<char>((char*)ptr, s.Length));
+            s.CopyTo(new Span<char>((char*)ptr, s.Length));
             ((char*)ptr)[s.Length] = '\0';
 
             return ptr;
@@ -979,7 +979,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocCoTaskMem(nb);
 
-            s.AsSpan().CopyTo(new Span<char>((char*)ptr, s.Length));
+            s.CopyTo(new Span<char>((char*)ptr, s.Length));
             ((char*)ptr)[s.Length] = '\0';
 
             return ptr;
@@ -1205,7 +1205,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr bstr = AllocBSTR(s.Length);
 
-            s.AsSpan().CopyTo(new Span<char>((char*)bstr, s.Length)); // AllocBSTR already included the null terminator
+            s.CopyTo(new Span<char>((char*)bstr, s.Length)); // AllocBSTR already included the null terminator
 
             return bstr;
         }
