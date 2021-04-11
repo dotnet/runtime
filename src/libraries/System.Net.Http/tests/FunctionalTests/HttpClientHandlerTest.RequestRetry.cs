@@ -84,7 +84,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_RetryUntilLimitExceeded_ThrowsHttpRequestException()
         {
-            const int MaxRetries = 5;
+            const int MaxRetries = 3;
 
             await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
@@ -97,7 +97,8 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                for (int i = 0; i < MaxRetries; i++)
+                // Note, total attempts will be MaxRetries + 1 for the original attempt.
+                for (int i = 0; i <= MaxRetries; i++)
                 {
                     // Establish connection and then close it before sending a response
                     await server.AcceptConnectionAsync(async connection =>

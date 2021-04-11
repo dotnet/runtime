@@ -53,7 +53,7 @@ namespace System.Net.Http
         private volatile bool _altSvcEnabled = true;
 
         /// <summary>The maximum number of times to retry a request after a failure on an established connection.</summary>
-        private const int MaxConnectionFailureRetries = 5;
+        private const int MaxConnectionFailureRetries = 3;
 
         /// <summary>
         /// If <see cref="_altSvcBlocklist"/> exceeds this size, Alt-Svc will be disabled entirely for <see cref="AltSvcBlocklistTimeoutInMilliseconds"/> milliseconds.
@@ -885,20 +885,23 @@ namespace System.Net.Http
                 }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnConnectionFailure)
                 {
-                    retryCount++;
+                    Debug.Assert(retryCount >= 0 && retryCount <= MaxConnectionFailureRetries);
+
                     if (retryCount == MaxConnectionFailureRetries)
                     {
                         if (NetEventSource.Log.IsEnabled())
                         {
-                            Trace($"MaxConnectionFailureRetries limit hit. Retryable request will not be retried. Exception: {e}");
+                            Trace($"MaxConnectionFailureRetries limit of {MaxConnectionFailureRetries} hit. Retryable request will not be retried. Exception: {e}");
                         }
 
                         throw;
                     }
 
+                    retryCount++;
+
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Retrying request after exception on existing connection: {e}");
+                        Trace($"Retry attempt {retryCount} after connection failure. Connection exception: {e}");
                     }
 
                     // Eat exception and try again.
