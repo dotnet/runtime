@@ -92,5 +92,11 @@
     <ProjectReference Include="VoidMainWithExitCodeApp\VoidMainWithExitCodeApp.csproj" />
     <ProjectReference Include="TestApp\TestApp.csproj" />
     <ProjectReference Include="TargetFrameworkNameTestApp\TargetFrameworkNameTestApp.csproj" />
+
+    <TrimmerRootAssembly Include="AssemblyResolveTestApp" />
+    <TrimmerRootAssembly Include="TestAppOutsideOfTPA" />
+    <TrimmerRootAssembly Include="VoidMainWithExitCodeApp" />
+    <TrimmerRootAssembly Include="TestApp" />
+    <TrimmerRootAssembly Include="TargetFrameworkNameTestApp" />
   </ItemGroup>
 </Project>
