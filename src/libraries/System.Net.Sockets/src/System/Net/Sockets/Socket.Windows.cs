@@ -251,14 +251,14 @@ namespace System.Net.Sockets
             return connectEx(socketHandle, socketAddress, socketAddressSize, buffer, dataLength, out bytesSent, overlapped);
         }
 
-        internal unsafe SocketError WSARecvMsg(SafeSocketHandle socketHandle, IntPtr msg, out int bytesTransferred, NativeOverlapped* overlapped, IntPtr completionRoutine)
+        internal unsafe SocketError WSARecvMsg(SafeSocketHandle socketHandle, Interop.Winsock.WSAMsg* msg, out int bytesTransferred, NativeOverlapped* overlapped, IntPtr completionRoutine)
         {
             WSARecvMsgDelegate recvMsg = GetDynamicWinsockMethods().GetWSARecvMsgDelegate(socketHandle);
 
             return recvMsg(socketHandle, msg, out bytesTransferred, overlapped, completionRoutine);
         }
 
-        internal unsafe SocketError WSARecvMsgBlocking(SafeSocketHandle socketHandle, IntPtr msg, out int bytesTransferred)
+        internal unsafe SocketError WSARecvMsgBlocking(SafeSocketHandle socketHandle, Interop.Winsock.WSAMsg* msg, out int bytesTransferred)
         {
             WSARecvMsgDelegate recvMsg = GetDynamicWinsockMethods().GetWSARecvMsgDelegate(_handle);
 

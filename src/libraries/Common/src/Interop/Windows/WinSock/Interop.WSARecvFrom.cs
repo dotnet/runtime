@@ -43,7 +43,7 @@ internal static partial class Interop
 
         internal static unsafe SocketError WSARecvFrom(
             SafeHandle socketHandle,
-            WSABuffer[] buffers,
+            ReadOnlySpan<WSABuffer> buffers,
             int bufferCount,
             out int bytesTransferred,
             ref SocketFlags socketFlags,
@@ -53,7 +53,7 @@ internal static partial class Interop
             IntPtr completionRoutine)
         {
             Debug.Assert(buffers != null && buffers.Length > 0);
-            fixed (WSABuffer* buffersPtr = &buffers[0])
+            fixed (WSABuffer* buffersPtr = &MemoryMarshal.GetReference(buffers))
             {
                 return WSARecvFrom(socketHandle, buffersPtr, bufferCount, out bytesTransferred, ref socketFlags, socketAddressPointer, socketAddressSizePointer, overlapped, completionRoutine);
             }

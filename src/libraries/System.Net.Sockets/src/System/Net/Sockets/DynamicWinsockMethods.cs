@@ -146,7 +146,7 @@ namespace System.Net.Sockets
     [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
     internal unsafe delegate SocketError WSARecvMsgDelegate(
                 SafeSocketHandle socketHandle,
-                IntPtr msg,
+                Interop.Winsock.WSAMsg* msg,
                 out int bytesTransferred,
                 NativeOverlapped* overlapped,
                 IntPtr completionRoutine);
