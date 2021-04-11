@@ -1328,26 +1328,26 @@ namespace System
         public static System.DateOnly Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
         public static System.DateOnly ParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format) { throw null; }
         public static System.DateOnly ParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
-        public static System.DateOnly ParseExact(System.ReadOnlySpan<char> s, string [] formats) { throw null; }
-        public static System.DateOnly ParseExact(System.ReadOnlySpan<char> s, string [] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateOnly ParseExact(System.ReadOnlySpan<char> s, string[] formats) { throw null; }
+        public static System.DateOnly ParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
         public static System.DateOnly Parse(string s) { throw null; }
         public static System.DateOnly Parse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
         public static System.DateOnly ParseExact(string s, string format) { throw null; }
         public static System.DateOnly ParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
-        public static System.DateOnly ParseExact(string s, string [] formats) { throw null; }
-        public static System.DateOnly ParseExact(string s, string [] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateOnly ParseExact(string s, string[] formats) { throw null; }
+        public static System.DateOnly ParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.DateOnly result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
         public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, out System.DateOnly result) { throw null; }
         public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
-        public static bool TryParseExact(System.ReadOnlySpan<char> s, string [] formats, out System.DateOnly result) { throw null; }
-        public static bool TryParseExact(System.ReadOnlySpan<char> s, string [] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
         public static bool TryParse(string s, out System.DateOnly result) { throw null; }
         public static bool TryParse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
         public static bool TryParseExact(string s, string format, out System.DateOnly result) { throw null; }
         public static bool TryParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
-        public static bool TryParseExact(string s, string [] formats, out System.DateOnly result) { throw null; }
-        public static bool TryParseExact(string s, string [] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(string s, string[] formats, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
         public string ToLongDateString() { throw null; }
         public string ToShortDateString() { throw null; }
         public override string ToString() { throw null; }
@@ -3839,26 +3839,26 @@ namespace System
         public static System.TimeOnly Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
         public static System.TimeOnly ParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format) { throw null; }
         public static System.TimeOnly ParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
-        public static System.TimeOnly ParseExact(System.ReadOnlySpan<char> s, string [] formats) { throw null; }
-        public static System.TimeOnly ParseExact(System.ReadOnlySpan<char> s, string [] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.TimeOnly ParseExact(System.ReadOnlySpan<char> s, string[] formats) { throw null; }
+        public static System.TimeOnly ParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
         public static System.TimeOnly Parse(string s) { throw null; }
         public static System.TimeOnly Parse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
         public static System.TimeOnly ParseExact(string s, string format) { throw null; }
         public static System.TimeOnly ParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
-        public static System.TimeOnly ParseExact(string s, string [] formats) { throw null; }
-        public static System.TimeOnly ParseExact(string s, string [] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.TimeOnly ParseExact(string s, string[] formats) { throw null; }
+        public static System.TimeOnly ParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.TimeOnly result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
         public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, out System.TimeOnly result) { throw null; }
         public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
-        public static bool TryParseExact(System.ReadOnlySpan<char> s, string [] formats, out System.TimeOnly result) { throw null; }
-        public static bool TryParseExact(System.ReadOnlySpan<char> s, string [] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
         public static bool TryParse(string s, out System.TimeOnly result) { throw null; }
         public static bool TryParse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
         public static bool TryParseExact(string s, string format, out System.TimeOnly result) { throw null; }
         public static bool TryParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
-        public static bool TryParseExact(string s, string [] formats, out System.TimeOnly result) { throw null; }
-        public static bool TryParseExact(string s, string [] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(string s, string[] formats, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
         public string ToLongTimeString() { throw null; }
         public string ToShortTimeString() { throw null; }
         public override string ToString() { throw null; }
