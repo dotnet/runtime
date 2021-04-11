@@ -13,8 +13,8 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override object CreateObject(ref ReadStackFrame frame)
         {
-            var createObject = (JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>)
-                frame.JsonClassInfo.CreateObjectWithArgs!;
+            var createObject = (JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>)
+                frame.JsonTypeInfo.CreateObjectWithArgs!;
             var arguments = (Arguments<TArg0, TArg1, TArg2, TArg3>)frame.CtorArgumentState!.Arguments;
             return createObject!(arguments.Arg0, arguments.Arg1, arguments.Arg2, arguments.Arg3);
         }
@@ -74,17 +74,17 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
-            if (classInfo.CreateObjectWithArgs == null)
+            if (typeInfo.CreateObjectWithArgs == null)
             {
-                classInfo.CreateObjectWithArgs =
+                typeInfo.CreateObjectWithArgs =
                     options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo!);
             }
 
             var arguments = new Arguments<TArg0, TArg1, TArg2, TArg3>();
 
-            foreach (JsonParameterInfo parameterInfo in classInfo.ParameterCache!.Values)
+            foreach (JsonParameterInfo parameterInfo in typeInfo.ParameterCache!.Values)
             {
                 if (parameterInfo.ShouldDeserialize)
                 {

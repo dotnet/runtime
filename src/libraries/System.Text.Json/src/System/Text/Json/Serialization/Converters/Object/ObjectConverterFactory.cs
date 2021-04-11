@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (parameterCount <= JsonConstants.UnboxedParameterCountThreshold)
                 {
-                    Type placeHolderType = JsonClassInfo.ObjectType;
+                    Type placeHolderType = JsonTypeInfo.ObjectType;
                     Type[] typeArguments = new Type[JsonConstants.UnboxedParameterCountThreshold + 1];
 
                     typeArguments[0] = typeToConvert;

@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("Path:{JsonPath()} Current: ClassType.{Current.JsonClassInfo.ClassType}, {Current.JsonClassInfo.Type.Name}")]
+    [DebuggerDisplay("Path:{JsonPath()} Current: ClassType.{Current.JsonTypeInfo.ClassType}, {Current.JsonTypeInfo.Type.Name}")]
     internal struct ReadStack
     {
         internal static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
@@ -81,11 +81,11 @@ namespace System.Text.Json
 
         public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonClassInfo jsonClassInfo = options.GetOrAddClassForRootType(type);
-            Current.JsonClassInfo = jsonClassInfo;
+            JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
+            Current.JsonTypeInfo = jsonTypeInfo;
 
             // The initial JsonPropertyInfo will be used to obtain the converter.
-            Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+            Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
 
             Current.NumberHandling = Current.JsonPropertyInfo.NumberHandling;
 
@@ -110,36 +110,36 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    JsonClassInfo jsonClassInfo;
+                    JsonTypeInfo jsonTypeInfo;
                     JsonNumberHandling? numberHandling = Current.NumberHandling;
 
-                    if (Current.JsonClassInfo.ClassType == ClassType.Object)
+                    if (Current.JsonTypeInfo.ClassType == ClassType.Object)
                     {
                         if (Current.JsonPropertyInfo != null)
                         {
-                            jsonClassInfo = Current.JsonPropertyInfo.RuntimeClassInfo;
+                            jsonTypeInfo = Current.JsonPropertyInfo.RuntimeTypeInfo;
                         }
                         else
                         {
-                            jsonClassInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeClassInfo;
+                            jsonTypeInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeTypeInfo;
                         }
                     }
-                    else if (((ClassType.Value | ClassType.NewValue) & Current.JsonClassInfo.ClassType) != 0)
+                    else if (((ClassType.Value | ClassType.NewValue) & Current.JsonTypeInfo.ClassType) != 0)
                     {
                         // Although ClassType.Value doesn't push, a custom custom converter may re-enter serialization.
-                        jsonClassInfo = Current.JsonPropertyInfo!.RuntimeClassInfo;
+                        jsonTypeInfo = Current.JsonPropertyInfo!.RuntimeTypeInfo;
                     }
                     else
                     {
-                        Debug.Assert(((ClassType.Enumerable | ClassType.Dictionary) & Current.JsonClassInfo.ClassType) != 0);
-                        jsonClassInfo = Current.JsonClassInfo.ElementClassInfo!;
+                        Debug.Assert(((ClassType.Enumerable | ClassType.Dictionary) & Current.JsonTypeInfo.ClassType) != 0);
+                        jsonTypeInfo = Current.JsonTypeInfo.ElementTypeInfo!;
                     }
 
                     AddCurrent();
                     Current.Reset();
 
-                    Current.JsonClassInfo = jsonClassInfo;
-                    Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
+                    Current.JsonTypeInfo = jsonTypeInfo;
+                    Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
                     // Allow number handling on property to win over handling on type.
                     Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.NumberHandling;
                 }
@@ -248,7 +248,7 @@ namespace System.Text.Json
                 string? propertyName = GetPropertyName(frame);
                 AppendPropertyName(sb, propertyName);
 
-                if (frame.JsonClassInfo != null && frame.IsProcessingEnumerable())
+                if (frame.JsonTypeInfo != null && frame.IsProcessingEnumerable())
                 {
                     IEnumerable? enumerable = (IEnumerable?)frame.ReturnValue;
                     if (enumerable == null)
@@ -337,7 +337,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetConstructorArgumentState()
         {
-            if (Current.JsonClassInfo.ParameterCount > 0)
+            if (Current.JsonTypeInfo.ParameterCount > 0)
             {
                 // A zero index indicates a new stack frame.
                 if (Current.CtorArgumentStateIndex == 0)

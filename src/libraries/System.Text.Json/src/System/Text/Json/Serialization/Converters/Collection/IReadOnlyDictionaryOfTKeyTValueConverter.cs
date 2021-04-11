@@ -42,9 +42,9 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (Dictionary<TKey, TValue>.Enumerator)state.Current.CollectionEnumerator;
             }
 
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
-            _keyConverter ??= GetConverter<TKey>(classInfo.KeyClassInfo!);
-            _valueConverter ??= GetConverter<TValue>(classInfo.ElementClassInfo!);
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
+            _keyConverter ??= GetConverter<TKey>(typeInfo.KeyTypeInfo!);
+            _valueConverter ??= GetConverter<TValue>(typeInfo.ElementTypeInfo!);
 
             do
             {

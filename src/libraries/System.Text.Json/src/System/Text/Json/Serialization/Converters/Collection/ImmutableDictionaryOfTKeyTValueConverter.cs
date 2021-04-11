@@ -24,13 +24,13 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
-            Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>? creator = (Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>?)classInfo.CreateObjectWithArgs;
+            Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>? creator = (Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>?)typeInfo.CreateObjectWithArgs;
             if (creator == null)
             {
                 creator = options.MemberAccessorStrategy.CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>();
-                classInfo.CreateObjectWithArgs = creator;
+                typeInfo.CreateObjectWithArgs = creator;
             }
 
             state.Current.ReturnValue = creator((Dictionary<TKey, TValue>)state.Current.ReturnValue!);
@@ -53,9 +53,9 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (IEnumerator<KeyValuePair<TKey, TValue>>)state.Current.CollectionEnumerator;
             }
 
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
-            _keyConverter ??= GetConverter<TKey>(classInfo.KeyClassInfo!);
-            _valueConverter ??= GetConverter<TValue>(classInfo.ElementClassInfo!);
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
+            _keyConverter ??= GetConverter<TKey>(typeInfo.KeyTypeInfo!);
+            _valueConverter ??= GetConverter<TValue>(typeInfo.ElementTypeInfo!);
 
             do
             {

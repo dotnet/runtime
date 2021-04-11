@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            if (JsonClassInfo.ObjectType == typeToConvert)
+            if (JsonTypeInfo.ObjectType == typeToConvert)
             {
                 if (options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode)
                 {
@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         public override bool CanConvert(Type typeToConvert) =>
-            typeToConvert == JsonClassInfo.ObjectType ||
+            typeToConvert == JsonTypeInfo.ObjectType ||
             typeof(JsonNode).IsAssignableFrom(typeToConvert);
     }
 }

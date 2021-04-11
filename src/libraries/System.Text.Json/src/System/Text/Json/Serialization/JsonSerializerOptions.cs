@@ -19,11 +19,11 @@ namespace System.Text.Json
 
         internal static readonly JsonSerializerOptions s_defaultOptions = new JsonSerializerOptions();
 
-        private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
+        private readonly ConcurrentDictionary<Type, JsonTypeInfo> _classes = new ConcurrentDictionary<Type, JsonTypeInfo>();
 
         // Simple LRU cache for the public (de)serialize entry points that avoid some lookups in _classes.
         // Although this may be written by multiple threads, 'volatile' was not added since any local affinity is fine.
-        private JsonClassInfo? _lastClass { get; set; }
+        private JsonTypeInfo? _lastClass { get; set; }
 
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
 
@@ -94,7 +94,7 @@ namespace System.Text.Json
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
 
-            // _classes is not copied as sharing the JsonClassInfo and JsonPropertyInfo caches can result in
+            // _classes is not copied as sharing the JsonTypeInfo and JsonPropertyInfo caches can result in
             // unnecessary references to type metadata, potentially hindering garbage collection on the source options.
 
             // _haveTypesBeenCreated is not copied; it's okay to make changes to this options instance as (de)serialization has not occurred.
@@ -528,34 +528,34 @@ namespace System.Text.Json
             }
         }
 
-        internal JsonClassInfo GetOrAddClass(Type type)
+        internal JsonTypeInfo GetOrAddClass(Type type)
         {
             _haveTypesBeenCreated = true;
 
-            // todo: for performance and reduced instances, consider using the converters and JsonClassInfo from s_defaultOptions by cloning (or reference directly if no changes).
+            // todo: for performance and reduced instances, consider using the converters and JsonTypeInfo from s_defaultOptions by cloning (or reference directly if no changes).
             // https://github.com/dotnet/runtime/issues/32357
-            if (!_classes.TryGetValue(type, out JsonClassInfo? result))
+            if (!_classes.TryGetValue(type, out JsonTypeInfo? result))
             {
-                result = _classes.GetOrAdd(type, new JsonClassInfo(type, this));
+                result = _classes.GetOrAdd(type, new JsonTypeInfo(type, this));
             }
 
             return result;
         }
 
         /// <summary>
-        /// Return the ClassInfo for root API calls.
+        /// Return the TypeInfo for root API calls.
         /// This has a LRU cache that is intended only for public API calls that specify the root type.
         /// </summary>
-        internal JsonClassInfo GetOrAddClassForRootType(Type type)
+        internal JsonTypeInfo GetOrAddClassForRootType(Type type)
         {
-            JsonClassInfo? jsonClassInfo = _lastClass;
-            if (jsonClassInfo?.Type != type)
+            JsonTypeInfo? jsonTypeInfo = _lastClass;
+            if (jsonTypeInfo?.Type != type)
             {
-                jsonClassInfo = GetOrAddClass(type);
-                _lastClass = jsonClassInfo;
+                jsonTypeInfo = GetOrAddClass(type);
+                _lastClass = jsonTypeInfo;
             }
 
-            return jsonClassInfo;
+            return jsonTypeInfo;
         }
 
         internal bool TypeIsCached(Type type)

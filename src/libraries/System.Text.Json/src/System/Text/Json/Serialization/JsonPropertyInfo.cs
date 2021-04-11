@@ -13,7 +13,7 @@ namespace System.Text.Json
     {
         public static readonly JsonPropertyInfo s_missingProperty = GetPropertyPlaceholder();
 
-        private JsonClassInfo? _runtimeClassInfo;
+        private JsonTypeInfo? _runtimeTypeInfo;
 
         public ClassType ClassType;
 
@@ -23,7 +23,7 @@ namespace System.Text.Json
         {
             JsonPropertyInfo info = new JsonPropertyInfo<object>();
 
-            Debug.Assert(!info.IsForClassInfo);
+            Debug.Assert(!info.IsForTypeInfo);
             Debug.Assert(!info.ShouldDeserialize);
             Debug.Assert(!info.ShouldSerialize);
 
@@ -186,7 +186,7 @@ namespace System.Text.Json
         {
             bool numberHandlingIsApplicable = ConverterBase.IsInternalConverterForNumberType || TypeIsCollectionOfNumbersWithInternalConverter();
 
-            if (IsForClassInfo)
+            if (IsForTypeInfo)
             {
                 if (parentTypeNumberHandling != null && !ConverterBase.IsInternalConverter)
                 {
@@ -261,7 +261,7 @@ namespace System.Text.Json
                 elementType == typeof(ushort) ||
                 elementType == typeof(uint) ||
                 elementType == typeof(ulong) ||
-                elementType == JsonClassInfo.ObjectType)
+                elementType == JsonTypeInfo.ObjectType)
             {
                 return true;
             }
@@ -308,9 +308,9 @@ namespace System.Text.Json
         public bool IgnoreDefaultValuesOnWrite { get; private set; }
 
         /// <summary>
-        /// True if the corresponding cref="JsonClassInfo.PropertyInfoForClassInfo"/> is this instance.
+        /// True if the corresponding cref="JsonTypeInfo.PropertyInfoForTypeInfo"/> is this instance.
         /// </summary>
-        public bool IsForClassInfo { get; protected set; }
+        public bool IsForTypeInfo { get; protected set; }
 
         // There are 3 copies of the property name:
         // 1) NameAsString. The unescaped property name.
@@ -335,7 +335,7 @@ namespace System.Text.Json
         /// </summary>
         public byte[] EscapedNameSection = null!;
 
-        // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
+        // Options can be referenced here since all JsonPropertyInfos originate from a JsonTypeInfo that is cached on JsonSerializerOptions.
         protected JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
 
         public bool ReadJsonAndAddExtensionProperty(object obj, ref ReadStack state, ref Utf8JsonReader reader)
@@ -353,7 +353,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    JsonConverter<object> converter = (JsonConverter<object>)Options.GetConverter(JsonClassInfo.ObjectType);
+                    JsonConverter<object> converter = (JsonConverter<object>)Options.GetConverter(JsonTypeInfo.ObjectType);
 
                     if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out object? value))
                     {
@@ -389,9 +389,9 @@ namespace System.Text.Json
 
         public bool ReadJsonExtensionDataValue(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
         {
-            Debug.Assert(this == state.Current.JsonClassInfo.DataExtensionProperty);
+            Debug.Assert(this == state.Current.JsonTypeInfo.DataExtensionProperty);
 
-            if (RuntimeClassInfo.ElementType == JsonClassInfo.ObjectType && reader.TokenType == JsonTokenType.Null)
+            if (RuntimeTypeInfo.ElementType == JsonTypeInfo.ObjectType && reader.TokenType == JsonTokenType.Null)
             {
                 value = null;
                 return true;
@@ -413,16 +413,16 @@ namespace System.Text.Json
 
         public MemberInfo? MemberInfo { get; private set; }
 
-        public JsonClassInfo RuntimeClassInfo
+        public JsonTypeInfo RuntimeTypeInfo
         {
             get
             {
-                if (_runtimeClassInfo == null)
+                if (_runtimeTypeInfo == null)
                 {
-                    _runtimeClassInfo = Options.GetOrAddClass(RuntimePropertyType!);
+                    _runtimeTypeInfo = Options.GetOrAddClass(RuntimePropertyType!);
                 }
 
-                return _runtimeClassInfo;
+                return _runtimeTypeInfo;
             }
         }
 

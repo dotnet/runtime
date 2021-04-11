@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization
 {
     internal sealed class ReflectionMemberAccessor : MemberAccessor
     {
-        public override JsonClassInfo.ConstructorDelegate? CreateConstructor(Type type)
+        public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(Type type)
         {
             Debug.Assert(type != null);
             ConstructorInfo? realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization
             return () => Activator.CreateInstance(type, nonPublic: false);
         }
 
-        public override JsonClassInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)
+        public override JsonTypeInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)
         {
             Type type = typeof(T);
 
@@ -66,7 +66,7 @@ namespace System.Text.Json.Serialization
             };
         }
 
-        public override JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
+        public override JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
             CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo constructor)
         {
             Type type = typeof(T);
@@ -111,7 +111,7 @@ namespace System.Text.Json.Serialization
         public override Action<TCollection, object?> CreateAddMethodDelegate<TCollection>()
         {
             Type collectionType = typeof(TCollection);
-            Type elementType = JsonClassInfo.ObjectType;
+            Type elementType = JsonTypeInfo.ObjectType;
 
             // We verified this won't be null when we created the converter for the collection type.
             MethodInfo addMethod = (collectionType.GetMethod("Push") ?? collectionType.GetMethod("Enqueue"))!;

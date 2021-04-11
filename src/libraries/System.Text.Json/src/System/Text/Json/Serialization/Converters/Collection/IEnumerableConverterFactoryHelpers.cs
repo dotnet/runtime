@@ -48,7 +48,7 @@ namespace System.Text.Json.Serialization
 
             Type? baseTypeToCheck = type;
 
-            while (baseTypeToCheck != null && baseTypeToCheck != JsonClassInfo.ObjectType)
+            while (baseTypeToCheck != null && baseTypeToCheck != JsonTypeInfo.ObjectType)
             {
                 if (baseTypeToCheck.IsGenericType)
                 {

@@ -51,10 +51,10 @@ namespace System.Text.Json.Serialization.Converters
             JsonSerializerOptions options,
             out JsonParameterInfo? jsonParameterInfo)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
             ArgumentState? argState = state.Current.CtorArgumentState;
 
-            Debug.Assert(classInfo.ClassType == ClassType.Object);
+            Debug.Assert(typeInfo.ClassType == ClassType.Object);
             Debug.Assert(argState != null);
             Debug.Assert(_keyName != null);
             Debug.Assert(_valueName != null);
@@ -67,13 +67,13 @@ namespace System.Text.Json.Serialization.Converters
             if (!argState.FoundKey &&
                 FoundKeyProperty(propertyName, caseInsensitiveMatch))
             {
-                jsonParameterInfo = classInfo.ParameterCache![_keyName];
+                jsonParameterInfo = typeInfo.ParameterCache![_keyName];
                 argState.FoundKey = true;
             }
             else if (!argState.FoundValue &&
                 FoundValueProperty(propertyName, caseInsensitiveMatch))
             {
-                jsonParameterInfo = classInfo.ParameterCache![_valueName];
+                jsonParameterInfo = typeInfo.ParameterCache![_valueName];
                 argState.FoundValue = true;
             }
             else

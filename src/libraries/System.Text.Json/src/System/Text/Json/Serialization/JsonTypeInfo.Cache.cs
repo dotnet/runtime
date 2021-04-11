@@ -11,7 +11,7 @@ using System.Text.Json.Serialization;
 namespace System.Text.Json
 {
     [DebuggerDisplay("ClassType.{ClassType}, {Type.Name}")]
-    internal sealed partial class JsonClassInfo
+    internal sealed partial class JsonTypeInfo
     {
         /// <summary>
         /// Cached typeof(object). It is faster to cache this than to call typeof(object) multiple times.
@@ -112,9 +112,9 @@ namespace System.Text.Json
 
         /// <summary>
         /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
-        /// See <seealso cref="JsonClassInfo.PropertyInfoForClassInfo"/>.
+        /// See <seealso cref="JsonTypeInfo.PropertyInfoForTypeInfo"/>.
         /// </summary>
-        internal static JsonPropertyInfo CreatePropertyInfoForClassInfo(
+        internal static JsonPropertyInfo CreatePropertyInfoForTypeInfo(
             Type declaredPropertyType,
             Type runtimePropertyType,
             JsonConverter converter,
@@ -126,12 +126,12 @@ namespace System.Text.Json
                 declaredPropertyType: declaredPropertyType,
                 runtimePropertyType: runtimePropertyType,
                 memberInfo: null, // Not a real property so this is null.
-                parentClassType: JsonClassInfo.ObjectType, // a dummy value (not used)
+                parentClassType: JsonTypeInfo.ObjectType, // a dummy value (not used)
                 converter: converter,
                 options,
                 parentTypeNumberHandling: numberHandling);
 
-            Debug.Assert(jsonPropertyInfo.IsForClassInfo);
+            Debug.Assert(jsonPropertyInfo.IsForTypeInfo);
 
             return jsonPropertyInfo;
         }

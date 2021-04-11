@@ -153,8 +153,8 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\VersionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonCamelCaseNamingPolicy.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonClassInfo.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonClassInfo.Cache.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonTypeInfo.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonTypeInfo.Cache.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.ReadAhead.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterFactory.cs" />
