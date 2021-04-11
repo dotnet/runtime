@@ -250,11 +250,7 @@ namespace System.Net.Security
         public static unsafe SecurityStatusPal EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
         {
             // Ensure that there is sufficient space for the message output.
-            int bufferSizeNeeded = checked(input.Length + headerSize + trailerSize);
-            if (output == null || output.Length < bufferSizeNeeded)
-            {
-                output = new byte[bufferSizeNeeded];
-            }
+            Debug.Assert(output is not null && output.Length >= checked(input.Length + headerSize + trailerSize));
 
             // Copy the input into the output buffer to prepare for SCHANNEL's expectations
             input.Span.CopyTo(new Span<byte>(output, headerSize, input.Length));

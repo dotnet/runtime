@@ -70,7 +70,7 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal EncryptMessage(
-            SafeDeleteContext securityContext,
+            SafeDeleteSslContext securityContext,
             ReadOnlyMemory<byte> input,
             int headerSize,
             int trailerSize,
@@ -83,8 +83,7 @@ namespace System.Net.Security
 
             try
             {
-                SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
-                SafeSslHandle sslHandle = sslContext.SslContext;
+                SafeSslHandle sslHandle = securityContext.SslContext;
 
                 unsafe
                 {
@@ -104,13 +103,13 @@ namespace System.Net.Security
                                 Interop.AppleCrypto.CreateExceptionForOSStatus((int)status));
                         }
 
-                        if (sslContext.BytesReadyForConnection <= output?.Length)
+                        if (securityContext.BytesReadyForConnection <= output?.Length)
                         {
-                            resultSize = sslContext.ReadPendingWrites(output, 0, output.Length);
+                            resultSize = securityContext.ReadPendingWrites(output, 0, output.Length);
                         }
                         else
                         {
-                            output = sslContext.ReadPendingWrites()!;
+                            output = securityContext.ReadPendingWrites()!;
                             resultSize = output.Length;
                         }
 
@@ -138,17 +137,16 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal DecryptMessage(
-            SafeDeleteContext securityContext,
+            SafeDeleteSslContext securityContext,
             byte[] buffer,
             ref int offset,
             ref int count)
         {
             try
             {
-                SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
-                SafeSslHandle sslHandle = sslContext.SslContext;
+                SafeSslHandle sslHandle = securityContext.SslContext;
 
-                sslContext.Write(buffer.AsSpan(offset, count));
+                securityContext.Write(buffer.AsSpan(offset, count));
 
                 unsafe
                 {

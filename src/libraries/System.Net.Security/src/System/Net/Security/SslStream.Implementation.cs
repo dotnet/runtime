@@ -37,7 +37,7 @@ namespace System.Net.Security
         private object _handshakeLock => _sslAuthenticationOptions!;
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
 
-        private const int FrameOverhead = 32;
+        private const int FrameOverhead = 64;
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
         private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
         private ArrayBuffer _handshakeBuffer;
@@ -635,7 +635,7 @@ namespace System.Net.Security
             where TIOAdapter : struct, IReadWriteAdapter
         {
             // For rented buffer size:
-            //     Prior to handshake; when _context is not yet set, we will use FrameOverhead.
+            //     When _context is not yet set, we will use FrameOverhead estimation.
             //     After we will use whichever is greater of (Header + Trailer) or FrameOverhead.
             int bufferSize = Math.Max(
                 _context is not null ? checked(buffer.Length + _context.HeaderSize + _context.TrailerSize) : 0,
