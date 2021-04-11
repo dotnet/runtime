@@ -634,7 +634,8 @@ namespace System.Net.Security
         private ValueTask WriteSingleChunk<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TIOAdapter : struct, IReadWriteAdapter
         {
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length + FrameOverhead);
+            int bufferSize = Math.Max(_context is not null ? checked(buffer.Length + _context.HeaderSize + _context.TrailerSize) : 0, buffer.Length + FrameOverhead);
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             byte[] outBuffer = rentedBuffer;
 
             SecurityStatusPal status;

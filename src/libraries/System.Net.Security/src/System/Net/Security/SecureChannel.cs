@@ -55,6 +55,10 @@ namespace System.Net.Security
             _ssl = sslStream;
         }
 
+        internal int HeaderSize => _headerSize;
+
+        internal int TrailerSize => _trailerSize;
+
         //
         // SecureChannel properties
         //
