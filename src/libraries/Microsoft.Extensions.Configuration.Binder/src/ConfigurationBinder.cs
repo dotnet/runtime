@@ -593,6 +593,7 @@ namespace Microsoft.Extensions.Configuration
                 throw new ArgumentNullException(nameof(property));
             }
 
+
             // Check for a custom property name used for configuration key binding
             foreach (var attributeData in property.GetCustomAttributesData())
             {
@@ -601,7 +602,7 @@ namespace Microsoft.Extensions.Configuration
                     continue;
                 }
 
-                // Assumes ConfiguratKeyName constructor first arg is a string key name
+                // Assumes (ConfigurationKeyName constructor first arg is a string key name
                 string name = attributeData
                     .ConstructorArguments
                     .First()
