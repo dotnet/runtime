@@ -9,7 +9,7 @@ namespace System.Numerics
 {
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Numerics, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct BigInteger : IFormattable, IComparable, IComparable<BigInteger>, IEquatable<BigInteger>
+    public readonly struct BigInteger : IFormattable, IComparable, IComparable<BigInteger>, IEquatable<BigInteger>, ISpanFormattable
     {
         private const uint kuMaskHighBit = unchecked((uint)int.MinValue);
         private const int kcbitUint = 32;
