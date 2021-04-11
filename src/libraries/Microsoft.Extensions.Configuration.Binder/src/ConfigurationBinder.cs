@@ -596,29 +596,19 @@ namespace Microsoft.Extensions.Configuration
             // Check for a custom property name used for configuration key binding
             foreach (var attributeData in property.GetCustomAttributesData())
             {
-                if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute) ||
-                    attributeData.ConstructorArguments.Count == 0)
+                if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute))
                 {
-                    // ConfigurationKeyName expected to have a single string constructor argument
                     continue;
                 }
 
-                var constructorArgument = attributeData.ConstructorArguments.First();
-                if (constructorArgument.ArgumentType != typeof(string) ||
-                    constructorArgument.Value == null)
-                {
-                    // First argument didn't contain the expected string value
-                    break;
-                }
+                // Assumes ConfiguratKeyName constructor first arg is a string key name
+                string name = attributeData
+                    .ConstructorArguments
+                    .First()
+                    .Value?
+                    .ToString();
 
-                string name = constructorArgument.Value.ToString();
-                if (!string.IsNullOrWhiteSpace(name))
-                {
-                    return name;
-                }
-
-                // No custom string "name" provided - we're done here.
-                break;
+                return !string.IsNullOrWhiteSpace(name) ? name : property.Name;
             }
 
             return property.Name;
