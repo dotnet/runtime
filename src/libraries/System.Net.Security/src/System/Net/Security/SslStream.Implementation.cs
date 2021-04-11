@@ -634,7 +634,13 @@ namespace System.Net.Security
         private ValueTask WriteSingleChunk<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TIOAdapter : struct, IReadWriteAdapter
         {
-            int bufferSize = Math.Max(_context is not null ? checked(buffer.Length + _context.HeaderSize + _context.TrailerSize) : 0, buffer.Length + FrameOverhead);
+            // For rented buffer size:
+            //     Prior to handshake; when _context is not yet set, we will use FrameOverhead.
+            //     After we will use whichever is greater of (Header + Trailer) or FrameOverhead.
+            int bufferSize = Math.Max(
+                _context is not null ? checked(buffer.Length + _context.HeaderSize + _context.TrailerSize) : 0,
+                buffer.Length + FrameOverhead);
+
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             byte[] outBuffer = rentedBuffer;
 
@@ -684,19 +690,18 @@ namespace System.Net.Security
 
             async ValueTask WaitAndWriteAsync(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer, Task waitTask, byte[] rentedBuffer)
             {
-                byte[]? bufferToReturn = rentedBuffer;
-                byte[] outBuffer = rentedBuffer;
                 try
                 {
                     // Wait for renegotiation to finish.
                     await waitTask.ConfigureAwait(false);
 
+                    byte[] outBuffer = rentedBuffer;
                     SecurityStatusPal status = EncryptData(buffer, ref outBuffer, out int encryptedBytes);
                     if (status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
                     {
                         // No need to hold on the buffer any more.
-                        ArrayPool<byte>.Shared.Return(bufferToReturn);
-                        bufferToReturn = null;
+                        ArrayPool<byte>.Shared.Return(rentedBuffer);
+                        rentedBuffer = null!;
                         // Call WriteSingleChunk() recursively to avoid code duplication.
                         // This should be extremely rare in cases when second renegotiation happens concurrently with Write.
                         await WriteSingleChunk(writeAdapter, buffer).ConfigureAwait(false);
@@ -712,9 +717,9 @@ namespace System.Net.Security
                 }
                 finally
                 {
-                    if (bufferToReturn != null)
+                    if (rentedBuffer != null)
                     {
-                        ArrayPool<byte>.Shared.Return(bufferToReturn);
+                        ArrayPool<byte>.Shared.Return(rentedBuffer);
                     }
                 }
             }
