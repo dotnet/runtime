@@ -604,8 +604,7 @@ namespace Microsoft.Extensions.Configuration
 
                 // Assumes ConfigurationKeyName constructor first arg is a string key name
                 string name = attributeData
-                    .ConstructorArguments
-                    .First()
+                    .ConstructorArguments[0]
                     .Value?
                     .ToString();
 
