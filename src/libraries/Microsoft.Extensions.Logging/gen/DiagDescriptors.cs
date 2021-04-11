@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Logging.Generators
     internal static class DiagDescriptors
     {
         public static DiagnosticDescriptor InvalidLoggingMethodName { get; } = new (
-            id: "LG0000",
+            id: "SYSLIB0013",
             title: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodNameTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodNameMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor ShouldntMentionLogLevelInMessage { get; } = new (
-            id: "LG0001",
+            id: "SYSLIB0014",
             title: new LocalizableResourceString(nameof(SR.ShouldntMentionLogLevelInMessageTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.ShouldntMentionLogLevelInMessageMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor InvalidLoggingMethodParameterName { get; } = new (
-            id: "LG0002",
+            id: "SYSLIB0015",
             title: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterNameTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterNameMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor LoggingMethodInNestedType { get; } = new (
-            id: "LG0003",
+            id: "SYSLIB0016",
             title: new LocalizableResourceString(nameof(SR.LoggingMethodInNestedTypeTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.LoggingMethodInNestedTypeMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor MissingRequiredType { get; } = new (
-            id: "LG0004",
+            id: "SYSLIB0017",
             title: new LocalizableResourceString(nameof(SR.MissingRequiredTypeTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.MissingRequiredTypeMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor ShouldntReuseEventIds { get; } = new (
-            id: "LG0005",
+            id: "SYSLIB0018",
             title: new LocalizableResourceString(nameof(SR.ShouldntReuseEventIdsTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.ShouldntReuseEventIdsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor LoggingMethodMustReturnVoid { get; } = new (
-            id: "LG0006",
+            id: "SYSLIB0019",
             title: new LocalizableResourceString(nameof(SR.LoggingMethodMustReturnVoidTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.LoggingMethodMustReturnVoidMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor MissingLoggerArgument { get; } = new (
-            id: "LG0007",
+            id: "SYSLIB0020",
             title: new LocalizableResourceString(nameof(SR.MissingLoggerArgumentTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.MissingLoggerArgumentMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor LoggingMethodShouldBeStatic { get; } = new (
-            id: "LG0008",
+            id: "SYSLIB0021",
             title: new LocalizableResourceString(nameof(SR.LoggingMethodShouldBeStaticTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.LoggingMethodShouldBeStaticMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor LoggingMethodMustBePartial { get; } = new (
-            id: "LG0009",
+            id: "SYSLIB0022",
             title: new LocalizableResourceString(nameof(SR.LoggingMethodMustBePartialTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.LoggingMethodMustBePartialMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor LoggingMethodIsGeneric { get; } = new (
-            id: "LG0010",
+            id: "SYSLIB0023",
             title: new LocalizableResourceString(nameof(SR.LoggingMethodIsGenericTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.LoggingMethodIsGenericMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -97,17 +97,15 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor RedundantQualifierInMessage { get; } = new (
-            id: "LG0011",
+            id: "SYSLIB0024",
             title: new LocalizableResourceString(nameof(SR.RedundantQualifierInMessageTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.RedundantQualifierInMessageMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        // TODO: LG0012 is currently unused
-
         public static DiagnosticDescriptor ShouldntMentionExceptionInMessage { get; } = new (
-            id: "LG0013",
+            id: "SYSLIB0025",
             title: new LocalizableResourceString(nameof(SR.ShouldntMentionExceptionInMessageTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.ShouldntMentionExceptionInMessageMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -115,7 +113,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor TemplateHasNoCorrespondingArgument { get; } = new (
-            id: "LG0014",
+            id: "SYSLIB0026",
             title: new LocalizableResourceString(nameof(SR.TemplateHasNoCorrespondingArgumentTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.TemplateHasNoCorrespondingArgumentMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -123,7 +121,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor ArgumentHasNoCorrespondingTemplate { get; } = new (
-            id: "LG0015",
+            id: "SYSLIB0027",
             title: new LocalizableResourceString(nameof(SR.ArgumentHasNoCorrespondingTemplateTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.ArgumentHasNoCorrespondingTemplateMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -131,7 +129,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor LoggingMethodHasBody { get; } = new (
-            id: "LG0016",
+            id: "SYSLIB0028",
             title: new LocalizableResourceString(nameof(SR.LoggingMethodHasBodyTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.LoggingMethodHasBodyMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -139,7 +137,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor MissingLogLevel { get; } = new (
-            id: "LG0017",
+            id: "SYSLIB0029",
             title: new LocalizableResourceString(nameof(SR.MissingLogLevelTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.MissingLogLevelMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -147,7 +145,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor ShouldntMentionLoggerInMessage { get; } = new (
-            id: "LG0018",
+            id: "SYSLIB0030",
             title: new LocalizableResourceString(nameof(SR.ShouldntMentionLoggerInMessageTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.ShouldntMentionLoggerInMessageMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -155,7 +153,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor MissingLoggerField { get; } = new (
-            id: "LG0019",
+            id: "SYSLIB0031",
             title: new LocalizableResourceString(nameof(SR.MissingLoggerFieldTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.MissingLoggerFieldMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
@@ -163,7 +161,7 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor MultipleLoggerFields { get; } = new(
-            id: "LG0020",
+            id: "SYSLIB0032",
             title: new LocalizableResourceString(nameof(SR.MultipleLoggerFieldsTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.MultipleLoggerFieldsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
