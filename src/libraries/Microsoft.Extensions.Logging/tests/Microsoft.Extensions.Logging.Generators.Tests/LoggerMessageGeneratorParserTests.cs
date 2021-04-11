@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
     public class LoggerMessageGeneratorParserTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task InvalidMethodName()
         {
             var d = await RunGenerator(@"
@@ -30,6 +31,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MissingLogLevel()
         {
             var d = await RunGenerator(@"
@@ -45,6 +47,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task InvalidMethodBody()
         {
             var d = await RunGenerator(@"
@@ -64,6 +67,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MissingTemplate()
         {
             var d = await RunGenerator(@"
@@ -79,6 +83,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MissingArgument()
         {
             var d = await RunGenerator(@"
@@ -94,6 +99,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task NeedlessQualifierInMessage()
         {
             var d = await RunGenerator(@"
@@ -109,6 +115,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task NeedlessExceptionInMessage()
         {
             var d = await RunGenerator(@"
@@ -139,6 +146,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task NeedlessLoggerInMessage()
         {
             var d = await RunGenerator(@"
@@ -156,6 +164,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
 #if false
         // TODO: can't have a log level in both the attribute and as a logging method parameter
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task DoubleLogLevel()
         {
             var d = await RunGenerator(@"
@@ -172,6 +181,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
 
         // TODO: can't have the same template with different casing
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task InconsistentTemplateCasing()
         {
             var d = await RunGenerator(@"
@@ -188,6 +198,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
 
         // TODO: can't have malformed format strings (like dangling {, etc)
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MalformedFormatString()
         {
             var d = await RunGenerator(@"
@@ -204,6 +215,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
 #endif
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task InvalidParameterName()
         {
             var d = await RunGenerator(@"
@@ -219,6 +231,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task NestedType()
         {
             var d = await RunGenerator(@"
@@ -237,6 +250,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MissingExceptionType()
         {
             var d = await RunGenerator(@"
@@ -270,6 +284,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MissingStringType()
         {
             var d = await RunGenerator(@"
@@ -303,6 +318,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MissingEnumerableType()
         {
             var d = await RunGenerator(@"
@@ -333,6 +349,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MissingLoggerMessageAttributeType()
         {
             var d = await RunGenerator(@"
@@ -345,6 +362,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MissingILoggerType()
         {
             var d = await RunGenerator(@"
@@ -361,6 +379,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MissingLogLevelType()
         {
             var d = await RunGenerator(@"
@@ -381,6 +400,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task EventIdReuse()
         {
             var d = await RunGenerator(@"
@@ -400,6 +420,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MethodReturnType()
         {
             var d = await RunGenerator(@"
@@ -417,6 +438,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MissingILogger()
         {
             var d = await RunGenerator(@"
@@ -432,6 +454,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task NotStatic()
         {
             var d = await RunGenerator(@"
@@ -447,6 +470,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task NoILoggerField()
         {
             var d = await RunGenerator(@"
@@ -462,6 +486,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MultipleILoggerFields()
         {
             var d = await RunGenerator(@"
@@ -480,6 +505,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task NotPartial()
         {
             var d = await RunGenerator(@"
@@ -496,6 +522,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task MethodGeneric()
         {
             var d = await RunGenerator(@"
@@ -511,6 +538,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task Templates()
         {
             var d = await RunGenerator(@"
@@ -543,6 +571,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task Cancellation()
         {
             await Assert.ThrowsAsync<OperationCanceledException>(async () =>
@@ -556,6 +585,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task SourceErrors()
         {
             var d = await RunGenerator(@"

@@ -11,6 +11,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
     public class LoggerMessageGeneratedCodeTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void BasicTests()
         {
             var logger = new MockLogger();
@@ -38,6 +39,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void EnableTest()
         {
             var logger = new MockLogger();
@@ -49,6 +51,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void ArgTest()
         {
             var logger = new MockLogger();
@@ -112,6 +115,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void CollectionTest()
         {
             var logger = new MockLogger();
@@ -160,6 +164,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void MessageTests()
         {
             var logger = new MockLogger();
@@ -196,6 +201,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void InstanceTests()
         {
             var logger = new MockLogger();
@@ -217,6 +223,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void LevelTests()
         {
             var logger = new MockLogger();
@@ -293,6 +300,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void ExceptionTests()
         {
             var logger = new MockLogger();
@@ -313,6 +321,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void EventNameTests()
         {
             var logger = new MockLogger();
@@ -327,6 +336,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public void TemplateTests()
         {
             var logger = new MockLogger();

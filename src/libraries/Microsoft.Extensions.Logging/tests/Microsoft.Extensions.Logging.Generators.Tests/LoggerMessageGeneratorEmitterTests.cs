@@ -11,25 +11,26 @@ namespace Microsoft.Extensions.Logging.Generators.Test
     public class LoggerMessageGeneratorEmitterTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task TestEmitter()
         {
             // This test exists strictly to calculate the code coverage
             // attained by processing Definitions.cs. The functionality of the
             // resulting code is tested via LoggerMessageGeneratedCodeTests.cs
-            string testProjectFolder = @"..\..\..\..\src\libraries\Microsoft.Extensions.Logging\tests\Microsoft.Extensions.Logging.Generators.Tests";
+            string testProjectFolder = Path.Combine("..", "..", "..", "..", "src", "libraries", "Microsoft.Extensions.Logging", "tests", "Microsoft.Extensions.Logging.Generators.Tests", "TestClasses");
 
             var sources = new[]
             {
-                Path.Combine(testProjectFolder, @"TestClasses\MiscTestExtensions.cs"),
-                Path.Combine(testProjectFolder, @"TestClasses\LevelTestExtensions.cs"),
-                Path.Combine(testProjectFolder, @"TestClasses\ArgTestExtensions.cs"),
-                Path.Combine(testProjectFolder, @"TestClasses\EventNameTestExtensions.cs"),
-                Path.Combine(testProjectFolder, @"TestClasses\SignatureTestExtensions.cs"),
-                Path.Combine(testProjectFolder, @"TestClasses\MessageTestExtensions.cs"),
-                Path.Combine(testProjectFolder, @"TestClasses\EnumerableTestExtensions.cs"),
-                Path.Combine(testProjectFolder, @"TestClasses\TestInstances.cs"),
-                Path.Combine(testProjectFolder, @"TestClasses\CollectionTestExtensions.cs"),
-                Path.Combine(testProjectFolder, @"TestClasses\TemplateTestExtensions.cs"),
+                Path.Combine(testProjectFolder, "MiscTestExtensions.cs"),
+                Path.Combine(testProjectFolder, "LevelTestExtensions.cs"),
+                Path.Combine(testProjectFolder, "ArgTestExtensions.cs"),
+                Path.Combine(testProjectFolder, "EventNameTestExtensions.cs"),
+                Path.Combine(testProjectFolder, "SignatureTestExtensions.cs"),
+                Path.Combine(testProjectFolder, "MessageTestExtensions.cs"),
+                Path.Combine(testProjectFolder, "EnumerableTestExtensions.cs"),
+                Path.Combine(testProjectFolder, "TestInstances.cs"),
+                Path.Combine(testProjectFolder, "CollectionTestExtensions.cs"),
+                Path.Combine(testProjectFolder, "TemplateTestExtensions.cs"),
             };
 
             foreach (var src in sources)
