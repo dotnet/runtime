@@ -602,7 +602,7 @@ namespace Microsoft.Extensions.Configuration
                     continue;
                 }
 
-                // Assumes (ConfigurationKeyName constructor first arg is a string key name
+                // Assumes ConfigurationKeyName constructor first arg is a string key name
                 string name = attributeData
                     .ConstructorArguments
                     .First()
