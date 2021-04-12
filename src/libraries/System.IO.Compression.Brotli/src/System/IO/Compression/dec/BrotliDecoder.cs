@@ -35,7 +35,7 @@ namespace System.IO.Compression
             _state?.Dispose();
         }
 
-        private void EnsureNotDisposed()
+        private readonly void EnsureNotDisposed()
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(BrotliDecoder), SR.BrotliDecoder_Disposed);

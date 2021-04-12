@@ -60,7 +60,7 @@ namespace System.IO.Compression
             _state?.Dispose();
         }
 
-        private void EnsureNotDisposed()
+        private readonly void EnsureNotDisposed()
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(BrotliEncoder), SR.BrotliEncoder_Disposed);
