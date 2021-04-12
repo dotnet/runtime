@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
         {
             internal SafeNCryptKeyHandle KeyHandle;
 
-            internal string? GetAlgorithmGroup()
+            internal readonly string? GetAlgorithmGroup()
             {
                 return CngKeyLite.GetPropertyAsString(
                     KeyHandle,

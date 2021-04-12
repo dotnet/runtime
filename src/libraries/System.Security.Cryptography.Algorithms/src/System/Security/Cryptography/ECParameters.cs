@@ -35,7 +35,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///     if the key or curve parameters are not valid for the current CurveType.
         /// </exception>
-        public void Validate()
+        public readonly void Validate()
         {
             bool hasErrors = true;
 

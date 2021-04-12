@@ -73,7 +73,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public Oid Oid
         {
-            get => _oid;
+            readonly get => _oid;
             private set
             {
                 if (value == null)
@@ -146,7 +146,7 @@ namespace System.Security.Cryptography
             return ECCurve.CreateFromOid(oid);
         }
 
-        public bool IsPrime
+        public readonly bool IsPrime
         {
             get
             {
@@ -156,7 +156,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public bool IsCharacteristic2
+        public readonly bool IsCharacteristic2
         {
             get
             {
@@ -164,7 +164,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public bool IsExplicit
+        public readonly bool IsExplicit
         {
             get
             {
@@ -172,7 +172,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public bool IsNamed
+        public readonly bool IsNamed
         {
             get
             {
@@ -186,7 +186,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///     if the curve parameters are not valid for the current CurveType.
         /// </exception>
-        public void Validate()
+        public readonly void Validate()
         {
             if (IsNamed)
             {
@@ -253,7 +253,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private bool HasAnyExplicitParameters()
+        private readonly bool HasAnyExplicitParameters()
         {
             return (A != null ||
                 B != null ||

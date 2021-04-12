@@ -241,15 +241,15 @@ namespace System.Security.Cryptography
         public byte[]? Polynomial;
         public byte[]? Prime;
         public byte[]? Seed;
-        public bool IsCharacteristic2 { get { throw null; } }
-        public bool IsExplicit { get { throw null; } }
-        public bool IsNamed { get { throw null; } }
-        public bool IsPrime { get { throw null; } }
-        public System.Security.Cryptography.Oid Oid { get { throw null; } }
+        public readonly bool IsCharacteristic2 { get { throw null; } }
+        public readonly bool IsExplicit { get { throw null; } }
+        public readonly bool IsNamed { get { throw null; } }
+        public readonly bool IsPrime { get { throw null; } }
+        public readonly System.Security.Cryptography.Oid Oid { get { throw null; } }
         public static System.Security.Cryptography.ECCurve CreateFromFriendlyName(string oidFriendlyName) { throw null; }
         public static System.Security.Cryptography.ECCurve CreateFromOid(System.Security.Cryptography.Oid curveOid) { throw null; }
         public static System.Security.Cryptography.ECCurve CreateFromValue(string oidValue) { throw null; }
-        public void Validate() { }
+        public readonly void Validate() { }
         public enum ECCurveType
         {
             Implicit = 0,
@@ -406,7 +406,7 @@ namespace System.Security.Cryptography
         public System.Security.Cryptography.ECCurve Curve;
         public byte[]? D;
         public System.Security.Cryptography.ECPoint Q;
-        public void Validate() { }
+        public readonly void Validate() { }
     }
     public partial struct ECPoint
     {
