@@ -1953,7 +1953,7 @@ namespace System.Xml
                 _reader = reader;
             }
 
-            public override string ToString()
+            public override readonly string ToString()
             {
                 XmlNodeType nt = _reader.NodeType;
                 string result = nt.ToString();

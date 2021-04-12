@@ -58,7 +58,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Returns the navigator at the top of the stack without adjusting the stack pointer
         /// </summary>
-        public XPathNavigator Peek()
+        public readonly XPathNavigator Peek()
         {
             Debug.Assert(!IsEmpty);
             return _stkNav[_sp - 1];
@@ -75,7 +75,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Returns true if there are no navigators in the stack
         /// </summary>
-        public bool IsEmpty
+        public readonly bool IsEmpty
         {
             get { return _sp == 0; }
         }

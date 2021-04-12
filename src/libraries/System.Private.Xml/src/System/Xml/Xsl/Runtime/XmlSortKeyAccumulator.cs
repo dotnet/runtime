@@ -106,7 +106,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Get array of sort keys that was constructed by this internal class.
         /// </summary>
-        public Array Keys
+        public readonly Array Keys
         {
             get { return _keys; }
         }

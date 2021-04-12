@@ -23,7 +23,7 @@ namespace System.Xml
         internal uint m_data3;
         internal uint m_data4;
 
-        public bool IsPositive
+        public readonly bool IsPositive
         {
             get
             {
@@ -139,7 +139,7 @@ namespace System.Xml
             return (char)(uiDigit + '0');
         }
 
-        public decimal ToDecimal()
+        public readonly decimal ToDecimal()
         {
             if ((int)m_data4 != 0 || m_bScale > 28)
                 throw new XmlException(SR.SqlTypes_ArithOverflow, (string?)null);
@@ -246,7 +246,7 @@ namespace System.Xml
 
         // Is this RE numeric valid?
         [System.Diagnostics.Conditional("DEBUG")]
-        private void AssertValid()
+        private readonly void AssertValid()
         {
             // Scale,Prec in range
             Debug.Assert(m_bScale <= s_NUMERIC_MAX_PRECISION, "m_bScale <= NUMERIC_MAX_PRECISION", "In AssertValid");
@@ -277,7 +277,7 @@ namespace System.Xml
         public BinXmlSqlMoney(int v) { _data = v; }
         public BinXmlSqlMoney(long v) { _data = v; }
 
-        public decimal ToDecimal()
+        public readonly decimal ToDecimal()
         {
             bool neg;
             ulong v;
@@ -296,7 +296,7 @@ namespace System.Xml
             return new decimal(unchecked((int)v), unchecked((int)(v >> 32)), 0, neg, MoneyScale);
         }
 
-        public override string ToString()
+        public override readonly string ToString()
         {
             decimal money = ToDecimal();
             // Formatting of SqlMoney: At least two digits after decimal point

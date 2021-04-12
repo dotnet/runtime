@@ -10,15 +10,15 @@ namespace System.Xml.Xsl
     {
         private readonly ulong _value;
 
-        public int Line { get { return (int)(_value >> 32); } }
-        public int Pos { get { return unchecked((int)(_value)); } }
+        public readonly int Line { get { return (int)(_value >> 32); } }
+        public readonly int Pos { get { return unchecked((int)(_value)); } }
 
         public Location(int line, int pos)
         {
             _value = (((ulong)line) << 32) | (uint)pos;
         }
 
-        public bool LessOrEqual(Location that)
+        public readonly bool LessOrEqual(Location that)
         {
             return _value <= that._value;
         }

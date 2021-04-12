@@ -60,7 +60,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns the type of this node
         /// </summary>
-        public XPathNodeType NodeType
+        public readonly XPathNodeType NodeType
         {
             get { return (XPathNodeType)(_props & NodeTypeMask); }
         }
@@ -69,7 +69,7 @@ namespace MS.Internal.Xml.Cache
         /// Returns the namespace prefix of this node.  If this node has no prefix, then the empty string
         /// will be returned (never null).
         /// </summary>
-        public string Prefix
+        public readonly string Prefix
         {
             get { return _info.Prefix; }
         }
@@ -78,7 +78,7 @@ namespace MS.Internal.Xml.Cache
         /// Returns the local name of this node.  If this node has no name, then the empty string
         /// will be returned (never null).
         /// </summary>
-        public string LocalName
+        public readonly string LocalName
         {
             get { return _info.LocalName; }
         }
@@ -87,7 +87,7 @@ namespace MS.Internal.Xml.Cache
         /// Returns the name of this node.  If this node has no name, then the empty string
         /// will be returned (never null).
         /// </summary>
-        public string Name
+        public readonly string Name
         {
             get
             {
@@ -106,7 +106,7 @@ namespace MS.Internal.Xml.Cache
         /// Returns the namespace part of this node's name.  If this node has no name, then the empty string
         /// will be returned (never null).
         /// </summary>
-        public string NamespaceUri
+        public readonly string NamespaceUri
         {
             get { return _info.NamespaceUri; }
         }
@@ -114,7 +114,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns this node's document.
         /// </summary>
-        public XPathDocument Document
+        public readonly XPathDocument Document
         {
             get { return _info.Document; }
         }
@@ -122,7 +122,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns this node's base Uri.  This is string.Empty for all node kinds except Element, Root, and PI.
         /// </summary>
-        public string BaseUri
+        public readonly string BaseUri
         {
             get { return _info.BaseUri ?? string.Empty; }
         }
@@ -130,7 +130,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns this node's source line number.
         /// </summary>
-        public int LineNumber
+        public readonly int LineNumber
         {
             get { return _info.LineNumberBase + (int)((_props & LineNumberMask) >> LineNumberShift); }
         }
@@ -138,7 +138,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return this node's source line position.
         /// </summary>
-        public int LinePosition
+        public readonly int LinePosition
         {
             get { return _info.LinePositionBase + (int)_posOffset; }
         }
@@ -147,7 +147,7 @@ namespace MS.Internal.Xml.Cache
         /// If this node is an element with collapsed text, then return the source line position of the node (the
         /// source line number is the same as LineNumber).
         /// </summary>
-        public int CollapsedLinePosition
+        public readonly int CollapsedLinePosition
         {
             get
             {
@@ -159,7 +159,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns information about the node page.  Only the 0th node on each page has this property defined.
         /// </summary>
-        public XPathNodePageInfo? PageInfo
+        public readonly XPathNodePageInfo? PageInfo
         {
             get { return _info.PageInfo; }
         }
@@ -167,7 +167,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns the root node of the current document.  This always succeeds.
         /// </summary>
-        public int GetRoot(out XPathNode[] pageNode)
+        public readonly int GetRoot(out XPathNode[] pageNode)
         {
             int idx = _info.Document.GetRootNode(out pageNode!);
             Debug.Assert(pageNode != null);
@@ -177,7 +177,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns the parent of this node.  If this node has no parent, then 0 is returned.
         /// </summary>
-        public int GetParent(out XPathNode[]? pageNode)
+        public readonly int GetParent(out XPathNode[]? pageNode)
         {
             pageNode = _info.ParentPage;
             return _idxParent;
@@ -186,7 +186,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns the next sibling of this node.  If this node has no next sibling, then 0 is returned.
         /// </summary>
-        public int GetSibling(out XPathNode[]? pageNode)
+        public readonly int GetSibling(out XPathNode[]? pageNode)
         {
             pageNode = _info.SiblingPage;
             return _idxSibling;
@@ -196,7 +196,7 @@ namespace MS.Internal.Xml.Cache
         /// Returns the next element in document order that has the same local name hashcode as this element.
         /// If there are no similar elements, then 0 is returned.
         /// </summary>
-        public int GetSimilarElement(out XPathNode[]? pageNode)
+        public readonly int GetSimilarElement(out XPathNode[]? pageNode)
         {
             pageNode = _info.SimilarElementPage;
             return _idxSimilar;
@@ -206,7 +206,7 @@ namespace MS.Internal.Xml.Cache
         /// Returns true if this node's name matches the specified localName and namespaceName.  Assume
         /// that localName has been atomized, but namespaceName has not.
         /// </summary>
-        public bool NameMatch(string? localName, string namespaceName)
+        public readonly bool NameMatch(string? localName, string namespaceName)
         {
             Debug.Assert(localName == null || (object?)Document.NameTable.Get(localName) == (object)localName, "localName must be atomized.");
 
@@ -218,7 +218,7 @@ namespace MS.Internal.Xml.Cache
         /// Returns true if this is an Element node with a name that matches the specified localName and
         /// namespaceName.  Assume that localName has been atomized, but namespaceName has not.
         /// </summary>
-        public bool ElementMatch(string? localName, string namespaceName)
+        public readonly bool ElementMatch(string? localName, string namespaceName)
         {
             Debug.Assert(localName == null || (object?)Document.NameTable.Get(localName) == (object)localName, "localName must be atomized.");
 
@@ -230,7 +230,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return true if this node is an xmlns:xml node.
         /// </summary>
-        public bool IsXmlNamespaceNode
+        public readonly bool IsXmlNamespaceNode
         {
             get
             {
@@ -242,7 +242,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns true if this node has a sibling.
         /// </summary>
-        public bool HasSibling
+        public readonly bool HasSibling
         {
             get { return _idxSibling != 0; }
         }
@@ -250,7 +250,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns true if this node has a collapsed text node as its only content-typed child.
         /// </summary>
-        public bool HasCollapsedText
+        public readonly bool HasCollapsedText
         {
             get { return (_props & HasCollapsedTextBit) != 0; }
         }
@@ -258,7 +258,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns true if this node has at least one attribute.
         /// </summary>
-        public bool HasAttribute
+        public readonly bool HasAttribute
         {
             get { return (_props & HasAttributeBit) != 0; }
         }
@@ -267,7 +267,7 @@ namespace MS.Internal.Xml.Cache
         /// Returns true if this node has at least one content-typed child (attributes and namespaces
         /// don't count).
         /// </summary>
-        public bool HasContentChild
+        public readonly bool HasContentChild
         {
             get { return (_props & HasContentChildBit) != 0; }
         }
@@ -275,7 +275,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns true if this node has at least one element child.
         /// </summary>
-        public bool HasElementChild
+        public readonly bool HasElementChild
         {
             get { return (_props & HasElementChildBit) != 0; }
         }
@@ -283,7 +283,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns true if this is an attribute or namespace node.
         /// </summary>
-        public bool IsAttrNmsp
+        public readonly bool IsAttrNmsp
         {
             get
             {
@@ -295,7 +295,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns true if this is a text or whitespace node.
         /// </summary>
-        public bool IsText
+        public readonly bool IsText
         {
             get { return XPathNavigator.IsText(NodeType); }
         }
@@ -308,7 +308,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public bool HasNamespaceDecls
         {
-            get { return (_props & HasNmspDeclsBit) != 0; }
+            readonly get { return (_props & HasNmspDeclsBit) != 0; }
             set
             {
                 if (value) _props |= HasNmspDeclsBit;
@@ -319,7 +319,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Returns true if this node is an empty element that allows shortcut tag syntax.
         /// </summary>
-        public bool AllowShortcutTag
+        public readonly bool AllowShortcutTag
         {
             get { return (_props & AllowShortcutTagBit) != 0; }
         }
@@ -327,7 +327,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Cached hashcode computed over the local name of this element.
         /// </summary>
-        public int LocalNameHashCode
+        public readonly int LocalNameHashCode
         {
             get { return _info.LocalNameHashCode; }
         }
@@ -335,7 +335,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return the precomputed String value of this node (null if no value exists, i.e. document node, element node with complex content, etc).
         /// </summary>
-        public string? Value
+        public readonly string? Value
         {
             get { return _value; }
         }
@@ -485,17 +485,17 @@ namespace MS.Internal.Xml.Cache
             _idx = idx;
         }
 
-        public XPathNode[] Page
+        public readonly XPathNode[] Page
         {
             get { return _page; }
         }
 
-        public int Index
+        public readonly int Index
         {
             get { return _idx; }
         }
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return XPathNodeHelper.GetLocation(_page, _idx);
         }

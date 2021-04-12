@@ -35,14 +35,14 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public string? Delimiter
         {
-            get { return _delimiter; }
+            readonly get { return _delimiter; }
             set { _delimiter = value; }
         }
 
         /// <summary>
         /// Return the number of concatenated strings, including delimiters.
         /// </summary>
-        internal int Count
+        internal readonly int Count
         {
             get { return _idxStr; }
         }
@@ -66,7 +66,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Get the result string.
         /// </summary>
-        public string GetResult() =>
+        public readonly string GetResult() =>
             _idxStr switch
             {
                 0 => string.Empty,

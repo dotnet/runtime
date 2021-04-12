@@ -169,7 +169,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return an enumeration specifying where the value is located.
         /// </summary>
-        public ItemLocation Location
+        public readonly ItemLocation Location
         {
             get { return _location; }
         }
@@ -177,7 +177,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return the index of the parameter that stores this iterator's values.
         /// </summary>
-        public int ParameterLocation
+        public readonly int ParameterLocation
         {
             get { return (int)_locationObject; }
         }
@@ -185,7 +185,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return the LocalBuilder that stores this iterator's values.
         /// </summary>
-        public LocalBuilder? LocalLocation
+        public readonly LocalBuilder? LocalLocation
         {
             get { return _locationObject as LocalBuilder; }
         }
@@ -194,7 +194,7 @@ namespace System.Xml.Xsl.IlGen
         /// Return the "Current" location information (LocalBuilder and Current MethodInfo) that will store
         /// this iterator's helper class. The Current property on this iterator can be accessed to get the CurrentMethod.
         /// </summary>
-        public CurrentContext? CurrentLocation
+        public readonly CurrentContext? CurrentLocation
         {
             get { return _locationObject as CurrentContext; }
         }
@@ -202,7 +202,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return the MethodInfo for the method that computes this global value.
         /// </summary>
-        public MethodInfo? GlobalLocation
+        public readonly MethodInfo? GlobalLocation
         {
             get { return _locationObject as MethodInfo; }
         }
@@ -210,7 +210,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return true if this iterator's values are cached.
         /// </summary>
-        public bool IsCached
+        public readonly bool IsCached
         {
             get { return _isCached; }
         }
@@ -218,7 +218,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return the Clr type of an individual item in the storage location (never an IList{T} type).
         /// </summary>
-        public Type ItemStorageType
+        public readonly Type ItemStorageType
         {
             get { return _itemStorageType; }
         }

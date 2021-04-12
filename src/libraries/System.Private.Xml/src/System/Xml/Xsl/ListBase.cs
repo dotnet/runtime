@@ -229,7 +229,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Return current item.  Return default value if before first item or after last item in the list.
         /// </summary>
-        public T Current
+        public readonly T Current
         {
             get { return _current; }
         }

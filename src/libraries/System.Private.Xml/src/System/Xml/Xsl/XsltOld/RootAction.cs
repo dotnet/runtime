@@ -74,8 +74,8 @@ namespace System.Xml.Xsl.XsltOld
             _keyTable = keyTable;
         }
 
-        public XPathNavigator RootNav { get { return _rootNav; } }
-        public Hashtable KeyTable { get { return _keyTable; } }
+        public readonly XPathNavigator RootNav { get { return _rootNav; } }
+        public readonly Hashtable KeyTable { get { return _keyTable; } }
     }
 
     internal class RootAction : TemplateBaseAction

@@ -64,12 +64,12 @@ namespace System.Xml.Xsl.Xslt
         }
 
         [Conditional("DEBUG")]
-        private void CheckFocus()
+        private readonly void CheckFocus()
         {
             Debug.Assert(_focusType != SingletonFocusType.None, "Focus is not set, call SetFocus first");
         }
 
-        public QilNode GetCurrent()
+        public readonly QilNode GetCurrent()
         {
             CheckFocus();
             switch (_focusType)
@@ -82,13 +82,13 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        public QilNode GetPosition()
+        public readonly QilNode GetPosition()
         {
             CheckFocus();
             return _f.Double(1);
         }
 
-        public QilNode GetLast()
+        public readonly QilNode GetLast()
         {
             CheckFocus();
             return _f.Double(1);
@@ -127,24 +127,24 @@ namespace System.Xml.Xsl.Xslt
             _isSet = false;
             _current = _position = _last = null;
         }
-        public bool IsFocusSet
+        public readonly bool IsFocusSet
         {
             get { return _isSet; }
         }
 
-        public QilNode GetCurrent()
+        public readonly QilNode GetCurrent()
         {
             Debug.Assert(_current != null, "Naked current() is not expected in this function");
             return _current;
         }
 
-        public QilNode GetPosition()
+        public readonly QilNode GetPosition()
         {
             Debug.Assert(_position != null, "Naked position() is not expected in this function");
             return _position;
         }
 
-        public QilNode GetLast()
+        public readonly QilNode GetLast()
         {
             Debug.Assert(_last != null, "Naked last() is not expected in this function");
             return _last;
@@ -168,17 +168,17 @@ namespace System.Xml.Xsl.Xslt
             _cached = _last = null;
         }
 
-        public bool IsFocusSet
+        public readonly bool IsFocusSet
         {
             get { return _current != null; }
         }
 
-        public QilNode? GetCurrent()
+        public readonly QilNode? GetCurrent()
         {
             return _current;
         }
 
-        public QilNode GetPosition()
+        public readonly QilNode GetPosition()
         {
             return _f.XsltConvert(_f.PositionOf(_current!), T.DoubleX);
         }

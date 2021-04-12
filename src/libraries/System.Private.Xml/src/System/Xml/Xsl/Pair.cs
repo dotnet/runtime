@@ -18,10 +18,10 @@ namespace System.Xml.Xsl
             _right = right;
         }
 
-        public int Left { get { return _left; } }
-        public int Right { get { return _right; } }
+        public readonly int Left { get { return _left; } }
+        public readonly int Right { get { return _right; } }
 
-        public override bool Equals([NotNullWhen(true)] object? other)
+        public override readonly bool Equals([NotNullWhen(true)] object? other)
         {
             if (other is Int32Pair)
             {
@@ -32,7 +32,7 @@ namespace System.Xml.Xsl
             return false;
         }
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return _left.GetHashCode() ^ _right.GetHashCode();
         }
@@ -49,7 +49,7 @@ namespace System.Xml.Xsl
             _right = right;
         }
 
-        public string Left { get { return _left; } }
-        public string Right { get { return _right; } }
+        public readonly string Left { get { return _left; } }
+        public readonly string Right { get { return _right; } }
     }
 }

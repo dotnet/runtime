@@ -633,27 +633,27 @@ namespace System.Xml
                 _o = o;
             }
 
-            public XmlEventType EventType
+            public readonly XmlEventType EventType
             {
                 get { return _eventType; }
             }
 
-            public string? String1
+            public readonly string? String1
             {
                 get { return _s1; }
             }
 
-            public string? String2
+            public readonly string? String2
             {
                 get { return _s2; }
             }
 
-            public string? String3
+            public readonly string? String3
             {
                 get { return _s3; }
             }
 
-            public object? Object
+            public readonly object? Object
             {
                 get { return _o; }
             }

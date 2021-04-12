@@ -59,7 +59,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned true.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurrent; }
         }
@@ -136,7 +136,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned true or IteratorResult.HaveCurrentNode.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurrent; }
         }
@@ -183,7 +183,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned true.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurrent; }
         }
@@ -241,7 +241,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned true.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurrent; }
         }
@@ -286,7 +286,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned true.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurrent; }
         }
@@ -337,7 +337,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned true.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurrent; }
         }
@@ -484,7 +484,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned true or IteratorResult.HaveCurrentNode.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurrent; }
         }
@@ -579,7 +579,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned true.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurrent; }
         }
@@ -626,7 +626,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned true.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurrent; }
         }
@@ -685,7 +685,7 @@ namespace System.Xml.Xsl.Runtime
         /// Return the current result navigator.  This is only defined after MoveNext() has returned true or
         /// IteratorResult.HaveCurrentNode.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurrent; }
         }
@@ -821,7 +821,7 @@ namespace System.Xml.Xsl.Runtime
         /// Return the current result navigator.  This is only defined after MoveNext() has returned true or
         /// IteratorResult.HaveCurrentNode.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurrent; }
         }
@@ -935,7 +935,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned true.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurrent; }
         }

@@ -54,7 +54,7 @@ namespace System.Xml.Xsl.Runtime
                 _value = value;
             }
 
-            public bool GetFlag(int flag)
+            public readonly bool GetFlag(int flag)
             {
                 return (_value & flag) != 0;
             }
@@ -69,33 +69,33 @@ namespace System.Xml.Xsl.Runtime
 
             public bool UpperFirst
             {
-                get { return GetFlag(FlagUpperFirst); }
+                readonly get { return GetFlag(FlagUpperFirst); }
                 set { SetFlag(FlagUpperFirst, value); }
             }
 
-            public bool EmptyGreatest
+            public readonly bool EmptyGreatest
             {
                 get { return GetFlag(FlagEmptyGreatest); }
             }
 
-            public bool DescendingOrder
+            public readonly bool DescendingOrder
             {
                 get { return GetFlag(FlagDescendingOrder); }
             }
 
-            public bool IgnoreCase
+            public readonly bool IgnoreCase
             {
                 get { return GetFlag((int)CompareOptions.IgnoreCase); }
             }
 
-            public bool Ordinal
+            public readonly bool Ordinal
             {
                 get { return GetFlag((int)CompareOptions.Ordinal); }
             }
 
             public CompareOptions CompareOptions
             {
-                get
+                readonly get
                 {
                     return (CompareOptions)(_value & ~Mask);
                 }

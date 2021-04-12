@@ -96,7 +96,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Strongly-typed Equals that returns true if this type and "other" type are equivalent.
         /// </summary>
-        public bool Equals(XmlQueryCardinality other)
+        public readonly bool Equals(XmlQueryCardinality other)
         {
             return _value == other._value;
         }
@@ -120,7 +120,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// True if "other" is an XmlQueryCardinality, and this type is the exact same static type.
         /// </summary>
-        public override bool Equals([NotNullWhen(true)] object? other)
+        public override readonly bool Equals([NotNullWhen(true)] object? other)
         {
             if (other is XmlQueryCardinality)
             {
@@ -133,7 +133,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Return hash code of this instance.
         /// </summary>
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return _value;
         }
@@ -193,7 +193,7 @@ namespace System.Xml.Xsl
         /// Compute the cardinality of a subset of a set of the given cardinality.
         /// </summary>
         /// <returns>the cardinality of a subset</returns>
-        public XmlQueryCardinality AtMost()
+        public readonly XmlQueryCardinality AtMost()
         {
             //  Fill downward to zero
             return new XmlQueryCardinality(_value | (_value >> 1) | (_value >> 2));
@@ -206,7 +206,7 @@ namespace System.Xml.Xsl
         ///   None op ~None = false
         ///  ~None op  None = true
         /// </summary>
-        public bool NeverSubset(XmlQueryCardinality other)
+        public readonly bool NeverSubset(XmlQueryCardinality other)
         {
             return _value != 0 && (_value & other._value) == 0;
         }
@@ -274,7 +274,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Return the string representation of a cardinality, normalized to either ?, +, *, or "" (card 1).
         /// </summary>
-        public string ToString(string format)
+        public readonly string ToString(string format)
         {
             if (format == "S")
             {
@@ -289,7 +289,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Return the string representation of a cardinality, normalized to either ?, +, *, or "" (card 1).
         /// </summary>
-        public override string ToString()
+        public override readonly string ToString()
         {
             return s_toString[_value];
         }
@@ -297,7 +297,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Serialize the object to BinaryWriter.
         /// </summary>
-        public void GetObjectData(BinaryWriter writer)
+        public readonly void GetObjectData(BinaryWriter writer)
         {
             writer.Write((byte)_value);
         }

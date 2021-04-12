@@ -99,7 +99,7 @@ namespace System.Xml
                 }
             }
 
-            internal int LineNo
+            internal readonly int LineNo
             {
                 get
                 {
@@ -107,7 +107,7 @@ namespace System.Xml
                 }
             }
 
-            internal int LinePos
+            internal readonly int LinePos
             {
                 get
                 {

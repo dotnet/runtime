@@ -205,7 +205,7 @@ namespace System.Xml.Xsl
             // one bit before the least significant bit of u0.
             private uint _error;
 
-            public uint Error { get { return _error; } }
+            public readonly uint Error { get { return _error; } }
 
             public BigNumber(uint u0, uint u1, uint u2, int exp, uint error)
             {
@@ -382,7 +382,7 @@ namespace System.Xml.Xsl
 #endif
 
             // Test to see if the num is zero. This works even if we're not normalized.
-            private bool IsZero
+            private readonly bool IsZero
             {
                 get
                 {

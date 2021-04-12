@@ -19,7 +19,7 @@ namespace System.Xml
             // never degrades back, even if all elements are removed.
             private object? _field;
 
-            public int Count
+            public readonly int Count
             {
                 get
                 {
@@ -34,7 +34,7 @@ namespace System.Xml
                 }
             }
 
-            public object this[int index]
+            public readonly object this[int index]
             {
                 get
                 {
@@ -181,7 +181,7 @@ namespace System.Xml
                 }
             }
 
-            public IEnumerator GetEnumerator()
+            public readonly IEnumerator GetEnumerator()
             {
                 if (_field == null)
                 {

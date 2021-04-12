@@ -807,7 +807,7 @@ namespace MS.Internal.Xml.Cache
             /// <summary>
             /// Return the page on which the next node will be allocated.
             /// </summary>
-            public XPathNode[] NextNodePage
+            public readonly XPathNode[] NextNodePage
             {
                 get { return _page; }
             }
@@ -815,7 +815,7 @@ namespace MS.Internal.Xml.Cache
             /// <summary>
             /// Return the page index that the next node will be given.
             /// </summary>
-            public int NextNodeIndex
+            public readonly int NextNodeIndex
             {
                 get { return _pageInfo.NodeCount; }
             }
@@ -867,7 +867,7 @@ namespace MS.Internal.Xml.Cache
             /// <summary>
             /// Return the type of the cached text block.
             /// </summary>
-            public TextBlockType TextType
+            public readonly TextBlockType TextType
             {
                 get { return _textType; }
             }
@@ -875,7 +875,7 @@ namespace MS.Internal.Xml.Cache
             /// <summary>
             /// Returns true if text has been cached.
             /// </summary>
-            public bool HasText
+            public readonly bool HasText
             {
                 get { return _textType != TextBlockType.None; }
             }
@@ -883,7 +883,7 @@ namespace MS.Internal.Xml.Cache
             /// <summary>
             /// Returns the line number of the last text block to be cached.
             /// </summary>
-            public int LineNumber
+            public readonly int LineNumber
             {
                 get { return _lineNum; }
             }
@@ -891,7 +891,7 @@ namespace MS.Internal.Xml.Cache
             /// <summary>
             /// Returns the line position of the last text block to be cached.
             /// </summary>
-            public int LinePosition
+            public readonly int LinePosition
             {
                 get { return _linePos; }
             }

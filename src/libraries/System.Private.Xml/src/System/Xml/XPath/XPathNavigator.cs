@@ -2222,7 +2222,7 @@ namespace System.Xml.XPath
             {
                 _nav = nav;
             }
-            public override string ToString()
+            public override readonly string ToString()
             {
                 string result = _nav.NodeType.ToString();
                 switch (_nav.NodeType)

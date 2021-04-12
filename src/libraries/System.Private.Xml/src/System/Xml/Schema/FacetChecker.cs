@@ -379,7 +379,7 @@ namespace System.Xml.Schema
                 }
             }
 
-            private void CheckValue(object value, XmlSchemaFacet facet)
+            private readonly void CheckValue(object value, XmlSchemaFacet facet)
             {
                 RestrictionFacets? restriction = _datatype.Restriction;
                 switch (facet.FacetType)
@@ -669,7 +669,7 @@ namespace System.Xml.Schema
                 }
             }
 
-            private object ParseFacetValue(XmlSchemaDatatype datatype, XmlSchemaFacet facet, string code, IXmlNamespaceResolver? nsmgr, XmlNameTable? nameTable)
+            private readonly object ParseFacetValue(XmlSchemaDatatype datatype, XmlSchemaFacet facet, string code, IXmlNamespaceResolver? nsmgr, XmlNameTable? nameTable)
             {
                 object? typedValue;
                 Exception? ex = datatype.TryParseValue(facet.Value!, nameTable, nsmgr, out typedValue);
@@ -749,7 +749,7 @@ namespace System.Xml.Schema
                 return bufBld.ToString();
             }
 
-            private void CheckProhibitedFlag(XmlSchemaFacet facet, RestrictionFlags flag, string errorCode)
+            private readonly void CheckProhibitedFlag(XmlSchemaFacet facet, RestrictionFlags flag, string errorCode)
             {
                 if ((_validRestrictionFlags & flag) == 0)
                 {
@@ -757,7 +757,7 @@ namespace System.Xml.Schema
                 }
             }
 
-            private void CheckDupFlag(XmlSchemaFacet facet, RestrictionFlags flag, string errorCode)
+            private readonly void CheckDupFlag(XmlSchemaFacet facet, RestrictionFlags flag, string errorCode)
             {
                 if ((_derivedRestriction.Flags & flag) != 0)
                 {

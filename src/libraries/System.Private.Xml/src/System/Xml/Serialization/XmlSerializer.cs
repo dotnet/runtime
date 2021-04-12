@@ -30,7 +30,7 @@ namespace System.Xml.Serialization
 
         public XmlNodeEventHandler? OnUnknownNode
         {
-            get
+            readonly get
             {
                 return _onUnknownNode;
             }
@@ -43,7 +43,7 @@ namespace System.Xml.Serialization
 
         public XmlAttributeEventHandler? OnUnknownAttribute
         {
-            get
+            readonly get
             {
                 return _onUnknownAttribute;
             }
@@ -55,7 +55,7 @@ namespace System.Xml.Serialization
 
         public XmlElementEventHandler? OnUnknownElement
         {
-            get
+            readonly get
             {
                 return _onUnknownElement;
             }
@@ -67,7 +67,7 @@ namespace System.Xml.Serialization
 
         public UnreferencedObjectEventHandler? OnUnreferencedObject
         {
-            get
+            readonly get
             {
                 return _onUnreferencedObject;
             }

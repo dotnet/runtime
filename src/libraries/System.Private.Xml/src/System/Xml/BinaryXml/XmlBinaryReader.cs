@@ -79,34 +79,34 @@ namespace System.Xml
                 this.prefix = this.localname = this.namespaceUri = string.Empty;
             }
 
-            public bool MatchNs(string lname, string nsUri)
+            public readonly bool MatchNs(string lname, string nsUri)
             {
                 return lname == this.localname && nsUri == this.namespaceUri;
             }
 
-            public bool MatchPrefix(string prefix, string lname)
+            public readonly bool MatchPrefix(string prefix, string lname)
             {
                 return lname == this.localname && prefix == this.prefix;
             }
 
-            public void CheckPrefixNS(string prefix, string namespaceUri)
+            public readonly void CheckPrefixNS(string prefix, string namespaceUri)
             {
                 if (this.prefix == prefix && this.namespaceUri != namespaceUri)
                     throw new XmlException(SR.XmlBinary_NoRemapPrefix, new string[] { prefix, this.namespaceUri, namespaceUri });
             }
 
-            public override int GetHashCode()
+            public override readonly int GetHashCode()
             {
                 return this.prefix.GetHashCode() ^ this.localname.GetHashCode();
             }
 
-            public int GetNSHashCode()
+            public readonly int GetNSHashCode()
             {
                 return HashCode.Combine(this.namespaceUri, this.localname);
             }
 
 
-            public override bool Equals([NotNullWhen(true)] object? other)
+            public override readonly bool Equals([NotNullWhen(true)] object? other)
             {
                 if (other is QName that)
                 {
@@ -115,7 +115,7 @@ namespace System.Xml
                 return false;
             }
 
-            public override string ToString()
+            public override readonly string ToString()
             {
                 if (prefix.Length == 0)
                     return this.localname;
@@ -185,7 +185,7 @@ namespace System.Xml
                 this.prevHash = 0;
             }
 
-            public void GetLocalnameAndNamespaceUri(out string localname, out string namespaceUri)
+            public readonly void GetLocalnameAndNamespaceUri(out string localname, out string namespaceUri)
             {
                 localname = this.name.localname;
                 namespaceUri = this.name.namespaceUri;
@@ -198,12 +198,12 @@ namespace System.Xml
                 return this.hashCode = this.name.GetNSHashCode();
             }
 
-            public bool MatchNS(string localname, string namespaceUri)
+            public readonly bool MatchNS(string localname, string namespaceUri)
             {
                 return this.name.MatchNs(localname, namespaceUri);
             }
 
-            public bool MatchHashNS(int hash, string localname, string namespaceUri)
+            public readonly bool MatchHashNS(int hash, string localname, string namespaceUri)
             {
                 return this.hashCode == hash && this.name.MatchNs(localname, namespaceUri);
             }

@@ -135,7 +135,7 @@ namespace System.Xml.Xsl.Xslt
                 this.Name = name;
             }
 
-            public override int GetHashCode()
+            public override readonly int GetHashCode()
             {
                 return Mode.GetHashCode() ^ Name.GetHashCode();
             }

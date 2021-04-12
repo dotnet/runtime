@@ -38,8 +38,8 @@ namespace System.Xml.Xsl.Xslt
             public V value;      // value for variable, null for namespace
 
             // Exactly one of these three properties is true for every given record
-            public bool IsVariable { get { return (flags & ScopeFlags.Variable) != 0; } }
-            public bool IsNamespace { get { return (flags & ScopeFlags.NsDecl) != 0; } }
+            public readonly bool IsVariable { get { return (flags & ScopeFlags.Variable) != 0; } }
+            public readonly bool IsNamespace { get { return (flags & ScopeFlags.NsDecl) != 0; } }
             //          public bool IsExNamespace   { get { return (flags & ScopeFlags.NsExcl  ) != 0; } }
         }
 
@@ -407,7 +407,7 @@ namespace System.Xml.Xsl.Xslt
                 return false;
             }
 
-            public ScopeRecord Current
+            public readonly ScopeRecord Current
             {
                 get
                 {

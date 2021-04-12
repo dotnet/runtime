@@ -276,12 +276,12 @@ namespace System.Xml.Xsl.Runtime
             private int _hashCode;
             private int _nextNameIndex;
 
-            public string LocalName { get { return _localName; } }
-            public string Prefix { get { return _prefix; } }
-            public string Namespace { get { return _namespaceName; } }
-            public string Text { get { return _text; } }
-            public XmlAtomicValue Value { get { return _value; } }
-            public int NextNameIndex { get { return _nextNameIndex; } set { _nextNameIndex = value; } }
+            public readonly string LocalName { get { return _localName; } }
+            public readonly string Prefix { get { return _prefix; } }
+            public readonly string Namespace { get { return _namespaceName; } }
+            public readonly string Text { get { return _text; } }
+            public readonly XmlAtomicValue Value { get { return _value; } }
+            public int NextNameIndex { readonly get { return _nextNameIndex; } set { _nextNameIndex = value; } }
 
             /// <summary>
             /// Cache an attribute's name and type.

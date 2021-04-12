@@ -57,12 +57,12 @@ namespace System.Xml
                 this.xmlLang = null;
             }
 
-            internal void WriteEndElement(XmlRawWriter rawWriter)
+            internal readonly void WriteEndElement(XmlRawWriter rawWriter)
             {
                 rawWriter.WriteEndElement(prefix, localName, namespaceUri);
             }
 
-            internal void WriteFullEndElement(XmlRawWriter rawWriter)
+            internal readonly void WriteFullEndElement(XmlRawWriter rawWriter)
             {
                 rawWriter.WriteFullEndElement(prefix, localName, namespaceUri);
             }
@@ -91,7 +91,7 @@ namespace System.Xml
                 this.prevNsIndex = -1;
             }
 
-            internal void WriteDecl(XmlWriter writer, XmlRawWriter? rawWriter)
+            internal readonly void WriteDecl(XmlWriter writer, XmlRawWriter? rawWriter)
             {
                 Debug.Assert(kind == NamespaceKind.NeedToWrite);
                 if (null != rawWriter)
@@ -130,7 +130,7 @@ namespace System.Xml
                 this.prev = 0;
             }
 
-            internal bool IsDuplicate(string prefix, string localName, string namespaceUri)
+            internal readonly bool IsDuplicate(string prefix, string localName, string namespaceUri)
             {
                 return ((this.localName == localName)
                     && ((this.prefix == prefix) || (this.namespaceUri == namespaceUri)));

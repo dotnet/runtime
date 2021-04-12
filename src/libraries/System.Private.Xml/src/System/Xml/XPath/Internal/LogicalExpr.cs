@@ -431,7 +431,7 @@ namespace MS.Internal.Xml.XPath
                 _opnd.Reset();
             }
 
-            public string Value { get { return _current!.Value; } }
+            public readonly string Value { get { return _current!.Value; } }
         }
 
         private static string Rtf(object o) { return ((XPathNavigator)o).Value; }

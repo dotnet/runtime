@@ -14,12 +14,12 @@ namespace System.Xml
     {
         private partial struct ElementScope
         {
-            internal Task WriteEndElementAsync(XmlRawWriter rawWriter)
+            internal readonly Task WriteEndElementAsync(XmlRawWriter rawWriter)
             {
                 return rawWriter.WriteEndElementAsync(prefix, localName, namespaceUri);
             }
 
-            internal Task WriteFullEndElementAsync(XmlRawWriter rawWriter)
+            internal readonly Task WriteFullEndElementAsync(XmlRawWriter rawWriter)
             {
                 return rawWriter.WriteFullEndElementAsync(prefix, localName, namespaceUri);
             }
@@ -27,7 +27,7 @@ namespace System.Xml
 
         private partial struct Namespace
         {
-            internal async Task WriteDeclAsync(XmlWriter writer, XmlRawWriter? rawWriter)
+            internal async readonly Task WriteDeclAsync(XmlWriter writer, XmlRawWriter? rawWriter)
             {
                 Debug.Assert(kind == NamespaceKind.NeedToWrite);
                 if (null != rawWriter)

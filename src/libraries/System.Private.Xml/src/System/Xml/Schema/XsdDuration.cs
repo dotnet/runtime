@@ -166,7 +166,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Return true if this duration is negative.
         /// </summary>
-        public bool IsNegative
+        public readonly bool IsNegative
         {
             get { return (_nanoseconds & NegativeBit) != 0; }
         }
@@ -174,7 +174,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Return number of years in this duration (stored in 31 bits).
         /// </summary>
-        public int Years
+        public readonly int Years
         {
             get { return _years; }
         }
@@ -182,7 +182,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Return number of months in this duration (stored in 31 bits).
         /// </summary>
-        public int Months
+        public readonly int Months
         {
             get { return _months; }
         }
@@ -190,7 +190,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Return number of days in this duration (stored in 31 bits).
         /// </summary>
-        public int Days
+        public readonly int Days
         {
             get { return _days; }
         }
@@ -198,7 +198,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Return number of hours in this duration (stored in 31 bits).
         /// </summary>
-        public int Hours
+        public readonly int Hours
         {
             get { return _hours; }
         }
@@ -206,7 +206,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Return number of minutes in this duration (stored in 31 bits).
         /// </summary>
-        public int Minutes
+        public readonly int Minutes
         {
             get { return _minutes; }
         }
@@ -214,7 +214,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Return number of seconds in this duration (stored in 31 bits).
         /// </summary>
-        public int Seconds
+        public readonly int Seconds
         {
             get { return _seconds; }
         }
@@ -222,7 +222,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Return number of nanoseconds in this duration.
         /// </summary>
-        public int Nanoseconds
+        public readonly int Nanoseconds
         {
             get { return (int)(_nanoseconds & ~NegativeBit); }
         }
@@ -231,7 +231,7 @@ namespace System.Xml.Schema
         /// Internal helper method that converts an Xsd duration to a TimeSpan value.  This code uses the estimate
         /// that there are 365 days in the year and 30 days in a month.
         /// </summary>
-        public TimeSpan ToTimeSpan()
+        public readonly TimeSpan ToTimeSpan()
         {
             return ToTimeSpan(DurationType.Duration);
         }
@@ -240,7 +240,7 @@ namespace System.Xml.Schema
         /// Internal helper method that converts an Xsd duration to a TimeSpan value.  This code uses the estimate
         /// that there are 365 days in the year and 30 days in a month.
         /// </summary>
-        public TimeSpan ToTimeSpan(DurationType durationType)
+        public readonly TimeSpan ToTimeSpan(DurationType durationType)
         {
             TimeSpan result;
             Exception? exception = TryToTimeSpan(durationType, out result);
@@ -252,12 +252,12 @@ namespace System.Xml.Schema
             return result;
         }
 
-        internal Exception? TryToTimeSpan(out TimeSpan result)
+        internal readonly Exception? TryToTimeSpan(out TimeSpan result)
         {
             return TryToTimeSpan(DurationType.Duration, out result);
         }
 
-        internal Exception? TryToTimeSpan(DurationType durationType, out TimeSpan result)
+        internal readonly Exception? TryToTimeSpan(DurationType durationType, out TimeSpan result)
         {
             Exception? exception = null;
             ulong ticks = 0;

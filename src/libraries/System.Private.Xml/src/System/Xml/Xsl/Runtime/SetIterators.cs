@@ -129,7 +129,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned -1.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navCurr; }
         }
@@ -246,7 +246,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned -1.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navLeft; }
         }
@@ -349,7 +349,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the current result navigator.  This is only defined after MoveNext() has returned -1.
         /// </summary>
-        public XPathNavigator Current
+        public readonly XPathNavigator Current
         {
             get { return _navLeft; }
         }

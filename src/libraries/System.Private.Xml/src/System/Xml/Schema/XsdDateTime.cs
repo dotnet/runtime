@@ -247,7 +247,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Returns auxiliary enumeration of XSD date type
         /// </summary>
-        private DateTimeTypeCode InternalTypeCode
+        private readonly DateTimeTypeCode InternalTypeCode
         {
             get { return (DateTimeTypeCode)((_extra & TypeMask) >> TypeShift); }
         }
@@ -255,7 +255,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Returns geographical "position" of the value
         /// </summary>
-        private XsdDateTimeKind InternalKind
+        private readonly XsdDateTimeKind InternalKind
         {
             get { return (XsdDateTimeKind)((_extra & KindMask) >> KindShift); }
         }
@@ -263,7 +263,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Returns XmlTypeCode of the value being stored
         /// </summary>
-        public XmlTypeCode TypeCode
+        public readonly XmlTypeCode TypeCode
         {
             get { return s_typeCodes[(int)InternalTypeCode]; }
         }
@@ -272,7 +272,7 @@ namespace System.Xml.Schema
         /// Returns the year part of XsdDateTime
         /// The returned value is integer between 1 and 9999
         /// </summary>
-        public int Year
+        public readonly int Year
         {
             get { return _dt.Year; }
         }
@@ -281,7 +281,7 @@ namespace System.Xml.Schema
         /// Returns the month part of XsdDateTime
         /// The returned value is integer between 1 and 12
         /// </summary>
-        public int Month
+        public readonly int Month
         {
             get { return _dt.Month; }
         }
@@ -290,7 +290,7 @@ namespace System.Xml.Schema
         /// Returns the day of the month part of XsdDateTime
         /// The returned value is integer between 1 and 31
         /// </summary>
-        public int Day
+        public readonly int Day
         {
             get { return _dt.Day; }
         }
@@ -299,7 +299,7 @@ namespace System.Xml.Schema
         /// Returns the hour part of XsdDateTime
         /// The returned value is integer between 0 and 23
         /// </summary>
-        public int Hour
+        public readonly int Hour
         {
             get { return _dt.Hour; }
         }
@@ -308,7 +308,7 @@ namespace System.Xml.Schema
         /// Returns the minute part of XsdDateTime
         /// The returned value is integer between 0 and 60
         /// </summary>
-        public int Minute
+        public readonly int Minute
         {
             get { return _dt.Minute; }
         }
@@ -317,7 +317,7 @@ namespace System.Xml.Schema
         /// Returns the second part of XsdDateTime
         /// The returned value is integer between 0 and 60
         /// </summary>
-        public int Second
+        public readonly int Second
         {
             get { return _dt.Second; }
         }
@@ -326,7 +326,7 @@ namespace System.Xml.Schema
         /// Returns number of ticks in the fraction of the second
         /// The returned value is integer between 0 and 9999999
         /// </summary>
-        public int Fraction
+        public readonly int Fraction
         {
             get { return (int)(_dt.Ticks % ticksToFractionDivisor); }
         }
@@ -335,7 +335,7 @@ namespace System.Xml.Schema
         /// Returns the hour part of the time zone
         /// The returned value is integer between -13 and 13
         /// </summary>
-        public int ZoneHour
+        public readonly int ZoneHour
         {
             get
             {
@@ -348,7 +348,7 @@ namespace System.Xml.Schema
         /// Returns the minute part of the time zone
         /// The returned value is integer between 0 and 60
         /// </summary>
-        public int ZoneMinute
+        public readonly int ZoneMinute
         {
             get
             {
@@ -574,7 +574,7 @@ namespace System.Xml.Schema
         // day once. As we know that we need all 3 values, by duplicating the
         // logic here we can calculate the number of days and return the intermediate
         // calculations for month and year without the added cost.
-        private void GetYearMonthDay(out int year, out int month, out int day)
+        private readonly void GetYearMonthDay(out int year, out int month, out int day)
         {
             long ticks = _dt.Ticks;
             // n = number of days since 1/1/0001
@@ -1039,7 +1039,7 @@ namespace System.Xml.Schema
             }
 
 
-            private bool Parse4Dig(int start, ref int num)
+            private readonly bool Parse4Dig(int start, ref int num)
             {
                 if (start + 3 < _length)
                 {
@@ -1060,7 +1060,7 @@ namespace System.Xml.Schema
                 return false;
             }
 
-            private bool Parse2Dig(int start, ref int num)
+            private readonly bool Parse2Dig(int start, ref int num)
             {
                 if (start + 1 < _length)
                 {
@@ -1077,7 +1077,7 @@ namespace System.Xml.Schema
                 return false;
             }
 
-            private bool ParseChar(int start, char ch)
+            private readonly bool ParseChar(int start, char ch)
             {
                 return start < _length && _text[start] == ch;
             }
