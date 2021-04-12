@@ -143,7 +143,12 @@ namespace System.Net.Test.Common
             }
 
             var request = new ReceivedRequest();
-            _requests.Add(request);
+
+            // Avoid concurrent writes to the request list
+            lock (_requests)
+            {
+                _requests.Add(request);
+            }
 
             request.RequestLine = line;
             string[] requestTokens = request.RequestLine.Split(' ');

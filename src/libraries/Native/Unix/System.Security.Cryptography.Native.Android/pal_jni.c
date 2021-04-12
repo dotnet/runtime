@@ -405,6 +405,8 @@ jmethodID g_SSLEngineWrap;
 jmethodID g_SSLEngineUnwrap;
 jmethodID g_SSLEngineCloseOutbound;
 jmethodID g_SSLEngineGetHandshakeStatus;
+jmethodID g_SSLEngineGetSupportedProtocols;
+jmethodID g_SSLEngineSetEnabledProtocols;
 jmethodID g_SSLEngineSetSSLParameters;
 
 // java/nio/ByteBuffer
@@ -976,6 +978,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLEngineUnwrap =                 GetMethod(env, false, g_SSLEngine, "unwrap", "(Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;)Ljavax/net/ssl/SSLEngineResult;");
     g_SSLEngineGetHandshakeStatus =     GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
     g_SSLEngineCloseOutbound =          GetMethod(env, false, g_SSLEngine, "closeOutbound", "()V");
+    g_SSLEngineGetSupportedProtocols =  GetMethod(env, false, g_SSLEngine, "getSupportedProtocols", "()[Ljava/lang/String;");
+    g_SSLEngineSetEnabledProtocols =    GetMethod(env, false, g_SSLEngine, "setEnabledProtocols", "([Ljava/lang/String;)V");
     g_SSLEngineSetSSLParameters =       GetMethod(env, false, g_SSLEngine, "setSSLParameters", "(Ljavax/net/ssl/SSLParameters;)V");
 
     g_ByteBuffer =                          GetClassGRef(env, "java/nio/ByteBuffer");

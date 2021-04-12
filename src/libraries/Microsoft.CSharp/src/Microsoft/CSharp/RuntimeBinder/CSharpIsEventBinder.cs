@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Numerics.Hashing;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
@@ -15,9 +16,11 @@ namespace Microsoft.CSharp.RuntimeBinder
     {
         public BindingFlag BindingFlags => 0;
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
             => runtimeBinder.BindIsEvent(this, arguments, locals);
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
             => SymbolTable.PopulateSymbolTableWithName(Name, null, arguments[0].Info.IsStaticType ? arguments[0].Value as Type : arguments[0].Type);
 
@@ -36,6 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// </summary>
         /// <param name="name">The name of the member to test.</param>
         /// <param name="callingContext">The <see cref="System.Type"/> that indicates where this operation is defined.</param>
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public CSharpIsEventBinder(
             string name,
             Type callingContext)
@@ -80,6 +84,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="target">The target of the dynamic binary operation.</param>
         /// <param name="args">The arguments to the dynamic event test.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
             BinderHelper.ValidateBindArgument(target, nameof(target));

@@ -159,6 +159,11 @@ inputs.
     - AOT:  add `/p:EnableAggressiveTrimming=true /p:RunAOTCompilation=true /p:BuildAOTTestsOnHelix=true`
     - Only trimming (helpful to isolate issues caused by trimming):
         - add `/p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true`
+## Debugging
+
+### Getting more information
+
+- Line numbers: add `/p:DebuggerSupport=true` to the command line, for `Release` builds. It's enabled by default for `Debug` builds.
 
 ## Kicking off outer loop tests from GitHub Interface
 

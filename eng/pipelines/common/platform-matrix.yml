@@ -180,6 +180,31 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Linux x64 Source Build
+
+- ${{ if containsValue(parameters.platforms, 'SourceBuild_Linux_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      archType: x64
+      targetRid: linux-x64
+      platform: Linux_x64
+      container:
+        image: centos-7-source-build-20210408124356-5d87b80
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+        buildingOnSourceBuildImage: true
+
 # WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
