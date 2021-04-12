@@ -9,9 +9,11 @@ using System.Reflection;
 
 namespace System.Linq.Expressions
 {
-    /// <summary>
-    /// Represents a control expression that handles multiple selections by passing control to a <see cref="SwitchCase"/>.
-    /// </summary>
+    /// <summary>Represents a control expression that handles multiple selections by passing control to <see cref="System.Linq.Expressions.SwitchCase" />.</summary>
+    /// <remarks></remarks>
+    /// <example>The following example demonstrates how to create an expression that represents a switch statement that has a default case by using the <see cref="O:System.Linq.Expressions.Expression.Switch" /> method.
+    /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.linq.expressions.expressiondev10/cs/program.cs" id="Snippet35":::
+    /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.linq.expressions.expressiondev10/vb/module1.vb" id="Snippet35":::</example>
     [DebuggerTypeProxy(typeof(SwitchExpressionProxy))]
     public sealed class SwitchExpression : Expression
     {
@@ -24,42 +26,33 @@ namespace System.Linq.Expressions
             Cases = cases;
         }
 
-        /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression"/> represents.
-        /// </summary>
-        /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
+        /// <summary>Gets the static type of the expression that this <see cref="System.Linq.Expressions.Expression" /> represents.</summary>
+        /// <value>The <see cref="System.Linq.Expressions.SwitchExpression.Type" /> that represents the static type of the expression.</value>
         public sealed override Type Type { get; }
 
-        /// <summary>
-        /// Returns the node type of this Expression. Extension nodes should return
-        /// ExpressionType.Extension when overriding this method.
-        /// </summary>
-        /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
+        /// <summary>Returns the node type of this Expression. Extension nodes should return <see cref="System.Linq.Expressions.ExpressionType.Extension" /> when overriding this method.</summary>
+        /// <value>The <see cref="System.Linq.Expressions.ExpressionType" /> of the expression.</value>
         public sealed override ExpressionType NodeType => ExpressionType.Switch;
 
-        /// <summary>
-        /// Gets the test for the switch.
-        /// </summary>
+        /// <summary>Gets the test for the switch.</summary>
+        /// <value>The <see cref="System.Linq.Expressions.Expression" /> object representing the test for the switch.</value>
         public Expression SwitchValue { get; }
 
-        /// <summary>
-        /// Gets the collection of <see cref="SwitchCase"/> objects for the switch.
-        /// </summary>
+        /// <summary>Gets the collection of <see cref="System.Linq.Expressions.SwitchCase" /> objects for the switch.</summary>
+        /// <value>The collection of <see cref="System.Linq.Expressions.SwitchCase" /> objects.</value>
         public ReadOnlyCollection<SwitchCase> Cases { get; }
 
-        /// <summary>
-        /// Gets the test for the switch.
-        /// </summary>
+        /// <summary>Gets the test for the switch.</summary>
+        /// <value>The <see cref="System.Linq.Expressions.Expression" /> object representing the test for the switch.</value>
         public Expression? DefaultBody { get; }
 
-        /// <summary>
-        /// Gets the equality comparison method, if any.
-        /// </summary>
+        /// <summary>Gets the equality comparison method, if any.</summary>
+        /// <value>The <see cref="System.Reflection.MethodInfo" /> object representing the equality comparison method.</value>
         public MethodInfo? Comparison { get; }
 
-        /// <summary>
-        /// Dispatches to the specific visit method for this node type.
-        /// </summary>
+        /// <summary>Dispatches to the specific visit method for this node type.</summary>
+        /// <param name="visitor">The visitor to visit this node with.</param>
+        /// <returns>The result of visiting this node.</returns>
         protected internal override Expression Accept(ExpressionVisitor visitor)
         {
             return visitor.VisitSwitch(this);
@@ -78,15 +71,11 @@ namespace System.Linq.Expressions
             }
         }
 
-        /// <summary>
-        /// Creates a new expression that is like this one, but using the
-        /// supplied children. If all of the children are the same, it will
-        /// return this expression.
-        /// </summary>
-        /// <param name="switchValue">The <see cref="SwitchValue"/> property of the result.</param>
-        /// <param name="cases">The <see cref="Cases"/> property of the result.</param>
-        /// <param name="defaultBody">The <see cref="DefaultBody"/> property of the result.</param>
-        /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
+        /// <summary>Creates a new expression that is like this one, but using the supplied children. If all of the children are the same, it will return this expression.</summary>
+        /// <param name="switchValue">The <see cref="System.Linq.Expressions.SwitchExpression.SwitchValue" /> property of the result.</param>
+        /// <param name="cases">The <see cref="System.Linq.Expressions.SwitchExpression.Cases" /> property of the result.</param>
+        /// <param name="defaultBody">The <see cref="System.Linq.Expressions.SwitchExpression.DefaultBody" /> property of the result.</param>
+        /// <returns>This expression if no children are changed or an expression with the updated children.</returns>
         public SwitchExpression Update(Expression switchValue, IEnumerable<SwitchCase>? cases, Expression? defaultBody)
         {
             if (switchValue == SwitchValue && defaultBody == DefaultBody && cases != null)
@@ -100,80 +89,85 @@ namespace System.Linq.Expressions
         }
     }
 
+    /// <summary>Provides the base class from which the classes that represent expression tree nodes are derived. It also contains <see langword="static" /> (<see langword="Shared" /> in Visual Basic) factory methods to create the various node types. This is an <see langword="abstract" /> class.</summary>
+    /// <remarks></remarks>
+    /// <example>The following code example shows how to create a block expression. The block expression consists of two <see cref="System.Linq.Expressions.MethodCallExpression" /> objects and one <see cref="System.Linq.Expressions.ConstantExpression" /> object.
+    /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.linq.expressions.expressiondev10/cs/program.cs" id="Snippet13":::
+    /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.linq.expressions.expressiondev10/vb/module1.vb" id="Snippet13":::</example>
     public partial class Expression
     {
-        /// <summary>
-        /// Creates a <see cref="SwitchExpression"/>.
-        /// </summary>
+        /// <summary>Creates a <see cref="System.Linq.Expressions.SwitchExpression" /> that represents a <see langword="switch" /> statement without a default case.</summary>
         /// <param name="switchValue">The value to be tested against each case.</param>
-        /// <param name="cases">The valid cases for this switch.</param>
-        /// <returns>The created <see cref="SwitchExpression"/>.</returns>
+        /// <param name="cases">The set of cases for this switch expression.</param>
+        /// <returns>The created <see cref="System.Linq.Expressions.SwitchExpression" />.</returns>
+        /// <remarks>All <see cref="System.Linq.Expressions.SwitchCase" /> objects in a <see cref="System.Linq.Expressions.SwitchExpression" /> object must have the same type, unless the <see cref="System.Linq.Expressions.SwitchExpression" /> has the type `void`.
+        /// Each <see cref="System.Linq.Expressions.SwitchCase" /> object has an implicit `break` statement, which means that there is no implicit fall through from one case label to another.
+        /// If <paramref name="switchValue" /> does not match any of the cases, no exception is thrown.</remarks>
+        /// <example>The following example demonstrates how to create an expression that represents a switch statement without a default case.
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.linq.expressions.expressiondev10/cs/program.cs" id="Snippet34":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.linq.expressions.expressiondev10/vb/module1.vb" id="Snippet34":::</example>
         public static SwitchExpression Switch(Expression switchValue, params SwitchCase[]? cases)
         {
             return Switch(switchValue, null, null, (IEnumerable<SwitchCase>?)cases);
         }
 
-        /// <summary>
-        /// Creates a <see cref="SwitchExpression"/>.
-        /// </summary>
+        /// <summary>Creates a <see cref="System.Linq.Expressions.SwitchExpression" /> that represents a <see langword="switch" /> statement that has a default case.</summary>
         /// <param name="switchValue">The value to be tested against each case.</param>
-        /// <param name="defaultBody">The result of the switch if no cases are matched.</param>
-        /// <param name="cases">The valid cases for this switch.</param>
-        /// <returns>The created <see cref="SwitchExpression"/>.</returns>
+        /// <param name="defaultBody">The result of the switch if <paramref name="switchValue" /> does not match any of the cases.</param>
+        /// <param name="cases">The set of cases for this switch expression.</param>
+        /// <returns>The created <see cref="System.Linq.Expressions.SwitchExpression" />.</returns>
+        /// <remarks>All <see cref="System.Linq.Expressions.SwitchCase" /> objects in a <see cref="System.Linq.Expressions.SwitchExpression" /> object must have the same type, unless the <see cref="System.Linq.Expressions.SwitchExpression" /> has the type `void`.
+        /// Each <see cref="System.Linq.Expressions.SwitchCase" /> object has an implicit `break` statement, which means that there is no implicit fall through from one case label to another.
+        /// If <paramref name="switchValue" /> does not match any of the cases, the default case represented by <paramref name="defaultBody" /> is run.</remarks>
+        /// <example>The following example demonstrates how to create an expression that represents a switch statement that has a default case.
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.linq.expressions.expressiondev10/cs/program.cs" id="Snippet35":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.linq.expressions.expressiondev10/vb/module1.vb" id="Snippet35":::</example>
         public static SwitchExpression Switch(Expression switchValue, Expression? defaultBody, params SwitchCase[]? cases)
         {
             return Switch(switchValue, defaultBody, null, (IEnumerable<SwitchCase>?)cases);
         }
 
-        /// <summary>
-        /// Creates a <see cref="SwitchExpression"/>.
-        /// </summary>
+        /// <summary>Creates a <see cref="System.Linq.Expressions.SwitchExpression" /> that represents a <see langword="switch" /> statement that has a default case.</summary>
         /// <param name="switchValue">The value to be tested against each case.</param>
-        /// <param name="defaultBody">The result of the switch if no cases are matched.</param>
+        /// <param name="defaultBody">The result of the switch if <paramref name="switchValue" /> does not match any of the cases.</param>
         /// <param name="comparison">The equality comparison method to use.</param>
-        /// <param name="cases">The valid cases for this switch.</param>
-        /// <returns>The created <see cref="SwitchExpression"/>.</returns>
+        /// <param name="cases">The set of cases for this switch expression.</param>
+        /// <returns>The created <see cref="System.Linq.Expressions.SwitchExpression" />.</returns>
         public static SwitchExpression Switch(Expression switchValue, Expression? defaultBody, MethodInfo? comparison, params SwitchCase[]? cases)
         {
             return Switch(switchValue, defaultBody, comparison, (IEnumerable<SwitchCase>?)cases);
         }
 
-        /// <summary>
-        /// Creates a <see cref="SwitchExpression"/>.
-        /// </summary>
+        /// <summary>Creates a <see cref="System.Linq.Expressions.SwitchExpression" /> that represents a <see langword="switch" /> statement that has a default case.</summary>
         /// <param name="type">The result type of the switch.</param>
         /// <param name="switchValue">The value to be tested against each case.</param>
-        /// <param name="defaultBody">The result of the switch if no cases are matched.</param>
+        /// <param name="defaultBody">The result of the switch if <paramref name="switchValue" /> does not match any of the cases.</param>
         /// <param name="comparison">The equality comparison method to use.</param>
-        /// <param name="cases">The valid cases for this switch.</param>
-        /// <returns>The created <see cref="SwitchExpression"/>.</returns>
+        /// <param name="cases">The set of cases for this switch expression.</param>
+        /// <returns>The created <see cref="System.Linq.Expressions.SwitchExpression" />.</returns>
         public static SwitchExpression Switch(Type? type, Expression switchValue, Expression? defaultBody, MethodInfo? comparison, params SwitchCase[]? cases)
         {
             return Switch(type, switchValue, defaultBody, comparison, (IEnumerable<SwitchCase>?)cases);
         }
 
-        /// <summary>
-        /// Creates a <see cref="SwitchExpression"/>.
-        /// </summary>
+        /// <summary>Creates a <see cref="System.Linq.Expressions.SwitchExpression" /> that represents a <see langword="switch" /> statement that has a default case.</summary>
         /// <param name="switchValue">The value to be tested against each case.</param>
-        /// <param name="defaultBody">The result of the switch if no cases are matched.</param>
+        /// <param name="defaultBody">The result of the switch if <paramref name="switchValue" /> does not match any of the cases.</param>
         /// <param name="comparison">The equality comparison method to use.</param>
-        /// <param name="cases">The valid cases for this switch.</param>
-        /// <returns>The created <see cref="SwitchExpression"/>.</returns>
+        /// <param name="cases">The set of cases for this switch expression.</param>
+        /// <returns>The created <see cref="System.Linq.Expressions.SwitchExpression" />.</returns>
         public static SwitchExpression Switch(Expression switchValue, Expression? defaultBody, MethodInfo? comparison, IEnumerable<SwitchCase>? cases)
         {
             return Switch(null, switchValue, defaultBody, comparison, cases);
         }
 
-        /// <summary>
-        /// Creates a <see cref="SwitchExpression"/>.
-        /// </summary>
+        /// <summary>Creates a <see cref="System.Linq.Expressions.SwitchExpression" /> that represents a <see langword="switch" /> statement that has a default case.</summary>
         /// <param name="type">The result type of the switch.</param>
         /// <param name="switchValue">The value to be tested against each case.</param>
-        /// <param name="defaultBody">The result of the switch if no cases are matched.</param>
+        /// <param name="defaultBody">The result of the switch if <paramref name="switchValue" /> does not match any of the cases.</param>
         /// <param name="comparison">The equality comparison method to use.</param>
-        /// <param name="cases">The valid cases for this switch.</param>
-        /// <returns>The created <see cref="SwitchExpression"/>.</returns>
+        /// <param name="cases">The set of cases for this switch expression.</param>
+        /// <returns>The created <see cref="System.Linq.Expressions.SwitchExpression" />.</returns>
         public static SwitchExpression Switch(Type? type, Expression switchValue, Expression? defaultBody, MethodInfo? comparison, IEnumerable<SwitchCase>? cases)
         {
             ExpressionUtils.RequiresCanRead(switchValue, nameof(switchValue));

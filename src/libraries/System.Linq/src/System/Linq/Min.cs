@@ -6,8 +6,23 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
+    /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="System.Collections.Generic.IEnumerable{T}" />.</summary>
+    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="System.Collections.Generic.IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
+    /// The majority of the methods in this class are defined as extension methods that extend <see cref="System.Collections.Generic.IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="System.Collections.Generic.IEnumerable{T}" />.
+    /// Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</remarks>
+    /// <related type="Article" href="https://msdn.microsoft.com/library/24cda21e-8af8-4632-b519-c404a839b9b2">Standard Query Operators Overview</related>
+    /// <related type="Article" href="/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension Methods (C# Programming Guide)</related>
+    /// <related type="Article" href="/dotnet/visual-basic/programming-guide/language-features/procedures/extension-methods">Extension Methods (Visual Basic)</related>
     public static partial class Enumerable
     {
+        /// <summary>Returns the minimum value in a sequence of <see cref="int" /> values.</summary>
+        /// <param name="source">A sequence of <see cref="int" /> values to determine the minimum value of.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
+        /// <remarks>The <see cref="System.Linq.Enumerable.Min(System.Collections.Generic.IEnumerable{int})" /> method uses the <see cref="int" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Min" />.</remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static int Min(this IEnumerable<int> source)
         {
             if (source == null)
@@ -37,6 +52,17 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Returns the minimum value in a sequence of nullable <see cref="int" /> values.</summary>
+        /// <param name="source">A sequence of nullable <see cref="int" /> values to determine the minimum value of.</param>
+        /// <returns>A value of type <c>Nullable&lt;Int32&gt;</c> in C# or <c>Nullable(Of Int32)</c> in Visual Basic that corresponds to the minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <remarks>The <see cref="System.Linq.Enumerable.Min(System.Collections.Generic.IEnumerable{System.Nullable{int}})" /> method uses the <see cref="int" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// If the source sequence is empty or contains only values that are <see langword="null" />, this function returns <see langword="null" />.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Min" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Min(System.Collections.Generic.IEnumerable{System.Nullable{int}})" /> to determine the minimum value in a sequence.
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet63":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet63":::</example>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static int? Min(this IEnumerable<int?> source)
         {
             if (source == null)
@@ -81,6 +107,14 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Returns the minimum value in a sequence of <see cref="long" /> values.</summary>
+        /// <param name="source">A sequence of <see cref="long" /> values to determine the minimum value of.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
+        /// <remarks>The <see cref="System.Linq.Enumerable.Min(System.Collections.Generic.IEnumerable{long})" /> method uses the <see cref="long" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Min" />.</remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static long Min(this IEnumerable<long> source)
         {
             if (source == null)
@@ -110,6 +144,14 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Returns the minimum value in a sequence of nullable <see cref="long" /> values.</summary>
+        /// <param name="source">A sequence of nullable <see cref="long" /> values to determine the minimum value of.</param>
+        /// <returns>A value of type <c>Nullable&lt;Int64&gt;</c> in C# or <c>Nullable(Of Int64)</c> in Visual Basic that corresponds to the minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <remarks>The <see cref="System.Linq.Enumerable.Min(System.Collections.Generic.IEnumerable{System.Nullable{long}})" /> method uses the <see cref="long" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// If the source sequence is empty or contains only values that are <see langword="null" />, this function returns <see langword="null" />.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Min" />.</remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static long? Min(this IEnumerable<long?> source)
         {
             if (source == null)
@@ -150,6 +192,14 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Returns the minimum value in a sequence of <see cref="float" /> values.</summary>
+        /// <param name="source">A sequence of <see cref="float" /> values to determine the minimum value of.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
+        /// <remarks>The <see cref="System.Linq.Enumerable.Min(System.Collections.Generic.IEnumerable{float})" /> method uses the <see cref="float" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Min" />.</remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static float Min(this IEnumerable<float> source)
         {
             if (source == null)
@@ -197,6 +247,14 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Returns the minimum value in a sequence of nullable <see cref="float" /> values.</summary>
+        /// <param name="source">A sequence of nullable <see cref="float" /> values to determine the minimum value of.</param>
+        /// <returns>A value of type <c>Nullable&lt;Single&gt;</c> in C# or <c>Nullable(Of Single)</c> in Visual Basic that corresponds to the minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <remarks>The <see cref="System.Linq.Enumerable.Min(System.Collections.Generic.IEnumerable{System.Nullable{float}})" /> method uses the <see cref="float" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// If the source sequence is empty or contains only values that are <see langword="null" />, this function returns <see langword="null" />.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Min" />.</remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static float? Min(this IEnumerable<float?> source)
         {
             if (source == null)
@@ -246,6 +304,17 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Returns the minimum value in a sequence of <see cref="double" /> values.</summary>
+        /// <param name="source">A sequence of <see cref="double" /> values to determine the minimum value of.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
+        /// <remarks>The <see cref="System.Linq.Enumerable.Min(System.Collections.Generic.IEnumerable{double})" /> method uses the <see cref="double" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Min" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Min(System.Collections.Generic.IEnumerable{double})" /> to determine the minimum value in a sequence.
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet60":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet60":::</example>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static double Min(this IEnumerable<double> source)
         {
             if (source == null)
@@ -284,6 +353,14 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Returns the minimum value in a sequence of nullable <see cref="double" /> values.</summary>
+        /// <param name="source">A sequence of nullable <see cref="double" /> values to determine the minimum value of.</param>
+        /// <returns>A value of type <c>Nullable&lt;Double&gt;</c> in C# or <c>Nullable(Of Double)</c> in Visual Basic that corresponds to the minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <remarks>The <see cref="System.Linq.Enumerable.Min(System.Collections.Generic.IEnumerable{System.Nullable{double}})" /> method uses the <see cref="double" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// If the source sequence is empty or contains only values that are <see langword="null" />, this function returns <see langword="null" />.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Min" />.</remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static double? Min(this IEnumerable<double?> source)
         {
             if (source == null)
@@ -333,6 +410,14 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Returns the minimum value in a sequence of <see cref="decimal" /> values.</summary>
+        /// <param name="source">A sequence of <see cref="decimal" /> values to determine the minimum value of.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
+        /// <remarks>The <see cref="System.Linq.Enumerable.Min(System.Collections.Generic.IEnumerable{decimal})" /> method uses the <see cref="decimal" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Min" />.</remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static decimal Min(this IEnumerable<decimal> source)
         {
             if (source == null)
@@ -362,6 +447,14 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Returns the minimum value in a sequence of nullable <see cref="decimal" /> values.</summary>
+        /// <param name="source">A sequence of nullable <see cref="decimal" /> values to determine the minimum value of.</param>
+        /// <returns>A value of type <c>Nullable&lt;Decimal&gt;</c> in C# or <c>Nullable(Of Decimal)</c> in Visual Basic that corresponds to the minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <remarks>The <see cref="System.Linq.Enumerable.Min(System.Collections.Generic.IEnumerable{System.Nullable{decimal}})" /> method uses the <see cref="decimal" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// If the source sequence is empty or contains only values that are <see langword="null" />, this function returns <see langword="null" />.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Min" />.</remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static decimal? Min(this IEnumerable<decimal?> source)
         {
             if (source == null)
@@ -399,6 +492,19 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Returns the minimum value in a generic sequence.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.ArgumentException">No object in <paramref name="source" /> implements the <see cref="System.IComparable" /> or <see cref="System.IComparable{T}" /> interface.</exception>
+        /// <remarks>If type <typeparamref name="TSource" /> implements <see cref="System.IComparable{T}" />, this method uses that implementation to compare values. Otherwise, if type <typeparamref name="TSource" /> implements <see cref="System.IComparable" />, that implementation is used to compare values.
+        /// If <typeparamref name="TSource" /> is a reference type and the source sequence is empty or contains only values that are <see langword="null" />, this function returns <see langword="null" />.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Min" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Min{T}(System.Collections.Generic.IEnumerable{T})" /> to determine the minimum value in a sequence of <see cref="System.IComparable{T}" /> objects.
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet67":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet67":::</example>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static TSource? Min<TSource>(this IEnumerable<TSource> source) => Min(source, comparer: null);
         public static TSource? Min<TSource>(this IEnumerable<TSource> source, IComparer<TSource>? comparer)
         {
@@ -555,6 +661,20 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Invokes a transform function on each element of a sequence and returns the minimum <see cref="int" /> value.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
+        /// <remarks>The <see cref="System.Linq.Enumerable.Min{T}(System.Collections.Generic.IEnumerable{T},System.Func{T,int})" /> method uses the <see cref="int" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// You can apply this method to a sequence of arbitrary values if you provide a function, <paramref name="selector" />, that projects the members of <paramref name="source" /> into a numeric type, specifically <see cref="int" />.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Min" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Min{T}(System.Collections.Generic.IEnumerable{T},System.Func{T,int})" /> to determine the minimum value in a sequence of projected values.
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet68":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet68":::</example>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static int Min<TSource>(this IEnumerable<TSource> source, Func<TSource, int> selector)
         {
             if (source == null)
@@ -589,6 +709,23 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Invokes a transform function on each element of a sequence and returns the minimum nullable <see cref="int" /> value.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The value of type <c>Nullable&lt;Int32&gt;</c> in C# or <c>Nullable(Of Int32)</c> in Visual Basic that corresponds to the minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Nullable%7BSystem.Int32%7D%7D%29> method uses the <xref:System.Int32> implementation of <xref:System.IComparable%601> to compare values.
+        /// You can apply this method to a sequence of arbitrary values if you provide a function, `selector`, that projects the members of source into a numeric type, specifically `Nullable<Int32>` in C# or `Nullable(Of Int32)` in Visual Basic.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <xref:System.Linq.Enumerable.Min%2A>.
+        /// ## Examples
+        /// The following code example demonstrates how to use <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Int32%7D%29> to determine the minimum value in a sequence of projected values.
+        /// [!INCLUDE[sqo_diff_overload_example_func](~/includes/sqo-diff-overload-example-func-md.md)]
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet68":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet68":::
+        /// ]]></format></remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static int? Min<TSource>(this IEnumerable<TSource> source, Func<TSource, int?> selector)
         {
             if (source == null)
@@ -638,6 +775,24 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Invokes a transform function on each element of a sequence and returns the minimum <see cref="long" /> value.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Int64%7D%29> method uses the <xref:System.Int64> implementation of <xref:System.IComparable%601> to compare values.
+        /// You can apply this method to a sequence of arbitrary values if you provide a function, `selector`, that projects the members of `source` into a numeric type, specifically <xref:System.Int64>.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <xref:System.Linq.Enumerable.Min%2A>.
+        /// ## Examples
+        /// The following code example demonstrates how to use <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Int32%7D%29> to determine the minimum value in a sequence of projected values.
+        /// [!INCLUDE[sqo_diff_overload_example_func](~/includes/sqo-diff-overload-example-func-md.md)]
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet68":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet68":::
+        /// ]]></format></remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static long Min<TSource>(this IEnumerable<TSource> source, Func<TSource, long> selector)
         {
             if (source == null)
@@ -672,6 +827,23 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Invokes a transform function on each element of a sequence and returns the minimum nullable <see cref="long" /> value.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The value of type <c>Nullable&lt;Int64&gt;</c> in C# or <c>Nullable(Of Int64)</c> in Visual Basic that corresponds to the minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Nullable%7BSystem.Int64%7D%7D%29> method uses the <xref:System.Int64> implementation of <xref:System.IComparable%601> to compare values.
+        /// You can apply this method to a sequence of arbitrary values if you provide a function, `selector`, that projects the members of `source` into a numeric type, specifically `Nullable<Int64>` in C# or `Nullable(Of Int64)` in Visual Basic.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <xref:System.Linq.Enumerable.Min%2A>.
+        /// ## Examples
+        /// The following code example demonstrates how to use <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Int32%7D%29> to determine the minimum value in a sequence of projected values.
+        /// [!INCLUDE[sqo_diff_overload_example_func](~/includes/sqo-diff-overload-example-func-md.md)]
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet68":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet68":::
+        /// ]]></format></remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static long? Min<TSource>(this IEnumerable<TSource> source, Func<TSource, long?> selector)
         {
             if (source == null)
@@ -717,6 +889,24 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Invokes a transform function on each element of a sequence and returns the minimum <see cref="float" /> value.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Single%7D%29> method uses the <xref:System.Single> implementation of <xref:System.IComparable%601> to compare values.
+        /// You can apply this method to a sequence of arbitrary values if you provide a function, `selector`, that projects the members of `source` into a numeric type, specifically <xref:System.Single>.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <xref:System.Linq.Enumerable.Min%2A>.
+        /// ## Examples
+        /// The following code example demonstrates how to use <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Int32%7D%29> to determine the minimum value in a sequence of projected values.
+        /// [!INCLUDE[sqo_diff_overload_example_func](~/includes/sqo-diff-overload-example-func-md.md)]
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet68":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet68":::
+        /// ]]></format></remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static float Min<TSource>(this IEnumerable<TSource> source, Func<TSource, float> selector)
         {
             if (source == null)
@@ -769,6 +959,23 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Invokes a transform function on each element of a sequence and returns the minimum nullable <see cref="float" /> value.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The value of type <c>Nullable&lt;Single&gt;</c> in C# or <c>Nullable(Of Single)</c> in Visual Basic that corresponds to the minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Nullable%7BSystem.Single%7D%7D%29> method uses the <xref:System.Single> implementation of <xref:System.IComparable%601> to compare values.
+        /// You can apply this method to a sequence of arbitrary values if you provide a function, `selector`, that projects the members of `source` into a numeric type, specifically `Nullable<Single>` in C# or `Nullable(Of Single)` in Visual Basic.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <xref:System.Linq.Enumerable.Min%2A>.
+        /// ## Examples
+        /// The following code example demonstrates how to use <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Int32%7D%29> to determine the minimum value in a sequence of projected values.
+        /// [!INCLUDE[sqo_diff_overload_example_func](~/includes/sqo-diff-overload-example-func-md.md)]
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet68":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet68":::
+        /// ]]></format></remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static float? Min<TSource>(this IEnumerable<TSource> source, Func<TSource, float?> selector)
         {
             if (source == null)
@@ -823,6 +1030,24 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Invokes a transform function on each element of a sequence and returns the minimum <see cref="double" /> value.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Double%7D%29> method uses the <xref:System.Double> implementation of <xref:System.IComparable%601> to compare values.
+        /// You can apply this method to a sequence of arbitrary values if you provide a function, `selector`, that projects the members of `source` into a numeric type, specifically <xref:System.Double>.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <xref:System.Linq.Enumerable.Min%2A>.
+        /// ## Examples
+        /// The following code example demonstrates how to use <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Int32%7D%29> to determine the minimum value in a sequence of projected values.
+        /// [!INCLUDE[sqo_diff_overload_example_func](~/includes/sqo-diff-overload-example-func-md.md)]
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet68":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet68":::
+        /// ]]></format></remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static double Min<TSource>(this IEnumerable<TSource> source, Func<TSource, double> selector)
         {
             if (source == null)
@@ -866,6 +1091,23 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Invokes a transform function on each element of a sequence and returns the minimum nullable <see cref="double" /> value.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The value of type <c>Nullable&lt;Double&gt;</c> in C# or <c>Nullable(Of Double)</c> in Visual Basic that corresponds to the minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Nullable%7BSystem.Double%7D%7D%29> method uses the <xref:System.Double> implementation of <xref:System.IComparable%601> to compare values.
+        /// You can apply this method to a sequence of arbitrary values if you provide a function, `selector`, that projects the members of `source` into a numeric type, specifically `Nullable<Double>` in C# or `Nullable(Of Double)` in Visual Basic.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <xref:System.Linq.Enumerable.Min%2A>.
+        /// ## Examples
+        /// The following code example demonstrates how to use <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Int32%7D%29> to determine the minimum value in a sequence of projected values.
+        /// [!INCLUDE[sqo_diff_overload_example_func](~/includes/sqo-diff-overload-example-func-md.md)]
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet68":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet68":::
+        /// ]]></format></remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static double? Min<TSource>(this IEnumerable<TSource> source, Func<TSource, double?> selector)
         {
             if (source == null)
@@ -920,6 +1162,24 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Invokes a transform function on each element of a sequence and returns the minimum <see cref="decimal" /> value.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Decimal%7D%29> method uses the <xref:System.Decimal> implementation of <xref:System.IComparable%601> to compare values.
+        /// You can apply this method to a sequence of arbitrary values if you provide a function, `selector`, that projects the members of `source` into a numeric type, specifically <xref:System.Decimal>.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <xref:System.Linq.Enumerable.Min%2A>.
+        /// ## Examples
+        /// The following code example demonstrates how to use <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Int32%7D%29> to determine the minimum value in a sequence of projected values.
+        /// [!INCLUDE[sqo_diff_overload_example_func](~/includes/sqo-diff-overload-example-func-md.md)]
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet68":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet68":::
+        /// ]]></format></remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static decimal Min<TSource>(this IEnumerable<TSource> source, Func<TSource, decimal> selector)
         {
             if (source == null)
@@ -954,6 +1214,23 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Invokes a transform function on each element of a sequence and returns the minimum nullable <see cref="decimal" /> value.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The value of type <c>Nullable&lt;Decimal&gt;</c> in C# or <c>Nullable(Of Decimal)</c> in Visual Basic that corresponds to the minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Nullable%7BSystem.Decimal%7D%7D%29> method uses the <xref:System.Decimal> implementation of <xref:System.IComparable%601> to compare values.
+        /// You can apply this method to a sequence of arbitrary values if you provide a function, `selector`, that projects the members of `source` into a numeric type, specifically `Nullable<Decimal>` in C# or `Nullable(Of Decimal)` in Visual Basic.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <xref:System.Linq.Enumerable.Min%2A>.
+        /// ## Examples
+        /// The following code example demonstrates how to use <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Int32%7D%29> to determine the minimum value in a sequence of projected values.
+        /// [!INCLUDE[sqo_diff_overload_example_func](~/includes/sqo-diff-overload-example-func-md.md)]
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet68":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet68":::
+        /// ]]></format></remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static decimal? Min<TSource>(this IEnumerable<TSource> source, Func<TSource, decimal?> selector)
         {
             if (source == null)
@@ -996,6 +1273,23 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Invokes a transform function on each element of a generic sequence and returns the minimum resulting value.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <typeparam name="TResult">The type of the value returned by <paramref name="selector" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum value of.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// If type `TResult` implements <xref:System.IComparable%601>, this method uses that implementation to compare values. Otherwise, if type `TResult` implements <xref:System.IComparable>, that implementation is used to compare values.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <xref:System.Linq.Enumerable.Min%2A>.
+        /// ## Examples
+        /// The following code example demonstrates how to use <xref:System.Linq.Enumerable.Min%60%601%28System.Collections.Generic.IEnumerable%7B%60%600%7D%2CSystem.Func%7B%60%600%2CSystem.Int32%7D%29> to determine the minimum value in a sequence of projected values.
+        /// [!INCLUDE[sqo_diff_overload_example_func](~/includes/sqo-diff-overload-example-func-md.md)]
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet68":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet68":::
+        /// ]]></format></remarks>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static TResult? Min<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
         {
             if (source == null)

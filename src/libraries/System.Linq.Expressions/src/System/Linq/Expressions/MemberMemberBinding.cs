@@ -10,13 +10,9 @@ using System.Reflection;
 
 namespace System.Linq.Expressions
 {
-    /// <summary>
-    /// Represents initializing members of a member of a newly created object.
-    /// </summary>
-    /// <remarks>
-    /// Use the <see cref="Expression.MemberBind(MemberInfo, MemberBinding[])"/> factory methods to create a <see cref="MemberMemberBinding"/>.
-    /// The value of the <see cref="MemberBinding.BindingType"/> property of a <see cref="MemberMemberBinding"/> object is <see cref="MemberBinding"/>.
-    /// </remarks>
+    /// <summary>Represents initializing members of a member of a newly created object.</summary>
+    /// <remarks>Use the <see cref="O:System.Linq.Expressions.Expression.MemberBind" /> factory methods to create a <see cref="System.Linq.Expressions.MemberMemberBinding" />.
+    /// The value of the <see cref="O:System.Linq.Expressions.MemberBinding.BindingType" /> property of a <see cref="System.Linq.Expressions.MemberMemberBinding" /> object is <see cref="System.Linq.Expressions.MemberBindingType.MemberBinding" />.</remarks>
     public sealed class MemberMemberBinding : MemberBinding
     {
         internal MemberMemberBinding(MemberInfo member, ReadOnlyCollection<MemberBinding> bindings)
@@ -27,18 +23,13 @@ namespace System.Linq.Expressions
             Bindings = bindings;
         }
 
-        /// <summary>
-        /// Gets the bindings that describe how to initialize the members of a member.
-        /// </summary>
+        /// <summary>Gets the bindings that describe how to initialize the members of a member.</summary>
+        /// <value>A <see cref="System.Collections.ObjectModel.ReadOnlyCollection{T}" /> of <see cref="System.Linq.Expressions.MemberBinding" /> objects that describe how to initialize the members of the member.</value>
         public ReadOnlyCollection<MemberBinding> Bindings { get; }
 
-        /// <summary>
-        /// Creates a new expression that is like this one, but using the
-        /// supplied children. If all of the children are the same, it will
-        /// return this expression.
-        /// </summary>
-        /// <param name="bindings">The <see cref="Bindings"/> property of the result.</param>
-        /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
+        /// <summary>Creates a new expression that is like this one, but using the supplied children. If all of the children are the same, it will return this expression.</summary>
+        /// <param name="bindings">The <see cref="System.Linq.Expressions.MemberMemberBinding.Bindings" /> property of the result.</param>
+        /// <returns>This expression if no children are changed or an expression with the updated children.</returns>
         public MemberMemberBinding Update(IEnumerable<MemberBinding> bindings)
         {
             if (bindings != null)
@@ -57,25 +48,36 @@ namespace System.Linq.Expressions
         }
     }
 
+    /// <summary>Provides the base class from which the classes that represent expression tree nodes are derived. It also contains <see langword="static" /> (<see langword="Shared" /> in Visual Basic) factory methods to create the various node types. This is an <see langword="abstract" /> class.</summary>
+    /// <remarks></remarks>
+    /// <example>The following code example shows how to create a block expression. The block expression consists of two <see cref="System.Linq.Expressions.MethodCallExpression" /> objects and one <see cref="System.Linq.Expressions.ConstantExpression" /> object.
+    /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.linq.expressions.expressiondev10/cs/program.cs" id="Snippet13":::
+    /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.linq.expressions.expressiondev10/vb/module1.vb" id="Snippet13":::</example>
     public partial class Expression
     {
-        /// <summary>
-        /// Creates a <see cref="MemberMemberBinding"/> that represents the recursive initialization of members of a field or property.
-        /// </summary>
-        /// <param name="member">The <see cref="MemberInfo"/> to set the <see cref="MemberBinding.Member"/> property equal to.</param>
-        /// <param name="bindings">An array of <see cref="MemberBinding"/> objects to use to populate the <see cref="MemberMemberBinding.Bindings"/> collection.</param>
-        /// <returns>A <see cref="MemberMemberBinding"/> that has the <see cref="MemberBinding.BindingType"/> property equal to <see cref="MemberBinding"/> and the <see cref="MemberBinding.Member"/> and <see cref="MemberMemberBinding.Bindings"/> properties set to the specified values.</returns>
+        /// <summary>Creates a <see cref="System.Linq.Expressions.MemberMemberBinding" /> that represents the recursive initialization of members of a field or property.</summary>
+        /// <param name="member">The <see cref="System.Reflection.MemberInfo" /> to set the <see cref="System.Linq.Expressions.MemberBinding.Member" /> property equal to.</param>
+        /// <param name="bindings">An array of <see cref="System.Linq.Expressions.MemberBinding" /> objects to use to populate the <see cref="System.Linq.Expressions.MemberMemberBinding.Bindings" /> collection.</param>
+        /// <returns>A <see cref="System.Linq.Expressions.MemberMemberBinding" /> that has the <see cref="System.Linq.Expressions.MemberBinding.BindingType" /> property equal to <see cref="System.Linq.Expressions.MemberBindingType.MemberBinding" /> and the <see cref="System.Linq.Expressions.MemberBinding.Member" /> and <see cref="System.Linq.Expressions.MemberMemberBinding.Bindings" /> properties set to the specified values.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="member" /> or <paramref name="bindings" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.ArgumentException"><paramref name="member" /> does not represent a field or property.
+        /// -or-
+        /// The <see cref="System.Linq.Expressions.MemberBinding.Member" /> property of an element of <paramref name="bindings" /> does not represent a member of the type of the field or property that <paramref name="member" /> represents.</exception>
+        /// <remarks>The <paramref name="member" /> parameter must represent a field or property.</remarks>
         public static MemberMemberBinding MemberBind(MemberInfo member, params MemberBinding[] bindings)
         {
             return MemberBind(member, (IEnumerable<MemberBinding>)bindings);
         }
 
-        /// <summary>
-        /// Creates a <see cref="MemberMemberBinding"/> that represents the recursive initialization of members of a field or property.
-        /// </summary>
-        /// <param name="member">The <see cref="MemberInfo"/> to set the <see cref="MemberBinding.Member"/> property equal to.</param>
-        /// <param name="bindings">An <see cref="IEnumerable{T}"/> that contains <see cref="MemberBinding"/> objects to use to populate the <see cref="MemberMemberBinding.Bindings"/> collection.</param>
-        /// <returns>A <see cref="MemberMemberBinding"/> that has the <see cref="MemberBinding.BindingType"/> property equal to <see cref="MemberBinding"/> and the <see cref="MemberBinding.Member"/> and <see cref="MemberMemberBinding.Bindings"/> properties set to the specified values.</returns>
+        /// <summary>Creates a <see cref="System.Linq.Expressions.MemberMemberBinding" /> that represents the recursive initialization of members of a field or property.</summary>
+        /// <param name="member">The <see cref="System.Reflection.MemberInfo" /> to set the <see cref="System.Linq.Expressions.MemberBinding.Member" /> property equal to.</param>
+        /// <param name="bindings">An <see cref="System.Collections.Generic.IEnumerable{T}" /> that contains <see cref="System.Linq.Expressions.MemberBinding" /> objects to use to populate the <see cref="System.Linq.Expressions.MemberMemberBinding.Bindings" /> collection.</param>
+        /// <returns>A <see cref="System.Linq.Expressions.MemberMemberBinding" /> that has the <see cref="System.Linq.Expressions.MemberBinding.BindingType" /> property equal to <see cref="System.Linq.Expressions.MemberBindingType.MemberBinding" /> and the <see cref="System.Linq.Expressions.MemberBinding.Member" /> and <see cref="System.Linq.Expressions.MemberMemberBinding.Bindings" /> properties set to the specified values.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="member" /> or <paramref name="bindings" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.ArgumentException"><paramref name="member" /> does not represent a field or property.
+        /// -or-
+        /// The <see cref="System.Linq.Expressions.MemberBinding.Member" /> property of an element of <paramref name="bindings" /> does not represent a member of the type of the field or property that <paramref name="member" /> represents.</exception>
+        /// <remarks>The <paramref name="member" /> parameter must represent a field or property.</remarks>
         public static MemberMemberBinding MemberBind(MemberInfo member, IEnumerable<MemberBinding> bindings)
         {
             ContractUtils.RequiresNotNull(member, nameof(member));
@@ -87,32 +89,28 @@ namespace System.Linq.Expressions
             return new MemberMemberBinding(member, roBindings);
         }
 
-        /// <summary>
-        /// Creates a <see cref="MemberMemberBinding"/> that represents the recursive initialization of members of a member that is accessed by using a property accessor method.
-        /// </summary>
-        /// <param name="propertyAccessor">The <see cref="MemberInfo"/> that represents a property accessor method.</param>
-        /// <param name="bindings">An <see cref="IEnumerable{T}"/> that contains <see cref="MemberBinding"/> objects to use to populate the <see cref="MemberMemberBinding.Bindings"/> collection.</param>
-        /// <returns>
-        /// A <see cref="MemberMemberBinding"/> that has the <see cref="MemberBinding.BindingType"/> property equal to <see cref="MemberBinding"/>,
-        /// the Member property set to the <see cref="PropertyInfo"/> that represents the property accessed in <paramref name="propertyAccessor"/>,
-        /// and <see cref="MemberMemberBinding.Bindings"/> properties set to the specified values.
-        /// </returns>
+        /// <summary>Creates a <see cref="System.Linq.Expressions.MemberMemberBinding" /> that represents the recursive initialization of members of a member that is accessed by using a property accessor method.</summary>
+        /// <param name="propertyAccessor">The <see cref="System.Reflection.MethodInfo" /> that represents a property accessor method.</param>
+        /// <param name="bindings">An array of <see cref="System.Linq.Expressions.MemberBinding" /> objects to use to populate the <see cref="System.Linq.Expressions.MemberMemberBinding.Bindings" /> collection.</param>
+        /// <returns>A <see cref="System.Linq.Expressions.MemberMemberBinding" /> that has the <see cref="System.Linq.Expressions.MemberBinding.BindingType" /> property equal to <see cref="System.Linq.Expressions.MemberBindingType.MemberBinding" />, the <see cref="System.Linq.Expressions.MemberBinding.Member" /> property set to the <see cref="System.Reflection.PropertyInfo" /> that represents the property accessed in <paramref name="propertyAccessor" />, and <see cref="System.Linq.Expressions.MemberMemberBinding.Bindings" /> properties set to the specified values.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="propertyAccessor" /> or <paramref name="bindings" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.ArgumentException"><paramref name="propertyAccessor" /> does not represent a property accessor method.
+        /// -or-
+        /// The <see cref="System.Linq.Expressions.MemberBinding.Member" /> property of an element of <paramref name="bindings" /> does not represent a member of the type of the property accessed by the method that <paramref name="propertyAccessor" /> represents.</exception>
         [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static MemberMemberBinding MemberBind(MethodInfo propertyAccessor, params MemberBinding[] bindings)
         {
             return MemberBind(propertyAccessor, (IEnumerable<MemberBinding>)bindings);
         }
 
-        /// <summary>
-        /// Creates a <see cref="MemberMemberBinding"/> that represents the recursive initialization of members of a member that is accessed by using a property accessor method.
-        /// </summary>
-        /// <param name="propertyAccessor">The <see cref="MemberInfo"/> that represents a property accessor method.</param>
-        /// <param name="bindings">An <see cref="IEnumerable{T}"/> that contains <see cref="MemberBinding"/> objects to use to populate the <see cref="MemberMemberBinding.Bindings"/> collection.</param>
-        /// <returns>
-        /// A <see cref="MemberMemberBinding"/> that has the <see cref="MemberBinding.BindingType"/> property equal to <see cref="MemberBinding"/>,
-        /// the Member property set to the <see cref="PropertyInfo"/> that represents the property accessed in <paramref name="propertyAccessor"/>,
-        /// and <see cref="MemberMemberBinding.Bindings"/> properties set to the specified values.
-        /// </returns>
+        /// <summary>Creates a <see cref="System.Linq.Expressions.MemberMemberBinding" /> that represents the recursive initialization of members of a member that is accessed by using a property accessor method.</summary>
+        /// <param name="propertyAccessor">The <see cref="System.Reflection.MethodInfo" /> that represents a property accessor method.</param>
+        /// <param name="bindings">An <see cref="System.Collections.Generic.IEnumerable{T}" /> that contains <see cref="System.Linq.Expressions.MemberBinding" /> objects to use to populate the <see cref="System.Linq.Expressions.MemberMemberBinding.Bindings" /> collection.</param>
+        /// <returns>A <see cref="System.Linq.Expressions.MemberMemberBinding" /> that has the <see cref="System.Linq.Expressions.MemberBinding.BindingType" /> property equal to <see cref="System.Linq.Expressions.MemberBindingType.MemberBinding" />, the <see cref="System.Linq.Expressions.MemberBinding.Member" /> property set to the <see cref="System.Reflection.PropertyInfo" /> that represents the property accessed in <paramref name="propertyAccessor" />, and <see cref="System.Linq.Expressions.MemberMemberBinding.Bindings" /> properties set to the specified values.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="propertyAccessor" /> or <paramref name="bindings" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.ArgumentException"><paramref name="propertyAccessor" /> does not represent a property accessor method.
+        /// -or-
+        /// The <see cref="System.Linq.Expressions.MemberBinding.Member" /> property of an element of <paramref name="bindings" /> does not represent a member of the type of the property accessed by the method that <paramref name="propertyAccessor" /> represents.</exception>
         [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static MemberMemberBinding MemberBind(MethodInfo propertyAccessor, IEnumerable<MemberBinding> bindings)
         {

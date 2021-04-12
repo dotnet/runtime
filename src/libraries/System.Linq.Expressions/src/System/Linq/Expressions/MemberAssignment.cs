@@ -7,9 +7,9 @@ using System.Reflection;
 
 namespace System.Linq.Expressions
 {
-    /// <summary>
-    /// Represents assignment to a member of an object.
-    /// </summary>
+    /// <summary>Represents assignment operation for a field or property of an object.</summary>
+    /// <remarks>Use the <see cref="O:System.Linq.Expressions.Expression.Bind" /> factory methods to create a <see cref="System.Linq.Expressions.MemberAssignment" />.
+    /// A <see cref="System.Linq.Expressions.MemberAssignment" /> has the <see cref="O:System.Linq.Expressions.MemberBinding.BindingType" /> property equal to <see cref="System.Linq.Expressions.MemberBindingType.Assignment" />.</remarks>
     public sealed class MemberAssignment : MemberBinding
     {
         private readonly Expression _expression;
@@ -22,18 +22,13 @@ namespace System.Linq.Expressions
             _expression = expression;
         }
 
-        /// <summary>
-        /// Gets the <see cref="Expression"/> which represents the object whose member is being assigned to.
-        /// </summary>
+        /// <summary>Gets the expression to assign to the field or property.</summary>
+        /// <value>The <see cref="System.Linq.Expressions.Expression" /> that represents the value to assign to the field or property.</value>
         public Expression Expression => _expression;
 
-        /// <summary>
-        /// Creates a new expression that is like this one, but using the
-        /// supplied children. If all of the children are the same, it will
-        /// return this expression.
-        /// </summary>
-        /// <param name="expression">The <see cref="Expression"/> property of the result.</param>
-        /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
+        /// <summary>Creates a new expression that is like this one, but using the supplied children. If all of the children are the same, it will return this expression.</summary>
+        /// <param name="expression">The <see cref="System.Linq.Expressions.MemberAssignment.Expression" /> property of the result.</param>
+        /// <returns>This expression if no children are changed or an expression with the updated children.</returns>
         public MemberAssignment Update(Expression expression)
         {
             if (expression == Expression)
@@ -48,14 +43,24 @@ namespace System.Linq.Expressions
         }
     }
 
+    /// <summary>Provides the base class from which the classes that represent expression tree nodes are derived. It also contains <see langword="static" /> (<see langword="Shared" /> in Visual Basic) factory methods to create the various node types. This is an <see langword="abstract" /> class.</summary>
+    /// <remarks></remarks>
+    /// <example>The following code example shows how to create a block expression. The block expression consists of two <see cref="System.Linq.Expressions.MethodCallExpression" /> objects and one <see cref="System.Linq.Expressions.ConstantExpression" /> object.
+    /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.linq.expressions.expressiondev10/cs/program.cs" id="Snippet13":::
+    /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.linq.expressions.expressiondev10/vb/module1.vb" id="Snippet13":::</example>
     public partial class Expression
     {
-        /// <summary>
-        /// Creates a <see cref="MemberAssignment"/> binding the specified value to the given member.
-        /// </summary>
-        /// <param name="member">The <see cref="MemberInfo"/> for the member which is being assigned to.</param>
-        /// <param name="expression">The value to be assigned to <paramref name="member"/>.</param>
-        /// <returns>The created <see cref="MemberAssignment"/>.</returns>
+        /// <summary>Creates a <see cref="System.Linq.Expressions.MemberAssignment" /> that represents the initialization of a field or property.</summary>
+        /// <param name="member">A <see cref="System.Reflection.MemberInfo" /> to set the <see cref="System.Linq.Expressions.MemberBinding.Member" /> property equal to.</param>
+        /// <param name="expression">An <see cref="System.Linq.Expressions.Expression" /> to set the <see cref="System.Linq.Expressions.MemberAssignment.Expression" /> property equal to.</param>
+        /// <returns>A <see cref="System.Linq.Expressions.MemberAssignment" /> that has <see cref="System.Linq.Expressions.MemberBinding.BindingType" /> equal to <see cref="System.Linq.Expressions.MemberBindingType.Assignment" /> and the <see cref="System.Linq.Expressions.MemberBinding.Member" /> and <see cref="System.Linq.Expressions.MemberAssignment.Expression" /> properties set to the specified values.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="member" /> or <paramref name="expression" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.ArgumentException"><paramref name="member" /> does not represent a field or property.
+        /// -or-
+        /// The property represented by <paramref name="member" /> does not have a <see langword="set" /> accessor.
+        /// -or-
+        /// <paramref name="expression" />.Type is not assignable to the type of the field or property that <paramref name="member" /> represents.</exception>
+        /// <remarks>The <see cref="O:System.Linq.Expressions.Expression.Type" /> property of <paramref name="expression" /> must be assignable to the type represented by the <see cref="O:System.Reflection.FieldInfo.FieldType" /> or <see cref="O:System.Reflection.PropertyInfo.PropertyType" /> property of <paramref name="member" />.</remarks>
         public static MemberAssignment Bind(MemberInfo member, Expression expression)
         {
             ContractUtils.RequiresNotNull(member, nameof(member));
@@ -69,12 +74,17 @@ namespace System.Linq.Expressions
             return new MemberAssignment(member, expression);
         }
 
-        /// <summary>
-        /// Creates a <see cref="MemberAssignment"/> binding the specified value to the given property.
-        /// </summary>
-        /// <param name="propertyAccessor">The <see cref="PropertyInfo"/> for the property which is being assigned to.</param>
-        /// <param name="expression">The value to be assigned to <paramref name="propertyAccessor"/>.</param>
-        /// <returns>The created <see cref="MemberAssignment"/>.</returns>
+        /// <summary>Creates a <see cref="System.Linq.Expressions.MemberAssignment" /> that represents the initialization of a member by using a property accessor method.</summary>
+        /// <param name="propertyAccessor">A <see cref="System.Reflection.MethodInfo" /> that represents a property accessor method.</param>
+        /// <param name="expression">An <see cref="System.Linq.Expressions.Expression" /> to set the <see cref="System.Linq.Expressions.MemberAssignment.Expression" /> property equal to.</param>
+        /// <returns>A <see cref="System.Linq.Expressions.MemberAssignment" /> that has the <see cref="System.Linq.Expressions.MemberBinding.BindingType" /> property equal to <see cref="System.Linq.Expressions.MemberBindingType.Assignment" />, the <see cref="System.Linq.Expressions.MemberBinding.Member" /> property set to the <see cref="System.Reflection.PropertyInfo" /> that represents the property accessed in <paramref name="propertyAccessor" />, and the <see cref="System.Linq.Expressions.MemberAssignment.Expression" /> property set to <paramref name="expression" />.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="propertyAccessor" /> or <paramref name="expression" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.ArgumentException"><paramref name="propertyAccessor" /> does not represent a property accessor method.
+        /// -or-
+        /// The property accessed by <paramref name="propertyAccessor" /> does not have a <see langword="set" /> accessor.
+        /// -or-
+        /// <paramref name="expression" />.Type is not assignable to the type of the field or property that <paramref name="propertyAccessor" /> represents.</exception>
+        /// <remarks>The <see cref="O:System.Linq.Expressions.Expression.Type" /> property of <paramref name="expression" /> must be assignable to the type represented by the <see cref="O:System.Reflection.PropertyInfo.PropertyType" /> property of the property accessed in <paramref name="propertyAccessor" />.</remarks>
         [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static MemberAssignment Bind(MethodInfo propertyAccessor, Expression expression)
         {

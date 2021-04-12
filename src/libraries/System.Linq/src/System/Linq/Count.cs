@@ -6,8 +6,28 @@ using System.Collections.Generic;
 
 namespace System.Linq
 {
+    /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="System.Collections.Generic.IEnumerable{T}" />.</summary>
+    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="System.Collections.Generic.IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
+    /// The majority of the methods in this class are defined as extension methods that extend <see cref="System.Collections.Generic.IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="System.Collections.Generic.IEnumerable{T}" />.
+    /// Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</remarks>
+    /// <related type="Article" href="https://msdn.microsoft.com/library/24cda21e-8af8-4632-b519-c404a839b9b2">Standard Query Operators Overview</related>
+    /// <related type="Article" href="/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension Methods (C# Programming Guide)</related>
+    /// <related type="Article" href="/dotnet/visual-basic/programming-guide/language-features/procedures/extension-methods">Extension Methods (Visual Basic)</related>
     public static partial class Enumerable
     {
+        /// <summary>Returns the number of elements in a sequence.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence that contains elements to be counted.</param>
+        /// <returns>The number of elements in the input sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.OverflowException">The number of elements in <paramref name="source" /> is larger than <see cref="int.MaxValue" />.</exception>
+        /// <remarks>If the type of <paramref name="source" /> implements <see cref="System.Collections.Generic.ICollection{T}" />, that implementation is used to obtain the count of elements. Otherwise, this method determines the count.
+        /// Use the <see cref="O:System.Linq.Enumerable.LongCount" /> method when you expect and want to allow the result to be greater than <see cref="int.MaxValue" />.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Count()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Count" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Count{T}(System.Collections.Generic.IEnumerable{T})" /> to count the elements in an array.
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet22":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet22":::</example>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static int Count<TSource>(this IEnumerable<TSource> source)
         {
             if (source == null)
@@ -45,6 +65,20 @@ namespace System.Linq
             return count;
         }
 
+        /// <summary>Returns a number that represents how many elements in the specified sequence satisfy a condition.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence that contains elements to be tested and counted.</param>
+        /// <param name="predicate">A function to test each element for a condition.</param>
+        /// <returns>A number that represents how many elements in the sequence satisfy the condition in the predicate function.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="predicate" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.OverflowException">The number of elements in <paramref name="source" /> is larger than <see cref="int.MaxValue" />.</exception>
+        /// <remarks>If the type of <paramref name="source" /> implements <see cref="System.Collections.Generic.ICollection{T}" />, that implementation is used to obtain the count of elements. Otherwise, this method determines the count.
+        /// You should use the <see cref="O:System.Linq.Enumerable.LongCount" /> method when you expect and want to allow the result to be greater than <see cref="int.MaxValue" />.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Count()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Count" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Count{T}(System.Collections.Generic.IEnumerable{T},System.Func{T,bool})" /> to count the elements in an array that satisfy a condition.
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet23":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet23":::</example>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static int Count<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
             if (source == null)
@@ -125,6 +159,18 @@ namespace System.Linq
             return false;
         }
 
+        /// <summary>Returns an <see cref="long" /> that represents the total number of elements in a sequence.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">An <see cref="System.Collections.Generic.IEnumerable{T}" /> that contains the elements to be counted.</param>
+        /// <returns>The number of elements in the source sequence.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.OverflowException">The number of elements exceeds <see cref="long.MaxValue" />.</exception>
+        /// <remarks>Use this method rather than <see cref="O:System.Linq.Enumerable.Count" /> when you expect the result to be greater than <see cref="int.MaxValue" />.
+        /// In Visual Basic query expression syntax, an `Aggregate Into LongCount()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.LongCount" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.LongCount{T}(System.Collections.Generic.IEnumerable{T})" /> to count the elements in an array.
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet47":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet47":::</example>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static long LongCount<TSource>(this IEnumerable<TSource> source)
         {
             if (source == null)
@@ -147,6 +193,19 @@ namespace System.Linq
             return count;
         }
 
+        /// <summary>Returns an <see cref="long" /> that represents how many elements in a sequence satisfy a condition.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">An <see cref="System.Collections.Generic.IEnumerable{T}" /> that contains the elements to be counted.</param>
+        /// <param name="predicate">A function to test each element for a condition.</param>
+        /// <returns>A number that represents how many elements in the sequence satisfy the condition in the predicate function.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="predicate" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.OverflowException">The number of matching elements exceeds <see cref="long.MaxValue" />.</exception>
+        /// <remarks>Use this method rather than <see cref="O:System.Linq.Enumerable.Count" /> when you expect the result to be greater than <see cref="int.MaxValue" />.
+        /// In Visual Basic query expression syntax, an `Aggregate Into LongCount()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.LongCount" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.LongCount{T}(System.Collections.Generic.IEnumerable{T},System.Func{T,bool})" /> to count the elements in an array that satisfy a condition.
+        /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet48":::
+        /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet48":::</example>
+        /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static long LongCount<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
             if (source == null)
