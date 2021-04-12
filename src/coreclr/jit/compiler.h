@@ -2742,6 +2742,7 @@ public:
     GenTree* gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd);
 
     GenTree* gtNewStringLiteralNode(InfoAccessType iat, void* pValue);
+    GenTreeIntCon* gtNewStringLiteralLength(GenTreeStrCon* node);
 
     GenTree* gtNewLconNode(__int64 value);
 
@@ -6434,6 +6435,11 @@ protected:
 public:
     LoopDsc*      optLoopTable; // loop descriptor table
     unsigned char optLoopCount; // number of tracked loops
+
+#ifdef DEBUG
+    unsigned char loopAlignCandidates; // number of loops identified for alignment
+    unsigned char loopsAligned;        // number of loops actually aligned
+#endif                                 // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
                        BasicBlock*   first,

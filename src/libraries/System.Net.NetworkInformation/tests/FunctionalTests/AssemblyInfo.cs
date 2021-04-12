@@ -3,4 +3,4 @@
 
 using Xunit;
 
-[assembly: SkipOnMono("System.Net.NetworkInformation is not supported on wasm", TestPlatforms.Browser)]
+[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Net.NetworkInformation is not supported on Browser")]

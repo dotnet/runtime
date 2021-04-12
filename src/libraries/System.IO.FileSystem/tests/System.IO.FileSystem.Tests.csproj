@@ -4,7 +4,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
 
-    <RunTestsJSArguments>--working-dir=/test-dir</RunTestsJSArguments>
+    <WasmXHarnessMonoArgs>--working-dir=/test-dir</WasmXHarnessMonoArgs>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Base\BaseGetSetAttributes.cs" />

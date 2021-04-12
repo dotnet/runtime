@@ -6267,19 +6267,15 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // JIT32_GCENCODER
 
-    // OSR methods use the original method slot for the cached kept alive this,
-    // so don't need to allocate  a slot on the new frame.
-    if (opts.IsOSR())
-    {
-        if (lvaKeepAliveAndReportThis())
-        {
-            PatchpointInfo* ppInfo = info.compPatchpointInfo;
-            assert(ppInfo->HasKeptAliveThis());
-            int originalOffset             = ppInfo->KeptAliveThisOffset();
-            lvaCachedGenericContextArgOffs = originalFrameStkOffs + originalOffset;
-        }
-    }
-    else if (lvaReportParamTypeArg())
+    // For OSR methods, param type args are always reportable via the root method frame slot.
+    // (see gcInfoBlockHdrSave) and so do not need a new slot on the frame.
+    //
+    // OSR methods may also be able to use the root frame kept alive this, if the root
+    // method needed to report this.
+    //
+    // Inlining done under OSR may introduce new reporting, in which case the OSR frame
+    // must allocate a slot.
+    if (!opts.IsOSR() && lvaReportParamTypeArg())
     {
 #ifdef JIT32_GCENCODER
         noway_assert(codeGen->isFramePointerUsed());
@@ -6292,10 +6288,25 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifndef JIT32_GCENCODER
     else if (lvaKeepAliveAndReportThis())
     {
-        // When "this" is also used as generic context arg.
-        lvaIncrementFrameSize(TARGET_POINTER_SIZE);
-        stkOffs -= TARGET_POINTER_SIZE;
-        lvaCachedGenericContextArgOffs = stkOffs;
+        bool canUseExistingSlot = false;
+        if (opts.IsOSR())
+        {
+            PatchpointInfo* ppInfo = info.compPatchpointInfo;
+            if (ppInfo->HasKeptAliveThis())
+            {
+                int originalOffset             = ppInfo->KeptAliveThisOffset();
+                lvaCachedGenericContextArgOffs = originalFrameStkOffs + originalOffset;
+                canUseExistingSlot             = true;
+            }
+        }
+
+        if (!canUseExistingSlot)
+        {
+            // When "this" is also used as generic context arg.
+            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+            stkOffs -= TARGET_POINTER_SIZE;
+            lvaCachedGenericContextArgOffs = stkOffs;
+        }
     }
 #endif
 

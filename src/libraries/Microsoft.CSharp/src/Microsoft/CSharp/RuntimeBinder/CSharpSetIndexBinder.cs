@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Numerics.Hashing;
 using Microsoft.CSharp.RuntimeBinder.Errors;
@@ -20,9 +21,11 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public BindingFlag BindingFlags => 0;
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
             => runtimeBinder.BindAssignment(this, arguments, locals);
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
             => SymbolTable.PopulateSymbolTableWithName(SpecialNames.Indexer, null, arguments[0].Type);
 
@@ -49,6 +52,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="isChecked">True if the operation is defined in a checked context; otherwise, false.</param>
         /// <param name="callingContext">The <see cref="Type"/> that indicates where this operation is defined.</param>
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public CSharpSetIndexBinder(
             bool isCompoundAssignment,
             bool isChecked,
@@ -105,6 +109,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="value">The value to set to the collection.</param>
         /// <param name="errorSuggestion">The binding result to use if binding fails, or null.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject FallbackSetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value, DynamicMetaObject errorSuggestion)
         {
 #if ENABLECOMBINDER

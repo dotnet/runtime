@@ -52,7 +52,6 @@ namespace System
         // constants for TimeZoneInfo.Local and TimeZoneInfo.Utc
         private const string UtcId = "UTC";
         private const string LocalId = "Local";
-        private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
 
         private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
 
@@ -2020,7 +2019,7 @@ namespace System
         private static TimeZoneInfo CreateUtcTimeZone()
         {
             string standardDisplayName = GetUtcStandardDisplayName();
-            string displayName = $"(UTC) {standardDisplayName}";
+            string displayName = GetUtcFullDisplayName(UtcId, standardDisplayName);
             return CreateCustomTimeZone(UtcId, TimeSpan.Zero, displayName, standardDisplayName);
         }
     }
