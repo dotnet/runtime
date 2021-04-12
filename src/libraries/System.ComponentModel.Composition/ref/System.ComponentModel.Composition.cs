@@ -615,10 +615,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
         public LazyMemberInfo(System.Reflection.MemberInfo member) { throw null; }
         public LazyMemberInfo(System.Reflection.MemberTypes memberType, System.Func<System.Reflection.MemberInfo[]> accessorsCreator) { throw null; }
         public LazyMemberInfo(System.Reflection.MemberTypes memberType, params System.Reflection.MemberInfo[] accessors) { throw null; }
-        public System.Reflection.MemberTypes MemberType { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public readonly System.Reflection.MemberTypes MemberType { get { throw null; } }
+        public override readonly bool Equals(object? obj) { throw null; }
         public System.Reflection.MemberInfo[] GetAccessors() { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static bool operator ==(System.ComponentModel.Composition.ReflectionModel.LazyMemberInfo left, System.ComponentModel.Composition.ReflectionModel.LazyMemberInfo right) { throw null; }
         public static bool operator !=(System.ComponentModel.Composition.ReflectionModel.LazyMemberInfo left, System.ComponentModel.Composition.ReflectionModel.LazyMemberInfo right) { throw null; }
     }

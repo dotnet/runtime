@@ -68,7 +68,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             _accessorsCreator = accessorsCreator;
         }
 
-        public MemberTypes MemberType
+        public readonly MemberTypes MemberType
         {
             get { return _memberType; }
         }
@@ -91,7 +91,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return _accessors!;
         }
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             if (_accessorsCreator != null)
             {
@@ -106,7 +106,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             throw new Exception(SR.Diagnostic_InternalExceptionMessage);
         }
 
-        public override bool Equals(object? obj)
+        public override readonly bool Equals(object? obj)
         {
             LazyMemberInfo that = (LazyMemberInfo)obj!;
 

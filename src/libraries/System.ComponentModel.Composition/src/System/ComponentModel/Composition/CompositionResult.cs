@@ -23,17 +23,17 @@ namespace System.ComponentModel.Composition
             _errors = errors;
         }
 
-        public bool Succeeded
+        public readonly bool Succeeded
         {
             get { return _errors == null || !_errors.Any(); }
         }
 
-        public IEnumerable<CompositionError> Errors
+        public readonly IEnumerable<CompositionError> Errors
         {
             get { return _errors ?? Enumerable.Empty<CompositionError>(); }
         }
 
-        public CompositionResult MergeResult(CompositionResult result)
+        public readonly CompositionResult MergeResult(CompositionResult result)
         {
             if (Succeeded)
             {
@@ -46,27 +46,27 @@ namespace System.ComponentModel.Composition
             return MergeErrors(result._errors);
         }
 
-        public CompositionResult MergeError(CompositionError error)
+        public readonly CompositionResult MergeError(CompositionError error)
         {
             return MergeErrors(new CompositionError[] { error });
         }
 
-        public CompositionResult MergeErrors(IEnumerable<CompositionError>? errors)
+        public readonly CompositionResult MergeErrors(IEnumerable<CompositionError>? errors)
         {
             return new CompositionResult(_errors.ConcatAllowingNull(errors));
         }
 
-        public CompositionResult<T> ToResult<T>(T value)
+        public readonly CompositionResult<T> ToResult<T>(T value)
         {
             return new CompositionResult<T>(value, _errors);
         }
 
-        public void ThrowOnErrors()
+        public readonly void ThrowOnErrors()
         {
             ThrowOnErrors(null);
         }
 
-        public void ThrowOnErrors(AtomicComposition? atomicComposition)
+        public readonly void ThrowOnErrors(AtomicComposition? atomicComposition)
         {
             if (!Succeeded)
             {

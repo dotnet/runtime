@@ -34,12 +34,12 @@ namespace System.ComponentModel.Composition
             _value = value;
         }
 
-        public bool Succeeded
+        public readonly bool Succeeded
         {
             get { return _errors == null || !_errors.Any(); }
         }
 
-        public IEnumerable<CompositionError> Errors
+        public readonly IEnumerable<CompositionError> Errors
         {
             get { return _errors ?? Enumerable.Empty<CompositionError>(); }
         }
@@ -47,7 +47,7 @@ namespace System.ComponentModel.Composition
         /// <summary>
         ///     Gets the value from the result, throwing a CompositionException if there are any errors.
         /// </summary>
-        public T Value
+        public readonly T Value
         {
             get
             {
@@ -57,17 +57,17 @@ namespace System.ComponentModel.Composition
             }
         }
 
-        internal CompositionResult<TValue> ToResult<TValue>()
+        internal readonly CompositionResult<TValue> ToResult<TValue>()
         {
             return new CompositionResult<TValue>(_errors);
         }
 
-        internal CompositionResult ToResult()
+        internal readonly CompositionResult ToResult()
         {
             return new CompositionResult(_errors);
         }
 
-        private void ThrowOnErrors()
+        private readonly void ThrowOnErrors()
         {
             if (!Succeeded)
             {
