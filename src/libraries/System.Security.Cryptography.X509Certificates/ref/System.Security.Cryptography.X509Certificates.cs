@@ -402,7 +402,7 @@ namespace System.Security.Cryptography.X509Certificates
         private int _dummyPrimitive;
         public System.Security.Cryptography.X509Certificates.X509ChainStatusFlags Status { readonly get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string StatusInformation { get { throw null; } set { } }
+        public string StatusInformation { readonly get { throw null; } set { } }
     }
     [System.FlagsAttribute]
     public enum X509ChainStatusFlags

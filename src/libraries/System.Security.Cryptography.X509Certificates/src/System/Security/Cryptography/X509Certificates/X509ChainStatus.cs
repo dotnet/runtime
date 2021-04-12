@@ -9,12 +9,12 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public struct X509ChainStatus
     {
-        public X509ChainStatusFlags Status { get; set; }
+        public X509ChainStatusFlags Status { readonly get; set; }
 
         [AllowNull]
         public string StatusInformation
         {
-            get
+            readonly get
             {
                 if (_statusInformation == null)
                     return string.Empty;

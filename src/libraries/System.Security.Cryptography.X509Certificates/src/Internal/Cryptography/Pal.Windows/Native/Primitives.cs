@@ -145,7 +145,7 @@ namespace Internal.Cryptography.Pal.Native
         public int cbData;
         public byte* pbData;
 
-        public byte[] ToByteArray()
+        public readonly byte[] ToByteArray()
         {
             if (cbData == 0)
             {
@@ -252,7 +252,7 @@ namespace Internal.Cryptography.Pal.Native
         public byte* pbData;
         public int cUnusedBits;
 
-        public byte[] ToByteArray()
+        public readonly byte[] ToByteArray()
         {
             if (cbData == 0)
             {
@@ -279,7 +279,7 @@ namespace Internal.Cryptography.Pal.Native
         private uint ftTimeLow;
         private uint ftTimeHigh;
 
-        public DateTime ToDateTime()
+        public readonly DateTime ToDateTime()
         {
             long fileTime = (((long)ftTimeHigh) << 32) + ftTimeLow;
             return DateTime.FromFileTime(fileTime);

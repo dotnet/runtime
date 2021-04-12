@@ -52,25 +52,25 @@ namespace Internal.Cryptography.Pal
         internal string IssuerName;
         internal string SubjectName;
 
-        internal int Version => certificate.TbsCertificate.Version;
+        internal readonly int Version => certificate.TbsCertificate.Version;
 
-        internal byte[] SerialNumber => certificate.TbsCertificate.SerialNumber.ToArray();
+        internal readonly byte[] SerialNumber => certificate.TbsCertificate.SerialNumber.ToArray();
 
-        internal DateTime NotBefore => certificate.TbsCertificate.Validity.NotBefore.GetValue().UtcDateTime;
+        internal readonly DateTime NotBefore => certificate.TbsCertificate.Validity.NotBefore.GetValue().UtcDateTime;
 
-        internal DateTime NotAfter => certificate.TbsCertificate.Validity.NotAfter.GetValue().UtcDateTime;
+        internal readonly DateTime NotAfter => certificate.TbsCertificate.Validity.NotAfter.GetValue().UtcDateTime;
 
-        internal AlgorithmIdentifier PublicKeyAlgorithm => new AlgorithmIdentifier(certificate.TbsCertificate.SubjectPublicKeyInfo.Algorithm);
+        internal readonly AlgorithmIdentifier PublicKeyAlgorithm => new AlgorithmIdentifier(certificate.TbsCertificate.SubjectPublicKeyInfo.Algorithm);
 
-        internal byte[] PublicKey => certificate.TbsCertificate.SubjectPublicKeyInfo.SubjectPublicKey.ToArray();
+        internal readonly byte[] PublicKey => certificate.TbsCertificate.SubjectPublicKeyInfo.SubjectPublicKey.ToArray();
 
-        internal byte[]? IssuerUniqueId => certificate.TbsCertificate.IssuerUniqueId?.ToArray();
+        internal readonly byte[]? IssuerUniqueId => certificate.TbsCertificate.IssuerUniqueId?.ToArray();
 
-        internal byte[]? SubjectUniqueId => certificate.TbsCertificate.SubjectUniqueId?.ToArray();
+        internal readonly byte[]? SubjectUniqueId => certificate.TbsCertificate.SubjectUniqueId?.ToArray();
 
-        internal AlgorithmIdentifier SignatureAlgorithm => new AlgorithmIdentifier(certificate.SignatureAlgorithm);
+        internal readonly AlgorithmIdentifier SignatureAlgorithm => new AlgorithmIdentifier(certificate.SignatureAlgorithm);
 
-        internal byte[] SignatureValue => certificate.SignatureValue.ToArray();
+        internal readonly byte[] SignatureValue => certificate.SignatureValue.ToArray();
 
         internal CertificateData(byte[] rawData)
         {
