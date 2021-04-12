@@ -19,7 +19,7 @@ namespace System.IO.Pipelines
         private CancellationTokenRegistration _cancellationTokenRegistration;
 
 #if (!NETSTANDARD2_0 && !NETFRAMEWORK)
-        private CancellationToken CancellationToken => _cancellationTokenRegistration.Token;
+        private readonly CancellationToken CancellationToken => _cancellationTokenRegistration.Token;
 #else
         private CancellationToken _cancellationToken;
         private CancellationToken CancellationToken => _cancellationToken;
@@ -38,9 +38,9 @@ namespace System.IO.Pipelines
 #endif
         }
 
-        public bool IsCompleted => (_awaitableState & (AwaitableState.Completed | AwaitableState.Canceled)) != 0;
+        public readonly bool IsCompleted => (_awaitableState & (AwaitableState.Completed | AwaitableState.Canceled)) != 0;
 
-        public bool IsRunning => (_awaitableState & AwaitableState.Running) != 0;
+        public readonly bool IsRunning => (_awaitableState & AwaitableState.Running) != 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BeginOperation(CancellationToken cancellationToken, Action<object?> callback, object? state)

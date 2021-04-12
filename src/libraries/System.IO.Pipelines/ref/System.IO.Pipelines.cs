@@ -10,8 +10,8 @@ namespace System.IO.Pipelines
     {
         private int _dummyPrimitive;
         public FlushResult(bool isCanceled, bool isCompleted) { throw null; }
-        public bool IsCanceled { get { throw null; } }
-        public bool IsCompleted { get { throw null; } }
+        public readonly bool IsCanceled { get { throw null; } }
+        public readonly bool IsCompleted { get { throw null; } }
     }
     public partial interface IDuplexPipe
     {

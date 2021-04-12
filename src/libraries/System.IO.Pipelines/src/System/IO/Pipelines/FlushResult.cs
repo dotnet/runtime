@@ -28,10 +28,10 @@ namespace System.IO.Pipelines
 
         /// <summary>Gets a value that indicates whether the current <see cref="System.IO.Pipelines.PipeWriter.FlushAsync(System.Threading.CancellationToken)" /> operation was canceled by <see cref="System.IO.Pipelines.PipeWriter.CancelPendingFlush" />.</summary>
         /// <value><see langword="true" /> if the current <see cref="System.IO.Pipelines.PipeWriter.FlushAsync(System.Threading.CancellationToken)" /> operation was canceled by <see cref="System.IO.Pipelines.PipeWriter.CancelPendingFlush" />; otherwise, <see langword="false" />.</value>
-        public bool IsCanceled => (_resultFlags & ResultFlags.Canceled) != 0;
+        public readonly bool IsCanceled => (_resultFlags & ResultFlags.Canceled) != 0;
 
         /// <summary>Gets a value that indicates the reader is no longer reading data written to the <see cref="System.IO.Pipelines.PipeWriter" />.</summary>
         /// <value><see langword="true" /> if the reader is no longer reading data written to the <see cref="System.IO.Pipelines.PipeWriter" />; otherwise, <see langword="false" />.</value>
-        public bool IsCompleted => (_resultFlags & ResultFlags.Completed) != 0;
+        public readonly bool IsCompleted => (_resultFlags & ResultFlags.Completed) != 0;
     }
 }

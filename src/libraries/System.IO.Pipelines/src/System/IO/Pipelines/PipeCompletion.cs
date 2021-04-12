@@ -16,9 +16,9 @@ namespace System.IO.Pipelines
         private object? _state;
         private List<PipeCompletionCallback>? _callbacks;
 
-        public bool IsCompleted => _state != null;
+        public bool readonly IsCompleted => _state != null;
 
-        public bool IsFaulted => _state is ExceptionDispatchInfo;
+        public bool readonly IsFaulted => _state is ExceptionDispatchInfo;
 
         public PipeCompletionCallbacks? TryComplete(Exception? exception = null)
         {
@@ -51,7 +51,7 @@ namespace System.IO.Pipelines
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsCompletedOrThrow()
+        public readonly bool IsCompletedOrThrow()
         {
             if (!IsCompleted)
             {
@@ -88,7 +88,7 @@ namespace System.IO.Pipelines
             _state = null;
         }
 
-        public override string ToString()
+        public override readonly string ToString()
         {
             return $"{nameof(IsCompleted)}: {IsCompleted}";
         }

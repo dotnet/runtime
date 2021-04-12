@@ -57,9 +57,9 @@ namespace System.IO.Pipelines
             _state &= ~State.Writing;
         }
 
-        public bool IsWritingActive => (_state & State.Writing) == State.Writing;
+        public readonly bool IsWritingActive => (_state & State.Writing) == State.Writing;
 
-        public bool IsReadingActive => (_state & State.Reading) == State.Reading;
+        public readonly bool IsReadingActive => (_state & State.Reading) == State.Reading;
 
         [Flags]
         internal enum State : byte
