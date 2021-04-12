@@ -56,35 +56,51 @@ namespace System.IO.Strategies
 
         private static unsafe SafeFileHandle CreateFileOpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
-
-            int fAccess =
-                ((access & FileAccess.Read) == FileAccess.Read ? Interop.Kernel32.GenericOperations.GENERIC_READ : 0) |
-                ((access & FileAccess.Write) == FileAccess.Write ? Interop.Kernel32.GenericOperations.GENERIC_WRITE : 0);
-
-            // Our Inheritable bit was stolen from Windows, but should be set in
-            // the security attributes class.  Don't leave this bit set.
-            share &= ~FileShare.Inheritable;
-
-            // Must use a valid Win32 constant here...
-            if (mode == FileMode.Append)
-                mode = FileMode.OpenOrCreate;
-
-            int flagsAndAttributes = (int)options;
-
-            // For mitigating local elevation of privilege attack through named pipes
-            // make sure we always call CreateFile with SECURITY_ANONYMOUS so that the
-            // named pipe server can't impersonate a high privileged client security context
-            // (note that this is the effective default on CreateFile2)
-            flagsAndAttributes |= (Interop.Kernel32.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.Kernel32.SecurityOptions.SECURITY_ANONYMOUS);
-
             using (DisableMediaInsertionPrompt.Create())
             {
                 Debug.Assert(path != null);
-                return ValidateFileHandle(
-                    Interop.Kernel32.CreateFile(path, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero),
-                    path,
-                    (options & FileOptions.Asynchronous) != 0);
+
+                if (allocationSize > 0)
+                {
+                    uint ntCreateFileResult = Interop.Kernel32.NtCreateFile(path, mode, access, share, options, allocationSize, out IntPtr fileHandle);
+                    if (ntCreateFileResult == 0)
+                    {
+                        return ValidateFileHandle(new SafeFileHandle(fileHandle, ownsHandle: true), path, (options & FileOptions.Asynchronous) != 0);
+                    }
+                    else if (ntCreateFileResult == ERROR_STATUS_DISK_FULL)
+                    {
+                        throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, path, allocationSize));
+                    }
+
+                    // NtCreateFile has failed for some other reason than a full disk.
+                    // Instead of implementing the mapping for every NS Status value (there are plenty of them: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55)
+                    // increasing both the code complexity and the chance for breaking backward compatibility (by throwing a different exception than CreateFileW)
+                    // the code falls back to CreateFileW that just throws the right exception.
+                }
+
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
+
+                int fAccess =
+                    ((access & FileAccess.Read) == FileAccess.Read ? Interop.Kernel32.GenericOperations.GENERIC_READ : 0) |
+                    ((access & FileAccess.Write) == FileAccess.Write ? Interop.Kernel32.GenericOperations.GENERIC_WRITE : 0);
+
+                // Our Inheritable bit was stolen from Windows, but should be set in
+                // the security attributes class.  Don't leave this bit set.
+                share &= ~FileShare.Inheritable;
+
+                // Must use a valid Win32 constant here...
+                if (mode == FileMode.Append)
+                    mode = FileMode.OpenOrCreate;
+
+                int flagsAndAttributes = (int)options;
+
+                // For mitigating local elevation of privilege attack through named pipes
+                // make sure we always call CreateFile with SECURITY_ANONYMOUS so that the
+                // named pipe server can't impersonate a high privileged client security context
+                // (note that this is the effective default on CreateFile2)
+                flagsAndAttributes |= (Interop.Kernel32.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.Kernel32.SecurityOptions.SECURITY_ANONYMOUS);
+
+                return ValidateFileHandle(Interop.Kernel32.CreateFile(path, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero), path, (options & FileOptions.Asynchronous) != 0);
             }
         }
 
