@@ -699,14 +699,14 @@ namespace System.Net.Mail
             _statusCode = statusCode;
             _line = line;
         }
-        internal string Line
+        internal readonly string Line
         {
             get
             {
                 return _line;
             }
         }
-        internal SmtpStatusCode StatusCode
+        internal readonly SmtpStatusCode StatusCode
         {
             get
             {
