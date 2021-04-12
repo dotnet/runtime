@@ -89,7 +89,7 @@ namespace System.Net.Security
         public SslProtocols Version;
         public int Length;
 
-        public override string ToString() => $"{Version}:{Type}[{Length}]";
+        public override readonly string ToString() => $"{Version}:{Type}[{Length}]";
     }
 
     internal static class TlsFrameHelper
@@ -123,7 +123,7 @@ namespace System.Net.Security
             public ApplicationProtocolInfo ApplicationProtocols;
             public TlsAlertDescription AlertDescription;
 
-            public override string ToString()
+            public override readonly string ToString()
             {
                 if (Header.Type == TlsContentType.Handshake)
                 {

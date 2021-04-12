@@ -14,7 +14,7 @@ namespace System.Net.Security
         internal CipherAlgorithmType CipherAlgorithm;
         internal int CipherAlgorithmStrength;
         internal HashAlgorithmType MACAlgorithm;
-        internal int MACAlgorithmStrength => GetHashSize(MACAlgorithm);
+        internal readonly int MACAlgorithmStrength => GetHashSize(MACAlgorithm);
 
 #if DEBUG
         static TlsCipherSuiteData()
