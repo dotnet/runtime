@@ -38,11 +38,9 @@ void Compiler::optInit()
     optNativeCallCount   = 0;
     optAssertionCount    = 0;
     optAssertionDep      = nullptr;
-#if FEATURE_ANYCSE
     optCSECandidateTotal = 0;
     optCSEstart          = UINT_MAX;
     optCSEcount          = 0;
-#endif // FEATURE_ANYCSE
 }
 
 DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)

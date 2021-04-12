@@ -13628,14 +13628,12 @@ DONE_MORPHING_CHILDREN:
                         goto SKIP;
                     }
 
-#if FEATURE_ANYCSE
                     /* If the LCL_VAR is a CSE temp then bail, it could have multiple defs/uses */
                     // Fix 383856 X86/ARM ILGEN
                     if (lclNumIsCSE(lclNum))
                     {
                         goto SKIP;
                     }
-#endif
 
                     /* We also must be assigning the result of a RELOP */
                     if (asg->AsOp()->gtOp1->gtOper != GT_LCL_VAR)
