@@ -478,7 +478,7 @@ void CallDescrWorkerReflectionWrapper(CallDescrData * pCallDescrData, Frame * pF
     PAL_ENDTRY
 } // CallDescrWorkerReflectionWrapper
 
-OBJECTREF InvokeArrayConstructor(TypeHandle th, MethodDesc* pMeth, const Span<OBJECTREF>* objs, int argCnt)
+OBJECTREF InvokeArrayConstructor(TypeHandle th, MethodDesc* pMeth, Span<OBJECTREF>* objs, int argCnt)
 {
     CONTRACTL {
         THROWS;

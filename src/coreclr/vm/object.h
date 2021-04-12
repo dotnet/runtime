@@ -742,8 +742,7 @@ public:
 /* Corresponds to the managed Span<T> and ReadOnlySpan<T> types.
    This should only ever be passed from the managed to the unmanaged world byref,
    as any copies of this struct made within the unmanaged world will not observe
-   potential GC relocations of the source data. As a result we've deleted ctors
-   which allow making byval copies of the span. */
+   potential GC relocations of the source data. */
 template < class KIND >
 class Span
 {
@@ -753,55 +752,17 @@ private:
     unsigned int _length;
 
 public:
-    class ControlledMutabilityRef
-    {
-    private:
-        KIND* _pointer;
-
-    public:
-        __inline ControlledMutabilityRef(KIND* ptr)
-            : _pointer(ptr)
-        {
-        }
-
-        // Turns the pointer into a const ref, allowing safe dereferencing.
-        __inline operator const KIND&() const
-        {
-            return *_pointer;
-        }
-
-        // Forwards operator->() to the underlying element as non-const.
-        __inline KIND operator->() const
-        {
-            return *_pointer;
-        }
-    };
-
-    Span() = delete;
-    Span(const Span&) = delete;
-    Span& operator=(const Span&) = delete;
-
     // !! CAUTION !!
-    // The reference address may be on the managed heap. If KIND is a reference type,
-    // ensure caller is using a helper like SetObjectReference instead of assigning
-    // values directly to the reference location.
+    // Caller must take care not to reassign returned reference if this span corresponds
+    // to a managed ReadOnlySpan<T>. If KIND is a reference type, caller must use a
+    // helper like SetObjectReference instead of assigning values directly to the
+    // reference location.
     KIND& GetAt(SIZE_T index)
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         _ASSERTE(index < GetLength());
         return _pointer[index];
-    }
-
-    // Returns a controlled-mutability reference.
-    // The reference can be manipulated but cannot be reassigned.
-    // Gives "const Span<T>" semantics similar to "ReadOnlySpan<T>".
-    const ControlledMutabilityRef GetAt(SIZE_T index) const
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        _ASSERTE(index < GetLength());
-        return ControlledMutabilityRef{ &_pointer[index] };
     }
 
     // Gets the length (in elements) of this span.
