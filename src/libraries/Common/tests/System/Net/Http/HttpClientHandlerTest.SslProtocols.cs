@@ -142,7 +142,14 @@ namespace System.Net.Http.Functional.Tests
 
             string GetTestSNIName()
             {
-                return $"{nameof(GetAsync_AllowedSSLVersion_Succeeds)}_{acceptedProtocol}_{requestOnlyThisProtocol}";
+                string name = $"{nameof(GetAsync_AllowedSSLVersion_Succeeds)}_{acceptedProtocol}_{requestOnlyThisProtocol}";
+                if (PlatformDetection.IsAndroid)
+                {
+                    // Android does not support underscores in host names
+                    name = name.Replace("_", string.Empty);
+                }
+
+                return name;
             }
         }
 
