@@ -14,7 +14,7 @@ namespace System.Configuration
             Data = data;
         }
 
-        internal int Data { get; private set; }
+        internal int Data { readonly get; private set; }
 
         internal bool this[int bit]
         {

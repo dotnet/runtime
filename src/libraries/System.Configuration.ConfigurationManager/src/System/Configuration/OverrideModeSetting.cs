@@ -136,7 +136,7 @@ namespace System.Configuration
             return result;
         }
 
-        internal bool IsDefaultForSection
+        internal readonly bool IsDefaultForSection
         {
             get
             {
@@ -153,7 +153,7 @@ namespace System.Configuration
             }
         }
 
-        internal bool IsDefaultForLocationTag
+        internal readonly bool IsDefaultForLocationTag
         {
             get
             {
@@ -169,9 +169,9 @@ namespace System.Configuration
             }
         }
 
-        internal bool IsLocked => OverrideMode == OverrideMode.Deny;
+        internal readonly bool IsLocked => OverrideMode == OverrideMode.Deny;
 
-        internal string LocationTagXmlString
+        internal readonly string LocationTagXmlString
         {
             get
             {
@@ -232,7 +232,7 @@ namespace System.Configuration
             }
         }
 
-        internal string OverrideModeXmlValue
+        internal readonly string OverrideModeXmlValue
         {
             get
             {
@@ -265,7 +265,7 @@ namespace System.Configuration
         // There shouldn't be a reason for those to be used except in this specific case
         internal OverrideMode OverrideMode
         {
-            get { return (OverrideMode)(_mode & ModeMask); }
+            readonly get { return (OverrideMode)(_mode & ModeMask); }
             set
             {
                 // Note that changing the mode through the API ( which is the purpose of this setter )
@@ -283,7 +283,7 @@ namespace System.Configuration
 
         internal bool AllowOverride
         {
-            get
+            readonly get
             {
                 bool result = true;
 
@@ -322,7 +322,7 @@ namespace System.Configuration
             _mode = (byte)mode;
         }
 
-        private void VerifyConsistentChangeModel(byte required)
+        private readonly void VerifyConsistentChangeModel(byte required)
         {
             // The required API change model ( i.e. was allowOverride used or OverrideMode ) should be consistent
             // I.e. its not possible to change both on the same OverrideModeSetting object
