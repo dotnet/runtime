@@ -126,7 +126,7 @@ namespace System.IO
         /// <summary>
         /// Gets the current subcomponent of the string as a string.
         /// </summary>
-        public string ExtractCurrent()
+        public readonly string ExtractCurrent()
         {
             if (_buffer == null || _startIndex == -1)
             {
@@ -313,7 +313,7 @@ namespace System.IO
         /// <summary>
         /// Gets the current subcomponent and all remaining components of the string as a string.
         /// </summary>
-        public string ExtractCurrentToEnd()
+        public readonly string ExtractCurrentToEnd()
         {
             if (_buffer == null || _startIndex == -1)
             {

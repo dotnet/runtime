@@ -119,7 +119,7 @@ namespace System.IO
             return true;
         }
 
-        private bool TryFindNextKeyOccurrence(string key, int startIndex, out int keyIndex)
+        private readonly bool TryFindNextKeyOccurrence(string key, int startIndex, out int keyIndex)
         {
             // Loop until end of file is reached, or a match is found.
             while (true)
@@ -145,7 +145,7 @@ namespace System.IO
             }
         }
 
-        private bool HasFollowingWhitespace(int keyIndex, int length)
+        private readonly bool HasFollowingWhitespace(int keyIndex, int length)
         {
             return (keyIndex + length < _buffer.Length)
                 && (_buffer[keyIndex + length] == ' ' || _buffer[keyIndex + length] == '\t');
