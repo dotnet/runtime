@@ -258,7 +258,7 @@ namespace System.Threading
                     _start = 0;
             }
 
-            public int RemainingMilliseconds
+            public readonly int RemainingMilliseconds
             {
                 get
                 {
@@ -274,7 +274,7 @@ namespace System.Threading
                 }
             }
 
-            public bool IsExpired => RemainingMilliseconds == 0;
+            public readonly bool IsExpired => RemainingMilliseconds == 0;
         }
 
         public bool TryEnterReadLock(TimeSpan timeout)
@@ -1487,7 +1487,7 @@ namespace System.Threading
                 }
             }
 
-            private ushort EnterForEnterAnyReadDeprioritizedCount
+            private readonly ushort EnterForEnterAnyReadDeprioritizedCount
             {
                 get
                 {
@@ -1496,7 +1496,7 @@ namespace System.Threading
                 }
             }
 
-            private ushort EnterForEnterAnyWriteDeprioritizedCount
+            private readonly ushort EnterForEnterAnyWriteDeprioritizedCount
             {
                 get
                 {
@@ -1505,7 +1505,7 @@ namespace System.Threading
                 }
             }
 
-            private bool IsEnterDeprioritized(EnterSpinLockReason reason)
+            private readonly bool IsEnterDeprioritized(EnterSpinLockReason reason)
             {
                 Debug.Assert((reason & EnterSpinLockReason.Wait) != 0 || reason == (reason & EnterSpinLockReason.OperationMask));
                 Debug.Assert(

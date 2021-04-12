@@ -15,8 +15,8 @@ namespace System.Threading
                     Imaginary = imaginary;
                 }
 
-                public double Imaginary { get; }
-                public double Real { get; }
+                public readonly double Imaginary { get; }
+                public readonly double Real { get; }
 
                 public static Complex operator *(double scalar, Complex complex) => new Complex(scalar * complex.Real, scalar * complex.Imaginary);
 
@@ -32,7 +32,7 @@ namespace System.Threading
                     return new Complex((lhs.Real * rhs.Real + lhs.Imaginary * rhs.Imaginary) / denom, (-lhs.Real * rhs.Imaginary + lhs.Imaginary * rhs.Real) / denom);
                 }
 
-                public double Abs() => Math.Sqrt(Real * Real + Imaginary * Imaginary);
+                public readonly double Abs() => Math.Sqrt(Real * Real + Imaginary * Imaginary);
             }
         }
     }

@@ -540,7 +540,7 @@ namespace System.Threading
         /// <summary>
         /// Gets whether the lock is currently held by any thread.
         /// </summary>
-        public bool IsHeld
+        public readonly bool IsHeld
         {
             get
             {
@@ -565,7 +565,7 @@ namespace System.Threading
         /// <exception cref="System.InvalidOperationException">
         /// Thread ownership tracking is disabled.
         /// </exception>
-        public bool IsHeldByCurrentThread
+        public readonly bool IsHeldByCurrentThread
         {
             get
             {
@@ -578,7 +578,7 @@ namespace System.Threading
         }
 
         /// <summary>Gets whether thread ownership tracking is enabled for this instance.</summary>
-        public bool IsThreadOwnerTrackingEnabled => (_owner & LOCK_ID_DISABLE_MASK) == 0;
+        public readonly bool IsThreadOwnerTrackingEnabled => (_owner & LOCK_ID_DISABLE_MASK) == 0;
 
         #region Debugger proxy class
         /// <summary>

@@ -596,17 +596,17 @@ namespace System.Threading
             Undo();
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public override readonly bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is AsyncFlowControl asyncControl && Equals(asyncControl);
         }
 
-        public bool Equals(AsyncFlowControl obj)
+        public readonly bool Equals(AsyncFlowControl obj)
         {
             return _thread == obj._thread;
         }
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return _thread?.GetHashCode() ?? 0;
         }

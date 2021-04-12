@@ -67,14 +67,14 @@ namespace System.Threading
 
             private CountsOfThreadsProcessingUserCallbacks(uint data) => _data = data;
 
-            private short GetInt16Value(byte shift) => (short)(_data >> shift);
+            private readonly short GetInt16Value(byte shift) => (short)(_data >> shift);
             private void SetInt16Value(short value, byte shift) =>
                 _data = (_data & ~((uint)ushort.MaxValue << shift)) | ((uint)(ushort)value << shift);
 
             /// <summary>
             /// Number of threads currently processing user callbacks
             /// </summary>
-            public short Current => GetInt16Value(CurrentShift);
+            public readonly short Current => GetInt16Value(CurrentShift);
 
             public void IncrementCurrent()
             {
@@ -99,7 +99,7 @@ namespace System.Threading
             /// <summary>
             /// The high-warkmark of number of threads processing user callbacks since the high-watermark was last reset
             /// </summary>
-            public short HighWatermark => GetInt16Value(HighWatermarkShift);
+            public readonly short HighWatermark => GetInt16Value(HighWatermarkShift);
 
             public void ResetHighWatermark() => SetInt16Value(Current, HighWatermarkShift);
 
@@ -119,9 +119,9 @@ namespace System.Threading
                 CountsOfThreadsProcessingUserCallbacks lhs,
                 CountsOfThreadsProcessingUserCallbacks rhs) => lhs._data != rhs._data;
 
-            public override bool Equals([NotNullWhen(true)] object? obj) =>
+            public override readonly bool Equals([NotNullWhen(true)] object? obj) =>
                 obj is CountsOfThreadsProcessingUserCallbacks other && _data == other._data;
-            public override int GetHashCode() => (int)_data;
+            public override readonly int GetHashCode() => (int)_data;
         }
     }
 }

@@ -22,7 +22,7 @@ namespace System.Threading
 
             private ThreadCounts(ulong data) => _data = data;
 
-            private short GetInt16Value(byte shift) => (short)(_data >> shift);
+            private readonly short GetInt16Value(byte shift) => (short)(_data >> shift);
             private void SetInt16Value(short value, byte shift) =>
                 _data = (_data & ~((ulong)ushort.MaxValue << shift)) | ((ulong)(ushort)value << shift);
 
@@ -31,7 +31,7 @@ namespace System.Threading
             /// </summary>
             public short NumProcessingWork
             {
-                get => GetInt16Value(NumProcessingWorkShift);
+                readonly get => GetInt16Value(NumProcessingWorkShift);
                 set
                 {
                     Debug.Assert(value >= 0);
@@ -52,7 +52,7 @@ namespace System.Threading
             /// </summary>
             public short NumExistingThreads
             {
-                get => GetInt16Value(NumExistingThreadsShift);
+                readonly get => GetInt16Value(NumExistingThreadsShift);
                 set
                 {
                     Debug.Assert(value >= 0);
@@ -73,7 +73,7 @@ namespace System.Threading
             /// </summary>
             public short NumThreadsGoal
             {
-                get => GetInt16Value(NumThreadsGoalShift);
+                readonly get => GetInt16Value(NumThreadsGoalShift);
                 set
                 {
                     Debug.Assert(value > 0);
@@ -89,8 +89,8 @@ namespace System.Threading
             public static bool operator ==(ThreadCounts lhs, ThreadCounts rhs) => lhs._data == rhs._data;
             public static bool operator !=(ThreadCounts lhs, ThreadCounts rhs) => lhs._data != rhs._data;
 
-            public override bool Equals([NotNullWhen(true)] object? obj) => obj is ThreadCounts other && _data == other._data;
-            public override int GetHashCode() => (int)_data + (int)(_data >> 32);
+            public override readonly bool Equals([NotNullWhen(true)] object? obj) => obj is ThreadCounts other && _data == other._data;
+            public override readonly int GetHashCode() => (int)_data + (int)(_data >> 32);
         }
     }
 }
