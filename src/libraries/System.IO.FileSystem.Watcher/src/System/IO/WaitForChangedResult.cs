@@ -16,9 +16,9 @@ namespace System.IO
         internal static readonly WaitForChangedResult TimedOutResult =
             new WaitForChangedResult(changeType: 0, name: null, oldName: null, timedOut: true);
 
-        public WatcherChangeTypes ChangeType { get; set; }
-        public string? Name { get; set; }
-        public string? OldName { get; set; }
-        public bool TimedOut { get; set; }
+        public WatcherChangeTypes ChangeType { readonly get; set; }
+        public string? Name { readonly get; set; }
+        public string? OldName { readonly get; set; }
+        public bool TimedOut { readonly get; set; }
     }
 }

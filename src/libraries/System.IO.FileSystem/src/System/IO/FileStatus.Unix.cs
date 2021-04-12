@@ -18,7 +18,7 @@ namespace System.IO
 
         // We track intent of creation to know whether or not we want to (1) create a
         // DirectoryInfo around this status struct or (2) actually are part of a DirectoryInfo.
-        internal bool InitiallyDirectory { get; private set; }
+        internal bool InitiallyDirectory { readonly get; private set; }
 
         // Is a directory as of the last refresh
         internal bool _isDirectory;
@@ -220,7 +220,7 @@ namespace System.IO
 
         internal void SetLastWriteTime(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: false);
 
-        private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
+        private readonly DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
         {
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick).ToLocalTime();
         }
