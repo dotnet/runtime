@@ -24,7 +24,7 @@ namespace System.Text.Json
         /// <seealso cref="TokenType" />
         /// It will also throw when the JSON string contains invalid UTF-8 bytes, or invalid UTF-16 surrogates.
         /// </exception>
-        public string? GetString()
+        public readonly string? GetString()
         {
             if (TokenType == JsonTokenType.Null)
             {
@@ -56,7 +56,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of the JSON token that is not a comment.
         /// <seealso cref="TokenType" />
         /// </exception>
-        public string GetComment()
+        public readonly string GetComment()
         {
             if (TokenType != JsonTokenType.Comment)
             {
@@ -74,7 +74,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of a JSON token that is not a boolean (i.e. <see cref="JsonTokenType.True"/> or <see cref="JsonTokenType.False"/>).
         /// <seealso cref="TokenType" />
         /// </exception>
-        public bool GetBoolean()
+        public readonly bool GetBoolean()
         {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
 
@@ -105,7 +105,7 @@ namespace System.Text.Json
         /// Thrown when the JSON string contains data outside of the expected Base64 range, or if it contains invalid/more than two padding characters,
         /// or is incomplete (i.e. the JSON string length is not a multiple of 4).
         /// </exception>
-        public byte[] GetBytesFromBase64()
+        public readonly byte[] GetBytesFromBase64()
         {
             if (!TryGetBytesFromBase64(out byte[]? value))
             {
@@ -129,7 +129,7 @@ namespace System.Text.Json
         /// is written in scientific notation) or, it represents a number less than <see cref="byte.MinValue"/> or greater
         /// than <see cref="byte.MaxValue"/>.
         /// </exception>
-        public byte GetByte()
+        public readonly byte GetByte()
         {
             if (!TryGetByte(out byte value))
             {
@@ -138,7 +138,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal byte GetByteWithQuotes()
+        internal readonly byte GetByteWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
             if (!TryGetByteCore(out byte value, span))
@@ -164,7 +164,7 @@ namespace System.Text.Json
         /// than <see cref="sbyte.MaxValue"/>.
         /// </exception>
         [System.CLSCompliantAttribute(false)]
-        public sbyte GetSByte()
+        public readonly sbyte GetSByte()
         {
             if (!TryGetSByte(out sbyte value))
             {
@@ -173,7 +173,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal sbyte GetSByteWithQuotes()
+        internal readonly sbyte GetSByteWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
             if (!TryGetSByteCore(out sbyte value, span))
@@ -198,7 +198,7 @@ namespace System.Text.Json
         /// is written in scientific notation) or, it represents a number less than <see cref="short.MinValue"/> or greater
         /// than <see cref="short.MaxValue"/>.
         /// </exception>
-        public short GetInt16()
+        public readonly short GetInt16()
         {
             if (!TryGetInt16(out short value))
             {
@@ -207,7 +207,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal short GetInt16WithQuotes()
+        internal readonly short GetInt16WithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
             if (!TryGetInt16Core(out short value, span))
@@ -232,7 +232,7 @@ namespace System.Text.Json
         /// is written in scientific notation) or, it represents a number less than <see cref="int.MinValue"/> or greater
         /// than <see cref="int.MaxValue"/>.
         /// </exception>
-        public int GetInt32()
+        public readonly int GetInt32()
         {
             if (!TryGetInt32(out int value))
             {
@@ -241,7 +241,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal int GetInt32WithQuotes()
+        internal readonly int GetInt32WithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
             if (!TryGetInt32Core(out int value, span))
@@ -266,7 +266,7 @@ namespace System.Text.Json
         /// is written in scientific notation) or, it represents a number less than <see cref="long.MinValue"/> or greater
         /// than <see cref="long.MaxValue"/>.
         /// </exception>
-        public long GetInt64()
+        public readonly long GetInt64()
         {
             if (!TryGetInt64(out long value))
             {
@@ -275,7 +275,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal long GetInt64WithQuotes()
+        internal readonly long GetInt64WithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
             if (!TryGetInt64Core(out long value, span))
@@ -301,7 +301,7 @@ namespace System.Text.Json
         /// than <see cref="ushort.MaxValue"/>.
         /// </exception>
         [System.CLSCompliantAttribute(false)]
-        public ushort GetUInt16()
+        public readonly ushort GetUInt16()
         {
             if (!TryGetUInt16(out ushort value))
             {
@@ -310,7 +310,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal ushort GetUInt16WithQuotes()
+        internal readonly ushort GetUInt16WithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
             if (!TryGetUInt16Core(out ushort value, span))
@@ -336,7 +336,7 @@ namespace System.Text.Json
         /// than <see cref="uint.MaxValue"/>.
         /// </exception>
         [System.CLSCompliantAttribute(false)]
-        public uint GetUInt32()
+        public readonly uint GetUInt32()
         {
             if (!TryGetUInt32(out uint value))
             {
@@ -345,7 +345,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal uint GetUInt32WithQuotes()
+        internal readonly uint GetUInt32WithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
             if (!TryGetUInt32Core(out uint value, span))
@@ -371,7 +371,7 @@ namespace System.Text.Json
         /// than <see cref="ulong.MaxValue"/>.
         /// </exception>
         [System.CLSCompliantAttribute(false)]
-        public ulong GetUInt64()
+        public readonly ulong GetUInt64()
         {
             if (!TryGetUInt64(out ulong value))
             {
@@ -380,7 +380,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal ulong GetUInt64WithQuotes()
+        internal readonly ulong GetUInt64WithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
             if (!TryGetUInt64Core(out ulong value, span))
@@ -404,7 +404,7 @@ namespace System.Text.Json
         /// On any framework that is not .NET Core 3.0 or higher, thrown if the JSON token value represents a number less than <see cref="float.MinValue"/> or greater
         /// than <see cref="float.MaxValue"/>.
         /// </exception>
-        public float GetSingle()
+        public readonly float GetSingle()
         {
             if (!TryGetSingle(out float value))
             {
@@ -413,7 +413,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal float GetSingleWithQuotes()
+        internal readonly float GetSingleWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
 
@@ -437,7 +437,7 @@ namespace System.Text.Json
             throw ThrowHelper.GetFormatException(NumericType.Single);
         }
 
-        internal float GetSingleFloatingPointConstant()
+        internal readonly float GetSingleFloatingPointConstant()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
 
@@ -463,7 +463,7 @@ namespace System.Text.Json
         /// On any framework that is not .NET Core 3.0 or higher, thrown if the JSON token value represents a number less than <see cref="double.MinValue"/> or greater
         /// than <see cref="double.MaxValue"/>.
         /// </exception>
-        public double GetDouble()
+        public readonly double GetDouble()
         {
             if (!TryGetDouble(out double value))
             {
@@ -472,7 +472,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal double GetDoubleWithQuotes()
+        internal readonly double GetDoubleWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
 
@@ -496,7 +496,7 @@ namespace System.Text.Json
             throw ThrowHelper.GetFormatException(NumericType.Double);
         }
 
-        internal double GetDoubleFloatingPointConstant()
+        internal readonly double GetDoubleFloatingPointConstant()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
 
@@ -522,7 +522,7 @@ namespace System.Text.Json
         /// Thrown if the JSON token value represents a number less than <see cref="decimal.MinValue"/> or greater
         /// than <see cref="decimal.MaxValue"/>.
         /// </exception>
-        public decimal GetDecimal()
+        public readonly decimal GetDecimal()
         {
             if (!TryGetDecimal(out decimal value))
             {
@@ -531,7 +531,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal decimal GetDecimalWithQuotes()
+        internal readonly decimal GetDecimalWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
             if (!TryGetDecimalCore(out decimal value, span))
@@ -554,7 +554,7 @@ namespace System.Text.Json
         /// <exception cref="FormatException">
         /// Thrown if the JSON token value is of an unsupported format. Only a subset of ISO 8601 formats are supported.
         /// </exception>
-        public DateTime GetDateTime()
+        public readonly DateTime GetDateTime()
         {
             if (!TryGetDateTime(out DateTime value))
             {
@@ -564,7 +564,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal DateTime GetDateTimeNoValidation()
+        internal readonly DateTime GetDateTimeNoValidation()
         {
             if (!TryGetDateTimeCore(out DateTime value))
             {
@@ -587,7 +587,7 @@ namespace System.Text.Json
         /// <exception cref="FormatException">
         /// Thrown if the JSON token value is of an unsupported format. Only a subset of ISO 8601 formats are supported.
         /// </exception>
-        public DateTimeOffset GetDateTimeOffset()
+        public readonly DateTimeOffset GetDateTimeOffset()
         {
             if (!TryGetDateTimeOffset(out DateTimeOffset value))
             {
@@ -597,7 +597,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal DateTimeOffset GetDateTimeOffsetNoValidation()
+        internal readonly DateTimeOffset GetDateTimeOffsetNoValidation()
         {
             if (!TryGetDateTimeOffsetCore(out DateTimeOffset value))
             {
@@ -620,7 +620,7 @@ namespace System.Text.Json
         /// <exception cref="FormatException">
         /// Thrown if the JSON token value is of an unsupported format for a Guid.
         /// </exception>
-        public Guid GetGuid()
+        public readonly Guid GetGuid()
         {
             if (!TryGetGuid(out Guid value))
             {
@@ -630,7 +630,7 @@ namespace System.Text.Json
             return value;
         }
 
-        internal Guid GetGuidNoValidation()
+        internal readonly Guid GetGuidNoValidation()
         {
             if (!TryGetGuidCore(out Guid value))
             {
@@ -650,7 +650,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.
         /// <seealso cref="TokenType" />
         /// </exception>
-        public bool TryGetBytesFromBase64([NotNullWhen(true)] out byte[]? value)
+        public readonly bool TryGetBytesFromBase64([NotNullWhen(true)] out byte[]? value)
         {
             if (TokenType != JsonTokenType.String)
             {
@@ -680,7 +680,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
         /// <seealso cref="TokenType" />
         /// </exception>
-        public bool TryGetByte(out byte value)
+        public readonly bool TryGetByte(out byte value)
         {
             if (TokenType != JsonTokenType.Number)
             {
@@ -692,7 +692,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetByteCore(out byte value, ReadOnlySpan<byte> span)
+        internal readonly bool TryGetByteCore(out byte value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out byte tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -716,7 +716,7 @@ namespace System.Text.Json
         /// <seealso cref="TokenType" />
         /// </exception>
         [System.CLSCompliantAttribute(false)]
-        public bool TryGetSByte(out sbyte value)
+        public readonly bool TryGetSByte(out sbyte value)
         {
             if (TokenType != JsonTokenType.Number)
             {
@@ -728,7 +728,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetSByteCore(out sbyte value, ReadOnlySpan<byte> span)
+        internal readonly bool TryGetSByteCore(out sbyte value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out sbyte tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -751,7 +751,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
         /// <seealso cref="TokenType" />
         /// </exception>
-        public bool TryGetInt16(out short value)
+        public readonly bool TryGetInt16(out short value)
         {
             if (TokenType != JsonTokenType.Number)
             {
@@ -763,7 +763,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetInt16Core(out short value, ReadOnlySpan<byte> span)
+        internal readonly bool TryGetInt16Core(out short value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out short tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -786,7 +786,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
         /// <seealso cref="TokenType" />
         /// </exception>
-        public bool TryGetInt32(out int value)
+        public readonly bool TryGetInt32(out int value)
         {
             if (TokenType != JsonTokenType.Number)
             {
@@ -798,7 +798,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetInt32Core(out int value, ReadOnlySpan<byte> span)
+        internal readonly bool TryGetInt32Core(out int value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out int tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -821,7 +821,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
         /// <seealso cref="TokenType" />
         /// </exception>
-        public bool TryGetInt64(out long value)
+        public readonly bool TryGetInt64(out long value)
         {
             if (TokenType != JsonTokenType.Number)
             {
@@ -833,7 +833,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetInt64Core(out long value, ReadOnlySpan<byte> span)
+        internal readonly bool TryGetInt64Core(out long value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out long tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -857,7 +857,7 @@ namespace System.Text.Json
         /// <seealso cref="TokenType" />
         /// </exception>
         [System.CLSCompliantAttribute(false)]
-        public bool TryGetUInt16(out ushort value)
+        public readonly bool TryGetUInt16(out ushort value)
         {
             if (TokenType != JsonTokenType.Number)
             {
@@ -869,7 +869,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetUInt16Core(out ushort value, ReadOnlySpan<byte> span)
+        internal readonly bool TryGetUInt16Core(out ushort value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out ushort tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -893,7 +893,7 @@ namespace System.Text.Json
         /// <seealso cref="TokenType" />
         /// </exception>
         [System.CLSCompliantAttribute(false)]
-        public bool TryGetUInt32(out uint value)
+        public readonly bool TryGetUInt32(out uint value)
         {
             if (TokenType != JsonTokenType.Number)
             {
@@ -905,7 +905,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetUInt32Core(out uint value, ReadOnlySpan<byte> span)
+        internal readonly bool TryGetUInt32Core(out uint value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out uint tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -929,7 +929,7 @@ namespace System.Text.Json
         /// <seealso cref="TokenType" />
         /// </exception>
         [System.CLSCompliantAttribute(false)]
-        public bool TryGetUInt64(out ulong value)
+        public readonly bool TryGetUInt64(out ulong value)
         {
             if (TokenType != JsonTokenType.Number)
             {
@@ -941,7 +941,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetUInt64Core(out ulong value, ReadOnlySpan<byte> span)
+        internal readonly bool TryGetUInt64Core(out ulong value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out ulong tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -964,7 +964,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
         /// <seealso cref="TokenType" />
         /// </exception>
-        public bool TryGetSingle(out float value)
+        public readonly bool TryGetSingle(out float value)
         {
             if (TokenType != JsonTokenType.Number)
             {
@@ -994,7 +994,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
         /// <seealso cref="TokenType" />
         /// </exception>
-        public bool TryGetDouble(out double value)
+        public readonly bool TryGetDouble(out double value)
         {
             if (TokenType != JsonTokenType.Number)
             {
@@ -1024,7 +1024,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
         /// <seealso cref="TokenType" />
         /// </exception>
-        public bool TryGetDecimal(out decimal value)
+        public readonly bool TryGetDecimal(out decimal value)
         {
             if (TokenType != JsonTokenType.Number)
             {
@@ -1036,7 +1036,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGetDecimalCore(out decimal value, ReadOnlySpan<byte> span)
+        internal readonly bool TryGetDecimalCore(out decimal value, ReadOnlySpan<byte> span)
         {
             if (Utf8Parser.TryParse(span, out decimal tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -1059,7 +1059,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.
         /// <seealso cref="TokenType" />
         /// </exception>
-        public bool TryGetDateTime(out DateTime value)
+        public readonly bool TryGetDateTime(out DateTime value)
         {
             if (TokenType != JsonTokenType.String)
             {
@@ -1069,7 +1069,7 @@ namespace System.Text.Json
             return TryGetDateTimeCore(out value);
         }
 
-        internal bool TryGetDateTimeCore(out DateTime value)
+        internal readonly bool TryGetDateTimeCore(out DateTime value)
         {
             ReadOnlySpan<byte> span = stackalloc byte[0];
 
@@ -1127,7 +1127,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.
         /// <seealso cref="TokenType" />
         /// </exception>
-        public bool TryGetDateTimeOffset(out DateTimeOffset value)
+        public readonly bool TryGetDateTimeOffset(out DateTimeOffset value)
         {
             if (TokenType != JsonTokenType.String)
             {
@@ -1137,7 +1137,7 @@ namespace System.Text.Json
             return TryGetDateTimeOffsetCore(out value);
         }
 
-        internal bool TryGetDateTimeOffsetCore(out DateTimeOffset value)
+        internal readonly bool TryGetDateTimeOffsetCore(out DateTimeOffset value)
         {
             ReadOnlySpan<byte> span = stackalloc byte[0];
 
@@ -1196,7 +1196,7 @@ namespace System.Text.Json
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.
         /// <seealso cref="TokenType" />
         /// </exception>
-        public bool TryGetGuid(out Guid value)
+        public readonly bool TryGetGuid(out Guid value)
         {
             if (TokenType != JsonTokenType.String)
             {
@@ -1206,7 +1206,7 @@ namespace System.Text.Json
             return TryGetGuidCore(out value);
         }
 
-        internal bool TryGetGuidCore(out Guid value)
+        internal readonly bool TryGetGuidCore(out Guid value)
         {
             ReadOnlySpan<byte> span = stackalloc byte[0];
 

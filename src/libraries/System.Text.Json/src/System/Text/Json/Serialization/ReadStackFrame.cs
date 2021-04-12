@@ -76,7 +76,7 @@ namespace System.Text.Json
         /// <summary>
         /// Is the current object a Dictionary.
         /// </summary>
-        public bool IsProcessingDictionary()
+        public readonly bool IsProcessingDictionary()
         {
             return (JsonClassInfo.ClassType & ClassType.Dictionary) != 0;
         }
@@ -84,7 +84,7 @@ namespace System.Text.Json
         /// <summary>
         /// Is the current object an Enumerable.
         /// </summary>
-        public bool IsProcessingEnumerable()
+        public readonly bool IsProcessingEnumerable()
         {
             return (JsonClassInfo.ClassType & ClassType.Enumerable) != 0;
         }

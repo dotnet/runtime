@@ -84,7 +84,7 @@ namespace System.Text.Json
             private const int SizeOrLengthOffset = 4;
             private const int NumberOfRowsOffset = 8;
 
-            internal int Length { get; private set; }
+            internal int Length { readonly get; private set; }
             private byte[] _data;
 
             private bool _convertToAlloc; // Convert the rented data to an alloc when complete.
@@ -241,7 +241,7 @@ namespace System.Text.Json
             }
 
             [Conditional("DEBUG")]
-            private void AssertValidIndex(int index)
+            private readonly void AssertValidIndex(int index)
             {
                 Debug.Assert(index >= 0);
                 Debug.Assert(index <= Length - DbRow.Size, $"index {index} is out of bounds");
@@ -281,13 +281,13 @@ namespace System.Text.Json
                 MemoryMarshal.Write(dataPos, ref value);
             }
 
-            internal int FindIndexOfFirstUnsetSizeOrLength(JsonTokenType lookupType)
+            internal readonly int FindIndexOfFirstUnsetSizeOrLength(JsonTokenType lookupType)
             {
                 Debug.Assert(lookupType == JsonTokenType.StartObject || lookupType == JsonTokenType.StartArray);
                 return FindOpenElement(lookupType);
             }
 
-            private int FindOpenElement(JsonTokenType lookupType)
+            private readonly int FindOpenElement(JsonTokenType lookupType)
             {
                 Span<byte> data = _data.AsSpan(0, Length);
 
@@ -306,13 +306,13 @@ namespace System.Text.Json
                 return -1;
             }
 
-            internal DbRow Get(int index)
+            internal readonly DbRow Get(int index)
             {
                 AssertValidIndex(index);
                 return MemoryMarshal.Read<DbRow>(_data.AsSpan(index));
             }
 
-            internal JsonTokenType GetJsonTokenType(int index)
+            internal readonly JsonTokenType GetJsonTokenType(int index)
             {
                 AssertValidIndex(index);
                 uint union = MemoryMarshal.Read<uint>(_data.AsSpan(index + NumberOfRowsOffset));

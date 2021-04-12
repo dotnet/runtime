@@ -19,7 +19,7 @@ namespace System.Text.Json
             public int Fraction; // This value should never be greater than 9_999_999.
             public int OffsetHours;
             public int OffsetMinutes;
-            public bool OffsetNegative => OffsetToken == JsonConstants.Hyphen;
+            public readonly bool OffsetNegative => OffsetToken == JsonConstants.Hyphen;
             public byte OffsetToken;
         }
 

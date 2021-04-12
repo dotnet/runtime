@@ -31,7 +31,7 @@ namespace System.Text.Json
         /// </summary>
         public int FlushThreshold;
 
-        public bool IsContinuation => _continuationCount != 0;
+        public readonly bool IsContinuation => _continuationCount != 0;
 
         // The bag of preservable references.
         public ReferenceResolver ReferenceResolver;

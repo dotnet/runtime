@@ -37,8 +37,8 @@ namespace System.Text.Json
         // A field is used instead of a property to avoid value semantics.
         public ReadStackFrame Current;
 
-        public bool IsContinuation => _continuationCount != 0;
-        public bool IsLastContinuation => _continuationCount == _count;
+        public readonly bool IsContinuation => _continuationCount != 0;
+        public readonly bool IsLastContinuation => _continuationCount == _count;
 
         /// <summary>
         /// Internal flag to let us know that we need to read ahead in the inner read loop.

@@ -102,7 +102,7 @@ namespace System.Text.Json
         {
             private object _dummy;
             private int _dummyPrimitive;
-            public System.Text.Json.JsonElement Current { get { throw null; } }
+            public readonly System.Text.Json.JsonElement Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             public System.Text.Json.JsonElement.ArrayEnumerator GetEnumerator() { throw null; }
@@ -115,7 +115,7 @@ namespace System.Text.Json
         {
             private object _dummy;
             private int _dummyPrimitive;
-            public System.Text.Json.JsonProperty Current { get { throw null; } }
+            public readonly System.Text.Json.JsonProperty Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             public System.Text.Json.JsonElement.ObjectEnumerator GetEnumerator() { throw null; }
@@ -182,7 +182,7 @@ namespace System.Text.Json
         private object _dummy;
         private int _dummyPrimitive;
         public JsonReaderState(System.Text.Json.JsonReaderOptions options = default(System.Text.Json.JsonReaderOptions)) { throw null; }
-        public System.Text.Json.JsonReaderOptions Options { get { throw null; } }
+        public readonly System.Text.Json.JsonReaderOptions Options { get { throw null; } }
     }
     public static partial class JsonSerializer
     {
@@ -267,8 +267,8 @@ namespace System.Text.Json
         private object _dummy;
         private int _dummyPrimitive;
         public System.Text.Encodings.Web.JavaScriptEncoder? Encoder { readonly get { throw null; } set { } }
-        public bool Indented { get { throw null; } set { } }
-        public bool SkipValidation { get { throw null; } set { } }
+        public bool Indented { readonly get { throw null; } set { } }
+        public bool SkipValidation { readonly get { throw null; } set { } }
     }
     public ref partial struct Utf8JsonReader
     {
@@ -278,63 +278,63 @@ namespace System.Text.Json
         public Utf8JsonReader(System.Buffers.ReadOnlySequence<byte> jsonData, System.Text.Json.JsonReaderOptions options = default(System.Text.Json.JsonReaderOptions)) { throw null; }
         public Utf8JsonReader(System.ReadOnlySpan<byte> jsonData, bool isFinalBlock, System.Text.Json.JsonReaderState state) { throw null; }
         public Utf8JsonReader(System.ReadOnlySpan<byte> jsonData, System.Text.Json.JsonReaderOptions options = default(System.Text.Json.JsonReaderOptions)) { throw null; }
-        public long BytesConsumed { get { throw null; } }
-        public int CurrentDepth { get { throw null; } }
-        public System.Text.Json.JsonReaderState CurrentState { get { throw null; } }
+        public readonly long BytesConsumed { get { throw null; } }
+        public readonly int CurrentDepth { get { throw null; } }
+        public readonly System.Text.Json.JsonReaderState CurrentState { get { throw null; } }
         public readonly bool HasValueSequence { get { throw null; } }
-        public bool IsFinalBlock { get { throw null; } }
-        public System.SequencePosition Position { get { throw null; } }
+        public readonly bool IsFinalBlock { get { throw null; } }
+        public readonly System.SequencePosition Position { get { throw null; } }
         public readonly long TokenStartIndex { get { throw null; } }
-        public System.Text.Json.JsonTokenType TokenType { get { throw null; } }
+        public readonly System.Text.Json.JsonTokenType TokenType { get { throw null; } }
         public readonly System.Buffers.ReadOnlySequence<byte> ValueSequence { get { throw null; } }
         public readonly System.ReadOnlySpan<byte> ValueSpan { get { throw null; } }
-        public bool GetBoolean() { throw null; }
-        public byte GetByte() { throw null; }
-        public byte[] GetBytesFromBase64() { throw null; }
-        public string GetComment() { throw null; }
-        public System.DateTime GetDateTime() { throw null; }
-        public System.DateTimeOffset GetDateTimeOffset() { throw null; }
-        public decimal GetDecimal() { throw null; }
-        public double GetDouble() { throw null; }
-        public System.Guid GetGuid() { throw null; }
-        public short GetInt16() { throw null; }
-        public int GetInt32() { throw null; }
-        public long GetInt64() { throw null; }
+        public readonly bool GetBoolean() { throw null; }
+        public readonly byte GetByte() { throw null; }
+        public readonly byte[] GetBytesFromBase64() { throw null; }
+        public readonly string GetComment() { throw null; }
+        public readonly System.DateTime GetDateTime() { throw null; }
+        public readonly System.DateTimeOffset GetDateTimeOffset() { throw null; }
+        public readonly decimal GetDecimal() { throw null; }
+        public readonly double GetDouble() { throw null; }
+        public readonly System.Guid GetGuid() { throw null; }
+        public readonly short GetInt16() { throw null; }
+        public readonly int GetInt32() { throw null; }
+        public readonly long GetInt64() { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public sbyte GetSByte() { throw null; }
-        public float GetSingle() { throw null; }
-        public string? GetString() { throw null; }
+        public readonly sbyte GetSByte() { throw null; }
+        public readonly float GetSingle() { throw null; }
+        public readonly string? GetString() { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public ushort GetUInt16() { throw null; }
+        public readonly ushort GetUInt16() { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public uint GetUInt32() { throw null; }
+        public readonly uint GetUInt32() { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public ulong GetUInt64() { throw null; }
+        public readonly ulong GetUInt64() { throw null; }
         public bool Read() { throw null; }
         public void Skip() { }
-        public bool TryGetByte(out byte value) { throw null; }
-        public bool TryGetBytesFromBase64([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out byte[]? value) { throw null; }
-        public bool TryGetDateTime(out System.DateTime value) { throw null; }
-        public bool TryGetDateTimeOffset(out System.DateTimeOffset value) { throw null; }
-        public bool TryGetDecimal(out decimal value) { throw null; }
-        public bool TryGetDouble(out double value) { throw null; }
-        public bool TryGetGuid(out System.Guid value) { throw null; }
-        public bool TryGetInt16(out short value) { throw null; }
-        public bool TryGetInt32(out int value) { throw null; }
-        public bool TryGetInt64(out long value) { throw null; }
+        public readonly bool TryGetByte(out byte value) { throw null; }
+        public readonly bool TryGetBytesFromBase64([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out byte[]? value) { throw null; }
+        public readonly bool TryGetDateTime(out System.DateTime value) { throw null; }
+        public readonly bool TryGetDateTimeOffset(out System.DateTimeOffset value) { throw null; }
+        public readonly bool TryGetDecimal(out decimal value) { throw null; }
+        public readonly bool TryGetDouble(out double value) { throw null; }
+        public readonly bool TryGetGuid(out System.Guid value) { throw null; }
+        public readonly bool TryGetInt16(out short value) { throw null; }
+        public readonly bool TryGetInt32(out int value) { throw null; }
+        public readonly bool TryGetInt64(out long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public bool TryGetSByte(out sbyte value) { throw null; }
-        public bool TryGetSingle(out float value) { throw null; }
+        public readonly bool TryGetSByte(out sbyte value) { throw null; }
+        public readonly bool TryGetSingle(out float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public bool TryGetUInt16(out ushort value) { throw null; }
+        public readonly bool TryGetUInt16(out ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public bool TryGetUInt32(out uint value) { throw null; }
+        public readonly bool TryGetUInt32(out uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public bool TryGetUInt64(out ulong value) { throw null; }
+        public readonly bool TryGetUInt64(out ulong value) { throw null; }
         public bool TrySkip() { throw null; }
-        public bool ValueTextEquals(System.ReadOnlySpan<byte> utf8Text) { throw null; }
-        public bool ValueTextEquals(System.ReadOnlySpan<char> text) { throw null; }
-        public bool ValueTextEquals(string? text) { throw null; }
+        public readonly bool ValueTextEquals(System.ReadOnlySpan<byte> utf8Text) { throw null; }
+        public readonly bool ValueTextEquals(System.ReadOnlySpan<char> text) { throw null; }
+        public readonly bool ValueTextEquals(string? text) { throw null; }
     }
     public sealed partial class Utf8JsonWriter : System.IAsyncDisposable, System.IDisposable
     {

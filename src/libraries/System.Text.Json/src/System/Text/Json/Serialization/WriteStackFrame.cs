@@ -88,7 +88,7 @@ namespace System.Text.Json
         /// Return the property that contains the correct polymorphic properties including
         /// the ClassType and ConverterBase.
         /// </summary>
-        public JsonPropertyInfo GetPolymorphicJsonPropertyInfo()
+        public readonly JsonPropertyInfo GetPolymorphicJsonPropertyInfo()
         {
             return PolymorphicJsonPropertyInfo ?? DeclaredJsonPropertyInfo!;
         }

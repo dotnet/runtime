@@ -29,7 +29,7 @@ namespace System.Text.Json
             }
 
             /// <inheritdoc />
-            public JsonProperty Current
+            public readonly JsonProperty Current
             {
                 get
                 {

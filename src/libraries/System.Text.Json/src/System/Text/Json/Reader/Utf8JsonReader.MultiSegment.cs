@@ -626,7 +626,7 @@ namespace System.Text.Json
             throw GetInvalidLiteralMultiSegment(readSoFar.Slice(0, written).ToArray());
         }
 
-        private int FindMismatch(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal)
+        private readonly int FindMismatch(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal)
         {
             Debug.Assert(span.Length > 0);
 
@@ -2583,7 +2583,7 @@ namespace System.Text.Json
             }
         }
 
-        private PartialStateForRollback CaptureState()
+        private readonly PartialStateForRollback CaptureState()
         {
             return new PartialStateForRollback(_totalConsumed, _bytePositionInLine, _consumed, _currentPosition);
         }
@@ -2603,7 +2603,7 @@ namespace System.Text.Json
                 _prevCurrentPosition = currentPosition;
             }
 
-            public SequencePosition GetStartPosition(int offset = 0)
+            public readonly SequencePosition GetStartPosition(int offset = 0)
             {
                 return new SequencePosition(_prevCurrentPosition.GetObject(), _prevCurrentPosition.GetInteger() + _prevConsumed + offset);
             }

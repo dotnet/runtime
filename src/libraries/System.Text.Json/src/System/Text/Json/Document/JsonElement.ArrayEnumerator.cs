@@ -30,7 +30,7 @@ namespace System.Text.Json
             }
 
             /// <inheritdoc />
-            public JsonElement Current
+            public readonly JsonElement Current
             {
                 get
                 {

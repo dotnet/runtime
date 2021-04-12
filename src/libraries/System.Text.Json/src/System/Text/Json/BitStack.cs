@@ -26,7 +26,7 @@ namespace System.Text.Json
 
         private int _currentDepth;
 
-        public int CurrentDepth => _currentDepth;
+        public readonly int CurrentDepth => _currentDepth;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void PushTrue()

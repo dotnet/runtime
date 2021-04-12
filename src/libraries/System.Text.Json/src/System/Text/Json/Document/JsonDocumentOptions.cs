@@ -65,9 +65,9 @@ namespace System.Text.Json
         /// <remarks>
         /// By default, it's set to false, and <exception cref="JsonException"/> is thrown if a trailing comma is encountered.
         /// </remarks>
-        public bool AllowTrailingCommas { get; set; }
+        public bool AllowTrailingCommas { readonly get; set; }
 
-        internal JsonReaderOptions GetReaderOptions()
+        internal readonly JsonReaderOptions GetReaderOptions()
         {
             return new JsonReaderOptions
             {

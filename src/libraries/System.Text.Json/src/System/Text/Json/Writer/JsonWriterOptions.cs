@@ -18,7 +18,7 @@ namespace System.Text.Json
         /// <summary>
         /// The encoder to use when escaping strings, or <see langword="null" /> to use the default encoder.
         /// </summary>
-        public JavaScriptEncoder? Encoder { get; set; }
+        public JavaScriptEncoder? Encoder { readonly get; set; }
 
         /// <summary>
         /// Defines whether the <see cref="Utf8JsonWriter"/> should pretty print the JSON which includes:
@@ -27,7 +27,7 @@ namespace System.Text.Json
         /// </summary>
         public bool Indented
         {
-            get
+            readonly get
             {
                 return (_optionsMask & IndentBit) != 0;
             }
@@ -54,7 +54,7 @@ namespace System.Text.Json
         /// </remarks>
         public bool SkipValidation
         {
-            get
+            readonly get
             {
                 return (_optionsMask & SkipValidationBit) != 0;
             }
@@ -67,7 +67,7 @@ namespace System.Text.Json
             }
         }
 
-        internal bool IndentedOrNotSkipValidation => _optionsMask != SkipValidationBit; // Equivalent to: Indented || !SkipValidation;
+        internal readonly bool IndentedOrNotSkipValidation => _optionsMask != SkipValidationBit; // Equivalent to: Indented || !SkipValidation;
 
         private const int IndentBit = 1;
         private const int SkipValidationBit = 2;

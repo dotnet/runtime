@@ -58,6 +58,6 @@ namespace System.Text.Json
         /// the <see cref="Utf8JsonReader"/> that may deviate from strict adherence
         /// to the JSON specification, which is the default behavior.
         /// </summary>
-        public JsonReaderOptions Options => _readerOptions;
+        public readonly JsonReaderOptions Options => _readerOptions;
     }
 }

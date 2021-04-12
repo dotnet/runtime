@@ -48,11 +48,11 @@ namespace System.Text.Json
         private SequencePosition _currentPosition;
         private readonly ReadOnlySequence<byte> _sequence;
 
-        private bool IsLastSpan => _isFinalBlock && (!_isMultiSegment || _isLastSegment);
+        private readonly bool IsLastSpan => _isFinalBlock && (!_isMultiSegment || _isLastSegment);
 
-        internal ReadOnlySequence<byte> OriginalSequence => _sequence;
+        internal readonly ReadOnlySequence<byte> OriginalSequence => _sequence;
 
-        internal ReadOnlySpan<byte> OriginalSpan => _sequence.IsEmpty ? _buffer : default;
+        internal readonly ReadOnlySpan<byte> OriginalSpan => _sequence.IsEmpty ? _buffer : default;
 
         /// <summary>
         /// Gets the value of the last processed token as a ReadOnlySpan&lt;byte&gt; slice
@@ -66,13 +66,13 @@ namespace System.Text.Json
         /// a previous single-segment token. Therefore, only access <see cref="ValueSpan"/> if <see cref="HasValueSequence"/> is false.
         /// Otherwise, the token value must be accessed from <see cref="ValueSequence"/>.
         /// </remarks>
-        public ReadOnlySpan<byte> ValueSpan { get; private set; }
+        public ReadOnlySpan<byte> ValueSpan { readonly get; private set; }
 
         /// <summary>
         /// Returns the total amount of bytes consumed by the <see cref="Utf8JsonReader"/> so far
         /// for the current instance of the <see cref="Utf8JsonReader"/> with the given UTF-8 encoded input text.
         /// </summary>
-        public long BytesConsumed
+        public readonly long BytesConsumed
         {
             get
             {
@@ -94,13 +94,13 @@ namespace System.Text.Json
         /// For JSON strings (including property names), this points to before the start quote.
         /// For comments, this points to before the first comment delimiter (i.e. '/').
         /// </remarks>
-        public long TokenStartIndex { get; private set; }
+        public long TokenStartIndex { readonly get; private set; }
 
         /// <summary>
         /// Tracks the recursive depth of the nested objects / arrays within the JSON text
         /// processed so far. This provides the depth of the current token.
         /// </summary>
-        public int CurrentDepth
+        public readonly int CurrentDepth
         {
             get
             {
@@ -114,12 +114,12 @@ namespace System.Text.Json
             }
         }
 
-        internal bool IsInArray => !_inObject;
+        internal readonly bool IsInArray => !_inObject;
 
         /// <summary>
         /// Gets the type of the last processed JSON token in the UTF-8 encoded JSON text.
         /// </summary>
-        public JsonTokenType TokenType => _tokenType;
+        public readonly JsonTokenType TokenType => _tokenType;
 
         /// <summary>
         /// Lets the caller know which of the two 'Value' properties to read to get the
@@ -128,14 +128,14 @@ namespace System.Text.Json
         /// will only return true if the token value straddles more than a single segment and
         /// hence couldn't be represented as a span.
         /// </summary>
-        public bool HasValueSequence { get; private set; }
+        public bool HasValueSequence { readonly get; private set; }
 
         /// <summary>
         /// Returns the mode of this instance of the <see cref="Utf8JsonReader"/>.
         /// True when the reader was constructed with the input span containing the entire data to process.
         /// False when the reader was constructed knowing that the input span may contain partial data with more data to follow.
         /// </summary>
-        public bool IsFinalBlock => _isFinalBlock;
+        public readonly bool IsFinalBlock => _isFinalBlock;
 
         /// <summary>
         /// Gets the value of the last processed token as a ReadOnlySpan&lt;byte&gt; slice
@@ -149,14 +149,14 @@ namespace System.Text.Json
         /// a previous multi-segment token. Therefore, only access <see cref="ValueSequence"/> if <see cref="HasValueSequence"/> is true.
         /// Otherwise, the token value must be accessed from <see cref="ValueSpan"/>.
         /// </remarks>
-        public ReadOnlySequence<byte> ValueSequence { get; private set; }
+        public ReadOnlySequence<byte> ValueSequence { readonly get; private set; }
 
         /// <summary>
         /// Returns the current <see cref="SequencePosition"/> within the provided UTF-8 encoded
         /// input ReadOnlySequence&lt;byte&gt;. If the <see cref="Utf8JsonReader"/> was constructed
         /// with a ReadOnlySpan&lt;byte&gt; instead, this will always return a default <see cref="SequencePosition"/>.
         /// </summary>
-        public SequencePosition Position
+        public readonly SequencePosition Position
         {
             get
             {
@@ -176,7 +176,7 @@ namespace System.Text.Json
         /// across async/await boundaries and hence this type is required to provide support for reading
         /// in more data asynchronously before continuing with a new instance of the <see cref="Utf8JsonReader"/>.
         /// </summary>
-        public JsonReaderState CurrentState => new JsonReaderState
+        public readonly JsonReaderState CurrentState => new JsonReaderState
         {
             _lineNumber = _lineNumber,
             _bytePositionInLine = _bytePositionInLine,
@@ -425,7 +425,7 @@ namespace System.Text.Json
         ///     if required. The look up text is matched as is, without any modifications to it.
         ///   </para>
         /// </remarks>
-        public bool ValueTextEquals(ReadOnlySpan<byte> utf8Text)
+        public readonly bool ValueTextEquals(ReadOnlySpan<byte> utf8Text)
         {
             if (!IsTokenTypeString(TokenType))
             {
@@ -454,13 +454,13 @@ namespace System.Text.Json
         ///     if required. The look up text is matched as is, without any modifications to it.
         ///   </para>
         /// </remarks>
-        public bool ValueTextEquals(string? text)
+        public readonly bool ValueTextEquals(string? text)
         {
             return ValueTextEquals(text.AsSpan());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TextEqualsHelper(ReadOnlySpan<byte> otherUtf8Text)
+        private readonly bool TextEqualsHelper(ReadOnlySpan<byte> otherUtf8Text)
         {
             if (HasValueSequence)
             {
@@ -495,7 +495,7 @@ namespace System.Text.Json
         ///     if required. The look up text is matched as is, without any modifications to it.
         ///   </para>
         /// </remarks>
-        public bool ValueTextEquals(ReadOnlySpan<char> text)
+        public readonly bool ValueTextEquals(ReadOnlySpan<char> text)
         {
             if (!IsTokenTypeString(TokenType))
             {
@@ -553,7 +553,7 @@ namespace System.Text.Json
             return result;
         }
 
-        private bool CompareToSequence(ReadOnlySpan<byte> other)
+        private readonly bool CompareToSequence(ReadOnlySpan<byte> other)
         {
             Debug.Assert(HasValueSequence);
 
@@ -589,7 +589,7 @@ namespace System.Text.Json
             return true;
         }
 
-        private bool UnescapeAndCompare(ReadOnlySpan<byte> other)
+        private readonly bool UnescapeAndCompare(ReadOnlySpan<byte> other)
         {
             Debug.Assert(!HasValueSequence);
             ReadOnlySpan<byte> localSpan = ValueSpan;
@@ -610,7 +610,7 @@ namespace System.Text.Json
             return JsonReaderHelper.UnescapeAndCompare(localSpan.Slice(idx), other.Slice(idx));
         }
 
-        private bool UnescapeSequenceAndCompare(ReadOnlySpan<byte> other)
+        private readonly bool UnescapeSequenceAndCompare(ReadOnlySpan<byte> other)
         {
             Debug.Assert(HasValueSequence);
             Debug.Assert(!ValueSequence.IsSingleSegment);
@@ -675,7 +675,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool MatchNotPossible(int charTextLength)
+        private readonly bool MatchNotPossible(int charTextLength)
         {
             if (HasValueSequence)
             {
@@ -706,7 +706,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private bool MatchNotPossibleSequence(int charTextLength)
+        private readonly bool MatchNotPossibleSequence(int charTextLength)
         {
             long sourceLength = ValueSequence.Length;
 
@@ -1586,7 +1586,7 @@ namespace System.Text.Json
             return ConsumeNumberResult.OperationIncomplete;
         }
 
-        private ConsumeNumberResult ConsumeIntegerDigits(ref ReadOnlySpan<byte> data, ref int i)
+        private readonly ConsumeNumberResult ConsumeIntegerDigits(ref ReadOnlySpan<byte> data, ref int i)
         {
             byte nextByte = default;
             for (; i < data.Length; i++)
@@ -2529,7 +2529,7 @@ namespace System.Text.Json
         // Using TokenType.ToString() (or {TokenType}) fails to render in the debug window. The
         // message "The runtime refused to evaluate the expression at this time." is shown. This
         // is a workaround until we root cause and fix the issue.
-        private string DebugTokenType
+        private readonly string DebugTokenType
             => TokenType switch
             {
                 JsonTokenType.Comment => nameof(JsonTokenType.Comment),
@@ -2547,7 +2547,7 @@ namespace System.Text.Json
                 _ => ((byte)TokenType).ToString()
             };
 
-        private ReadOnlySpan<byte> GetUnescapedSpan()
+        private readonly ReadOnlySpan<byte> GetUnescapedSpan()
         {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
             if (_stringHasEscaping)
