@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
@@ -220,6 +221,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public bool HasConversion()
         {
             SymbolTable.AddConversionsForType(AssociatedSystemType);

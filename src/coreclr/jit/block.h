@@ -647,9 +647,9 @@ struct BasicBlock : private LIR::Range
         }
     }
 
-    bool isMaxBBWeight()
+    bool isMaxBBWeight() const
     {
-        return (bbWeight == BB_MAX_WEIGHT);
+        return (bbWeight >= BB_MAX_WEIGHT);
     }
 
     // Returns "true" if the block is empty. Empty here means there are no statement

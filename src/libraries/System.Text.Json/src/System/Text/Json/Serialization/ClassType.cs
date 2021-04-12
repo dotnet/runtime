@@ -20,7 +20,7 @@ namespace System.Text.Json
         Value = 0x2,
         // JsonValueConverter<> - simple values that need to re-enter the serializer such as KeyValuePair<TKey, TValue>.
         NewValue = 0x4,
-        // JsonIEnumerbleConverter<> - all enumerable collections except dictionaries.
+        // JsonIEnumerableConverter<> - all enumerable collections except dictionaries.
         Enumerable = 0x8,
         // JsonDictionaryConverter<,> - dictionary types.
         Dictionary = 0x10,
