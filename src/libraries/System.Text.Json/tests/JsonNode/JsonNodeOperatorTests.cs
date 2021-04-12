@@ -54,15 +54,12 @@ namespace System.Text.Json.Node.Tests
 
             string expected = ExpectedPrimitiveJson;
 
-#if !BUILDING_INBOX_LIBRARY
-            // The reader uses "G9" format which causes temp to be 1.10000002 in this case.
-            expected.Replace("1.1", "1.10000002");
-
-            // The reader uses "G17" format which causes temp to be 2.2000000000000002 in this case.
-            expected.Replace("2.2", "2.2000000000000002");
-#endif
-
             string json = jObject.ToJsonString();
+
+            // Adjust for non-Core frameworks which do not have round-trippable floating point strings.
+            json.Replace("1.10000002", "1.1");
+            json.Replace("2.2000000000000002", "2.2");
+
             Assert.Equal(expected, json);
         }
 
