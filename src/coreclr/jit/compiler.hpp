@@ -902,9 +902,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 #ifdef DEBUG
     gtDebugFlags = 0;
 #endif // DEBUG
-#if FEATURE_ANYCSE
     gtCSEnum = NO_CSE;
-#endif // FEATURE_ANYCSE
 #if ASSERTION_PROP
     ClearAssertion();
 #endif
@@ -4181,7 +4179,7 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
-    bool result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (opts.IsOSR() && (varNum == lvaGSSecurityCookie)) ||
+    bool       result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (varNum == lvaGSSecurityCookie) ||
                   (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
 
 #if FEATURE_FIXED_OUT_ARGS

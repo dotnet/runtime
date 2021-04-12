@@ -3253,6 +3253,9 @@
   <data name="SpinWait_SpinUntil_TimeoutWrong" xml:space="preserve">
     <value>The timeout must represent a value between -1 and Int32.MaxValue, inclusive.</value>
   </data>
+  <data name="StackTrace_InFileILOffset" xml:space="preserve">
+    <value>in {0}:token 0x{1:x}+0x{2:x}</value>
+  </data>
   <data name="StackTrace_InFileLineNumber" xml:space="preserve">
     <value>in {0}:line {1}</value>
   </data>

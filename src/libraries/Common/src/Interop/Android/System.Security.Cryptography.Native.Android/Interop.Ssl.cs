@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
 using Microsoft.Win32.SafeHandles;
@@ -74,6 +75,15 @@ internal static partial class Interop
             string targetHost)
         {
             int ret = SSLStreamConfigureParametersImpl(sslHandle, targetHost);
+            if (ret != SUCCESS)
+                throw new SslException();
+        }
+
+        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamSetEnabledProtocols")]
+        private static extern int SSLStreamSetEnabledProtocols(SafeSslHandle sslHandle, ref SslProtocols protocols, int length);
+        internal static void SSLStreamSetEnabledProtocols(SafeSslHandle sslHandle, ReadOnlySpan<SslProtocols> protocols)
+        {
+            int ret = SSLStreamSetEnabledProtocols(sslHandle, ref MemoryMarshal.GetReference(protocols), protocols.Length);
             if (ret != SUCCESS)
                 throw new SslException();
         }

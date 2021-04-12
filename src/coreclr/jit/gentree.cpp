@@ -6212,6 +6212,38 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     return tree;
 }
 
+//------------------------------------------------------------------------
+// gtNewStringLiteralLength: create GenTreeIntCon node for the given string
+//    literal to store its length.
+//
+// Arguments:
+//    node  - string literal node.
+//
+// Return Value:
+//    GenTreeIntCon node with string's length as a value or null.
+//
+GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
+{
+    int             length = -1;
+    const char16_t* str    = info.compCompHnd->getStringLiteral(node->gtScpHnd, node->gtSconCPX, &length);
+    if (length >= 0)
+    {
+        GenTreeIntCon* iconNode = gtNewIconNode(length);
+
+        // str can be NULL for dynamic context
+        if (str != nullptr)
+        {
+            JITDUMP("String '\"%ws\".Length' is '%d'\n", str, length)
+        }
+        else
+        {
+            JITDUMP("String 'CNS_STR.Length' is '%d'\n", length)
+        }
+        return iconNode;
+    }
+    return nullptr;
+}
+
 /*****************************************************************************/
 
 GenTree* Compiler::gtNewLconNode(__int64 value)
@@ -10773,7 +10805,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     }
     else if (ilNum == (unsigned)ICorDebugInfo::UNKNOWN_ILNUM)
     {
-#if FEATURE_ANYCSE
         if (lclNumIsTrueCSE(lclNum))
         {
             ilKind = "cse";
@@ -10787,7 +10818,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             ilNum  = lclNum - (optCSEstart + optCSEcount);
         }
         else
-#endif // FEATURE_ANYCSE
         {
             if (lclNum == info.compLvFrameListRoot)
             {
