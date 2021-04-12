@@ -23,9 +23,9 @@ namespace System.Threading
         private object _dummy;
         private int _dummyPrimitive;
         public void Dispose() { }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public bool Equals(System.Threading.AsyncFlowControl obj) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public readonly bool Equals(System.Threading.AsyncFlowControl obj) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static bool operator ==(System.Threading.AsyncFlowControl a, System.Threading.AsyncFlowControl b) { throw null; }
         public static bool operator !=(System.Threading.AsyncFlowControl a, System.Threading.AsyncFlowControl b) { throw null; }
         public void Undo() { }
@@ -238,9 +238,9 @@ namespace System.Threading
     public partial struct LockCookie
     {
         private int _dummyPrimitive;
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public bool Equals(System.Threading.LockCookie obj) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public readonly bool Equals(System.Threading.LockCookie obj) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static bool operator ==(System.Threading.LockCookie a, System.Threading.LockCookie b) { throw null; }
         public static bool operator !=(System.Threading.LockCookie a, System.Threading.LockCookie b) { throw null; }
     }
@@ -427,9 +427,9 @@ namespace System.Threading
     {
         private int _dummyPrimitive;
         public SpinLock(bool enableThreadOwnerTracking) { throw null; }
-        public bool IsHeld { get { throw null; } }
-        public bool IsHeldByCurrentThread { get { throw null; } }
-        public bool IsThreadOwnerTrackingEnabled { get { throw null; } }
+        public readonly bool IsHeld { get { throw null; } }
+        public readonly bool IsHeldByCurrentThread { get { throw null; } }
+        public readonly bool IsThreadOwnerTrackingEnabled { get { throw null; } }
         public void Enter(ref bool lockTaken) { }
         public void Exit() { }
         public void Exit(bool useMemoryBarrier) { }
@@ -440,8 +440,8 @@ namespace System.Threading
     public partial struct SpinWait
     {
         private int _dummyPrimitive;
-        public int Count { get { throw null; } }
-        public bool NextSpinWillYield { get { throw null; } }
+        public readonly int Count { get { throw null; } }
+        public readonly bool NextSpinWillYield { get { throw null; } }
         public void Reset() { }
         public void SpinOnce() { }
         public void SpinOnce(int sleep1Threshold) { }

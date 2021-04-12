@@ -16,17 +16,17 @@ namespace System.Threading
         internal ushort _writerLevel;
         internal int _threadID;
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return (int)_flags + _readerLevel + _writerLevel + _threadID;
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public override readonly bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is LockCookie && Equals((LockCookie)obj);
         }
 
-        public bool Equals(LockCookie obj)
+        public readonly bool Equals(LockCookie obj)
         {
             return
                 _flags == obj._flags &&
