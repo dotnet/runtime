@@ -893,7 +893,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     }
 
     CORINFO_RESOLVED_TOKEN resolvedToken;
-    CORINFO_RESOLVED_TOKEN constrainedResolvedToken;
 
     while (codeAddr < codeEndp)
     {
@@ -1142,10 +1141,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 noway_assert(sz == sizeof(unsigned));
                 prefixFlags |= PREFIX_CONSTRAINED;
 
-                if (resolveTokens)
-                {
-                    impResolveToken(codeAddr, &constrainedResolvedToken, CORINFO_TOKENKIND_Constrained);
-                }
                 codeAddr += sizeof(unsigned);
 
                 {
