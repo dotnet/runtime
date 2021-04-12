@@ -21,7 +21,7 @@ namespace System.Text
         public static SegmentStringBuilder Create() => new SegmentStringBuilder() { _array = Array.Empty<ReadOnlyMemory<char>>() };
 
         /// <summary>Gets the number of segments added to the builder.</summary>
-        public int Count => _count;
+        public readonly int Count => _count;
 
         /// <summary>Adds a segment to the builder.</summary>
         /// <param name="segment">The segment.</param>
@@ -60,7 +60,7 @@ namespace System.Text
 
         /// <summary>Gets a span of all segments in the builder.</summary>
         /// <returns></returns>
-        public Span<ReadOnlyMemory<char>> AsSpan() => new Span<ReadOnlyMemory<char>>(_array, 0, _count);
+        public readonly Span<ReadOnlyMemory<char>> AsSpan() => new Span<ReadOnlyMemory<char>>(_array, 0, _count);
 
         /// <summary>Creates a string from all the segments in the builder and then disposes of the builder.</summary>
         public override string ToString()

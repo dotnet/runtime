@@ -1628,7 +1628,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Returns true for options allowed only at the top level</summary>
-        private bool IsOnlyTopOption(RegexOptions options) =>
+        private readonly bool IsOnlyTopOption(RegexOptions options) =>
             options == RegexOptions.RightToLeft ||
             options == RegexOptions.CultureInvariant ||
             options == RegexOptions.ECMAScript;
@@ -1748,7 +1748,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Returns ReNode type for zero-length assertions with a \ code.</summary>
-        private int TypeFromCode(char ch) =>
+        private readonly int TypeFromCode(char ch) =>
             ch switch
             {
                 'b' => UseOptionE() ? RegexNode.ECMABoundary : RegexNode.Boundary,
@@ -2021,10 +2021,10 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Looks up the slot number for a given name.</summary>
-        private int CaptureSlotFromName(string capname) => (int)_capnames![capname]!;
+        private readonly int CaptureSlotFromName(string capname) => (int)_capnames![capname]!;
 
         /// <summary>True if the capture slot was noted</summary>
-        private bool IsCaptureSlot(int i)
+        private readonly bool IsCaptureSlot(int i)
         {
             if (_caps != null)
             {
@@ -2035,25 +2035,25 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Looks up the slot number for a given name</summary>
-        private bool IsCaptureName(string capname) => _capnames != null && _capnames.ContainsKey(capname);
+        private readonly bool IsCaptureName(string capname) => _capnames != null && _capnames.ContainsKey(capname);
 
         /// <summary>True if N option disabling '(' autocapture is on.</summary>
-        private bool UseOptionN() => (_options & RegexOptions.ExplicitCapture) != 0;
+        private readonly bool UseOptionN() => (_options & RegexOptions.ExplicitCapture) != 0;
 
         /// <summary>True if I option enabling case-insensitivity is on.</summary>
-        private bool UseOptionI() => (_options & RegexOptions.IgnoreCase) != 0;
+        private readonly bool UseOptionI() => (_options & RegexOptions.IgnoreCase) != 0;
 
         /// <summary>True if M option altering meaning of $ and ^ is on.</summary>
-        private bool UseOptionM() => (_options & RegexOptions.Multiline) != 0;
+        private readonly bool UseOptionM() => (_options & RegexOptions.Multiline) != 0;
 
         /// <summary>True if S option altering meaning of . is on.</summary>
-        private bool UseOptionS() => (_options & RegexOptions.Singleline) != 0;
+        private readonly bool UseOptionS() => (_options & RegexOptions.Singleline) != 0;
 
         /// <summary> True if X option enabling whitespace/comment mode is on.</summary>
-        private bool UseOptionX() => (_options & RegexOptions.IgnorePatternWhitespace) != 0;
+        private readonly bool UseOptionX() => (_options & RegexOptions.IgnorePatternWhitespace) != 0;
 
         /// <summary>True if E option enabling ECMAScript behavior is on.</summary>
-        private bool UseOptionE() => (_options & RegexOptions.ECMAScript) != 0;
+        private readonly bool UseOptionE() => (_options & RegexOptions.ECMAScript) != 0;
 
         private const byte Q = 5;    // quantifier
         private const byte S = 4;    // ordinary stopper
@@ -2081,7 +2081,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Returns true for those characters that begin a quantifier.</summary>
         private static bool IsQuantifier(char ch) => ch <= '{' && Category[ch] >= Q;
 
-        private bool IsTrueQuantifier()
+        private readonly bool IsTrueQuantifier()
         {
             Debug.Assert(CharsRight() > 0, "The current reading position must not be at the end of the pattern");
 
@@ -2185,7 +2185,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>True if the group stack is empty.</summary>
-        private bool EmptyStack() => _stack == null;
+        private readonly bool EmptyStack() => _stack == null;
 
         /// <summary>Start a new round for the parser state (in response to an open paren or string start)</summary>
         private void StartGroup(RegexNode openGroup)
@@ -2229,7 +2229,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Returns the current unit</summary>
-        private RegexNode? Unit() => _unit;
+        private readonly RegexNode? Unit() => _unit;
 
         /// <summary>Sets the current unit to a single char node</summary>
         private void AddUnitOne(char ch)
@@ -2299,17 +2299,17 @@ namespace System.Text.RegularExpressions
         private void PopOptions() => _options = (RegexOptions)_optionsStack.Pop();
 
         /// <summary>True if options stack is empty.</summary>
-        private bool EmptyOptionsStack() => _optionsStack.Length == 0;
+        private readonly bool EmptyOptionsStack() => _optionsStack.Length == 0;
 
         /// <summary>Pops the options stack, but keeps the current options unchanged.</summary>
         private void PopKeepOptions() => _optionsStack.Length--;
 
         /// <summary>Fills in a RegexParseException</summary>
-        private RegexParseException MakeException(RegexParseError error, string message) =>
+        private readonly RegexParseException MakeException(RegexParseError error, string message) =>
             new RegexParseException(error, _currentPos, SR.Format(SR.MakeException, _pattern, _currentPos, message));
 
         /// <summary>Returns the current parsing position.</summary>
-        private int Textpos() => _currentPos;
+        private readonly int Textpos() => _currentPos;
 
         /// <summary>Zaps to a specific parsing position.</summary>
         private void Textto(int pos) => _currentPos = pos;
@@ -2326,15 +2326,15 @@ namespace System.Text.RegularExpressions
         private void MoveLeft() => --_currentPos;
 
         /// <summary>Returns the char left of the current parsing position.</summary>
-        private char CharAt(int i) => _pattern[i];
+        private readonly char CharAt(int i) => _pattern[i];
 
         /// <summary>Returns the char right of the current parsing position.</summary>
-        private char RightChar() => _pattern[_currentPos];
+        private readonly char RightChar() => _pattern[_currentPos];
 
         /// <summary>Returns the char i chars right of the current parsing position.</summary>
-        private char RightChar(int i) => _pattern[_currentPos + i];
+        private readonly char RightChar(int i) => _pattern[_currentPos + i];
 
         /// <summary>Number of characters to the right of the current parsing position.</summary>
-        private int CharsRight() => _pattern.Length - _currentPos;
+        private readonly int CharsRight() => _pattern.Length - _currentPos;
     }
 }

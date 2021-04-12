@@ -252,7 +252,7 @@ namespace System.Text.RegularExpressions
         /// for an array of capture slots. Instead of doing the hash
         /// at match time, it's done at compile time, here.
         /// </summary>
-        private int MapCapnum(int capnum) =>
+        private readonly int MapCapnum(int capnum) =>
             capnum == -1 ? -1 :
             _caps != null ? (int)_caps[capnum]! :
             capnum;

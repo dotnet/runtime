@@ -381,7 +381,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void PushInt(int i) => _intStack.Append(i);
 
-        private bool IntIsEmpty() => _intStack.Length == 0;
+        private readonly bool IntIsEmpty() => _intStack.Length == 0;
 
         private int PopInt() => _intStack.Pop();
 
@@ -390,7 +390,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void PushFC(RegexFC fc) => _fcStack.Add(fc);
 
-        private bool FCIsEmpty() => _fcStack.Count == 0;
+        private readonly bool FCIsEmpty() => _fcStack.Count == 0;
 
         private RegexFC PopFC()
         {
@@ -399,7 +399,7 @@ namespace System.Text.RegularExpressions
             return item;
         }
 
-        private RegexFC TopFC() => _fcStack[_fcStack.Count - 1];
+        private readonly RegexFC TopFC() => _fcStack[_fcStack.Count - 1];
 
         /// <summary>
         /// Return rented buffers.
