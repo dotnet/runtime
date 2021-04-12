@@ -22,7 +22,7 @@ namespace System.Collections.Generic
             Debug.Assert(initialize);
         }
 
-        public int Count => _builder.Count;
+        public readonly int Count => _builder.Count;
 
         public void Add(T item) => _builder.Add(item);
 
@@ -35,9 +35,9 @@ namespace System.Collections.Generic
             }
         }
 
-        public T[] ToArray() => _builder.ToArray();
+        public readonly T[] ToArray() => _builder.ToArray();
 
-        public CopyPosition CopyTo(CopyPosition position, T[] array, int arrayIndex, int count)
+        public readonly CopyPosition CopyTo(CopyPosition position, T[] array, int arrayIndex, int count)
         {
             Array.Copy(_builder.Buffer!, position.Column, array, arrayIndex, count);
             return new CopyPosition(0, position.Column + count);

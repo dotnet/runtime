@@ -26,7 +26,7 @@ namespace System.Collections.Generic
             }
         }
 
-        internal bool IsMarked(int bitPosition)
+        internal readonly bool IsMarked(int bitPosition)
         {
             int bitArrayIndex = bitPosition / IntSize;
             return

@@ -53,7 +53,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the number of items added to the builder.
         /// </summary>
-        public int Count => _count;
+        public readonly int Count => _count;
 
         /// <summary>
         /// Adds an item to this builder.
@@ -153,7 +153,7 @@ namespace System.Collections.Generic
         /// <param name="array">The destination array.</param>
         /// <param name="arrayIndex">The index in <paramref name="array"/> to start copying to.</param>
         /// <param name="count">The number of items to copy.</param>
-        public void CopyTo(T[] array, int arrayIndex, int count)
+        public readonly void CopyTo(T[] array, int arrayIndex, int count)
         {
             Debug.Assert(arrayIndex >= 0);
             Debug.Assert(count >= 0 && count <= Count);
@@ -182,7 +182,7 @@ namespace System.Collections.Generic
         /// <param name="arrayIndex">The index in <paramref name="array"/> to start copying to.</param>
         /// <param name="count">The number of items to copy.</param>
         /// <returns>The position in this builder that was copied up to.</returns>
-        public CopyPosition CopyTo(CopyPosition position, T[] array, int arrayIndex, int count)
+        public readonly CopyPosition CopyTo(CopyPosition position, T[] array, int arrayIndex, int count)
         {
             Debug.Assert(array != null);
             Debug.Assert(arrayIndex >= 0);
@@ -239,7 +239,7 @@ namespace System.Collections.Generic
         /// Retrieves the buffer at the specified index.
         /// </summary>
         /// <param name="index">The index of the buffer.</param>
-        public T[] GetBuffer(int index)
+        public readonly T[] GetBuffer(int index)
         {
             Debug.Assert(index >= 0 && index < _buffers.Count + 2);
 
@@ -262,7 +262,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Creates an array from the contents of this builder.
         /// </summary>
-        public T[] ToArray()
+        public readonly T[] ToArray()
         {
             if (TryMove(out T[] array))
             {
@@ -280,7 +280,7 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="array">The transferred array, if the operation succeeded.</param>
         /// <returns><c>true</c> if the operation succeeded; otherwise, <c>false</c>.</returns>
-        public bool TryMove(out T[] array)
+        public readonly bool TryMove(out T[] array)
         {
             array = _first;
             return _count == _first.Length;

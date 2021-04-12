@@ -85,12 +85,12 @@ namespace System.Collections.Generic
         /// <summary>
         /// The total number of items in this builder, including reserved regions.
         /// </summary>
-        public int Count => checked(_builder.Count + _reservedCount);
+        public readonly int Count => checked(_builder.Count + _reservedCount);
 
         /// <summary>
         /// The list of reserved regions in this builder.
         /// </summary>
-        public ArrayBuilder<Marker> Markers => _markers;
+        public readonly ArrayBuilder<Marker> Markers => _markers;
 
         /// <summary>
         /// Adds an item to this builder.
@@ -110,7 +110,7 @@ namespace System.Collections.Generic
         /// <param name="array">The destination array.</param>
         /// <param name="arrayIndex">The index in <paramref name="array"/> to start copying to.</param>
         /// <param name="count">The number of items to copy.</param>
-        public void CopyTo(T[] array, int arrayIndex, int count)
+        public readonly void CopyTo(T[] array, int arrayIndex, int count)
         {
             Debug.Assert(array != null);
             Debug.Assert(arrayIndex >= 0);
@@ -211,7 +211,7 @@ namespace System.Collections.Generic
         /// <remarks>
         /// Regions created with <see cref="Reserve"/> will be default-initialized.
         /// </remarks>
-        public T[] ToArray()
+        public readonly T[] ToArray()
         {
             // If no regions were reserved, there are no 'gaps' we need to add to the array.
             // In that case, we can just call ToArray on the underlying builder.

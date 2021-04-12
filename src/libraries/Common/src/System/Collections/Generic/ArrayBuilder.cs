@@ -34,21 +34,21 @@ namespace System.Collections.Generic
         /// Gets the number of items this instance can store without re-allocating,
         /// or 0 if the backing array is <c>null</c>.
         /// </summary>
-        public int Capacity => _array?.Length ?? 0;
+        public readonly int Capacity => _array?.Length ?? 0;
 
         /// <summary>Gets the current underlying array.</summary>
-        public T[]? Buffer => _array;
+        public readonly T[]? Buffer => _array;
 
         /// <summary>
         /// Gets the number of items in the array currently in use.
         /// </summary>
-        public int Count => _count;
+        public readonly int Count => _count;
 
         /// <summary>
         /// Gets or sets the item at a certain index in the array.
         /// </summary>
         /// <param name="index">The index into the array.</param>
-        public T this[int index]
+        public readonly T this[int index]
         {
             get
             {
@@ -74,7 +74,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the first item in this builder.
         /// </summary>
-        public T First()
+        public readonly T First()
         {
             Debug.Assert(_count > 0);
             return _array![0];
@@ -83,7 +83,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the last item in this builder.
         /// </summary>
-        public T Last()
+        public readonly T Last()
         {
             Debug.Assert(_count > 0);
             return _array![_count - 1];
