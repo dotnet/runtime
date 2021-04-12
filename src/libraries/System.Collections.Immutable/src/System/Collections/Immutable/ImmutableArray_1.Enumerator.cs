@@ -44,7 +44,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the currently enumerated value.
             /// </summary>
-            public T Current
+            public readonly T Current
             {
                 get
                 {

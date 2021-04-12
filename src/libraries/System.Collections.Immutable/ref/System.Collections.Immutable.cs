@@ -264,7 +264,7 @@ namespace System.Collections.Immutable
             private readonly T[] _array;
             private object _dummy;
             private int _dummyPrimitive;
-            public T Current { get { throw null; } }
+            public readonly T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
     }
@@ -399,7 +399,7 @@ namespace System.Collections.Immutable
         {
             private object _dummy;
             private int _dummyPrimitive;
-            public System.Collections.Generic.KeyValuePair<TKey, TValue> Current { get { throw null; } }
+            public readonly System.Collections.Generic.KeyValuePair<TKey, TValue> Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             public bool MoveNext() { throw null; }
@@ -506,7 +506,7 @@ namespace System.Collections.Immutable
         {
             private object _dummy;
             private int _dummyPrimitive;
-            public T Current { get { throw null; } }
+            public readonly T Current { get { throw null; } }
             object? System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             public bool MoveNext() { throw null; }
@@ -760,7 +760,7 @@ namespace System.Collections.Immutable
         {
             private object _dummy;
             private int _dummyPrimitive;
-            public T Current { get { throw null; } }
+            public readonly T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
     }
@@ -1075,7 +1075,7 @@ namespace System.Collections.Immutable
         {
             private object _dummy;
             private int _dummyPrimitive;
-            public T Current { get { throw null; } }
+            public readonly T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
     }

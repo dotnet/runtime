@@ -118,7 +118,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="index">The zero-based index of the element to get.</param>
         /// <returns>The element at the specified index in the read-only list.</returns>
-        public T this[int index]
+        public readonly T this[int index]
         {
             [NonVersionable]
             get
@@ -138,7 +138,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="index">The zero-based index of the element to get a reference to.</param>
         /// <returns>A read-only reference to the element at the specified index in the read-only list.</returns>
-        public ref readonly T ItemRef(int index)
+        public readonly ref readonly T ItemRef(int index)
         {
             // We intentionally do not check this.array != null, and throw NullReferenceException
             // if this is called while uninitialized.
@@ -153,7 +153,7 @@ namespace System.Collections.Immutable
         /// Gets a value indicating whether this collection is empty.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public bool IsEmpty
+        public readonly bool IsEmpty
         {
             [NonVersionable]
             get { return this.array!.Length == 0; }
@@ -163,7 +163,7 @@ namespace System.Collections.Immutable
         /// Gets the number of elements in the array.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public int Length
+        public readonly int Length
         {
             [NonVersionable]
             get
@@ -181,7 +181,7 @@ namespace System.Collections.Immutable
         /// Gets a value indicating whether this struct was initialized without an actual array instance.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public bool IsDefault
+        public readonly bool IsDefault
         {
             get { return this.array == null; }
         }
@@ -190,7 +190,7 @@ namespace System.Collections.Immutable
         /// Gets a value indicating whether this struct is empty or uninitialized.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public bool IsDefaultOrEmpty
+        public readonly bool IsDefaultOrEmpty
         {
             get
             {
@@ -212,7 +212,7 @@ namespace System.Collections.Immutable
         /// Gets the string to display in the debugger watches window for this instance.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay
+        private readonly string DebuggerDisplay
         {
             get
             {
@@ -225,7 +225,7 @@ namespace System.Collections.Immutable
         /// Copies the contents of this array to the specified array.
         /// </summary>
         /// <param name="destination">The array to copy to.</param>
-        public void CopyTo(T[] destination)
+        public readonly void CopyTo(T[] destination)
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
@@ -237,7 +237,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="destination">The array to copy to.</param>
         /// <param name="destinationIndex">The index into the destination array to which the first copied element is written.</param>
-        public void CopyTo(T[] destination, int destinationIndex)
+        public readonly void CopyTo(T[] destination, int destinationIndex)
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
@@ -251,7 +251,7 @@ namespace System.Collections.Immutable
         /// <param name="destination">The array to copy to.</param>
         /// <param name="destinationIndex">The index into the destination array to which the first copied element is written.</param>
         /// <param name="length">The number of elements to copy.</param>
-        public void CopyTo(int sourceIndex, T[] destination, int destinationIndex, int length)
+        public readonly void CopyTo(int sourceIndex, T[] destination, int destinationIndex, int length)
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
@@ -280,7 +280,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <returns>An enumerator.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Enumerator GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
@@ -293,7 +293,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
         /// </returns>
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             var self = this;
             return self.array == null ? 0 : self.array.GetHashCode();
@@ -306,7 +306,7 @@ namespace System.Collections.Immutable
         /// <returns>
         ///   <c>true</c> if the specified <see cref="object"/> is equal to this instance; otherwise, <c>false</c>.
         /// </returns>
-        public override bool Equals(object? obj)
+        public override readonly bool Equals(object? obj)
         {
             return obj is IImmutableArray other && this.array == other.Array;
         }
@@ -319,7 +319,7 @@ namespace System.Collections.Immutable
         /// true if the current object is equal to the <paramref name="other"/> parameter; otherwise, false.
         /// </returns>
         [NonVersionable]
-        public bool Equals(ImmutableArray<T> other)
+        public readonly bool Equals(ImmutableArray<T> other)
         {
             return this.array == other.array;
         }
@@ -348,7 +348,7 @@ namespace System.Collections.Immutable
         /// array to an array of type <typeparam name="TOther"/>.
         /// </summary>
         /// <exception cref="InvalidCastException">Thrown if the cast is illegal.</exception>
-        public ImmutableArray<
+        public readonly ImmutableArray<
 #nullable disable
             TOther
 #nullable restore
@@ -372,7 +372,7 @@ namespace System.Collections.Immutable
         /// element types to their derived types. However, downcasting is only successful
         /// when it reverses a prior upcasting operation.
         /// </remarks>
-        public ImmutableArray<
+        public readonly ImmutableArray<
 #nullable disable
             TOther
 #nullable restore
@@ -386,7 +386,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <returns>An enumerator.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        readonly IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             var self = this;
             self.ThrowInvalidOperationIfNotInitialized();
@@ -398,7 +398,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <returns>An enumerator.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
-        IEnumerator IEnumerable.GetEnumerator()
+        readonly IEnumerator IEnumerable.GetEnumerator()
         {
             var self = this;
             self.ThrowInvalidOperationIfNotInitialized();
@@ -408,7 +408,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Throws a null reference exception if the array field is null.
         /// </summary>
-        internal void ThrowNullRefIfNotInitialized()
+        internal readonly void ThrowNullRefIfNotInitialized()
         {
             // Force NullReferenceException if array is null by touching its Length.
             // This way of checking has a nice property of requiring very little code
@@ -429,7 +429,7 @@ namespace System.Collections.Immutable
         ///
         /// This is intended for explicitly implemented interface method and property implementations.
         /// </summary>
-        private void ThrowInvalidOperationIfNotInitialized()
+        private readonly void ThrowInvalidOperationIfNotInitialized()
         {
             if (this.IsDefault)
             {

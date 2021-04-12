@@ -236,12 +236,12 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Obtains the right branch of the given node (or the left, if walking in reverse).
             /// </summary>
-            private Node? NextBranch(Node node) => _reversed ? node.Left : node.Right;
+            private readonly Node? NextBranch(Node node) => _reversed ? node.Left : node.Right;
 
             /// <summary>
             /// Obtains the left branch of the given node (or the right, if walking in reverse).
             /// </summary>
-            private Node? PreviousBranch(Node node) => _reversed ? node.Right : node.Left;
+            private readonly Node? PreviousBranch(Node node) => _reversed ? node.Right : node.Left;
 
             /// <summary>
             /// Throws an <see cref="ObjectDisposedException"/> if this enumerator has been disposed.
@@ -264,7 +264,7 @@ namespace System.Collections.Immutable
             /// Throws an exception if the underlying builder's contents have been changed since enumeration started.
             /// </summary>
             /// <exception cref="System.InvalidOperationException">Thrown if the collection has changed.</exception>
-            private void ThrowIfChanged()
+            private readonly void ThrowIfChanged()
             {
                 if (_builder != null && _builder.Version != _enumeratingBuilderVersion)
                 {

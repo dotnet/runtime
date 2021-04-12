@@ -207,7 +207,7 @@ namespace System.Collections.Immutable
             /// Throws an exception if the underlying builder's contents have been changed since enumeration started.
             /// </summary>
             /// <exception cref="System.InvalidOperationException">Thrown if the collection has changed.</exception>
-            private void ThrowIfChanged()
+            private readonly void ThrowIfChanged()
             {
                 if (_builder != null && _builder.Version != _enumeratingBuilderVersion)
                 {

@@ -53,7 +53,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the current enumerated value.
         /// </summary>
-        public T Current
+        public readonly T Current
         {
             get { return _enumeratorObject != null ? _enumeratorObject.Current : _enumeratorStruct.Current; }
         }
@@ -87,7 +87,7 @@ namespace System.Collections.Immutable
         /// <remarks>
         /// This member is here so that it can be used in C# foreach loops.
         /// </remarks>
-        public DisposableEnumeratorAdapter<T, TEnumerator> GetEnumerator()
+        public readonly DisposableEnumeratorAdapter<T, TEnumerator> GetEnumerator()
         {
             return this;
         }

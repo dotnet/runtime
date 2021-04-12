@@ -38,7 +38,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the current element.
             /// </summary>
-            public T Current
+            public readonly T Current
             {
                 get
                 {
