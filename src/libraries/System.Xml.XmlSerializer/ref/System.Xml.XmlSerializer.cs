@@ -270,10 +270,10 @@ namespace System.Xml.Serialization
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public System.Xml.Serialization.XmlAttributeEventHandler? OnUnknownAttribute { get { throw null; } set { } }
-        public System.Xml.Serialization.XmlElementEventHandler? OnUnknownElement { get { throw null; } set { } }
-        public System.Xml.Serialization.XmlNodeEventHandler? OnUnknownNode { get { throw null; } set { } }
-        public System.Xml.Serialization.UnreferencedObjectEventHandler? OnUnreferencedObject { get { throw null; } set { } }
+        public System.Xml.Serialization.XmlAttributeEventHandler? OnUnknownAttribute { readonly get { throw null; } set { } }
+        public System.Xml.Serialization.XmlElementEventHandler? OnUnknownElement { readonly get { throw null; } set { } }
+        public System.Xml.Serialization.XmlNodeEventHandler? OnUnknownNode { readonly get { throw null; } set { } }
+        public System.Xml.Serialization.UnreferencedObjectEventHandler? OnUnreferencedObject { readonly get { throw null; } set { } }
     }
     public partial class XmlElementAttributes : System.Collections.CollectionBase
     {
