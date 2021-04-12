@@ -602,4 +602,10 @@
   <data name="ConverterForPropertyMustBeValid" xml:space="preserve">
     <value>The generic type of the converter for property '{0}.{1}' must match with the specified converter type '{2}'. The converter must not be 'null'.</value>
   </data>
+  <data name="BuiltInConvertersNotRooted" xml:space="preserve">
+    <value>Built-in type converters have not been initialized. There is no converter available for type '{0}'. To root all built-in converters, use a 'JsonSerializerOptions'-based method of the 'JsonSerializer'.</value>
+  </data>
+  <data name="NoMetadataForType" xml:space="preserve">
+    <value>Metadata for type '{0}' was not provided to the serializer. The serializer method used does not support reflection-based creation of serialization-related type metadata. If using source generation, ensure that all root types passed to the serializer have been indicated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically.</value>
+  </data>
 </root>
