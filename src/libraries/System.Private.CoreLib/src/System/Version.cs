@@ -354,10 +354,10 @@ namespace System
 
         private static bool TryParseComponent(ReadOnlySpan<char> component, string componentName, bool throwOnFailure, out int parsedComponent)
         {
-            if(component.Length == 1)
+            if (component.Length == 1)
             {
                 var value = component[0] - '0';
-                if(value >= 0 && value <= 9)
+                if (value >= 0 && value <= 9)
                 {
                     parsedComponent = value;
                     return true;
