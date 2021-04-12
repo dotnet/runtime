@@ -427,7 +427,7 @@ namespace System.Reflection
 
                 // object[] args = new object[paramCount];
                 il.Emit(OpCodes.Nop);
-                GenericArray<object> argsArr = new GenericArray<object>(il, ParamTypes(parameters, true).Length);
+                GenericArray<object> argsArr = new GenericArray<object>(il, parameters.Length);
 
                 for (int i = 0; i < parameters.Length; i++)
                 {
@@ -510,18 +510,6 @@ namespace System.Reflection
 
                 _tb.DefineMethodOverride(mdb, mi);
                 return mdb;
-            }
-
-            private static Type[] ParamTypes(ParameterInfo[] parms, bool noByRef)
-            {
-                Type[] types = new Type[parms.Length];
-                for (int i = 0; i < parms.Length; i++)
-                {
-                    types[i] = parms[i].ParameterType;
-                    if (noByRef && types[i].IsByRef)
-                        types[i] = types[i].GetElementType()!;
-                }
-                return types;
             }
 
             // TypeCode does not exist in ProjectK or ProjectN.
