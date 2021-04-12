@@ -27,7 +27,7 @@ namespace System.Reflection.Metadata
             }
 
             object IEnumerator.Current => Current;
-            public BlobBuilder Current => _currentOpt!;
+            public readonly BlobBuilder Current => _currentOpt!;
 
             public bool MoveNext()
             {
@@ -56,9 +56,9 @@ namespace System.Reflection.Metadata
             void IDisposable.Dispose() { }
 
             // IEnumerable:
-            public Chunks GetEnumerator() => this;
-            IEnumerator<BlobBuilder> IEnumerable<BlobBuilder>.GetEnumerator() => GetEnumerator();
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            public readonly Chunks GetEnumerator() => this;
+            readonly IEnumerator<BlobBuilder> IEnumerable<BlobBuilder>.GetEnumerator() => GetEnumerator();
+            readonly IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         public struct Blobs : IEnumerable<Blob>, IEnumerator<Blob>, IEnumerator
@@ -72,7 +72,7 @@ namespace System.Reflection.Metadata
 
             object IEnumerator.Current => Current;
 
-            public Blob Current
+            public readonly Blob Current
             {
                 get
                 {
@@ -94,9 +94,9 @@ namespace System.Reflection.Metadata
             void IDisposable.Dispose() { }
 
             // IEnumerable:
-            public Blobs GetEnumerator() => this;
-            IEnumerator<Blob> IEnumerable<Blob>.GetEnumerator() => GetEnumerator();
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            public readonly Blobs GetEnumerator() => this;
+            readonly IEnumerator<Blob> IEnumerable<Blob>.GetEnumerator() => GetEnumerator();
+            readonly IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
     }
 }

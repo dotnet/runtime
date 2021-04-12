@@ -272,13 +272,13 @@ namespace System.Reflection.Metadata
         {
             private object _dummy;
             private int _dummyPrimitive;
-            public System.Reflection.Metadata.Blob Current { get { throw null; } }
+            public readonly System.Reflection.Metadata.Blob Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
-            public System.Reflection.Metadata.BlobBuilder.Blobs GetEnumerator() { throw null; }
+            public readonly System.Reflection.Metadata.BlobBuilder.Blobs GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
             public void Reset() { }
-            System.Collections.Generic.IEnumerator<System.Reflection.Metadata.Blob> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>.GetEnumerator() { throw null; }
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+            readonly System.Collections.Generic.IEnumerator<System.Reflection.Metadata.Blob> System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>.GetEnumerator() { throw null; }
+            readonly System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
             void System.IDisposable.Dispose() { }
         }
     }
@@ -1996,11 +1996,11 @@ namespace System.Reflection.Metadata
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.ExportedTypeHandle> ExportedTypes { get { throw null; } }
-        public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
-        public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.NamespaceDefinitionHandle> NamespaceDefinitions { get { throw null; } }
-        public System.Reflection.Metadata.NamespaceDefinitionHandle Parent { get { throw null; } }
-        public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.TypeDefinitionHandle> TypeDefinitions { get { throw null; } }
+        public readonly System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.ExportedTypeHandle> ExportedTypes { get { throw null; } }
+        public readonly System.Reflection.Metadata.StringHandle Name { get { throw null; } }
+        public readonly System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.NamespaceDefinitionHandle> NamespaceDefinitions { get { throw null; } }
+        public readonly System.Reflection.Metadata.NamespaceDefinitionHandle Parent { get { throw null; } }
+        public readonly System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.TypeDefinitionHandle> TypeDefinitions { get { throw null; } }
     }
     public readonly partial struct NamespaceDefinitionHandle : System.IEquatable<System.Reflection.Metadata.NamespaceDefinitionHandle>
     {
@@ -2241,16 +2241,16 @@ namespace System.Reflection.Metadata
         public const byte CallingConventionOrKindMask = (byte)15;
         public SignatureHeader(byte rawValue) { throw null; }
         public SignatureHeader(System.Reflection.Metadata.SignatureKind kind, System.Reflection.Metadata.SignatureCallingConvention convention, System.Reflection.Metadata.SignatureAttributes attributes) { throw null; }
-        public System.Reflection.Metadata.SignatureAttributes Attributes { get { throw null; } }
-        public System.Reflection.Metadata.SignatureCallingConvention CallingConvention { get { throw null; } }
-        public bool HasExplicitThis { get { throw null; } }
-        public bool IsGeneric { get { throw null; } }
-        public bool IsInstance { get { throw null; } }
-        public System.Reflection.Metadata.SignatureKind Kind { get { throw null; } }
-        public byte RawValue { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Reflection.Metadata.SignatureHeader other) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public readonly System.Reflection.Metadata.SignatureAttributes Attributes { get { throw null; } }
+        public readonly System.Reflection.Metadata.SignatureCallingConvention CallingConvention { get { throw null; } }
+        public readonly bool HasExplicitThis { get { throw null; } }
+        public readonly bool IsGeneric { get { throw null; } }
+        public readonly bool IsInstance { get { throw null; } }
+        public readonly System.Reflection.Metadata.SignatureKind Kind { get { throw null; } }
+        public readonly byte RawValue { get { throw null; } }
+        public override readonly bool Equals(object? obj) { throw null; }
+        public readonly bool Equals(System.Reflection.Metadata.SignatureHeader other) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Metadata.SignatureHeader left, System.Reflection.Metadata.SignatureHeader right) { throw null; }
         public static bool operator !=(System.Reflection.Metadata.SignatureHeader left, System.Reflection.Metadata.SignatureHeader right) { throw null; }
         public override string ToString() { throw null; }

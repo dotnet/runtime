@@ -158,49 +158,49 @@ namespace System.Reflection.Metadata.Ecma335
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, this.RowSize * numberOfRows);
         }
 
-        internal TypeAttributes GetFlags(TypeDefinitionHandle handle)
+        internal readonly TypeAttributes GetFlags(TypeDefinitionHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * this.RowSize;
             return (TypeAttributes)this.Block.PeekUInt32(rowOffset + _FlagsOffset);
         }
 
-        internal NamespaceDefinitionHandle GetNamespaceDefinition(TypeDefinitionHandle handle)
+        internal readonly NamespaceDefinitionHandle GetNamespaceDefinition(TypeDefinitionHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * this.RowSize;
             return NamespaceDefinitionHandle.FromFullNameOffset(this.Block.PeekHeapReference(rowOffset + _NamespaceOffset, _IsStringHeapRefSizeSmall));
         }
 
-        internal StringHandle GetNamespace(TypeDefinitionHandle handle)
+        internal readonly StringHandle GetNamespace(TypeDefinitionHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * this.RowSize;
             return StringHandle.FromOffset(this.Block.PeekHeapReference(rowOffset + _NamespaceOffset, _IsStringHeapRefSizeSmall));
         }
 
-        internal StringHandle GetName(TypeDefinitionHandle handle)
+        internal readonly StringHandle GetName(TypeDefinitionHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * this.RowSize;
             return StringHandle.FromOffset(this.Block.PeekHeapReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
         }
 
-        internal EntityHandle GetExtends(TypeDefinitionHandle handle)
+        internal readonly EntityHandle GetExtends(TypeDefinitionHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * this.RowSize;
             return TypeDefOrRefTag.ConvertToHandle(this.Block.PeekTaggedReference(rowOffset + _ExtendsOffset, _IsTypeDefOrRefRefSizeSmall));
         }
 
-        internal int GetFieldStart(int rowId)
+        internal readonly int GetFieldStart(int rowId)
         {
             int rowOffset = (rowId - 1) * this.RowSize;
             return this.Block.PeekReference(rowOffset + _FieldListOffset, _IsFieldRefSizeSmall);
         }
 
-        internal int GetMethodStart(int rowId)
+        internal readonly int GetMethodStart(int rowId)
         {
             int rowOffset = (rowId - 1) * this.RowSize;
             return this.Block.PeekReference(rowOffset + _MethodListOffset, _IsMethodRefSizeSmall);
         }
 
-        internal TypeDefinitionHandle FindTypeContainingMethod(int methodDefOrPtrRowId, int numberOfMethods)
+        internal readonly TypeDefinitionHandle FindTypeContainingMethod(int methodDefOrPtrRowId, int numberOfMethods)
         {
             int numOfRows = this.NumberOfRows;
             int slot = this.Block.BinarySearchForSlot(numOfRows, this.RowSize, _MethodListOffset, (uint)methodDefOrPtrRowId, _IsMethodRefSizeSmall);
@@ -241,7 +241,7 @@ namespace System.Reflection.Metadata.Ecma335
             return TypeDefinitionHandle.FromRowId(row);
         }
 
-        internal TypeDefinitionHandle FindTypeContainingField(int fieldDefOrPtrRowId, int numberOfFields)
+        internal readonly TypeDefinitionHandle FindTypeContainingField(int fieldDefOrPtrRowId, int numberOfFields)
         {
             int numOfRows = this.NumberOfRows;
             int slot = this.Block.BinarySearchForSlot(numOfRows, this.RowSize, _FieldListOffset, (uint)fieldDefOrPtrRowId, _IsFieldRefSizeSmall);
@@ -655,19 +655,19 @@ namespace System.Reflection.Metadata.Ecma335
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, this.RowSize * numberOfRows);
         }
 
-        internal BlobHandle GetSignature(MemberReferenceHandle handle)
+        internal readonly BlobHandle GetSignature(MemberReferenceHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * this.RowSize;
             return BlobHandle.FromOffset(this.Block.PeekHeapReference(rowOffset + _SignatureOffset, _IsBlobHeapRefSizeSmall));
         }
 
-        internal StringHandle GetName(MemberReferenceHandle handle)
+        internal readonly StringHandle GetName(MemberReferenceHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * this.RowSize;
             return StringHandle.FromOffset(this.Block.PeekHeapReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
         }
 
-        internal EntityHandle GetClass(MemberReferenceHandle handle)
+        internal readonly EntityHandle GetClass(MemberReferenceHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * this.RowSize;
             return MemberRefParentTag.ConvertToHandle(this.Block.PeekTaggedReference(rowOffset + _ClassOffset, _IsMemberRefParentRefSizeSmall));
@@ -1036,26 +1036,26 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        internal TypeDefinitionHandle GetParent(int rowId)
+        internal readonly TypeDefinitionHandle GetParent(int rowId)
         {
             int rowOffset = (rowId - 1) * this.RowSize;
             return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _ParentOffset, _IsTypeDefTableRowRefSizeSmall));
         }
 
-        internal ushort GetPackingSize(int rowId)
+        internal readonly ushort GetPackingSize(int rowId)
         {
             int rowOffset = (rowId - 1) * this.RowSize;
             return this.Block.PeekUInt16(rowOffset + _PackagingSizeOffset);
         }
 
-        internal uint GetClassSize(int rowId)
+        internal readonly uint GetClassSize(int rowId)
         {
             int rowOffset = (rowId - 1) * this.RowSize;
             return this.Block.PeekUInt32(rowOffset + _ClassSizeOffset);
         }
 
         // Returns RowId (0 means we there is no record in this table corresponding to the specified type).
-        internal int FindRow(TypeDefinitionHandle typeDef)
+        internal readonly int FindRow(TypeDefinitionHandle typeDef)
         {
             return 1 + this.Block.BinarySearchReference(
                 this.NumberOfRows,
@@ -1065,7 +1065,7 @@ namespace System.Reflection.Metadata.Ecma335
                 _IsTypeDefTableRowRefSizeSmall);
         }
 
-        private bool CheckSorted()
+        private readonly bool CheckSorted()
         {
             return this.Block.IsOrderedByReferenceAscending(this.RowSize, _ParentOffset, _IsTypeDefTableRowRefSizeSmall);
         }
@@ -1271,19 +1271,19 @@ namespace System.Reflection.Metadata.Ecma335
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, this.RowSize * numberOfRows);
         }
 
-        internal EventAttributes GetFlags(EventDefinitionHandle handle)
+        internal readonly EventAttributes GetFlags(EventDefinitionHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * this.RowSize;
             return (EventAttributes)this.Block.PeekUInt16(rowOffset + _FlagsOffset);
         }
 
-        internal StringHandle GetName(EventDefinitionHandle handle)
+        internal readonly StringHandle GetName(EventDefinitionHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * this.RowSize;
             return StringHandle.FromOffset(this.Block.PeekHeapReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
         }
 
-        internal EntityHandle GetEventType(EventDefinitionHandle handle)
+        internal readonly EntityHandle GetEventType(EventDefinitionHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * this.RowSize;
             return TypeDefOrRefTag.ConvertToHandle(this.Block.PeekTaggedReference(rowOffset + _EventTypeOffset, _IsTypeDefOrRefRefSizeSmall));

@@ -85,7 +85,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        internal byte[] GetBytes(BlobHandle handle)
+        internal readonly byte[] GetBytes(BlobHandle handle)
         {
             if (handle.IsVirtual)
             {
@@ -136,7 +136,7 @@ namespace System.Reflection.Metadata.Ecma335
             return new BlobReader(GetMemoryBlock(handle));
         }
 
-        internal BlobHandle GetNextHandle(BlobHandle handle)
+        internal readonly BlobHandle GetNextHandle(BlobHandle handle)
         {
             if (handle.IsVirtual)
             {
@@ -158,7 +158,7 @@ namespace System.Reflection.Metadata.Ecma335
             return BlobHandle.FromOffset(nextIndex);
         }
 
-        internal byte[] GetVirtualBlobBytes(BlobHandle handle, bool unique)
+        internal readonly byte[] GetVirtualBlobBytes(BlobHandle handle, bool unique)
         {
             BlobHandle.VirtualIndex index = handle.GetVirtualIndex();
             byte[] result = s_virtualValues![(int)index];

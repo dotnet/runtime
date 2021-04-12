@@ -28,12 +28,12 @@ namespace System.Reflection.Metadata
         {
         }
 
-        public byte RawValue
+        public readonly byte RawValue
         {
             get { return _rawValue; }
         }
 
-        public SignatureCallingConvention CallingConvention
+        public readonly SignatureCallingConvention CallingConvention
         {
             get
             {
@@ -49,7 +49,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public SignatureKind Kind
+        public readonly SignatureKind Kind
         {
             get
             {
@@ -65,37 +65,37 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public SignatureAttributes Attributes
+        public readonly SignatureAttributes Attributes
         {
             get { return (SignatureAttributes)(_rawValue & ~CallingConventionOrKindMask); }
         }
 
-        public bool HasExplicitThis
+        public readonly bool HasExplicitThis
         {
             get { return (_rawValue & (byte)SignatureAttributes.ExplicitThis) != 0; }
         }
 
-        public bool IsInstance
+        public readonly bool IsInstance
         {
             get { return (_rawValue & (byte)SignatureAttributes.Instance) != 0; }
         }
 
-        public bool IsGeneric
+        public readonly bool IsGeneric
         {
             get { return (_rawValue & (byte)SignatureAttributes.Generic) != 0; }
         }
 
-        public override bool Equals(object? obj)
+        public override readonly bool Equals(object? obj)
         {
             return obj is SignatureHeader && Equals((SignatureHeader)obj);
         }
 
-        public bool Equals(SignatureHeader other)
+        public readonly bool Equals(SignatureHeader other)
         {
             return _rawValue == other._rawValue;
         }
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return _rawValue;
         }

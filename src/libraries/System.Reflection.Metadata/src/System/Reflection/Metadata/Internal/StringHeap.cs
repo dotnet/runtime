@@ -144,7 +144,7 @@ namespace System.Reflection.Metadata.Ecma335
             return block.GetMemoryBlockAt(0, i + 2);
         }
 
-        internal string GetString(StringHandle handle, MetadataStringDecoder utf8Decoder)
+        internal readonly string GetString(StringHandle handle, MetadataStringDecoder utf8Decoder)
         {
             return handle.IsVirtual ? GetVirtualHandleString(handle, utf8Decoder) : GetNonVirtualString(handle, utf8Decoder, prefixOpt: null);
         }
@@ -159,7 +159,7 @@ namespace System.Reflection.Metadata.Ecma335
             return s_virtualValues![(int)index];
         }
 
-        private string GetNonVirtualString(StringHandle handle, MetadataStringDecoder utf8Decoder, byte[]? prefixOpt)
+        private readonly string GetNonVirtualString(StringHandle handle, MetadataStringDecoder utf8Decoder, byte[]? prefixOpt)
         {
             Debug.Assert(handle.StringKind != StringKind.Virtual);
 
@@ -168,7 +168,7 @@ namespace System.Reflection.Metadata.Ecma335
             return Block.PeekUtf8NullTerminated(handle.GetHeapOffset(), prefixOpt, utf8Decoder, out bytesRead, otherTerminator);
         }
 
-        private unsafe MemoryBlock GetNonVirtualStringMemoryBlock(StringHandle handle)
+        private unsafe readonly MemoryBlock GetNonVirtualStringMemoryBlock(StringHandle handle)
         {
             Debug.Assert(handle.StringKind != StringKind.Virtual);
 
@@ -180,7 +180,7 @@ namespace System.Reflection.Metadata.Ecma335
             return new MemoryBlock(Block.Pointer + offset, length);
         }
 
-        private unsafe byte[] GetNonVirtualStringBytes(StringHandle handle, byte[] prefix)
+        private unsafe readonly byte[] GetNonVirtualStringBytes(StringHandle handle, byte[] prefix)
         {
             Debug.Assert(handle.StringKind != StringKind.Virtual);
 
@@ -191,7 +191,7 @@ namespace System.Reflection.Metadata.Ecma335
             return bytes;
         }
 
-        private string GetVirtualHandleString(StringHandle handle, MetadataStringDecoder utf8Decoder)
+        private readonly string GetVirtualHandleString(StringHandle handle, MetadataStringDecoder utf8Decoder)
         {
             Debug.Assert(handle.IsVirtual);
 
@@ -230,7 +230,7 @@ namespace System.Reflection.Metadata.Ecma335
             return new BlobReader(GetMemoryBlock(handle));
         }
 
-        internal StringHandle GetNextHandle(StringHandle handle)
+        internal readonly StringHandle GetNextHandle(StringHandle handle)
         {
             if (handle.IsVirtual)
             {
@@ -246,7 +246,7 @@ namespace System.Reflection.Metadata.Ecma335
             return StringHandle.FromOffset(terminator + 1);
         }
 
-        internal bool Equals(StringHandle handle, string value, MetadataStringDecoder utf8Decoder, bool ignoreCase)
+        internal readonly bool Equals(StringHandle handle, string value, MetadataStringDecoder utf8Decoder, bool ignoreCase)
         {
             Debug.Assert(value != null);
 
@@ -265,7 +265,7 @@ namespace System.Reflection.Metadata.Ecma335
             return this.Block.Utf8NullTerminatedEquals(handle.GetHeapOffset(), value, utf8Decoder, otherTerminator, ignoreCase);
         }
 
-        internal bool StartsWith(StringHandle handle, string value, MetadataStringDecoder utf8Decoder, bool ignoreCase)
+        internal readonly bool StartsWith(StringHandle handle, string value, MetadataStringDecoder utf8Decoder, bool ignoreCase)
         {
             Debug.Assert(value != null);
 
@@ -287,7 +287,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Returns true if the given raw (non-virtual) handle represents the same string as given ASCII string.
         /// </summary>
-        internal bool EqualsRaw(StringHandle rawHandle, string asciiString)
+        internal readonly bool EqualsRaw(StringHandle rawHandle, string asciiString)
         {
             Debug.Assert(!rawHandle.IsVirtual);
             Debug.Assert(rawHandle.StringKind != StringKind.DotTerminated, "Not supported");
@@ -297,7 +297,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Returns the heap index of the given ASCII character or -1 if not found prior null terminator or end of heap.
         /// </summary>
-        internal int IndexOfRaw(int startIndex, char asciiChar)
+        internal readonly int IndexOfRaw(int startIndex, char asciiChar)
         {
             Debug.Assert(asciiChar != 0 && asciiChar <= 0x7f);
             return this.Block.Utf8NullTerminatedOffsetOfAsciiChar(startIndex, asciiChar);
@@ -306,7 +306,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Returns true if the given raw (non-virtual) handle represents a string that starts with given ASCII prefix.
         /// </summary>
-        internal bool StartsWithRaw(StringHandle rawHandle, string asciiPrefix)
+        internal readonly bool StartsWithRaw(StringHandle rawHandle, string asciiPrefix)
         {
             Debug.Assert(!rawHandle.IsVirtual);
             Debug.Assert(rawHandle.StringKind != StringKind.DotTerminated, "Not supported");
@@ -316,7 +316,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Equivalent to Array.BinarySearch, searches for given raw (non-virtual) handle in given array of ASCII strings.
         /// </summary>
-        internal int BinarySearchRaw(string[] asciiKeys, StringHandle rawHandle)
+        internal readonly int BinarySearchRaw(string[] asciiKeys, StringHandle rawHandle)
         {
             Debug.Assert(!rawHandle.IsVirtual);
             Debug.Assert(rawHandle.StringKind != StringKind.DotTerminated, "Not supported");

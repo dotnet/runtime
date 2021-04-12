@@ -21,12 +21,12 @@ namespace System.Reflection.Metadata.Ecma335
             public int AggregateInserts;
             public int Updates;
 
-            public int CompareTo(RowCounts other)
+            public readonly int CompareTo(RowCounts other)
             {
                 return AggregateInserts - other.AggregateInserts;
             }
 
-            public override string ToString()
+            public override readonly string ToString()
             {
                 return $"+0x{AggregateInserts:x} ~0x{Updates:x}";
             }

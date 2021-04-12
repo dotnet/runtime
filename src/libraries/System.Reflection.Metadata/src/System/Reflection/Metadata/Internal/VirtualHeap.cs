@@ -31,7 +31,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Length = length;
             }
 
-            public unsafe MemoryBlock GetMemoryBlock() =>
+            public unsafe readonly MemoryBlock GetMemoryBlock() =>
                 new MemoryBlock((byte*)Handle.AddrOfPinnedObject(), Length);
         }
 

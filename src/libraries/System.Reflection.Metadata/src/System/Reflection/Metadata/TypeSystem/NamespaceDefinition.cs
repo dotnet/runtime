@@ -20,7 +20,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Gets the unqualified name of the NamespaceDefinition.
         /// </summary>
-        public StringHandle Name
+        public readonly StringHandle Name
         {
             get { return _data.Name; }
         }
@@ -28,7 +28,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Gets the parent namespace.
         /// </summary>
-        public NamespaceDefinitionHandle Parent
+        public readonly NamespaceDefinitionHandle Parent
         {
             get { return _data.Parent; }
         }
@@ -41,7 +41,7 @@ namespace System.Reflection.Metadata
         /// System.Collections.Generic is a direct child of System.Collections.
         /// System.Collections.Generic is *not* a direct child of System.
         /// </summary>
-        public ImmutableArray<NamespaceDefinitionHandle> NamespaceDefinitions
+        public readonly ImmutableArray<NamespaceDefinitionHandle> NamespaceDefinitions
         {
             get { return _data.NamespaceDefinitions; }
         }
@@ -49,7 +49,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Gets all type definitions that reside directly in a namespace.
         /// </summary>
-        public ImmutableArray<TypeDefinitionHandle> TypeDefinitions
+        public readonly ImmutableArray<TypeDefinitionHandle> TypeDefinitions
         {
             get { return _data.TypeDefinitions; }
         }
@@ -57,7 +57,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Gets all exported types that reside directly in a namespace.
         /// </summary>
-        public ImmutableArray<ExportedTypeHandle> ExportedTypes
+        public readonly ImmutableArray<ExportedTypeHandle> ExportedTypes
         {
             get { return _data.ExportedTypes; }
         }
