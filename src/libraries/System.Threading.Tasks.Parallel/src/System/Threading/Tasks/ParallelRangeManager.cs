@@ -62,7 +62,7 @@ namespace System.Threading.Tasks
         // whether to use 32-bits or 64-bits of current index in each range
         internal readonly bool _use32BitCurrentIndex;
 
-        internal bool IsInitialized { get { return _indexRanges != null; } }
+        internal readonly bool IsInitialized { get { return _indexRanges != null; } }
 
         /// <summary>
         /// Initializes a RangeWorker struct

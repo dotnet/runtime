@@ -608,7 +608,7 @@ namespace System.Threading.Tasks
         /// Gets whether the loop ran to completion, such that all iterations of the loop were executed
         /// and the loop didn't receive a request to end prematurely.
         /// </summary>
-        public bool IsCompleted { get { return _completed; } }
+        public readonly bool IsCompleted { get { return _completed; } }
 
         /// <summary>
         /// Gets the index of the lowest iteration from which <see
@@ -619,6 +619,6 @@ namespace System.Threading.Tasks
         /// If <see cref="System.Threading.Tasks.ParallelLoopState.Break()"/> was not employed, this property will
         /// return null.
         /// </remarks>
-        public long? LowestBreakIteration { get { return _lowestBreakIteration; } }
+        public readonly long? LowestBreakIteration { get { return _lowestBreakIteration; } }
     }
 }
