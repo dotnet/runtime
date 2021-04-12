@@ -12,13 +12,9 @@
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <NoWarn>$(NoWarn);NU5128</NoWarn> <!-- No Dependencies-->
     <PackageDescription>Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.</PackageDescription>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+    
     <!-- When building from source, ensure the RID we're building for is part of the RID graph -->
-    <AdditionalRuntimeIdentifiers>$(AdditionalRuntimeIdentifiers);$(OutputRID)</AdditionalRuntimeIdentifiers>
-    <!-- Also ensure the RID we're bulding on is part of the RID graph, since this may be more specific -->
-    <AdditionalRuntimeIdentifiers>$(AdditionalRuntimeIdentifiers);$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</AdditionalRuntimeIdentifiers>
+    <AdditionalRuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalRuntimeIdentifiers);$(OutputRID)</AdditionalRuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
