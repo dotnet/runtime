@@ -31,7 +31,7 @@ namespace System.Runtime.Caching
             _ref = ((((uint)pageIndex) << PAGE_SHIFT) | (((uint)(entryIndex)) & ENTRY_MASK));
         }
 
-        public override bool Equals(object value)
+        public override readonly bool Equals(object value)
         {
             if (value is ExpiresEntryRef)
             {
@@ -50,12 +50,12 @@ namespace System.Runtime.Caching
             return r1._ref == r2._ref;
         }
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return (int)_ref;
         }
 
-        internal int PageIndex
+        internal readonly int PageIndex
         {
             get
             {
@@ -64,7 +64,7 @@ namespace System.Runtime.Caching
             }
         }
 
-        internal int Index
+        internal readonly int Index
         {
             get
             {
@@ -73,7 +73,7 @@ namespace System.Runtime.Caching
             }
         }
 
-        internal bool IsInvalid
+        internal readonly bool IsInvalid
         {
             get
             {
