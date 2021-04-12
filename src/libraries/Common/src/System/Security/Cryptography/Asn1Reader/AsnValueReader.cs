@@ -19,9 +19,9 @@ namespace System.Formats.Asn1
             _ruleSet = ruleSet;
         }
 
-        internal bool HasData => !_span.IsEmpty;
+        internal readonly bool HasData => !_span.IsEmpty;
 
-        internal void ThrowIfNotEmpty()
+        internal readonly void ThrowIfNotEmpty()
         {
             if (!_span.IsEmpty)
             {
@@ -29,12 +29,12 @@ namespace System.Formats.Asn1
             }
         }
 
-        internal Asn1Tag PeekTag()
+        internal readonly Asn1Tag PeekTag()
         {
             return Asn1Tag.Decode(_span, out _);
         }
 
-        internal ReadOnlySpan<byte> PeekEncodedValue()
+        internal readonly ReadOnlySpan<byte> PeekEncodedValue()
         {
             AsnDecoder.ReadEncodedValue(_span, _ruleSet, out _, out _, out int consumed);
             return _span.Slice(0, consumed);
