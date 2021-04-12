@@ -139,7 +139,7 @@ namespace System.Formats.Asn1
     {
         private int _dummyPrimitive;
         public bool SkipSetSortOrderVerification { readonly get { throw null; } set { } }
-        public int UtcTimeTwoDigitYearMax { get { throw null; } set { } }
+        public int UtcTimeTwoDigitYearMax { readonly get { throw null; } set { } }
     }
     public sealed partial class AsnWriter
     {

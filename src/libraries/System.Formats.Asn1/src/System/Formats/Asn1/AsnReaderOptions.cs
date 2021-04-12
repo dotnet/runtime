@@ -18,7 +18,7 @@ namespace System.Formats.Asn1
         /// <value>The largest year to represent with a UtcTime value. The default is 2049.</value>
         public int UtcTimeTwoDigitYearMax
         {
-            get
+            readonly get
             {
                 if (_twoDigitYearMax == 0)
                 {
