@@ -1805,7 +1805,7 @@ private:
 
         // Seed the loop block set and worklist with the entry block.
         loopBlocks.Reset(entry->bbNum);
-        jitstd::list<BasicBlock*> worklist(comp->getAllocator());
+        jitstd::list<BasicBlock*> worklist(comp->getAllocator(CMK_LoopOpt));
         worklist.push_back(entry);
 
         while (!worklist.empty())
@@ -3781,7 +3781,7 @@ void Compiler::optUnrollLoops()
 
         /* Create the unrolled loop statement list */
         {
-            BlockToBlockMap blockMap(getAllocator());
+            BlockToBlockMap blockMap(getAllocator(CMK_LoopOpt));
             BasicBlock*     insertAfter = bottom;
 
             for (lval = lbeg; totalIter; totalIter--)
@@ -4725,7 +4725,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         }
         else if (loop->lpFlags & LPFLG_ARRLEN_LIMIT)
         {
-            ArrIndex* index = new (getAllocator()) ArrIndex(getAllocator());
+            ArrIndex* index = new (getAllocator(CMK_LoopClone)) ArrIndex(getAllocator(CMK_LoopClone));
             if (!loop->lpArrLenLimit(this, index))
             {
                 JITDUMP("> ArrLen not matching");
@@ -4768,8 +4768,8 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                     // limit <= mdArrLen
                     LcMdArrayOptInfo* mdArrInfo = optInfo->AsLcMdArrayOptInfo();
                     LC_Condition      cond(GT_LE, LC_Expr(ident),
-                                      LC_Expr(LC_Ident(LC_Array(LC_Array::MdArray,
-                                                                mdArrInfo->GetArrIndexForDim(getAllocator()),
+                                      LC_Expr(LC_Ident(LC_Array(LC_Array::MdArray, mdArrInfo->GetArrIndexForDim(
+                                                                                       getAllocator(CMK_LoopClone)),
                                                                 mdArrInfo->dim, LC_Array::None))));
                     context->EnsureConditions(loopNum)->Push(cond);
                 }
@@ -4895,7 +4895,7 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
 //
 bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* context)
 {
-    JitExpandArrayStack<LC_Deref*> nodes(getAllocator());
+    JitExpandArrayStack<LC_Deref*> nodes(getAllocator(CMK_LoopClone));
     int                            maxRank = -1;
 
     // Get the dereference-able arrays.
@@ -4913,7 +4913,7 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
         LC_Deref* node = LC_Deref::Find(&nodes, array.arrIndex->arrLcl);
         if (node == nullptr)
         {
-            node = new (getAllocator()) LC_Deref(array, 0 /*level*/);
+            node = new (getAllocator(CMK_LoopClone)) LC_Deref(array, 0 /*level*/);
             nodes.Push(node);
         }
 
@@ -4922,11 +4922,11 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
         unsigned rank = (unsigned)array.GetDimRank();
         for (unsigned i = 0; i < rank; ++i)
         {
-            node->EnsureChildren(getAllocator());
+            node->EnsureChildren(getAllocator(CMK_LoopClone));
             LC_Deref* tmp = node->Find(array.arrIndex->indLcls[i]);
             if (tmp == nullptr)
             {
-                tmp = new (getAllocator()) LC_Deref(array, node->level + 1);
+                tmp = new (getAllocator(CMK_LoopClone)) LC_Deref(array, node->level + 1);
                 node->children->Push(tmp);
             }
 
@@ -5269,7 +5269,7 @@ void Compiler::optCloneLoops()
 
     unsigned optStaticallyOptimizedLoops = 0;
 
-    LoopCloneContext context(optLoopCount, getAllocator());
+    LoopCloneContext context(optLoopCount, getAllocator(CMK_LoopClone));
 
     // Obtain array optimization candidates in the context.
     optObtainLoopCloningOpts(&context);
@@ -5477,7 +5477,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     BasicBlock* newFirst = nullptr;
     BasicBlock* newBot   = nullptr;
 
-    BlockToBlockMap* blockMap = new (getAllocator()) BlockToBlockMap(getAllocator());
+    BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
     for (BasicBlock* blk = loop.lpFirst; blk != loop.lpBottom->bbNext; blk = blk->bbNext)
     {
         BasicBlock* newBlk = fgNewBBafter(blk->bbJumpKind, newPred, /*extendRegion*/ true);
@@ -5692,7 +5692,7 @@ void Compiler::optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambien
     BlockSetOps::Assign(this, h2->bbReach, e->bbReach);
 
     // Redirect paths from preds of "e" to go to "h2" instead of "e".
-    BlockToBlockMap* blockMap = new (getAllocator()) BlockToBlockMap(getAllocator());
+    BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
     blockMap->Set(e, h2);
 
     for (flowList* predEntry = e->bbPreds; predEntry; predEntry = predEntry->flNext)
@@ -8820,7 +8820,7 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 //
 Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info)
 {
-    ArrIndex arrIndex(getAllocator());
+    ArrIndex arrIndex(getAllocator(CMK_LoopClone));
 
     // Check if array index can be optimized.
     if (optReconstructArrIndex(tree, &arrIndex, BAD_VAR_NUM))
