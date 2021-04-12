@@ -2666,12 +2666,10 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 {
     const unsigned lclNum = tree->GetLclNum();
 
-#if FEATURE_ANYCSE
     if (lclNumIsCSE(lclNum))
     {
         return nullptr;
     }
-#endif
 
     GenTree* newTree = tree;
 
@@ -5167,13 +5165,11 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
             {
                 return WALK_CONTINUE;
             }
-#if FEATURE_ANYCSE
             // Let's not conflict with CSE (to save the movw/movt).
             if (lclNumIsCSE(tree->AsLclVarCommon()->GetLclNum()))
             {
                 return WALK_CONTINUE;
             }
-#endif
             break;
 
         default:

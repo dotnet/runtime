@@ -10805,7 +10805,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     }
     else if (ilNum == (unsigned)ICorDebugInfo::UNKNOWN_ILNUM)
     {
-#if FEATURE_ANYCSE
         if (lclNumIsTrueCSE(lclNum))
         {
             ilKind = "cse";
@@ -10819,7 +10818,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             ilNum  = lclNum - (optCSEstart + optCSEcount);
         }
         else
-#endif // FEATURE_ANYCSE
         {
             if (lclNum == info.compLvFrameListRoot)
             {
