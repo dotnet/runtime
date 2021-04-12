@@ -22,6 +22,10 @@ namespace System.Reflection.Metadata
 }
 namespace System.Runtime.Loader
 {
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
     public sealed partial class AssemblyDependencyResolver
     {
         public AssemblyDependencyResolver(string componentAssemblyPath) { }

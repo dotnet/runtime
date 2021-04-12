@@ -5,11 +5,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using Internal.IO;
 
 namespace System.Runtime.Loader
 {
+    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
+    [UnsupportedOSPlatform("android")]
     public sealed class AssemblyDependencyResolver
     {
         /// <summary>

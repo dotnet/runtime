@@ -827,7 +827,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64DebugView_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Enums.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\AssemblyDependencyResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\AssemblyLoadContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.cs" />
@@ -1181,6 +1180,15 @@
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true' and '$(IsiOSLike)' != 'true' and '$(TargetsAndroid)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\Interop.HostPolicy.cs">
+      <Link>Common\Interop\Interop.HostPolicy.cs</Link>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\AssemblyDependencyResolver.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(IsiOSLike)' == 'true' or '$(TargetsAndroid)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\AssemblyDependencyResolver.Unsupported.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ActivityControl.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.ActivityControl.cs</Link>
@@ -1190,9 +1198,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EVENT_INFO_CLASS.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.EVENT_INFO_CLASS.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.HostPolicy.cs">
-      <Link>Common\Interop\Interop.HostPolicy.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\ActivityTracker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\DiagnosticCounter.cs" />
