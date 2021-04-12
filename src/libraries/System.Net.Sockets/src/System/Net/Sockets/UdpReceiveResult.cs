@@ -37,7 +37,7 @@ namespace System.Net.Sockets
         /// <summary>
         /// Gets a buffer with the data received in the UDP packet
         /// </summary>
-        public byte[] Buffer
+        public readonly byte[] Buffer
         {
             get
             {
@@ -48,7 +48,7 @@ namespace System.Net.Sockets
         /// <summary>
         /// Gets the remote endpoint from which the UDP packet was received
         /// </summary>
-        public IPEndPoint RemoteEndPoint
+        public readonly IPEndPoint RemoteEndPoint
         {
             get
             {
@@ -60,7 +60,7 @@ namespace System.Net.Sockets
         /// Returns the hash code for this instance.
         /// </summary>
         /// <returns>The hash code</returns>
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return (_buffer != null) ? (_buffer.GetHashCode() ^ _remoteEndPoint.GetHashCode()) : 0;
         }
@@ -70,7 +70,7 @@ namespace System.Net.Sockets
         /// </summary>
         /// <param name="obj">The object to compare with this instance</param>
         /// <returns>true if obj is an instance of <see cref="UdpReceiveResult"/> and equals the value of the instance; otherwise, false</returns>
-        public override bool Equals([NotNullWhen(true)] object? obj) =>
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) =>
             obj is UdpReceiveResult other && Equals(other);
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace System.Net.Sockets
         /// </summary>
         /// <param name="other">The object to compare with this instance</param>
         /// <returns>true if other is an instance of <see cref="UdpReceiveResult"/> and equals the value of the instance; otherwise, false</returns>
-        public bool Equals(UdpReceiveResult other)
+        public readonly bool Equals(UdpReceiveResult other)
         {
             return object.Equals(_buffer, other._buffer) && object.Equals(_remoteEndPoint, other._remoteEndPoint);
         }

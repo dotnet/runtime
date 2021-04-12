@@ -16,7 +16,7 @@ namespace System.Net.Sockets
             _networkInterface = networkInterface;
         }
 
-        public IPAddress Address
+        public readonly IPAddress Address
         {
             get
             {
@@ -24,7 +24,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public int Interface
+        public readonly int Interface
         {
             get
             {
@@ -44,10 +44,10 @@ namespace System.Net.Sockets
             return !(packetInformation1 == packetInformation2);
         }
 
-        public override bool Equals([NotNullWhen(true)] object? comparand) =>
+        public override readonly bool Equals([NotNullWhen(true)] object? comparand) =>
             comparand is IPPacketInformation other && this == other;
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return unchecked(_networkInterface.GetHashCode() * (int)0xA5555529) +
                 (_address == null ? 0 : _address.GetHashCode());

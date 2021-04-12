@@ -5,8 +5,8 @@ namespace System.Net.Sockets
 {
     public struct SocketInformation
     {
-        public byte[] ProtocolInformation { get; set; }
-        public SocketInformationOptions Options { get; set; }
+        public byte[] ProtocolInformation { readonly get; set; }
+        public SocketInformationOptions Options { readonly get; set; }
 
         internal void SetOption(SocketInformationOptions option, bool value)
         {
@@ -14,7 +14,7 @@ namespace System.Net.Sockets
             else Options &= ~option;
         }
 
-        internal bool GetOption(SocketInformationOptions option)
+        internal readonly bool GetOption(SocketInformationOptions option)
         {
             return (Options & option) == option;
         }

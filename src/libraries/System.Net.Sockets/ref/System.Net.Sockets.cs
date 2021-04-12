@@ -78,10 +78,10 @@ namespace System.Net.Sockets
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public System.Net.IPAddress Address { get { throw null; } }
-        public int Interface { get { throw null; } }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? comparand) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public readonly System.Net.IPAddress Address { get { throw null; } }
+        public readonly int Interface { get { throw null; } }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? comparand) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static bool operator ==(System.Net.Sockets.IPPacketInformation packetInformation1, System.Net.Sockets.IPPacketInformation packetInformation2) { throw null; }
         public static bool operator !=(System.Net.Sockets.IPPacketInformation packetInformation1, System.Net.Sockets.IPPacketInformation packetInformation2) { throw null; }
     }
@@ -151,7 +151,7 @@ namespace System.Net.Sockets
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void WriteByte(byte value) { }
     }
     public enum ProtocolFamily
@@ -757,11 +757,11 @@ namespace System.Net.Sockets
         private object _dummy;
         private int _dummyPrimitive;
         public UdpReceiveResult(byte[] buffer, System.Net.IPEndPoint remoteEndPoint) { throw null; }
-        public byte[] Buffer { get { throw null; } }
-        public System.Net.IPEndPoint RemoteEndPoint { get { throw null; } }
-        public bool Equals(System.Net.Sockets.UdpReceiveResult other) { throw null; }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public readonly byte[] Buffer { get { throw null; } }
+        public readonly System.Net.IPEndPoint RemoteEndPoint { get { throw null; } }
+        public readonly bool Equals(System.Net.Sockets.UdpReceiveResult other) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static bool operator ==(System.Net.Sockets.UdpReceiveResult left, System.Net.Sockets.UdpReceiveResult right) { throw null; }
         public static bool operator !=(System.Net.Sockets.UdpReceiveResult left, System.Net.Sockets.UdpReceiveResult right) { throw null; }
     }

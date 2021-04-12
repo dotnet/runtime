@@ -742,9 +742,9 @@ namespace System.Net.Sockets
             // never around any external call, e.g. OS call or user code invocation.
             private object _queueLock;
 
-            private LockToken Lock() => new LockToken(_queueLock);
+            private readonly LockToken Lock() => new LockToken(_queueLock);
 
-            public bool IsNextOperationSynchronous_Speculative => _isNextOperationSynchronous;
+            public readonly bool IsNextOperationSynchronous_Speculative => _isNextOperationSynchronous;
 
             public void Init()
             {
@@ -1216,7 +1216,7 @@ namespace System.Net.Sockets
             }
 
             [Conditional("SOCKETASYNCCONTEXT_TRACE")]
-            public void Trace(SocketAsyncContext context, string message, [CallerMemberName] string? memberName = null)
+            public readonly void Trace(SocketAsyncContext context, string message, [CallerMemberName] string? memberName = null)
             {
                 string queueType =
                     typeof(TOperation) == typeof(ReadOperation) ? "recv" :
