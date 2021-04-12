@@ -17,8 +17,8 @@ namespace System.IO.Strategies
         private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
             => new Net5CompatFileStreamStrategy(handle, access, bufferSize, isAsync);
 
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options);
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long allocationSize)
+            => new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options, allocationSize);
 
         internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize)
         {
