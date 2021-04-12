@@ -357,7 +357,7 @@ namespace System
             if (component.Length == 1)
             {
                 int value = component[0] - '0';
-                if (value >= 0 && value <= 9)
+                if ((uint)value <= 9)
                 {
                     parsedComponent = value;
                     return true;
