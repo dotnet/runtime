@@ -7,7 +7,7 @@ namespace System.IO.Strategies
 {
     internal static partial class FileStreamHelpers
     {
-        // It's enabled by default. We are going to change that once we fix #16354, #25905 and #24847.
+        // It's enabled by default. We are going to change that once we fix #51141.
         internal static bool UseNet5CompatStrategy { get; } = GetNet5CompatFileStreamSetting();
 
         private static bool GetNet5CompatFileStreamSetting()
