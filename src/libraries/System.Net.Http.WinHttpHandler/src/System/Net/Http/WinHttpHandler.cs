@@ -966,16 +966,14 @@ namespace System.Net.Http
                         // This order is important because the response could be returned immediately
                         // with END_STREAM flag on headers. Trying to send request body after that
                         // can cause the request to go into a bad state.
-                        var valueTask = InternalReceiveResponseHeadersAsync(state);
+                        var receivedResponseTask = InternalReceiveResponseHeadersAsync(state);
 
                         if (state.RequestMessage.Content != null)
                         {
                             sendRequestBodyTask = InternalSendRequestBodyAsync(state, chunkedModeForSend);
                         }
 
-                        var value = await valueTask;
-
-                        bool receivedResponse = value != 0;
+                        bool receivedResponse = await receivedResponseTask != 0;
                         if (receivedResponse)
                         {
                             // If we're manually handling cookies, we need to add them to the container after
