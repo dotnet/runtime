@@ -1544,56 +1544,74 @@ decode_value (MonoType *t, guint8 *addr, const char* variableValue)
 			*(gunichar2*)addr = variableValue [0];
 			break;
 		case MONO_TYPE_I1: {
-			gint8 val = strtoimax (variableValue, &endptr, 10);
+			intmax_t val = strtoimax (variableValue, &endptr, 10);
 			if (errno != 0)
 				return FALSE;
-			*(gint8*)addr = val;
+			if (val >= -128 && val <= 127)
+				*(gint8*)addr = val;
+			else 
+				return FALSE;
 			break;
 		}
 		case MONO_TYPE_U1: {
-			guint8 val = strtoimax (variableValue, &endptr, 10);
+			intmax_t val = strtoimax (variableValue, &endptr, 10);
 			if (errno != 0)
 				return FALSE;
-			*(guint8*)addr = val;
+			if (val >= 0 && val <= 255)
+				*(guint8*)addr = val;
+			else 
+				return FALSE;
 			break;
 		}
 		case MONO_TYPE_I2: {
-			gint16 val = strtoimax (variableValue, &endptr, 10);
+			intmax_t val = strtoimax (variableValue, &endptr, 10);
 			if (errno != 0)
 				return FALSE;
-			*(gint16*)addr = val;
+			if (val >= -32768 && val <= 32767)
+				*(gint16*)addr = val;
+			else 
+				return FALSE;
 			break;
 		}
 		case MONO_TYPE_U2: {
-			guint16 val = strtoimax (variableValue, &endptr, 10);
+			intmax_t val = strtoimax (variableValue, &endptr, 10);
 			if (errno != 0)
 				return FALSE;
-			*(guint16*)addr = val;
+			if (val >= 0 && val <= 65535)
+				*(guint16*)addr = val;
+			else 
+				return FALSE;
 			break;
 		}
 		case MONO_TYPE_I4: {
-			gint32 val = strtoimax (variableValue, &endptr, 10);
+			intmax_t val = strtoimax (variableValue, &endptr, 10);
 			if (errno != 0)
 				return FALSE;
-			*(gint32*)addr = val;
+			if (val >= -2147483648 && val <= 2147483647)
+				*(gint32*)addr = val;
+			else 
+				return FALSE;
 			break;
 		}
 		case MONO_TYPE_U4: {
-			guint32 val = strtoimax (variableValue, &endptr, 10);
+			intmax_t val = strtoimax (variableValue, &endptr, 10);
 			if (errno != 0)
 				return FALSE;
-			*(guint32*)addr = val;
+			if (val >= 0 && val <= 4294967295)				
+				*(guint32*)addr = val;
+			else 
+				return FALSE;
 			break;
 		}
 		case MONO_TYPE_I8: {
-			gint64 val = strtoimax (variableValue, &endptr, 10);
+			long long val = strtoll (variableValue, &endptr, 10);
 			if (errno != 0)
 				return FALSE;
 			*(gint64*)addr = val;
 			break;
 		}
 		case MONO_TYPE_U8: {
-			guint64 val = strtol (variableValue, &endptr, 10);
+			long long val = strtoll (variableValue, &endptr, 10);
 			if (errno != 0)
 				return FALSE;
 			*(guint64*)addr = val;

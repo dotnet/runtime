@@ -231,6 +231,20 @@ namespace DebuggerTests
             Assert.True(false, $"Could not find variable '{name}'");
         }
 
+        internal void CheckNumberAsString(JToken locals, string name, string value)
+        {
+            foreach (var l in locals)
+            {
+                if (name != l["name"]?.Value<string>())
+                    continue;
+                var val = l["value"];
+                Assert.Equal("number", val["type"]?.Value<string>());
+                Assert.Equal(value, val["value"].ToString());
+                return;
+            }
+            Assert.True(false, $"Could not find variable '{name}'");
+        }
+
         internal void CheckString(JToken locals, string name, string value)
         {
             var l = GetAndAssertObjectWithName(locals, name);
