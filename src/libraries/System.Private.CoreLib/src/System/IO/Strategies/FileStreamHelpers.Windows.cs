@@ -18,6 +18,7 @@ namespace System.IO.Strategies
         internal const int ERROR_NO_DATA = 232;
         private const int ERROR_HANDLE_EOF = 38;
         private const int ERROR_IO_PENDING = 997;
+        private const uint ERROR_STATUS_DISK_FULL = 0xC000007F;
 
         private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
         {
@@ -33,28 +34,27 @@ namespace System.IO.Strategies
             return EnableBufferingIfNeeded(strategy, bufferSize);
         }
 
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long allocationSize)
         {
             if (UseNet5CompatStrategy)
             {
-                return new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options);
+                return new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options, allocationSize);
             }
 
             WindowsFileStreamStrategy strategy = (options & FileOptions.Asynchronous) != 0
-                ? new AsyncWindowsFileStreamStrategy(path, mode, access, share, options)
-                : new SyncWindowsFileStreamStrategy(path, mode, access, share, options);
+                ? new AsyncWindowsFileStreamStrategy(path, mode, access, share, options, allocationSize)
+                : new SyncWindowsFileStreamStrategy(path, mode, access, share, options, allocationSize);
 
             return EnableBufferingIfNeeded(strategy, bufferSize);
         }
 
-        // TODO: we might want to consider strategy.IsPipe here and never enable buffering for async pipes
         internal static FileStreamStrategy EnableBufferingIfNeeded(WindowsFileStreamStrategy strategy, int bufferSize)
             => bufferSize == 1 ? strategy : new BufferedFileStreamStrategy(strategy, bufferSize);
 
-        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
-            => CreateFileOpenHandle(path, mode, access, share, options);
+        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize)
+            => CreateFileOpenHandle(path, mode, access, share, options, allocationSize);
 
-        private static unsafe SafeFileHandle CreateFileOpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+        private static unsafe SafeFileHandle CreateFileOpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
 

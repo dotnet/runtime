@@ -130,6 +130,11 @@ namespace System.IO
         }
 
         public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+            : this(path, mode, access, share, bufferSize, options, 0)
+        {
+        }
+
+        public FileStream(string path, FileMode mode, FileAccess access, FileShare share = DefaultShare, int bufferSize = DefaultBufferSize, FileOptions options = FileOptions.None, long allocationSize = 0)
         {
             if (path == null)
             {
@@ -191,7 +196,7 @@ namespace System.IO
                 SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
             }
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, allocationSize);
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
