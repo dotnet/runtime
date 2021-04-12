@@ -546,8 +546,8 @@ namespace System.Text
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public System.Text.Rune Current { get { throw null; } }
-        public System.Text.SpanRuneEnumerator GetEnumerator() { throw null; }
+        public readonly System.Text.Rune Current { get { throw null; } }
+        public readonly System.Text.SpanRuneEnumerator GetEnumerator() { throw null; }
         public bool MoveNext() { throw null; }
     }
 }
