@@ -1997,19 +1997,9 @@ void Compiler::fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext
             optLoopTable[loopNum].lpEntry = block;
         }
 
-        /* Check the loop's first block */
-
-        if (optLoopTable[loopNum].lpFirst == bNext)
-        {
-            optLoopTable[loopNum].lpFirst = block;
-        }
-
-        /* Check the loop top */
-
-        if (optLoopTable[loopNum].lpTop == bNext)
-        {
-            optLoopTable[loopNum].lpTop = block;
-        }
+        /* Do not compact first/top block in loop */
+        assert(optLoopTable[loopNum].lpFirst != bNext);
+        assert(optLoopTable[loopNum].lpTop != bNext);
     }
 }
 
