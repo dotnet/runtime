@@ -13,7 +13,7 @@
 #
 # ./install-native-dependencies.sh <OS>
 
-if [ "$1" = "OSX" ] && [ "$2" = "arm64" ] && [ "$3" = "azDO" ]; then
+if [ "$1" = "MacCatalyst" ] || [ "$1" = "OSX" ] && [ "$2" = "arm64" ] && [ "$3" = "azDO" ]; then
     # On AzDO macOS-10.15 build agents the Xcode currently defaults to Xcode 11.7
     # Cross compilation for osx-arm64 requires xcode 12.2 or greater
     sudo xcode-select -s /Applications/Xcode_12.2.app/Contents/Developer
@@ -28,7 +28,7 @@ if [ "$1" = "Linux" ]; then
     if [ "$?" != "0" ]; then
         exit 1;
     fi
-elif [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
+elif [ "$1" = "MacCatalyst" ] || [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
     engdir=$(dirname "${BASH_SOURCE[0]}")
 
     if [ "$3" = "azDO" ]; then
