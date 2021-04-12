@@ -394,9 +394,19 @@ namespace System.Reflection
             private MethodBuilder AddMethodImpl(MethodInfo mi, int methodInfoIndex)
             {
                 ParameterInfo[] parameters = mi.GetParameters();
-                Type[] paramTypes = ParamTypes(parameters, false);
+                Type[] paramTypes = new Type[parameters.Length];
+                Type[][] paramReqMods = new Type[paramTypes.Length][];
 
-                MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, mi.ReturnType, paramTypes);
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    paramTypes[i] = parameters[i].ParameterType;
+                    paramReqMods[i] = parameters[i].GetRequiredCustomModifiers();
+                }
+
+                MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.Standard,
+                    mi.ReturnType, null, null,
+                    paramTypes, paramReqMods, null);
+
                 if (mi.ContainsGenericParameters)
                 {
                     Type[] ts = mi.GetGenericArguments();

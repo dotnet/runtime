@@ -29,7 +29,6 @@
 
   <ItemGroup>
     {AdditionalProjectReferences}
-    {TrimmerRootAssemblies}
   </ItemGroup>
 
   <!-- Logic to override the default IlLink tasks that come from the SDK and use the one

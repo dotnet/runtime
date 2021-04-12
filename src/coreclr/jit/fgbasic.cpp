@@ -969,7 +969,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Method);
                     eeGetCallInfo(&resolvedToken,
                                   (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                                  combine(CORINFO_CALLINFO_KINDONLY,
+                                  combine(combine(CORINFO_CALLINFO_KINDONLY, CORINFO_CALLINFO_ALLOWINSTPARAM),
                                           (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
                                   &callInfo);
 

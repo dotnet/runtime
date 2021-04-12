@@ -4964,6 +4964,16 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
         }
     }
 
+    if (reserve_success && separated_poh_p)
+    {
+        for (int heap_no = 0; (reserve_success && (heap_no < num_heaps)); heap_no++)
+        {
+            if (!GCToOSInterface::VirtualCommit(memory_details.initial_pinned_heap[heap_no].memory_base, pinned_size))
+            {
+                reserve_success = FALSE;
+            }
+        }
+    }
 
     return reserve_success;
 }
@@ -6581,7 +6591,6 @@ bool gc_heap::virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_
 
 void gc_heap::virtual_free (void* add, size_t allocated_size, heap_segment* sg)
 {
-    assert(!heap_hard_limit);
     bool release_succeeded_p = GCToOSInterface::VirtualRelease (add, allocated_size);
     if (release_succeeded_p)
     {
@@ -11739,6 +11748,11 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps, 
                                  use_large_pages_p, separated_poh_p, heap_no_to_numa_node))
         return E_OUTOFMEMORY;
+    if (separated_poh_p)
+    {
+        heap_hard_limit_oh[poh] = min_segment_size_hard_limit * number_of_heaps;
+        heap_hard_limit += heap_hard_limit_oh[poh];
+    }
 #endif //USE_REGIONS
 
 #ifdef CARD_BUNDLE
@@ -40125,6 +40139,10 @@ HRESULT GCHeap::Initialize()
         {
             return E_INVALIDARG;
         }
+        if (!gc_heap::heap_hard_limit_oh[poh] && !GCConfig::GetGCLargePages())
+        {
+            return E_INVALIDARG;
+        }
         gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[soh] + 
             gc_heap::heap_hard_limit_oh[loh] + gc_heap::heap_hard_limit_oh[poh];
     }
@@ -40344,7 +40362,12 @@ HRESULT GCHeap::Initialize()
 #ifdef MULTIPLE_HEAPS
     gc_heap::soh_segment_size /= 4;
 #endif //MULTIPLE_HEAPS
-    gc_heap::min_segment_size_shr = index_of_highest_set_bit (REGION_SIZE);
+    size_t gc_region_size = (size_t)GCConfig::GetGCRegionsSize();
+    if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
+    {
+        return E_INVALIDARG;
+    }
+    gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_region_size);
 #else
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_heap::min_segment_size);
 #endif //USE_REGIONS
