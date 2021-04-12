@@ -40,7 +40,7 @@ namespace System.Data.ProviderBase
                 _tag = 0;
             }
 
-            public bool HasTarget
+            public readonly bool HasTarget
             {
                 get
                 {
@@ -48,7 +48,7 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            public int Tag
+            public readonly int Tag
             {
                 get
                 {
@@ -56,7 +56,7 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            public object? Target
+            public readonly object? Target
             {
                 get
                 {
