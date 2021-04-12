@@ -689,6 +689,41 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         [Fact]
+        public async Task HostStopsApplicationWithOneBackgroundServiceErrorAndOthersWithoutError()
+        {
+            var executionCount = 0;
+            using IHost host = CreateBuilder()
+                .ConfigureServices(
+                    services =>
+                    {
+                        services.AddHostedService(_ => new TestBackgroundService(Task.Delay(200), i => executionCount = i));
+                        services.AddHostedService(_ => new AsyncThrowingService(Task.CompletedTask));
+                        services.Configure<HostOptions>(
+                            options =>
+                            options.BackgroundServiceExceptionBehavior =
+                                BackgroundServiceExceptionBehavior.StopHost);
+                    })
+                .Build();
+
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            var wasStartedCalled = false;
+            lifetime.ApplicationStarted.Register(() => wasStartedCalled = true);
+            var wasStoppingCalled = false;
+            lifetime.ApplicationStopping.Register(() => wasStoppingCalled = true);
+
+            await host.StartAsync();
+
+            Assert.True(
+                wasStartedCalled,
+                $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, started should not have been called.");
+            Assert.True(
+                wasStoppingCalled,
+                $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, stopping should have been called.");
+
+            Assert.True(executionCount > 0);
+        }
+
+        [Fact]
         public void HostHandlesExceptionsThrownWithBackgroundServiceExceptionBehaviorOfIgnore()
         {
             var backgroundDelayTaskSource = new TaskCompletionSource<bool>();
@@ -1429,6 +1464,29 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 DisposeAsyncCalled = true;
                 return default;
+            }
+        }
+
+        private class TestBackgroundService : BackgroundService
+        {
+            private readonly Action<int> _counter;
+            private readonly Task _emulateWorkTask;
+
+            private int _executionCount;
+
+            public TestBackgroundService(Task emulateWorkTask, Action<int> counter)
+            {
+                _emulateWorkTask = emulateWorkTask;
+                _counter = counter;
+            }
+
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                while (!stoppingToken.IsCancellationRequested)
+                {
+                    _counter(++_executionCount);
+                    await _emulateWorkTask;
+                }
             }
         }
 
