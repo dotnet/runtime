@@ -1944,7 +1944,7 @@ private:
     instrDescJmp* emitAllocInstrJmp()
     {
 #if EMITTER_STATS
-        emitTotalDescAlignCnt++;
+        emitTotalIDescJmpCnt++;
 #endif // EMITTER_STATS
         return (instrDescJmp*)emitAllocAnyInstr(sizeof(instrDescJmp), EA_1BYTE);
     }
@@ -2023,7 +2023,7 @@ private:
     instrDescAlign* emitAllocInstrAlign()
     {
 #if EMITTER_STATS
-        emitTotalIDescJmpCnt++;
+        emitTotalDescAlignCnt++;
 #endif // EMITTER_STATS
         return (instrDescAlign*)emitAllocAnyInstr(sizeof(instrDescAlign), EA_1BYTE);
     }
