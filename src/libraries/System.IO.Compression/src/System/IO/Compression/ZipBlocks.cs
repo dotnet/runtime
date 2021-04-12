@@ -17,12 +17,12 @@ namespace System.IO.Compression
         private ushort _size;
         private byte[] _data;
 
-        public ushort Tag => _tag;
+        public readonly ushort Tag => _tag;
         // returns size of data, not of the entire block
-        public ushort Size => _size;
-        public byte[] Data => _data;
+        public readonly ushort Size => _size;
+        public readonly byte[] Data => _data;
 
-        public void WriteBlock(Stream stream)
+        public readonly void WriteBlock(Stream stream)
         {
             BinaryWriter writer = new BinaryWriter(stream);
             writer.Write(Tag);
@@ -98,24 +98,24 @@ namespace System.IO.Compression
         private long? _localHeaderOffset;
         private int? _startDiskNumber;
 
-        public ushort TotalSize => (ushort)(_size + 4);
+        public readonly ushort TotalSize => (ushort)(_size + 4);
 
         public long? UncompressedSize
         {
-            get { return _uncompressedSize; }
+            readonly get { return _uncompressedSize; }
             set { _uncompressedSize = value; UpdateSize(); }
         }
         public long? CompressedSize
         {
-            get { return _compressedSize; }
+            readonly get { return _compressedSize; }
             set { _compressedSize = value; UpdateSize(); }
         }
         public long? LocalHeaderOffset
         {
-            get { return _localHeaderOffset; }
+            readonly get { return _localHeaderOffset; }
             set { _localHeaderOffset = value; UpdateSize(); }
         }
-        public int? StartDiskNumber => _startDiskNumber;
+        public readonly int? StartDiskNumber => _startDiskNumber;
 
         private void UpdateSize()
         {
@@ -273,7 +273,7 @@ namespace System.IO.Compression
                 extraFields.Remove(field);
         }
 
-        public void WriteBlock(Stream stream)
+        public readonly void WriteBlock(Stream stream)
         {
             BinaryWriter writer = new BinaryWriter(stream);
             writer.Write(TagConstant);
