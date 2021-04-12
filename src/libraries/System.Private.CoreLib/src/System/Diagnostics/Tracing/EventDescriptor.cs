@@ -94,23 +94,23 @@ namespace System.Diagnostics.Tracing
             m_task = (ushort)task;
         }
 
-        public int EventId => m_id;
-        public byte Version => m_version;
-        public byte Channel => m_channel;
-        public byte Level => m_level;
-        public byte Opcode => m_opcode;
-        public int Task => m_task;
-        public long Keywords => m_keywords;
+        public readonly int EventId => m_id;
+        public readonly byte Version => m_version;
+        public readonly byte Channel => m_channel;
+        public readonly byte Level => m_level;
+        public readonly byte Opcode => m_opcode;
+        public readonly int Task => m_task;
+        public readonly long Keywords => m_keywords;
 
-        internal int TraceLoggingId => m_traceloggingId;
+        internal readonly int TraceLoggingId => m_traceloggingId;
 
-        public override bool Equals([NotNullWhen(true)] object? obj) =>
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) =>
             obj is EventDescriptor ed && Equals(ed);
 
-        public override int GetHashCode() =>
+        public override readonly int GetHashCode() =>
             m_id ^ m_version ^ m_channel ^ m_level ^ m_opcode ^ m_task ^ (int)m_keywords;
 
-        public bool Equals(EventDescriptor other) =>
+        public readonly bool Equals(EventDescriptor other) =>
             m_id == other.m_id &&
             m_version == other.m_version &&
             m_channel == other.m_channel &&

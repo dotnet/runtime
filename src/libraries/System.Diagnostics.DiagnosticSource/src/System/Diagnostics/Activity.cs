@@ -1674,7 +1674,7 @@ namespace System.Diagnostics
                 _currentItem = default;
             }
 
-            public T Current => _currentItem!;
+            public readonly T Current => _currentItem!;
 
             object? IEnumerator.Current => Current;
 

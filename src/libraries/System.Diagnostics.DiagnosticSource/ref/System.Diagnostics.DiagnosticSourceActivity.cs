@@ -101,7 +101,7 @@ namespace System.Diagnostics
 
         public struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerator
         {
-            public System.Collections.Generic.KeyValuePair<string, object?> Current { get { throw null; } }
+            public readonly System.Collections.Generic.KeyValuePair<string, object?> Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { throw null; }
             public bool MoveNext() { throw null; }

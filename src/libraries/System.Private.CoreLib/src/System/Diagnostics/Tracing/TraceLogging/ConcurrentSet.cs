@@ -29,7 +29,7 @@ namespace System.Diagnostics.Tracing
     {
         private ItemType[]? items;
 
-        public ItemType? TryGet(KeyType key)
+        public readonly ItemType? TryGet(KeyType key)
         {
             ItemType? item;
             ItemType[]? oldItems = this.items;

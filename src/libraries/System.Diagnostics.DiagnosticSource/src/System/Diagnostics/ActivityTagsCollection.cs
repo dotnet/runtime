@@ -286,7 +286,7 @@ namespace System.Diagnostics
             private List<KeyValuePair<string, object?>>.Enumerator _enumerator;
             internal Enumerator(List<KeyValuePair<string, object?>> list) => _enumerator = list.GetEnumerator();
 
-            public KeyValuePair<string, object?> Current => _enumerator.Current;
+            public readonly KeyValuePair<string, object?> Current => _enumerator.Current;
             object IEnumerator.Current => ((IEnumerator)_enumerator).Current;
             public void Dispose() => _enumerator.Dispose();
             public bool MoveNext() => _enumerator.MoveNext();

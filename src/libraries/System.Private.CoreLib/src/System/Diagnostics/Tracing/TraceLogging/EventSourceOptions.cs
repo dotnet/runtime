@@ -37,7 +37,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventLevel Level
         {
-            get => (EventLevel)this.level;
+            readonly get => (EventLevel)this.level;
             set
             {
                 this.level = checked((byte)value);
@@ -51,7 +51,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventOpcode Opcode
         {
-            get => (EventOpcode)this.opcode;
+            readonly get => (EventOpcode)this.opcode;
             set
             {
                 this.opcode = checked((byte)value);
@@ -59,7 +59,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal bool IsOpcodeSet => (this.valuesSet & opcodeSet) != 0;
+        internal readonly bool IsOpcodeSet => (this.valuesSet & opcodeSet) != 0;
 
         /// <summary>
         /// Gets or sets the keywords to use for the specified event. If this
@@ -67,7 +67,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventKeywords Keywords
         {
-            get => this.keywords;
+            readonly get => this.keywords;
             set
             {
                 this.keywords = value;
@@ -81,7 +81,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventTags Tags
         {
-            get => this.tags;
+            readonly get => this.tags;
             set
             {
                 this.tags = value;
@@ -95,7 +95,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventActivityOptions ActivityOptions
         {
-            get => this.activityOptions;
+            readonly get => this.activityOptions;
             set
             {
                 this.activityOptions = value;

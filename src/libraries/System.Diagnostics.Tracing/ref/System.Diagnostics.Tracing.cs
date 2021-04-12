@@ -218,8 +218,8 @@ namespace System.Diagnostics.Tracing
         protected internal partial struct EventData
         {
             private int _dummyPrimitive;
-            public System.IntPtr DataPointer { get { throw null; } set { } }
-            public int Size { get { throw null; } set { } }
+            public System.IntPtr DataPointer { readonly get { throw null; } set { } }
+            public int Size { readonly get { throw null; } set { } }
         }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
@@ -246,11 +246,11 @@ namespace System.Diagnostics.Tracing
     public partial struct EventSourceOptions
     {
         private int _dummyPrimitive;
-        public System.Diagnostics.Tracing.EventActivityOptions ActivityOptions { get { throw null; } set { } }
-        public System.Diagnostics.Tracing.EventKeywords Keywords { get { throw null; } set { } }
-        public System.Diagnostics.Tracing.EventLevel Level { get { throw null; } set { } }
-        public System.Diagnostics.Tracing.EventOpcode Opcode { get { throw null; } set { } }
-        public System.Diagnostics.Tracing.EventTags Tags { get { throw null; } set { } }
+        public System.Diagnostics.Tracing.EventActivityOptions ActivityOptions { readonly get { throw null; } set { } }
+        public System.Diagnostics.Tracing.EventKeywords Keywords { readonly get { throw null; } set { } }
+        public System.Diagnostics.Tracing.EventLevel Level { readonly get { throw null; } set { } }
+        public System.Diagnostics.Tracing.EventOpcode Opcode { readonly get { throw null; } set { } }
+        public System.Diagnostics.Tracing.EventTags Tags { readonly get { throw null; } set { } }
     }
     [System.FlagsAttribute]
     public enum EventSourceSettings
