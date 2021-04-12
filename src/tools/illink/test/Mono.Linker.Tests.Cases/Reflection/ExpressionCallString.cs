@@ -9,6 +9,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[SetupCSharpCompilerToUse ("csc")]
 	[Reference ("System.Core.dll")]
+	[ExpectedNoWarnings]
 	public class ExpressionCallString
 	{
 		public static void Main ()
@@ -231,19 +232,112 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{ }
 
 			[Kept]
-			// BUG:https://github.com/mono/linker/issues/1819
-			// [ExpectedWarning("IL9999", nameof(GenericMethodWithRequirements))]
-			public static void Test ()
+			public static void GenericMethodWithRequirementsNoArguments<
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> ()
+			{ }
+
+			[Kept]
+			static void TestWithNoTypeParameters ()
 			{
 				// Linker doesn't check if it's valid to call a generic method without generic parameters, it looks like a non-generic call
 				// so it will preserve the target method.
 				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodCalledAsNonGeneric), Type.EmptyTypes);
+			}
 
+			[Kept]
+			static void TestMethodWithoutRequirements ()
+			{
 				// This may not warn - as it's safe
 				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodWithNoRequirements), new Type[] { GetUnknownType () });
+			}
 
+			[Kept]
+			[ExpectedWarning ("IL2060", "Expression::Call")]
+			static void TestMethodWithRequirements ()
+			{
 				// This must warn - as this is dangerous
 				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodWithRequirements), new Type[] { GetUnknownType () });
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2060", "Expression::Call")]
+			static void TestMethodWithRequirementsButNoTypeArguments ()
+			{
+				// Linker could figure out that this is not a problem, but it's not worth the complexity, since this will always throw at runtime
+				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodWithRequirementsNoArguments), Type.EmptyTypes);
+			}
+
+			[Kept]
+			[KeptMember (".cctor()")]
+			class UnknownMethodWithRequirements
+			{
+				[Kept]
+				public static void GenericMethodWithRequirements<
+					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> ()
+				{ }
+
+				[Kept]
+				static string _unknownMethodName = "NoMethod";
+
+				[Kept]
+				[ExpectedWarning ("IL2060")]
+				public static void TestWithTypeParameters ()
+				{
+					// Linker has no idea which method to mark - so it should warn if there are type parameters
+					Expression.Call (typeof (UnknownMethodWithRequirements), _unknownMethodName, new Type[] { GetUnknownType () });
+				}
+
+				[Kept]
+				public static void TestWithoutTypeParameters ()
+				{
+					// Linker has no idea which method to mark - so it should warn if there are type parameters
+					Expression.Call (typeof (UnknownMethodWithRequirements), _unknownMethodName, Type.EmptyTypes);
+				}
+			}
+
+			[Kept]
+			[KeptMember (".cctor()")]
+			class UnknownTypeWithRequirements
+			{
+				public static void GenericMethodWithRequirements<
+					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> ()
+				{ }
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+				static Type _unknownType = null;
+
+				[Kept]
+				[ExpectedWarning ("IL2060")]
+				public static void TestWithTypeParameters ()
+				{
+					// Linker has no idea which method to mark - so it should warn if there are type parameters
+					Expression.Call (_unknownType, "NoMethod", new Type[] { GetUnknownType () });
+				}
+
+				[Kept]
+				public static void TestWithoutTypeParameters ()
+				{
+					// Linker has no idea which method to mark - so it should warn if there are type parameters
+					Expression.Call (_unknownType, "NoMethod", Type.EmptyTypes);
+				}
+			}
+
+			[Kept]
+			public static void Test ()
+			{
+				TestWithNoTypeParameters ();
+				TestMethodWithoutRequirements ();
+				TestMethodWithRequirements ();
+				TestMethodWithRequirementsButNoTypeArguments ();
+				UnknownMethodWithRequirements.TestWithTypeParameters ();
+				UnknownMethodWithRequirements.TestWithoutTypeParameters ();
+				UnknownTypeWithRequirements.TestWithTypeParameters ();
+				UnknownTypeWithRequirements.TestWithoutTypeParameters ();
 			}
 
 			[Kept]
