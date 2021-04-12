@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace System.Timers
 {
@@ -26,7 +27,7 @@ namespace System.Timers
         internal TimersDescriptionAttribute(string description, string unused) : base(SR.GetResourceString(description))
         {
             // Needed for overload resolution
-            System.Diagnostics.Debug.Assert(unused == null);
+            Debug.Assert(unused == null);
         }
 
         /// <summary>
