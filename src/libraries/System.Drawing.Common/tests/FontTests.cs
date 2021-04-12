@@ -985,11 +985,22 @@ namespace System.Drawing.Tests
         {
             using (FontFamily family1 = FontFamily.GenericSansSerif)
             using (var font1 = new Font(family1, 1, FontStyle.Bold, GraphicsUnit.Point))
-            //Create a font with just the different name, Size, Style, and unit same.
+
             using (FontFamily family2 = FontFamily.GenericSerif)
             using (var font2 = new Font(family2, 1, FontStyle.Bold, GraphicsUnit.Point))
-            {                
-                Assert.NotEqual(font1.GetHashCode(), font2.GetHashCode());
+
+            using (FontFamily family3 = FontFamily.GenericMonospace)
+            using (var font3 = new Font(family3, 1, FontStyle.Bold, GraphicsUnit.Point))
+            {
+                if (font1 != font2)
+                {
+                    Assert.NotEqual(font1.GetHashCode(), font2.GetHashCode());
+                }
+                else
+                {
+                    Assert.NotEqual(font1, font3);
+                    Assert.NotEqual(font1.GetHashCode(), font3.GetHashCode());
+                }
             }
         }
     }
