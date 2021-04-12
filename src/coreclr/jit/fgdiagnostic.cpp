@@ -622,7 +622,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     }
 
     bool        validWeights  = fgHaveValidEdgeWeights;
-    double      weightDivisor = (double)(fgCalledCount == BB_ZERO_WEIGHT ? 1.0 : fgCalledCount); // avoid divide by zero
+    double      weightDivisor = (double)BasicBlock::getCalledCount(this);
     const char* escapedString;
     const char* regionString = "NONE";
 

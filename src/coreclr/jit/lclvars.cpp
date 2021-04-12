@@ -3239,6 +3239,7 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 //  if we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (100)
 //  otherwise it returns the number of times that profile data says the method was called.
 //
+// static
 BasicBlock::weight_t BasicBlock::getCalledCount(Compiler* comp)
 {
     // when we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)
