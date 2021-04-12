@@ -30,7 +30,8 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: release
     platforms:
-     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    - windows_x64
+    # - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: gc-largepages
       liveLibrariesBuildConfig: Release
