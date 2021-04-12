@@ -292,7 +292,7 @@ namespace System.Xml.Linq
             }
         }
 
-        private string? GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
+        private readonly string? GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
         {
             string namespaceName = ns.NamespaceName;
             if (namespaceName.Length == 0) return string.Empty;
@@ -556,7 +556,7 @@ namespace System.Xml.Linq
             }
         }
 
-        private string? GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
+        private readonly string? GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
         {
             string namespaceName = ns.NamespaceName;
             if (namespaceName.Length == 0) return string.Empty;
