@@ -15,9 +15,9 @@ namespace System.Net.WebSockets.Compression
             = new ZLibStreamPool[WebSocketValidate.MaxDeflateWindowBits - WebSocketValidate.MinDeflateWindowBits + 1];
 
         /// <summary>
-        /// The amount of time after which a cached item will be removed.
+        /// The default amount of time after which a cached item will be removed.
         /// </summary>
-        private const int TimeoutMilliseconds = 60_000;
+        private const int DefaultTimeoutMilliseconds = 60_000;
 
         private readonly int _windowBits;
         private readonly List<CacheItem> _inflaters = new();
@@ -25,14 +25,20 @@ namespace System.Net.WebSockets.Compression
         private readonly Timer _cleaningTimer;
 
         /// <summary>
+        /// The amount of time after which a cached item will be removed.
+        /// </summary>
+        private readonly int _timeoutMilliseconds;
+
+        /// <summary>
         /// The number of cached inflaters and deflaters.
         /// </summary>
         private int _activeCount;
 
-        private ZLibStreamPool(int windowBits)
+        private ZLibStreamPool(int windowBits, int timeoutMilliseconds)
         {
             // Use negative window bits to for raw deflate data
             _windowBits = -windowBits;
+            _timeoutMilliseconds = timeoutMilliseconds;
 
             bool restoreFlow = false;
             try
@@ -70,7 +76,7 @@ namespace System.Net.WebSockets.Compression
 
             static ZLibStreamPool EnsureInitialized(int windowBits, ref ZLibStreamPool? target)
             {
-                Interlocked.CompareExchange(ref target, new ZLibStreamPool(windowBits), null);
+                Interlocked.CompareExchange(ref target, new ZLibStreamPool(windowBits, DefaultTimeoutMilliseconds), null);
 
                 Debug.Assert(target != null);
                 return target;
@@ -127,7 +133,7 @@ namespace System.Net.WebSockets.Compression
 
                 if (Interlocked.Increment(ref _activeCount) == 1)
                 {
-                    _cleaningTimer.Change(TimeoutMilliseconds, Timeout.Infinite);
+                    _cleaningTimer.Change(_timeoutMilliseconds, Timeout.Infinite);
                 }
             }
         }
@@ -163,7 +169,7 @@ namespace System.Net.WebSockets.Compression
             // would eventually do nothing.
             if (_activeCount > 0)
             {
-                _cleaningTimer.Change(TimeoutMilliseconds, Timeout.Infinite);
+                _cleaningTimer.Change(_timeoutMilliseconds, Timeout.Infinite);
             }
         }
 
@@ -178,7 +184,7 @@ namespace System.Net.WebSockets.Compression
                 {
                     CacheItem item = cache[index];
 
-                    if (currentTimestamp - item.Timestamp > TimeoutMilliseconds)
+                    if (currentTimestamp - item.Timestamp > _timeoutMilliseconds)
                     {
                         removedStreams ??= new List<ZLibStreamHandle>();
                         removedStreams.Add(item.Stream);

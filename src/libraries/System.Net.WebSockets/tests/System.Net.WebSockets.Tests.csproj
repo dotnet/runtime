@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
@@ -10,6 +10,7 @@
     <Compile Include="WebSocketTestStream.cs" />
     <Compile Include="WebSocketDeflateOptionsTests.cs" />
     <Compile Include="WebSocketDeflateTests.cs" />
+    <Compile Include="ZLibStreamTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
              Link="Common\System\Net\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.WebSockets.cs"
