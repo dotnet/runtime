@@ -5,7 +5,7 @@
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup>
     <BuildAOTTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(Scenario)' == 'BuildWasmApps'">helix</BuildAOTTestsOn>
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">helix</BuildAOTTestsOn>
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOn)' == ''">local</BuildAOTTestsOn>
@@ -29,7 +29,7 @@
     <RunScriptCommand>$HARNESS_RUNNER $(_XHarnessArgs) %24WasmXHarnessArgs -- $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true'">
+  <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
     <_AOTBuildCommand>dotnet msbuild publish/AOTTestProjectForHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
@@ -54,11 +54,11 @@
 
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.props"
-          Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOn)' == 'local'" />
+          Condition="'$(BuildAOTTestsOn)' == 'local'" />
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets"
-          Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOn)' == 'local'" />
+          Condition="'$(BuildAOTTestsOn)' == 'local'" />
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
       <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
 
@@ -68,9 +68,9 @@
       <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
   </PropertyGroup>
 
-  <Target Name="BundleTestWasmApp" Condition="'$(TargetOS)' == 'Browser'" DependsOnTargets="$(BundleTestWasmAppDependsOn)" />
+  <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" />
 
-  <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true' and '$(TargetOS)' == 'Browser'"
+  <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true'"
              TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateAOTProps"
              AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="PrepareForWasmBuildApp">
@@ -111,7 +111,7 @@
   <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
    attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation 
    payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
-  <Target Name="StageEmSdkForHelix" Condition="'$(TargetOS)' == 'Browser' and ('$(EmSdkDirForHelixPayload)' == '' or !Exists($(EmSdkDirForHelixPayload)))">
+  <Target Name="StageEmSdkForHelix" Condition="'$(EmSdkDirForHelixPayload)' == '' or !Exists($(EmSdkDirForHelixPayload))">
     <Error Condition="'$(EMSDK_PATH)' == '' or !Exists($(EMSDK_PATH))" Text="Could not find emscripten sdk in $(EmSdkDirForHelixPayload) or in EMSDK_PATH=$(EMSDK_PATH)" />
 
     <ItemGroup>
@@ -122,7 +122,7 @@
     <Copy SourceFiles="@(EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
   </Target>
 
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
+  <Target Name="PrepareForWasmBuildApp">
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
