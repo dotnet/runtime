@@ -26,7 +26,7 @@ namespace System.Timers
         internal TimersDescriptionAttribute(string description, string unused) : base(SR.GetResourceString(description))
         {
             // Needed for overload resolution
-            Debug.Assert(unused == null);
+            System.Diagnostics.Debug.Assert(unused == null);
         }
 
         /// <summary>
