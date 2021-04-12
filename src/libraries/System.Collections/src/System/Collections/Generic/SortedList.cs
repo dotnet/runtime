@@ -830,7 +830,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            public KeyValuePair<TKey, TValue> Current => new KeyValuePair<TKey, TValue>(_key!, _value!);
+            public readonly KeyValuePair<TKey, TValue> Current => new KeyValuePair<TKey, TValue>(_key!, _value!);
 
             object? IEnumerator.Current
             {

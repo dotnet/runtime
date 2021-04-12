@@ -542,7 +542,7 @@ namespace System.Collections.Generic
                 _index = 0;
             }
 
-            public T Current => _current!;
+            public readonly T Current => _current!;
 
             object? IEnumerator.Current
             {

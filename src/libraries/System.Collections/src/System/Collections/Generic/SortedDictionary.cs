@@ -475,7 +475,7 @@ namespace System.Collections.Generic
                 _treeEnum.Dispose();
             }
 
-            public KeyValuePair<TKey, TValue> Current
+            public readonly KeyValuePair<TKey, TValue> Current
             {
                 get
                 {
@@ -483,7 +483,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            internal bool NotStartedOrEnded
+            internal readonly bool NotStartedOrEnded
             {
                 get
                 {
@@ -716,7 +716,7 @@ namespace System.Collections.Generic
                     return _dictEnum.MoveNext();
                 }
 
-                public TKey Current
+                public readonly TKey Current
                 {
                     get
                     {
@@ -898,7 +898,7 @@ namespace System.Collections.Generic
                     return _dictEnum.MoveNext();
                 }
 
-                public TValue Current
+                public readonly TValue Current
                 {
                     get
                     {

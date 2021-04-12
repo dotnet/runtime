@@ -1999,7 +1999,7 @@ namespace System.Collections.Generic
 
             public void Dispose() { }
 
-            public T Current
+            public readonly T Current
             {
                 get
                 {
@@ -2024,7 +2024,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            internal bool NotStartedOrEnded => _current == null;
+            internal readonly bool NotStartedOrEnded => _current == null;
 
             internal void Reset()
             {

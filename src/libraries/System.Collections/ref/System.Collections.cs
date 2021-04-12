@@ -113,7 +113,7 @@ namespace System.Collections.Generic
         {
             private object _dummy;
             private int _dummyPrimitive;
-            public System.Collections.Generic.KeyValuePair<TKey, TValue> Current { get { throw null; } }
+            public readonly System.Collections.Generic.KeyValuePair<TKey, TValue> Current { get { throw null; } }
             System.Collections.DictionaryEntry System.Collections.IDictionaryEnumerator.Entry { get { throw null; } }
             object System.Collections.IDictionaryEnumerator.Key { get { throw null; } }
             object? System.Collections.IDictionaryEnumerator.Value { get { throw null; } }
@@ -143,7 +143,7 @@ namespace System.Collections.Generic
                 private TKey _currentKey;
                 private object _dummy;
                 private int _dummyPrimitive;
-                public TKey Current { get { throw null; } }
+                public readonly TKey Current { get { throw null; } }
                 object? System.Collections.IEnumerator.Current { get { throw null; } }
                 public void Dispose() { }
                 public bool MoveNext() { throw null; }
@@ -171,7 +171,7 @@ namespace System.Collections.Generic
                 private TValue _currentValue;
                 private object _dummy;
                 private int _dummyPrimitive;
-                public TValue Current { get { throw null; } }
+                public readonly TValue Current { get { throw null; } }
                 object? System.Collections.IEnumerator.Current { get { throw null; } }
                 public void Dispose() { }
                 public bool MoveNext() { throw null; }
@@ -233,7 +233,7 @@ namespace System.Collections.Generic
             private T _current;
             private object _dummy;
             private int _dummyPrimitive;
-            public T Current { get { throw null; } }
+            public readonly T Current { get { throw null; } }
             object? System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             public bool MoveNext() { throw null; }
@@ -289,7 +289,7 @@ namespace System.Collections.Generic
             private T _current;
             private object _dummy;
             private int _dummyPrimitive;
-            public T Current { get { throw null; } }
+            public readonly T Current { get { throw null; } }
             object? System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             public bool MoveNext() { throw null; }
@@ -372,7 +372,7 @@ namespace System.Collections.Generic
             private T _current;
             private object _dummy;
             private int _dummyPrimitive;
-            public T Current { get { throw null; } }
+            public readonly T Current { get { throw null; } }
             object? System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             public bool MoveNext() { throw null; }
@@ -452,7 +452,7 @@ namespace System.Collections.Generic
             private T _currentElement;
             private object _dummy;
             private int _dummyPrimitive;
-            public T Current { get { throw null; } }
+            public readonly T Current { get { throw null; } }
             object? System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             public bool MoveNext() { throw null; }
@@ -511,7 +511,7 @@ namespace System.Collections.Generic
         {
             private object _dummy;
             private int _dummyPrimitive;
-            public System.Collections.Generic.KeyValuePair<TKey, TValue> Current { get { throw null; } }
+            public readonly System.Collections.Generic.KeyValuePair<TKey, TValue> Current { get { throw null; } }
             System.Collections.DictionaryEntry System.Collections.IDictionaryEnumerator.Entry { get { throw null; } }
             object System.Collections.IDictionaryEnumerator.Key { get { throw null; } }
             object? System.Collections.IDictionaryEnumerator.Value { get { throw null; } }
@@ -540,7 +540,7 @@ namespace System.Collections.Generic
             {
                 private object _dummy;
                 private int _dummyPrimitive;
-                public TKey Current { get { throw null; } }
+                public readonly TKey Current { get { throw null; } }
                 object? System.Collections.IEnumerator.Current { get { throw null; } }
                 public void Dispose() { }
                 public bool MoveNext() { throw null; }
@@ -567,7 +567,7 @@ namespace System.Collections.Generic
             {
                 private object _dummy;
                 private int _dummyPrimitive;
-                public TValue Current { get { throw null; } }
+                public readonly TValue Current { get { throw null; } }
                 object? System.Collections.IEnumerator.Current { get { throw null; } }
                 public void Dispose() { }
                 public bool MoveNext() { throw null; }
@@ -674,7 +674,7 @@ namespace System.Collections.Generic
         {
             private object _dummy;
             private int _dummyPrimitive;
-            public T Current { get { throw null; } }
+            public readonly T Current { get { throw null; } }
             object? System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             public bool MoveNext() { throw null; }
@@ -711,7 +711,7 @@ namespace System.Collections.Generic
             private T _currentElement;
             private object _dummy;
             private int _dummyPrimitive;
-            public T Current { get { throw null; } }
+            public readonly T Current { get { throw null; } }
             object? System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             public bool MoveNext() { throw null; }
