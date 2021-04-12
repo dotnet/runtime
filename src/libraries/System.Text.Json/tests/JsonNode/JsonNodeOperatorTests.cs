@@ -57,8 +57,7 @@ namespace System.Text.Json.Node.Tests
             string json = jObject.ToJsonString();
 
             // Adjust for non-Core frameworks which do not have round-trippable floating point strings.
-            json.Replace("1.10000002", "1.1");
-            json.Replace("2.2000000000000002", "2.2");
+            json = json.Replace("1.10000002", "1.1").Replace("2.2000000000000002", "2.2");
 
             Assert.Equal(expected, json);
         }
