@@ -981,10 +981,12 @@ namespace System
         /// <param name="ianaId">The IANA time zone Id.</param>
         /// <param name="windowsId">String object hold the Windows Id which resulted from the IANA Id conversion.</param>
         /// <returns>True if the Id conversion succeed, false otherwise .</returns>
-        public static bool TryConvertIanaIdToWindowsId(string ianaId, out string? windowsId)
+        public static unsafe bool TryConvertIanaIdToWindowsId(string ianaId, out string? windowsId)
         {
             windowsId = null;
 
+            // This functionality is not enabled in the browser for the sake of size reduction.
+#if !TARGET_BROWSER
             if (GlobalizationMode.Invariant || GlobalizationMode.UseNls || ianaId is null)
             {
                 return false;
@@ -1000,13 +1002,14 @@ namespace System
                 }
             }
 
-            Span<char> buffer = stackalloc char[100];
-            int length = Interop.Globalization.IanaIdToWindowsId(ianaId, ref MemoryMarshal.GetReference(buffer), 100);
+            char* buffer = stackalloc char[100];
+            int length = Interop.Globalization.IanaIdToWindowsId(ianaId, buffer, 100);
             if (length > 0)
             {
-                windowsId = buffer.Slice(0, length).ToString();
+                windowsId = new string(buffer, 0, length);
                 return true;
             }
+#endif // !TARGET_BROWSER
 
             return false;
         }
@@ -1026,9 +1029,12 @@ namespace System
         /// <param name="region">The ISO 3166 for the country/region.</param>
         /// <param name="ianaId">String object hold the IANA Id which resulted from the Windows Id conversion.</param>
         /// <returns>True if the Id conversion succeed, false otherwise .</returns>
-        public static bool TryConvertWindowsIdToIanaId(string windowsId, string? region, out string? ianaId)
+        public static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, out string? ianaId)
         {
             ianaId = null;
+
+            // This functionality is not enabled in the browser for the sake of size reduction.
+#if !TARGET_BROWSER
             if (GlobalizationMode.Invariant || GlobalizationMode.UseNls || windowsId is null)
             {
                 return false;
@@ -1051,13 +1057,14 @@ namespace System
                 }
             }
 
-            Span<char> buffer = stackalloc char[100];
-            int length = Interop.Globalization.WindowsIdToIanaId(windowsId, region, ref MemoryMarshal.GetReference(buffer), 100);
+            char* buffer = stackalloc char[100];
+            int length = Interop.Globalization.WindowsIdToIanaId(windowsId, region, buffer, 100);
             if (length > 0)
             {
-                ianaId = buffer.Slice(0, length).ToString();
+                ianaId = new string(buffer, 0, length);
                 return true;
             }
+#endif // !TARGET_BROWSER
 
             return false;
         }
