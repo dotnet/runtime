@@ -205,10 +205,10 @@ namespace System.Transactions
     public partial struct TransactionOptions
     {
         private int _dummyPrimitive;
-        public System.Transactions.IsolationLevel IsolationLevel { get { throw null; } set { } }
-        public System.TimeSpan Timeout { get { throw null; } set { } }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public System.Transactions.IsolationLevel IsolationLevel { readonly get { throw null; } set { } }
+        public System.TimeSpan Timeout { readonly get { throw null; } set { } }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static bool operator ==(System.Transactions.TransactionOptions x, System.Transactions.TransactionOptions y) { throw null; }
         public static bool operator !=(System.Transactions.TransactionOptions x, System.Transactions.TransactionOptions y) { throw null; }
     }

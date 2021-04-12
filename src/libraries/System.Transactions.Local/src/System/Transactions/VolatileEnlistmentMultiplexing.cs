@@ -448,7 +448,7 @@ namespace System.Transactions
         private VolatileDemultiplexer _volatileDemux;
         internal VolatileDemultiplexer VolatileDemux
         {
-            get { return _volatileDemux; }
+            readonly get { return _volatileDemux; }
             set
             {
                 Debug.Assert(_volatileDemux == null, "volatileDemux can only be set once.");

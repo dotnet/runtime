@@ -12,21 +12,21 @@ namespace System.Transactions
 
         public TimeSpan Timeout
         {
-            get { return _timeout; }
+            readonly get { return _timeout; }
             set { _timeout = value; }
         }
 
         public IsolationLevel IsolationLevel
         {
-            get { return _isolationLevel; }
+            readonly get { return _isolationLevel; }
             set { _isolationLevel = value; }
         }
 
-        public override int GetHashCode() => base.GetHashCode();  // Don't have anything better to do.
+        public override readonly int GetHashCode() => base.GetHashCode();  // Don't have anything better to do.
 
-        public override bool Equals([NotNullWhen(true)] object? obj) => obj is TransactionOptions transactionOptions && Equals(transactionOptions);
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => obj is TransactionOptions transactionOptions && Equals(transactionOptions);
 
-        private bool Equals(TransactionOptions other) =>
+        private readonly bool Equals(TransactionOptions other) =>
             _timeout == other._timeout &&
             _isolationLevel == other._isolationLevel;
 
