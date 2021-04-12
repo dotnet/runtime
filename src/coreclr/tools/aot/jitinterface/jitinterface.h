@@ -198,6 +198,7 @@ public:
     {
     }
 
+
     virtual bool isJitIntrinsic(
           CORINFO_METHOD_HANDLE ftn)
 {

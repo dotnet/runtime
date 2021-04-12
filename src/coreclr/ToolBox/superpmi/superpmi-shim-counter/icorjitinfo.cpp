@@ -11,6 +11,7 @@
 #include "icorjitcompiler.h"
 #include "spmiutil.h"
 
+
 bool interceptor_ICJI::isJitIntrinsic(
           CORINFO_METHOD_HANDLE ftn)
 {
