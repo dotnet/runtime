@@ -99,7 +99,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
                 }
 
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                 byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(
                     includePrivateParameters ? keys.PrivateKey : keys.PublicKey,
                     exportPrivate: includePrivateParameters,
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography
                             manager.Memory,
                             out int localRead);
 
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                         SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.ImportEphemeralKey(source.Slice(0, localRead), false);
 #pragma warning restore CA1416
                         SetKey(SecKeyPair.PublicOnly(publicKey));
@@ -320,7 +320,7 @@ namespace System.Security.Cryptography
                             SR.Format(SR.Cryptography_Encryption_MessageTooLong, maxAllowed));
                     }
 
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                     return Interop.AppleCrypto.TryRsaEncrypt(
                         GetKeys().PublicKey,
                         data,
@@ -399,7 +399,7 @@ namespace System.Security.Cryptography
 
                 if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1)
                 {
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                     return Interop.AppleCrypto.RsaDecrypt(keys.PrivateKey, data, padding);
 #pragma warning restore CA1416
                 }
@@ -467,7 +467,7 @@ namespace System.Security.Cryptography
                 if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1 ||
                     padding == RSAEncryptionPadding.OaepSHA1)
                 {
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                     return Interop.AppleCrypto.TryRsaDecrypt(privateKey, data, destination, padding, out bytesWritten);
 #pragma warning restore CA1416
                 }
@@ -533,7 +533,7 @@ namespace System.Security.Cryptography
                                 hashAlgorithm.Name));
                     }
 
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                     return Interop.AppleCrypto.GenerateSignature(
                         keys.PrivateKey,
                         hash,
@@ -612,7 +612,7 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                     return Interop.AppleCrypto.TryGenerateSignature(
                         keys.PrivateKey,
                         hash,
@@ -680,7 +680,7 @@ namespace System.Security.Cryptography
                 {
                     Interop.AppleCrypto.PAL_HashAlgorithm palAlgId =
                         PalAlgorithmFromAlgorithmName(hashAlgorithm, out int expectedSize);
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                     return Interop.AppleCrypto.VerifySignature(GetKeys().PublicKey, hash, signature, palAlgId);
 #pragma warning restore CA1416
                 }
@@ -809,7 +809,7 @@ namespace System.Security.Cryptography
                 SafeSecKeyRefHandle publicKey;
                 SafeSecKeyRefHandle privateKey;
 
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                 Interop.AppleCrypto.RsaGenerateKey(KeySizeValue, out publicKey, out privateKey);
 #pragma warning restore CA1416
                 current = SecKeyPair.PublicPrivatePair(publicKey, privateKey);
@@ -860,7 +860,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on iOS/tvOS
+#pragma warning disable CA1416 // https://github.com/dotnet/runtime/issues/51098
                     return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
 #pragma warning restore CA1416
                 }
