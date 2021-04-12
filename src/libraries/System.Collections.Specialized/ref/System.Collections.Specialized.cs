@@ -11,15 +11,15 @@ namespace System.Collections.Specialized
         private int _dummyPrimitive;
         public BitVector32(System.Collections.Specialized.BitVector32 value) { throw null; }
         public BitVector32(int data) { throw null; }
-        public int Data { get { throw null; } }
+        public readonly int Data { get { throw null; } }
         public int this[System.Collections.Specialized.BitVector32.Section section] { get { throw null; } set { } }
         public bool this[int bit] { get { throw null; } set { } }
         public static int CreateMask() { throw null; }
         public static int CreateMask(int previous) { throw null; }
         public static System.Collections.Specialized.BitVector32.Section CreateSection(short maxValue) { throw null; }
         public static System.Collections.Specialized.BitVector32.Section CreateSection(short maxValue, System.Collections.Specialized.BitVector32.Section previous) { throw null; }
-        public override bool Equals(object? o) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals(object? o) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
         public static string ToString(System.Collections.Specialized.BitVector32 value) { throw null; }
         public readonly partial struct Section

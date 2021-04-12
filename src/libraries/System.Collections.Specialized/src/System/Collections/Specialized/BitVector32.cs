@@ -84,7 +84,7 @@ namespace System.Collections.Specialized
         /// <devdoc>
         ///    returns the raw data stored in this bit vector...
         /// </devdoc>
-        public int Data
+        public readonly int Data
         {
             get
             {
@@ -184,7 +184,7 @@ namespace System.Collections.Specialized
             return new Section(CreateMaskFromHighValue(maxValue), offset);
         }
 
-        public override bool Equals(object? o)
+        public override readonly bool Equals(object? o)
         {
             if (!(o is BitVector32))
             {
@@ -194,7 +194,7 @@ namespace System.Collections.Specialized
             return _data == ((BitVector32)o)._data;
         }
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return base.GetHashCode();
         }
@@ -237,7 +237,7 @@ namespace System.Collections.Specialized
                 _offset = offset;
             }
 
-            public short Mask
+            public readonly short Mask
             {
                 get
                 {
@@ -245,7 +245,7 @@ namespace System.Collections.Specialized
                 }
             }
 
-            public short Offset
+            public readonly short Offset
             {
                 get
                 {
@@ -253,7 +253,7 @@ namespace System.Collections.Specialized
                 }
             }
 
-            public override bool Equals(object? o)
+            public override readonly bool Equals(object? o)
             {
                 if (o is Section)
                     return Equals((Section)o);
@@ -261,7 +261,7 @@ namespace System.Collections.Specialized
                     return false;
             }
 
-            public bool Equals(Section obj)
+            public readonly bool Equals(Section obj)
             {
                 return obj._mask == _mask && obj._offset == _offset;
             }
@@ -276,7 +276,7 @@ namespace System.Collections.Specialized
                 return !(a == b);
             }
 
-            public override int GetHashCode()
+            public override readonly int GetHashCode()
             {
                 return base.GetHashCode();
             }
@@ -286,7 +286,7 @@ namespace System.Collections.Specialized
                 return "Section{0x" + Convert.ToString(value.Mask, 16) + ", 0x" + Convert.ToString(value.Offset, 16) + "}";
             }
 
-            public override string ToString()
+            public override readonly string ToString()
             {
                 return ToString(this);
             }
