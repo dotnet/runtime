@@ -33,11 +33,11 @@ namespace System.ServiceModel
                 Quotas = quotas;
             }
 
-            public int Offset { get; }
+            public readonly int Offset { get; }
 
-            public int Size { get; }
+            public readonly int Size { get; }
 
-            public XmlDictionaryReaderQuotas Quotas { get; }
+            public readonly XmlDictionaryReaderQuotas Quotas { get; }
         }
 
         public XmlBuffer(int maxBufferSize)

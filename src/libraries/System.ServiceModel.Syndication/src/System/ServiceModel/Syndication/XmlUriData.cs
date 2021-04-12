@@ -14,10 +14,10 @@ namespace System.ServiceModel.Syndication
             ElementQualifiedName = elementQualifiedName;
         }
 
-        public XmlQualifiedName ElementQualifiedName { get; }
+        public readonly XmlQualifiedName ElementQualifiedName { get; }
 
-        public UriKind UriKind { get; }
+        public readonly UriKind UriKind { get; }
 
-        public string UriString { get; }
+        public readonly string UriString { get; }
     }
 }

@@ -13,8 +13,8 @@ namespace System.ServiceModel.Syndication
             ElementQualifiedName = elementQualifiedName;
         }
 
-        public string DateTimeString { get; }
+        public readonly string DateTimeString { get; }
 
-        public XmlQualifiedName ElementQualifiedName { get; }
+        public readonly XmlQualifiedName ElementQualifiedName { get; }
     }
 }

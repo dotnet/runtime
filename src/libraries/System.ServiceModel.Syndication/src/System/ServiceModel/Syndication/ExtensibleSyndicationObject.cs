@@ -84,7 +84,7 @@ namespace System.ServiceModel.Syndication
             _elementExtensions = new SyndicationElementExtensionCollection(buffer);
         }
 
-        internal void WriteAttributeExtensions(XmlWriter writer)
+        internal readonly void WriteAttributeExtensions(XmlWriter writer)
         {
             if (writer == null)
             {
@@ -101,7 +101,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal void WriteElementExtensions(XmlWriter writer, Func<string, string, bool> shouldSkipElement = null)
+        internal readonly void WriteElementExtensions(XmlWriter writer, Func<string, string, bool> shouldSkipElement = null)
         {
             if (writer == null)
             {
@@ -114,6 +114,6 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public ExtensibleSyndicationObject Clone() => new ExtensibleSyndicationObject(this);
+        public readonly ExtensibleSyndicationObject Clone() => new ExtensibleSyndicationObject(this);
     }
 }
