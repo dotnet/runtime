@@ -334,7 +334,6 @@
     <Compile Include="$(CommonPath)..\tests\Tests\System\Net\aspnetcore\Http2\HuffmanDecodingTests.cs"
              Link="HPack\HuffmanDecodingTests.cs" />
     <Compile Include="HttpContentTest.cs" />
-    <Compile Include="HttpClientTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
     <Compile Include="StreamToStreamCopyTest.cs" />
