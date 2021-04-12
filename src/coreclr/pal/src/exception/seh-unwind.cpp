@@ -254,13 +254,6 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_AARCH64_X26, (unw_word_t *) &winContext->X26);
     unw_get_reg(cursor, UNW_AARCH64_X27, (unw_word_t *) &winContext->X27);
     unw_get_reg(cursor, UNW_AARCH64_X28, (unw_word_t *) &winContext->X28);
-
-#if defined(TARGET_OSX) && defined(TARGET_ARM64)
-    // Strip pointer authentication bits which seem to be leaking out of libunwind
-    // Seems like ptrauth_strip() / __builtin_ptrauth_strip() should work, but currently
-    // errors with "this target does not support pointer authentication"
-    winContext->Pc = winContext->Pc & 0x7fffffffffffull;
-#endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
 #else
 #error unsupported architecture
 #endif
