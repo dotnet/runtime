@@ -361,12 +361,6 @@ namespace System.Reflection
             // only test instance methods
             if ((m_methodAttributes & MethodAttributes.Static) == 0)
             {
-                CheckConsistencyInstance(target);
-            }
-
-            [MethodImpl(MethodImplOptions.NoInlining)] // move check out of hot path when invoking static methods
-            void CheckConsistencyInstance(object? target)
-            {
                 if (!m_declaringType.IsInstanceOfType(target))
                 {
                     if (target == null)
