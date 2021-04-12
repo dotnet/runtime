@@ -902,7 +902,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 191
+// Highest packet number: 192
 // *************************************************************************************
 enum mcPackets
 {
@@ -1004,6 +1004,7 @@ enum mcPackets
     Packet_GetJustMyCodeHandle                           = 68,
     Packet_GetLikelyClass                                = 182, // Added 9/27/2020
     Packet_GetLocationOfThisType                         = 69,
+    Packet_IsJitIntrinsic                                = 192,
     Packet_GetMethodAttribs                              = 70,
     Packet_GetMethodClass                                = 71,
     Packet_GetMethodModule                               = 181, // Added 11/20/2020

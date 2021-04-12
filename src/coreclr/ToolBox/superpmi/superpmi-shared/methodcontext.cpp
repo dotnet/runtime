@@ -1777,25 +1777,25 @@ CorInfoType MethodContext::repAsCorInfoType(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
-void MethodContext::recIsJitIntrinsic(CORINFO_CLASS_HANDLE cls, bool result)
+void MethodContext::recIsValueClass(CORINFO_CLASS_HANDLE cls, bool result)
 {
-    if (IsJitIntrinsic == nullptr)
-        IsJitIntrinsic = new LightWeightMap<DWORDLONG, DWORD>();
+    if (IsValueClass == nullptr)
+        IsValueClass = new LightWeightMap<DWORDLONG, DWORD>();
 
-    IsJitIntrinsic->Add(CastHandle(cls), (DWORD)result);
-    DEBUG_REC(dmpIsJitIntrinsic(CastHandle(cls), (DWORD)result));
+    IsValueClass->Add(CastHandle(cls), (DWORD)result);
+    DEBUG_REC(dmpIsValueClass(CastHandle(cls), (DWORD)result));
 }
-void MethodContext::dmpIsJitIntrinsic(DWORDLONG key, DWORD value)
+void MethodContext::dmpIsValueClass(DWORDLONG key, DWORD value)
 {
-    printf("IsJitIntrinsic key cls-%016llX, value res-%u", key, value);
+    printf("IsValueClass key cls-%016llX, value res-%u", key, value);
 }
-bool MethodContext::repIsJitIntrinsic(CORINFO_CLASS_HANDLE cls)
+bool MethodContext::repIsValueClass(CORINFO_CLASS_HANDLE cls)
 {
-    AssertCodeMsg((IsJitIntrinsic != nullptr) && (IsJitIntrinsic->GetIndex(CastHandle(cls)) != -1), EXCEPTIONCODE_MC,
+    AssertCodeMsg((IsValueClass != nullptr) && (IsValueClass->GetIndex(CastHandle(cls)) != -1), EXCEPTIONCODE_MC,
                   "Didn't find %016llX", CastHandle(cls));
 
-    bool result = (BOOL)IsJitIntrinsic->Get(CastHandle(cls));
-    DEBUG_REP(dmpIsJitIntrinsic(CastHandle(cls), (DWORD)result));
+    bool result = (BOOL)IsValueClass->Get(CastHandle(cls));
+    DEBUG_REP(dmpIsValueClass(CastHandle(cls), (DWORD)result));
     return result;
 }
 
