@@ -882,12 +882,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				TestNullMethod ();
 				TestUnknownInput (null);
+				TestUnknownMethodButNoTypeArguments (null);
 				TestWithNoArguments ();
 
 				TestWithRequirements ();
 				TestWithRequirementsFromParam (null);
 				TestWithRequirementsFromGenericParam<TestType> ();
 				TestWithRequirementsViaRuntimeMethod ();
+				TestWithRequirementsButNoTypeArguments ();
 
 				TestWithNoRequirements ();
 				TestWithNoRequirementsFromParam (null);
@@ -912,6 +914,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void TestUnknownInput (MethodInfo mi)
 			{
 				mi.MakeGenericMethod (typeof (TestType));
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestUnknownMethodButNoTypeArguments (MethodInfo mi)
+			{
+				// Thechnically linker could figure this out, but it's not worth the complexity - such call will always fail at runtime.
+				mi.MakeGenericMethod (Type.EmptyTypes);
 			}
 
 			[RecognizedReflectionAccessPattern]
@@ -955,6 +965,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				typeof (MakeGenericMethod).GetRuntimeMethod (nameof (GenericWithRequirements), Type.EmptyTypes)
 					.MakeGenericMethod (typeof (TestType));
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithRequirementsButNoTypeArguments ()
+			{
+				// Linker could figure out that this is not a problem, but it's not worth the complexity, since this will always throw at runtime
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
+					.MakeGenericMethod (Type.EmptyTypes);
 			}
 
 			public static void GenericWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()

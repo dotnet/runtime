@@ -795,6 +795,7 @@ namespace Mono.Linker.Dataflow
 						}
 					}
 					break;
+
 				//
 				// System.Linq.Expressions.Expression
 				// 
@@ -804,15 +805,26 @@ namespace Mono.Linker.Dataflow
 						reflectionContext.AnalyzingPattern ();
 						BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
 
+						bool hasTypeArguments = (methodParams[2] as ArrayValue)?.Size.AsConstInt () != 0;
 						foreach (var value in methodParams[0].UniqueValues ()) {
 							if (value is SystemTypeValue systemTypeValue) {
 								foreach (var stringParam in methodParams[1].UniqueValues ()) {
-									// TODO: Change this as needed after deciding whether or not we are to keep
-									// all methods on a type that was accessed via reflection.
 									if (stringParam is KnownStringValue stringValue) {
-										MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
+										foreach (var method in systemTypeValue.TypeRepresented.GetMethodsOnTypeHierarchy (m => m.Name == stringValue.Contents, bindingFlags)) {
+											ValidateGenericMethodInstantiation (ref reflectionContext, method, calledMethod);
+											MarkMethod (ref reflectionContext, method);
+										}
+
 										reflectionContext.RecordHandledPattern ();
 									} else {
+										if (hasTypeArguments) {
+											// We don't know what method the `MakeGenericMethod` was called on, so we have to assume
+											// that the method may have requirements which we can't fullfil -> warn.
+											reflectionContext.RecordUnrecognizedPattern (
+												2060, string.Format (Resources.Strings.IL2060,
+													DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
+										}
+
 										RequireDynamicallyAccessedMembers (
 											ref reflectionContext,
 											GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods (bindingFlags),
@@ -821,6 +833,14 @@ namespace Mono.Linker.Dataflow
 									}
 								}
 							} else {
+								if (hasTypeArguments) {
+									// We don't know what method the `MakeGenericMethod` was called on, so we have to assume
+									// that the method may have requirements which we can't fullfil -> warn.
+									reflectionContext.RecordUnrecognizedPattern (
+										2060, string.Format (Resources.Strings.IL2060,
+											DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
+								}
+
 								RequireDynamicallyAccessedMembers (
 									ref reflectionContext,
 									GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods (bindingFlags),
@@ -1612,24 +1632,13 @@ namespace Mono.Linker.Dataflow
 
 						foreach (var methodValue in methodParams[0].UniqueValues ()) {
 							if (methodValue is SystemReflectionMethodBaseValue methodBaseValue) {
-								foreach (var genericParameter in methodBaseValue.MethodRepresented.GenericParameters) {
-									if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None ||
-										genericParameter.HasDefaultConstructorConstraint) {
-										// There is a generic parameter which has some requirements on input types.
-										// For now we don't support tracking actual array elements, so we can't validate that the requirements are fulfilled.
-										reflectionContext.RecordUnrecognizedPattern (
-											2060, string.Format (Resources.Strings.IL2060,
-												DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
-									}
-								}
-
-								// We haven't found any generic parameters with annotations, so there's nothing to validate
+								ValidateGenericMethodInstantiation (ref reflectionContext, methodBaseValue.MethodRepresented, calledMethod);
 								reflectionContext.RecordHandledPattern ();
 							} else if (methodValue == NullValue.Instance) {
 								reflectionContext.RecordHandledPattern ();
 							} else {
-								// There is a generic parameter which has some requirements on input types.
-								// For now we don't support tracking actual array elements, so we can't validate that the requirements are fulfilled.
+								// We don't know what method the `MakeGenericMethod` was called on, so we have to assume
+								// that the method may have requirements which we can't fullfil -> warn.
 								reflectionContext.RecordUnrecognizedPattern (
 									2060, string.Format (Resources.Strings.IL2060,
 										DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
@@ -2137,12 +2146,6 @@ namespace Mono.Linker.Dataflow
 				MarkMethod (ref reflectionContext, ctor);
 		}
 
-		void MarkMethodsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<MethodDefinition, bool> filter, BindingFlags? bindingFlags = null)
-		{
-			foreach (var method in type.GetMethodsOnTypeHierarchy (filter, bindingFlags))
-				MarkMethod (ref reflectionContext, method);
-		}
-
 		void MarkFieldsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<FieldDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			foreach (var field in type.GetFieldsOnTypeHierarchy (filter, bindingFlags))
@@ -2171,6 +2174,26 @@ namespace Mono.Linker.Dataflow
 		{
 			foreach (var @event in type.GetEventsOnTypeHierarchy (filter, bindingFlags))
 				MarkEvent (ref reflectionContext, @event);
+		}
+
+		void ValidateGenericMethodInstantiation (
+			ref ReflectionPatternContext reflectionContext,
+			MethodDefinition genericMethod,
+			MethodReference reflectionMethod)
+		{
+			if (!genericMethod.HasGenericParameters)
+				return;
+
+			foreach (var genericParameter in genericMethod.GenericParameters) {
+				if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None ||
+					genericParameter.HasDefaultConstructorConstraint) {
+					// There is a generic parameter which has some requirements on input types.
+					// For now we don't support tracking actual array elements, so we can't validate that the requirements are fulfilled.
+					reflectionContext.RecordUnrecognizedPattern (
+						2060, string.Format (Resources.Strings.IL2060,
+							DiagnosticUtilities.GetMethodSignatureDisplayName (reflectionMethod)));
+				}
+			}
 		}
 
 		static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForNestedTypes (BindingFlags? bindingFlags) =>
