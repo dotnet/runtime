@@ -964,18 +964,7 @@ namespace System
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? InvokeMethod(object? target, ref object? arguments, Signature sig, bool constructor, bool wrapExceptions);
-
-        internal static unsafe object? InvokeMethod(object? target, Span<object?> arguments, Signature sig, bool constructor, bool wrapExceptions)
-        {
-            // Native InvokeMethod needs the 'ref object' passed in to point to a pinned memory address (pinned array, stack-allocated
-            // struct, etc). We'll cast the object ref as a byte ref so that we can pin it, then we'll pass in the now-pinned object ref.
-            ref object? refToFirstArgElement = ref MemoryMarshal.GetReference(arguments);
-            fixed (byte* unused = &Unsafe.As<object?, byte>(ref refToFirstArgElement))
-            {
-                return InvokeMethod(target, ref refToFirstArgElement, sig, constructor, wrapExceptions);
-            }
-        }
+        internal static extern object? InvokeMethod(object? target, in Span<object?> arguments, Signature sig, bool constructor, bool wrapExceptions);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);

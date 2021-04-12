@@ -478,7 +478,7 @@ void CallDescrWorkerReflectionWrapper(CallDescrData * pCallDescrData, Frame * pF
     PAL_ENDTRY
 } // CallDescrWorkerReflectionWrapper
 
-OBJECTREF InvokeArrayConstructor(TypeHandle th, MethodDesc* pMeth, PTR_OBJECTREF pinnedArgs, int argCnt)
+OBJECTREF InvokeArrayConstructor(TypeHandle th, MethodDesc* pMeth, const Span<OBJECTREF>* objs, int argCnt)
 {
     CONTRACTL {
         THROWS;
@@ -501,16 +501,16 @@ OBJECTREF InvokeArrayConstructor(TypeHandle th, MethodDesc* pMeth, PTR_OBJECTREF
 
     for (DWORD i=0; i<(DWORD)argCnt; i++)
     {
-        if (!pinnedArgs[i])
+        if (!objs->GetAt(i))
             COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
 
-        MethodTable* pMT = pinnedArgs[i]->GetMethodTable();
+        MethodTable* pMT = objs->GetAt(i)->GetMethodTable();
         CorElementType oType = TypeHandle(pMT).GetVerifierCorElementType();
 
         if (!InvokeUtil::IsPrimitiveType(oType) || !InvokeUtil::CanPrimitiveWiden(ELEMENT_TYPE_I4,oType))
             COMPlusThrow(kArgumentException,W("Arg_PrimWiden"));
 
-        memcpy(&indexes[i],pinnedArgs[i]->UnBox(),pMT->GetNumInstanceFieldBytes());
+        memcpy(&indexes[i], objs->GetAt(i)->UnBox(),pMT->GetNumInstanceFieldBytes());
     }
 
     return AllocateArrayEx(th, indexes, argCnt);
@@ -749,7 +749,7 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
 }
 
 FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
-    Object *target, Object** pinnedObjs, SignatureNative* pSigUNSAFE,
+    Object *target, Span<OBJECTREF>* objs, SignatureNative* pSigUNSAFE,
     CLR_BOOL fConstructor, CLR_BOOL fWrapExceptions)
 {
     FCALL_CONTRACT;
@@ -769,7 +769,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    PTR_OBJECTREF pinnedArgs = (PTR_OBJECTREF)pinnedObjs;
     Assembly *pAssem = pMeth->GetAssembly();
 
     if (ownerType.IsSharedByGenericInstantiations())
@@ -792,7 +791,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         if (ownerType.IsArray()) {
             gc.retVal = InvokeArrayConstructor(ownerType,
                                                pMeth,
-                                               pinnedArgs,
+                                               objs,
                                                gc.pSig->NumFixedArgs());
             goto Done;
         }
@@ -1043,7 +1042,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
             argDest = ArgDestination(pStackCopy, 0, NULL);
         }
 
-        InvokeUtil::CopyArg(th, &pinnedArgs[i], &argDest);
+        InvokeUtil::CopyArg(th, &objs->GetAt(i), &argDest);
     }
 
     ENDFORBIDGC();
@@ -1158,7 +1157,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
     while (byRefToNullables != NULL) {
         OBJECTREF obj = Nullable::Box(byRefToNullables->data, byRefToNullables->type.GetMethodTable());
-        SetObjectReference(&pinnedArgs[byRefToNullables->argNum], obj);
+        SetObjectReference(&objs->GetAt(byRefToNullables->argNum), obj);
         byRefToNullables = byRefToNullables->next;
     }
 
