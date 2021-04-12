@@ -1344,6 +1344,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.NtCreateFile.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.NtCreateFile.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CriticalSection.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CriticalSection.cs</Link>
     </Compile>
