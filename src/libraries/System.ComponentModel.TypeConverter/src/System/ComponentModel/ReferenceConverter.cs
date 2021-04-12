@@ -197,7 +197,7 @@ namespace System.ComponentModel
                 _converter = converter;
             }
 
-            public int Compare(object item1, object item2)
+            public readonly int Compare(object item1, object item2)
             {
                 string itemName1 = _converter.ConvertToString(item1);
                 string itemName2 = _converter.ConvertToString(item2);

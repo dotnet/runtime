@@ -43,8 +43,8 @@ namespace System.ComponentModel
             return previous == 0 ? 1 : previous << 1;
         }
 
-        public override bool Equals(object o) => o is InterlockedBitVector32 vector && _data == vector._data;
+        public override readonly bool Equals(object o) => o is InterlockedBitVector32 vector && _data == vector._data;
 
-        public override int GetHashCode() => base.GetHashCode();
+        public override readonly int GetHashCode() => base.GetHashCode();
     }
 }

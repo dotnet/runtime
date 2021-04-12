@@ -166,7 +166,7 @@ namespace System.ComponentModel.Design.Serialization
                 _hashCode = rel.Owner == null ? 0 : rel.Owner.GetHashCode();
             }
 
-            public override bool Equals(object o)
+            public override readonly bool Equals(object o)
             {
                 Debug.Assert(o is RelationshipEntry, "This is only called indirectly from a dictionary only containing RelationshipEntry structs.");
                 return this == (RelationshipEntry)o;
@@ -184,7 +184,7 @@ namespace System.ComponentModel.Design.Serialization
                 return !(re1 == re2);
             }
 
-            public override int GetHashCode() => _hashCode;
+            public override readonly int GetHashCode() => _hashCode;
         }
     }
 
