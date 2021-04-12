@@ -26,7 +26,7 @@ namespace System.Drawing
         /// </summary>
         public int First
         {
-            get => _first;
+            readonly get => _first;
             set => _first = value;
         }
 
@@ -35,11 +35,11 @@ namespace System.Drawing
         /// </summary>
         public int Length
         {
-            get => _length;
+            readonly get => _length;
             set => _length = value;
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public override readonly bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is CharacterRange cr))
             {
@@ -53,6 +53,6 @@ namespace System.Drawing
 
         public static bool operator !=(CharacterRange cr1, CharacterRange cr2) => !(cr1 == cr2);
 
-        public override int GetHashCode() => HashCode.Combine(First, Length);
+        public override readonly int GetHashCode() => HashCode.Combine(First, Length);
     }
 }

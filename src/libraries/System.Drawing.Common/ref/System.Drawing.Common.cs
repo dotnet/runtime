@@ -230,10 +230,10 @@ namespace System.Drawing
     {
         private int _dummyPrimitive;
         public CharacterRange(int First, int Length) { throw null; }
-        public int First { get { throw null; } set { } }
-        public int Length { get { throw null; } set { } }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public int First { readonly get { throw null; } set { } }
+        public int Length { readonly get { throw null; } set { } }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static bool operator ==(System.Drawing.CharacterRange cr1, System.Drawing.CharacterRange cr2) { throw null; }
         public static bool operator !=(System.Drawing.CharacterRange cr1, System.Drawing.CharacterRange cr2) { throw null; }
     }
