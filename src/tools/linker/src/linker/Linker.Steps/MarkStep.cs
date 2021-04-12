@@ -1004,7 +1004,7 @@ namespace Mono.Linker.Steps
 			if (MarkDependencyMethod (td, member, signature, new DependencyInfo (DependencyKind.PreservedDependency, ca), sourceLocationMember))
 				return;
 
-			if (MarkDependencyField (td, member, new DependencyInfo (DependencyKind.PreservedDependency, ca)))
+			if (MarkNamedField (td, member, new DependencyInfo (DependencyKind.PreservedDependency, ca)))
 				return;
 
 			_context.LogWarning (
@@ -1055,18 +1055,6 @@ namespace Mono.Linker.Steps
 			}
 
 			return marked;
-		}
-
-		bool MarkDependencyField (TypeDefinition type, string name, in DependencyInfo reason)
-		{
-			foreach (var f in type.Fields) {
-				if (f.Name == name) {
-					MarkField (f, reason);
-					return true;
-				}
-			}
-
-			return false;
 		}
 
 		void LazyMarkCustomAttributes (ICustomAttributeProvider provider)
@@ -1710,7 +1698,6 @@ namespace Mono.Linker.Steps
 
 			MarkSerializable (type);
 
-			// TODO: This needs work to ensure we handle EventSource appropriately.
 			// This marks static fields of KeyWords/OpCodes/Tasks subclasses of an EventSource type.
 			if (BCL.EventTracingForWindows.IsEventSourceImplementation (type, _context)) {
 				MarkEventSourceProviders (type);
@@ -1982,7 +1969,8 @@ namespace Mono.Linker.Steps
 					}
 
 					while (type != null) {
-						// TODO: Non-understood DebuggerDisplayAttribute causes us to keep everything. Should this be a warning?
+						// Currently if we don't understand the DebuggerDisplayAttribute we mark everything on the type
+						// This can be improved: mono/linker/issues/1873
 						MarkMethods (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute), type);
 						MarkFields (type, includeStatic: true, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
 						type = type.BaseType?.Resolve ();
@@ -2056,18 +2044,20 @@ namespace Mono.Linker.Steps
 			MarkNamedProperty (method.DeclaringType, member_name, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
 		}
 
-		// TODO: combine with MarkDependencyField?
-		void MarkNamedField (TypeDefinition type, string field_name, in DependencyInfo reason)
+		bool MarkNamedField (TypeDefinition type, string field_name, in DependencyInfo reason)
 		{
 			if (!type.HasFields)
-				return;
+				return false;
 
 			foreach (FieldDefinition field in type.Fields) {
 				if (field.Name != field_name)
 					continue;
 
 				MarkField (field, reason);
+				return true;
 			}
+
+			return false;
 		}
 
 		void MarkNamedProperty (TypeDefinition type, string property_name, in DependencyInfo reason)
