@@ -1664,7 +1664,7 @@
     <value>Ticks must be between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
   </data>
   <data name="ArgumentOutOfRange_TimeOnlyBadTicks" xml:space="preserve">
-    <value>Ticks must be between 0 and 863_999_999_999.</value>
+    <value>Ticks must be between 0 and and TimeOnly.MaxValue.Ticks.</value>
   </data>
   <data name="ArgumentOutOfRange_DateTimeBadYears" xml:space="preserve">
     <value>Years value must be between +/-10000.</value>
@@ -1763,7 +1763,8 @@
     <value>Month must be between one and twelve.</value>
   </data>
   <data name="ArgumentOutOfRange_DayNumber" xml:space="preserve">
-    <value>Day number must be between 0 and 36_520_58.</value>
+    <value>Day number must be between 0 and DateOnly.MaxValue.DayNumber.</value>
+    <comment>{Locked="DateOnly.MaxValue.DayNumber"}</comment>
   </data>
   <data name="ArgumentOutOfRange_MonthParam" xml:space="preserve">
     <value>The Month parameter must be in the range 1 through 12.</value>
@@ -2199,13 +2200,8 @@
     <value>String '{0}' was not recognized as a valid TimeOnly.</value>
     <comment>{Locked="TimeOnly"}</comment>
   </data>
-  <data name="Format_DateOnlyContainsNoneDateParts" xml:space="preserve">
-    <value>String '{0}' contains parts which are not specific to the DateOnly.</value>
-    <comment>{Locked="DateOnly"}</comment>
-  </data>
-  <data name="Format_TimeOnlyContainsNoneTimeParts" xml:space="preserve">
-    <value>String '{0}' contains parts which are not specific to the TimeOnly.</value>
-    <comment>{Locked="TimeOnly"}</comment>
+  <data name="Format_DateTimeOnlyContainsNoneDateParts" xml:space="preserve">
+    <value>String '{0}' contains parts which are not specific to the {1}.</value>
   </data>
   <data name="Format_BadDateTimeCalendar" xml:space="preserve">
     <value>The DateTime represented by the string '{0}' is not supported in calendar '{1}'.</value>

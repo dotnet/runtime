@@ -1114,15 +1114,14 @@ namespace System
 
         internal static bool IsValidCustomDateFormat(ReadOnlySpan<char> format, bool throwOnError)
         {
-            int length = format.Length;
             int i = 0;
 
-            while (i < length)
+            while (i < format.Length)
             {
                 switch (format[i])
                 {
                     case '\\':
-                        if (i == length - 1)
+                        if (i == format.Length - 1)
                         {
                             if (throwOnError)
                             {
@@ -1138,12 +1137,12 @@ namespace System
                     case '\'':
                     case '"':
                         char quoteChar = format[i++];
-                        while (i < length && format[i] != quoteChar)
+                        while (i < format.Length && format[i] != quoteChar)
                         {
                             i++;
                         }
 
-                        if (i >= length)
+                        if (i >= format.Length)
                         {
                             if (throwOnError)
                             {
@@ -1266,7 +1265,7 @@ namespace System
             destination[5] = ':';
             WriteTwoDecimalDigits((uint)second, destination, 6);
             destination[8] = '.';
-            WriteDigits((uint)fraction, destination.Slice(9, 7));
+            WriteDigits((uint)fraction, destination.Slice(9));
 
             return true;
         }

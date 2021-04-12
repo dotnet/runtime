@@ -62,10 +62,10 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new TimeOnly(10, -2));
             Assert.Throws<ArgumentOutOfRangeException>(() => new TimeOnly(10, 10, 60));
             Assert.Throws<ArgumentOutOfRangeException>(() => new TimeOnly(10, 10, -3));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TimeOnly(10, 10, 10, 1000));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TimeOnly(10, 10, 10, -4));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TimeOnly(TimeOnly.MaxValue.Ticks + 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TimeOnly(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new TimeOnly(10, 10, 10, 1000));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new TimeOnly(10, 10, 10, -4));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("ticks", () => new TimeOnly(TimeOnly.MaxValue.Ticks + 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("ticks", () => new TimeOnly(-1));
         }
 
         [Fact]
@@ -156,7 +156,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CompareOperatosTest()
+        public static void CompareOperatorsTest()
         {
             TimeOnly to1 = new TimeOnly(14, 30);
             TimeOnly to2 = new TimeOnly(14, 30);
@@ -201,8 +201,8 @@ namespace System.Tests
 
             Assert.Equal(TimeOnly.MaxValue, TimeOnly.FromTimeSpan(TimeOnly.MaxValue.ToTimeSpan()));
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => TimeOnly.FromTimeSpan(new TimeSpan(24, 0, 0)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => TimeOnly.FromTimeSpan(new TimeSpan(-1, 0, 0)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("ticks", () => TimeOnly.FromTimeSpan(new TimeSpan(24, 0, 0)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("ticks", () => TimeOnly.FromTimeSpan(new TimeSpan(-1, 0, 0)));
         }
 
         [Fact]
@@ -289,13 +289,13 @@ namespace System.Tests
             Assert.Equal(parsedTimeOnly, parsedTimeOnly1);
 
             Assert.False(TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out parsedTimeOnly1));
-            Assert.Throws<ArgumentException>(() => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal));
             Assert.False(TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out parsedTimeOnly1));
-            Assert.Throws<ArgumentException>(() => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal));
             Assert.False(TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsedTimeOnly1));
-            Assert.Throws<ArgumentException>(() => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal));
             Assert.False(TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out parsedTimeOnly1));
-            Assert.Throws<ArgumentException>(() => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault));
 
             s = "     " + s + "     ";
             parsedTimeOnly = TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces);
