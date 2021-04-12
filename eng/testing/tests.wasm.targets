@@ -2,6 +2,8 @@
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
+
+    <!-- many library tests depend on debugger attributes -->
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
     <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,
          so, just setting it true by default -->

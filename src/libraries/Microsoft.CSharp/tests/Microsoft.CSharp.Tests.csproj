@@ -8,6 +8,7 @@
     -->
     <Features>$(Features.Replace('strict', '')</Features>
 
+    <!-- tests depend on debugger attributes -->
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
