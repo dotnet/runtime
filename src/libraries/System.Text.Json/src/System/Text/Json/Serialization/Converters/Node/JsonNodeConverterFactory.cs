@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Return the converter for System.Object which uses JsonElement.
-                return JsonNodeConverter.Instance.ElementConverter;
+                return JsonMetadataServices.ObjectConverter;
             }
 
             if (typeof(JsonValue).IsAssignableFrom(typeToConvert))

@@ -164,9 +164,13 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_SerializerOptionsImmutable()
+        public static void ThrowInvalidOperationException_SerializerOptionsImmutable(JsonSerializerContext? context)
         {
-            throw new InvalidOperationException(SR.SerializerOptionsImmutable);
+            string message = context == null
+                ? SR.SerializerOptionsImmutable
+                : SR.SerializerContextOptionsImmutable;
+
+            throw new InvalidOperationException(message);
         }
 
         [DoesNotReturn]
@@ -247,10 +251,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_IgnoreConditionOnValueTypeInvalid(JsonPropertyInfo jsonPropertyInfo)
+        public static void ThrowInvalidOperationException_IgnoreConditionOnValueTypeInvalid(string clrPropertyName, Type propertyDeclaringType)
         {
-            MemberInfo memberInfo = jsonPropertyInfo.MemberInfo!;
-            throw new InvalidOperationException(SR.Format(SR.IgnoreConditionOnValueTypeInvalid, memberInfo.Name, memberInfo.DeclaringType));
+            throw new InvalidOperationException(SR.Format(SR.IgnoreConditionOnValueTypeInvalid, clrPropertyName, propertyDeclaringType));
         }
 
         [DoesNotReturn]
@@ -667,6 +670,13 @@ namespace System.Text.Json
             {
                 ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, reader);
             }
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext()
+        {
+            throw new InvalidOperationException(SR.Format(SR.OptionsAlreadyBoundToContext));
         }
     }
 }

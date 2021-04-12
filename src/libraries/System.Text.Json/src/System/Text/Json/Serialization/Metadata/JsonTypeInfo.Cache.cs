@@ -9,8 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Serialization.Metadata
 {
-    [DebuggerDisplay("ClassType.{ClassType}, {Type.Name}")]
-    internal sealed partial class JsonTypeInfo
+    public partial class JsonTypeInfo
     {
         /// <summary>
         /// Cached typeof(object). It is faster to cache this than to call typeof(object) multiple times.
@@ -30,18 +29,18 @@ namespace System.Text.Json.Serialization.Metadata
 
         // The number of parameters the deserialization constructor has. If this is not equal to ParameterCache.Count, this means
         // that not all parameters are bound to object properties, and an exception will be thrown if deserialization is attempted.
-        public int ParameterCount { get; private set; }
+        internal int ParameterCount { get; private set; }
 
         // All of the serializable parameters on a POCO constructor keyed on parameter name.
         // Only paramaters which bind to properties are cached.
-        public Dictionary<string, JsonParameterInfo>? ParameterCache;
+        internal Dictionary<string, JsonParameterInfo>? ParameterCache;
 
         // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
-        public Dictionary<string, JsonPropertyInfo>? PropertyCache;
+        internal Dictionary<string, JsonPropertyInfo>? PropertyCache;
 
         // All of the serializable properties on a POCO including the optional extension property.
         // Used for performance during serialization instead of 'PropertyCache' above.
-        public JsonPropertyInfo[]? PropertyCacheArray;
+        internal JsonPropertyInfo[]? PropertyCacheArray;
 
         // Fast cache of constructor parameters by first JSON ordering; may not contain all parameters. Accessed before ParameterCache.
         // Use an array (instead of List<T>) for highest performance.
@@ -51,7 +50,9 @@ namespace System.Text.Json.Serialization.Metadata
         // Use an array (instead of List<T>) for highest performance.
         private volatile PropertyRef[]? _propertyRefsSorted;
 
-        public static JsonPropertyInfo AddProperty(
+        internal Func<JsonSerializerContext, JsonPropertyInfo[]>? PropInitFunc;
+
+        internal static JsonPropertyInfo AddProperty(
             MemberInfo memberInfo,
             Type memberType,
             Type parentClassType,
@@ -117,10 +118,9 @@ namespace System.Text.Json.Serialization.Metadata
             Type declaredPropertyType,
             Type runtimePropertyType,
             JsonConverter converter,
+            JsonNumberHandling? numberHandling,
             JsonSerializerOptions options)
         {
-            JsonNumberHandling? numberHandling = GetNumberHandlingForType(declaredPropertyType);
-
             JsonPropertyInfo jsonPropertyInfo = CreateProperty(
                 declaredPropertyType: declaredPropertyType,
                 runtimePropertyType: runtimePropertyType,
@@ -137,7 +137,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public JsonPropertyInfo GetProperty(
+        internal JsonPropertyInfo GetProperty(
             ReadOnlySpan<byte> propertyName,
             ref ReadStackFrame frame,
             out byte[] utf8PropertyName)
@@ -274,7 +274,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public JsonParameterInfo? GetParameter(
+        internal JsonParameterInfo? GetParameter(
             ReadOnlySpan<byte> propertyName,
             ref ReadStackFrame frame,
             out byte[] utf8PropertyName)
@@ -445,7 +445,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         // AggressiveInlining used since this method is only called from two locations and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong GetKey(ReadOnlySpan<byte> name)
+        internal static ulong GetKey(ReadOnlySpan<byte> name)
         {
             ulong key;
 
@@ -494,7 +494,7 @@ namespace System.Text.Json.Serialization.Metadata
             return key;
         }
 
-        public void UpdateSortedPropertyCache(ref ReadStackFrame frame)
+        internal void UpdateSortedPropertyCache(ref ReadStackFrame frame)
         {
             Debug.Assert(frame.PropertyRefCache != null);
 
@@ -530,7 +530,7 @@ namespace System.Text.Json.Serialization.Metadata
             frame.PropertyRefCache = null;
         }
 
-        public void UpdateSortedParameterCache(ref ReadStackFrame frame)
+        internal void UpdateSortedParameterCache(ref ReadStackFrame frame)
         {
             Debug.Assert(frame.CtorArgumentState!.ParameterRefCache != null);
 
@@ -564,6 +564,36 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             frame.CtorArgumentState.ParameterRefCache = null;
+        }
+
+        internal void InitializeSerializePropCache()
+        {
+            Debug.Assert(PropInitFunc != null);
+            Debug.Assert(Options._context != null);
+
+            PropertyCacheArray = PropInitFunc(Options._context);
+        }
+
+        internal void InitializeDeserializePropCache()
+        {
+            if (PropertyCacheArray == null)
+            {
+                InitializeSerializePropCache();
+            }
+
+            PropertyCache = new Dictionary<string, JsonPropertyInfo>(Options.PropertyNameCaseInsensitive
+                ? StringComparer.OrdinalIgnoreCase
+                : StringComparer.Ordinal);
+
+            for (int i = 0; i < PropertyCacheArray!.Length; i++)
+            {
+                JsonPropertyInfo jsonPropertyInfo = PropertyCacheArray[i];
+
+                if (!JsonHelpers.TryAdd(PropertyCache!, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
+                }
+            }
         }
     }
 }

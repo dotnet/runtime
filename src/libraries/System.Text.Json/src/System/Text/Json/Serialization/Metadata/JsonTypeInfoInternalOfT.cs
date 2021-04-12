@@ -1,0 +1,102 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Text.Json.Serialization.Converters;
+
+namespace System.Text.Json.Serialization.Metadata
+{
+    /// <summary>
+    /// Creates and initializes serialization metadata for a type.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    internal sealed class JsonTypeInfoInternal<T> : JsonTypeInfo<T>
+    {
+        /// <summary>
+        /// Creates serialization metadata for a <see cref="ClassType.Object"/>.
+        /// </summary>
+        public JsonTypeInfoInternal() : base(typeof(T), null!, ClassType.Object)
+        {
+        }
+
+        /// <summary>
+        /// Creates serialization metadata for a <see cref="ClassType.Value"/>.
+        /// </summary>
+        public JsonTypeInfoInternal(JsonSerializerOptions options, JsonConverter converter)
+            : base (typeof(T), options, ClassType.Value)
+        {
+            ConverterBase = converter ?? throw new ArgumentNullException(nameof(converter));
+            PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, Options);
+        }
+
+        /// <summary>
+        /// Creates serialization metadata for a <see cref="ClassType.Enumerable"/>.
+        /// </summary>
+        public JsonTypeInfoInternal(
+            JsonSerializerOptions options,
+            Func<T>? createObjectFunc,
+            JsonConverter<T> converter,
+            JsonTypeInfo elementInfo,
+            JsonNumberHandling numberHandling) : base(typeof(T), options, ClassType.Enumerable)
+        {
+            ConverterBase = converter;
+            ElementType = converter.ElementType;
+            ElementTypeInfo = elementInfo;
+            NumberHandling = numberHandling;
+            PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, Options);
+            SetCreateObjectFunc(createObjectFunc);
+        }
+
+        /// <summary>
+        /// Creates serialization metadata for a <see cref="ClassType.Dictionary"/>.
+        /// </summary>
+        public JsonTypeInfoInternal(
+            JsonSerializerOptions options,
+            Func<T>? createObjectFunc,
+            JsonConverter<T> converter,
+            JsonTypeInfo keyInfo,
+            JsonTypeInfo elementInfo,
+            JsonNumberHandling numberHandling) : base(typeof(T), options, ClassType.Dictionary)
+        {
+            ConverterBase = converter;
+            KeyType = converter.KeyType;
+            KeyTypeInfo = keyInfo;
+            ElementType = converter.ElementType;
+            ElementTypeInfo = elementInfo;
+            NumberHandling = numberHandling;
+            PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, Options);
+            SetCreateObjectFunc(createObjectFunc);
+        }
+
+        /// <summary>
+        /// Initializes serialization metadata for a <see cref="ClassType.Object"/>.
+        /// </summary>
+        public void InitializeAsObject(
+            JsonSerializerOptions options,
+            Func<T>? createObjectFunc,
+            Func<JsonSerializerContext, JsonPropertyInfo[]> propInitFunc,
+            JsonNumberHandling numberHandling)
+        {
+            Options = options;
+
+#pragma warning disable CS8714
+            // The type cannot be used as type parameter in the generic type or method.
+            // Nullability of type argument doesn't match 'notnull' constraint.
+            JsonConverter converter = new ObjectSourceGenConverter<T>();
+#pragma warning restore CS8714
+
+            ConverterBase = converter;
+            NumberHandling = numberHandling;
+            PropInitFunc = propInitFunc;
+            PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, options);
+            SetCreateObjectFunc(createObjectFunc);
+        }
+
+        private void SetCreateObjectFunc(Func<T>? createObjectFunc)
+        {
+            if (createObjectFunc != null)
+            {
+                CreateObject = () => createObjectFunc();
+            }
+        }
+    }
+}

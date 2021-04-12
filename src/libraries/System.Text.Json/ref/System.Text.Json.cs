@@ -194,13 +194,13 @@ namespace System.Text.Json
         public static System.Threading.Tasks.ValueTask<TValue?> DeserializeAsync<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] TValue>(System.IO.Stream utf8Json, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] TValue>(System.IO.Stream utf8Json, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static TValue? Deserialize<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] TValue>(System.ReadOnlySpan<byte> utf8Json, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
-        public static TValue? Deserialize<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] TValue>(string json, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static TValue? Deserialize<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] TValue>(System.ReadOnlySpan<char> json, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
+        public static TValue? Deserialize<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] TValue>(string json, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static TValue? Deserialize<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] TValue>(ref System.Text.Json.Utf8JsonReader reader, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static string Serialize(object? value, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type inputType, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static void Serialize(System.Text.Json.Utf8JsonWriter writer, object? value, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type inputType, System.Text.Json.JsonSerializerOptions? options = null) { }
         public static System.Threading.Tasks.Task SerializeAsync(System.IO.Stream utf8Json, object? value, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type inputType, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task SerializeAsync<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]TValue>(System.IO.Stream utf8Json, TValue value, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task SerializeAsync<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] TValue>(System.IO.Stream utf8Json, TValue value, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static byte[] SerializeToUtf8Bytes(object? value, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type inputType, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static byte[] SerializeToUtf8Bytes<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] TValue>(TValue value, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static void Serialize<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] TValue>(System.Text.Json.Utf8JsonWriter writer, TValue value, System.Text.Json.JsonSerializerOptions? options = null) { }
@@ -222,8 +222,6 @@ namespace System.Text.Json
         public System.Text.Json.Serialization.JsonIgnoreCondition DefaultIgnoreCondition { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy? DictionaryKeyPolicy { get { throw null; } set { } }
         public System.Text.Encodings.Web.JavaScriptEncoder? Encoder { get { throw null; } set { } }
-        [System.ObsoleteAttribute("To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.", false)]
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public bool IgnoreNullValues { get { throw null; } set { } }
         public bool IgnoreReadOnlyFields { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
@@ -236,6 +234,7 @@ namespace System.Text.Json
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
+        public void AddContext<TContext>() where TContext : System.Text.Json.Serialization.Metadata.JsonSerializerContext, new() { }
         public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
     }
     public enum JsonTokenType : byte
@@ -712,6 +711,12 @@ namespace System.Text.Json.Serialization
         public JsonPropertyNameAttribute(string name) { }
         public string Name { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true)]
+    public sealed partial class JsonSerializableAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonSerializableAttribute(System.Type type) { }
+        public string? TypeInfoPropertyName { get { throw null; } set { } }
+    }
     public sealed partial class JsonStringEnumConverter : System.Text.Json.Serialization.JsonConverterFactory
     {
         public JsonStringEnumConverter() { }
@@ -742,5 +747,64 @@ namespace System.Text.Json.Serialization
         public abstract void AddReference(string referenceId, object value);
         public abstract string GetReference(object value, out bool alreadyExists);
         public abstract object ResolveReference(string referenceId);
+    }
+}
+namespace System.Text.Json.Serialization.Metadata
+{
+    public static partial class JsonMetadataServices
+    {
+        public static System.Text.Json.Serialization.JsonConverter<bool> BooleanConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<byte[]> ByteArrayConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<byte> ByteConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<char> CharConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.DateTime> DateTimeConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.DateTimeOffset> DateTimeOffsetConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<decimal> DecimalConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<double> DoubleConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Guid> GuidConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<short> Int16Converter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<int> Int32Converter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<long> Int64Converter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<object> ObjectConverter { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Text.Json.Serialization.JsonConverter<sbyte> SByteConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<float> SingleConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<string> StringConverter { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Text.Json.Serialization.JsonConverter<ushort> UInt16Converter { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Text.Json.Serialization.JsonConverter<uint> UInt32Converter { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Text.Json.Serialization.JsonConverter<ulong> UInt64Converter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Uri> UriConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Version> VersionConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TElement[]> CreateArrayInfo<TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonTypeInfo elementInfo, System.Text.Json.Serialization.JsonNumberHandling numberHandling) { throw null; }
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateDictionaryInfo<TCollection, TKey, TValue>(System.Text.Json.JsonSerializerOptions options, System.Func<TCollection> createObjectFunc, System.Text.Json.Serialization.Metadata.JsonTypeInfo keyInfo, System.Text.Json.Serialization.Metadata.JsonTypeInfo valueInfo, System.Text.Json.Serialization.JsonNumberHandling numberHandling) where TCollection : System.Collections.Generic.Dictionary<TKey, TValue> where TKey : notnull { throw null; }
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateListInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Func<TCollection>? createObjectFunc, System.Text.Json.Serialization.Metadata.JsonTypeInfo elementInfo, System.Text.Json.Serialization.JsonNumberHandling numberHandling) where TCollection : System.Collections.Generic.List<TElement> { throw null; }
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> CreateObjectInfo<T>() where T : notnull { throw null; }
+        public static System.Text.Json.Serialization.Metadata.JsonPropertyInfo CreatePropertyInfo<T>(System.Text.Json.JsonSerializerOptions options, bool isProperty, System.Type declaringType, System.Text.Json.Serialization.Metadata.JsonTypeInfo typeInfo, System.Text.Json.Serialization.JsonConverter converter, System.Func<object, T> getter, System.Action<object, T> setter, System.Text.Json.Serialization.JsonIgnoreCondition ignoreCondition, System.Text.Json.Serialization.JsonNumberHandling numberHandling, string propertyName, System.Text.Json.JsonEncodedText jsonPropertyName) { throw null; }
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> CreateValueInfo<T>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.JsonConverter converter) { throw null; }
+        public static System.Text.Json.Serialization.JsonConverter<T> GetEnumConverter<T>(System.Text.Json.JsonSerializerOptions options) where T : struct { throw null; }
+        public static System.Text.Json.Serialization.JsonConverter<T?> GetNullableConverter<T>(System.Text.Json.Serialization.JsonConverter<T> underlyingTypeconverter) where T : struct { throw null; }
+        public static void InitializeObjectInfo<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> info, System.Text.Json.JsonSerializerOptions options, System.Func<T>? createObjectFunc, System.Func<System.Text.Json.Serialization.Metadata.JsonSerializerContext, System.Text.Json.Serialization.Metadata.JsonPropertyInfo[]> propInitFunc, System.Text.Json.Serialization.JsonNumberHandling numberHandling) where T : notnull { }
+    }
+    public abstract partial class JsonPropertyInfo
+    {
+        internal JsonPropertyInfo() { }
+    }
+    public abstract partial class JsonSerializerContext
+    {
+        protected JsonSerializerContext(System.Text.Json.JsonSerializerOptions? options) { }
+        public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }
+        public abstract System.Text.Json.Serialization.Metadata.JsonTypeInfo? GetTypeInfo(System.Type type);
+    }
+    public partial class JsonTypeInfo
+    {
+        internal JsonTypeInfo() { }
+        public static readonly System.Type ObjectType;
+    }
+    public abstract partial class JsonTypeInfo<T> : System.Text.Json.Serialization.Metadata.JsonTypeInfo
+    {
+        internal JsonTypeInfo() { }
     }
 }

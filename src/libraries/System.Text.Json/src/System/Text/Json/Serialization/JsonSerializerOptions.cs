@@ -49,6 +49,8 @@ namespace System.Text.Json
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
 
+        internal JsonSerializerContext? _context;
+
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
         /// </summary>
@@ -117,6 +119,25 @@ namespace System.Text.Json
             {
                 throw new ArgumentOutOfRangeException(nameof(defaults));
             }
+        }
+
+        /// <summary>
+        /// Binds current <see cref="JsonSerializerOptions"/> instance with a new instance of the specified <see cref="JsonSerializerContext"/> type.
+        /// </summary>
+        /// <typeparam name="TContext">The generic definition of the specified context type.</typeparam>
+        /// <remarks>When serializing and deserializing types using the options
+        /// instance, metadata for the types will be fetched from the context instance.
+        /// </remarks>
+        public void AddContext<TContext>() where TContext : JsonSerializerContext, new()
+        {
+            if (_context != null)
+            {
+                throw new InvalidOperationException();
+            }
+
+            TContext context = new();
+            _context = context;
+            context._options = this;
         }
 
         /// <summary>
@@ -599,9 +620,9 @@ namespace System.Text.Json
             // The default options are hidden and thus should be immutable.
             Debug.Assert(this != s_defaultOptions);
 
-            if (_haveTypesBeenCreated)
+            if (_haveTypesBeenCreated || _context != null)
             {
-                ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable();
+                ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable(_context);
             }
         }
     }

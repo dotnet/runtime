@@ -590,4 +590,10 @@
   <data name="ValueCannotBeNull" xml:space="preserve">
     <value>Value cannot be null. (Parameter '{0}')</value>
   </data>
+  <data name="SerializerContextOptionsImmutable" xml:space="preserve">
+    <value>A 'JsonSerializerOptions' instance associated with a 'JsonSerializerContext' instance cannot be mutated once the context has been instantiated.</value>
+  </data>
+  <data name="OptionsAlreadyBoundToContext" xml:space="preserve">
+    <value>"The specified 'JsonSerializerOptions' instance is already bound with a 'JsonSerializerContext' instance."</value>
+  </data>
 </root>
