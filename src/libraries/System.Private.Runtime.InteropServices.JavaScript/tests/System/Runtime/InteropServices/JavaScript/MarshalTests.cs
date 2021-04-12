@@ -86,6 +86,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public static void MarshalUnicodeStringToCS()
+        {
+            HelperMarshal._stringResource = null;
+            Runtime.InvokeJS("App.call_test_method(\"StoreAndReturnNew\", [' '+\"Příliš žluťoučký\u202fkůň úpěl ďábelské ódy\"])");
+            Assert.Equal("Got:  Příliš žluťoučký kůň úpěl ďábelské ódy", HelperMarshal._stringResource);
+
+            HelperMarshal._stringResource = null;
+            Runtime.InvokeJS("App.call_test_method(\"StoreAndReturnNew\", [' '+\"\uFEFF\u0000\uFFFE\"])");
+            Assert.Equal("Got:  \uFEFF\0\uFFFE", HelperMarshal._stringResource);
+
+            HelperMarshal._stringResource = null;
+            Runtime.InvokeJS("App.call_test_method(\"StoreAndReturnNew\", [' '+\"\u02F3o\u0302\u0303\u0308\u0930\u0903\u0951\"])");
+            Assert.Equal("Got:  ˳ỗ̈रः॑", HelperMarshal._stringResource);
+        }
+
+        [Fact]
         public static void MarshalNullStringToCS()
         {
             HelperMarshal._stringResource = null;
