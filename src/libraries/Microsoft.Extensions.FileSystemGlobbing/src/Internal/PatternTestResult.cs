@@ -11,8 +11,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
     {
         public static readonly PatternTestResult Failed = new PatternTestResult(isSuccessful: false, stem: null);
 
-        public bool IsSuccessful { get; }
-        public string Stem { get; }
+        public readonly bool IsSuccessful { get; }
+        public readonly string Stem { get; }
 
         private PatternTestResult(bool isSuccessful, string stem)
         {

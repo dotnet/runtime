@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
                 get { return _stemItems ?? (_stemItems = new List<string>()); }
             }
 
-            public string Stem
+            public readonly string Stem
             {
                 get { return _stemItems == null ? null : string.Join("/", _stemItems); }
             }

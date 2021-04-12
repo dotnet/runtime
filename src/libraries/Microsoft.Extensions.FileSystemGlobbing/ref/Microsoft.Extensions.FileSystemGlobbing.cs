@@ -13,9 +13,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public FilePatternMatch(string path, string stem) { throw null; }
         public readonly string Path { get { throw null; } }
         public readonly string Stem { get { throw null; } }
-        public bool Equals(Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch other) { throw null; }
-        public override bool Equals(object obj) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public readonly bool Equals(Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch other) { throw null; }
+        public override readonly bool Equals(object obj) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
     }
     public partial class InMemoryDirectoryInfo : Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase
     {
@@ -195,7 +195,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
             public bool InStem;
             public bool IsNotApplicable;
             public int SegmentIndex;
-            public string Stem { get { throw null; } }
+            public readonly string Stem { get { throw null; } }
             public System.Collections.Generic.IList<string> StemItems { get { throw null; } }
         }
     }
@@ -232,7 +232,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
             public System.Collections.Generic.IList<Microsoft.Extensions.FileSystemGlobbing.Internal.IPathSegment> SegmentGroup;
             public int SegmentGroupIndex;
             public int SegmentIndex;
-            public string Stem { get { throw null; } }
+            public readonly string Stem { get { throw null; } }
             public System.Collections.Generic.IList<string> StemItems { get { throw null; } }
         }
     }

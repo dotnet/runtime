@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// If the matcher searched for "src/Project/**/*.cs" and the pattern matcher found "src/Project/Interfaces/IFile.cs",
         /// then <see cref="Stem" /> = "Interfaces/IFile.cs" and <see cref="Path" /> = "src/Project/Interfaces/IFile.cs".
         /// </remarks>
-        public string Path { get; }
+        public readonly string Path { get; }
 
         /// <summary>
         /// The subpath to the file matched, relative to the first wildcard in the matching search pattern.
@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// If the matcher searched for "src/Project/**/*.cs" and the pattern matcher found "src/Project/Interfaces/IFile.cs",
         /// then <see cref="Stem" /> = "Interfaces/IFile.cs" and <see cref="Path" /> = "src/Project/Interfaces/IFile.cs".
         /// </remarks>
-        public string Stem { get; }
+        public readonly string Stem { get; }
 
         /// <summary>
         /// Initializes new instance of <see cref="FilePatternMatch" />
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// </summary>
         /// <param name="other">The other match to be compared</param>
         /// <returns>True if <see cref="Path" /> and <see cref="Stem" /> are equal using case-insensitive comparison</returns>
-        public bool Equals(FilePatternMatch other)
+        public readonly bool Equals(FilePatternMatch other)
         {
             return string.Equals(other.Path, Path, StringComparison.OrdinalIgnoreCase) &&
                    string.Equals(other.Stem, Stem, StringComparison.OrdinalIgnoreCase);
@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// </summary>
         /// <param name="obj">The object to be compared</param>
         /// <returns>True when <see cref="Equals(FilePatternMatch)" /></returns>
-        public override bool Equals(object obj)
+        public override readonly bool Equals(object obj)
         {
             return Equals((FilePatternMatch) obj);
         }
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// Gets a hash for the file pattern match.
         /// </summary>
         /// <returns>Some number</returns>
-        public override int GetHashCode() =>
+        public override readonly int GetHashCode() =>
             HashHelpers.Combine(GetHashCode(Path), GetHashCode(Stem));
 
         private static int GetHashCode(string value) =>
