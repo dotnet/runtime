@@ -519,7 +519,7 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
 
     HANDLE hFile = pOwner->GetFileHandle();
     INT64 offset = pOwner->GetOffset();
-    _ASSERTE(!pOwner->GetUncompressedSize());
+    _ASSERTE(pOwner->GetUncompressedSize() == 0);
 
     // If mapping was requested, try to do SEC_IMAGE mapping
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening OS mapped %S (hFile %p)\n", (LPCWSTR) GetPath(), hFile));
@@ -774,12 +774,20 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             // we match the compression side here. 15 is the window sise, negative means no zlib header.
             const int Deflate_DefaultWindowBits = -15;
             if (CompressionNative_InflateInit2_(&zStream, Deflate_DefaultWindowBits) != PAL_Z_OK)
-                ThrowLastError();
+                ThrowHR(COR_E_BADIMAGEFORMAT);
 
             int ret = CompressionNative_Inflate(&zStream, PAL_Z_NOFLUSH);
+
+            // decompression should have consumed the entire input
+            // and the entire output budgets
+            if ((ret < 0) ||
+                !(zStream.availIn == 0 && zStream.availOut == 0))
+            {
+                CompressionNative_InflateEnd(&zStream);
+                ThrowHR(COR_E_BADIMAGEFORMAT);
+            }
+
             CompressionNative_InflateEnd(&zStream);
-            if (ret < 0)
-                ThrowLastError();
 
             addr = anonView;
             size = uncompressedSize;
@@ -789,7 +797,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 
 #else
             _ASSERTE(!"Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost.");
-            ThrowLastError();
+            ThrowHR(E_FAIL); // we don't have any indication of what kind of failure. Possibly a corrupt image.
 #endif
         }
     }
