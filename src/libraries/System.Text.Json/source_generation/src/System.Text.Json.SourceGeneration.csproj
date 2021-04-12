@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <CLSCompliant>false</CLSCompliant>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
+
+    <PackageDestination Include="analyzers\dotnet\cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Common\JsonIgnoreCondition.cs" Link="Common\System\Text\Json\Serialization\JsonIgnoreCondition.cs" />
+    <Compile Include="..\..\Common\JsonNumberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonNumberHandling.cs" />
+    <Compile Include="ClassType.cs" />
+    <Compile Include="CollectionType.cs" />
+    <Compile Include="IsExternalInit.cs" />
+    <Compile Include="JsonSourceGenerator.cs" />
+    <Compile Include="JsonSourceGeneratorHelper.cs" />
+    <Compile Include="JsonSerializableSyntaxReceiver.cs" />
+    <Compile Include="JsonSourceGeneratorHelper.Generate.cs" />
+    <Compile Include="ObjectConstructionStrategy.cs" />
+    <Compile Include="PropertyMetadata.cs" />
+    <Compile Include="ReflectionUtils\AssemblyWrapper.cs" />
+    <Compile Include="ReflectionUtils\TypeExtensions.cs" />
+    <Compile Include="ReflectionUtils\FieldInfoWrapper.cs" />
+    <Compile Include="ReflectionUtils\ConstructorInfoWrapper.cs" />
+    <Compile Include="ReflectionUtils\CustomAttributeDataWrapper.cs" />
+    <Compile Include="ReflectionUtils\MemberInfoWrapper.cs" />
+    <Compile Include="ReflectionUtils\MetadataLoadContext.cs" />
+    <Compile Include="ReflectionUtils\MethodInfoWrapper.cs" />
+    <Compile Include="ReflectionUtils\ParameterInfoWrapper.cs" />
+    <Compile Include="ReflectionUtils\PropertyInfoWrapper.cs" />
+    <Compile Include="ReflectionUtils\ReflectionExtensions.cs" />
+    <Compile Include="ReflectionUtils\RoslynExtensions.cs" />
+    <Compile Include="ReflectionUtils\TypeWrapper.cs" />
+    <Compile Include="TypeMetadata.cs" />
+  </ItemGroup>
+
+</Project>

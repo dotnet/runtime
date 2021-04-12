@@ -4,6 +4,8 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -166,12 +168,27 @@ namespace System.Text.Json
 
         private static TValue? Deserialize<TValue>(ReadOnlySpan<char> json, Type returnType, JsonSerializerOptions? options)
         {
-            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
-
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
+
+            options.RootBuiltInConvertersAndTypeInfoCreator();
+
+            ReadStack state = default;
+            state.Initialize(returnType, options, supportContinuation: false);
+
+            JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
+            return Deserialize<TValue>(jsonConverter, json, options, ref state);
+        }
+
+        private static TValue? Deserialize<TValue>(
+            JsonConverter jsonConverter,
+            ReadOnlySpan<char> json,
+            JsonSerializerOptions options,
+            ref ReadStack state)
+        {
+            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
 
             byte[]? tempArray = null;
 
@@ -191,7 +208,7 @@ namespace System.Text.Json
                 var readerState = new JsonReaderState(options.GetReaderOptions());
                 var reader = new Utf8JsonReader(utf8, isFinalBlock: true, readerState);
 
-                TValue? value = ReadCore<TValue>(ref reader, returnType, options);
+                TValue? value = ReadCore<TValue>(jsonConverter, ref reader, options, ref state);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(reader.BytesConsumed == actualByteCount);
@@ -206,6 +223,117 @@ namespace System.Text.Json
                     ArrayPool<byte>.Shared.Return(tempArray);
                 }
             }
+        }
+
+        /// <summary>
+        /// Parse the text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// </summary>
+        /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
+        /// <param name="json">JSON text to parse.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="json"/> is <see langword="null"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// The JSON is invalid.
+        ///
+        /// -or-
+        ///
+        /// <typeparamref name="TValue" /> is not compatible with the JSON.
+        ///
+        /// -or-
+        ///
+        /// There is remaining data in the string beyond a single JSON value.</exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// </exception>
+        /// <remarks>Using a <see cref="string"/> is not as efficient as using the
+        /// UTF-8 methods since the implementation natively uses UTF-8.
+        /// </remarks>
+        public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(string json, JsonTypeInfo<TValue> jsonTypeInfo)
+        {
+            if (json == null)
+            {
+                throw new ArgumentNullException(nameof(json));
+            }
+
+            // null check for jsonTypeInfo occurs here.
+            return DeserializeUsingMetadata<TValue?>(json, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Parse the text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// </summary>
+        /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
+        /// <param name="json">JSON text to parse.</param>
+        /// <param name="jsonSerializerContext">A metadata provider for serializable types.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="json"/> is <see langword="null"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="jsonSerializerContext"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// The JSON is invalid.
+        ///
+        /// -or-
+        ///
+        /// <typeparamref name="TValue" /> is not compatible with the JSON.
+        ///
+        /// -or-
+        ///
+        /// There is remaining data in the string beyond a single JSON value.</exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonSerializerContext.GetTypeInfo(Type)"/> method of the provided
+        /// <paramref name="jsonSerializerContext"/> returns <see langword="null"/> for the type to convert.
+        /// </exception>
+        /// <remarks>Using a <see cref="string"/> is not as efficient as using the
+        /// UTF-8 methods since the implementation natively uses UTF-8.
+        /// </remarks>
+        public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(string json, JsonSerializerContext jsonSerializerContext)
+        {
+            if (json == null)
+            {
+                throw new ArgumentNullException(nameof(json));
+            }
+
+            if (jsonSerializerContext == null)
+            {
+                throw new ArgumentNullException(nameof(jsonSerializerContext));
+            }
+
+            return DeserializeUsingMetadata<TValue?>(
+                json,
+                JsonHelpers.GetJsonTypeInfo(jsonSerializerContext, typeof(TValue)));
+        }
+
+        private static TValue? DeserializeUsingMetadata<TValue>(string json, JsonTypeInfo? jsonTypeInfo)
+        {
+            // TODO: this would be when to fallback to regular warm-up code-paths.
+            // For validation during development, we don't expect this to be null.
+            if (jsonTypeInfo == null)
+            {
+                throw new ArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            ReadStack state = default;
+            state.Initialize(jsonTypeInfo);
+
+            return Deserialize<TValue>(
+                jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase,
+                json.AsSpan(),
+                jsonTypeInfo.Options,
+                ref state);
         }
     }
 }

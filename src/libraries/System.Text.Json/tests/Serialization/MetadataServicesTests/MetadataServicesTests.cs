@@ -22,14 +22,15 @@ namespace System.Text.Json.Tests.Serialization
                 options: null,
                 isProperty: true,
                 declaringType: typeof(Point),
-                propertyTypeInfo: JsonMetadataServices.CreateValueInfo<int, int>(options, JsonMetadataServices.Int32Converter),
+                propertyTypeInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
                 converter: null,
                 getter: null,
                 setter: null,
                 ignoreCondition: default,
                 numberHandling: default,
                 propertyName: "MyInt",
-                jsonPropertyName: default));
+                jsonPropertyName: null,
+                encodedName: null));
             Assert.Contains("options", ane.ToString());
 
             // Null declaring type
@@ -37,14 +38,15 @@ namespace System.Text.Json.Tests.Serialization
                 options: options,
                 isProperty: true,
                 declaringType: null,
-                propertyTypeInfo: JsonMetadataServices.CreateValueInfo<int, int>(options, JsonMetadataServices.Int32Converter),
+                propertyTypeInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
                 converter: null,
                 getter: null,
                 setter: null,
                 ignoreCondition: default,
                 numberHandling: default,
                 propertyName: "MyInt",
-                jsonPropertyName: default));
+                jsonPropertyName: null,
+                encodedName: null));
             Assert.Contains("declaringType", ane.ToString());
 
             // Null property type info
@@ -59,7 +61,8 @@ namespace System.Text.Json.Tests.Serialization
                 ignoreCondition: default,
                 numberHandling: default,
                 propertyName: "MyInt",
-                jsonPropertyName: default));
+                jsonPropertyName: null,
+                encodedName: null));
             Assert.Contains("propertyTypeInfo", ane.ToString());
 
             // Null property name
@@ -67,14 +70,15 @@ namespace System.Text.Json.Tests.Serialization
                 options: options,
                 isProperty: true,
                 declaringType: typeof(Point),
-                propertyTypeInfo: JsonMetadataServices.CreateValueInfo<int, int>(options, JsonMetadataServices.Int32Converter),
+                propertyTypeInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
                 converter: null,
                 getter: null,
                 setter: null,
                 ignoreCondition: default,
                 numberHandling: default,
                 propertyName: null,
-                jsonPropertyName: default));
+                jsonPropertyName: null,
+                encodedName: null));
             Assert.Contains("propertyName", ane.ToString());
 
             // Invalid converter
@@ -83,14 +87,15 @@ namespace System.Text.Json.Tests.Serialization
                 isProperty: true,
                 declaringType: typeof(Point),
                 // Converter invalid because you'd need to create with JsonMetadataServices.CreatePropertyInfo<MyDerivedClass> instead.
-                propertyTypeInfo: JsonMetadataServices.CreateValueInfo<MyClass, MyDerivedClass>(options, new DerivedClassConverter()),
+                propertyTypeInfo: JsonMetadataServices.CreateValueInfo<MyClass>(options, new DerivedClassConverter()),
                 converter: null,
                 getter: null,
                 setter: null,
                 ignoreCondition: default,
                 numberHandling: default,
                 propertyName: "MyProp",
-                jsonPropertyName: default));
+                jsonPropertyName: null,
+                encodedName: null));
             string ioeAsStr = ioe.ToString();
             Assert.Contains("Point.MyProp", ioeAsStr);
             Assert.Contains("MyClass", ioeAsStr);
@@ -119,7 +124,7 @@ namespace System.Text.Json.Tests.Serialization
 
             // Info is not for object converter strategy
             ArgumentException ae = Assert.Throws<ArgumentException>(() => JsonMetadataServices.InitializeObjectInfo(
-                info: JsonMetadataServices.CreateValueInfo<MyClass, MyDerivedClass>(options, new DerivedClassConverter()),
+                info: JsonMetadataServices.CreateValueInfo<MyClass>(options, new DerivedClassConverter()),
                 options: options,
                 createObjectFunc: null,
                 propInitFunc: (context) => Array.Empty<JsonPropertyInfo>(),
@@ -151,13 +156,13 @@ namespace System.Text.Json.Tests.Serialization
             JsonSerializerOptions options = new();
 
             // Use converter that returns same type.
-            Assert.NotNull(JsonMetadataServices.CreateValueInfo<MyClass, MyClass>(options, new ClassConverter()));
+            Assert.NotNull(JsonMetadataServices.CreateValueInfo<MyClass>(options, new ClassConverter()));
 
             // Use converter that returns derived type.
-            Assert.NotNull(JsonMetadataServices.CreateValueInfo<MyClass, MyDerivedClass>(options, new DerivedClassConverter()));
+            Assert.NotNull(JsonMetadataServices.CreateValueInfo<MyClass>(options, new DerivedClassConverter()));
 
             // Null options
-            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreateValueInfo<MyClass, MyDerivedClass>(options: null, new DerivedClassConverter()));
+            ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreateValueInfo<MyClass>(options: null, new DerivedClassConverter()));
             Assert.Contains("options", ex.ToString());
         }
 
@@ -169,7 +174,7 @@ namespace System.Text.Json.Tests.Serialization
             // Null options
             ArgumentNullException ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreateArrayInfo<int>(
                 options: null,
-                elementInfo: JsonMetadataServices.CreateValueInfo<int, int>(options, JsonMetadataServices.Int32Converter),
+                elementInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
                 numberHandling: default));
             Assert.Contains("options", ane.ToString());
 
@@ -190,7 +195,7 @@ namespace System.Text.Json.Tests.Serialization
             ArgumentNullException ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreateListInfo<List<int>, int>(
                 options: null,
                 createObjectFunc: null,
-                elementInfo: JsonMetadataServices.CreateValueInfo<int, int>(options, JsonMetadataServices.Int32Converter),
+                elementInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
                 numberHandling: default));
             Assert.Contains("options", ane.ToString());
 
@@ -212,8 +217,8 @@ namespace System.Text.Json.Tests.Serialization
             ArgumentNullException ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreateDictionaryInfo<Dictionary<string, int>, string, int>(
                 options: null,
                 createObjectFunc: null,
-                keyInfo: JsonMetadataServices.CreateValueInfo<string, string>(options, JsonMetadataServices.StringConverter),
-                valueInfo: JsonMetadataServices.CreateValueInfo<int, int>(options, JsonMetadataServices.Int32Converter),
+                keyInfo: JsonMetadataServices.CreateValueInfo<string>(options, JsonMetadataServices.StringConverter),
+                valueInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
                 numberHandling: default));
             Assert.Contains("options", ane.ToString());
 
@@ -222,7 +227,7 @@ namespace System.Text.Json.Tests.Serialization
                 options: options,
                 createObjectFunc: null,
                 keyInfo: null,
-                valueInfo: JsonMetadataServices.CreateValueInfo<int, int>(options, JsonMetadataServices.Int32Converter),
+                valueInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
                 numberHandling: default));
             Assert.Contains("valueInfo", ane.ToString());
 
@@ -230,7 +235,7 @@ namespace System.Text.Json.Tests.Serialization
             ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreateDictionaryInfo<StringToGenericDictionaryWrapper<int>, string, int>(
                 options: options,
                 createObjectFunc: null,
-                keyInfo: JsonMetadataServices.CreateValueInfo<string, string>(options, JsonMetadataServices.StringConverter),
+                keyInfo: JsonMetadataServices.CreateValueInfo<string>(options, JsonMetadataServices.StringConverter),
                 valueInfo: null,
                 numberHandling: default));
             Assert.Contains("valueInfo", ane.ToString());
@@ -259,8 +264,10 @@ namespace System.Text.Json.Tests.Serialization
         [Fact]
         public static void GetNullableConverter()
         {
-            JsonConverter<DayOfWeek> enumConverter = JsonMetadataServices.GetEnumConverter<DayOfWeek>(new JsonSerializerOptions());
-            JsonConverter<DayOfWeek?> nullableConverter = JsonMetadataServices.GetNullableConverter(enumConverter);
+            JsonSerializerOptions options = new();
+            JsonConverter<DayOfWeek> enumConverter = JsonMetadataServices.GetEnumConverter<DayOfWeek>(options);
+            JsonTypeInfo<DayOfWeek> enumInfo = JsonMetadataServices.CreateValueInfo<DayOfWeek>(options, enumConverter);
+            JsonConverter<DayOfWeek?> nullableConverter = JsonMetadataServices.GetNullableConverter(enumInfo);
             Assert.NotNull(nullableConverter);
             Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.GetNullableConverter<DayOfWeek>(null!));
         }

@@ -27,6 +27,10 @@ namespace System.Text.Json
         // Although this may be written by multiple threads, 'volatile' was not added since any local affinity is fine.
         private JsonTypeInfo? _lastClass { get; set; }
 
+        internal JsonSerializerContext? _context;
+
+        private Func<Type, JsonSerializerOptions, JsonTypeInfo>? _typeInfoCreationFunc = null!;
+
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
 
         private MemberAccessor? _memberAccessorStrategy;
@@ -49,8 +53,6 @@ namespace System.Text.Json
         private bool _includeFields;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
-
-        internal JsonSerializerContext? _context;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -575,10 +577,27 @@ namespace System.Text.Json
             // https://github.com/dotnet/runtime/issues/32357
             if (!_classes.TryGetValue(type, out JsonTypeInfo? result))
             {
-                result = _classes.GetOrAdd(type, new JsonTypeInfo(type, this));
+                result = _classes.GetOrAdd(type, GetClassFromContextOrCreate(type));
             }
 
             return result;
+        }
+
+        internal JsonTypeInfo GetClassFromContextOrCreate(Type type)
+        {
+            JsonTypeInfo? info = _context?.GetTypeInfo(type);
+            if (info != null)
+            {
+                return info;
+            }
+
+            if (_typeInfoCreationFunc == null)
+            {
+                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type);
+                return null!;
+            }
+
+            return _typeInfoCreationFunc(type, this);
         }
 
         /// <summary>

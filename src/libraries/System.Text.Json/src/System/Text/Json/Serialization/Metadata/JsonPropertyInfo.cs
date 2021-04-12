@@ -203,7 +203,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void DetermineNumberHandlingForTypeInfo(JsonNumberHandling? numberHandling)
         {
-            if (numberHandling != null && !ConverterBase.IsInternalConverter)
+            if (numberHandling != null && numberHandling != JsonNumberHandling.Strict && !ConverterBase.IsInternalConverter)
             {
                 ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
             }
@@ -243,7 +243,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 NumberHandling = handling;
             }
-            else if (propertyNumberHandling.HasValue)
+            else if (propertyNumberHandling.HasValue && propertyNumberHandling != JsonNumberHandling.Strict)
             {
                 ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
             }
@@ -321,6 +321,12 @@ namespace System.Text.Json.Serialization.Metadata
             ConverterBase = converter;
             Options = options;
         }
+
+        internal abstract void InitializeForTypeInfo(
+            Type declaredType,
+            JsonTypeInfo runtimeTypeInfo,
+            JsonConverter converter,
+            JsonSerializerOptions options);
 
         internal bool IgnoreDefaultValuesOnRead { get; private set; }
         internal bool IgnoreDefaultValuesOnWrite { get; private set; }
