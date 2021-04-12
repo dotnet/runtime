@@ -2418,6 +2418,18 @@ namespace System
             return cache;
         }
 
+        internal void ClearCache()
+        {
+            // If there isn't a GCHandle yet, there's nothing more to do.
+            if (Volatile.Read(ref m_cache) == IntPtr.Zero)
+            {
+                return;
+            }
+
+            // Set the GCHandle to null. The cache will be re-created next time it is needed.
+            GCHandle.InternalSet(m_cache, null);
+        }
+
         private string? GetDefaultMemberName()
         {
             return Cache.GetDefaultMemberName();

@@ -18,6 +18,9 @@
     <SingleFileHostIncludeFilename Include="somefile.dll" />
   -->
   <ItemGroup>
+    <!-- include at least one item. Otherwise there will be no opt-in list and everything will be included -->
+    <SingleFileHostIncludeFilename Include="NONE" />
+
     <!-- LINUX -->
 
     <!-- OSX -->

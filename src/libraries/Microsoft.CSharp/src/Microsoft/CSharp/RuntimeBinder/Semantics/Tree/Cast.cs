@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -22,6 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override object Object
         {
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
             get
             {
                 Expr arg = Argument;

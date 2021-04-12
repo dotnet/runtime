@@ -228,17 +228,10 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
                         scale = scale / 2;
                     }
 
-                    //
-                    //  Set the new weight
-                    //
                     curBlk->scaleBBWeight(scale);
                 }
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\n    " FMT_BB "(wt=%s)", curBlk->bbNum, refCntWtd2str(curBlk->getBBWeight(this)));
-                }
-#endif
+
+                JITDUMP("\n    " FMT_BB "(wt=" FMT_WT ")", curBlk->bbNum, curBlk->getBBWeight(this));
             }
         }
 
@@ -347,41 +340,19 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             //
             if (!curBlk->isMaxBBWeight() && !curBlk->hasProfileWeight())
             {
-                BasicBlock::weight_t weight = curBlk->bbWeight;
+                BasicBlock::weight_t scale = 1.0f / BB_LOOP_WEIGHT_SCALE;
 
                 if (!fgDominate(curBlk, endBlk))
                 {
-                    weight *= 2;
+                    scale *= 2;
                 }
-                else
-                {
-                    /* Merging of blocks can disturb the Dominates
-                       information (see RAID #46649) */
-                    if (weight < BB_LOOP_WEIGHT_SCALE)
-                    {
-                        weight *= 2;
-                    }
-                }
-
-                // We can overflow here so check for it
-                if (weight < curBlk->bbWeight)
-                {
-                    weight = BB_MAX_WEIGHT;
-                }
-
-                assert(curBlk->bbWeight != BB_ZERO_WEIGHT);
-                BasicBlock::weight_t scale = weight / curBlk->bbWeight;
 
                 curBlk->scaleBBWeight(scale);
             }
 
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\n    " FMT_BB "(wt=%s)", curBlk->bbNum, refCntWtd2str(curBlk->getBBWeight(this)));
-            }
-#endif
+            JITDUMP("\n    " FMT_BB "(wt=" FMT_WT ")", curBlk->bbNum, curBlk->getBBWeight(this));
         }
+
         /* Stop if we've reached the last block in the loop */
 
         if (curBlk == endBlk)
