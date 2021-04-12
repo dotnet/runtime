@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -281,8 +280,7 @@ namespace Mono.Linker.Steps
 
 				return new CustomAttributeArgument (typeref, type);
 			default:
-				// TODO: Add support for null values
-				// TODO: Add suppport for arrays
+				// No support for null and arrays, consider adding - mono/linker/issues/1957
 				_context.LogError ($"Unexpected attribute argument type '{typeref.GetDisplayName ()}'", 1045);
 				return null;
 			}
