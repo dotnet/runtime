@@ -1286,7 +1286,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            public KeyValuePair<TKey, TValue> Current => _current;
+            public readonly KeyValuePair<TKey, TValue> Current => _current;
 
             public void Dispose() { }
 
@@ -1524,7 +1524,7 @@ namespace System.Collections.Generic
                     return false;
                 }
 
-                public TKey Current => _currentKey!;
+                public readonly TKey Current => _currentKey!;
 
                 object? IEnumerator.Current
                 {
@@ -1715,7 +1715,7 @@ namespace System.Collections.Generic
                     return false;
                 }
 
-                public TValue Current => _currentValue!;
+                public readonly TValue Current => _currentValue!;
 
                 object? IEnumerator.Current
                 {

@@ -1142,7 +1142,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            public T Current => _current!;
+            public readonly T Current => _current!;
 
             object? IEnumerator.Current
             {

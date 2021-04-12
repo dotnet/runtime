@@ -22,7 +22,7 @@ namespace System.Collections.Generic
 
         public int Length
         {
-            get => _pos;
+            readonly get => _pos;
             set
             {
                 Debug.Assert(value >= 0);
@@ -31,7 +31,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public ref T this[int index]
+        public readonly ref T this[int index]
         {
             get
             {
@@ -51,7 +51,7 @@ namespace System.Collections.Generic
             _pos = pos + 1;
         }
 
-        public ReadOnlySpan<T> AsSpan()
+        public readonly ReadOnlySpan<T> AsSpan()
         {
             return _span.Slice(0, _pos);
         }
