@@ -74,7 +74,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         private static string StoreAndReturnNew(string s)
         {
-            var sb=new System.Text.StringBuilder();
+            var sb = new System.Text.StringBuilder();
             sb.Append("Got:");
             sb.Append(' ');
             sb.Append(s);
