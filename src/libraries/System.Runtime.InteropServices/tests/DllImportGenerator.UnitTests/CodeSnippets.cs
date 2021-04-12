@@ -929,5 +929,73 @@ class MySafeHandle : SafeHandle
 
     protected override bool ReleaseHandle() => true;
 }}";
+
+        public static string PreprocessorIfAroundFullFunctionDefinition(string define) =>
+            @$"
+partial class Test
+{{
+#if {define}
+    [System.Runtime.InteropServices.GeneratedDllImport(""DoesNotExist"")]
+    public static partial int Method(
+        int p,
+        in int pIn,
+        out int pOut);
+#endif
+}}";
+
+        public static string PreprocessorIfAroundFullFunctionDefinitionWithFollowingFunction(string define) =>
+            @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+#if {define}
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial int Method(
+        int p,
+        in int pIn,
+        out int pOut);
+#endif
+    public static int Method2(
+        SafeHandle p) => throw null;
+}}";
+
+        public static string PreprocessorIfAfterAttributeAroundFunction(string define) =>
+            @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+#if {define}
+    public static partial int Method(
+        int p,
+        in int pIn,
+        out int pOut);
+#else
+    public static partial int Method2(
+        int p,
+        in int pIn,
+        out int pOut);
+#endif
+}}";
+
+        public static string PreprocessorIfAfterAttributeAroundFunctionAdditionalFunctionAfter(string define) =>
+            @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+#if {define}
+    public static partial int Method(
+        int p,
+        in int pIn,
+        out int pOut);
+#else
+    public static partial int Method2(
+        int p,
+        in int pIn,
+        out int pOut);
+#endif
+    public static int Foo() => throw null;
+}}";
     }
 }
