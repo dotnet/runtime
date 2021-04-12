@@ -1,11 +1,13 @@
 <Project DefaultTargets="BundleTestWasmApp">
   <Import Project="Directory.Build.props" />
   <PropertyGroup>
-    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$(HELIX_WORKITEM_ROOT)\wasm_build\</TestRootDir>
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\wasm_build\</TestRootDir>
+
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
     <OriginalPublishDir>$(TestRootDir)..\publish\</OriginalPublishDir>
-    <IntermediateOutputPath>$(TestRootDir)\obj</IntermediateOutputPath>
+    <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
+    <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
 
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
@@ -26,17 +28,20 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmSatelliteAssemblies Include="$(OriginalPublishDir)*.resources.dll" />
-      <WasmSatelliteAssemblies>
-        <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
-      </WasmSatelliteAssemblies>
-      <WasmAssembliesToBundle Include="$(OriginalPublishDir)*.dll"/>
+      <WasmSatelliteAssemblies Include="$(OriginalPublishDir)**\*.resources.dll" />
+      <WasmSatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
 
-      <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)"
-             TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
+      <WasmAssembliesToBundle Include="$(OriginalPublishDir)*.dll" />
 
-      <_ExtraFiles Include="$(OriginalPublishDir)..\extraFiles\**\*" />
+      <_ExtraFiles Include="$(ExtraFilesPath)**\*" />
       <WasmFilesToIncludeInFileSystem Include="@(_ExtraFiles)" TargetPath="%(RecursiveDir)%(FileName)%(Extension)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'">
+      <_SatelliteAssembliesForVFS Include="@(WasmSatelliteAssemblies)" />
+      <_SatelliteAssembliesForVFS TargetPath="%(CultureName)\%(FileName)%(Extension)" />
+
+      <WasmFilesToIncludeInFileSystem Include="@(_SatelliteAssembliesForVFS)" />
     </ItemGroup>
   </Target>
   <Import Project="Directory.Build.targets" />

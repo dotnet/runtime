@@ -73,13 +73,26 @@
   <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true'"
              TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateAOTProps"
              AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
+
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="PrepareForWasmBuildApp">
+    <PropertyGroup>
+      <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,
+           so, just setting it true by default -->
+      <IncludeSatelliteAssembliesInVFS Condition="'$(IncludeSatelliteAssembliesInVFS)' == ''">true</IncludeSatelliteAssembliesInVFS>
+    </PropertyGroup>
+
     <ItemGroup>
       <BundleFiles Include="$(WasmMainJSPath)"                  TargetDir="publish" />
-      <BundleFiles Include="@(WasmSatelliteAssemblies)"         TargetDir="%(WasmSatelliteAssemblies.CultureName)" />
+      <BundleFiles Include="@(WasmSatelliteAssemblies)"         TargetDir="publish/%(WasmSatelliteAssemblies.CultureName)" />
       <BundleFiles Include="@(WasmAssembliesToBundle)"          TargetDir="publish" />
 
       <BundleFiles Include="$(MonoProjectRoot)\wasm\data\aot-tests\*" TargetDir="publish" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(DebuggerSupport)' == 'true'">
+      <!-- Add any pdb files, if available -->
+      <_BundlePdbFiles Include="$([System.IO.Path]::ChangeExtension('%(WasmAssembliesToBundle.Identity)', '.pdb'))" />
+      <BundleFiles Include="@(_BundlePdbFiles)" TargetDir="publish" Condition="Exists(%(_BundlePdbFiles.Identity))" />
     </ItemGroup>
 
     <!-- To recreate the original project on helix, we need to set the wasm properties also, same as the
@@ -92,11 +105,15 @@
       <_WasmPropertyNames Include="_WasmDevel" />
       <_WasmPropertyNames Include="WasmLinkIcalls" />
       <_WasmPropertyNames Include="WasmDedup" />
+      <_WasmPropertyNames Include="IncludeSatelliteAssembliesInVFS" />
 
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
         Name="%(_WasmPropertyNames.Identity)"
         ConditionToUse="%(_WasmPropertyNames.ConditionToUse)" />
+
+      <_WasmVFSFilesToCopy Include="@(WasmFilesToIncludeInFileSystem)" />
+      <_WasmVFSFilesToCopy TargetPath="%(FileName)%(Extension)" Condition="'%(TargetPath)' == ''" />
     </ItemGroup>
 
     <!-- This file gets imported by the project file on helix -->
@@ -104,8 +121,8 @@
         Properties="@(_WasmPropertiesToPass)"
         OutputFile="$(BundleDir)publish\AOTTestProjectForHelix.props" />
 
-    <Copy SourceFiles="@(BundleFiles)" DestinationFolder="$(BundleDir)%(TargetDir)" />
-    <Copy SourceFiles="@(WasmFilesToIncludeInFileSystem)"  DestinationFiles="$(BundleDir)\extraFiles\%(WasmFilesToIncludeInFileSystem.TargetPath)" Condition="'%(WasmFilesToIncludeInFileSystem.TargetPath)' != ''" />
+    <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
+    <Copy SourceFiles="@(_WasmVFSFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmVFSFilesToCopy.TargetPath)" />
   </Target>
 
   <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
@@ -137,23 +154,26 @@
 
     <ItemGroup>
       <WasmSatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
-      <WasmSatelliteAssemblies>
-        <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
-      </WasmSatelliteAssemblies>
+      <WasmSatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
 
       <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
 
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
 
-      <_CopyLocalPaths Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
+      <_CopyLocalPaths
+              Include="@(PublishItemsOutputGroupOutputs)"
+              Condition="'%(PublishItemsOutputGroupOutputs.BuildReference)' == 'true' and
+                         !$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.resources.dll'))" />
+
       <_CopyLocalPaths TargetPath="%(_CopyLocalPaths.RelativePath)" Condition="'%(_CopyLocalPaths.RelativePath)' != ''" />
-      <_CopyLocalPaths TargetPath="%(FileName)%(Extension)" Condition="'%(_CopyLocalPaths.RelativePath)' == ''" />
+      <_CopyLocalPaths TargetPath="%(FileName)%(Extension)"         Condition="'%(_CopyLocalPaths.RelativePath)' == ''" />
       <WasmFilesToIncludeInFileSystem Include="@(_CopyLocalPaths)" />
 
-      <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
-
       <!-- Include files specified by test projects from publish dir -->
-      <WasmFilesToIncludeInFileSystem Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)" TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)" Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
+      <WasmFilesToIncludeInFileSystem
+              Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
+              TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
+              Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
   </Target>
 
