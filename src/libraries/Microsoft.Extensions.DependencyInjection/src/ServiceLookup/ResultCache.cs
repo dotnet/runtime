@@ -38,8 +38,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Key = new ServiceCacheKey(type, slot);
         }
 
-        public CallSiteResultCacheLocation Location { get; set; }
+        public CallSiteResultCacheLocation Location { readonly get; set; }
 
-        public ServiceCacheKey Key { get; set; }
+        public ServiceCacheKey Key { readonly get; set; }
     }
 }

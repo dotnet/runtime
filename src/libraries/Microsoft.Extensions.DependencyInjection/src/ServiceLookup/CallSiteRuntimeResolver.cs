@@ -177,9 +177,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
     internal struct RuntimeResolverContext
     {
-        public ServiceProviderEngineScope Scope { get; set; }
+        public ServiceProviderEngineScope Scope { readonly get; set; }
 
-        public RuntimeResolverLock AcquiredLocks { get; set; }
+        public RuntimeResolverLock AcquiredLocks { readonly get; set; }
     }
 
     [Flags]

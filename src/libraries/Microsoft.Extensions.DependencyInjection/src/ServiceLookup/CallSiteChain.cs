@@ -72,8 +72,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private struct ChainItemInfo
         {
-            public int Order { get; }
-            public Type ImplementationType { get; }
+            public readonly int Order { get; }
+            public readonly Type ImplementationType { get; }
 
             public ChainItemInfo(int order, Type implementationType)
             {

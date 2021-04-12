@@ -127,8 +127,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             private bool _firstItem;
 
-            public int Offset { get; }
-            public StringBuilder Builder { get; }
+            public readonly int Offset { get; }
+            public readonly StringBuilder Builder { get; }
 
             public bool ShouldFormat(ServiceCallSite serviceCallSite)
             {

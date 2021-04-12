@@ -409,7 +409,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             private List<ServiceDescriptor> _items;
 
-            public ServiceDescriptor Last
+            public readonly ServiceDescriptor Last
             {
                 get
                 {
@@ -423,7 +423,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
             }
 
-            public int Count
+            public readonly int Count
             {
                 get
                 {
@@ -437,7 +437,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
             }
 
-            public ServiceDescriptor this[int index]
+            public readonly ServiceDescriptor this[int index]
             {
                 get
                 {
@@ -455,7 +455,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
             }
 
-            public int GetSlot(ServiceDescriptor descriptor)
+            public readonly int GetSlot(ServiceDescriptor descriptor)
             {
                 if (descriptor == _item)
                 {

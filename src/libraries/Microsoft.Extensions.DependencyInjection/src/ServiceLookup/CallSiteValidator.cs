@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         internal struct CallSiteValidatorState
         {
-            public ServiceCallSite Singleton { get; set; }
+            public ServiceCallSite Singleton { readonly get; set; }
         }
     }
 }
