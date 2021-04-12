@@ -139,21 +139,21 @@ namespace System.IO.Packaging
                 _valueType = valueType;
             }
 
-            internal object Name
+            internal readonly object Name
             {
                 get
                 {
                     return (string)_nameString;
                 }
             }
-            internal PackageXmlEnum Namespace
+            internal readonly PackageXmlEnum Namespace
             {
                 get
                 {
                     return _namespace;
                 }
             }
-            internal string? ValueType
+            internal readonly string? ValueType
             {
                 get
                 {
