@@ -601,7 +601,13 @@ namespace Microsoft.Extensions.Configuration
                     continue;
                 }
 
-                // Assumes ConfigurationKeyName constructor first arg is a string key name
+                // Ensure ConfigurationKeyName constructor signature matches expectations
+                if (attributeData.ConstructorArguments.Count != 1)
+                {
+                    break;
+                }
+
+                // Assumes ConfigurationKeyName constructor first arg is the string key name
                 string name = attributeData
                     .ConstructorArguments[0]
                     .Value?
