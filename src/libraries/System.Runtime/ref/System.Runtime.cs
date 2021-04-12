@@ -7163,6 +7163,7 @@ namespace System.IO
         public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, int bufferSize) { }
         public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, int bufferSize, bool useAsync) { }
         public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, int bufferSize, System.IO.FileOptions options) { }
+        public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share = System.IO.FileShare.Read, int bufferSize = 4096, System.IO.FileOptions options = System.IO.FileOptions.None, long allocationSize = 0) { }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
