@@ -63,7 +63,7 @@ namespace System.Net
 
         internal bool EndOfCookie
         {
-            get
+            readonly get
             {
                 return _eofCookie;
             }
@@ -73,7 +73,7 @@ namespace System.Net
             }
         }
 
-        internal bool Eof
+        internal readonly bool Eof
         {
             get
             {
@@ -83,7 +83,7 @@ namespace System.Net
 
         internal string? Name
         {
-            get
+            readonly get
             {
                 return _name;
             }
@@ -95,7 +95,7 @@ namespace System.Net
 
         internal bool Quoted
         {
-            get
+            readonly get
             {
                 return _quoted;
             }
@@ -107,7 +107,7 @@ namespace System.Net
 
         internal CookieToken Token
         {
-            get
+            readonly get
             {
                 return _token;
             }
@@ -119,7 +119,7 @@ namespace System.Net
 
         internal string Value
         {
-            get
+            readonly get
             {
                 return _value;
             }
@@ -132,7 +132,7 @@ namespace System.Net
         // Extract
         //
         // Extracts the current token
-        internal string Extract()
+        internal readonly string Extract()
         {
             string tokenString = string.Empty;
 
@@ -441,7 +441,7 @@ namespace System.Net
                 _token = token;
             }
 
-            internal CookieToken Token
+            internal readonly CookieToken Token
             {
                 get
                 {
@@ -449,7 +449,7 @@ namespace System.Net
                 }
             }
 
-            internal bool IsEqualTo(string? value)
+            internal readonly bool IsEqualTo(string? value)
             {
                 return string.Equals(_name, value, StringComparison.OrdinalIgnoreCase);
             }
@@ -478,7 +478,7 @@ namespace System.Net
             new RecognizedAttribute('$' + CookieFields.HttpOnlyAttributeName, CookieToken.HttpOnly),
         };
 
-        internal CookieToken TokenFromName(bool parseResponseCookies)
+        internal readonly CookieToken TokenFromName(bool parseResponseCookies)
         {
             if (!parseResponseCookies)
             {
@@ -861,7 +861,7 @@ namespace System.Net
             return value.Length == 2 ? string.Empty : value.Substring(1, value.Length - 2);
         }
 
-        internal bool EndofHeader()
+        internal readonly bool EndofHeader()
         {
             return _tokenizer.Eof;
         }

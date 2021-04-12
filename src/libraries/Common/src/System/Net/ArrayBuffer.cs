@@ -50,17 +50,17 @@ namespace System.Net
             }
         }
 
-        public int ActiveLength => _availableStart - _activeStart;
-        public Span<byte> ActiveSpan => new Span<byte>(_bytes, _activeStart, _availableStart - _activeStart);
-        public ReadOnlySpan<byte> ActiveReadOnlySpan => new ReadOnlySpan<byte>(_bytes, _activeStart, _availableStart - _activeStart);
-        public Memory<byte> ActiveMemory => new Memory<byte>(_bytes, _activeStart, _availableStart - _activeStart);
+        public readonly int ActiveLength => _availableStart - _activeStart;
+        public readonly Span<byte> ActiveSpan => new Span<byte>(_bytes, _activeStart, _availableStart - _activeStart);
+        public readonly ReadOnlySpan<byte> ActiveReadOnlySpan => new ReadOnlySpan<byte>(_bytes, _activeStart, _availableStart - _activeStart);
+        public readonly Memory<byte> ActiveMemory => new Memory<byte>(_bytes, _activeStart, _availableStart - _activeStart);
 
-        public int AvailableLength => _bytes.Length - _availableStart;
-        public Span<byte> AvailableSpan => _bytes.AsSpan(_availableStart);
-        public Memory<byte> AvailableMemory => _bytes.AsMemory(_availableStart);
-        public Memory<byte> AvailableMemorySliced(int length) => new Memory<byte>(_bytes, _availableStart, length);
+        public readonly int AvailableLength => _bytes.Length - _availableStart;
+        public readonly Span<byte> AvailableSpan => _bytes.AsSpan(_availableStart);
+        public readonly Memory<byte> AvailableMemory => _bytes.AsMemory(_availableStart);
+        public readonly Memory<byte> AvailableMemorySliced(int length) => new Memory<byte>(_bytes, _availableStart, length);
 
-        public int Capacity => _bytes.Length;
+        public readonly int Capacity => _bytes.Length;
 
         public void Discard(int byteCount)
         {
