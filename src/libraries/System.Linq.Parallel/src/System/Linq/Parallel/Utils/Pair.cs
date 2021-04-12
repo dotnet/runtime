@@ -40,13 +40,13 @@ namespace System.Linq.Parallel
 
         public T First
         {
-            get { return _first; }
+            readonly get { return _first; }
             set { _first = value; }
         }
 
         public U Second
         {
-            get { return _second; }
+            readonly get { return _second; }
             set { _second = value; }
         }
     }

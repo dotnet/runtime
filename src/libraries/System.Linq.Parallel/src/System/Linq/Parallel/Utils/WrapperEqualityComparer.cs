@@ -33,13 +33,13 @@ namespace System.Linq.Parallel
             }
         }
 
-        public bool Equals(Wrapper<T> x, Wrapper<T> y)
+        public readonly bool Equals(Wrapper<T> x, Wrapper<T> y)
         {
             Debug.Assert(_comparer != null);
             return _comparer.Equals(x.Value, y.Value);
         }
 
-        public int GetHashCode(Wrapper<T> x)
+        public readonly int GetHashCode(Wrapper<T> x)
         {
             Debug.Assert(_comparer != null);
             T value = x.Value;

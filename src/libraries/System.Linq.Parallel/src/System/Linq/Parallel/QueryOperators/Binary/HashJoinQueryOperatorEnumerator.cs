@@ -329,7 +329,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="TOrderKey"></typeparam>
     internal struct HashLookupValueList<TElement, TOrderKey>
     {
-        internal Pair<TElement, TOrderKey> Head
+        internal readonly Pair<TElement, TOrderKey> Head
         {
             get
             {
@@ -338,7 +338,7 @@ namespace System.Linq.Parallel
         }
         private readonly Pair<TElement, TOrderKey> _head;
 
-        internal ListChunk<Pair<TElement, TOrderKey>>? Tail
+        internal readonly ListChunk<Pair<TElement, TOrderKey>>? Tail
         {
             get
             {

@@ -33,7 +33,7 @@ namespace System.Linq.Parallel
 
         internal CancellationState CancellationState
         {
-            get { return _cancellationState; }
+            readonly get { return _cancellationState; }
             set
             {
                 _cancellationState = value;
@@ -44,31 +44,31 @@ namespace System.Linq.Parallel
         // The task manager on which to execute the query.
         internal TaskScheduler? TaskScheduler
         {
-            get { return _taskScheduler; }
+            readonly get { return _taskScheduler; }
             set { _taskScheduler = value; }
         }
 
         // The number of parallel tasks to utilize.
         internal int? DegreeOfParallelism
         {
-            get { return _degreeOfParallelism; }
+            readonly get { return _degreeOfParallelism; }
             set { _degreeOfParallelism = value; }
         }
 
         // The mode in which to execute this query.
         internal ParallelExecutionMode? ExecutionMode
         {
-            get { return _executionMode; }
+            readonly get { return _executionMode; }
             set { _executionMode = value; }
         }
 
         internal ParallelMergeOptions? MergeOptions
         {
-            get { return _mergeOptions; }
+            readonly get { return _mergeOptions; }
             set { _mergeOptions = value; }
         }
 
-        internal int QueryId
+        internal readonly int QueryId
         {
             get
             {
@@ -96,7 +96,7 @@ namespace System.Linq.Parallel
         //-----------------------------------------------------------------------------------
         // Combines two sets of options.
         //
-        internal QuerySettings Merge(QuerySettings settings2)
+        internal readonly QuerySettings Merge(QuerySettings settings2)
         {
             if (this.TaskScheduler != null && settings2.TaskScheduler != null)
             {
@@ -217,7 +217,7 @@ namespace System.Linq.Parallel
         // Cleanup internal state once the entire query is complete.
         // (this should not be performed after a 'premature-query' completes as the state should live
         // uninterrupted for the duration of the full query.)
-        public void CleanStateAtQueryEnd()
+        public readonly void CleanStateAtQueryEnd()
         {
             Debug.Assert(_cancellationState.MergedCancellationTokenSource != null);
             _cancellationState.MergedCancellationTokenSource.Dispose();
