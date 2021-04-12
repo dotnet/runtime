@@ -376,7 +376,7 @@ namespace System.Data.OleDb
             _value = (unknown as UnsafeNativeMethods.IDBInfo)!;
         }
 
-        internal UnsafeNativeMethods.IDBInfo Value
+        internal readonly UnsafeNativeMethods.IDBInfo Value
         {
             get
             {
@@ -408,7 +408,7 @@ namespace System.Data.OleDb
             Debug.Assert(null != _value, "null IDBProperties");
         }
 
-        internal UnsafeNativeMethods.IDBProperties Value
+        internal readonly UnsafeNativeMethods.IDBProperties Value
         {
             get
             {
@@ -440,7 +440,7 @@ namespace System.Data.OleDb
             _value = (unknown as UnsafeNativeMethods.IDBSchemaRowset)!;
         }
 
-        internal UnsafeNativeMethods.IDBSchemaRowset Value
+        internal readonly UnsafeNativeMethods.IDBSchemaRowset Value
         {
             get
             {
@@ -472,7 +472,7 @@ namespace System.Data.OleDb
             Debug.Assert(null != _value, "null IOpenRowsetWrapper");
         }
 
-        internal UnsafeNativeMethods.IOpenRowset Value
+        internal readonly UnsafeNativeMethods.IOpenRowset Value
         {
             get
             {
@@ -504,7 +504,7 @@ namespace System.Data.OleDb
             _value = (unknown as NativeMethods.ITransactionJoin)!;
         }
 
-        internal NativeMethods.ITransactionJoin Value
+        internal readonly NativeMethods.ITransactionJoin Value
         {
             get
             {

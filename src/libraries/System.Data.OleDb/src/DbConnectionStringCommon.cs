@@ -104,7 +104,7 @@ namespace System.Data.Common
                 return (++_index < _items.Length);
             }
 
-            public K Current
+            public readonly K Current
             {
                 get
                 {
