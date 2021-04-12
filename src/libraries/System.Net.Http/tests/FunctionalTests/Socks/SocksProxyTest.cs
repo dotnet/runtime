@@ -79,18 +79,6 @@ namespace System.Net.Http.Functional.Tests.Socks
         [MemberData(nameof(TestExceptionalAsync_MemberData))]
         public async Task TestExceptionalAsync(string scheme, string host, bool useAuth, ICredentials? credentials)
         {
-            using LoopbackSocksServer proxy = useAuth ? LoopbackSocksServer.Create("DOTNET", "424242") : LoopbackSocksServer.Create();
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            using HttpClient client = CreateHttpClient(handler);
-
-            handler.Proxy = new WebProxy($"{scheme}://localhost:{proxy.Port}")
-            {
-                Credentials = credentials
-            };
-
-            // SocksException is not public
-            await Assert.ThrowsAnyAsync<IOException>(() => client.GetStringAsync($"http://{host}"));
-
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
