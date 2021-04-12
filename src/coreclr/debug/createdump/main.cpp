@@ -21,7 +21,7 @@ const char* g_help = "createdump [options] pid\n"
 "-h, --withheap - create minidump with heap (default).\n"
 "-t, --triage - create triage minidump.\n"
 "-u, --full - create full core dump.\n"
-"-d, --diag - enable diagnostic messages.\n";
+"-d, --diag - enable diagnostic messages.\n"
 "-vd, --verbose - enable verbose diagnostic messages.\n";
 
 bool g_diagnostics = false;
