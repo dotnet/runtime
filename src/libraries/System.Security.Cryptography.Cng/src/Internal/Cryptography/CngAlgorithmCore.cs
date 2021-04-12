@@ -32,7 +32,7 @@ namespace Internal.Cryptography
             }
         }
 
-        public bool IsKeyGeneratedNamedCurve()
+        public readonly bool IsKeyGeneratedNamedCurve()
         {
             ThrowIfDisposed();
             return (_lazyKey != null && _lazyKey.IsECNamedCurve());
@@ -148,7 +148,7 @@ namespace Internal.Cryptography
             _disposed = true;
         }
 
-        internal void ThrowIfDisposed()
+        internal readonly void ThrowIfDisposed()
         {
             if (_disposed)
             {

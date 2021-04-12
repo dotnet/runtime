@@ -56,7 +56,7 @@ namespace Internal.Cryptography
         /// <summary>
         /// Note! This can and likely will throw if the algorithm was given a hardware-based key.
         /// </summary>
-        public byte[] GetKeyIfExportable()
+        public readonly byte[] GetKeyIfExportable()
         {
             if (KeyInPlainText)
             {
@@ -99,27 +99,27 @@ namespace Internal.Cryptography
             _outer.IV = iv;
         }
 
-        public ICryptoTransform CreateEncryptor()
+        public readonly ICryptoTransform CreateEncryptor()
         {
             return CreateCryptoTransform(encrypting: true);
         }
 
-        public ICryptoTransform CreateDecryptor()
+        public readonly ICryptoTransform CreateDecryptor()
         {
             return CreateCryptoTransform(encrypting: false);
         }
 
-        public ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
+        public readonly ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
         {
             return CreateCryptoTransform(rgbKey, rgbIV, encrypting: true);
         }
 
-        public ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
+        public readonly ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
         {
             return CreateCryptoTransform(rgbKey, rgbIV, encrypting: false);
         }
 
-        private ICryptoTransform CreateCryptoTransform(bool encrypting)
+        private readonly ICryptoTransform CreateCryptoTransform(bool encrypting)
         {
             if (KeyInPlainText)
             {
@@ -129,7 +129,7 @@ namespace Internal.Cryptography
             return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting);
         }
 
-        private ICryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
+        private readonly ICryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
         {
             if (rgbKey == null)
                 throw new ArgumentNullException(nameof(rgbKey));
@@ -155,7 +155,7 @@ namespace Internal.Cryptography
             return CreateEphemeralCryptoTransformCore(key, iv, encrypting);
         }
 
-        private ICryptoTransform CreateEphemeralCryptoTransformCore(byte[] key, byte[]? iv, bool encrypting)
+        private readonly ICryptoTransform CreateEphemeralCryptoTransformCore(byte[] key, byte[]? iv, bool encrypting)
         {
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
             SafeAlgorithmHandle algorithmModeHandle = _outer.GetEphemeralModeHandle();
@@ -173,7 +173,7 @@ namespace Internal.Cryptography
             return UniversalCryptoTransform.Create(_outer.Padding, cipher, encrypting);
         }
 
-        private ICryptoTransform CreatePersistedCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[] iv, bool encrypting)
+        private readonly ICryptoTransform CreatePersistedCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[] iv, bool encrypting)
         {
             // note: iv is guaranteed to be cloned before this method, so no need to clone it again
 
@@ -183,14 +183,14 @@ namespace Internal.Cryptography
             return UniversalCryptoTransform.Create(_outer.Padding, cipher, encrypting);
         }
 
-        private CngKey ProduceCngKey()
+        private readonly CngKey ProduceCngKey()
         {
             Debug.Assert(!KeyInPlainText);
 
             return CngKey.Open(_keyName!, _provider!, _optionOptions);
         }
 
-        private bool KeyInPlainText
+        private readonly bool KeyInPlainText
         {
             get { return _keyName == null; }
         }

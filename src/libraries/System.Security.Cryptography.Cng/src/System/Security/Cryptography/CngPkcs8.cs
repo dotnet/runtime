@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
         {
             internal CngKey Key;
 
-            internal string GetAlgorithmGroup()
+            internal readonly string GetAlgorithmGroup()
             {
                 return Key.AlgorithmGroup!.AlgorithmGroup;
             }

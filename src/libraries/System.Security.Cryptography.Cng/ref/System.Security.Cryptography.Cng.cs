@@ -202,10 +202,10 @@ namespace System.Security.Cryptography
         public CngProperty(string name, byte[]? value, System.Security.Cryptography.CngPropertyOptions options) { throw null; }
         public readonly string Name { get { throw null; } }
         public readonly System.Security.Cryptography.CngPropertyOptions Options { get { throw null; } }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public bool Equals(System.Security.Cryptography.CngProperty other) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public readonly bool Equals(System.Security.Cryptography.CngProperty other) { throw null; }
         public override int GetHashCode() { throw null; }
-        public byte[]? GetValue() { throw null; }
+        public readonly byte[]? GetValue() { throw null; }
         public static bool operator ==(System.Security.Cryptography.CngProperty left, System.Security.Cryptography.CngProperty right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.CngProperty left, System.Security.Cryptography.CngProperty right) { throw null; }
     }

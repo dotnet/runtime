@@ -31,13 +31,13 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Name of the property
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { readonly get; private set; }
 
         /// <summary>
         ///     Contents of the property
         /// </summary>
         /// <returns></returns>
-        public byte[]? GetValue()
+        public readonly byte[]? GetValue()
         {
             return (_value == null) ? null : _value.CloneByteArray();
         }
@@ -45,14 +45,14 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Options used to set / get the property
         /// </summary>
-        public CngPropertyOptions Options { get; private set; }
+        public CngPropertyOptions Options { readonly get; private set; }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public override readonly bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is CngProperty && Equals((CngProperty)obj);
         }
 
-        public bool Equals(CngProperty other)
+        public readonly bool Equals(CngProperty other)
         {
             //
             // We will consider CNG properties equal only if the name, options and value are all also equal
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography
             return !left.Equals(right);
         }
 
-        internal byte[]? GetValueWithoutCopying()
+        internal readonly byte[]? GetValueWithoutCopying()
         {
             return _value;
         }
