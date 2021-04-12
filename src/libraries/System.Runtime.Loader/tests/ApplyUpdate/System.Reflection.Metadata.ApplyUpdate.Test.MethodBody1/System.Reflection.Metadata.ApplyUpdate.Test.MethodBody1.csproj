@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TestRuntime>true</TestRuntime>
+    <!-- Mono doesn't support hot reload in every configuration. -->
+    <DefineConstants Condition="'$(MonoMetadataUpdate)' == 'true'">FEATURE_MONO_APPLY_UPDATE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MethodBody1.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <DeltaScript>deltascript.json</DeltaScript>
+    <DeltaCount>2</DeltaCount>
+  </PropertyGroup>
+</Project>

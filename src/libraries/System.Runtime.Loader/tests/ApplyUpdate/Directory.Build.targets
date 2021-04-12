@@ -1,0 +1,5 @@
+<Project>
+  <Import Project="..\..\..\Directory.Build.targets" />
+
+  <Import Project="..\GenerateHotReloadDelta.targets" />
+</Project>
