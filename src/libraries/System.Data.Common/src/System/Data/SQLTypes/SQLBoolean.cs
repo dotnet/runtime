@@ -53,7 +53,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Gets whether the current <see cref='Value'/> is <see cref='SqlBoolean.Null'/>.
         /// </summary>
-        public bool IsNull
+        public readonly bool IsNull
         {
             get { return m_value == x_Null; }
         }
@@ -62,7 +62,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Gets or sets the <see cref='SqlBoolean'/> to be <see langword='true'/> or <see langword='false'/>.
         /// </summary>
-        public bool Value
+        public readonly bool Value
         {
             get
             {
@@ -78,7 +78,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Gets whether the current <see cref='Value'/> is <see cref='SqlBoolean.True'/>.
         /// </summary>
-        public bool IsTrue
+        public readonly bool IsTrue
         {
             get { return m_value == x_True; }
         }
@@ -86,7 +86,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Gets whether the current <see cref='Value'/> is <see cref='SqlBoolean.False'/>.
         /// </summary>
-        public bool IsFalse
+        public readonly bool IsFalse
         {
             get { return m_value == x_False; }
         }
@@ -173,7 +173,7 @@ namespace System.Data.SqlTypes
 
 
         // property: ByteValue
-        public byte ByteValue
+        public readonly byte ByteValue
         {
             get
             {
@@ -184,7 +184,7 @@ namespace System.Data.SqlTypes
             }
         }
 
-        public override string ToString()
+        public override readonly string ToString()
         {
             return IsNull ? SQLResource.NullString : Value.ToString();
         }
@@ -384,47 +384,47 @@ namespace System.Data.SqlTypes
 
         // Alternative method for conversions.
 
-        public SqlByte ToSqlByte()
+        public readonly SqlByte ToSqlByte()
         {
             return (SqlByte)this;
         }
 
-        public SqlDouble ToSqlDouble()
+        public readonly SqlDouble ToSqlDouble()
         {
             return (SqlDouble)this;
         }
 
-        public SqlInt16 ToSqlInt16()
+        public readonly SqlInt16 ToSqlInt16()
         {
             return (SqlInt16)this;
         }
 
-        public SqlInt32 ToSqlInt32()
+        public readonly SqlInt32 ToSqlInt32()
         {
             return (SqlInt32)this;
         }
 
-        public SqlInt64 ToSqlInt64()
+        public readonly SqlInt64 ToSqlInt64()
         {
             return (SqlInt64)this;
         }
 
-        public SqlMoney ToSqlMoney()
+        public readonly SqlMoney ToSqlMoney()
         {
             return (SqlMoney)this;
         }
 
-        public SqlDecimal ToSqlDecimal()
+        public readonly SqlDecimal ToSqlDecimal()
         {
             return (SqlDecimal)this;
         }
 
-        public SqlSingle ToSqlSingle()
+        public readonly SqlSingle ToSqlSingle()
         {
             return (SqlSingle)this;
         }
 
-        public SqlString ToSqlString()
+        public readonly SqlString ToSqlString()
         {
             return (SqlString)this;
         }
@@ -438,7 +438,7 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object? value)
+        public readonly int CompareTo(object? value)
         {
             if (value is SqlBoolean)
             {
@@ -449,7 +449,7 @@ namespace System.Data.SqlTypes
             throw ADP.WrongType(value!.GetType(), typeof(SqlBoolean));
         }
 
-        public int CompareTo(SqlBoolean value)
+        public readonly int CompareTo(SqlBoolean value)
         {
             // If both Null, consider them equal.
             // Otherwise, Null is less than anything.
@@ -464,7 +464,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object? value)
+        public override readonly bool Equals(object? value)
         {
             if (!(value is SqlBoolean))
             {
@@ -480,12 +480,12 @@ namespace System.Data.SqlTypes
         }
 
         // For hashing purpose
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return IsNull ? 0 : Value.GetHashCode();
         }
 
-        XmlSchema? IXmlSerializable.GetSchema() { return null; }
+        readonly XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

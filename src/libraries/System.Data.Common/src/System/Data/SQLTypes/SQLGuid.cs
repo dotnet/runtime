@@ -67,13 +67,13 @@ namespace System.Data.SqlTypes
 
 
         // INullable
-        public bool IsNull
+        public readonly bool IsNull
         {
             get { return (m_value is null); }
         }
 
         // property: Value
-        public Guid Value
+        public readonly Guid Value
         {
             get
             {
@@ -96,14 +96,14 @@ namespace System.Data.SqlTypes
             return x.Value;
         }
 
-        public byte[]? ToByteArray()
+        public readonly byte[]? ToByteArray()
         {
             byte[] ret = new byte[SizeOfGuid];
             m_value!.CopyTo(ret, 0); // TODO: NRE
             return ret;
         }
 
-        public override string ToString()
+        public override readonly string ToString()
         {
             if (m_value is null)
                 return SQLResource.NullString;
@@ -236,12 +236,12 @@ namespace System.Data.SqlTypes
 
         // Alternative method for conversions.
 
-        public SqlString ToSqlString()
+        public readonly SqlString ToSqlString()
         {
             return (SqlString)this;
         }
 
-        public SqlBinary ToSqlBinary()
+        public readonly SqlBinary ToSqlBinary()
         {
             return (SqlBinary)this;
         }
@@ -254,7 +254,7 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object? value)
+        public readonly int CompareTo(object? value)
         {
             if (value is SqlGuid)
             {
@@ -265,7 +265,7 @@ namespace System.Data.SqlTypes
             throw ADP.WrongType(value!.GetType(), typeof(SqlGuid));
         }
 
-        public int CompareTo(SqlGuid value)
+        public readonly int CompareTo(SqlGuid value)
         {
             // If both Null, consider them equal.
             // Otherwise, Null is less than anything.
@@ -280,7 +280,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object? value)
+        public override readonly bool Equals(object? value)
         {
             if (!(value is SqlGuid))
             {
@@ -296,12 +296,12 @@ namespace System.Data.SqlTypes
         }
 
         // For hashing purpose
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return IsNull ? 0 : Value.GetHashCode();
         }
 
-        XmlSchema? IXmlSerializable.GetSchema() { return null; }
+        readonly XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

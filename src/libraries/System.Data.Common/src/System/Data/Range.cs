@@ -20,11 +20,11 @@ namespace System.Data
             _isNotNull = true;
         }
 
-        public int Count => IsNull ? 0 : _max - _min + 1;
+        public readonly int Count => IsNull ? 0 : _max - _min + 1;
 
-        public bool IsNull => !_isNotNull;
+        public readonly bool IsNull => !_isNotNull;
 
-        public int Max
+        public readonly int Max
         {
             get
             {
@@ -33,7 +33,7 @@ namespace System.Data
             }
         }
 
-        public int Min
+        public readonly int Min
         {
             get
             {
@@ -42,7 +42,7 @@ namespace System.Data
             }
         }
 
-        internal void CheckNull()
+        internal readonly void CheckNull()
         {
             if (IsNull)
             {

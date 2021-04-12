@@ -106,7 +106,7 @@ namespace System.Data.SqlTypes
         /// Gets a value indicating whether the <see cref='Value'/>
         /// property is assigned to null.
         /// </summary>
-        public bool IsNull
+        public readonly bool IsNull
         {
             get { return !_fNotNull; }
         }
@@ -114,7 +114,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Gets or sets the monetary value of an instance of the <see cref='SqlMoney'/> class.
         /// </summary>
-        public decimal Value
+        public readonly decimal Value
         {
             get
             {
@@ -125,7 +125,7 @@ namespace System.Data.SqlTypes
             }
         }
 
-        public decimal ToDecimal()
+        public readonly decimal ToDecimal()
         {
             if (IsNull)
                 throw new SqlNullValueException();
@@ -141,7 +141,7 @@ namespace System.Data.SqlTypes
             return new decimal(unchecked((int)value), unchecked((int)(value >> 32)), 0, fNegative, (byte)s_iMoneyScale);
         }
 
-        public long ToInt64()
+        public readonly long ToInt64()
         {
             if (IsNull)
                 throw new SqlNullValueException();
@@ -162,7 +162,7 @@ namespace System.Data.SqlTypes
             return ret;
         }
 
-        internal long ToSqlInternalRepresentation()
+        internal readonly long ToSqlInternalRepresentation()
         {
             if (IsNull)
                 throw new SqlNullValueException();
@@ -170,12 +170,12 @@ namespace System.Data.SqlTypes
             return _value;
         }
 
-        public int ToInt32()
+        public readonly int ToInt32()
         {
             return checked((int)(ToInt64()));
         }
 
-        public double ToDouble()
+        public readonly double ToDouble()
         {
             return decimal.ToDouble(ToDecimal());
         }
@@ -204,7 +204,7 @@ namespace System.Data.SqlTypes
             return x.Value;
         }
 
-        public override string ToString()
+        public override readonly string ToString()
         {
             if (IsNull)
             {
@@ -459,47 +459,47 @@ namespace System.Data.SqlTypes
 
         // Alternative method for conversions.
 
-        public SqlBoolean ToSqlBoolean()
+        public readonly SqlBoolean ToSqlBoolean()
         {
             return (SqlBoolean)this;
         }
 
-        public SqlByte ToSqlByte()
+        public readonly SqlByte ToSqlByte()
         {
             return (SqlByte)this;
         }
 
-        public SqlDouble ToSqlDouble()
+        public readonly SqlDouble ToSqlDouble()
         {
             return this;
         }
 
-        public SqlInt16 ToSqlInt16()
+        public readonly SqlInt16 ToSqlInt16()
         {
             return (SqlInt16)this;
         }
 
-        public SqlInt32 ToSqlInt32()
+        public readonly SqlInt32 ToSqlInt32()
         {
             return (SqlInt32)this;
         }
 
-        public SqlInt64 ToSqlInt64()
+        public readonly SqlInt64 ToSqlInt64()
         {
             return (SqlInt64)this;
         }
 
-        public SqlDecimal ToSqlDecimal()
+        public readonly SqlDecimal ToSqlDecimal()
         {
             return this;
         }
 
-        public SqlSingle ToSqlSingle()
+        public readonly SqlSingle ToSqlSingle()
         {
             return this;
         }
 
-        public SqlString ToSqlString()
+        public readonly SqlString ToSqlString()
         {
             return (SqlString)this;
         }
@@ -512,7 +512,7 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object? value)
+        public readonly int CompareTo(object? value)
         {
             if (value is SqlMoney)
             {
@@ -523,7 +523,7 @@ namespace System.Data.SqlTypes
             throw ADP.WrongType(value!.GetType(), typeof(SqlMoney));
         }
 
-        public int CompareTo(SqlMoney value)
+        public readonly int CompareTo(SqlMoney value)
         {
             // If both Null, consider them equal.
             // Otherwise, Null is less than anything.
@@ -538,7 +538,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object? value)
+        public override readonly bool Equals(object? value)
         {
             if (!(value is SqlMoney))
             {
@@ -554,13 +554,13 @@ namespace System.Data.SqlTypes
         }
 
         // For hashing purpose
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             // Don't use Value property, because Value will convert to Decimal, which is not necessary.
             return IsNull ? 0 : _value.GetHashCode();
         }
 
-        XmlSchema? IXmlSerializable.GetSchema() { return null; }
+        readonly XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

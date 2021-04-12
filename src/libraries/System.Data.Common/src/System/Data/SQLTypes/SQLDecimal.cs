@@ -422,7 +422,7 @@ namespace System.Data.SqlTypes
         // returns true if the current value is less or equal than the max value of the
         // supplied precision.
         //
-        private bool VerifyPrecision(byte precision)
+        private readonly bool VerifyPrecision(byte precision)
         {
             Debug.Assert(precision > 0, "Precision cannot be less than 1");
             Debug.Assert(precision <= MaxPrecision, "Precision > MaxPrecision");
@@ -806,17 +806,17 @@ namespace System.Data.SqlTypes
 
 
         // INullable
-        public bool IsNull
+        public readonly bool IsNull
         {
             get { return (_bStatus & s_bNullMask) == s_bIsNull; }
         }
 
-        public decimal Value
+        public readonly decimal Value
         {
             get { return ToDecimal(); }
         }
 
-        public bool IsPositive
+        public readonly bool IsPositive
         {
             get
             {
@@ -838,7 +838,7 @@ namespace System.Data.SqlTypes
             _bStatus = (byte)(fPositive ? (_bStatus & s_bReverseSignMask) : (_bStatus | s_bNegative));
         }
 
-        public byte Precision
+        public readonly byte Precision
         {
             get
             {
@@ -848,7 +848,7 @@ namespace System.Data.SqlTypes
             }
         }
 
-        public byte Scale
+        public readonly byte Scale
         {
             get
             {
@@ -858,7 +858,7 @@ namespace System.Data.SqlTypes
             }
         }
 
-        public int[] Data
+        public readonly int[] Data
         {
             get
             {
@@ -1117,7 +1117,7 @@ namespace System.Data.SqlTypes
             return snResult;
         }
 
-        public double ToDouble()
+        public readonly double ToDouble()
         {
             if (IsNull)
                 throw new SqlNullValueException();
@@ -1134,7 +1134,7 @@ namespace System.Data.SqlTypes
             return IsPositive ? dRet : -dRet;
         }
 
-        private decimal ToDecimal()
+        private readonly decimal ToDecimal()
         {
             if (IsNull)
                 throw new SqlNullValueException();
@@ -1777,7 +1777,7 @@ namespace System.Data.SqlTypes
         //----------------------------------------------------------------------
         // Is this RE numeric valid?
         [Conditional("DEBUG")]
-        private void AssertValid()
+        private readonly void AssertValid()
         {
             if (IsNull)
                 return;
@@ -1895,20 +1895,20 @@ namespace System.Data.SqlTypes
         }
 
         // check whether is zero
-        private bool FZero()
+        private readonly bool FZero()
         {
             return (_data1 == 0) && (_bLen <= 1);
         }
 
         // Find the case where we overflowed 10**38, but not 2**128
-        private bool FGt10_38()
+        private readonly bool FGt10_38()
         {
             return _data4 >= 0x4b3b4ca8L && _bLen == 4 &&
             ((_data4 > 0x4b3b4ca8L) || (_data3 > 0x5a86c47aL) ||
              (_data3 == 0x5a86c47aL) && (_data2 >= 0x098a2240L));
         }
 
-        private bool FGt10_38(Span<uint> rglData)
+        private readonly bool FGt10_38(Span<uint> rglData)
         {
             Debug.Assert(rglData.Length == 4, "rglData.Length == 4", "Wrong array length: " + rglData.Length.ToString(CultureInfo.InvariantCulture));
 
@@ -2399,7 +2399,7 @@ namespace System.Data.SqlTypes
         //        0            - |this| = |snumOp|
         //        negative    - |this| < |snumOp|
         //
-        private int LAbsCmp(SqlDecimal snumOp)
+        private readonly int LAbsCmp(SqlDecimal snumOp)
         {
             int iData;  //which UI4 we are operating on
             int culOp;  //#of UI4s on operand
@@ -2949,47 +2949,47 @@ namespace System.Data.SqlTypes
 
         // Alternative method for conversions.
 
-        public SqlBoolean ToSqlBoolean()
+        public readonly SqlBoolean ToSqlBoolean()
         {
             return (SqlBoolean)this;
         }
 
-        public SqlByte ToSqlByte()
+        public readonly SqlByte ToSqlByte()
         {
             return (SqlByte)this;
         }
 
-        public SqlDouble ToSqlDouble()
+        public readonly SqlDouble ToSqlDouble()
         {
             return this;
         }
 
-        public SqlInt16 ToSqlInt16()
+        public readonly SqlInt16 ToSqlInt16()
         {
             return (SqlInt16)this;
         }
 
-        public SqlInt32 ToSqlInt32()
+        public readonly SqlInt32 ToSqlInt32()
         {
             return (SqlInt32)this;
         }
 
-        public SqlInt64 ToSqlInt64()
+        public readonly SqlInt64 ToSqlInt64()
         {
             return (SqlInt64)this;
         }
 
-        public SqlMoney ToSqlMoney()
+        public readonly SqlMoney ToSqlMoney()
         {
             return (SqlMoney)this;
         }
 
-        public SqlSingle ToSqlSingle()
+        public readonly SqlSingle ToSqlSingle()
         {
             return this;
         }
 
-        public SqlString ToSqlString()
+        public readonly SqlString ToSqlString()
         {
             return (SqlString)this;
         }
@@ -3255,7 +3255,7 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object? value)
+        public readonly int CompareTo(object? value)
         {
             if (value is SqlDecimal i)
             {
@@ -3264,7 +3264,7 @@ namespace System.Data.SqlTypes
             throw ADP.WrongType(value!.GetType(), typeof(SqlDecimal));
         }
 
-        public int CompareTo(SqlDecimal value)
+        public readonly int CompareTo(SqlDecimal value)
         {
             // If both Null, consider them equal.
             // Otherwise, Null is less than anything.
@@ -3279,7 +3279,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object? value)
+        public override readonly bool Equals(object? value)
         {
             if (!(value is SqlDecimal))
             {
@@ -3295,7 +3295,7 @@ namespace System.Data.SqlTypes
         }
 
         // For hashing purpose
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             if (IsNull)
                 return 0;
@@ -3330,7 +3330,7 @@ namespace System.Data.SqlTypes
             return ulValue;
         }
 
-        XmlSchema? IXmlSerializable.GetSchema() { return null; }
+        readonly XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

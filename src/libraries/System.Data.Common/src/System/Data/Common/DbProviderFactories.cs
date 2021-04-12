@@ -23,13 +23,13 @@ namespace System.Data.Common
                 this.FactoryInstance = factoryInstance;
             }
 
-            internal string FactoryTypeAssemblyQualifiedName { get; }
+            internal readonly string FactoryTypeAssemblyQualifiedName { get; }
 
             /// <summary>
             /// The cached instance of the type in <see cref="FactoryTypeAssemblyQualifiedName"/>. If null, this registration is seen as a deferred registration
             /// and <see cref="FactoryTypeAssemblyQualifiedName"/> is checked the first time when this registration is requested through GetFactory().
             /// </summary>
-            internal DbProviderFactory? FactoryInstance { get; }
+            internal readonly DbProviderFactory? FactoryInstance { get; }
         }
 
         private static readonly ConcurrentDictionary<string, ProviderRegistration> _registeredFactories = new ConcurrentDictionary<string, ProviderRegistration>();

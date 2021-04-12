@@ -39,13 +39,13 @@ namespace System.Data.SqlTypes
         }
 
         // INullable
-        public bool IsNull
+        public readonly bool IsNull
         {
             get { return !m_fNotNull; }
         }
 
         // property: Value
-        public byte Value
+        public readonly byte Value
         {
             get
             {
@@ -68,7 +68,7 @@ namespace System.Data.SqlTypes
             return x.Value;
         }
 
-        public override string ToString()
+        public override readonly string ToString()
         {
             return IsNull ? SQLResource.NullString : m_value.ToString((IFormatProvider)null!);
         }
@@ -393,47 +393,47 @@ namespace System.Data.SqlTypes
 
         // Alternative method for conversions.
 
-        public SqlBoolean ToSqlBoolean()
+        public readonly SqlBoolean ToSqlBoolean()
         {
             return (SqlBoolean)this;
         }
 
-        public SqlDouble ToSqlDouble()
+        public readonly SqlDouble ToSqlDouble()
         {
             return this;
         }
 
-        public SqlInt16 ToSqlInt16()
+        public readonly SqlInt16 ToSqlInt16()
         {
             return this;
         }
 
-        public SqlInt32 ToSqlInt32()
+        public readonly SqlInt32 ToSqlInt32()
         {
             return this;
         }
 
-        public SqlInt64 ToSqlInt64()
+        public readonly SqlInt64 ToSqlInt64()
         {
             return this;
         }
 
-        public SqlMoney ToSqlMoney()
+        public readonly SqlMoney ToSqlMoney()
         {
             return this;
         }
 
-        public SqlDecimal ToSqlDecimal()
+        public readonly SqlDecimal ToSqlDecimal()
         {
             return this;
         }
 
-        public SqlSingle ToSqlSingle()
+        public readonly SqlSingle ToSqlSingle()
         {
             return this;
         }
 
-        public SqlString ToSqlString()
+        public readonly SqlString ToSqlString()
         {
             return (SqlString)this;
         }
@@ -447,7 +447,7 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object? value)
+        public readonly int CompareTo(object? value)
         {
             if (value is SqlByte)
             {
@@ -458,7 +458,7 @@ namespace System.Data.SqlTypes
             throw ADP.WrongType(value!.GetType(), typeof(SqlByte));
         }
 
-        public int CompareTo(SqlByte value)
+        public readonly int CompareTo(SqlByte value)
         {
             // If both Null, consider them equal.
             // Otherwise, Null is less than anything.
@@ -473,7 +473,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object? value)
+        public override readonly bool Equals(object? value)
         {
             if (!(value is SqlByte))
             {
@@ -489,12 +489,12 @@ namespace System.Data.SqlTypes
         }
 
         // For hashing purpose
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return IsNull ? 0 : Value.GetHashCode();
         }
 
-        XmlSchema? IXmlSerializable.GetSchema() { return null; }
+        readonly XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

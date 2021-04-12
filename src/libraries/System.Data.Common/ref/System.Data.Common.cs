@@ -2579,17 +2579,17 @@ namespace System.Data.SqlTypes
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlBinary Null;
         public SqlBinary(byte[]? value) { throw null; }
-        public bool IsNull { get { throw null; } }
-        public byte this[int index] { get { throw null; } }
-        public int Length { get { throw null; } }
-        public byte[] Value { get { throw null; } }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly byte this[int index] { get { throw null; } }
+        public readonly int Length { get { throw null; } }
+        public readonly byte[] Value { get { throw null; } }
         public static System.Data.SqlTypes.SqlBinary Add(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
-        public int CompareTo(System.Data.SqlTypes.SqlBinary value) { throw null; }
-        public int CompareTo(object? value) { throw null; }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlBinary value) { throw null; }
+        public readonly int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlBinary Concat(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
@@ -2606,11 +2606,11 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
-        System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public System.Data.SqlTypes.SqlGuid ToSqlGuid() { throw null; }
-        public override string ToString() { throw null; }
+        public readonly System.Data.SqlTypes.SqlGuid ToSqlGuid() { throw null; }
+        public override readonly string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
     public partial struct SqlBoolean : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
@@ -2623,17 +2623,17 @@ namespace System.Data.SqlTypes
         public static readonly System.Data.SqlTypes.SqlBoolean Zero;
         public SqlBoolean(bool value) { throw null; }
         public SqlBoolean(int value) { throw null; }
-        public byte ByteValue { get { throw null; } }
-        public bool IsFalse { get { throw null; } }
-        public bool IsNull { get { throw null; } }
-        public bool IsTrue { get { throw null; } }
-        public bool Value { get { throw null; } }
+        public readonly byte ByteValue { get { throw null; } }
+        public readonly bool IsFalse { get { throw null; } }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly bool IsTrue { get { throw null; } }
+        public readonly bool Value { get { throw null; } }
         public static System.Data.SqlTypes.SqlBoolean And(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
-        public int CompareTo(System.Data.SqlTypes.SqlBoolean value) { throw null; }
-        public int CompareTo(object? value) { throw null; }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlBoolean value) { throw null; }
+        public readonly int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEquals(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
@@ -2667,19 +2667,19 @@ namespace System.Data.SqlTypes
         public static bool operator true(System.Data.SqlTypes.SqlBoolean x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Or(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Parse(string s) { throw null; }
-        System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
-        public System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
-        public System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
-        public System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
-        public System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
-        public System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
-        public System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
-        public System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
-        public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
-        public override string ToString() { throw null; }
+        public readonly System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
+        public readonly System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
+        public readonly System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
+        public readonly System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
+        public override readonly string ToString() { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Xor(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
@@ -2691,17 +2691,17 @@ namespace System.Data.SqlTypes
         public static readonly System.Data.SqlTypes.SqlByte Null;
         public static readonly System.Data.SqlTypes.SqlByte Zero;
         public SqlByte(byte value) { throw null; }
-        public bool IsNull { get { throw null; } }
-        public byte Value { get { throw null; } }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly byte Value { get { throw null; } }
         public static System.Data.SqlTypes.SqlByte Add(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
         public static System.Data.SqlTypes.SqlByte BitwiseAnd(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
         public static System.Data.SqlTypes.SqlByte BitwiseOr(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
-        public int CompareTo(System.Data.SqlTypes.SqlByte value) { throw null; }
-        public int CompareTo(object? value) { throw null; }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlByte value) { throw null; }
+        public readonly int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlByte Divide(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
@@ -2740,19 +2740,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlByte operator -(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
         public static System.Data.SqlTypes.SqlByte Parse(string s) { throw null; }
         public static System.Data.SqlTypes.SqlByte Subtract(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
-        System.Xml.Schema.XmlSchema System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
-        public System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
-        public System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
-        public System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
-        public System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
-        public System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
-        public System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
-        public System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
-        public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
-        public override string ToString() { throw null; }
+        public readonly System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
+        public readonly System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
+        public readonly System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
+        public readonly System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
+        public override readonly string ToString() { throw null; }
         public static System.Data.SqlTypes.SqlByte Xor(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
@@ -2838,16 +2838,16 @@ namespace System.Data.SqlTypes
         public SqlDateTime(int year, int month, int day, int hour, int minute, int second) { throw null; }
         public SqlDateTime(int year, int month, int day, int hour, int minute, int second, double millisecond) { throw null; }
         public SqlDateTime(int year, int month, int day, int hour, int minute, int second, int bilisecond) { throw null; }
-        public int DayTicks { get { throw null; } }
-        public bool IsNull { get { throw null; } }
-        public int TimeTicks { get { throw null; } }
-        public System.DateTime Value { get { throw null; } }
+        public readonly int DayTicks { get { throw null; } }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly int TimeTicks { get { throw null; } }
+        public readonly System.DateTime Value { get { throw null; } }
         public static System.Data.SqlTypes.SqlDateTime Add(System.Data.SqlTypes.SqlDateTime x, System.TimeSpan t) { throw null; }
-        public int CompareTo(System.Data.SqlTypes.SqlDateTime value) { throw null; }
-        public int CompareTo(object? value) { throw null; }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlDateTime value) { throw null; }
+        public readonly int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
@@ -2867,10 +2867,10 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlDateTime operator -(System.Data.SqlTypes.SqlDateTime x, System.TimeSpan t) { throw null; }
         public static System.Data.SqlTypes.SqlDateTime Parse(string s) { throw null; }
         public static System.Data.SqlTypes.SqlDateTime Subtract(System.Data.SqlTypes.SqlDateTime x, System.TimeSpan t) { throw null; }
-        System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
+        public readonly System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
         public override string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
@@ -2889,24 +2889,24 @@ namespace System.Data.SqlTypes
         public SqlDecimal(int value) { throw null; }
         public SqlDecimal(long value) { throw null; }
         public byte[] BinData { get { throw null; } }
-        public int[] Data { get { throw null; } }
-        public bool IsNull { get { throw null; } }
-        public bool IsPositive { get { throw null; } }
-        public byte Precision { get { throw null; } }
-        public byte Scale { get { throw null; } }
-        public decimal Value { get { throw null; } }
+        public readonly int[] Data { get { throw null; } }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly bool IsPositive { get { throw null; } }
+        public readonly byte Precision { get { throw null; } }
+        public readonly byte Scale { get { throw null; } }
+        public readonly decimal Value { get { throw null; } }
         public static System.Data.SqlTypes.SqlDecimal Abs(System.Data.SqlTypes.SqlDecimal n) { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Add(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
         public static System.Data.SqlTypes.SqlDecimal AdjustScale(System.Data.SqlTypes.SqlDecimal n, int digits, bool fRound) { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Ceiling(System.Data.SqlTypes.SqlDecimal n) { throw null; }
-        public int CompareTo(System.Data.SqlTypes.SqlDecimal value) { throw null; }
-        public int CompareTo(object? value) { throw null; }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlDecimal value) { throw null; }
+        public readonly int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlDecimal ConvertToPrecScale(System.Data.SqlTypes.SqlDecimal n, int precision, int scale) { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Divide(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Floor(System.Data.SqlTypes.SqlDecimal n) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
@@ -2943,19 +2943,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlDecimal Round(System.Data.SqlTypes.SqlDecimal n, int position) { throw null; }
         public static System.Data.SqlTypes.SqlInt32 Sign(System.Data.SqlTypes.SqlDecimal n) { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Subtract(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
-        System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public double ToDouble() { throw null; }
-        public System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
-        public System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
-        public System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
-        public System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
-        public System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
-        public System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
-        public System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
-        public System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
-        public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
+        public readonly double ToDouble() { throw null; }
+        public readonly System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
+        public readonly System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
+        public readonly System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
+        public readonly System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
+        public readonly System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
         public override string ToString() { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Truncate(System.Data.SqlTypes.SqlDecimal n, int position) { throw null; }
     }
@@ -2968,15 +2968,15 @@ namespace System.Data.SqlTypes
         public static readonly System.Data.SqlTypes.SqlDouble Null;
         public static readonly System.Data.SqlTypes.SqlDouble Zero;
         public SqlDouble(double value) { throw null; }
-        public bool IsNull { get { throw null; } }
-        public double Value { get { throw null; } }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly double Value { get { throw null; } }
         public static System.Data.SqlTypes.SqlDouble Add(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
-        public int CompareTo(System.Data.SqlTypes.SqlDouble value) { throw null; }
-        public int CompareTo(object? value) { throw null; }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlDouble value) { throw null; }
+        public readonly int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlDouble Divide(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
@@ -3008,19 +3008,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlDouble operator -(System.Data.SqlTypes.SqlDouble x) { throw null; }
         public static System.Data.SqlTypes.SqlDouble Parse(string s) { throw null; }
         public static System.Data.SqlTypes.SqlDouble Subtract(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
-        System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
-        public System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
-        public System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
-        public System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
-        public System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
-        public System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
-        public System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
-        public System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
-        public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
-        public override string ToString() { throw null; }
+        public readonly System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
+        public readonly System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
+        public readonly System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
+        public readonly System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
+        public readonly System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
+        public override readonly string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
     public partial struct SqlGuid : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
@@ -3032,13 +3032,13 @@ namespace System.Data.SqlTypes
         public SqlGuid(System.Guid g) { throw null; }
         public SqlGuid(int a, short b, short c, byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k) { throw null; }
         public SqlGuid(string s) { throw null; }
-        public bool IsNull { get { throw null; } }
-        public System.Guid Value { get { throw null; } }
-        public int CompareTo(System.Data.SqlTypes.SqlGuid value) { throw null; }
-        public int CompareTo(object? value) { throw null; }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly System.Guid Value { get { throw null; } }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlGuid value) { throw null; }
+        public readonly int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
@@ -3056,13 +3056,13 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
         public static System.Data.SqlTypes.SqlGuid Parse(string s) { throw null; }
-        System.Xml.Schema.XmlSchema System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public byte[]? ToByteArray() { throw null; }
-        public System.Data.SqlTypes.SqlBinary ToSqlBinary() { throw null; }
-        public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
-        public override string ToString() { throw null; }
+        public readonly byte[]? ToByteArray() { throw null; }
+        public readonly System.Data.SqlTypes.SqlBinary ToSqlBinary() { throw null; }
+        public readonly System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
+        public override readonly string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
     public partial struct SqlInt16 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
@@ -3073,17 +3073,17 @@ namespace System.Data.SqlTypes
         public static readonly System.Data.SqlTypes.SqlInt16 Null;
         public static readonly System.Data.SqlTypes.SqlInt16 Zero;
         public SqlInt16(short value) { throw null; }
-        public bool IsNull { get { throw null; } }
-        public short Value { get { throw null; } }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly short Value { get { throw null; } }
         public static System.Data.SqlTypes.SqlInt16 Add(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
         public static System.Data.SqlTypes.SqlInt16 BitwiseAnd(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
         public static System.Data.SqlTypes.SqlInt16 BitwiseOr(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
-        public int CompareTo(System.Data.SqlTypes.SqlInt16 value) { throw null; }
-        public int CompareTo(object? value) { throw null; }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlInt16 value) { throw null; }
+        public readonly int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlInt16 Divide(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
@@ -3123,19 +3123,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlInt16 operator -(System.Data.SqlTypes.SqlInt16 x) { throw null; }
         public static System.Data.SqlTypes.SqlInt16 Parse(string s) { throw null; }
         public static System.Data.SqlTypes.SqlInt16 Subtract(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
-        System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
-        public System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
-        public System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
-        public System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
-        public System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
-        public System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
-        public System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
-        public System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
-        public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
-        public override string ToString() { throw null; }
+        public readonly System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
+        public readonly System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
+        public readonly System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
+        public readonly System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
+        public readonly System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
+        public override readonly string ToString() { throw null; }
         public static System.Data.SqlTypes.SqlInt16 Xor(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
@@ -3147,17 +3147,17 @@ namespace System.Data.SqlTypes
         public static readonly System.Data.SqlTypes.SqlInt32 Null;
         public static readonly System.Data.SqlTypes.SqlInt32 Zero;
         public SqlInt32(int value) { throw null; }
-        public bool IsNull { get { throw null; } }
-        public int Value { get { throw null; } }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly int Value { get { throw null; } }
         public static System.Data.SqlTypes.SqlInt32 Add(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
         public static System.Data.SqlTypes.SqlInt32 BitwiseAnd(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
         public static System.Data.SqlTypes.SqlInt32 BitwiseOr(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
-        public int CompareTo(System.Data.SqlTypes.SqlInt32 value) { throw null; }
-        public int CompareTo(object? value) { throw null; }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlInt32 value) { throw null; }
+        public readonly int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlInt32 Divide(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
@@ -3197,19 +3197,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlInt32 operator -(System.Data.SqlTypes.SqlInt32 x) { throw null; }
         public static System.Data.SqlTypes.SqlInt32 Parse(string s) { throw null; }
         public static System.Data.SqlTypes.SqlInt32 Subtract(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
-        System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
-        public System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
-        public System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
-        public System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
-        public System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
-        public System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
-        public System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
-        public System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
-        public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
-        public override string ToString() { throw null; }
+        public readonly System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
+        public readonly System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
+        public readonly System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
+        public readonly System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
+        public readonly System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
+        public override readonly string ToString() { throw null; }
         public static System.Data.SqlTypes.SqlInt32 Xor(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
@@ -3221,17 +3221,17 @@ namespace System.Data.SqlTypes
         public static readonly System.Data.SqlTypes.SqlInt64 Null;
         public static readonly System.Data.SqlTypes.SqlInt64 Zero;
         public SqlInt64(long value) { throw null; }
-        public bool IsNull { get { throw null; } }
-        public long Value { get { throw null; } }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly long Value { get { throw null; } }
         public static System.Data.SqlTypes.SqlInt64 Add(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
         public static System.Data.SqlTypes.SqlInt64 BitwiseAnd(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
         public static System.Data.SqlTypes.SqlInt64 BitwiseOr(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
-        public int CompareTo(System.Data.SqlTypes.SqlInt64 value) { throw null; }
-        public int CompareTo(object? value) { throw null; }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlInt64 value) { throw null; }
+        public readonly int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlInt64 Divide(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
@@ -3271,19 +3271,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlInt64 operator -(System.Data.SqlTypes.SqlInt64 x) { throw null; }
         public static System.Data.SqlTypes.SqlInt64 Parse(string s) { throw null; }
         public static System.Data.SqlTypes.SqlInt64 Subtract(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
-        System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
-        public System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
-        public System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
-        public System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
-        public System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
-        public System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
-        public System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
-        public System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
-        public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
-        public override string ToString() { throw null; }
+        public readonly System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
+        public readonly System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
+        public readonly System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
+        public readonly System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
+        public readonly System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
+        public override readonly string ToString() { throw null; }
         public static System.Data.SqlTypes.SqlInt64 Xor(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
@@ -3298,15 +3298,15 @@ namespace System.Data.SqlTypes
         public SqlMoney(double value) { throw null; }
         public SqlMoney(int value) { throw null; }
         public SqlMoney(long value) { throw null; }
-        public bool IsNull { get { throw null; } }
-        public decimal Value { get { throw null; } }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly decimal Value { get { throw null; } }
         public static System.Data.SqlTypes.SqlMoney Add(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
-        public int CompareTo(System.Data.SqlTypes.SqlMoney value) { throw null; }
-        public int CompareTo(object? value) { throw null; }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlMoney value) { throw null; }
+        public readonly int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlMoney Divide(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
@@ -3340,23 +3340,23 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlMoney operator -(System.Data.SqlTypes.SqlMoney x) { throw null; }
         public static System.Data.SqlTypes.SqlMoney Parse(string s) { throw null; }
         public static System.Data.SqlTypes.SqlMoney Subtract(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
-        System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public decimal ToDecimal() { throw null; }
-        public double ToDouble() { throw null; }
-        public int ToInt32() { throw null; }
-        public long ToInt64() { throw null; }
-        public System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
-        public System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
-        public System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
-        public System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
-        public System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
-        public System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
-        public System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
-        public System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
-        public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
-        public override string ToString() { throw null; }
+        public readonly decimal ToDecimal() { throw null; }
+        public readonly double ToDouble() { throw null; }
+        public readonly int ToInt32() { throw null; }
+        public readonly long ToInt64() { throw null; }
+        public readonly System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
+        public readonly System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
+        public readonly System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
+        public readonly System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
+        public override readonly string ToString() { throw null; }
     }
     public sealed partial class SqlNotFilledException : System.Data.SqlTypes.SqlTypeException
     {
@@ -3380,15 +3380,15 @@ namespace System.Data.SqlTypes
         public static readonly System.Data.SqlTypes.SqlSingle Zero;
         public SqlSingle(double value) { throw null; }
         public SqlSingle(float value) { throw null; }
-        public bool IsNull { get { throw null; } }
-        public float Value { get { throw null; } }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly float Value { get { throw null; } }
         public static System.Data.SqlTypes.SqlSingle Add(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
-        public int CompareTo(System.Data.SqlTypes.SqlSingle value) { throw null; }
-        public int CompareTo(object? value) { throw null; }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlSingle value) { throw null; }
+        public readonly int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlSingle Divide(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
@@ -3420,19 +3420,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlSingle operator -(System.Data.SqlTypes.SqlSingle x) { throw null; }
         public static System.Data.SqlTypes.SqlSingle Parse(string s) { throw null; }
         public static System.Data.SqlTypes.SqlSingle Subtract(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
-        System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
-        public System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
-        public System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
-        public System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
-        public System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
-        public System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
-        public System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
-        public System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
-        public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
-        public override string ToString() { throw null; }
+        public readonly System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
+        public readonly System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
+        public readonly System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
+        public readonly System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
+        public override readonly string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
     public partial struct SqlString : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
@@ -3454,22 +3454,22 @@ namespace System.Data.SqlTypes
         public SqlString(string? data, int lcid) { throw null; }
         public SqlString(string? data, int lcid, System.Data.SqlTypes.SqlCompareOptions compareOptions) { throw null; }
         public System.Globalization.CompareInfo CompareInfo { get { throw null; } }
-        public System.Globalization.CultureInfo CultureInfo { get { throw null; } }
-        public bool IsNull { get { throw null; } }
-        public int LCID { get { throw null; } }
-        public System.Data.SqlTypes.SqlCompareOptions SqlCompareOptions { get { throw null; } }
-        public string Value { get { throw null; } }
+        public readonly System.Globalization.CultureInfo CultureInfo { get { throw null; } }
+        public readonly bool IsNull { get { throw null; } }
+        public readonly int LCID { get { throw null; } }
+        public readonly System.Data.SqlTypes.SqlCompareOptions SqlCompareOptions { get { throw null; } }
+        public readonly string Value { get { throw null; } }
         public static System.Data.SqlTypes.SqlString Add(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
-        public System.Data.SqlTypes.SqlString Clone() { throw null; }
+        public readonly System.Data.SqlTypes.SqlString Clone() { throw null; }
         public static System.Globalization.CompareOptions CompareOptionsFromSqlCompareOptions(System.Data.SqlTypes.SqlCompareOptions compareOptions) { throw null; }
-        public int CompareTo(System.Data.SqlTypes.SqlString value) { throw null; }
+        public readonly int CompareTo(System.Data.SqlTypes.SqlString value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlString Concat(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public override readonly bool Equals(object? value) { throw null; }
         public override int GetHashCode() { throw null; }
-        public byte[]? GetNonUnicodeBytes() { throw null; }
-        public byte[]? GetUnicodeBytes() { throw null; }
+        public readonly byte[]? GetNonUnicodeBytes() { throw null; }
+        public readonly byte[]? GetUnicodeBytes() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
@@ -3496,21 +3496,21 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
-        System.Xml.Schema.XmlSchema System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
+        readonly System.Xml.Schema.XmlSchema System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-        public System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
-        public System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
-        public System.Data.SqlTypes.SqlDateTime ToSqlDateTime() { throw null; }
-        public System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
-        public System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
-        public System.Data.SqlTypes.SqlGuid ToSqlGuid() { throw null; }
-        public System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
-        public System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
-        public System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
-        public System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
-        public System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
-        public override string ToString() { throw null; }
+        public readonly System.Data.SqlTypes.SqlBoolean ToSqlBoolean() { throw null; }
+        public readonly System.Data.SqlTypes.SqlByte ToSqlByte() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDateTime ToSqlDateTime() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDecimal ToSqlDecimal() { throw null; }
+        public readonly System.Data.SqlTypes.SqlDouble ToSqlDouble() { throw null; }
+        public readonly System.Data.SqlTypes.SqlGuid ToSqlGuid() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt16 ToSqlInt16() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt32 ToSqlInt32() { throw null; }
+        public readonly System.Data.SqlTypes.SqlInt64 ToSqlInt64() { throw null; }
+        public readonly System.Data.SqlTypes.SqlMoney ToSqlMoney() { throw null; }
+        public readonly System.Data.SqlTypes.SqlSingle ToSqlSingle() { throw null; }
+        public override readonly string ToString() { throw null; }
     }
     public sealed partial class SqlTruncateException : System.Data.SqlTypes.SqlTypeException
     {

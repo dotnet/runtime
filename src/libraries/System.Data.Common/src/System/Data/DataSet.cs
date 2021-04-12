@@ -1259,7 +1259,7 @@ namespace System.Data
                 HasChanges = 0;
             }
 
-            internal int HasChanges { get; set; }
+            internal int HasChanges { readonly get; set; }
 
             internal bool this[int index]
             {

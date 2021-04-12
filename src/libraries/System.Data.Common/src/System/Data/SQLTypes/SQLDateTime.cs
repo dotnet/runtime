@@ -192,7 +192,7 @@ namespace System.Data.SqlTypes
         }
 
         // INullable
-        public bool IsNull
+        public readonly bool IsNull
         {
             get { return !m_fNotNull; }
         }
@@ -286,7 +286,7 @@ namespace System.Data.SqlTypes
 
         // do we still want to define a property of DateTime? If the user uses it often, it is expensive
         // property: Value
-        public DateTime Value
+        public readonly DateTime Value
         {
             get
             {
@@ -298,7 +298,7 @@ namespace System.Data.SqlTypes
         }
 
         // Day ticks -- returns number of days since 1/1/1900
-        public int DayTicks
+        public readonly int DayTicks
         {
             get
             {
@@ -310,7 +310,7 @@ namespace System.Data.SqlTypes
         }
 
         // Time ticks -- return daily time in unit of 1/300 second
-        public int TimeTicks
+        public readonly int TimeTicks
         {
             get
             {
@@ -581,7 +581,7 @@ namespace System.Data.SqlTypes
         }
 
         // Alternative method for conversions.
-        public SqlString ToSqlString()
+        public readonly SqlString ToSqlString()
         {
             return (SqlString)this;
         }
@@ -594,7 +594,7 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object? value)
+        public readonly int CompareTo(object? value)
         {
             if (value is SqlDateTime)
             {
@@ -605,7 +605,7 @@ namespace System.Data.SqlTypes
             throw ADP.WrongType(value!.GetType(), typeof(SqlDateTime));
         }
 
-        public int CompareTo(SqlDateTime value)
+        public readonly int CompareTo(SqlDateTime value)
         {
             // If both Null, consider them equal.
             // Otherwise, Null is less than anything.
@@ -620,7 +620,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object? value)
+        public override readonly bool Equals(object? value)
         {
             if (!(value is SqlDateTime))
             {
@@ -636,12 +636,12 @@ namespace System.Data.SqlTypes
         }
 
         // For hashing purpose
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return IsNull ? 0 : Value.GetHashCode();
         }
 
-        XmlSchema? IXmlSerializable.GetSchema() { return null; }
+        readonly XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

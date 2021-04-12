@@ -215,7 +215,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Gets whether the <see cref='System.Data.SqlTypes.SqlString.Value'/> of the <see cref='System.Data.SqlTypes.SqlString'/> is <see cref='System.Data.SqlTypes.SqlString.Null'/>.
         /// </summary>
-        public bool IsNull
+        public readonly bool IsNull
         {
             get { return !m_fNotNull; }
         }
@@ -224,7 +224,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Gets the string that is to be stored.
         /// </summary>
-        public string Value
+        public readonly string Value
         {
             get
             {
@@ -235,7 +235,7 @@ namespace System.Data.SqlTypes
             }
         }
 
-        public int LCID
+        public readonly int LCID
         {
             get
             {
@@ -246,7 +246,7 @@ namespace System.Data.SqlTypes
             }
         }
 
-        public CultureInfo CultureInfo
+        public readonly CultureInfo CultureInfo
         {
             get
             {
@@ -278,7 +278,7 @@ namespace System.Data.SqlTypes
             }
         }
 
-        public SqlCompareOptions SqlCompareOptions
+        public readonly SqlCompareOptions SqlCompareOptions
         {
             get
             {
@@ -304,12 +304,12 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Converts a <see cref='System.Data.SqlTypes.SqlString'/> object to a string.
         /// </summary>
-        public override string ToString()
+        public override readonly string ToString()
         {
             return IsNull ? SQLResource.NullString : m_value!;
         }
 
-        public byte[]? GetUnicodeBytes()
+        public readonly byte[]? GetUnicodeBytes()
         {
             if (IsNull)
                 return null;
@@ -317,7 +317,7 @@ namespace System.Data.SqlTypes
             return s_unicodeEncoding.GetBytes(m_value!);
         }
 
-        public byte[]? GetNonUnicodeBytes()
+        public readonly byte[]? GetNonUnicodeBytes()
         {
             if (IsNull)
                 return null;
@@ -514,7 +514,7 @@ namespace System.Data.SqlTypes
             return x.IsNull ? Null : new SqlString(x.ToString());
         }
 
-        public SqlString Clone()
+        public readonly SqlString Clone()
         {
             if (IsNull)
                 return new SqlString(true);
@@ -609,57 +609,57 @@ namespace System.Data.SqlTypes
 
         // Alternative method for conversions.
 
-        public SqlBoolean ToSqlBoolean()
+        public readonly SqlBoolean ToSqlBoolean()
         {
             return (SqlBoolean)this;
         }
 
-        public SqlByte ToSqlByte()
+        public readonly SqlByte ToSqlByte()
         {
             return (SqlByte)this;
         }
 
-        public SqlDateTime ToSqlDateTime()
+        public readonly SqlDateTime ToSqlDateTime()
         {
             return (SqlDateTime)this;
         }
 
-        public SqlDouble ToSqlDouble()
+        public readonly SqlDouble ToSqlDouble()
         {
             return (SqlDouble)this;
         }
 
-        public SqlInt16 ToSqlInt16()
+        public readonly SqlInt16 ToSqlInt16()
         {
             return (SqlInt16)this;
         }
 
-        public SqlInt32 ToSqlInt32()
+        public readonly SqlInt32 ToSqlInt32()
         {
             return (SqlInt32)this;
         }
 
-        public SqlInt64 ToSqlInt64()
+        public readonly SqlInt64 ToSqlInt64()
         {
             return (SqlInt64)this;
         }
 
-        public SqlMoney ToSqlMoney()
+        public readonly SqlMoney ToSqlMoney()
         {
             return (SqlMoney)this;
         }
 
-        public SqlDecimal ToSqlDecimal()
+        public readonly SqlDecimal ToSqlDecimal()
         {
             return (SqlDecimal)this;
         }
 
-        public SqlSingle ToSqlSingle()
+        public readonly SqlSingle ToSqlSingle()
         {
             return (SqlSingle)this;
         }
 
-        public SqlGuid ToSqlGuid()
+        public readonly SqlGuid ToSqlGuid()
         {
             return (SqlGuid)this;
         }
@@ -698,7 +698,7 @@ namespace System.Data.SqlTypes
             return options;
         }
 
-        private bool FBinarySort()
+        private readonly bool FBinarySort()
         {
             return (!IsNull && (m_flag & (SqlCompareOptions.BinarySort | SqlCompareOptions.BinarySort2)) != 0);
         }
@@ -844,7 +844,7 @@ namespace System.Data.SqlTypes
             throw ADP.WrongType(value!.GetType(), typeof(SqlString));
         }
 
-        public int CompareTo(SqlString value)
+        public readonly int CompareTo(SqlString value)
         {
             // If both Null, consider them equal.
             // Otherwise, Null is less than anything.
@@ -870,7 +870,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object? value)
+        public override readonly bool Equals(object? value)
         {
             if (!(value is SqlString))
             {
@@ -918,7 +918,7 @@ namespace System.Data.SqlTypes
             return SqlBinary.HashByteArray(rgbSortKey, rgbSortKey.Length);
         }
 
-        XmlSchema? IXmlSerializable.GetSchema() { return null; }
+        readonly XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

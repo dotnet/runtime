@@ -51,13 +51,13 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Gets whether or not <see cref='Value'/> is null.
         /// </summary>
-        public bool IsNull => _value is null;
+        public readonly bool IsNull => _value is null;
 
         // property: Value
         /// <summary>
         /// Gets or sets the  value of the SQL binary object retrieved.
         /// </summary>
-        public byte[] Value
+        public readonly byte[] Value
         {
             get
             {
@@ -73,7 +73,7 @@ namespace System.Data.SqlTypes
         }
 
         // class indexer
-        public byte this[int index]
+        public readonly byte this[int index]
         {
             get
             {
@@ -89,7 +89,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Gets the length in bytes of <see cref='Value'/>.
         /// </summary>
-        public int Length
+        public readonly int Length
         {
             get
             {
@@ -118,7 +118,7 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Returns a string describing a <see cref='SqlBinary'/> object.
         /// </summary>
-        public override string ToString() =>
+        public override readonly string ToString() =>
             _value is null ? SQLResource.NullString : "SqlBinary(" + _value.Length.ToString(CultureInfo.InvariantCulture) + ")";
 
         // Unary operators
@@ -324,7 +324,7 @@ namespace System.Data.SqlTypes
         }
 
         // Alternative method for conversions.
-        public SqlGuid ToSqlGuid()
+        public readonly SqlGuid ToSqlGuid()
         {
             return (SqlGuid)this;
         }
@@ -336,7 +336,7 @@ namespace System.Data.SqlTypes
         // or a value greater than zero if this > object.
         // null is considered to be less than any instance.
         // If object is not of same type, this method throws an ArgumentException.
-        public int CompareTo(object? value)
+        public readonly int CompareTo(object? value)
         {
             if (value is SqlBinary)
             {
@@ -347,7 +347,7 @@ namespace System.Data.SqlTypes
             throw ADP.WrongType(value!.GetType(), typeof(SqlBinary));
         }
 
-        public int CompareTo(SqlBinary value)
+        public readonly int CompareTo(SqlBinary value)
         {
             // If both Null, consider them equal.
             // Otherwise, Null is less than anything.
@@ -362,7 +362,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object? value)
+        public override readonly bool Equals(object? value)
         {
             if (!(value is SqlBinary))
             {
@@ -407,7 +407,7 @@ namespace System.Data.SqlTypes
             return ulValue;
         }
         // For hashing purpose
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             if (_value is null)
                 return 0;
@@ -420,7 +420,7 @@ namespace System.Data.SqlTypes
             return HashByteArray(_value, cbLen);
         }
 
-        XmlSchema? IXmlSerializable.GetSchema() { return null; }
+        readonly XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {

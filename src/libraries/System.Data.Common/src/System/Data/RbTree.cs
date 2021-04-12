@@ -2090,7 +2090,7 @@ namespace System.Data
                 return hasCurrent;
             }
 
-            public K Current
+            public readonly K Current
             {
                 get
                 {
