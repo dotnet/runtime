@@ -126,7 +126,6 @@ namespace System.Net.Quic.Tests
                     }
 
                     stream.Shutdown();
-                    await stream.ShutdownWriteCompleted();
                     await stream.ShutdownCompleted();
                 },
                 async serverConnection =>
@@ -145,7 +144,6 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(expectedTotalBytes, totalBytes);
 
                     stream.Shutdown();
-                    await stream.ShutdownWriteCompleted();
                     await stream.ShutdownCompleted();
                 });
         }

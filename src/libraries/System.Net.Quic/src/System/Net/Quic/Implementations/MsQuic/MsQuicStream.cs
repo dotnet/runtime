@@ -64,6 +64,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Set once writes have been shutdown.
             public readonly TaskCompletionSource ShutdownWriteCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
+
+            public ShutdownState ShutdownState;
+
             // Set once stream have been shutdown.
             public readonly TaskCompletionSource ShutdownCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         }
@@ -203,7 +206,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
-            CancellationTokenRegistration registration = cancellationToken.Register(static (s, token) =>
+            CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
                 var stream = (MsQuicStream)s!;
                 bool shouldComplete = false;
@@ -274,7 +277,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
-            using CancellationTokenRegistration registration = cancellationToken.Register(static (s, token) =>
+            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
                 var stream = (MsQuicStream)s!;
                 bool shouldComplete = false;
@@ -384,7 +387,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             ThrowIfDisposed();
 
             // TODO do anything to stop writes?
-            using CancellationTokenRegistration registration = cancellationToken.Register(static (s, token) =>
+            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
                 var stream = (MsQuicStream)s!;
                 bool shouldComplete = false;
@@ -392,7 +395,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     if (stream._state.ShutdownWriteState == ShutdownWriteState.None)
                     {
-                        stream._state.ShutdownWriteState = ShutdownWriteState.Canceled;
+                        stream._state.ShutdownWriteState = ShutdownWriteState.Canceled; // TODO: should we separate states for cancelling here vs calling Abort?
                         shouldComplete = true;
                     }
                 }
@@ -411,10 +414,26 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = cancellationToken.Register(static (s, token) =>
-                ((MsQuicStream)s!)._state.ShutdownCompletionSource.SetException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException("Wait for shutdown was canceled", token))),
-                this);
+            // TODO do anything to stop writes?
+            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
+            {
+                var stream = (MsQuicStream)s!;
+                bool shouldComplete = false;
+                lock (stream._state)
+                {
+                    if (stream._state.ShutdownState == ShutdownState.None)
+                    {
+                        stream._state.ShutdownState = ShutdownState.Canceled;
+                        shouldComplete = true;
+                    }
+                }
+
+                if (shouldComplete)
+                {
+                    stream._state.ShutdownWriteCompletionSource.SetException(
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException("Wait for shutdown was canceled", token)));
+                }
+            }, this);
 
             await _state.ShutdownCompletionSource.Task.ConfigureAwait(false);
         }
@@ -634,7 +653,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldComplete)
             {
-                state.ShutdownWriteCompletionSource.TrySetResult();
+                state.ShutdownWriteCompletionSource.SetResult();
             }
 
             return MsQuicStatusCodes.Success;
@@ -644,6 +663,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             bool shouldReadComplete = false;
             bool shouldShutdownWriteComplete = false;
+            bool shouldShutdownComplete = false;
 
             lock (state)
             {
@@ -662,6 +682,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                     state.ShutdownWriteState = ShutdownWriteState.Finished;
                     shouldShutdownWriteComplete = true;
                 }
+
+                if (state.ShutdownState == ShutdownState.None)
+                {
+                    state.ShutdownState = ShutdownState.Finished;
+                    shouldShutdownComplete = true;
+                }
             }
 
             if (shouldReadComplete)
@@ -671,10 +697,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldShutdownWriteComplete)
             {
-                state.ShutdownWriteCompletionSource.TrySetResult();
+                state.ShutdownWriteCompletionSource.SetResult();
             }
 
-            state.ShutdownCompletionSource.TrySetResult();
+            if (shouldShutdownComplete)
+            {
+                state.ShutdownCompletionSource.SetResult();
+            }
 
             return MsQuicStatusCodes.Success;
         }
@@ -969,6 +998,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         private enum ShutdownWriteState
+        {
+            None,
+            Canceled,
+            Finished
+        }
+
+        private enum ShutdownState
         {
             None,
             Canceled,
