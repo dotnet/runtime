@@ -4037,57 +4037,77 @@ bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
     return true;
 }
 
+// static
+Compiler::fgWalkResult Compiler::optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data)
+{
+    OptInvertCountTreeInfoType* o = (OptInvertCountTreeInfoType*)data->pCallbackData;
+
+    if (Compiler::IsSharedStaticHelper(*pTree))
+    {
+        o->sharedStaticHelperCount += 1;
+    }
+
+    if ((*pTree)->OperGet() == GT_ARR_LENGTH)
+    {
+        o->arrayLengthCount += 1;
+    }
+
+    return WALK_CONTINUE;
+}
+
 //-----------------------------------------------------------------------------
 // optInvertWhileLoop: modify flow and duplicate code so that for/while loops are
 //   entered at top and tested at bottom (aka loop rotation or bottom testing).
+//   Creates a "zero trip test" condition which guards entry to the loop.
+//   Enables loop invariant hoisting and loop cloning, which depend on
+//   `do {} while` format loops. Enables creation of a pre-header block after the
+//   zero trip test to place code that only runs if the loop is guaranteed to
+//   run at least once.
 //
 // Arguments:
 //   block -- block that may be the predecessor of the un-rotated loop's test block.
 //
 // Notes:
-//  Optimizes "jmp C; do{} C:while(cond);" loops to "if (cond){ do{}while(cond}; }"
-//  Does not modify every loop
+//   Uses a simple lexical screen to detect likely loops.
+//
+//   Specifically, we're looking for the following case:
+//
+//          ...
+//          jmp test                // `block` argument
+//   loop:
+//          ...
+//          ...
+//   test:
+//          ..stmts..
+//          cond
+//          jtrue loop
+//
+//   If we find this, and the condition is simple enough, we change
+//   the loop to the following:
+//
+//          ...
+//          ..stmts..               // duplicated cond block statments
+//          cond                    // duplicated cond
+//          jfalse done
+//          // else fall-through
+//   loop:
+//          ...
+//          ...
+//   test:
+//          ..stmts..
+//          cond
+//          jtrue loop
+//   done:
 //
 //  Makes no changes if the flow pattern match fails.
 //
 //  May not modify a loop if profile is unfavorable, if the cost of duplicating
-//  code is large (factoring in potential CSEs)
+//  code is large (factoring in potential CSEs).
 //
 void Compiler::optInvertWhileLoop(BasicBlock* block)
 {
     assert(opts.OptimizationEnabled());
     assert(compCodeOpt() != SMALL_CODE);
-
-    /*
-        Optimize while loops into do { } while loop
-        Our loop hoisting logic requires do { } while loops.
-        Specifically, we're looking for the following case:
-
-                ...
-                jmp test
-        loop:
-                ...
-                ...
-        test:
-                cond
-                jtrue   loop
-
-        If we find this, and the condition is simple enough, we change
-        the loop to the following:
-
-                ...
-                cond
-                jfalse done
-                // else fall-through
-        loop:
-                ...
-                ...
-        test:
-                cond
-                jtrue   loop
-        done:
-
-     */
 
     /* Does the BB end with an unconditional jump? */
 
@@ -4137,49 +4157,47 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         return;
     }
 
-    // Find the loop termination test at the bottom of the loop.
-    Statement* condStmt = bTest->lastStmt();
-
-    // bTest must only contain only a jtrue with no other stmts, we will only clone
-    // the conditional, so any other statements will not get cloned
-    //  TODO-CQ: consider cloning the whole bTest block and inserting it after block.
-    //
-    if (bTest->bbStmtList != condStmt)
-    {
-        return;
-    }
-
-    /* Get to the condition node from the statement tree */
-
-    GenTree* condTree = condStmt->GetRootNode();
-    noway_assert(condTree->gtOper == GT_JTRUE);
-
-    condTree = condTree->AsOp()->gtOp1;
-
-    // The condTree has to be a RelOp comparison
-    //  TODO-CQ: Check if we can also optimize the backwards jump as well.
-    //
-    if (condTree->OperIsCompare() == false)
-    {
-        return;
-    }
-
     // It has to be a forward jump. Defer this check until after all the cheap checks
     // are done, since it iterates forward in the block list looking for bbJumpDest.
     //  TODO-CQ: Check if we can also optimize the backwards jump as well.
     //
-    if (fgIsForwardBranch(block) == false)
+    if (!fgIsForwardBranch(block))
     {
         return;
     }
 
-    /* We call gtPrepareCost to measure the cost of duplicating this tree */
+    // Find the loop termination test at the bottom of the loop.
+    Statement* condStmt = bTest->lastStmt();
 
-    gtPrepareCost(condTree);
-    unsigned estDupCostSz = condTree->GetCostSz();
+    // Verify the test block ends with a conditional that we can manipulate.
+    GenTree* const condTree = condStmt->GetRootNode();
+    noway_assert(condTree->gtOper == GT_JTRUE);
+    if (!condTree->AsOp()->gtOp1->OperIsCompare())
+    {
+        return;
+    }
 
-    BasicBlock::weight_t loopIterations = BB_LOOP_WEIGHT_SCALE;
+    // Estimate the cost of cloning the entire test block.
+    //
+    // Note: it would help throughput to compute the maximum cost
+    // first and early out for large bTest blocks, as we are doing two
+    // tree walks per tree. But because of this helper call scan, the
+    // maximum cost depends on the trees in the block.
+    //
+    // We might consider flagging blocks with hoistable helper calls
+    // during importation, so we can avoid the helper search and
+    // implement an early bail out for large blocks with no helper calls.
 
+    unsigned estDupCostSz = 0;
+
+    for (Statement* stmt : bTest->Statements())
+    {
+        GenTree* tree = stmt->GetRootNode();
+        gtPrepareCost(tree);
+        estDupCostSz += tree->GetCostSz();
+    }
+
+    BasicBlock::weight_t       loopIterations            = BB_LOOP_WEIGHT_SCALE;
     bool                       allProfileWeightsAreValid = false;
     BasicBlock::weight_t const weightBlock               = block->bbWeight;
     BasicBlock::weight_t const weightTest                = bTest->bbWeight;
@@ -4228,10 +4246,8 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         }
     }
 
-    unsigned maxDupCostSz = 32;
+    unsigned maxDupCostSz = 34;
 
-    // optFastCodeOrBlendedLoop(bTest->bbWeight) does not work here as we have not
-    // set loop weights yet
     if ((compCodeOpt() == FAST_CODE) || compStressCompile(STRESS_DO_WHILE_LOOPS, 30))
     {
         maxDupCostSz *= 4;
@@ -4247,40 +4263,65 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         }
     }
 
-    // If the compare has too high cost then we don't want to dup
+    // If the compare has too high cost then we don't want to dup.
 
     bool costIsTooHigh = (estDupCostSz > maxDupCostSz);
 
-    int countOfHelpers = 0;
+    OptInvertCountTreeInfoType optInvertTotalInfo = {};
     if (costIsTooHigh)
     {
         // If we already know that the cost is acceptable, then don't waste time walking the tree
-        // counting shared static helpers.
+        // counting things to boost the maximum allowed cost.
         //
         // If the loop condition has a shared static helper, we really want this loop converted
         // as not converting the loop will disable loop hoisting, meaning the shared helper will
         // be executed on every loop iteration.
-        fgWalkTreePre(&condTree, CountSharedStaticHelper, &countOfHelpers);
+        //
+        // If the condition has array.Length operations, also boost, as they are likely to be CSE'd.
 
-        if (countOfHelpers > 0)
+        for (Statement* stmt : bTest->Statements())
         {
-            maxDupCostSz += 24 * min(countOfHelpers, (int)(loopIterations + 1.5));
+            GenTree* tree = stmt->GetRootNode();
 
-            // Is the cost too high now?
-            costIsTooHigh = (estDupCostSz > maxDupCostSz);
+            OptInvertCountTreeInfoType optInvertInfo = {};
+            fgWalkTreePre(&tree, Compiler::optInvertCountTreeInfo, &optInvertInfo);
+            optInvertTotalInfo.sharedStaticHelperCount += optInvertInfo.sharedStaticHelperCount;
+            optInvertTotalInfo.arrayLengthCount += optInvertInfo.arrayLengthCount;
+
+            if ((optInvertInfo.sharedStaticHelperCount > 0) || (optInvertInfo.arrayLengthCount > 0))
+            {
+                // Calculate a new maximum cost. We might be able to early exit.
+
+                unsigned newMaxDupCostSz =
+                    maxDupCostSz + 24 * min(optInvertTotalInfo.sharedStaticHelperCount, (int)(loopIterations + 1.5)) +
+                    8 * optInvertTotalInfo.arrayLengthCount;
+
+                // Is the cost too high now?
+                costIsTooHigh = (estDupCostSz > newMaxDupCostSz);
+                if (!costIsTooHigh)
+                {
+                    // No need counting any more trees; we're going to do the transformation.
+                    JITDUMP("Decided to duplicate loop condition block after counting helpers in tree [%06u] in "
+                            "block " FMT_BB,
+                            dspTreeID(tree), bTest->bbNum);
+                    maxDupCostSz = newMaxDupCostSz; // for the JitDump output below
+                    break;
+                }
+            }
         }
     }
 
 #ifdef DEBUG
     if (verbose)
     {
-        // Note that `countOfHelpers = 0` means either there were zero helpers, or the tree walk to count them was not
-        // done.
-        printf("\nDuplication of loop condition [%06u] is %s, because the cost of duplication (%i) is %s than %i,"
-               "\n   loopIterations = %7.3f, countOfHelpers = %d, validProfileWeights = %s\n",
-               dspTreeID(condTree), costIsTooHigh ? "not done" : "performed", estDupCostSz,
-               costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, loopIterations, countOfHelpers,
-               dspBool(allProfileWeightsAreValid));
+        // Note that `optInvertTotalInfo.sharedStaticHelperCount = 0` means either there were zero helpers, or the
+        // tree walk to count them was not done.
+        printf(
+            "\nDuplication of loop condition [%06u] is %s, because the cost of duplication (%i) is %s than %i,"
+            "\n   loopIterations = %7.3f, optInvertTotalInfo.sharedStaticHelperCount >= %d, validProfileWeights = %s\n",
+            dspTreeID(condTree), costIsTooHigh ? "not done" : "performed", estDupCostSz,
+            costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, loopIterations,
+            optInvertTotalInfo.sharedStaticHelperCount, dspBool(allProfileWeightsAreValid));
     }
 #endif
 
@@ -4289,34 +4330,47 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         return;
     }
 
-    /* Looks good - duplicate the condition test */
+    bool foundCondTree = false;
 
-    condTree->gtFlags |= GTF_RELOP_ZTT;
-
-    condTree = gtCloneExpr(condTree);
-    gtReverseCond(condTree);
-
-    // Make sure clone expr copied the flag
-    assert(condTree->gtFlags & GTF_RELOP_ZTT);
-
-    condTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condTree);
-
-    /* Create a statement entry out of the condition and
-       append the condition test at the end of 'block' */
-
-    Statement* copyOfCondStmt = fgNewStmtAtEnd(block, condTree);
-
-    copyOfCondStmt->SetCompilerAdded();
-
-    if (condTree->gtFlags & GTF_CALL)
+    // Clone each statement in bTest and append to block.
+    for (Statement* stmt : bTest->Statements())
     {
-        block->bbFlags |= BBF_HAS_CALL; // Record that the block has a call
+        GenTree* originalTree = stmt->GetRootNode();
+        GenTree* clonedTree   = gtCloneExpr(originalTree);
+
+        // Special case handling needed for the conditional jump tree
+        if (originalTree == condTree)
+        {
+            foundCondTree = true;
+
+            // Get the compare subtrees
+            GenTree* originalCompareTree = originalTree->AsOp()->gtOp1;
+            GenTree* clonedCompareTree   = clonedTree->AsOp()->gtOp1;
+            assert(originalCompareTree->OperIsCompare());
+            assert(clonedCompareTree->OperIsCompare());
+
+            // Flag compare and cloned copy so later we know this loop
+            // has a proper zero trip test.
+            originalCompareTree->gtFlags |= GTF_RELOP_ZTT;
+            clonedCompareTree->gtFlags |= GTF_RELOP_ZTT;
+
+            // The original test branches to remain in the loop.  The
+            // new cloned test will branch to avoid the loop.  So the
+            // cloned compare needs to reverse the branch condition.
+            gtReverseCond(clonedCompareTree);
+        }
+
+        Statement* clonedStmt = fgNewStmtAtEnd(block, clonedTree);
+
+        if (opts.compDbgInfo)
+        {
+            clonedStmt->SetILOffsetX(stmt->GetILOffsetX());
+        }
+
+        clonedStmt->SetCompilerAdded();
     }
 
-    if (opts.compDbgInfo)
-    {
-        copyOfCondStmt->SetILOffsetX(condStmt->GetILOffsetX());
-    }
+    assert(foundCondTree);
 
     // Flag the block that received the copy as potentially having an array/vtable
     // reference, nullcheck, object/array allocation if the block copied from did;
@@ -4340,17 +4394,6 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
 
     fgRemoveRefPred(bTest, block);
     fgAddRefPred(bTest->bbNext, block);
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nDuplicated loop condition in " FMT_BB " for loop (" FMT_BB " - " FMT_BB ")\n", block->bbNum,
-               block->bbNext->bbNum, bTest->bbNum);
-        printf("Estimated code size expansion is %d\n", estDupCostSz);
-
-        gtDispStmt(copyOfCondStmt);
-    }
-#endif // DEBUG
 
     // If we have profile data for all blocks and we know that we are cloning the
     // bTest block into block and thus changing the control flow from block so
@@ -4420,6 +4463,18 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         fgDebugCheckIncomingProfileData(block->bbJumpDest);
 #endif // DEBUG
     }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nDuplicated loop exit block at " FMT_BB " for loop (" FMT_BB " - " FMT_BB ")\n", block->bbNum,
+               block->bbNext->bbNum, bTest->bbNum);
+        printf("Estimated code size expansion is %d\n", estDupCostSz);
+
+        fgDumpBlock(block);
+        fgDumpBlock(bTest);
+    }
+#endif // DEBUG
 }
 
 //-----------------------------------------------------------------------------
@@ -4432,6 +4487,14 @@ PhaseStatus Compiler::optInvertLoops()
 {
     noway_assert(opts.OptimizationEnabled());
     noway_assert(fgModified == false);
+
+#if defined(OPT_CONFIG)
+    if (!JitConfig.JitDoLoopInversion())
+    {
+        JITDUMP("Loop inversion disabled\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif // OPT_CONFIG
 
     if (compCodeOpt() == SMALL_CODE)
     {

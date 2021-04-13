@@ -6544,6 +6544,15 @@ protected:
         }
     }
 
+    // Struct used in optInvertWhileLoop to count interesting constructs to boost the profitability score.
+    struct OptInvertCountTreeInfoType
+    {
+        int sharedStaticHelperCount;
+        int arrayLengthCount;
+    };
+
+    static fgWalkResult optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data);
+
     void optInvertWhileLoop(BasicBlock* block);
 
     bool optComputeLoopRep(int        constInit,
@@ -6572,9 +6581,6 @@ protected:
      *                       Optimization conditions
      *************************************************************************/
 
-    bool optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight);
-    bool optPentium4(void);
-    bool optAvoidIncDec(BasicBlock::weight_t bbWeight);
     bool optAvoidIntMult(void);
 
 protected:
