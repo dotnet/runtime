@@ -104,8 +104,8 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
-          artifactFileName: ${{ format('libraries_test_assets_{0}_{1}_{2}.tar.gz', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
-          artifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+          artifactFileName: ${{ format('libraries_test_assets_{0}_x64_Release.tar.gz', parameters.osGroup) }}
+          artifactName: ${{ format('libraries_test_assets_{0}_x64_Release', parameters.osGroup) }}
           displayName: 'generic libraries test artifacts'
 
     # Create Core_Root
