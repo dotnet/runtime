@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -15,7 +14,7 @@ namespace System.Net.Quic.Tests
     public abstract class QuicStreamTests<T> : QuicTestBase<T>
          where T : IQuicImplProviderFactory, new()
     {
-        private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
+        private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");
 
         [Fact]
         public async Task BasicTest()
@@ -30,7 +29,7 @@ namespace System.Net.Quic.Tests
                     int bytesRead = await ReadAll(stream, buffer);
 
                     Assert.Equal(s_data.Length, bytesRead);
-                    Assert.True(s_data.Span.SequenceEqual(buffer));
+                    Assert.Equal(s_data, buffer);
 
                     await stream.WriteAsync(s_data, endStream: true);
                     await stream.ShutdownCompleted();
@@ -46,7 +45,7 @@ namespace System.Net.Quic.Tests
                     int bytesRead = await ReadAll(stream, buffer);
 
                     Assert.Equal(s_data.Length, bytesRead);
-                    Assert.True(s_data.Span.SequenceEqual(buffer));
+                    Assert.Equal(s_data, buffer);
 
                     await stream.ShutdownCompleted();
                 }
@@ -75,7 +74,7 @@ namespace System.Net.Quic.Tests
                     byte[] buffer = new byte[expectedBytesCount];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(expectedBytesCount, bytesRead);
-                    Assert.True(expected.SequenceEqual(buffer));
+                    Assert.Equal(expected, buffer);
 
                     for (int i = 0; i < sendCount; i++)
                     {
@@ -100,7 +99,7 @@ namespace System.Net.Quic.Tests
                     byte[] buffer = new byte[expectedBytesCount];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(expectedBytesCount, bytesRead);
-                    Assert.True(expected.SequenceEqual(buffer));
+                    Assert.Equal(expected, buffer);
 
                     await stream.ShutdownCompleted();
                 }
@@ -121,11 +120,11 @@ namespace System.Net.Quic.Tests
 
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(s_data.Length, bytesRead);
-                    Assert.True(s_data.Span.SequenceEqual(buffer));
+                    Assert.Equal(s_data, buffer);
 
                     int bytesRead2 = await ReadAll(stream2, buffer2);
                     Assert.Equal(s_data.Length, bytesRead2);
-                    Assert.True(s_data.Span.SequenceEqual(buffer2));
+                    Assert.Equal(s_data, buffer2);
 
                     await stream.WriteAsync(s_data, endStream: true);
                     await stream.ShutdownWriteCompleted();
@@ -150,11 +149,11 @@ namespace System.Net.Quic.Tests
 
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(s_data.Length, bytesRead);
-                    Assert.True(s_data.Span.SequenceEqual(buffer));
+                    Assert.Equal(s_data, buffer);
 
                     int bytesRead2 = await ReadAll(stream2, buffer2);
                     Assert.Equal(s_data.Length, bytesRead2);
-                    Assert.True(s_data.Span.SequenceEqual(buffer2));
+                    Assert.Equal(s_data, buffer2);
 
                     await stream.ShutdownCompleted();
                     await stream2.ShutdownCompleted();
@@ -324,23 +323,24 @@ namespace System.Net.Quic.Tests
             await s2.ShutdownCompleted();
         }
 
-        private static async Task SendAndReceiveDataAsync(ReadOnlyMemory<byte> data, QuicStream s1, QuicStream s2)
+        private static async Task SendAndReceiveDataAsync(byte[] data, QuicStream s1, QuicStream s2)
         {
             await s1.WriteAsync(data);
             await ReceiveDataAsync(data, s2);
         }
 
-        private static async Task ReceiveDataAsync(ReadOnlyMemory<byte> data, QuicStream s)
+        private static async Task ReceiveDataAsync(byte[] data, QuicStream s)
         {
-            Memory<byte> readBuffer = new byte[data.Length];
+            byte[] readBuffer = new byte[data.Length];
 
             int bytesRead = 0;
             while (bytesRead < data.Length)
             {
-                bytesRead += await s.ReadAsync(readBuffer.Slice(bytesRead));
+                bytesRead += await s.ReadAsync(readBuffer.AsMemory(bytesRead));
             }
 
-            Assert.True(data.Span.SequenceEqual(readBuffer.Span));
+            Assert.Equal(data.Length, bytesRead);
+            Assert.Equal(s_data, readBuffer);
         }
 
         private static async Task SendAndReceiveEOFAsync(QuicStream s1, QuicStream s2)
@@ -390,7 +390,7 @@ namespace System.Net.Quic.Tests
                     byte[] receiveBuffer = new byte[testBuffer.Length];
                     int totalBytesRead = 0;
 
-                    while (totalBytesRead != receiveBuffer.Length)
+                    while (true) // TODO: if you don't read until 0-byte read, ShutdownCompleted sometimes may not trigger - why?
                     {
                         Memory<byte> recieveChunkBuffer = receiveBuffer.AsMemory(totalBytesRead, Math.Min(receiveBuffer.Length - totalBytesRead, readSize));
                         int bytesRead = await serverStream.ReadAsync(recieveChunkBuffer);

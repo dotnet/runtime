@@ -160,7 +160,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             state.Connection = null;
 
-            state.Connected = false; // TODO: is this the right way to let the user know the connection was shut down? should there be a lock on state?
             state.ShutdownTcs.SetResult(MsQuicStatusCodes.Success);
 
             // Stop accepting new streams.
@@ -275,8 +274,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             QUIC_CONNECTION_SHUTDOWN_FLAGS Flags,
             long ErrorCode)
         {
-            Debug.Assert(!_state.ShutdownTcs.Task.IsCompleted);
-
             // Store the connection into the GCHandle'd state to prevent GC if user calls ShutdownAsync and gets rid of all references to the MsQuicConnection.
             Debug.Assert(_state.Connection == null);
             _state.Connection = this;

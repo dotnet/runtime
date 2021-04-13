@@ -61,10 +61,7 @@ namespace System.Net.Quic.Tests
                     await serverFunction(serverConnection);
                     serverFinished.Set();
                     clientFinished.Wait();
-                    if (serverConnection.Connected)
-                    {
-                        await serverConnection.CloseAsync(0);
-                    }
+                    await serverConnection.CloseAsync(0);
                 }),
                 Task.Run(async () =>
                 {
@@ -73,10 +70,7 @@ namespace System.Net.Quic.Tests
                     await clientFunction(clientConnection);
                     clientFinished.Set();
                     serverFinished.Wait();
-                    if (clientConnection.Connected)
-                    {
-                        await clientConnection.CloseAsync(0);
-                    }
+                    await clientConnection.CloseAsync(0);
                 })
             }.WhenAllOrAnyFailed(millisecondsTimeout);
         }

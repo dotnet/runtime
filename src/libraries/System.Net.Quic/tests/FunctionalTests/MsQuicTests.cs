@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -224,7 +223,7 @@ namespace System.Net.Quic.Tests
                 });
         }
 
-        private static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
+        internal static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
         {
             List<byte[]> segments = new List<byte[]>
             {

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.Quic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -38,7 +36,7 @@ namespace System.Net.Quic.Tests
         }
 
         // this started to fail after updating msquic from cc104e836a5d4a5e0d324bc08b42136d2acac997 to 8e21db733f22533a613d404d2a86e64588019132
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")] 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
         public async Task AcceptStream_ConnectionAborted_ByClient_Throws()
         {

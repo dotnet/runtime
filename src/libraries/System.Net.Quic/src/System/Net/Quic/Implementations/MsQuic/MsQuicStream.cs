@@ -413,9 +413,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override void Shutdown()
         {
             ThrowIfDisposed();
-            // TODO what should happen if shutdown was already sent before?
+            // it is ok to send shutdown several times, MsQuic will ignore it
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
-            // TODO should at least SEND_SHUTDOWN_COMPLETE be awaited here? or SHUTDOWN_COMPLETE if is it supposed to be complete a shutdown
         }
 
         // TODO consider removing sync-over-async with blocking calls.
@@ -766,7 +765,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
                     StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
                 }
-                return default; // TODO: should ShutdownWriteCompletionSource task be returned here? normal writes will return after SEND_COMPLETE
+                return default;
             }
 
             MemoryHandle handle = buffer.Pin();

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Net.Quic.Implementations;
 using Xunit;
 using System.Threading;
+using System.Text;
 
 namespace System.Net.Quic.Tests
 {
@@ -116,30 +117,29 @@ namespace System.Net.Quic.Tests
                     continue;
                 }
 
-                Console.WriteLine($"Wrong data starting from pos={i}");
+                var message = $"Wrong data starting from idx={i}\n" +
+                    $"Expected: {ToStringAroundIndex(expected, i)}\n" +
+                    $"Actual:   {ToStringAroundIndex(actual, i)}";
 
-                Console.Write("Expected: ");
-                PrintAroundIndex(expected, i);
-                Console.Write("Actual:   ");
-                PrintAroundIndex(actual, i);
-
-                Assert.Equal(expected[i], actual[i]);
+                Assert.True(expected[i] == actual[i], message);
             }
         }
 
-        private static void PrintAroundIndex(byte[] arr, int idx, int dl = 3, int dr = 7)
+        private static string ToStringAroundIndex(byte[] arr, int idx, int dl = 3, int dr = 7)
         {
-            Console.Write(idx - (dl+1) >= 0 ? "[..., " : "[");
+            var sb = new StringBuilder(idx - (dl+1) >= 0 ? "[..., " : "[");
 
             for (int i = idx - dl; i <= idx + dr; ++i)
             {
                 if (i >= 0 && i < arr.Length)
                 {
-                    Console.Write($"{arr[i]}, ");
+                    sb.Append($"{arr[i]}, ");
                 }
             }
 
-            Console.WriteLine(idx + (dr+1) < arr.Length ? "...]" : "]");
+            sb.Append(idx + (dr+1) < arr.Length ? "...]" : "]");
+
+            return sb.ToString();
         }
     }
 

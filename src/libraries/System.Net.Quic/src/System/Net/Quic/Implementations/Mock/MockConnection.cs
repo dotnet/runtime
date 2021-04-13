@@ -210,6 +210,12 @@ namespace System.Net.Quic.Implementations.Mock
             ConnectionState? state = _state;
             if (state is not null)
             {
+                if (state._closed)
+                {
+                    return default;
+                }
+                state._closed = true;
+
                 if (_isClient)
                 {
                     state._clientErrorCode = errorCode;
@@ -272,6 +278,7 @@ namespace System.Net.Quic.Implementations.Mock
             public Channel<MockStream.StreamState> _serverInitiatedStreamChannel;
             public long _clientErrorCode;
             public long _serverErrorCode;
+            public bool _closed;
 
             public ConnectionState(SslApplicationProtocol applicationProtocol)
             {
