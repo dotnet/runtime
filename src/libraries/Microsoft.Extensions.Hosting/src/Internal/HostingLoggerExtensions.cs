@@ -94,8 +94,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 logger.LogCritical(
                     eventId: LoggerEventIds.BackgroundServiceStoppingHost,
                     exception: ex,
-                    message: SR.BackgroundServiceExceptionStoppedHost,
-                    args: ex);
+                    message: SR.BackgroundServiceExceptionStoppedHost);
             }
         }
     }

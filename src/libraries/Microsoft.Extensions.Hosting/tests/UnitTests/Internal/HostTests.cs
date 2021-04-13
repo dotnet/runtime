@@ -692,11 +692,13 @@ namespace Microsoft.Extensions.Hosting.Internal
         public async Task HostStopsApplicationWithOneBackgroundServiceErrorAndOthersWithoutError()
         {
             var executionCount = 0;
+            TaskCompletionSource<bool> tcs = new();
+
             using IHost host = CreateBuilder()
                 .ConfigureServices(
                     services =>
                     {
-                        services.AddHostedService(_ => new TestBackgroundService(Task.Delay(200), i => executionCount = i));
+                        services.AddHostedService(_ => new TestBackgroundService(tcs.Task, i => executionCount = i));
                         services.AddHostedService(_ => new AsyncThrowingService(Task.CompletedTask));
                         services.Configure<HostOptions>(
                             options =>
@@ -712,6 +714,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             lifetime.ApplicationStopping.Register(() => wasStoppingCalled = true);
 
             await host.StartAsync();
+            tcs.TrySetResult(true);
 
             Assert.True(
                 wasStartedCalled,
