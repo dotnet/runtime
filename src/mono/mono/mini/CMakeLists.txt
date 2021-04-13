@@ -355,10 +355,14 @@ if(NOT DISABLE_SHARED_LIBS)
   if(TARGET_DARWIN)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
   endif()
-  if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS)
+  if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND NOT DISABLE_LINK_STATIC_COMPONENTS)
     # if components are built statically, but we're building a shared lib mono,
     # link them into the library
     target_sources(monosgen-shared PRIVATE "${mono-components-objects}")
+  elseif(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND DISABLE_LINK_STATIC_COMPONENTS)
+    # if components are built statically, we're building a shared lib mono, but we shouldn't link components
+    # link the fallback stubs into the runtime
+    target_sources(monosgen-shared PRIVATE "${mono-components-stub-objects}")
   elseif(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
     # if components are built dynamically, link the fallback stubs into the runtime
     target_sources(monosgen-shared PRIVATE "${mono-components-stub-objects}")
@@ -415,9 +419,13 @@ if(NOT DISABLE_EXECUTABLES)
   endif()
   add_executable(mono-sgen "${sgen_sources}")
   target_link_libraries(mono-sgen PRIVATE monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
-  if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS)
+  if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND NOT DISABLE_LINK_STATIC_COMPONENTS)
     # if components are built statically, link them into runtime.
     target_sources(mono-sgen PRIVATE "${mono-components-objects}")
+  elseif(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND DISABLE_LINK_STATIC_COMPONENTS)
+    # if components are built statically, but we shouldn't link components
+    # link the fallback stubs into the runtime
+    target_sources(mono-sgen PRIVATE "${mono-components-stub-objects}")
   elseif(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
     # if components are built dynamically, link the fallback stubs into the runtime
     target_sources(mono-sgen PRIVATE "${mono-components-stub-objects}")

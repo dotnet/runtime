@@ -665,6 +665,10 @@ endif()
 if(DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
   set(STATIC_COMPONENTS 1)
 endif()
+
+if(DISABLE_LINK_STATIC_COMPONENTS AND NOT STATIC_COMPONENTS)
+  set(STATIC_COMPONENTS 1)
+endif()
 ### End of component build checks
 
 ######################################

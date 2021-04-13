@@ -117,15 +117,14 @@ elseif(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS)
 
 endif()
 
-if(DISABLE_COMPONENTS OR NOT STATIC_COMPONENTS)
-  # define a list of mono-components-stubs objects that will be linked into
-  # the runtime to be used as fallbacks if the dynamic components are not
-  # available or when only static component stubs are requested.
-  set(mono-components-stub-objects "")
-  foreach(component IN LISTS components)
-    list(APPEND mono-components-stub-objects $<TARGET_OBJECTS:${component}-stub-objects>)
-  endforeach()
-endif()
+# define a list of mono-components-stubs objects that will be linked into
+# the runtime to be used as fallbacks if the dynamic components are not
+# available or when only static component stubs are requested.
+set(mono-components-stub-objects "")
+foreach(component IN LISTS components)
+  list(APPEND mono-components-stub-objects $<TARGET_OBJECTS:${component}-stub-objects>)
+endforeach()
+
 
 # component tests
 set(MONO_EVENTPIPE_TEST_SOURCE_PATH "${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/test")
