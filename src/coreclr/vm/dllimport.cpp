@@ -3660,6 +3660,8 @@ static void CreateNDirectStubWorker(StubState*               pss,
         }
 #endif // TARGET_X86
 
+        nativeStackSize = ALIGN_UP(nativeStackSize, TARGET_POINTER_SIZE);
+
         if (!FitsInU2(nativeStackSize))
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
 
