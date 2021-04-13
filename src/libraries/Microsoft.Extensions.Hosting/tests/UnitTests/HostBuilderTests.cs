@@ -572,22 +572,24 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(expectedContentRootPath, env.ContentRootPath);
         }
 
-        [Fact]
-        public void HostBuilderCanConfigureBackgroundServiceExceptionBehavior()
+        [Theory]
+        [InlineData(BackgroundServiceExceptionBehavior.Ignore)]
+        [InlineData(BackgroundServiceExceptionBehavior.StopHost)]
+        public void HostBuilderCanConfigureBackgroundServiceExceptionBehavior(
+            BackgroundServiceExceptionBehavior testBehavior)
         {
             using IHost host = new HostBuilder()
                 .ConfigureServices(
                     services =>
                         services.Configure<HostOptions>(
                             options =>
-                            options.BackgroundServiceExceptionBehavior =
-                                BackgroundServiceExceptionBehavior.StopHost))
+                            options.BackgroundServiceExceptionBehavior = testBehavior))
                 .Build();
 
             var options = host.Services.GetRequiredService<IOptions<HostOptions>>();
 
             Assert.Equal(
-                BackgroundServiceExceptionBehavior.StopHost,
+                testBehavior,
                 options.Value.BackgroundServiceExceptionBehavior);
         }
 
