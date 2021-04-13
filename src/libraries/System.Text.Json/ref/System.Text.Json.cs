@@ -492,7 +492,7 @@ namespace System.Text.Json.Node
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public override void WriteTo(System.Text.Json.Utf8JsonWriter writer, System.Text.Json.JsonSerializerOptions? options = null) { }
     }
-    public abstract partial class JsonNode
+    public abstract partial class JsonNode : System.Dynamic.IDynamicMetaObjectProvider
     {
         internal JsonNode() { }
         public System.Text.Json.Node.JsonNode? this[int index] { get { throw null; } set { } }
@@ -587,6 +587,7 @@ namespace System.Text.Json.Node
         public static implicit operator System.Text.Json.Node.JsonNode(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Text.Json.Node.JsonNode(ulong value) { throw null; }
+        System.Dynamic.DynamicMetaObject System.Dynamic.IDynamicMetaObjectProvider.GetMetaObject(System.Linq.Expressions.Expression parameter) { throw null; }
         public static System.Text.Json.Node.JsonNode? Parse(string json, System.Text.Json.Node.JsonNodeOptions? nodeOptions = default(System.Text.Json.Node.JsonNodeOptions?), System.Text.Json.JsonDocumentOptions documentOptions = default(System.Text.Json.JsonDocumentOptions)) { throw null; }
         public static System.Text.Json.Node.JsonNode? Parse(ref System.Text.Json.Utf8JsonReader reader, System.Text.Json.Node.JsonNodeOptions? nodeOptions = default(System.Text.Json.Node.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Node.JsonNode? Parse(System.IO.Stream utf8Json, System.Text.Json.Node.JsonNodeOptions? nodeOptions = default(System.Text.Json.Node.JsonNodeOptions?), System.Text.Json.JsonDocumentOptions documentOptions = default(System.Text.Json.JsonDocumentOptions)) { throw null; }

@@ -47,17 +47,17 @@
     <Compile Include="System\Text\Json\Node\JsonArray.cs" />
     <Compile Include="System\Text\Json\Node\JsonArray.IList.cs" />
     <Compile Include="System\Text\Json\Node\JsonNode.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.Dynamic.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <Compile Include="System\Text\Json\Node\JsonNode.Dynamic.cs" />
     <Compile Include="System\Text\Json\Node\JsonNode.Operators.cs" />
     <Compile Include="System\Text\Json\Node\JsonNode.Parse.cs" />
     <Compile Include="System\Text\Json\Node\JsonNode.To.cs" />
     <Compile Include="System\Text\Json\Node\JsonNodeOptions.cs" />
     <Compile Include="System\Text\Json\Node\JsonObject.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObject.Dynamic.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <Compile Include="System\Text\Json\Node\JsonObject.Dynamic.cs" />
     <Compile Include="System\Text\Json\Node\JsonObject.IDictionary.cs" />
     <Compile Include="System\Text\Json\Node\JsonValue.cs" />
     <Compile Include="System\Text\Json\Node\JsonValueOfT.cs" />
-    <Compile Include="System\Text\Json\Node\MetaDynamic.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <Compile Include="System\Text\Json\Node\MetaDynamic.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeNumberResult.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderException.cs" />
@@ -285,6 +285,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Linq.Expressions" Version="$(SystemLinqExpressionsVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
