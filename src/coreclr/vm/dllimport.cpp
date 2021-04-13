@@ -5296,11 +5296,6 @@ namespace
         }
         CONTRACTL_END;
 
-        //
-        // On the phone, we only allow platform assemblies to define pinvokes
-        // unless the host has asked us otherwise.
-        //
-
         if (pMD->IsClassConstructorTriggeredAtLinkTime())
         {
             pMD->GetMethodTable()->CheckRunClassInitThrowing();
