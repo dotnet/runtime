@@ -5848,7 +5848,6 @@ private:
                                      unsigned             argIndex,
                                      CORINFO_CLASS_HANDLE copyBlkClass);
 
-    void fgFixupStructReturn(GenTree* call);
     GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
 
 public:
@@ -9615,11 +9614,6 @@ public:
 
         return false;
 #endif // TARGET_AMD64
-    }
-
-    bool compDoOldStructRetyping()
-    {
-        return JitConfig.JitDoOldStructRetyping();
     }
 
     // Returns true if the method returns a value in more than one return register

@@ -618,56 +618,8 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
 #endif // FEATURE_MULTIREG_RET
 
             case SPK_EnclosingType:
-            {
-                // For enclosing type returns, we must return the call value to a temp since
-                // the return type is larger than the struct type.
-                if (!tree->IsCall())
-                {
-                    break;
-                }
-
-                GenTreeCall* call = tree->AsCall();
-
-                assert(call->gtReturnType == TYP_STRUCT);
-
-                if (call->gtReturnType != TYP_STRUCT)
-                {
-                    break;
-                }
-
-                JITDUMP("\nCall returns small struct via enclosing type, retyping. Before:\n");
-                DISPTREE(call);
-
-                // Create new struct typed temp for return value
-                const unsigned tmpNum =
-                    comp->lvaGrabTemp(true DEBUGARG("small struct return temp for rejected inline"));
-                comp->lvaSetStruct(tmpNum, retClsHnd, false);
-                GenTree* assign = comp->gtNewTempAssign(tmpNum, call);
-
-                // Modify assign tree and call return types to the primitive return type
-                call->gtReturnType = returnType;
-                call->gtType       = returnType;
-                assign->gtType     = returnType;
-
-                // Modify the temp reference in the assign as a primitive reference via GT_LCL_FLD
-                GenTree* tempAsPrimitive = assign->AsOp()->gtOp1;
-                assert(tempAsPrimitive->gtOper == GT_LCL_VAR);
-                tempAsPrimitive->gtType = returnType;
-                tempAsPrimitive->ChangeOper(GT_LCL_FLD);
-
-                // Return temp as value of call tree via comma
-                GenTree* tempAsStruct = comp->gtNewLclvNode(tmpNum, TYP_STRUCT);
-                GenTree* comma        = comp->gtNewOperNode(GT_COMMA, TYP_STRUCT, assign, tempAsStruct);
-                parent->ReplaceOperand(pTree, comma);
-
-                JITDUMP("\nAfter:\n");
-                DISPTREE(comma);
-            }
-            break;
-
             case SPK_PrimitiveType:
-                // We should have already retyped the call as a primitive type
-                // when we first imported the call
+                // No work needs to be done, the call has struct type and should keep it.
                 break;
 
             case SPK_ByReference:

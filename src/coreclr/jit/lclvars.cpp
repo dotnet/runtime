@@ -2102,8 +2102,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
             shouldPromote = false;
         }
     }
-    else if (!compiler->compDoOldStructRetyping() && (lclNum == compiler->genReturnLocal) &&
-             (structPromotionInfo.fieldCnt > 1))
+    else if ((lclNum == compiler->genReturnLocal) && (structPromotionInfo.fieldCnt > 1))
     {
         // TODO-1stClassStructs: a temporary solution to keep diffs small, it will be fixed later.
         shouldPromote = false;
