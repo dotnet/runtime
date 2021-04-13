@@ -4611,6 +4611,7 @@ PhaseStatus Compiler::optFindLoops()
 
         // Check if any of the loops need alignment
 
+        JITDUMP("\n");
         optIdentifyLoopsForAlignment();
 
 #if COUNT_LOOPS

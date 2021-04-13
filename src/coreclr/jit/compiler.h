@@ -5506,7 +5506,6 @@ public:
     const char* fgProcessEscapes(const char* nameIn, escapeMapping_t* map);
     FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR type);
     bool fgDumpFlowGraph(Phases phase);
-
 #endif // DUMP_FLOWGRAPHS
 
 #ifdef DEBUG
@@ -9445,12 +9444,12 @@ public:
         BOOL hasCircularClassConstraints;
         BOOL hasCircularMethodConstraints;
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
         const char* compMethodName;
         const char* compClassName;
         const char* compFullName;
         double      compPerfScore;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
         // Method hash is logcally const, but computed
