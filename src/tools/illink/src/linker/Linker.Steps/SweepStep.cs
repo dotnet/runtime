@@ -683,7 +683,7 @@ namespace Mono.Linker.Steps
 					if (td == null) {
 						// Forwarded type cannot be resolved but it was marked
 						// linker is running in --skip-unresolved true mode
-						return;
+						continue;
 					}
 
 					var tr = assembly.MainModule.ImportReference (td);
