@@ -68,15 +68,15 @@ internal static partial class Interop
                 throw new SslException();
         }
 
-        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamConfigureParameters")]
-        private static extern int SSLStreamConfigureParametersImpl(
+        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamSetTargetHost")]
+        private static extern int SSLStreamSetTargetHostImpl(
             SafeSslHandle sslHandle,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string targetHost);
-        internal static void SSLStreamConfigureParameters(
+        internal static void SSLStreamSetTargetHost(
             SafeSslHandle sslHandle,
             string targetHost)
         {
-            int ret = SSLStreamConfigureParametersImpl(sslHandle, targetHost);
+            int ret = SSLStreamSetTargetHostImpl(sslHandle, targetHost);
             if (ret != SUCCESS)
                 throw new SslException();
         }

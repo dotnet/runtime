@@ -233,16 +233,6 @@ namespace System.Net
                 Interop.AndroidCrypto.SSLStreamSetEnabledProtocols(handle, s_orderedSslProtocols.AsSpan(minIndex, maxIndex - minIndex + 1));
             }
 
-            if (isServer && authOptions.RemoteCertRequired)
-            {
-                Interop.AndroidCrypto.SSLStreamRequestClientAuthentication(handle);
-            }
-
-            if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
-            {
-                Interop.AndroidCrypto.SSLStreamConfigureParameters(handle, authOptions.TargetHost);
-            }
-
             if (authOptions.ApplicationProtocols != null)
             {
                 if (!Interop.AndroidCrypto.SSLSupportsApplicationProtocolsConfiguration())
@@ -251,6 +241,16 @@ namespace System.Net
                 }
 
                 Interop.AndroidCrypto.SSLStreamSetApplicationProtocols(handle, authOptions.ApplicationProtocols);
+            }
+
+            if (isServer && authOptions.RemoteCertRequired)
+            {
+                Interop.AndroidCrypto.SSLStreamRequestClientAuthentication(handle);
+            }
+
+            if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
+            {
+                Interop.AndroidCrypto.SSLStreamSetTargetHost(handle, authOptions.TargetHost);
             }
         }
     }

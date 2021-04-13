@@ -79,7 +79,6 @@ jmethodID g_sigNumMethod;
 
 // javax/net/ssl/SSLParameters
 jclass    g_SSLParametersClass;
-jmethodID g_SSLParametersCtor;
 jmethodID g_SSLParametersGetProtocols;
 jmethodID g_SSLParametersSetApplicationProtocols;
 jmethodID g_SSLParametersSetServerNames;
@@ -403,6 +402,7 @@ jmethodID g_SSLEngineCloseOutbound;
 jmethodID g_SSLEngineGetApplicationProtocol;
 jmethodID g_SSLEngineGetHandshakeStatus;
 jmethodID g_SSLEngineGetSession;
+jmethodID g_SSLEngineGetSSLParameters;
 jmethodID g_SSLEngineGetSupportedProtocols;
 jmethodID g_SSLEngineSetEnabledProtocols;
 jmethodID g_SSLEngineSetSSLParameters;
@@ -714,7 +714,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_sigNumMethod =            GetMethod(env, false, g_bigNumClass, "signum", "()I");
 
     g_SSLParametersClass =                      GetClassGRef(env, "javax/net/ssl/SSLParameters");
-    g_SSLParametersCtor =                       GetMethod(env, false,  g_SSLParametersClass, "<init>", "()V");
     g_SSLParametersGetProtocols =               GetMethod(env, false,  g_SSLParametersClass, "getProtocols", "()[Ljava/lang/String;");
     g_SSLParametersSetApplicationProtocols =    GetOptionalMethod(env, false,  g_SSLParametersClass, "setApplicationProtocols", "([Ljava/lang/String;)V");
     g_SSLParametersSetServerNames =             GetMethod(env, false,  g_SSLParametersClass, "setServerNames", "(Ljava/util/List;)V");
@@ -978,6 +977,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLEngineGetApplicationProtocol = GetMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
     g_SSLEngineGetHandshakeStatus =     GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
     g_SSLEngineGetSession =             GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
+    g_SSLEngineGetSSLParameters =       GetMethod(env, false, g_SSLEngine, "getSSLParameters", "()Ljavax/net/ssl/SSLParameters;");
     g_SSLEngineGetSupportedProtocols =  GetMethod(env, false, g_SSLEngine, "getSupportedProtocols", "()[Ljava/lang/String;");
     g_SSLEngineSetEnabledProtocols =    GetMethod(env, false, g_SSLEngine, "setEnabledProtocols", "([Ljava/lang/String;)V");
     g_SSLEngineSetSSLParameters =       GetMethod(env, false, g_SSLEngine, "setSSLParameters", "(Ljavax/net/ssl/SSLParameters;)V");

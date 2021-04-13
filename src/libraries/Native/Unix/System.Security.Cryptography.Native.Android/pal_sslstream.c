@@ -471,7 +471,7 @@ exit:
     return ret;
 }
 
-int32_t AndroidCryptoNative_SSLStreamConfigureParameters(SSLStream* sslStream, char* targetHost)
+int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* targetHost)
 {
     assert(sslStream != NULL);
     assert(targetHost != NULL);
@@ -492,10 +492,10 @@ int32_t AndroidCryptoNative_SSLStreamConfigureParameters(SSLStream* sslStream, c
     (*env)->CallBooleanMethod(env, loc[nameList], g_ArrayListAdd, loc[hostName]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    // SSLParameters params = new SSLParameters();
+    // SSLParameters params = sslEngine.getSSLParameters();
     // params.setServerNames(nameList);
     // sslEngine.setSSLParameters(params);
-    loc[params] = (*env)->NewObject(env, g_SSLParametersClass, g_SSLParametersCtor);
+    loc[params] = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSSLParameters);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, loc[params], g_SSLParametersSetServerNames, loc[nameList]);
     (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, loc[params]);
@@ -818,10 +818,10 @@ int32_t AndroidCryptoNative_SSLStreamSetApplicationProtocols(SSLStream* sslStrea
         (*env)->DeleteLocalRef(env, protocol);
     }
 
-    // SSLParameters params = new SSLParameters();
+    // SSLParameters params = sslEngine.getSSLParameters();
     // params.setApplicationProtocols(protocols);
     // sslEngine.setSSLParameters(params);
-    loc[params] = (*env)->NewObject(env, g_SSLParametersClass, g_SSLParametersCtor);
+    loc[params] = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSSLParameters);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, loc[params], g_SSLParametersSetApplicationProtocols, loc[protocols]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);

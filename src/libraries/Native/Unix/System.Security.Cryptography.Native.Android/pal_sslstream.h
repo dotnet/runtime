@@ -68,12 +68,12 @@ PALEXPORT int32_t AndroidCryptoNative_SSLStreamInitialize(
     SSLStream* sslStream, bool isServer, STREAM_READER streamReader, STREAM_WRITER streamWriter, int32_t appBufferSize);
 
 /*
-Set configuration parameters
+Set target host
   - targetHost : SNI host name
 
 Returns 1 on success, 0 otherwise
 */
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamConfigureParameters(SSLStream* sslStream, char* targetHost);
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* targetHost);
 
 /*
 Start or continue the TLS handshake

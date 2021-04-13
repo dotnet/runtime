@@ -88,7 +88,6 @@ extern jmethodID g_sigNumMethod;
 
 // javax/net/ssl/SSLParameters
 extern jclass    g_SSLParametersClass;
-extern jmethodID g_SSLParametersCtor;
 extern jmethodID g_SSLParametersGetProtocols;
 extern jmethodID g_SSLParametersSetApplicationProtocols;
 extern jmethodID g_SSLParametersSetServerNames;
@@ -417,6 +416,7 @@ extern jmethodID g_SSLEngineCloseOutbound;
 extern jmethodID g_SSLEngineGetApplicationProtocol;
 extern jmethodID g_SSLEngineGetHandshakeStatus;
 extern jmethodID g_SSLEngineGetSession;
+extern jmethodID g_SSLEngineGetSSLParameters;
 extern jmethodID g_SSLEngineGetSupportedProtocols;
 extern jmethodID g_SSLEngineSetEnabledProtocols;
 extern jmethodID g_SSLEngineSetSSLParameters;
