@@ -15,6 +15,9 @@ namespace Microsoft.Extensions.DependencyInjection
         [ThreadStatic]
         private static State t_tlsScopeState;
 
+        // More than 1000 scopes services seems like too many to cache
+        private const int MaxResolvedServicesCount = 1000;
+
         public State Rent()
         {
             State state = null;
@@ -31,7 +34,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public bool Return(State state)
         {
-            if (t_tlsScopeState == null)
+            if (state.Size <= MaxResolvedServicesCount && t_tlsScopeState == null)
             {
                 // Stash the state back in TLS
                 state.Clear();
@@ -49,6 +52,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             public IDictionary<ServiceCacheKey, object> ResolvedServices { get; }
             public List<object> Disposables { get; set; }
+
+            public int Size => ((Dictionary<ServiceCacheKey, object>)ResolvedServices).Count;
 
             public State(ScopePool pool = null)
             {
