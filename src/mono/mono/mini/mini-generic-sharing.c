@@ -3048,8 +3048,7 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot,
 {
 	MonoRuntimeGenericContext *rgctx, *new_rgctx;
 	gpointer info;
-	// FIXME:
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	MonoJitMemoryManager *jit_mm = jit_mm_for_class (class_vtable->klass);
 
 	error_init (error);
 
