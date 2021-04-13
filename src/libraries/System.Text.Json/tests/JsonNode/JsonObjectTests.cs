@@ -420,6 +420,12 @@ namespace System.Text.Json.Node.Tests
 
             var jObject = new JsonObject();
             jObject.Add("Prop", jValue);
+            Assert.Equal(jObject, jValue.Parent);
+
+            // Replace with a new node.
+            jObject["Prop"] = 42;
+
+            Assert.Null(jValue.Parent);
             Assert.Equal(1, jObject.Count);
             jObject.Remove("Prop");
             Assert.Equal(0, jObject.Count);

@@ -184,11 +184,9 @@ namespace System.Text.Json.Node
                 throw new ArgumentNullException(nameof(propertyName));
             }
 
-            value?.AssignParent(this);
-
-            Dictionary[propertyName] = value;
-            _lastKey = propertyName;
-            _lastValue = value;
+            // Do a Remove+Add instead of SetItem to unparent existing value (if any).
+            Remove(propertyName);
+            Add(propertyName, value);
         }
 
         private void CreateNodes()
