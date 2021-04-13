@@ -202,7 +202,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // Creating DSA keys is not supported on OSX
+        [SkipOnPlatform(TestPlatforms.OSX, "Creating DSA keys is not supported on OSX")]
         public static void SignCmsUsingDSACertWithNotMatchingKeyThrows()
         {
             byte[] content = { 9, 8, 7, 6, 5 };

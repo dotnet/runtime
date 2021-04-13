@@ -969,7 +969,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Method);
                     eeGetCallInfo(&resolvedToken,
                                   (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                                  combine(CORINFO_CALLINFO_KINDONLY,
+                                  combine(combine(CORINFO_CALLINFO_KINDONLY, CORINFO_CALLINFO_ALLOWINSTPARAM),
                                           (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
                                   &callInfo);
 
@@ -2560,14 +2560,7 @@ void Compiler::fgFindBasicBlocks()
             {
                 // The lifetime of this var might expand multiple BBs. So it is a long lifetime compiler temp.
                 lvaInlineeReturnSpillTemp = lvaGrabTemp(false DEBUGARG("Inline return value spill temp"));
-                if (compDoOldStructRetyping())
-                {
-                    lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetNativeType;
-                }
-                else
-                {
-                    lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetType;
-                }
+                lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetType;
 
                 // If the method returns a ref class, set the class of the spill temp
                 // to the method's return value. We may update this later if it turns

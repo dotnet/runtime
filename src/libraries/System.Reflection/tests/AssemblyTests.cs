@@ -144,7 +144,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // entry assembly won't be xunit.console on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "entry assembly won't be xunit.console on browser")]
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());

@@ -73,6 +73,8 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentStackOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\DictionaryDefaultConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\DictionaryOfTKeyTValueConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IAsyncEnumerableConverterFactory.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IAsyncEnumerableOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ICollectionOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IDictionaryConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IDictionaryOfTKeyTValueConverter.cs" />
@@ -173,6 +175,7 @@
     <Compile Include="System\Text\Json\Serialization\PreserveReferenceHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\PreserveReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\PropertyRef.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReadAsyncBufferState.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStack.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceHandler.cs" />
@@ -233,11 +236,9 @@
   <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <!-- Common or Common-branched source files -->
-    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs"
-             Link="Common\System\Buffers\ArrayBufferWriter.cs" />
+    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or
-                        '$(TargetFramework)' == 'netcoreapp3.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />

@@ -113,21 +113,52 @@ namespace System.Text.Json
                     inputType = value!.GetType();
                 }
 
-                WriteStack state = default;
+                WriteStack state = new WriteStack { CancellationToken = cancellationToken };
                 JsonConverter converterBase = state.Initialize(inputType, options, supportContinuation: true);
 
                 bool isFinalBlock;
 
-                do
+                try
                 {
-                    state.FlushThreshold = (int)(bufferWriter.Capacity * FlushThreshold);
+                    do
+                    {
+                        state.FlushThreshold = (int)(bufferWriter.Capacity * FlushThreshold);
 
-                    isFinalBlock = WriteCore(converterBase, writer, value, options, ref state);
+                        try
+                        {
+                            isFinalBlock = WriteCore(converterBase, writer, value, options, ref state);
+                        }
+                        finally
+                        {
+                            if (state.PendingAsyncDisposables?.Count > 0)
+                            {
+                                await state.DisposePendingAsyncDisposables().ConfigureAwait(false);
+                            }
+                        }
 
-                    await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                        await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                        bufferWriter.Clear();
 
-                    bufferWriter.Clear();
-                } while (!isFinalBlock);
+                        if (state.PendingTask is not null)
+                        {
+                            try
+                            {
+                                await state.PendingTask.ConfigureAwait(false);
+                            }
+                            catch
+                            {
+                                // Exceptions will be propagated elsewhere
+                                // TODO https://github.com/dotnet/runtime/issues/22144
+                            }
+                        }
+
+                    } while (!isFinalBlock);
+                }
+                catch
+                {
+                    await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
+                    throw;
+                }
             }
         }
     }
