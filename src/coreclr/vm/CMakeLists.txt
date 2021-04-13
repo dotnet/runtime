@@ -67,7 +67,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     debuginfostore.cpp
     decodemd.cpp
     disassembler.cpp
-    dllimport.cpp
     domainfile.cpp
     dynamicmethod.cpp
     ecall.cpp
@@ -323,6 +322,7 @@ set(VM_SOURCES_WKS
     customattribute.cpp
     custommarshalerinfo.cpp
     autotrace.cpp
+    dllimport.cpp
     dllimportcallback.cpp
     dynamicinterfacecastable.cpp
     eeconfig.cpp
@@ -358,6 +358,7 @@ set(VM_SOURCES_WKS
     multicorejitplayer.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     nativeeventsource.cpp
     nativeoverlapped.cpp
+    nativelibrary.cpp
     nativelibrarynative.cpp
     objectlist.cpp
     olevariant.cpp

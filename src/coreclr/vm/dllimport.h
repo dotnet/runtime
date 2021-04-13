@@ -71,14 +71,6 @@ public:
     static HRESULT HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken token, DWORD dwMemberAttrs);
 
     static LPVOID NDirectGetEntryPoint(NDirectMethodDesc *pMD, NATIVE_LIBRARY_HANDLE hMod);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryFromPath(LPCWSTR libraryPath, BOOL throwOnError);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryByName(LPCWSTR name, Assembly *callingAssembly,
-                                                   BOOL hasDllImportSearchPathFlags, DWORD dllImportSearchPathFlags,
-                                                   BOOL throwOnError);
-    static NATIVE_LIBRARY_HANDLE LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
-    static void FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle);
-    static INT_PTR GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError);
-
     static VOID NDirectLink(NDirectMethodDesc *pMD);
 
     // Either MD or signature & module must be given.
