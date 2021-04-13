@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Logging.Generators
 {
-    internal static class DiagDescriptors
+    internal static class DiagnosticDescriptors
     {
         public static DiagnosticDescriptor InvalidLoggingMethodName { get; } = new (
             id: "SYSLIB0013",
