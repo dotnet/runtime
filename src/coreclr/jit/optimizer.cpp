@@ -4288,7 +4288,7 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
             optInvertTotalInfo.sharedStaticHelperCount += optInvertInfo.sharedStaticHelperCount;
             optInvertTotalInfo.arrayLengthCount += optInvertInfo.arrayLengthCount;
 
-            if ((optInvertInfo.sharedStaticHelperCount > 0) || (optInvertTotalInfo.arrayLengthCount > 0))
+            if ((optInvertInfo.sharedStaticHelperCount > 0) || (optInvertInfo.arrayLengthCount > 0))
             {
                 // Calculate a new maximum cost. We might be able to early exit.
 
