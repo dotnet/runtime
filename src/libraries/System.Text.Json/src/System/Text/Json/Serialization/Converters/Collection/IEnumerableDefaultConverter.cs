@@ -218,7 +218,7 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal sealed override bool OnTryWrite(
+        internal override bool OnTryWrite(
             Utf8JsonWriter writer,
             TCollection value,
             JsonSerializerOptions options,

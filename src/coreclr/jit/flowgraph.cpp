@@ -2317,17 +2317,10 @@ private:
 
             if (comp->compMethodReturnsNativeScalarType())
             {
-                if (!comp->compDoOldStructRetyping())
+                returnLocalDsc.lvType = genActualType(comp->info.compRetType);
+                if (varTypeIsStruct(returnLocalDsc.lvType))
                 {
-                    returnLocalDsc.lvType = genActualType(comp->info.compRetType);
-                    if (varTypeIsStruct(returnLocalDsc.lvType))
-                    {
-                        comp->lvaSetStruct(returnLocalNum, comp->info.compMethodInfo->args.retTypeClass, false);
-                    }
-                }
-                else
-                {
-                    returnLocalDsc.lvType = genActualType(comp->info.compRetNativeType);
+                    comp->lvaSetStruct(returnLocalNum, comp->info.compMethodInfo->args.retTypeClass, false);
                 }
             }
             else if (comp->compMethodReturnsRetBufAddr())

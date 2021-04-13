@@ -150,7 +150,7 @@ public class WasmAppBuilder : Task
         foreach (var assembly in _assemblies)
         {
             FileCopyChecked(assembly, Path.Join(asmRootPath, Path.GetFileName(assembly)), "Assemblies");
-            if (DebugLevel > 0)
+            if (DebugLevel != 0)
             {
                 var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
@@ -173,7 +173,7 @@ public class WasmAppBuilder : Task
         foreach (var assembly in _assemblies)
         {
             config.Assets.Add(new AssemblyEntry(Path.GetFileName(assembly)));
-            if (DebugLevel > 0) {
+            if (DebugLevel != 0) {
                 var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))

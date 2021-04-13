@@ -16,10 +16,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-/*****************************************************************************/
-#if FEATURE_ANYCSE
-/*****************************************************************************/
-
 /* static */
 const size_t Compiler::s_optCSEhashSizeInitial  = EXPSET_SZ * 2;
 const size_t Compiler::s_optCSEhashGrowthFactor = 2;
@@ -219,7 +215,7 @@ bool Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
     // If we haven't setup cseMaskTraits, do it now
     if (cseMaskTraits == nullptr)
     {
-        cseMaskTraits = new (getAllocator()) BitVecTraits(optCSECandidateCount, this);
+        cseMaskTraits = new (getAllocator(CMK_CSE)) BitVecTraits(optCSECandidateCount, this);
     }
 
     optCSE_MaskData op1MaskData;
@@ -337,10 +333,6 @@ bool Compiler::optCSEcostCmpSz::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
     // In order to ensure that we have a stable sort, we break ties using the csdIndex
     return dsc1->csdIndex < dsc2->csdIndex;
 }
-
-/*****************************************************************************/
-#if FEATURE_VALNUM_CSE
-/*****************************************************************************/
 
 /*****************************************************************************
  *
@@ -975,7 +967,7 @@ void Compiler::optCseUpdateCheckedBoundMap(GenTree* compare)
             if (optCseCheckedBoundMap == nullptr)
             {
                 // Allocate map on first use.
-                optCseCheckedBoundMap = new (getAllocator()) NodeToNodeMap(getAllocator());
+                optCseCheckedBoundMap = new (getAllocator(CMK_CSE)) NodeToNodeMap(getAllocator());
             }
 
             optCseCheckedBoundMap->Set(bound, compare);
@@ -1005,7 +997,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     const unsigned bitCount = (optCSECandidateCount * 2) + 1;
 
     // Init traits and cseCallKillsMask bitvectors.
-    cseLivenessTraits = new (getAllocator()) BitVecTraits(bitCount, this);
+    cseLivenessTraits = new (getAllocator(CMK_CSE)) BitVecTraits(bitCount, this);
     cseCallKillsMask  = BitVecOps::MakeEmpty(cseLivenessTraits);
     for (unsigned inx = 0; inx < optCSECandidateCount; inx++)
     {
@@ -3471,8 +3463,6 @@ void Compiler::optOptimizeValnumCSEs()
     optValnumCSE_phase = false;
 }
 
-#endif // FEATURE_VALNUM_CSE
-
 /*****************************************************************************
  *
  *  The following determines whether the given expression is a worthy CSE
@@ -3829,11 +3819,9 @@ void Compiler::optOptimizeCSEs()
     optCSECandidateCount = 0;
     optCSEstart          = lvaCount;
 
-#if FEATURE_VALNUM_CSE
     INDEBUG(optEnsureClearCSEInfo());
     optOptimizeValnumCSEs();
     EndPhase(PHASE_OPTIMIZE_VALNUM_CSES);
-#endif // FEATURE_VALNUM_CSE
 }
 
 /*****************************************************************************
@@ -3888,7 +3876,3 @@ void Compiler::optEnsureClearCSEInfo()
 }
 
 #endif // DEBUG
-
-/*****************************************************************************/
-#endif // FEATURE_ANYCSE
-/*****************************************************************************/
