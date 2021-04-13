@@ -186,7 +186,7 @@ namespace System.Tests
             TimeOnly to2 = new TimeOnly(14, 0);
 
             Assert.Equal(new TimeSpan(3, 29, 20), to1 - to2);
-            Assert.Equal(new TimeSpan(3, 29, 20), to2 - to1);
+            Assert.Equal(new TimeSpan(20,30, 40), to2 - to1);
             Assert.Equal(TimeSpan.Zero, to1 - to1);
         }
 

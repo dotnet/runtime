@@ -233,12 +233,12 @@ namespace System
         public static bool operator <=(TimeOnly left, TimeOnly right) => left._ticks <= right._ticks;
 
         /// <summary>
-        /// Subtracts a specified time from another specified time and returns a time interval.
+        ///  Gives the elapsed time between two points on a circular clock, which will always be a positive value.
         /// </summary>
-        /// <param name="t1">The time value to subtract from (the minuend).</param>
-        /// <param name="t2">The time value to subtract (the subtrahend).</param>
-        /// <returns>The absolute time interval between t1 and t2. </returns>
-        public static TimeSpan operator -(TimeOnly t1, TimeOnly t2) => new TimeSpan(Math.Abs(t1._ticks - t2._ticks));
+        /// <param name="t1">The first TimeOnly instance.</param>
+        /// <param name="t2">The second TimeOnly instance..</param>
+        /// <returns>The elapsed time between t1 and t2.</returns>
+        public static TimeSpan operator -(TimeOnly t1, TimeOnly t2) => new TimeSpan((t2._ticks - t1._ticks + TimeSpan.TicksPerDay) % TimeSpan.TicksPerDay);
 
         /// <summary>
         /// Constructs a TimeOnly object from a TimeSpan representing the time elapsed since midnight.
