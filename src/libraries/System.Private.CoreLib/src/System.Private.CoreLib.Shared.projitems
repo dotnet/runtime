@@ -1344,8 +1344,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.NtCreateFile.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.NtCreateFile.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtCreateFile.cs">
+      <Link>Common\Interop\Windows\Kernel32\NtDll\Interop.NtCreateFile.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CriticalSection.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CriticalSection.cs</Link>
@@ -1512,14 +1512,11 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.UNICODE_STRING.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.UNICODE_STRING.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs">
+      <Link>Common\Interop\Windows\Interop.UNICODE_STRING.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OBJECT_ATTRIBUTES.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.OBJECT_ATTRIBUTES.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.IO_STATUS_BLOCK.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.IO_STATUS_BLOCK.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SecurityOptions.cs</Link>
