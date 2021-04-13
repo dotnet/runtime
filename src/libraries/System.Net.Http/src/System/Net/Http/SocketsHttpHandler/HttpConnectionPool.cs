@@ -273,7 +273,10 @@ namespace System.Net.Http
         {
             // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
             if (OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            {
+                // TODO: Once the HTTP/3 versions are part of SslApplicationProtocol, move this back to field initialization.
                 return new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
+            }
 
             return null!;
         }
