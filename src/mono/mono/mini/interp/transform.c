@@ -132,14 +132,14 @@ MonoInterpStats mono_interp_stats;
 
 #if SIZEOF_VOID_P == 8
 #define MINT_MOV_P MINT_MOV_8
+#define MINT_LDNULL MINT_LDC_I8_0
+#define MINT_LDIND_I MINT_LDIND_I8
+#define MINT_STIND_I MINT_STIND_I8
 #else
 #define MINT_MOV_P MINT_MOV_4
-#endif
-
-#if SIZEOF_VOID_P == 8
-#define MINT_LDNULL MINT_LDC_I8_0
-#else
 #define MINT_LDNULL MINT_LDC_I4_0
+#define MINT_LDIND_I MINT_LDIND_I4
+#define MINT_STIND_I MINT_STIND_I4
 #endif
 
 typedef struct {
@@ -1681,15 +1681,15 @@ static int
 interp_get_ldind_for_mt (int mt)
 {
 	switch (mt) {
-		case MINT_TYPE_I1: return MINT_LDIND_I1_CHECK;
-		case MINT_TYPE_U1: return MINT_LDIND_U1_CHECK;
-		case MINT_TYPE_I2: return MINT_LDIND_I2_CHECK;
-		case MINT_TYPE_U2: return MINT_LDIND_U2_CHECK;
-		case MINT_TYPE_I4: return MINT_LDIND_I4_CHECK;
-		case MINT_TYPE_I8: return MINT_LDIND_I8_CHECK;
-		case MINT_TYPE_R4: return MINT_LDIND_R4_CHECK;
-		case MINT_TYPE_R8: return MINT_LDIND_R8_CHECK;
-		case MINT_TYPE_O: return MINT_LDIND_REF;
+		case MINT_TYPE_I1: return MINT_LDIND_I1;
+		case MINT_TYPE_U1: return MINT_LDIND_U1;
+		case MINT_TYPE_I2: return MINT_LDIND_I2;
+		case MINT_TYPE_U2: return MINT_LDIND_U2;
+		case MINT_TYPE_I4: return MINT_LDIND_I4;
+		case MINT_TYPE_I8: return MINT_LDIND_I8;
+		case MINT_TYPE_R4: return MINT_LDIND_R4;
+		case MINT_TYPE_R8: return MINT_LDIND_R8;
+		case MINT_TYPE_O: return MINT_LDIND_I;
 		default:
 			g_assert_not_reached ();
 	}
@@ -5050,37 +5050,35 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 		}
 		case CEE_LDIND_I1:
-			handle_ldind (td, MINT_LDIND_I1_CHECK, STACK_TYPE_I4, &volatile_);
+			handle_ldind (td, MINT_LDIND_I1, STACK_TYPE_I4, &volatile_);
 			break;
 		case CEE_LDIND_U1:
-			handle_ldind (td, MINT_LDIND_U1_CHECK, STACK_TYPE_I4, &volatile_);
+			handle_ldind (td, MINT_LDIND_U1, STACK_TYPE_I4, &volatile_);
 			break;
 		case CEE_LDIND_I2:
-			handle_ldind (td, MINT_LDIND_I2_CHECK, STACK_TYPE_I4, &volatile_);
+			handle_ldind (td, MINT_LDIND_I2, STACK_TYPE_I4, &volatile_);
 			break;
 		case CEE_LDIND_U2:
-			handle_ldind (td, MINT_LDIND_U2_CHECK, STACK_TYPE_I4, &volatile_);
+			handle_ldind (td, MINT_LDIND_U2, STACK_TYPE_I4, &volatile_);
 			break;
 		case CEE_LDIND_I4:
-			handle_ldind (td, MINT_LDIND_I4_CHECK, STACK_TYPE_I4, &volatile_);
-			break;
 		case CEE_LDIND_U4:
-			handle_ldind (td, MINT_LDIND_U4_CHECK, STACK_TYPE_I4, &volatile_);
+			handle_ldind (td, MINT_LDIND_I4, STACK_TYPE_I4, &volatile_);
 			break;
 		case CEE_LDIND_I8:
-			handle_ldind (td, MINT_LDIND_I8_CHECK, STACK_TYPE_I8, &volatile_);
+			handle_ldind (td, MINT_LDIND_I8, STACK_TYPE_I8, &volatile_);
 			break;
 		case CEE_LDIND_I:
-			handle_ldind (td, MINT_LDIND_REF_CHECK, STACK_TYPE_I, &volatile_);
+			handle_ldind (td, MINT_LDIND_I, STACK_TYPE_I, &volatile_);
 			break;
 		case CEE_LDIND_R4:
-			handle_ldind (td, MINT_LDIND_R4_CHECK, STACK_TYPE_R4, &volatile_);
+			handle_ldind (td, MINT_LDIND_R4, STACK_TYPE_R4, &volatile_);
 			break;
 		case CEE_LDIND_R8:
-			handle_ldind (td, MINT_LDIND_R8_CHECK, STACK_TYPE_R8, &volatile_);
+			handle_ldind (td, MINT_LDIND_R8, STACK_TYPE_R8, &volatile_);
 			break;
 		case CEE_LDIND_REF:
-			handle_ldind (td, MINT_LDIND_REF_CHECK, STACK_TYPE_O, &volatile_);
+			handle_ldind (td, MINT_LDIND_I, STACK_TYPE_O, &volatile_);
 			break;
 		case CEE_STIND_REF:
 			handle_stind (td, MINT_STIND_REF, &volatile_);
@@ -5492,7 +5490,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->last_ins->data [0] = get_data_item_index(td, klass);
 			} else {
 				td->sp--;
-				interp_add_ins (td, MINT_LDIND_REF);
+				interp_add_ins (td, MINT_LDIND_I);
 				interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 				push_simple_type (td, STACK_TYPE_I);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
