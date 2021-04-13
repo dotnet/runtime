@@ -3898,9 +3898,11 @@ namespace System
             public System.DateTime DateEnd { get { throw null; } }
             public System.DateTime DateStart { get { throw null; } }
             public System.TimeSpan DaylightDelta { get { throw null; } }
+            public System.TimeSpan BaseUtcOffsetDelta { get { throw null; } }
             public System.TimeZoneInfo.TransitionTime DaylightTransitionEnd { get { throw null; } }
             public System.TimeZoneInfo.TransitionTime DaylightTransitionStart { get { throw null; } }
             public static System.TimeZoneInfo.AdjustmentRule CreateAdjustmentRule(System.DateTime dateStart, System.DateTime dateEnd, System.TimeSpan daylightDelta, System.TimeZoneInfo.TransitionTime daylightTransitionStart, System.TimeZoneInfo.TransitionTime daylightTransitionEnd) { throw null; }
+            public static System.TimeZoneInfo.AdjustmentRule CreateAdjustmentRule(System.DateTime dateStart, System.DateTime dateEnd, System.TimeSpan daylightDelta, System.TimeZoneInfo.TransitionTime daylightTransitionStart, System.TimeZoneInfo.TransitionTime daylightTransitionEnd, System.TimeSpan baseUtcOffsetDelta) { throw null; }
             public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.TimeZoneInfo.AdjustmentRule? other) { throw null; }
             public override int GetHashCode() { throw null; }
             void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
