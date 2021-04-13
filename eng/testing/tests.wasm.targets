@@ -49,7 +49,7 @@
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
 
     <!-- we want to default to what Blazor has, except if we are building in Debug config -->
-    <DebuggerSupport Condition="'$(Configuration)' != 'Debug'">false</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
   </PropertyGroup>
 
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
