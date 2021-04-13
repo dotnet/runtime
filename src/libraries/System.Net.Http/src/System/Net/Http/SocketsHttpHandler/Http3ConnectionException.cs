@@ -10,6 +10,7 @@ namespace System.Net.Http
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
+    [UnsupportedOSPlatform("android")]
     internal sealed class Http3ConnectionException : Http3ProtocolException
     {
         public Http3ConnectionException(Http3ErrorCode errorCode)

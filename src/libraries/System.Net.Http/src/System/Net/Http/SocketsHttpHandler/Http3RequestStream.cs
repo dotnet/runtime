@@ -19,6 +19,7 @@ namespace System.Net.Http
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
+    [UnsupportedOSPlatform("android")]
     internal sealed class Http3RequestStream : IHttpHeadersHandler, IAsyncDisposable, IDisposable
     {
         private readonly HttpRequestMessage _request;

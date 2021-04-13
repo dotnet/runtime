@@ -17,6 +17,7 @@ namespace System.Net.Http
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
+    [UnsupportedOSPlatform("android")]
     internal sealed class Http3Connection : HttpConnectionBase, IDisposable
     {
         // TODO: once HTTP/3 is standardized, create APIs for this.

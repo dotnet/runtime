@@ -104,6 +104,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
+        [UnsupportedOSPlatform("android")]
         public static async ValueTask<QuicConnection> ConnectQuicAsync(QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
         {
             QuicConnection con = new QuicConnection(quicImplementationProvider, endPoint, clientAuthenticationOptions);

@@ -10,6 +10,7 @@ namespace System.Net.Http
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
+    [UnsupportedOSPlatform("android")]
     internal class Http3ProtocolException : Exception
     {
         public Http3ErrorCode ErrorCode { get; }
