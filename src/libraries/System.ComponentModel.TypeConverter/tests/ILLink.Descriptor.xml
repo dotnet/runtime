@@ -1,11 +1,11 @@
+<!-- This is file is to tell the linker not to remove these assemblies/types/namespace 
+     when aggressive trimming is enabled. -->
 <linker>
   <assembly fullname="TestUtilities">
    	<namespace fullname="System" />
         <type fullname="System.PlatformDetection" />
   </assembly>
   <assembly fullname="System" />
-  <assembly fullname="xunit.runner.utility.netcoreapp10" />
-  <assembly fullname="Microsoft.DotNet.XUnitExtensions"/>
   <assembly fullname="mscorlib" />
   <assembly fullname="Castle.Core">
       <namespace fullname="Castle.DynamicProxy" />
