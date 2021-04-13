@@ -238,7 +238,7 @@ namespace System
         /// <param name="t1">The first TimeOnly instance.</param>
         /// <param name="t2">The second TimeOnly instance..</param>
         /// <returns>The elapsed time between t1 and t2.</returns>
-        public static TimeSpan operator -(TimeOnly t1, TimeOnly t2) => new TimeSpan((t2._ticks - t1._ticks + TimeSpan.TicksPerDay) % TimeSpan.TicksPerDay);
+        public static TimeSpan operator -(TimeOnly t1, TimeOnly t2) => new TimeSpan((t1._ticks - t2._ticks + TimeSpan.TicksPerDay) % TimeSpan.TicksPerDay);
 
         /// <summary>
         /// Constructs a TimeOnly object from a TimeSpan representing the time elapsed since midnight.
