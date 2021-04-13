@@ -5,40 +5,42 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     internal class ScopePool
     {
-        // Modest number to re-use. We only really care about reuse for short lived scopes
-        private const int MaxQueueSize = 128;
-
-        private int _count;
-        private readonly ConcurrentQueue<State> _queue = new();
+        // Stash the scope state on a thread static
+        [ThreadStatic]
+        private static State t_tlsScopeState;
 
         public State Rent()
         {
-            if (_queue.TryDequeue(out State state))
+            State state = null;
+
+            // Try to get a scope from TLS
+            if (t_tlsScopeState != null)
             {
-                Interlocked.Decrement(ref _count);
-                return state;
+                state = t_tlsScopeState;
+                t_tlsScopeState = null;
             }
-            return new State(this);
+
+            return state ?? new State(this);
         }
 
         public bool Return(State state)
         {
-            if (Interlocked.Increment(ref _count) > MaxQueueSize)
+            if (t_tlsScopeState == null)
             {
-                Interlocked.Decrement(ref _count);
-                return false;
+                // Stash the state back in TLS
+                state.Clear();
+                t_tlsScopeState = state;
+
+                return true;
             }
 
-            state.Clear();
-            _queue.Enqueue(state);
-            return true;
+            return false;
         }
 
         public class State
@@ -61,7 +63,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 // This should only get called from the pool
                 Debug.Assert(_pool != null);
                 // REVIEW: Should we trim excess here as well?
-                ResolvedServices.Clear();
+                ((Dictionary<ServiceCacheKey, object>)ResolvedServices).Clear();
                 Disposables?.Clear();
             }
 
