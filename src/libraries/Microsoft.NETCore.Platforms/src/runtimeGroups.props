@@ -269,7 +269,7 @@
   </PropertyGroup>
   <UsingTask TaskName="GenerateRuntimeGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
 
-  <Target Name="GenerateRuntimeJson" BeforeTargets="Pack">
+  <Target Name="UpdateRuntimeJson" BeforeTargets="Pack">
     <!-- Generates a Runtime graph using RuntimeGroups and diffs it with the graph described by runtime.json and runtime.compatibility.json
          Specifying UpdateRuntimeFiles=true skips the diff and updates those files.
          The graph can be visualized using the generated dmgl -->
