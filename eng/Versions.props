@@ -45,9 +45,11 @@
     <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="0" />
   </ItemGroup>
   <PropertyGroup>
+    <MicrosoftCodeAnalysisAnalyzersVersion>3.3.1</MicrosoftCodeAnalysisAnalyzersVersion> 
     <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-preview3.21168.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.9.0-5.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpVersion>3.9.0-5.final</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>3.8.0</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21207.4</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>6.0.0-beta.21207.4</MicrosoftDotNetBuildTasksFeedVersion>
@@ -154,6 +156,7 @@
     <XUnitRunnerVisualStudioVersion>2.4.2</XUnitRunnerVisualStudioVersion>
     <CoverletCollectorVersion>1.3.0</CoverletCollectorVersion>
     <NewtonsoftJsonVersion>12.0.3</NewtonsoftJsonVersion>
+    <SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion>
     <MoqVersion>4.12.0</MoqVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
     <!-- Docs -->
