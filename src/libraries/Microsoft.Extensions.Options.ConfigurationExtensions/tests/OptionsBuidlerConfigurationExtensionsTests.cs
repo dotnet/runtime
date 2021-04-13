@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
         public static void BindConfiguration_ThrowsForNullConfigurationSectionPath()
         {
             var services = new ServiceCollection();
-            var optionsBuilder = new OptionsBuilder<FakeOptions>(services, Options.DefaultName);
+            OptionsBuilder<FakeOptions> optionsBuilder = new(services, Options.DefaultName);
             string configSectionPath = null!;
 
             Assert.Throws<ArgumentNullException>("configSectionPath", () =>
@@ -36,9 +36,9 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
         public static void BindConfiguration_ReturnsSameBuilderInstance()
         {
             var services = new ServiceCollection();
-            var optionsBuilder = new OptionsBuilder<FakeOptions>(services, Options.DefaultName);
+            OptionsBuilder<FakeOptions> optionsBuilder = new(services, Options.DefaultName);
 
-            var returnedBuilder = optionsBuilder.BindConfiguration("Test");
+            OptionsBuilder<FakeOptions> returnedBuilder = optionsBuilder.BindConfiguration("Test");
 
             Assert.Same(optionsBuilder, returnedBuilder);
         }
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
         public static void BindConfiguration_OptionsMaterializationThrowsIfNoConfigurationInDI()
         {
             var services = new ServiceCollection();
-            var optionsBuilder = services.AddOptions<FakeOptions>();
+            OptionsBuilder<FakeOptions> optionsBuilder = services.AddOptions<FakeOptions>();
 
             _ = optionsBuilder.BindConfiguration("Test");
             using ServiceProvider serviceProvider = services.BuildServiceProvider();
@@ -71,12 +71,12 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
                 .AddInMemoryCollection(configEntries)
                 .Build());
-            var optionsBuilder = services.AddOptions<FakeOptions>();
+            OptionsBuilder<FakeOptions> optionsBuilder = services.AddOptions<FakeOptions>();
 
             _ = optionsBuilder.BindConfiguration(configSectionName);
 
             using ServiceProvider serviceProvider = services.BuildServiceProvider();
-            var options = serviceProvider.GetRequiredService<IOptions<FakeOptions>>().Value;
+            FakeOptions options = serviceProvider.GetRequiredService<IOptions<FakeOptions>>().Value;
 
             Assert.Equal(messageValue, options.Message);
         }
@@ -93,12 +93,12 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
                 .AddInMemoryCollection(configEntries)
                 .Build());
-            var optionsBuilder = services.AddOptions<FakeOptions>();
+            OptionsBuilder<FakeOptions> optionsBuilder = services.AddOptions<FakeOptions>();
 
             _ = optionsBuilder.BindConfiguration(configSectionPath: "");
 
             using ServiceProvider serviceProvider = services.BuildServiceProvider();
-            var options = serviceProvider.GetRequiredService<IOptions<FakeOptions>>().Value;
+            FakeOptions options = serviceProvider.GetRequiredService<IOptions<FakeOptions>>().Value;
 
             Assert.Equal(messageValue, options.Message);
         }
@@ -121,7 +121,7 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
                     .Add(configSource)
                     .Build());
-            var optionsBuilder = services.AddOptions<FakeOptions>();
+            OptionsBuilder<FakeOptions> optionsBuilder = services.AddOptions<FakeOptions>();
             _ = optionsBuilder.BindConfiguration(configSectionPath: "");
             using ServiceProvider serviceProvider = services.BuildServiceProvider();
             var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<FakeOptions>>();
@@ -130,10 +130,10 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
             {
                 updateHasRun = true;
             });
-            var optionsValue1 = optionsMonitor.CurrentValue;
+            FakeOptions optionsValue1 = optionsMonitor.CurrentValue;
             Assert.Equal(messageValue1, optionsValue1.Message);
             configSource.Provider.Set(nameof(FakeOptions.Message), messageValue2);
-            var optionsValue2 = optionsMonitor.CurrentValue;
+            FakeOptions optionsValue2 = optionsMonitor.CurrentValue;
             Assert.True(updateHasRun);
             Assert.Equal(messageValue2, optionsValue2.Message);
         }
