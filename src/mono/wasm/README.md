@@ -45,6 +45,8 @@ Windows build [requirements](https://github.com/dotnet/runtime/blob/main/docs/wo
 
 The latest engines can be installed with jsvu (JavaScript engine Version Updater https://github.com/GoogleChromeLabs/jsvu)
 
+### Mac
+
 * Install npm with brew:
 
 `brew install npm`
@@ -53,7 +55,7 @@ The latest engines can be installed with jsvu (JavaScript engine Version Updater
 
 `npm install jsvu -g`
 
-* Run jsvu:
+* Run jsvu and install `v8`, `SpiderMonkey`, or `JavaScriptCore` engines:
 
 `jsvu`
 
@@ -61,9 +63,25 @@ Add `~/.jsvu` to your `PATH`:
 
 `export PATH="${HOME}/.jsvu:${PATH}"`
 
+### Windows
+
+* Install node/npm from https://nodejs.org/en/ and add its npm and nodejs directories to the `PATH` environment variable
+
+* * Install jsvu with npm:
+
+`npm install jsvu -g`
+
+* Run jsvu and install `v8`, `SpiderMonkey`, or `JavaScriptCore` engines:
+
+`jsvu`
+
+* Add `~/.jsvu` to the `PATH` environment variable
+
 ## Libraries tests
 
 Library tests can be run with js engines: `v8`, `SpiderMonkey`,or `JavaScriptCore`:
+
+### Mac
 
 * `v8`: `make run-tests-v8-$(lib_name)`
 * SpiderMonkey: `make run-tests-sm-$(lib_name)`
@@ -71,6 +89,21 @@ Library tests can be run with js engines: `v8`, `SpiderMonkey`,or `JavaScriptCor
 * Or default: `make run-tests-$(lib_name)`. This runs the tests with `v8`.
 
 For example, for `System.Collections.Concurrent`: `make run-tests-v8-System.Collections.Concurrent`
+
+### Windows
+
+Library tests on windows can be run as described in [testing-libraries](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing.md#testing-libraries) documentation. Without setting additional properties, it will run tests for all libraries on `v8` engine:
+
+`.\build.cmd libs.tests -test -os browser`
+
+* `JSEngine` property can be used to specify which engine to use. Right now `v8` and `SpiderMonkey` engines can be used.
+
+Examples of running tests for individual libraries:
+
+`.\dotnet.cmd build /t:Test /p:TargetOS=Browser src\libraries\System.Collections.Concurrent\tests`
+`.\dotnet.cmd build /t:Test /p:TargetOS=Browser /p:JSEngine="SpiderMonkey" src\libraries\System.Text.Json\tests`
+
+### Browser tests
 
 Or they can be run with a browser (Chrome):
 
