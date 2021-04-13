@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyInjection
         [ThreadStatic]
         private static State t_tlsScopeState;
 
-        // More than 1000 scopes services seems like too many to cache
+        // More than 1000 scopes services seems like too many to cache (~36KB in size)
         private const int MaxResolvedServicesCount = 1000;
 
         public State Rent()
@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public bool Return(State state)
         {
-            if (state.Size <= MaxResolvedServicesCount && t_tlsScopeState == null)
+            if (state.Size <= MaxResolvedServicesCount)
             {
                 // Stash the state back in TLS
                 state.Clear();
