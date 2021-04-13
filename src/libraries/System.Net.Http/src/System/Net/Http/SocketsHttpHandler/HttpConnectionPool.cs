@@ -265,9 +265,18 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
         }
 
-        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
+        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = CreateHttp3ApplicationProtocols();
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
+
+        private static List<SslApplicationProtocol> CreateHttp3ApplicationProtocols()
+        {
+            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+                return new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
+
+            return null!;
+        }
 
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
         {
@@ -907,14 +916,18 @@ namespace System.Net.Http
                     HandleAltSvc(altSvcHeaderValues, response.Headers.Age);
                 }
 
-                // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
-                // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
-                // In this case, we blocklist the authority and retry the request at the origin.
-                if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection is Http3Connection h3Connection && h3Connection.Authority != _originAuthority)
+                // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+                if (OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
                 {
-                    response.Dispose();
-                    BlocklistAuthority(h3Connection.Authority);
-                    continue;
+                    // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
+                    // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
+                    // In this case, we blocklist the authority and retry the request at the origin.
+                    if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection is Http3Connection h3Connection && h3Connection.Authority != _originAuthority)
+                    {
+                        response.Dispose();
+                        BlocklistAuthority(h3Connection.Authority);
+                        continue;
+                    }
                 }
 
                 return response;
