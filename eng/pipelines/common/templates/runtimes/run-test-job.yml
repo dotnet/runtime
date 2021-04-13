@@ -30,7 +30,6 @@ parameters:
 ### Each test run job depends on a corresponding test build job with the same
 ### buildConfig and archType.
 
-# Some changes is required here
 jobs:
 - template: /eng/pipelines/${{ parameters.runtimeFlavor }}/templates/xplat-pipeline-job.yml
   parameters:
