@@ -417,11 +417,11 @@
       <_MonoCMakeArgs Include="-DENABLE_MSCORDBI=1" />
     </ItemGroup>
 
-    <!-- TODO: Enable TCP listener once all is component based -->
-    <!-- <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">
+    <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_LISTEN_PORTS=1"/>
-    </ItemGroup> -->
+      <_MonoCMakeArgs Include="-DISABLE_LINK_STATIC_COMPONENTS=1" />
+    </ItemGroup>
 
     <!-- Components -->
     <ItemGroup Condition="'$(MonoComponentsStatic)' == 'true'">
