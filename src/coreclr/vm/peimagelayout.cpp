@@ -16,7 +16,7 @@
 #if defined(CORECLR_EMBEDDED)
 extern "C"
 {
-#include "../../../libraries/Native/AnyOS/zlib/pal_zlib.h"
+#include "pal_zlib.h"
 }
 #endif
 
