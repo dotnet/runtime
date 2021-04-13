@@ -435,7 +435,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(expected, tss.ToStringState.ToStringMode);
         }
 
-        private sealed class SpanFormattableStringWrapper : IFormattable, ISpanFormattable, IHasToStringState
+        private sealed class SpanFormattableStringWrapper : ISpanFormattable, IHasToStringState
         {
             private readonly string _value;
             public ToStringState ToStringState { get; } = new ToStringState();
@@ -482,7 +482,7 @@ namespace System.Runtime.CompilerServices.Tests
             }
         }
 
-        private struct SpanFormattableInt32Wrapper : IFormattable, ISpanFormattable, IHasToStringState
+        private struct SpanFormattableInt32Wrapper : ISpanFormattable, IHasToStringState
         {
             private readonly int _value;
             public ToStringState ToStringState { get; }

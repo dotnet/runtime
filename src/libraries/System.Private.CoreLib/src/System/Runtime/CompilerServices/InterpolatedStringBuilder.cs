@@ -248,7 +248,7 @@ namespace System.Runtime.CompilerServices
             }
 
             // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
-            // derives from the former.  For value types, it won't matter as the type checks devolve into
+            // requires the former.  For value types, it won't matter as the type checks devolve into
             // JIT-time constants.  For reference types, they're more likely to implement IFormattable
             // than they are to implement ISpanFormattable: if they don't implement either, we save an
             // interface check over first checking for ISpanFormattable and then for IFormattable, and
@@ -295,7 +295,7 @@ namespace System.Runtime.CompilerServices
             }
 
             // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
-            // derives from the former.  For value types, it won't matter as the type checks devolve into
+            // requires the former.  For value types, it won't matter as the type checks devolve into
             // JIT-time constants.  For reference types, they're more likely to implement IFormattable
             // than they are to implement ISpanFormattable: if they don't implement either, we save an
             // interface check over first checking for ISpanFormattable and then for IFormattable, and
@@ -569,19 +569,23 @@ namespace System.Runtime.CompilerServices
         private void Grow(int additionalChars)
         {
             Debug.Assert(_pos > _chars.Length - additionalChars);
-            GrowCore(Math.Max(_chars.Length * 2, _pos + additionalChars));
+
+            // We want the max of doubling our capacity and how much space we know we actually required. However,
+            // if doubling would exceed the max array length possible, stick to the number of characters required.
+            uint doubling = (uint)_chars.Length * 2;
+            uint required = (uint)_pos + (uint)additionalChars;
+            GrowCore(doubling > Array.MaxArrayLength || required > doubling ? required : doubling);
         }
 
         /// <summary>Grow the size of <see cref="_chars"/>.</summary>
         [MethodImpl(MethodImplOptions.NoInlining)] // keep consumers as streamlined as possible
-        private void Grow() =>
-            GrowCore(Math.Max(_chars.Length * 2, _chars.Length + 1));
+        private void Grow() => GrowCore(Math.Min(Array.MaxArrayLength, (uint)_chars.Length * 2));
 
         /// <summary>Grow the size of <see cref="_chars"/> to the specified <paramref name="newCapacity"/>.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // but reuse this grow logic directly in both of the above grow routines
-        private void GrowCore(int newCapacity)
+        private void GrowCore(uint newCapacity)
         {
-            char[] newArray = ArrayPool<char>.Shared.Rent(Math.Max(MinimumArrayPoolLength, newCapacity));
+            char[] newArray = ArrayPool<char>.Shared.Rent((int)Math.Clamp(newCapacity, MinimumArrayPoolLength, int.MaxValue));
             _chars.Slice(0, _pos).CopyTo(newArray);
 
             char[]? toReturn = _arrayToReturnToPool;

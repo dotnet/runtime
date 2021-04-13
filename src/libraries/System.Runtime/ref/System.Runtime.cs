@@ -683,7 +683,7 @@ namespace System
         public unsafe static void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy) { }
         public static void SetByte(System.Array array, int index, byte value) { }
     }
-    public readonly partial struct Byte : System.IComparable, System.IComparable<byte>, System.IConvertible, System.IEquatable<byte>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct Byte : System.IComparable, System.IComparable<byte>, System.IConvertible, System.IEquatable<byte>, System.ISpanFormattable
     {
         private readonly byte _dummyPrimitive;
         public const byte MaxValue = (byte)255;
@@ -1484,7 +1484,7 @@ namespace System
         Utc = 1,
         Local = 2,
     }
-    public readonly partial struct DateTimeOffset : System.IComparable, System.IComparable<System.DateTimeOffset>, System.IEquatable<System.DateTimeOffset>, System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
+    public readonly partial struct DateTimeOffset : System.IComparable, System.IComparable<System.DateTimeOffset>, System.IEquatable<System.DateTimeOffset>, System.ISpanFormattable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.DateTimeOffset MaxValue;
@@ -1612,7 +1612,7 @@ namespace System
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
     }
-    public readonly partial struct Decimal : System.IComparable, System.IComparable<decimal>, System.IConvertible, System.IEquatable<decimal>, System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
+    public readonly partial struct Decimal : System.IComparable, System.IComparable<decimal>, System.IConvertible, System.IEquatable<decimal>, System.ISpanFormattable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         [System.Runtime.CompilerServices.DecimalConstantAttribute((byte)0, (byte)0, (uint)4294967295, (uint)4294967295, (uint)4294967295)]
@@ -1799,7 +1799,7 @@ namespace System
         public DivideByZeroException(string? message) { }
         public DivideByZeroException(string? message, System.Exception? innerException) { }
     }
-    public readonly partial struct Double : System.IComparable, System.IComparable<double>, System.IConvertible, System.IEquatable<double>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct Double : System.IComparable, System.IComparable<double>, System.IConvertible, System.IEquatable<double>, System.ISpanFormattable
     {
         private readonly double _dummyPrimitive;
         public const double Epsilon = 5E-324;
@@ -2247,7 +2247,7 @@ namespace System
     {
         public GopherStyleUriParser() { }
     }
-    public readonly partial struct Guid : System.IComparable, System.IComparable<System.Guid>, System.IEquatable<System.Guid>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct Guid : System.IComparable, System.IComparable<System.Guid>, System.IEquatable<System.Guid>, System.ISpanFormattable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.Guid Empty;
@@ -2282,7 +2282,7 @@ namespace System
         public bool TryWriteBytes(System.Span<byte> destination) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
     }
-    public readonly partial struct Half : System.IComparable, System.IComparable<System.Half>, System.IEquatable<System.Half>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct Half : System.IComparable, System.IComparable<System.Half>, System.IEquatable<System.Half>, System.ISpanFormattable
     {
         private readonly int _dummyPrimitive;
         public static System.Half Epsilon { get { throw null; } }
@@ -2453,7 +2453,7 @@ namespace System
         public InsufficientMemoryException(string? message) { }
         public InsufficientMemoryException(string? message, System.Exception? innerException) { }
     }
-    public readonly partial struct Int16 : System.IComparable, System.IComparable<short>, System.IConvertible, System.IEquatable<short>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct Int16 : System.IComparable, System.IComparable<short>, System.IConvertible, System.IEquatable<short>, System.ISpanFormattable
     {
         private readonly short _dummyPrimitive;
         public const short MaxValue = (short)32767;
@@ -2494,7 +2494,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Int16 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Int16 result) { throw null; }
     }
-    public readonly partial struct Int32 : System.IComparable, System.IComparable<int>, System.IConvertible, System.IEquatable<int>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct Int32 : System.IComparable, System.IComparable<int>, System.IConvertible, System.IEquatable<int>, System.ISpanFormattable
     {
         private readonly int _dummyPrimitive;
         public const int MaxValue = 2147483647;
@@ -2535,7 +2535,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Int32 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Int32 result) { throw null; }
     }
-    public readonly partial struct Int64 : System.IComparable, System.IComparable<long>, System.IConvertible, System.IEquatable<long>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct Int64 : System.IComparable, System.IComparable<long>, System.IConvertible, System.IEquatable<long>, System.ISpanFormattable
     {
         private readonly long _dummyPrimitive;
         public const long MaxValue = (long)9223372036854775807;
@@ -2576,7 +2576,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Int64 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Int64 result) { throw null; }
     }
-    public readonly partial struct IntPtr : System.IComparable, System.IComparable<System.IntPtr>, System.IEquatable<System.IntPtr>, System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
+    public readonly partial struct IntPtr : System.IComparable, System.IComparable<System.IntPtr>, System.IEquatable<System.IntPtr>, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.IntPtr Zero;
@@ -3401,7 +3401,7 @@ namespace System
         public static bool operator !=(System.RuntimeTypeHandle left, object? right) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
-    public readonly partial struct SByte : System.IComparable, System.IComparable<sbyte>, System.IConvertible, System.IEquatable<sbyte>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct SByte : System.IComparable, System.IComparable<sbyte>, System.IConvertible, System.IEquatable<sbyte>, System.ISpanFormattable
     {
         private readonly sbyte _dummyPrimitive;
         public const sbyte MaxValue = (sbyte)127;
@@ -3447,7 +3447,7 @@ namespace System
     {
         public SerializableAttribute() { }
     }
-    public readonly partial struct Single : System.IComparable, System.IComparable<float>, System.IConvertible, System.IEquatable<float>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct Single : System.IComparable, System.IComparable<float>, System.IConvertible, System.IEquatable<float>, System.ISpanFormattable
     {
         private readonly float _dummyPrimitive;
         public const float Epsilon = 1E-45f;
@@ -4638,7 +4638,7 @@ namespace System
         public TypeUnloadedException(string? message, System.Exception? innerException) { }
     }
     [System.CLSCompliantAttribute(false)]
-    public readonly partial struct UInt16 : System.IComparable, System.IComparable<ushort>, System.IConvertible, System.IEquatable<ushort>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct UInt16 : System.IComparable, System.IComparable<ushort>, System.IConvertible, System.IEquatable<ushort>, System.ISpanFormattable
     {
         private readonly ushort _dummyPrimitive;
         public const ushort MaxValue = (ushort)65535;
@@ -4680,7 +4680,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.UInt16 result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
-    public readonly partial struct UInt32 : System.IComparable, System.IComparable<uint>, System.IConvertible, System.IEquatable<uint>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct UInt32 : System.IComparable, System.IComparable<uint>, System.IConvertible, System.IEquatable<uint>, System.ISpanFormattable
     {
         private readonly uint _dummyPrimitive;
         public const uint MaxValue = (uint)4294967295;
@@ -4722,7 +4722,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.UInt32 result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
-    public readonly partial struct UInt64 : System.IComparable, System.IComparable<ulong>, System.IConvertible, System.IEquatable<ulong>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct UInt64 : System.IComparable, System.IComparable<ulong>, System.IConvertible, System.IEquatable<ulong>, System.ISpanFormattable
     {
         private readonly ulong _dummyPrimitive;
         public const ulong MaxValue = (ulong)18446744073709551615;
@@ -4764,7 +4764,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.UInt64 result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
-    public readonly partial struct UIntPtr : System.IComparable, System.IComparable<System.UIntPtr>, System.IEquatable<System.UIntPtr>, System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
+    public readonly partial struct UIntPtr : System.IComparable, System.IComparable<System.UIntPtr>, System.IEquatable<System.UIntPtr>, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.UIntPtr Zero;
