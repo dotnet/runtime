@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -14,6 +15,17 @@ namespace System.Text.Json
         /// The enumerator for resumable collections.
         /// </summary>
         public IEnumerator? CollectionEnumerator;
+
+        /// <summary>
+        /// The enumerator for resumable async disposables.
+        /// </summary>
+        public IAsyncDisposable? AsyncEnumerator;
+
+        /// <summary>
+        /// The current stackframe has suspended serialization due to a pending task,
+        /// stored in the <see cref="WriteStack.PendingTask"/> property.
+        /// </summary>
+        public bool AsyncEnumeratorIsPendingCompletion;
 
         /// <summary>
         /// The original JsonPropertyInfo that is not changed. It contains all properties.
@@ -113,6 +125,8 @@ namespace System.Text.Json
         {
             CollectionEnumerator = null;
             EnumeratorIndex = 0;
+            AsyncEnumerator = null;
+            AsyncEnumeratorIsPendingCompletion = false;
             IgnoreDictionaryKeyPolicy = false;
             JsonClassInfo = null!;
             OriginalDepth = 0;

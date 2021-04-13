@@ -206,6 +206,7 @@
     <Compile Include="System\Reflection\ObfuscateAssemblyAttributeTests.cs" />
     <Compile Include="System\Reflection\ObfuscationAttributeTests.cs" />
     <Compile Include="System\Reflection\PointerTests.cs" />
+    <Compile Include="System\Reflection\ReflectionCacheTests.cs" />
     <Compile Include="System\Reflection\ReflectionContextTests.cs" />
     <Compile Include="System\Reflection\ReflectionTypeLoadExceptionTests.cs" />
     <Compile Include="System\Reflection\StrongNameKeyPairTests.cs" />

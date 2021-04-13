@@ -17,12 +17,6 @@ namespace System
         private static int _infinitelyRecursingCount;
         private static bool _resourceManagerInited;
 
-        // Needed for debugger integration
-        internal static string GetResourceString(string resourceKey)
-        {
-            return GetResourceString(resourceKey, null);
-        }
-
         private static string InternalGetResourceString(string key)
         {
             if (key.Length == 0)

@@ -206,6 +206,7 @@ namespace System.Diagnostics
             string word_At = SR.GetResourceString(nameof(SR.Word_At), defaultString: "at");
             // We also want to pass in a default for inFileLineNumber.
             string inFileLineNum = SR.GetResourceString(nameof(SR.StackTrace_InFileLineNumber), defaultString: "in {0}:line {1}");
+            string inFileILOffset = SR.GetResourceString(nameof(SR.StackTrace_InFileILOffset), defaultString: "in {0}:token 0x{1:x}+0x{2:x}");
             bool fFirstFrame = true;
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
             {
@@ -322,6 +323,17 @@ namespace System.Diagnostics
                             // tack on " in c:\tmp\MyFile.cs:line 5"
                             sb.Append(' ');
                             sb.AppendFormat(CultureInfo.InvariantCulture, inFileLineNum, fileName, sf.GetFileLineNumber());
+                        }
+                        else if (LocalAppContextSwitches.ShowILOffsets && mb.ReflectedType != null)
+                        {
+                            string assemblyName = mb.ReflectedType.Module.ScopeName;
+                            try
+                            {
+                                int token = mb.MetadataToken;
+                                sb.Append(' ');
+                                sb.AppendFormat(CultureInfo.InvariantCulture, inFileILOffset, assemblyName, token, sf.GetILOffset());
+                            }
+                            catch (System.InvalidOperationException) {}
                         }
                     }
 

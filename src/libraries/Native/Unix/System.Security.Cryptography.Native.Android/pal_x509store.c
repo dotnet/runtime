@@ -329,7 +329,7 @@ int32_t AndroidCryptoNative_X509StoreEnumerateCertificates(jobject /*KeyStore*/ 
 static bool SystemAliasFilter(JNIEnv* env, jstring alias)
 {
     const char systemPrefix[] = "system:";
-    size_t prefixLen = (sizeof(systemPrefix) - 1) / sizeof(char);
+    size_t prefixLen = (sizeof(systemPrefix) / sizeof(*systemPrefix)) - 1;
 
     const char* aliasPtr = (*env)->GetStringUTFChars(env, alias, NULL);
     bool isSystem = (strncmp(aliasPtr, systemPrefix, prefixLen) == 0);

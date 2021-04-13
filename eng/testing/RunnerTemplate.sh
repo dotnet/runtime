@@ -225,8 +225,11 @@ popd >/dev/null
 # The helix work item should not exit with non-zero if tests ran and produced results
 # The special console runner for runtime returns 1 when tests fail
 if [ "$test_exitcode" == "1" ]; then
-  exit 0
-else
-  exit $test_exitcode
+  if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
+    exit 0
+  fi
+fi
+
+exit $test_exitcode
 fi
 

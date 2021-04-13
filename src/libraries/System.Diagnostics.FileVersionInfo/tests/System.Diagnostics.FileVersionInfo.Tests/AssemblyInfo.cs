@@ -3,4 +3,4 @@
 
 using Xunit;
 
-[assembly: SkipOnMono("System.Diagnostics.FileVersionInfo is not supported on wasm.", TestPlatforms.Browser)]
+[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Diagnostics.FileVersionInfo is not supported on Browser.")]
