@@ -376,6 +376,15 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void InternalCreate([NotNull] ref Array? result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
 
+        // CAUTION! No bounds checking!
+        internal object? InternalGetValue(nint index)
+        {
+            if (GetType().GetElementType()!.IsPointer)
+                throw new NotSupportedException(SR.NotSupported_Type);
+
+            return GetValueImpl((int)index);
+        }
+
         public object GetValue(int index)
         {
             if (Rank != 1)
