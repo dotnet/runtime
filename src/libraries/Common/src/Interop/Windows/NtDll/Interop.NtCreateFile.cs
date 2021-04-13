@@ -70,9 +70,9 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe (uint status, IntPtr handle) CreateFile(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize)
+        internal static unsafe (uint status, IntPtr handle) CreateFile(ReadOnlySpan<char> path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long allocationSize)
             => CreateFile(
-                path: PathInternal.IsExtended(path) ? path : @"\??\" + Path.GetFullPath(path), // TODO: we might consider getting rid of this managed allocation,
+                path: path,
                 rootDirectory: IntPtr.Zero,
                 createDisposition: GetCreateDisposition(mode),
                 desiredAccess: GetDesiredAccess(access, mode, options),
