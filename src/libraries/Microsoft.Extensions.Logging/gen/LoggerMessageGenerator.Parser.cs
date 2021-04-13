@@ -635,7 +635,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public string? EventName;
             public bool IsExtensionMethod;
             public string Modifiers = string.Empty;
-            public string LoggerField = "_logger";
+            public string LoggerField;
         }
 
         /// <summary>
