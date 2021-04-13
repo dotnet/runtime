@@ -13,9 +13,8 @@
 #include <cordb-register.h>
 #include <cordb-stepper.h>
 #include <cordb-thread.h>
+#include <cordb-stackwalk.h>
 #include <cordb.h>
-
-using namespace std;
 
 CordbThread::CordbThread(Connection* conn, CordbProcess* ppProcess, long thread_id) : CordbBaseMono(conn)
 {
@@ -73,8 +72,8 @@ HRESULT STDMETHODCALLTYPE CordbThread::GetCurrentCustomDebuggerNotification(ICor
 
 HRESULT STDMETHODCALLTYPE CordbThread::CreateStackWalk(ICorDebugStackWalk** ppStackWalk)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbThread - CreateStackWalk - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    ICorDebugStackWalk* stackWalk = new CordbStackWalk(conn, this);
+    return stackWalk->QueryInterface(IID_ICorDebugStackWalk, (void**)ppStackWalk);
 }
 
 HRESULT STDMETHODCALLTYPE CordbThread::GetActiveInternalFrames(ULONG32                  cInternalFrames,
@@ -82,7 +81,8 @@ HRESULT STDMETHODCALLTYPE CordbThread::GetActiveInternalFrames(ULONG32          
                                                                ICorDebugInternalFrame2* ppInternalFrames[])
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbThread - GetActiveInternalFrames - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    *pcInternalFrames = 0;
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbThread::GetActiveFunctions(ULONG32             cFunctions,
@@ -107,8 +107,25 @@ HRESULT STDMETHODCALLTYPE CordbThread::GetTaskID(TASKID* pTaskId)
 
 HRESULT STDMETHODCALLTYPE CordbThread::GetVolatileOSThreadID(DWORD* pdwTid)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbThread - GetVolatileOSThreadID - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    LOG((LF_CORDB, LL_INFO1000000, "CordbThread - GetActiveFrame - IMPLEMENTED\n"));
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, GetThreadId());
+
+        int cmdId = this->conn->SendEvent(MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_GET_TID, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
+
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+        *pdwTid = (DWORD) m_dbgprot_decode_long(pReply->p, &pReply->p, pReply->end);
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT STDMETHODCALLTYPE CordbThread::InterceptCurrentException(
@@ -245,12 +262,32 @@ HRESULT STDMETHODCALLTYPE CordbThread::GetActiveFrame(ICorDebugFrame** ppFrame)
 HRESULT STDMETHODCALLTYPE CordbThread::GetRegisterSet(ICorDebugRegisterSet** ppRegisters)
 {
     LOG((LF_CORDB, LL_INFO1000000, "CordbThread - GetRegisterSet - IMPLEMENTED\n"));
+    if (m_pRegisterSet != NULL)
+        m_pRegisterSet->InternalRelease();
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, GetThreadId());
+        m_dbgprot_buffer_add_int(&localbuf, 0);
 
-    if (!m_pRegisterSet)
-        SetRegisterSet(new CordbRegisterSet(conn, 0, 0));
-    m_pRegisterSet->AddRef();
-    *ppRegisters = static_cast<ICorDebugRegisterSet*>(m_pRegisterSet);
-    return S_OK;
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_GET_CONTEXT, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
+
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+        int contextSizeReceived = 0;
+        uint8_t* contextMemoryReceived = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, &contextSizeReceived);
+        m_pRegisterSet = new CordbRegisterSet(conn, contextMemoryReceived, contextSizeReceived);
+        m_pRegisterSet->InternalAddRef();
+    }
+    EX_CATCH_HRESULT(hr);
+
+    m_pRegisterSet->QueryInterface(IID_ICorDebugRegisterSet, (void**)ppRegisters);
+    return hr;
 }
 
 HRESULT STDMETHODCALLTYPE CordbThread::CreateEval(ICorDebugEval** ppEval)
@@ -292,6 +329,48 @@ HRESULT STDMETHODCALLTYPE CordbThread::QueryInterface(REFIID id, _COM_Outptr_ vo
     else
     {
         *ppInterface = NULL;
+        return E_NOINTERFACE;
+    }
+    AddRef();
+    return S_OK;
+}
+
+CordbThreadEnum::CordbThreadEnum(Connection* conn) : CordbBaseMono(conn)
+{
+
+}
+
+HRESULT STDMETHODCALLTYPE CordbThreadEnum::Next(ULONG celt, ICorDebugThread* values[], ULONG* pceltFetched)
+{
+    return E_NOTIMPL;
+}
+HRESULT STDMETHODCALLTYPE CordbThreadEnum::Skip(ULONG celt)
+{
+    return E_NOTIMPL;
+}
+HRESULT STDMETHODCALLTYPE CordbThreadEnum::Reset(void)
+{
+    return E_NOTIMPL;
+}
+HRESULT STDMETHODCALLTYPE CordbThreadEnum::Clone(ICorDebugEnum** ppEnum)
+{
+    return E_NOTIMPL;
+}
+HRESULT STDMETHODCALLTYPE CordbThreadEnum::GetCount(ULONG* pcelt)
+{
+    *pcelt = 0;
+    return S_OK;
+}
+HRESULT STDMETHODCALLTYPE CordbThreadEnum::QueryInterface(REFIID id, void** pInterface)
+{
+    if (id == IID_IUnknown)
+        *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugThreadEnum*>(this));
+    else if (id == IID_ICorDebugThreadEnum)
+        *pInterface = static_cast<ICorDebugThreadEnum*>(this);
+    else if (id == IID_ICorDebugEnum)
+        *pInterface = static_cast<ICorDebugEnum*>(this);
+    else
+    {
         return E_NOINTERFACE;
     }
     AddRef();

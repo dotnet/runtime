@@ -63,6 +63,7 @@ class CordbBlockingObjectEnum;
 class CordbFunctionBreakpoint;
 class CordbEval;
 class CordbType;
+class CordbStackWalk;
 
 enum CordbTypeKind {
     CordbTypeKindSimpleType,
@@ -159,13 +160,17 @@ class Cordb : public ICorDebug, public ICorDebugRemote, public CordbBaseMono
 {
     ICorDebugManagedCallback* m_pCallback;
     CordbProcess*             m_pProcess;
-
+    DWORD                     m_nPID;
 public:
+    DWORD PID()
+    {
+        return m_nPID;
+    }
     ICorDebugManagedCallback* GetCallback() const
     {
         return m_pCallback;
     }
-    Cordb();
+    Cordb(DWORD pid);
     ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
@@ -228,14 +233,21 @@ public:
                                  ICorDebugProcess**     ppProcess);
 };
 
-#define CHECK_ERROR_RETURN_FALSE(localbuf)                                                                             \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (localbuf->Error() > 0 || localbuf->Error2() > 0)                                                           \
-        {                                                                                                              \
-            LOG((LF_CORDB, LL_INFO100000, "ERROR RECEIVED\n"));                                                        \
+#define CHECK_ERROR_RETURN_FALSE(localbuf)                                                                                             \
+    do                                                                                                                                 \
+    {                                                                                                                                  \
+        if (localbuf->Error() > 0 || localbuf->Error2() > 0)                                                                           \
+        {\
+            if (localbuf->Buffer()->end > localbuf->Buffer()->p) {\
+                char *error_msg = m_dbgprot_decode_string(localbuf->Buffer()->p, &localbuf->Buffer()->p, localbuf->Buffer()->end);         \
+                LOG((LF_CORDB, LL_INFO100000, "ERROR RECEIVED - %s\n", error_msg));                                                         \
+                free(error_msg);                                                                                                           \
+            }\
+            else {\
+                LOG((LF_CORDB, LL_INFO100000, "ERROR RECEIVED - %d - %d\n", localbuf->Error(), localbuf->Error2()));                                                         \
+            }\
             EX_THROW(HRException, (E_FAIL));                                                                                           \
-        }                                                                                                              \
+        }                                                                                                                              \
     } while (0)
 
 #endif

@@ -17,13 +17,12 @@
 #include <socket.h>
 
 #define DEBUG_ADDRESS "127.0.0.1"
-#define DEBUG_PORT "4713"
 
 MONO_API HRESULT CoreCLRCreateCordbObjectEx(
     int iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, HMODULE hmodTargetCLR, void** ppCordb)
 {
     LOG((LF_CORDB, LL_INFO100000, "CoreCLRCreateCordbObjectEx\n"));
-    *ppCordb = new Cordb();
+    *ppCordb = new Cordb(pid);
     return S_OK;
 }
 
@@ -115,10 +114,16 @@ HRESULT Cordb::CanLaunchOrAttach(DWORD dwProcessId, BOOL win32DebuggingEnabled)
     return S_OK;
 }
 
-Cordb::Cordb() : CordbBaseMono(NULL)
+Cordb::Cordb(DWORD PID) : CordbBaseMono(NULL)
 {
     m_pCallback     = NULL;
     m_pSemReadWrite = new UTSemReadWrite();
+    m_nPID = PID;
+
+#ifndef TARGET_WINDOWS
+    PAL_InitializeDLL();
+#endif
+
 #ifdef LOGGING
     InitializeLogging();
 #endif
@@ -135,9 +140,19 @@ Cordb::~Cordb()
 }
 
 HRESULT
-Cordb::QueryInterface(REFIID riid, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+Cordb::QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface)
 {
-    LOG((LF_CORDB, LL_INFO100000, "Cordb - QueryInterface - NOT IMPLEMENTED\n"));
+    if (id == IID_ICorDebug)
+        *pInterface = static_cast<ICorDebug*>(this);
+    else if (id == IID_IUnknown)
+        *pInterface = static_cast<IUnknown*>(static_cast<ICorDebug*>(this));
+    else
+    {
+        *pInterface = NULL;
+        return E_NOINTERFACE;
+    }
+
+    AddRef();
     return S_OK;
 }
 
@@ -252,7 +267,7 @@ void Connection::Receive()
             return;
         }
 
-        MdbgProtBuffer* recvbuf = new MdbgProtBuffer();        
+        MdbgProtBuffer* recvbuf = new MdbgProtBuffer();
         m_dbgprot_buffer_init(recvbuf, header.len - HEADER_LENGTH);
         if (header.len - HEADER_LENGTH != 0)
         {
@@ -391,6 +406,7 @@ void Connection::ProcessPacketInternal(MdbgProtBuffer* recvbuf)
                     m_pCordb->GetCallback()->CreateThread(pCorDebugAppDomain, thread);
                 }
                 CordbStepper* stepper = GetProcess()->GetStepper(req_id);
+                stepper->Deactivate();
                 m_pCordb->GetCallback()->StepComplete(pCorDebugAppDomain, thread, stepper, STEP_NORMAL);
             }
             break;
@@ -448,6 +464,7 @@ void Connection::LoopSendReceive()
     m_dbgprot_buffer_init(&localbuf, 128);
     m_dbgprot_buffer_add_int(&localbuf, MAJOR_VERSION);
     m_dbgprot_buffer_add_int(&localbuf, MINOR_VERSION);
+    m_dbgprot_buffer_add_byte(&localbuf, true);
     int cmdId = SendEvent(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_SET_PROTOCOL_VERSION, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
 
@@ -465,10 +482,6 @@ void Connection::LoopSendReceive()
     LOG((LF_CORDB, LL_INFO100000, "Protocol version %d.%d, server protocol version %d.%d.\n", MAJOR_VERSION,
          MINOR_VERSION, major_version, minor_version));
     free(vm_version);
-
-    m_dbgprot_buffer_init(&localbuf, 128);
-    SendEvent(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_SET_USING_ICORDBG, &localbuf);
-    m_dbgprot_buffer_free(&localbuf);
 
     int iResult = 0;
     // Receive until the peer closes the connection
@@ -501,10 +514,13 @@ void Connection::StartConnection()
     LOG((LF_CORDB, LL_INFO100000, "Start Connection\n"));
 
     m_socket = new Socket();
+    int port = 56000 + (m_pCordb->PID() % 1000);
+    char* s_port = new char[10];
+    sprintf_s(s_port, 10, "%d", port);
+    LOG((LF_CORDB, LL_INFO100000, "Listening to %s:%s\n", DEBUG_ADDRESS, s_port));
 
-    LOG((LF_CORDB, LL_INFO100000, "Listening to %s:%s\n", DEBUG_ADDRESS, DEBUG_PORT));
-
-    int ret = m_socket->OpenSocketAcceptConnection(DEBUG_ADDRESS, DEBUG_PORT);
+    int ret = m_socket->OpenSocketAcceptConnection(DEBUG_ADDRESS, s_port);
+    delete[] s_port;
     if (ret == -1)
         exit(1);
 
@@ -551,13 +567,13 @@ int Connection::SendEvent(int cmd_set, int cmd, MdbgProtBuffer* sendbuf)
 
 MONO_API HRESULT CoreCLRCreateCordbObject(int iDebuggerVersion, DWORD pid, HMODULE hmodTargetCLR, void** ppCordb)
 {
-    *ppCordb = new Cordb();
+    *ppCordb = new Cordb(pid);
     return S_OK;
 }
 
 MONO_API HRESULT CreateCordbObject(int iDebuggerVersion, void** ppCordb)
 {
-    *ppCordb = new Cordb();
+    *ppCordb = new Cordb(0);
     return S_OK;
 }
 

@@ -19,6 +19,7 @@ CordbFunctionBreakpoint::CordbFunctionBreakpoint(Connection* conn, CordbCode* co
     this->m_offset = offset;
     conn->GetProcess()->AddBreakpoint(this);
     m_debuggerId = -1;
+    m_bActive = false;
 }
 
 CordbFunctionBreakpoint::~CordbFunctionBreakpoint() {}
@@ -38,6 +39,7 @@ HRESULT CordbFunctionBreakpoint::GetOffset(ULONG32* pnOffset)
 
 HRESULT CordbFunctionBreakpoint::Activate(BOOL bActive)
 {
+    m_bActive = bActive;
     if (bActive)
     {
         MdbgProtBuffer sendbuf;
@@ -68,8 +70,9 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL bActive)
 
 HRESULT CordbFunctionBreakpoint::IsActive(BOOL* pbActive)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbFunctionBreakpoint - IsActive - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunctionBreakpoint - IsActive - IMPLEMENTED\n"));
+    *pbActive = m_bActive;
+    return S_OK;
 }
 
 HRESULT CordbFunctionBreakpoint::QueryInterface(REFIID id, void** pInterface)
@@ -78,11 +81,16 @@ HRESULT CordbFunctionBreakpoint::QueryInterface(REFIID id, void** pInterface)
     {
         *pInterface = static_cast<ICorDebugFunctionBreakpoint*>(this);
     }
+    else if (id == IID_ICorDebugBreakpoint)
+    {
+        *pInterface = static_cast<ICorDebugBreakpoint*>(this);
+    }
+    else if (id == IID_IUnknown)
+        *pInterface = static_cast<ICorDebugFunctionBreakpoint*>(this);
     else
     {
-        // Not looking for a function breakpoint? See if the base class handles
-        // this interface. (issue 143976)
-        // return CordbBreakpoint::QueryInterface(id, pInterface);
+        *pInterface = NULL;
+        return E_NOINTERFACE;
     }
     AddRef();
     return S_OK;

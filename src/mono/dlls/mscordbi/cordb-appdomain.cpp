@@ -179,7 +179,7 @@ HRESULT CordbAppDomain::GetObject(ICorDebugValue** ppObject)
 HRESULT CordbAppDomain::Attach(void)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbAppDomain - Attach - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 HRESULT CordbAppDomain::GetID(ULONG32* pId)

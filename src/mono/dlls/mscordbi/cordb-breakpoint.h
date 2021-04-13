@@ -14,6 +14,7 @@ class CordbFunctionBreakpoint : public CordbBaseMono, public ICorDebugFunctionBr
     CordbCode* m_pCode;
     ULONG32    m_offset;
     int        m_debuggerId;
+    BOOL       m_bActive;
 
 public:
     CordbFunctionBreakpoint(Connection* conn, CordbCode* code, ULONG32 offset);

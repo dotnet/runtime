@@ -26,6 +26,7 @@ class CordbModule : public CordbBaseMono,
     int32_t             m_nPeImageSize;
     unsigned long       dwFlags;
     char *              m_pAssemblyName;
+    int                 m_nAssemblyNameLen;
 
 public:
     CordbModule(Connection* conn, CordbProcess* process, CordbAssembly* assembly, int id_assembly);
@@ -79,6 +80,8 @@ class CordbAssembly : public CordbBaseMono, public ICorDebugAssembly, public ICo
     CordbProcess*   m_pProcess;
     CordbAppDomain* m_pAppDomain;
     int             m_debuggerId;
+    char*           m_pAssemblyName;
+    int             m_nAssemblyNameLen;
 
 public:
     CordbAssembly(Connection* conn, CordbProcess* process, CordbAppDomain* appDomain, int id_assembly);
