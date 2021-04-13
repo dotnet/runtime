@@ -172,14 +172,25 @@ namespace System.Text.RegularExpressions
             int leadingAnchor = RegexPrefixAnalyzer.FindLeadingAnchor(tree);
 
             // Convert the string table into an ordered string array.
+            var firstLetterToStringTableIndices = new Dictionary<char, HashSet<int>>();
             var strings = new string[_stringTable.Count];
             foreach (KeyValuePair<string, int> stringEntry in _stringTable)
             {
+                if (firstLetterToStringTableIndices.TryGetValue(stringEntry.Key[0], out HashSet<int>? indices))
+                {
+                    indices.Add(stringEntry.Value);
+                }
+                else
+                {
+                    firstLetterToStringTableIndices.Add(stringEntry.Key[0], new HashSet<int>() { stringEntry.Value });
+                }
                 strings[stringEntry.Value] = stringEntry.Key;
             }
 
+
+
             // Return all that in a RegexCode object.
-            return new RegexCode(tree, emitted, strings, _trackCount, _caps, capsize, boyerMoorePrefix, leadingCharClasses, leadingAnchor, rtl);
+            return new RegexCode(tree, emitted, strings, _trackCount, _caps, capsize, boyerMoorePrefix, leadingCharClasses, leadingAnchor, rtl, firstLetterToStringTableIndices);
         }
 
         /// <summary>
