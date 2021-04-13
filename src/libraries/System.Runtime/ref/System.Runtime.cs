@@ -3107,6 +3107,8 @@ namespace System
         public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
         public static bool IsMacOS() { throw null; }
         public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsMacCatalyst() { throw null; }
+        public static bool IsMacCatalystVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
         public static bool IsTvOS() { throw null; }
         public static bool IsTvOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
         public static bool IsWatchOS() { throw null; }

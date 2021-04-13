@@ -52,7 +52,7 @@ namespace System
 
         public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
 
-        public static Version OpenSslVersion => !IsOSXLike && !IsWindows ?
+        public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();
 

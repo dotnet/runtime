@@ -4,15 +4,18 @@ This depends on `emsdk` to be installed.
 
 ## emsdk
 
-* You can either install it yourself (https://emscripten.org/docs/getting_started/downloads.html), and set `EMSDK_PATH` to that. Make sure to have this set whenever building, or running tests for wasm.
-
-* Or you can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk`.
+* You can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk`.
 Note: Irrespective of `$(EMSDK_PATH)`'s value, `provision-wasm` will always install into `$reporoot/src/mono/wasm/emsdk`.
 
 `EMSDK_PATH` is set to `$reporoot/src/mono/wasm/emsdk` by default, by the Makefile.
 
 Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building targets from that will have it set. But you might need to set it manually if
 you are directly using the `dotnet build`, or `build.sh`.
+
+* Alternatively you can install **correct version** yourself from the [Emscripten SDK guide](https://emscripten.org/docs/getting_started/downloads.html).
+Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.12`. See [emscripten-version.txt](./emscripten-version.txt)
+
+Make sure to set `EMSDK_PATH` variable, whenever building, or running tests for wasm.
 
 ### Windows dependencies
 
@@ -102,3 +105,17 @@ To run a test with `FooBar` in the name:
 (See https://docs.microsoft.com/en-us/dotnet/core/testing/selective-unit-tests?pivots=xunit for filter options)
 
 Additional arguments for `dotnet test` can be passed via `TEST_ARGS`. Though only one of `TEST_ARGS`, or `TEST_FILTER` can be used at a time.
+
+## Run samples
+
+The samples in `src/mono/sample/wasm` can be build and run like this:
+
+* console Hello world sample
+
+`dotnet build /t:RunSample console/Wasm.Console.Sample.csproj`
+
+* browser TestMeaning sample
+
+`dotnet build /t:RunSample browser/Wasm.Browser.Sample.csproj`
+
+To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the above command lines.

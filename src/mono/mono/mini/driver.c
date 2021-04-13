@@ -1044,7 +1044,6 @@ test_thread_func (gpointer void_arg)
 	int mode = MODE_ALLOC;
 	int i = 0;
 	gulong lookup_successes = 0, lookup_failures = 0;
-	MonoDomain *domain = test_domain;
 	int thread_num = (int)(td - thread_datas);
 	gboolean modify_thread = thread_num < NUM_THREADS / 2; /* only half of the threads modify the table */
 
@@ -1073,7 +1072,7 @@ test_thread_func (gpointer void_arg)
 					guint pos = (*data)->start + random () % (*data)->length;
 					MonoJitInfo *ji;
 
-					ji = mono_jit_info_table_find (domain, (char*)(gsize)pos);
+					ji = mono_jit_info_table_find_internal ((char*)(gsize)pos, TRUE, FALSE);
 
 					g_assert (ji->cas_inited);
 					g_assert ((*data)->ji == ji);
@@ -1083,7 +1082,7 @@ test_thread_func (gpointer void_arg)
 				char *addr = (char*)(uintptr_t)pos;
 				MonoJitInfo *ji;
 
-				ji = mono_jit_info_table_find (domain, addr);
+				ji = mono_jit_info_table_find_internal (addr, TRUE, FALSE);
 
 				/*
 				 * FIXME: We are actually not allowed

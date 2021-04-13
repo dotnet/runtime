@@ -1830,7 +1830,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     bRangeAllowStress = false;
 #endif
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
     // Initialize the method name and related info, as it is used early in determining whether to
     // apply stress modes, and which ones to apply.
     // Note that even allocating memory can invoke the stress mechanism, so ensure that both
@@ -1852,7 +1852,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     info.compFullName  = eeGetMethodFullName(methodHnd);
     info.compPerfScore = 0.0;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     info.compMethodHashPrivate = 0;
@@ -5027,11 +5027,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
 
-#if FEATURE_ANYCSE
             // Remove common sub-expressions
             //
             DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
-#endif // FEATURE_ANYCSE
 
 #if ASSERTION_PROP
             if (doAssertionProp)
@@ -5997,11 +5995,7 @@ void Compiler::compCompileFinish()
         else
         {
             printf(" %3d |", optAssertionCount);
-#if FEATURE_ANYCSE
             printf(" %3d |", optCSEcount);
-#else
-            printf(" %3d |", 0);
-#endif // FEATURE_ANYCSE
         }
 
         if (info.compPerfScore < 9999.995)
@@ -8255,7 +8249,12 @@ void JitTimer::PrintCsvHeader()
             fprintf(s_csvFile, "\"Min Opts\",");
             fprintf(s_csvFile, "\"Loops\",");
             fprintf(s_csvFile, "\"Loops Cloned\",");
-
+#if FEATURE_LOOP_ALIGN
+#ifdef DEBUG
+            fprintf(s_csvFile, "\"Alignment Candidates\",");
+            fprintf(s_csvFile, "\"Loops Aligned\",");
+#endif // DEBUG
+#endif // FEATURE_LOOP_ALIGN
             for (int i = 0; i < PHASE_NUMBER_OF; i++)
             {
                 fprintf(s_csvFile, "\"%s\",", PhaseNames[i]);
@@ -8329,6 +8328,12 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
     fprintf(s_csvFile, "%u,", comp->optLoopCount);
     fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
+#if FEATURE_LOOP_ALIGN
+#ifdef DEBUG
+    fprintf(s_csvFile, "%u,", comp->loopAlignCandidates);
+    fprintf(s_csvFile, "%u,", comp->loopsAligned);
+#endif // DEBUG
+#endif // FEATURE_LOOP_ALIGN
     unsigned __int64 totCycles = 0;
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
     {

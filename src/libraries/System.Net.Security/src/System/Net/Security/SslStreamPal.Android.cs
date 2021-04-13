@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
+
+using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
 
 namespace System.Net.Security
 {
@@ -58,7 +59,7 @@ namespace System.Net.Security
             if (context == null)
                 return null;
 
-            throw new NotImplementedException(nameof(GetNegotiatedApplicationProtocol));
+            return Interop.AndroidCrypto.SSLStreamGetApplicationProtocol(((SafeDeleteSslContext)context).SslContext);
         }
 
         public static SecurityStatusPal EncryptMessage(
@@ -72,7 +73,37 @@ namespace System.Net.Security
             resultSize = 0;
             Debug.Assert(input.Length > 0, $"{nameof(input.Length)} > 0 since {nameof(CanEncryptEmptyMessage)} is false");
 
-            throw new NotImplementedException(nameof(EncryptMessage));
+            try
+            {
+                SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
+                SafeSslHandle sslHandle = sslContext.SslContext;
+
+                PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamWrite(sslHandle, input);
+                SecurityStatusPalErrorCode statusCode = ret switch
+                {
+                    PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
+                    PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.ContinueNeeded,
+                    PAL_SSLStreamStatus.Renegotiate => SecurityStatusPalErrorCode.Renegotiate,
+                    PAL_SSLStreamStatus.Closed => SecurityStatusPalErrorCode.ContextExpired,
+                    _ => SecurityStatusPalErrorCode.InternalError
+                };
+
+                if (sslContext.BytesReadyForConnection <= output?.Length)
+                {
+                    resultSize = sslContext.ReadPendingWrites(output, 0, output.Length);
+                }
+                else
+                {
+                    output = sslContext.ReadPendingWrites()!;
+                    resultSize = output.Length;
+                }
+
+                return new SecurityStatusPal(statusCode);
+            }
+            catch (Exception e)
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, e);
+            }
         }
 
         public static SecurityStatusPal DecryptMessage(
@@ -81,7 +112,34 @@ namespace System.Net.Security
             ref int offset,
             ref int count)
         {
-            throw new NotImplementedException(nameof(DecryptMessage));
+            try
+            {
+                SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
+                SafeSslHandle sslHandle = sslContext.SslContext;
+
+                sslContext.Write(buffer.AsSpan(offset, count));
+
+                PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, buffer.AsSpan(offset, count), out int read);
+                if (ret == PAL_SSLStreamStatus.Error)
+                    return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+
+                count = read;
+
+                SecurityStatusPalErrorCode statusCode = ret switch
+                {
+                    PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
+                    PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.OK,
+                    PAL_SSLStreamStatus.Renegotiate => SecurityStatusPalErrorCode.Renegotiate,
+                    PAL_SSLStreamStatus.Closed => SecurityStatusPalErrorCode.ContextExpired,
+                    _ => SecurityStatusPalErrorCode.InternalError
+                };
+
+                return new SecurityStatusPal(statusCode);
+            }
+            catch (Exception e)
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, e);
+            }
         }
 
         public static ChannelBinding? QueryContextChannelBinding(
@@ -134,12 +192,17 @@ namespace System.Net.Security
 
                 SafeSslHandle sslHandle = sslContext!.SslContext;
 
-                // Do handshake
-                // Interop.AndroidCrypto.SSLStreamHandshake
+                PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamHandshake(sslHandle);
+                SecurityStatusPalErrorCode statusCode = ret switch
+                {
+                    PAL_SSLStreamStatus.OK => SecurityStatusPalErrorCode.OK,
+                    PAL_SSLStreamStatus.NeedData => SecurityStatusPalErrorCode.ContinueNeeded,
+                    _ => SecurityStatusPalErrorCode.InternalError
+                };
 
                 outputBuffer = sslContext.ReadPendingWrites();
 
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+                return new SecurityStatusPal(statusCode);
             }
             catch (Exception exc)
             {
@@ -166,8 +229,7 @@ namespace System.Net.Security
             SafeSslHandle sslHandle = sslContext.SslContext;
 
 
-            // bool success = Interop.AndroidCrypto.SslShutdown(sslHandle);
-            bool success = true;
+            bool success = Interop.AndroidCrypto.SSLStreamShutdown(sslHandle);
             if (success)
             {
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);

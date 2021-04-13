@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
@@ -26,14 +27,16 @@ namespace System.Reflection
         private IntPtr m_handle;
         private MethodAttributes m_methodAttributes;
         private BindingFlags m_bindingFlags;
-        private volatile Signature? m_signature;
+        private Signature? m_signature;
         private INVOCATION_FLAGS m_invocationFlags;
 
         internal INVOCATION_FLAGS InvocationFlags
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if ((m_invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
+                [MethodImpl(MethodImplOptions.NoInlining)] // move lazy invocation flags population out of the hot path
+                INVOCATION_FLAGS LazyCreateInvocationFlags()
                 {
                     INVOCATION_FLAGS invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_IS_CTOR; // this is a given
 
@@ -68,10 +71,17 @@ namespace System.Reflection
                             invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_IS_DELEGATE_CTOR;
                     }
 
-                    m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
+                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
+                    m_invocationFlags = invocationFlags; // accesses are guaranteed atomic
+                    return invocationFlags;
                 }
 
-                return m_invocationFlags;
+                INVOCATION_FLAGS flags = m_invocationFlags;
+                if ((flags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
+                {
+                    flags = LazyCreateInvocationFlags();
+                }
+                return flags;
             }
         }
         #endregion
@@ -95,7 +105,22 @@ namespace System.Reflection
         internal override bool CacheEquals(object? o) =>
             o is RuntimeConstructorInfo m && m.m_handle == m_handle;
 
-        private Signature Signature => m_signature ??= new Signature(this, m_declaringType);
+        private Signature Signature
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)] // move lazy sig generation out of the hot path
+                Signature LazyCreateSignature()
+                {
+                    Signature newSig = new Signature(this, m_declaringType);
+                    Volatile.Write(ref m_signature, newSig);
+                    return newSig;
+                }
+
+                return m_signature ?? LazyCreateSignature();
+            }
+        }
 
         private RuntimeType ReflectedTypeInternal => m_reflectedTypeCache.GetRuntimeType();
 
@@ -313,16 +338,17 @@ namespace System.Reflection
 
             // if we are here we passed all the previous checks. Time to look at the arguments
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            if (actualCount > 0)
-            {
-                object[] arguments = CheckArguments(parameters!, binder, invokeAttr, culture, sig);
-                object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, sig, false, wrapExceptions);
-                // copy out. This should be made only if ByRef are present.
-                for (int index = 0; index < arguments.Length; index++)
-                    parameters![index] = arguments[index];
-                return retValue;
-            }
-            return RuntimeMethodHandle.InvokeMethod(obj, null, sig, false, wrapExceptions);
+
+            StackAllocedArguments stackArgs = default;
+            Span<object?> arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig);
+            object? retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, sig, false, wrapExceptions);
+
+            // copy out. This should be made only if ByRef are present.
+            // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
+            for (int index = 0; index < arguments.Length; index++)
+                parameters![index] = arguments[index];
+
+            return retValue;
         }
 
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
@@ -366,16 +392,17 @@ namespace System.Reflection
 
             // if we are here we passed all the previous checks. Time to look at the arguments
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            if (actualCount > 0)
-            {
-                object[] arguments = CheckArguments(parameters!, binder, invokeAttr, culture, sig);
-                object retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, true, wrapExceptions);
-                // copy out. This should be made only if ByRef are present.
-                for (int index = 0; index < arguments.Length; index++)
-                    parameters![index] = arguments[index];
-                return retValue;
-            }
-            return RuntimeMethodHandle.InvokeMethod(null, null, sig, true, wrapExceptions);
+
+            StackAllocedArguments stackArgs = default;
+            Span<object?> arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig);
+            object retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, true, wrapExceptions)!; // ctor must return non-null
+
+            // copy out. This should be made only if ByRef are present.
+            // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
+            for (int index = 0; index < arguments.Length; index++)
+                parameters![index] = arguments[index];
+
+            return retValue;
         }
         #endregion
     }

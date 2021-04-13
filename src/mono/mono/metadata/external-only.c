@@ -24,6 +24,7 @@
 #include "external-only.h"
 #include "threads.h"
 #include "threads-types.h"
+#include "jit-info.h"
 
 /**
  * mono_gchandle_new:
@@ -663,4 +664,35 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *typebu
 exit:
 	mono_error_cleanup (error);
 	HANDLE_FUNCTION_RETURN_OBJ (ret);
+}
+
+/**
+ * mono_jit_info_table_find:
+ * \param domain Domain that you want to look up
+ * \param addr Points to an address with JITed code.
+ *
+ * Use this function to obtain a \c MonoJitInfo* object that can be used to get
+ * some statistics. You should provide both the \p domain on which you will be
+ * performing the probe, and an address. Since application domains can share code
+ * the same address can be in use by multiple domains at once.
+ *
+ * This does not return any results for trampolines.
+ *
+ * \returns NULL if the address does not belong to JITed code (it might be native
+ * code or a trampoline) or a valid pointer to a \c MonoJitInfo* .
+ */
+MonoJitInfo*
+mono_jit_info_table_find (MonoDomain *domain, gpointer addr)
+{
+	return mono_jit_info_table_find_internal (addr, TRUE, FALSE);
+}
+
+/**
+ * mono_domain_owns_vtable_slot:
+ * \returns Whether \p vtable_slot is inside a vtable which belongs to \p domain.
+ */
+gboolean
+mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
+{
+	return mono_mem_manager_mp_contains_addr (mono_mem_manager_get_ambient (), vtable_slot);
 }

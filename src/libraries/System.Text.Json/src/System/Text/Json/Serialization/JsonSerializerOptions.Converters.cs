@@ -26,6 +26,8 @@ namespace System.Text.Json
             // Nullable converter should always be next since it forwards to any nullable type.
             new NullableConverterFactory(),
             new EnumConverterFactory(),
+            // IAsyncEnumerable takes precedence over IEnumerable.
+            new IAsyncEnumerableConverterFactory(),
             // IEnumerable should always be second to last since they can convert any IEnumerable.
             new IEnumerableConverterFactory(),
             // Object should always be last since it converts any type.

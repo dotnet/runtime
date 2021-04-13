@@ -2637,7 +2637,7 @@ thread_in_critical_region (MonoThreadInfo *info)
 }
 
 static gboolean
-ip_in_critical_region (MonoDomain *domain, gpointer ip)
+ip_in_critical_region (gpointer ip)
 {
 	MonoJitInfo *ji;
 	MonoMethod *method;
@@ -2647,7 +2647,7 @@ ip_in_critical_region (MonoDomain *domain, gpointer ip)
 	 * It won't find aot methods whose jit info is not yet loaded,
 	 * so we preload their jit info in the JIT.
 	 */
-	ji = mono_jit_info_table_find_internal (domain, ip, FALSE, FALSE);
+	ji = mono_jit_info_table_find_internal (ip, FALSE, FALSE);
 	if (!ji)
 		return FALSE;
 

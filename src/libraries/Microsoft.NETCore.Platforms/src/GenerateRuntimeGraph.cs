@@ -54,6 +54,24 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         }
 
         /// <summary>
+        /// Additional runtime identifiers to add to the graph.
+        /// </summary>
+        public string[] AdditionalRuntimeIdentifiers
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Parent RID to use for any unknown AdditionalRuntimeIdentifer.
+        /// </summary>
+        public string AdditionalRuntimeIdentifierParent
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// Optional source Runtime.json to use as a starting point when merging additional RuntimeGroups
         /// </summary>
         public string SourceRuntimeJson
@@ -134,7 +152,11 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
                 runtimeGraph = new RuntimeGraph();
             }
 
-            foreach (var runtimeGroup in RuntimeGroups.NullAsEmpty().Select(i => new RuntimeGroup(i)))
+            List<RuntimeGroup> runtimeGroups = RuntimeGroups.NullAsEmpty().Select(i => new RuntimeGroup(i)).ToList();
+
+            AddRuntimeIdentifiers(runtimeGroups);
+
+            foreach (var runtimeGroup in runtimeGroups)
             {
                 runtimeGraph = SafeMerge(runtimeGraph, runtimeGroup);
             }
@@ -288,6 +310,21 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
                         Log.LogError($"Runtime {runtimeDescription.RuntimeIdentifier} imports {import} which is not defined.");
                     }
                 }
+            }
+        }
+
+        private void AddRuntimeIdentifiers(ICollection<RuntimeGroup> runtimeGroups)
+        {
+            if (AdditionalRuntimeIdentifiers == null || AdditionalRuntimeIdentifiers.Length == 0)
+            {
+                return;
+            }
+
+            RuntimeGroupCollection runtimeGroupCollection = new RuntimeGroupCollection(runtimeGroups);
+
+            foreach (string additionalRuntimeIdentifier in AdditionalRuntimeIdentifiers)
+            {
+                runtimeGroupCollection.AddRuntimeIdentifier(additionalRuntimeIdentifier, AdditionalRuntimeIdentifierParent);
             }
         }
 

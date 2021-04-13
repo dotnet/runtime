@@ -78,9 +78,7 @@ struct InitVarDscInfo;     // defined in register_arg_convention.h
 class FgStack;             // defined in fgbasic.cpp
 class Instrumentor;        // defined in fgprofile.cpp
 class SpanningTreeVisitor; // defined in fgprofile.cpp
-#if FEATURE_ANYCSE
-class CSE_DataFlow; // defined in OptCSE.cpp
-#endif
+class CSE_DataFlow;        // defined in OptCSE.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -2742,6 +2740,7 @@ public:
     GenTree* gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd);
 
     GenTree* gtNewStringLiteralNode(InfoAccessType iat, void* pValue);
+    GenTreeIntCon* gtNewStringLiteralLength(GenTreeStrCon* node);
 
     GenTree* gtNewLconNode(__int64 value);
 
@@ -5507,7 +5506,6 @@ public:
     const char* fgProcessEscapes(const char* nameIn, escapeMapping_t* map);
     FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR type);
     bool fgDumpFlowGraph(Phases phase);
-
 #endif // DUMP_FLOWGRAPHS
 
 #ifdef DEBUG
@@ -5850,7 +5848,6 @@ private:
                                      unsigned             argIndex,
                                      CORINFO_CLASS_HANDLE copyBlkClass);
 
-    void fgFixupStructReturn(GenTree* call);
     GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
 
 public:
@@ -6435,6 +6432,11 @@ public:
     LoopDsc*      optLoopTable; // loop descriptor table
     unsigned char optLoopCount; // number of tracked loops
 
+#ifdef DEBUG
+    unsigned char loopAlignCandidates; // number of loops identified for alignment
+    unsigned char loopsAligned;        // number of loops actually aligned
+#endif                                 // DEBUG
+
     bool optRecordLoop(BasicBlock*   head,
                        BasicBlock*   first,
                        BasicBlock*   top,
@@ -6541,6 +6543,15 @@ protected:
         }
     }
 
+    // Struct used in optInvertWhileLoop to count interesting constructs to boost the profitability score.
+    struct OptInvertCountTreeInfoType
+    {
+        int sharedStaticHelperCount;
+        int arrayLengthCount;
+    };
+
+    static fgWalkResult optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data);
+
     void optInvertWhileLoop(BasicBlock* block);
 
     bool optComputeLoopRep(int        constInit,
@@ -6569,12 +6580,7 @@ protected:
      *                       Optimization conditions
      *************************************************************************/
 
-    bool optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight);
-    bool optPentium4(void);
-    bool optAvoidIncDec(BasicBlock::weight_t bbWeight);
     bool optAvoidIntMult(void);
-
-#if FEATURE_ANYCSE
 
 protected:
     //  The following is the upper limit on how many expressions we'll keep track
@@ -6735,9 +6741,6 @@ protected:
         return (enckey & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
     }
 
-#endif // FEATURE_ANYCSE
-
-#if FEATURE_VALNUM_CSE
     /**************************************************************************
      *                   Value Number based CSEs
      *************************************************************************/
@@ -6754,9 +6757,6 @@ protected:
     void     optValnumCSE_Availablity();
     void     optValnumCSE_Heuristic();
 
-#endif // FEATURE_VALNUM_CSE
-
-#if FEATURE_ANYCSE
     bool                 optDoCSE;             // True when we have found a duplicate CSE tree
     bool                 optValnumCSE_phase;   // True when we are executing the optValnumCSE_phase
     unsigned             optCSECandidateTotal; // Grand total of CSE candidates for both Lexical and ValNum
@@ -6786,8 +6786,6 @@ protected:
     bool optConfigDisableCSE2();
 #endif
     void optOptimizeCSEs();
-
-#endif // FEATURE_ANYCSE
 
     struct isVarAssgDsc
     {
@@ -9451,12 +9449,12 @@ public:
         BOOL hasCircularClassConstraints;
         BOOL hasCircularMethodConstraints;
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
         const char* compMethodName;
         const char* compClassName;
         const char* compFullName;
         double      compPerfScore;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
         // Method hash is logcally const, but computed
@@ -9616,11 +9614,6 @@ public:
 
         return false;
 #endif // TARGET_AMD64
-    }
-
-    bool compDoOldStructRetyping()
-    {
-        return JitConfig.JitDoOldStructRetyping();
     }
 
     // Returns true if the method returns a value in more than one return register

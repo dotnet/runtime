@@ -105,13 +105,12 @@ namespace System.Net.Http
         /// <param name="port">The port with which this pool is associated.</param>
         /// <param name="sslHostName">The SSL host with which this pool is associated.</param>
         /// <param name="proxyUri">The proxy this pool targets (optional).</param>
-        /// <param name="maxConnections">The maximum number of connections allowed to be associated with the pool at any given time.</param>
-        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, int maxConnections)
+        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri)
         {
             _poolManager = poolManager;
             _kind = kind;
             _proxyUri = proxyUri;
-            _maxConnections = maxConnections;
+            _maxConnections = Settings._maxConnectionsPerServer;
 
             if (host != null)
             {
@@ -173,6 +172,11 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
+
+                    // Don't enforce the max connections limit on proxy tunnels; this would mean that connections to different origin servers
+                    // would compete for the same limited number of connections.
+                    // We will still enforce this limit on the user of the tunnel (i.e. ProxyTunnel or SslProxyTunnel).
+                    _maxConnections = int.MaxValue;
 
                     _http2Enabled = false;
                     _http3Enabled = false;
@@ -290,7 +294,6 @@ namespace System.Net.Http
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
         public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel;
-        public bool AnyProxyKind => (_proxyUri != null);
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
         public byte[]? HostHeaderValueBytes => _hostHeaderValueBytes;
@@ -1149,9 +1152,11 @@ namespace System.Net.Http
             }
         }
 
+        private bool DoProxyAuth => (_kind == HttpConnectionKind.Proxy || _kind == HttpConnectionKind.ProxyConnect);
+
         public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (AnyProxyKind && ProxyCredentials != null)
+            if (DoProxyAuth && ProxyCredentials is not null)
             {
                 return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, connection, this, cancellationToken);
             }
@@ -1159,13 +1164,11 @@ namespace System.Net.Http
             return connection.SendAsync(request, async, cancellationToken);
         }
 
-
         public ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            if ((_kind == HttpConnectionKind.Proxy || _kind == HttpConnectionKind.ProxyConnect) &&
-                _poolManager.ProxyCredentials != null)
+            if (DoProxyAuth && ProxyCredentials is not null)
             {
-                return AuthenticationHelper.SendWithProxyAuthAsync(request, _proxyUri!, async, _poolManager.ProxyCredentials, doRequestAuth, this, cancellationToken);
+                return AuthenticationHelper.SendWithProxyAuthAsync(request, _proxyUri!, async, ProxyCredentials, doRequestAuth, this, cancellationToken);
             }
 
             return SendWithRetryAsync(request, async, doRequestAuth, cancellationToken);
