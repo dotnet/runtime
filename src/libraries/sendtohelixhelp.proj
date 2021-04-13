@@ -248,8 +248,8 @@
 
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
       <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ -->
-      <!-- 84.0.4147.105 is 768962 for example -->
-      <ChromiumRevision>768968</ChromiumRevision>
+      <!-- 843830 is 89.0.4389.114 for example -->
+      <ChromiumRevision>843830</ChromiumRevision>
       <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
       <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</SeleniumUrl>
       <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
