@@ -5502,7 +5502,7 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
         }
     }
 
-    NATIVE_LIBRARY_HANDLE hmod = NativeLibrary::LoadNativeLibrary(pMD);
+    NATIVE_LIBRARY_HANDLE hmod = NativeLibrary::LoadLibraryFromMethodDesc(pMD);
     _ASSERTE(hmod != NULL);
 
     BOOL fSuccess = FALSE;

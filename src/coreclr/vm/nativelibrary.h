@@ -6,8 +6,6 @@
 
 #include <clrtypes.h>
 
-class LoadLibErrorTracker;
-
 class NativeLibrary
 {
 public:
@@ -15,11 +13,10 @@ public:
     static NATIVE_LIBRARY_HANDLE LoadLibraryByName(LPCWSTR name, Assembly *callingAssembly,
                                                    BOOL hasDllImportSearchPathFlags, DWORD dllImportSearchPathFlags,
                                                    BOOL throwOnError);
-    static NATIVE_LIBRARY_HANDLE LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
     static void FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle);
     static INT_PTR GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError);
 
-    static NATIVE_LIBRARY_HANDLE LoadNativeLibrary(NDirectMethodDesc *pMD);
+    static NATIVE_LIBRARY_HANDLE LoadLibraryFromMethodDesc(NDirectMethodDesc *pMD);
 };
 
 #endif // _NATIVELIBRARY_H_

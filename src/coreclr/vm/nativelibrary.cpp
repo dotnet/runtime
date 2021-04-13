@@ -12,173 +12,6 @@ extern bool g_hostpolicy_embedded;
 
 // remove when we get an updated SDK
 #define LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 0x00000100
-#define LOAD_LIBRARY_SEARCH_DEFAULT_DIRS 0x00001000
-
-// Preserving good error info from DllImport-driven LoadLibrary is tricky because we keep loading from different places
-// if earlier loads fail and those later loads obliterate error codes.
-//
-// This tracker object will keep track of the error code in accordance to priority:
-//
-//   low-priority:      unknown error code (should never happen)
-//   medium-priority:   dll not found
-//   high-priority:     dll found but error during loading
-//
-// We will overwrite the previous load's error code only if the new error code is higher priority.
-//
-
-class LoadLibErrorTracker
-{
-private:
-    static const DWORD const_priorityNotFound     = 10;
-    static const DWORD const_priorityAccessDenied = 20;
-    static const DWORD const_priorityCouldNotLoad = 99999;
-public:
-    LoadLibErrorTracker()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_hr = E_FAIL;
-        m_priorityOfLastError = 0;
-    }
-
-    VOID TrackErrorCode()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        DWORD priority;
-
-#ifdef TARGET_UNIX
-
-        SetMessage(PAL_GetLoadLibraryError());
-#else
-
-        DWORD dwLastError = GetLastError();
-
-        switch (dwLastError)
-        {
-            case ERROR_FILE_NOT_FOUND:
-            case ERROR_PATH_NOT_FOUND:
-            case ERROR_MOD_NOT_FOUND:
-            case ERROR_DLL_NOT_FOUND:
-                priority = const_priorityNotFound;
-                break;
-
-            // If we can't access a location, we can't know if the dll's there or if it's good.
-            // Still, this is probably more unusual (and thus of more interest) than a dll-not-found
-            // so give it an intermediate priority.
-            case ERROR_ACCESS_DENIED:
-                priority = const_priorityAccessDenied;
-
-            // Assume all others are "dll found but couldn't load."
-            default:
-                priority = const_priorityCouldNotLoad;
-                break;
-        }
-        UpdateHR(priority, HRESULT_FROM_WIN32(dwLastError));
-#endif
-    }
-
-    // Sets the error code to HRESULT as could not load DLL
-    void TrackHR_CouldNotLoad(HRESULT hr)
-    {
-        UpdateHR(const_priorityCouldNotLoad, hr);
-    }
-
-    HRESULT GetHR()
-    {
-        return m_hr;
-    }
-
-    SString& GetMessage()
-    {
-        return m_message;
-    }
-
-    void DECLSPEC_NORETURN Throw(SString &libraryNameOrPath)
-    {
-        STANDARD_VM_CONTRACT;
-
-#if defined(__APPLE__)
-        COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_MAC, libraryNameOrPath.GetUnicode(), GetMessage());
-#elif defined(TARGET_UNIX)
-        COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_LINUX, libraryNameOrPath.GetUnicode(), GetMessage());
-#else // __APPLE__
-        HRESULT theHRESULT = GetHR();
-        if (theHRESULT == HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT))
-        {
-            COMPlusThrow(kBadImageFormatException);
-        }
-        else
-        {
-            SString hrString;
-            GetHRMsg(theHRESULT, hrString);
-            COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_WIN, libraryNameOrPath.GetUnicode(), hrString);
-        }
-#endif // TARGET_UNIX
-
-        __UNREACHABLE();
-    }
-
-private:
-    void UpdateHR(DWORD priority, HRESULT hr)
-    {
-        if (priority > m_priorityOfLastError)
-        {
-            m_hr                  = hr;
-            m_priorityOfLastError = priority;
-        }
-    }
-
-    void SetMessage(LPCSTR message)
-    {
-        m_message = SString(SString::Utf8, message);
-    }
-
-    HRESULT m_hr;
-    DWORD   m_priorityOfLastError;
-    SString  m_message;
-};  // class LoadLibErrorTracker
-
-// Load the library directly and return the raw system handle
-static NATIVE_LIBRARY_HANDLE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTracker *pErrorTracker )
-{
-    STANDARD_VM_CONTRACT;
-
-    NATIVE_LIBRARY_HANDLE hmod = NULL;
-
-#ifndef TARGET_UNIX
-
-    if ((flags & 0xFFFFFF00) != 0)
-    {
-        hmod = CLRLoadLibraryEx(name, NULL, flags & 0xFFFFFF00);
-        if (hmod != NULL)
-        {
-            return hmod;
-        }
-
-        DWORD dwLastError = GetLastError();
-        if (dwLastError != ERROR_INVALID_PARAMETER)
-        {
-            pErrorTracker->TrackErrorCode();
-            return hmod;
-        }
-    }
-
-    hmod = CLRLoadLibraryEx(name, NULL, flags & 0xFF);
-
-#else // !TARGET_UNIX
-    hmod = PAL_LoadLibraryDirect(name);
-#endif // !TARGET_UNIX
-
-    if (hmod == NULL)
-    {
-        pErrorTracker->TrackErrorCode();
-    }
-
-    return hmod;
-}
-
-#define TOLOWER(a) (((a) >= W('A') && (a) <= W('Z')) ? (W('a') + (a - W('A'))) : (a))
-#define TOHEX(a)   ((a)>=10 ? W('a')+(a)-10 : W('0')+(a))
 
 #ifdef TARGET_UNIX
 #define PLATFORM_SHARED_LIB_SUFFIX_W PAL_SHLIB_SUFFIX_W
@@ -193,50 +26,206 @@ static NATIVE_LIBRARY_HANDLE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, 
 // Unlike other bits in this enum, this bit shouldn't be directly passed on to LoadLibrary()
 #define DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY 0x2
 
-// DllImportSearchPathFlags is a special enumeration, whose values are tied closely with LoadLibrary flags.
-// There is no "default" value DllImportSearchPathFlags. In the absence of DllImportSearchPath attribute,
-// CoreCLR's LoadLibrary implementation uses the following defaults.
-// Other implementations of LoadLibrary callbacks/events are free to use other default conventions.
-void GetDefaultDllImportSearchPathFlags(DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
+namespace
 {
-    STANDARD_VM_CONTRACT;
-
-    *searchAssemblyDirectory = TRUE;
-    *dllImportSearchPathFlags = 0;
-}
-
-// If a module has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and return true.
-// Otherwise, get CoreCLR's default value for DllImportSearchPathFlags, and return false.
-BOOL GetDllImportSearchPathFlags(Module *pModule, DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (pModule->HasDefaultDllImportSearchPathsAttribute())
+    // Preserving good error info from DllImport-driven LoadLibrary is tricky because we keep loading from different places
+    // if earlier loads fail and those later loads obliterate error codes.
+    //
+    // This tracker object will keep track of the error code in accordance to priority:
+    //
+    //   low-priority:      unknown error code (should never happen)
+    //   medium-priority:   dll not found
+    //   high-priority:     dll found but error during loading
+    //
+    // We will overwrite the previous load's error code only if the new error code is higher priority.
+    //
+    class LoadLibErrorTracker
     {
-        *dllImportSearchPathFlags = pModule->DefaultDllImportSearchPathsAttributeCachedValue();
-        *searchAssemblyDirectory = pModule->DllImportSearchAssemblyDirectory();
-        return TRUE;
+    private:
+        static const DWORD const_priorityNotFound     = 10;
+        static const DWORD const_priorityAccessDenied = 20;
+        static const DWORD const_priorityCouldNotLoad = 99999;
+    public:
+        LoadLibErrorTracker()
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_hr = E_FAIL;
+            m_priorityOfLastError = 0;
+        }
+
+        VOID TrackErrorCode()
+        {
+            LIMITED_METHOD_CONTRACT;
+
+            DWORD priority;
+
+#ifdef TARGET_UNIX
+            SetMessage(PAL_GetLoadLibraryError());
+#else
+            DWORD dwLastError = GetLastError();
+
+            switch (dwLastError)
+            {
+                case ERROR_FILE_NOT_FOUND:
+                case ERROR_PATH_NOT_FOUND:
+                case ERROR_MOD_NOT_FOUND:
+                case ERROR_DLL_NOT_FOUND:
+                    priority = const_priorityNotFound;
+                    break;
+
+                // If we can't access a location, we can't know if the dll's there or if it's good.
+                // Still, this is probably more unusual (and thus of more interest) than a dll-not-found
+                // so give it an intermediate priority.
+                case ERROR_ACCESS_DENIED:
+                    priority = const_priorityAccessDenied;
+
+                // Assume all others are "dll found but couldn't load."
+                default:
+                    priority = const_priorityCouldNotLoad;
+                    break;
+            }
+            UpdateHR(priority, HRESULT_FROM_WIN32(dwLastError));
+#endif
+        }
+
+        HRESULT GetHR()
+        {
+            return m_hr;
+        }
+
+        SString& GetMessage()
+        {
+            return m_message;
+        }
+
+        void DECLSPEC_NORETURN Throw(SString &libraryNameOrPath)
+        {
+            STANDARD_VM_CONTRACT;
+
+#if defined(__APPLE__)
+            COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_MAC, libraryNameOrPath.GetUnicode(), GetMessage());
+#elif defined(TARGET_UNIX)
+            COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_LINUX, libraryNameOrPath.GetUnicode(), GetMessage());
+#else // __APPLE__
+            HRESULT theHRESULT = GetHR();
+            if (theHRESULT == HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT))
+            {
+                COMPlusThrow(kBadImageFormatException);
+            }
+            else
+            {
+                SString hrString;
+                GetHRMsg(theHRESULT, hrString);
+                COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_WIN, libraryNameOrPath.GetUnicode(), hrString);
+            }
+#endif // TARGET_UNIX
+
+            __UNREACHABLE();
+        }
+
+    private:
+        void UpdateHR(DWORD priority, HRESULT hr)
+        {
+            if (priority > m_priorityOfLastError)
+            {
+                m_hr                  = hr;
+                m_priorityOfLastError = priority;
+            }
+        }
+
+        void SetMessage(LPCSTR message)
+        {
+            m_message = SString(SString::Utf8, message);
+        }
+
+        HRESULT m_hr;
+        DWORD   m_priorityOfLastError;
+        SString  m_message;
+    };  // class LoadLibErrorTracker
+
+    // Load the library directly and return the raw system handle
+    NATIVE_LIBRARY_HANDLE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTracker *pErrorTracker )
+    {
+        STANDARD_VM_CONTRACT;
+
+        NATIVE_LIBRARY_HANDLE hmod = NULL;
+
+#ifndef TARGET_UNIX
+        if ((flags & 0xFFFFFF00) != 0)
+        {
+            hmod = CLRLoadLibraryEx(name, NULL, flags & 0xFFFFFF00);
+            if (hmod != NULL)
+            {
+                return hmod;
+            }
+
+            DWORD dwLastError = GetLastError();
+            if (dwLastError != ERROR_INVALID_PARAMETER)
+            {
+                pErrorTracker->TrackErrorCode();
+                return hmod;
+            }
+        }
+
+        hmod = CLRLoadLibraryEx(name, NULL, flags & 0xFF);
+
+#else // !TARGET_UNIX
+        hmod = PAL_LoadLibraryDirect(name);
+#endif // !TARGET_UNIX
+
+        if (hmod == NULL)
+        {
+            pErrorTracker->TrackErrorCode();
+        }
+
+        return hmod;
     }
 
-    GetDefaultDllImportSearchPathFlags(dllImportSearchPathFlags, searchAssemblyDirectory);
-    return FALSE;
-}
-
-// If a pInvoke has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and returns true.
-// Otherwise, if the containing assembly has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and returns true.
-// Otherwise, get CoreCLR's default value for DllImportSearchPathFlags, and return false.
-BOOL GetDllImportSearchPathFlags(NDirectMethodDesc * pMD, DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (pMD->HasDefaultDllImportSearchPathsAttribute())
+    // DllImportSearchPathFlags is a special enumeration, whose values are tied closely with LoadLibrary flags.
+    // There is no "default" value DllImportSearchPathFlags. In the absence of DllImportSearchPath attribute,
+    // CoreCLR's LoadLibrary implementation uses the following defaults.
+    // Other implementations of LoadLibrary callbacks/events are free to use other default conventions.
+    void GetDefaultDllImportSearchPathFlags(DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
     {
-        *dllImportSearchPathFlags = pMD->DefaultDllImportSearchPathsAttributeCachedValue();
-        *searchAssemblyDirectory = pMD->DllImportSearchAssemblyDirectory();
-        return TRUE;
+        STANDARD_VM_CONTRACT;
+
+        *searchAssemblyDirectory = TRUE;
+        *dllImportSearchPathFlags = 0;
     }
 
-    return GetDllImportSearchPathFlags(pMD->GetModule(), dllImportSearchPathFlags, searchAssemblyDirectory);
+    // If a module has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and return true.
+    // Otherwise, get CoreCLR's default value for DllImportSearchPathFlags, and return false.
+    BOOL GetDllImportSearchPathFlags(Module *pModule, DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (pModule->HasDefaultDllImportSearchPathsAttribute())
+        {
+            *dllImportSearchPathFlags = pModule->DefaultDllImportSearchPathsAttributeCachedValue();
+            *searchAssemblyDirectory = pModule->DllImportSearchAssemblyDirectory();
+            return TRUE;
+        }
+
+        GetDefaultDllImportSearchPathFlags(dllImportSearchPathFlags, searchAssemblyDirectory);
+        return FALSE;
+    }
+
+    // If a pInvoke has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and returns true.
+    // Otherwise, if the containing assembly has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and returns true.
+    // Otherwise, get CoreCLR's default value for DllImportSearchPathFlags, and return false.
+    BOOL GetDllImportSearchPathFlags(NDirectMethodDesc * pMD, DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (pMD->HasDefaultDllImportSearchPathsAttribute())
+        {
+            *dllImportSearchPathFlags = pMD->DefaultDllImportSearchPathsAttributeCachedValue();
+            *searchAssemblyDirectory = pMD->DllImportSearchAssemblyDirectory();
+            return TRUE;
+        }
+
+        return GetDllImportSearchPathFlags(pMD->GetModule(), dllImportSearchPathFlags, searchAssemblyDirectory);
+    }
 }
 
 // static
@@ -838,61 +827,64 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Asse
     return hmod;
 }
 
-NATIVE_LIBRARY_HANDLE NativeLibrary::LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
+namespace
 {
-    CONTRACTL
+    NATIVE_LIBRARY_HANDLE LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
     {
-        STANDARD_VM_CHECK;
-        PRECONDITION( CheckPointer( pMD ) );
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION( CheckPointer( pMD ) );
+        }
+        CONTRACTL_END;
 
-    LPCUTF8 name = pMD->GetLibName();
-    if ( !name || !*name )
-        return NULL;
+        LPCUTF8 name = pMD->GetLibName();
+        if ( !name || !*name )
+            return NULL;
 
-    PREFIX_ASSUME( name != NULL );
-    MAKE_WIDEPTR_FROMUTF8( wszLibName, name );
+        PREFIX_ASSUME( name != NULL );
+        MAKE_WIDEPTR_FROMUTF8( wszLibName, name );
 
-    NativeLibraryHandleHolder hmod = LoadNativeLibraryViaDllImportResolver(pMD, wszLibName);
-    if (hmod != NULL)
-    {
+        NativeLibraryHandleHolder hmod = LoadNativeLibraryViaDllImportResolver(pMD, wszLibName);
+        if (hmod != NULL)
+        {
+            return hmod.Extract();
+        }
+
+        AppDomain* pDomain = GetAppDomain();
+        Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
+
+        hmod = LoadNativeLibraryViaAssemblyLoadContext(pAssembly, wszLibName);
+        if (hmod != NULL)
+        {
+            return hmod.Extract();
+        }
+
+        hmod = pDomain->FindUnmanagedImageInCache(wszLibName);
+        if (hmod != NULL)
+        {
+            return hmod.Extract();
+        }
+
+        hmod = LoadNativeLibraryBySearch(pMD, pErrorTracker, wszLibName);
+        if (hmod != NULL)
+        {
+            // If we have a handle add it to the cache.
+            pDomain->AddUnmanagedImageToCache(wszLibName, hmod);
+            return hmod.Extract();
+        }
+
+        hmod = LoadNativeLibraryViaAssemblyLoadContextEvent(pAssembly, wszLibName);
+        if (hmod != NULL)
+        {
+            return hmod.Extract();
+        }
+
         return hmod.Extract();
     }
-
-    AppDomain* pDomain = GetAppDomain();
-    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
-
-    hmod = LoadNativeLibraryViaAssemblyLoadContext(pAssembly, wszLibName);
-    if (hmod != NULL)
-    {
-        return hmod.Extract();
-    }
-
-    hmod = pDomain->FindUnmanagedImageInCache(wszLibName);
-    if (hmod != NULL)
-    {
-       return hmod.Extract();
-    }
-
-    hmod = LoadNativeLibraryBySearch(pMD, pErrorTracker, wszLibName);
-    if (hmod != NULL)
-    {
-        // If we have a handle add it to the cache.
-        pDomain->AddUnmanagedImageToCache(wszLibName, hmod);
-        return hmod.Extract();
-    }
-
-    hmod = LoadNativeLibraryViaAssemblyLoadContextEvent(pAssembly, wszLibName);
-    if (hmod != NULL)
-    {
-        return hmod.Extract();
-    }
-
-    return hmod.Extract();
 }
 
-NATIVE_LIBRARY_HANDLE NativeLibrary::LoadNativeLibrary(NDirectMethodDesc * pMD)
+NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(NDirectMethodDesc * pMD)
 {
     CONTRACT(NATIVE_LIBRARY_HANDLE)
     {
