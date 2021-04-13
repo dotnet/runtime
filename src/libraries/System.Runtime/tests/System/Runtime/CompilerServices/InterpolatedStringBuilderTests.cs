@@ -16,38 +16,50 @@ namespace System.Runtime.CompilerServices.Tests
         [InlineData(-1, 0)]
         [InlineData(-1, -1)]
         [InlineData(-16, 1)]
-        public void LengthAndHoleArguments_Valid(int baseLength, int holeCount)
+        public void LengthAndHoleArguments_Valid(int literalLength, int formattedCount)
         {
-            InterpolatedStringBuilder.Create(baseLength, holeCount);
+            InterpolatedStringBuilder.Create(literalLength, formattedCount);
 
             Span<char> scratch1 = stackalloc char[1];
             foreach (IFormatProvider provider in new IFormatProvider[] { null, new ConcatFormatter(), CultureInfo.InvariantCulture, CultureInfo.CurrentCulture, new CultureInfo("en-US"), new CultureInfo("fr-FR") })
             {
-                InterpolatedStringBuilder.Create(baseLength, holeCount, provider);
+                InterpolatedStringBuilder.Create(literalLength, formattedCount, provider);
 
-                InterpolatedStringBuilder.Create(baseLength, holeCount, provider, default);
-                InterpolatedStringBuilder.Create(baseLength, holeCount, provider, scratch1);
-                InterpolatedStringBuilder.Create(baseLength, holeCount, provider, Array.Empty<char>());
-                InterpolatedStringBuilder.Create(baseLength, holeCount, provider, new char[256]);
+                InterpolatedStringBuilder.Create(literalLength, formattedCount, provider, default);
+                InterpolatedStringBuilder.Create(literalLength, formattedCount, provider, scratch1);
+                InterpolatedStringBuilder.Create(literalLength, formattedCount, provider, Array.Empty<char>());
+                InterpolatedStringBuilder.Create(literalLength, formattedCount, provider, new char[256]);
             }
 
-            InterpolatedStringBuilder.Create(baseLength, holeCount, Span<char>.Empty);
-            InterpolatedStringBuilder.Create(baseLength, holeCount, scratch1);
-            InterpolatedStringBuilder.Create(baseLength, holeCount, Array.Empty<char>());
-            InterpolatedStringBuilder.Create(baseLength, holeCount, new char[256]);
+            InterpolatedStringBuilder.Create(literalLength, formattedCount, Span<char>.Empty);
+            InterpolatedStringBuilder.Create(literalLength, formattedCount, scratch1);
+            InterpolatedStringBuilder.Create(literalLength, formattedCount, Array.Empty<char>());
+            InterpolatedStringBuilder.Create(literalLength, formattedCount, new char[256]);
         }
 
         [Fact]
-        public void ToString_Clears()
+        public void ToString_DoesntClear()
         {
             InterpolatedStringBuilder builder = InterpolatedStringBuilder.Create(0, 0);
-            builder.TryFormatBaseString("hi");
-            Assert.Equal("hi", builder.ToString());
-            Assert.Equal(string.Empty, builder.ToString());
+            builder.AppendLiteral("hi");
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.Equal("hi", builder.ToString());
+            }
+            Assert.Equal("hi", builder.ToStringAndClear());
         }
 
         [Fact]
-        public void TryFormatBaseString()
+        public void ToStringAndClear_Clears()
+        {
+            InterpolatedStringBuilder builder = InterpolatedStringBuilder.Create(0, 0);
+            builder.AppendLiteral("hi");
+            Assert.Equal("hi", builder.ToStringAndClear());
+            Assert.Equal(string.Empty, builder.ToStringAndClear());
+        }
+
+        [Fact]
+        public void AppendLiteral()
         {
             var expected = new StringBuilder();
             InterpolatedStringBuilder actual = InterpolatedStringBuilder.Create(0, 0);
@@ -55,14 +67,14 @@ namespace System.Runtime.CompilerServices.Tests
             foreach (string s in new[] { "", "a", "bc", "def", "this is a long string", "!" })
             {
                 expected.Append(s);
-                actual.TryFormatBaseString(s);
+                actual.AppendLiteral(s);
             }
 
-            Assert.Equal(expected.ToString(), actual.ToString());
+            Assert.Equal(expected.ToString(), actual.ToStringAndClear());
         }
 
         [Fact]
-        public void TryFormatInterpolationHole_ReadOnlySpanChar()
+        public void AppendFormatted_ReadOnlySpanChar()
         {
             var expected = new StringBuilder();
             InterpolatedStringBuilder actual = InterpolatedStringBuilder.Create(0, 0);
@@ -71,29 +83,29 @@ namespace System.Runtime.CompilerServices.Tests
             {
                 // span
                 expected.Append(s);
-                actual.TryFormatInterpolationHole((ReadOnlySpan<char>)s);
+                actual.AppendFormatted((ReadOnlySpan<char>)s);
 
                 // span, format
                 expected.AppendFormat("{0:X2}", s);
-                actual.TryFormatInterpolationHole((ReadOnlySpan<char>)s, format: "X2");
+                actual.AppendFormatted((ReadOnlySpan<char>)s, format: "X2");
 
                 foreach (int alignment in new[] { 0, 3, -3 })
                 {
                     // span, alignment
                     expected.AppendFormat("{0," + alignment.ToString(CultureInfo.InvariantCulture) + "}", s);
-                    actual.TryFormatInterpolationHole((ReadOnlySpan<char>)s, alignment);
+                    actual.AppendFormatted((ReadOnlySpan<char>)s, alignment);
 
                     // span, alignment, format
                     expected.AppendFormat("{0," + alignment.ToString(CultureInfo.InvariantCulture) + ":X2}", s);
-                    actual.TryFormatInterpolationHole((ReadOnlySpan<char>)s, alignment, "X2");
+                    actual.AppendFormatted((ReadOnlySpan<char>)s, alignment, "X2");
                 }
             }
 
-            Assert.Equal(expected.ToString(), actual.ToString());
+            Assert.Equal(expected.ToString(), actual.ToStringAndClear());
         }
 
         [Fact]
-        public void TryFormatInterpolationHole_String()
+        public void AppendFormatted_String()
         {
             var expected = new StringBuilder();
             InterpolatedStringBuilder actual = InterpolatedStringBuilder.Create(0, 0);
@@ -102,29 +114,29 @@ namespace System.Runtime.CompilerServices.Tests
             {
                 // string
                 expected.AppendFormat("{0}", s);
-                actual.TryFormatInterpolationHole(s);
+                actual.AppendFormatted(s);
 
                 // string, format
                 expected.AppendFormat("{0:X2}", s);
-                actual.TryFormatInterpolationHole(s, "X2");
+                actual.AppendFormatted(s, "X2");
 
                 foreach (int alignment in new[] { 0, 3, -3 })
                 {
                     // string, alignment
                     expected.AppendFormat("{0," + alignment.ToString(CultureInfo.InvariantCulture) + "}", s);
-                    actual.TryFormatInterpolationHole(s, alignment);
+                    actual.AppendFormatted(s, alignment);
 
                     // string, alignment, format
                     expected.AppendFormat("{0," + alignment.ToString(CultureInfo.InvariantCulture) + ":X2}", s);
-                    actual.TryFormatInterpolationHole(s, alignment, "X2");
+                    actual.AppendFormatted(s, alignment, "X2");
                 }
             }
 
-            Assert.Equal(expected.ToString(), actual.ToString());
+            Assert.Equal(expected.ToString(), actual.ToStringAndClear());
         }
 
         [Fact]
-        public void TryFormatInterpolationHole_String_ICustomFormatter()
+        public void AppendFormatted_String_ICustomFormatter()
         {
             var provider = new ConcatFormatter();
 
@@ -135,26 +147,26 @@ namespace System.Runtime.CompilerServices.Tests
             {
                 // string
                 expected.AppendFormat(provider, "{0}", s);
-                actual.TryFormatInterpolationHole(s);
+                actual.AppendFormatted(s);
 
                 // string, format
                 expected.AppendFormat(provider, "{0:X2}", s);
-                actual.TryFormatInterpolationHole(s, "X2");
+                actual.AppendFormatted(s, "X2");
 
                 // string, alignment
                 expected.AppendFormat(provider, "{0,3}", s);
-                actual.TryFormatInterpolationHole(s, 3);
+                actual.AppendFormatted(s, 3);
 
                 // string, alignment, format
                 expected.AppendFormat(provider, "{0,-3:X2}", s);
-                actual.TryFormatInterpolationHole(s, -3, "X2");
+                actual.AppendFormatted(s, -3, "X2");
             }
 
-            Assert.Equal(expected.ToString(), actual.ToString());
+            Assert.Equal(expected.ToString(), actual.ToStringAndClear());
         }
 
         [Fact]
-        public void TryFormatInterpolationHole_ReferenceTypes()
+        public void AppendFormatted_ReferenceTypes()
         {
             var expected = new StringBuilder();
             InterpolatedStringBuilder actual = InterpolatedStringBuilder.Create(0, 0);
@@ -171,7 +183,7 @@ namespace System.Runtime.CompilerServices.Tests
                 {
                     // object
                     expected.AppendFormat("{0}", o);
-                    actual.TryFormatInterpolationHole(o);
+                    actual.AppendFormatted(o);
                     if (o is IHasToStringState tss1)
                     {
                         Assert.True(string.IsNullOrEmpty(tss1.ToStringState.LastFormat));
@@ -180,7 +192,7 @@ namespace System.Runtime.CompilerServices.Tests
 
                     // object, format
                     expected.AppendFormat("{0:X2}", o);
-                    actual.TryFormatInterpolationHole(o,  "X2");
+                    actual.AppendFormatted(o,  "X2");
                     if (o is IHasToStringState tss2)
                     {
                         Assert.Equal("X2", tss2.ToStringState.LastFormat);
@@ -191,7 +203,7 @@ namespace System.Runtime.CompilerServices.Tests
                     {
                         // object, alignment
                         expected.AppendFormat("{0," + alignment.ToString(CultureInfo.InvariantCulture) + "}", o);
-                        actual.TryFormatInterpolationHole(o, alignment);
+                        actual.AppendFormatted(o, alignment);
                         if (o is IHasToStringState tss3)
                         {
                             Assert.True(string.IsNullOrEmpty(tss3.ToStringState.LastFormat));
@@ -200,7 +212,7 @@ namespace System.Runtime.CompilerServices.Tests
 
                         // object, alignment, format
                         expected.AppendFormat("{0," + alignment.ToString(CultureInfo.InvariantCulture) + ":X2}", o);
-                        actual.TryFormatInterpolationHole(o, alignment, "X2");
+                        actual.AppendFormatted(o, alignment, "X2");
                         if (o is IHasToStringState tss4)
                         {
                             Assert.Equal("X2", tss4.ToStringState.LastFormat);
@@ -210,13 +222,13 @@ namespace System.Runtime.CompilerServices.Tests
                 }
             }
 
-            Assert.Equal(expected.ToString(), actual.ToString());
+            Assert.Equal(expected.ToString(), actual.ToStringAndClear());
         }
 
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void TryFormatInterpolationHole_ReferenceTypes_CreateProviderFlowed(bool useScratch)
+        public void AppendFormatted_ReferenceTypes_CreateProviderFlowed(bool useScratch)
         {
             var provider = new CultureInfo("en-US");
             InterpolatedStringBuilder builder = useScratch ?
@@ -225,22 +237,22 @@ namespace System.Runtime.CompilerServices.Tests
 
             foreach (IHasToStringState tss in new IHasToStringState[] { new FormattableStringWrapper("hello"), new SpanFormattableStringWrapper("hello") })
             {
-                builder.TryFormatInterpolationHole(tss);
+                builder.AppendFormatted(tss);
                 Assert.Same(provider, tss.ToStringState.LastProvider);
 
-                builder.TryFormatInterpolationHole(tss, 1);
+                builder.AppendFormatted(tss, 1);
                 Assert.Same(provider, tss.ToStringState.LastProvider);
 
-                builder.TryFormatInterpolationHole(tss, "X2");
+                builder.AppendFormatted(tss, "X2");
                 Assert.Same(provider, tss.ToStringState.LastProvider);
 
-                builder.TryFormatInterpolationHole(tss, 1, "X2");
+                builder.AppendFormatted(tss, 1, "X2");
                 Assert.Same(provider, tss.ToStringState.LastProvider);
             }
         }
 
         [Fact]
-        public void TryFormatInterpolationHole_ReferenceTypes_ICustomFormatter()
+        public void AppendFormatted_ReferenceTypes_ICustomFormatter()
         {
             var provider = new ConcatFormatter();
 
@@ -260,31 +272,31 @@ namespace System.Runtime.CompilerServices.Tests
 
                     // object
                     expected.AppendFormat(provider, "{0}", tss);
-                    actual.TryFormatInterpolationHole(tss);
+                    actual.AppendFormatted(tss);
                     AssertTss(tss, null);
 
                     // object, format
                     expected.AppendFormat(provider, "{0:X2}", tss);
-                    actual.TryFormatInterpolationHole(tss, "X2");
+                    actual.AppendFormatted(tss, "X2");
                     AssertTss(tss, "X2");
 
                     // object, alignment
                     expected.AppendFormat(provider, "{0,3}", tss);
-                    actual.TryFormatInterpolationHole(tss, 3);
+                    actual.AppendFormatted(tss, 3);
                     AssertTss(tss, null);
 
                     // object, alignment, format
                     expected.AppendFormat(provider, "{0,-3:X2}", tss);
-                    actual.TryFormatInterpolationHole(tss, -3, "X2");
+                    actual.AppendFormatted(tss, -3, "X2");
                     AssertTss(tss, "X2");
                 }
             }
 
-            Assert.Equal(expected.ToString(), actual.ToString());
+            Assert.Equal(expected.ToString(), actual.ToStringAndClear());
         }
 
         [Fact]
-        public void TryFormatInterpolationHole_ValueTypes()
+        public void AppendFormatted_ValueTypes()
         {
             void Test<T>(T t)
             {
@@ -293,13 +305,13 @@ namespace System.Runtime.CompilerServices.Tests
 
                 // struct
                 expected.AppendFormat("{0}", t);
-                actual.TryFormatInterpolationHole(t);
+                actual.AppendFormatted(t);
                 Assert.True(string.IsNullOrEmpty(((IHasToStringState)t).ToStringState.LastFormat));
                 AssertModeMatchesType(((IHasToStringState)t));
 
                 // struct, format
                 expected.AppendFormat("{0:X2}", t);
-                actual.TryFormatInterpolationHole(t, "X2");
+                actual.AppendFormatted(t, "X2");
                 Assert.Equal("X2", ((IHasToStringState)t).ToStringState.LastFormat);
                 AssertModeMatchesType(((IHasToStringState)t));
 
@@ -307,18 +319,18 @@ namespace System.Runtime.CompilerServices.Tests
                 {
                     // struct, alignment
                     expected.AppendFormat("{0," + alignment.ToString(CultureInfo.InvariantCulture) + "}", t);
-                    actual.TryFormatInterpolationHole(t, alignment);
+                    actual.AppendFormatted(t, alignment);
                     Assert.True(string.IsNullOrEmpty(((IHasToStringState)t).ToStringState.LastFormat));
                     AssertModeMatchesType(((IHasToStringState)t));
 
                     // struct, alignment, format
                     expected.AppendFormat("{0," + alignment.ToString(CultureInfo.InvariantCulture) + ":X2}", t);
-                    actual.TryFormatInterpolationHole(t, alignment, "X2");
+                    actual.AppendFormatted(t, alignment, "X2");
                     Assert.Equal("X2", ((IHasToStringState)t).ToStringState.LastFormat);
                     AssertModeMatchesType(((IHasToStringState)t));
                 }
 
-                Assert.Equal(expected.ToString(), actual.ToString());
+                Assert.Equal(expected.ToString(), actual.ToStringAndClear());
             }
 
             Test(new FormattableInt32Wrapper(42));
@@ -330,7 +342,7 @@ namespace System.Runtime.CompilerServices.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void TryFormatInterpolationHole_ValueTypes_CreateProviderFlowed(bool useScratch)
+        public void AppendFormatted_ValueTypes_CreateProviderFlowed(bool useScratch)
         {
             void Test<T>(T t)
             {
@@ -339,16 +351,16 @@ namespace System.Runtime.CompilerServices.Tests
                     InterpolatedStringBuilder.Create(1, 2, provider, stackalloc char[16]) :
                     InterpolatedStringBuilder.Create(1, 2, provider);
 
-                builder.TryFormatInterpolationHole(t);
+                builder.AppendFormatted(t);
                 Assert.Same(provider, ((IHasToStringState)t).ToStringState.LastProvider);
 
-                builder.TryFormatInterpolationHole(t, 1);
+                builder.AppendFormatted(t, 1);
                 Assert.Same(provider, ((IHasToStringState)t).ToStringState.LastProvider);
 
-                builder.TryFormatInterpolationHole(t, "X2");
+                builder.AppendFormatted(t, "X2");
                 Assert.Same(provider, ((IHasToStringState)t).ToStringState.LastProvider);
 
-                builder.TryFormatInterpolationHole(t, 1, "X2");
+                builder.AppendFormatted(t, 1, "X2");
                 Assert.Same(provider, ((IHasToStringState)t).ToStringState.LastProvider);
             }
 
@@ -359,7 +371,7 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        public void TryFormatInterpolationHole_ValueTypes_ICustomFormatter()
+        public void AppendFormatted_ValueTypes_ICustomFormatter()
         {
             var provider = new ConcatFormatter();
 
@@ -377,25 +389,25 @@ namespace System.Runtime.CompilerServices.Tests
 
                 // struct
                 expected.AppendFormat(provider, "{0}", t);
-                actual.TryFormatInterpolationHole(t);
+                actual.AppendFormatted(t);
                 AssertTss(t, null);
 
                 // struct, format
                 expected.AppendFormat(provider, "{0:X2}", t);
-                actual.TryFormatInterpolationHole(t, "X2");
+                actual.AppendFormatted(t, "X2");
                 AssertTss(t, "X2");
 
                 // struct, alignment
                 expected.AppendFormat(provider, "{0,3}", t);
-                actual.TryFormatInterpolationHole(t, 3);
+                actual.AppendFormatted(t, 3);
                 AssertTss(t, null);
 
                 // struct, alignment, format
                 expected.AppendFormat(provider, "{0,-3:X2}", t);
-                actual.TryFormatInterpolationHole(t, -3, "X2");
+                actual.AppendFormatted(t, -3, "X2");
                 AssertTss(t, "X2");
 
-                Assert.Equal(expected.ToString(), actual.ToString());
+                Assert.Equal(expected.ToString(), actual.ToStringAndClear());
             }
 
             Test(new FormattableInt32Wrapper(42));
@@ -416,14 +428,14 @@ namespace System.Runtime.CompilerServices.Tests
 
             for (int i = 0; i < 1000; i++)
             {
-                builder.TryFormatInterpolationHole(i);
+                builder.AppendFormatted(i);
                 expected.Append(i);
 
-                builder.TryFormatInterpolationHole(i, 3);
+                builder.AppendFormatted(i, 3);
                 expected.AppendFormat("{0,3}", i);
             }
 
-            Assert.Equal(expected.ToString(), builder.ToString());
+            Assert.Equal(expected.ToString(), builder.ToStringAndClear());
         }
 
         private static void AssertModeMatchesType<T>(T tss) where T : IHasToStringState

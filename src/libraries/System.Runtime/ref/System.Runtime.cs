@@ -9597,21 +9597,22 @@ namespace System.Runtime.CompilerServices
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
-        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int baseLength, int holeCount) { throw null; }
-        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int baseLength, int holeCount, System.IFormatProvider? provider) { throw null; }
-        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int baseLength, int holeCount, System.Span<char> scratchBuffer) { throw null; }
-        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int baseLength, int holeCount, System.IFormatProvider? provider, System.Span<char> scratchBuffer) { throw null; }
+        public void AppendLiteral(string value) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
+        public void AppendFormatted<T>(T value) { }
+        public void AppendFormatted<T>(T value, string? format) { }
+        public void AppendFormatted<T>(T value, int alignment) { }
+        public void AppendFormatted<T>(T value, int alignment, string? format) { }
+        public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
+        public void AppendFormatted(string? value) { throw null; }
+        public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
+        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int literalLength, int formattedCount) { throw null; }
+        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int literalLength, int formattedCount, System.IFormatProvider? provider) { throw null; }
+        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int literalLength, int formattedCount, System.Span<char> scratchBuffer) { throw null; }
+        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int literalLength, int formattedCount, System.IFormatProvider? provider, System.Span<char> scratchBuffer) { throw null; }
         public override string ToString() { throw null; }
-        public void TryFormatBaseString(string value) { }
-        public void TryFormatInterpolationHole(System.ReadOnlySpan<char> value) { }
-        public void TryFormatInterpolationHole(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
-        public void TryFormatInterpolationHole<T>(T value) { }
-        public void TryFormatInterpolationHole<T>(T value, string? format) { }
-        public void TryFormatInterpolationHole<T>(T value, int alignment) { }
-        public void TryFormatInterpolationHole<T>(T value, int alignment, string? format) { }
-        public void TryFormatInterpolationHole(object? value, int alignment = 0, string? format = null) { }
-        public void TryFormatInterpolationHole(string? value) { throw null; }
-        public void TryFormatInterpolationHole(string? value, int alignment = 0, string? format = null) { }
+        public string ToStringAndClear() { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

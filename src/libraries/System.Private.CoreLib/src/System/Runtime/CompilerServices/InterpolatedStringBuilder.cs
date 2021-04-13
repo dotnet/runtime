@@ -83,52 +83,57 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Creates a builder used to translate an interpolated string into a <see cref="string"/>.</summary>
-        /// <param name="baseLength">The number of constant characters outside of holes in the interpolated string.</param>
-        /// <param name="holeCount">The number of holes in the interpolated string.</param>
+        /// <param name="literalLength">The number of constant characters outside of holes in the interpolated string.</param>
+        /// <param name="formattedCount">The number of holes in the interpolated string.</param>
         /// <remarks>This is intended to be called only by compiler-generated code. Arguments are not validated as they'd otherwise be for members intended to be used directly.</remarks>
-        public static InterpolatedStringBuilder Create(int baseLength, int holeCount) =>
-            new InterpolatedStringBuilder(GetDefaultLength(baseLength, holeCount));
+        public static InterpolatedStringBuilder Create(int literalLength, int formattedCount) =>
+            new InterpolatedStringBuilder(GetDefaultLength(literalLength, formattedCount));
 
         /// <summary>Creates a builder used to translate an interpolated string into a <see cref="string"/>.</summary>
-        /// <param name="baseLength">The number of constant characters outside of holes in the interpolated string.</param>
-        /// <param name="holeCount">The number of holes in the interpolated string.</param>
+        /// <param name="literalLength">The number of constant characters outside of holes in the interpolated string.</param>
+        /// <param name="formattedCount">The number of holes in the interpolated string.</param>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <remarks>This is intended to be called only by compiler-generated code. Arguments are not validated as they'd otherwise be for members intended to be used directly.</remarks>
-        public static InterpolatedStringBuilder Create(int baseLength, int holeCount, IFormatProvider? provider) =>
-            new InterpolatedStringBuilder(GetDefaultLength(baseLength, holeCount), provider);
+        public static InterpolatedStringBuilder Create(int literalLength, int formattedCount, IFormatProvider? provider) =>
+            new InterpolatedStringBuilder(GetDefaultLength(literalLength, formattedCount), provider);
 
         /// <summary>Creates a builder used to translate an interpolated string into a <see cref="string"/>.</summary>
-        /// <param name="baseLength">The number of constant characters outside of holes in the interpolated string.</param>
-        /// <param name="holeCount">The number of holes in the interpolated string.</param>
+        /// <param name="literalLength">The number of constant characters outside of holes in the interpolated string.</param>
+        /// <param name="formattedCount">The number of holes in the interpolated string.</param>
         /// <param name="scratchBuffer">A buffer temporarily transferred to the builder for use as part of its formatting.  Contents may be overwritten.</param>
         /// <remarks>This is intended to be called only by compiler-generated code. Arguments are not validated as they'd otherwise be for members intended to be used directly.</remarks>
-        public static InterpolatedStringBuilder Create(int baseLength, int holeCount, Span<char> scratchBuffer) =>
+        public static InterpolatedStringBuilder Create(int literalLength, int formattedCount, Span<char> scratchBuffer) =>
             new InterpolatedStringBuilder(scratchBuffer);
 
         /// <summary>Creates a builder used to translate an interpolated string into a <see cref="string"/>.</summary>
-        /// <param name="baseLength">The number of constant characters outside of holes in the interpolated string.</param>
-        /// <param name="holeCount">The number of holes in the interpolated string.</param>
+        /// <param name="literalLength">The number of constant characters outside of holes in the interpolated string.</param>
+        /// <param name="formattedCount">The number of holes in the interpolated string.</param>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="scratchBuffer">A buffer temporarily transferred to the builder for use as part of its formatting.  Contents may be overwritten.</param>
         /// <remarks>This is intended to be called only by compiler-generated code. Arguments are not validated as they'd otherwise be for members intended to be used directly.</remarks>
-        public static InterpolatedStringBuilder Create(int baseLength, int holeCount, IFormatProvider? provider, Span<char> scratchBuffer) =>
+        public static InterpolatedStringBuilder Create(int literalLength, int formattedCount, IFormatProvider? provider, Span<char> scratchBuffer) =>
             new InterpolatedStringBuilder(scratchBuffer, provider);
 
         /// <summary>Derives a default length with which to seed the builder.</summary>
-        /// <param name="baseLength">The number of constant characters outside of holes in the interpolated string.</param>
-        /// <param name="holeCount">The number of holes in the interpolated string.</param>
+        /// <param name="literalLength">The number of constant characters outside of holes in the interpolated string.</param>
+        /// <param name="formattedCount">The number of holes in the interpolated string.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetDefaultLength(int baseLength, int holeCount) =>
-            Math.Max(MinimumArrayPoolLength, baseLength + (holeCount * GuessedLengthPerHole));
+        private static int GetDefaultLength(int literalLength, int formattedCount) =>
+            Math.Max(MinimumArrayPoolLength, literalLength + (formattedCount * GuessedLengthPerHole));
 
         /// <summary>Gets the built <see cref="string"/>.</summary>
         /// <returns>The built string.</returns>
+        public override string ToString() => _chars.Slice(0, _pos).ToString();
+
+        /// <summary>Gets the built <see cref="string"/> and clears the builder.</summary>
+        /// <returns>The built string.</returns>
         /// <remarks>
-        /// In addition to getting the built string, this clears the builder, releasing any used resources.
-        /// The method should be invoked only once and as the last thing performed on the builder.
-        /// Subsequent use is erroneous and ill-defined.
+        /// This releases any used resources used by the builder. The method should be invoked only
+        /// once and as the last thing performed on the builder. Subsequent use is erroneous, ill-defined,
+        /// and may destabilize the process, as may using any other copies of the builder after ToStringAndClear
+        /// is called on any one of them.
         /// </remarks>
-        public override string ToString()
+        public string ToStringAndClear()
         {
             string result = _chars.Slice(0, _pos).ToString();
 
@@ -144,7 +149,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Writes the specified string to the builder.</summary>
         /// <param name="value">The string to write.</param>
-        public void TryFormatBaseString(string value)
+        public void AppendLiteral(string value)
         {
             if (value.TryCopyTo(_chars.Slice(_pos)))
             {
@@ -156,9 +161,9 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        #region TryFormatInterpolationHole
+        #region AppendFormatted
         // Design note:
-        // The compiler requires a TryFormatInterpolationHole overload for anything that might be within a hole;
+        // The compiler requires a AppendFormatted overload for anything that might be within a hole;
         // if it can't find an appropriate overload, for builders in general it'll simply fail to compile.
         // (For target-typing to string where it uses InterpolatedStringBuilder implicitly, it'll instead fall back to
         // its other mechanisms, e.g. using string.Format.  This fallback has the benefit that if we miss a case,
@@ -171,7 +176,7 @@ namespace System.Runtime.CompilerServices
         // shortcomings:
         // - Every value type in a hole would be boxed.
         // - ReadOnlySpan<char> could not be used in holes.
-        // - Every TryFormatInterpolationHole call would have three arguments at the call site, bloating the IL further.
+        // - Every AppendFormatted call would have three arguments at the call site, bloating the IL further.
         // - Every invocation would be more expensive, due to lack of specialization, every call needing to account
         //   for alignment and format, etc.
         //
@@ -231,19 +236,19 @@ namespace System.Runtime.CompilerServices
         // apply is ReadOnlySpan<char>, which isn't supported by either string.Format nor StringBuilder.AppendFormat, but more
         // importantly which can't be boxed to be passed to ICustomFormatter.Format.
 
-        #region TryFormatInterpolationHole T
+        #region AppendFormatted T
         /// <summary>Writes the specified value to the builder.</summary>
         /// <param name="value">The value to write.</param>
-        public void TryFormatInterpolationHole<T>(T value)
+        public void AppendFormatted<T>(T value)
         {
-            // This method could delegate to TryFormatInterpolationHole with a null format, but explicitly passing
+            // This method could delegate to AppendFormatted with a null format, but explicitly passing
             // default as the format to TryFormat helps to improve code quality in some cases when TryFormat is inlined,
             // e.g. for Int32 it enables the JIT to eliminate code in the inlined method based on a length check on the format.
 
             // If there's a custom formatter, always use it.
             if (_customFormatter is not null)
             {
-                FormatCustomFormatter(value, format: null);
+                AppendCustomFormatter(value, format: null);
                 return;
             }
 
@@ -279,18 +284,18 @@ namespace System.Runtime.CompilerServices
 
             if (s is not null)
             {
-                TryFormatBaseString(s); // use TryFormatBaseString to avoid going back through this method recursively
+                AppendLiteral(s);
             }
         }
         /// <summary>Writes the specified value to the builder.</summary>
         /// <param name="value">The value to write.</param>
         /// <param name="format">The format string.</param>
-        public void TryFormatInterpolationHole<T>(T value, string? format)
+        public void AppendFormatted<T>(T value, string? format)
         {
             // If there's a custom formatter, always use it.
             if (_customFormatter is not null)
             {
-                FormatCustomFormatter(value, format);
+                AppendCustomFormatter(value, format);
                 return;
             }
 
@@ -326,17 +331,17 @@ namespace System.Runtime.CompilerServices
 
             if (s is not null)
             {
-                TryFormatBaseString(s); // use TryFormatBaseString to avoid going back through this method recursively
+                AppendLiteral(s);
             }
         }
 
         /// <summary>Writes the specified value to the builder.</summary>
         /// <param name="value">The value to write.</param>
         /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
-        public void TryFormatInterpolationHole<T>(T value, int alignment)
+        public void AppendFormatted<T>(T value, int alignment)
         {
             int startingPos = _pos;
-            TryFormatInterpolationHole(value);
+            AppendFormatted(value);
             if (alignment != 0)
             {
                 AppendOrInsertAlignmentIfNeeded(startingPos, alignment);
@@ -347,10 +352,10 @@ namespace System.Runtime.CompilerServices
         /// <param name="value">The value to write.</param>
         /// <param name="format">The format string.</param>
         /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
-        public void TryFormatInterpolationHole<T>(T value, int alignment, string? format)
+        public void AppendFormatted<T>(T value, int alignment, string? format)
         {
             int startingPos = _pos;
-            TryFormatInterpolationHole(value, format);
+            AppendFormatted(value, format);
             if (alignment != 0)
             {
                 AppendOrInsertAlignmentIfNeeded(startingPos, alignment);
@@ -358,10 +363,10 @@ namespace System.Runtime.CompilerServices
         }
         #endregion
 
-        #region TryFormatInterpolationHole ReadOnlySpan<char>
+        #region AppendFormatted ReadOnlySpan<char>
         /// <summary>Writes the specified character span to the builder.</summary>
         /// <param name="value">The span to write.</param>
-        public void TryFormatInterpolationHole(ReadOnlySpan<char> value)
+        public void AppendFormatted(ReadOnlySpan<char> value)
         {
             // Fast path for when the value fits in the current buffer
             if (value.TryCopyTo(_chars.Slice(_pos)))
@@ -378,7 +383,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="value">The span to write.</param>
         /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
         /// <param name="format">The format string.</param>
-        public void TryFormatInterpolationHole(ReadOnlySpan<char> value, int alignment = 0, string? format = null)
+        public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null)
         {
             bool leftAlign = false;
             if (alignment < 0)
@@ -392,7 +397,7 @@ namespace System.Runtime.CompilerServices
             {
                 // The value is as large or larger than the required amount of padding,
                 // so just write the value.
-                TryFormatInterpolationHole(value);
+                AppendFormatted(value);
                 return;
             }
 
@@ -415,10 +420,10 @@ namespace System.Runtime.CompilerServices
         }
         #endregion
 
-        #region TryFormatInterpolationHole string
+        #region AppendFormatted string
         /// <summary>Writes the specified value to the builder.</summary>
         /// <param name="value">The value to write.</param>
-        public void TryFormatInterpolationHole(string? value)
+        public void AppendFormatted(string? value)
         {
             // Fast-path for no custom formatter and a non-null string that fits in the current destination buffer.
             if (_customFormatter is null &&
@@ -429,7 +434,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                TryFormatInterpolationHoleSlow(value);
+                AppendFormattedSlow(value);
             }
         }
 
@@ -440,7 +445,7 @@ namespace System.Runtime.CompilerServices
         /// or a string that doesn't fit in the current buffer.
         /// </remarks>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void TryFormatInterpolationHoleSlow(string? value)
+        private void AppendFormattedSlow(string? value)
         {
             if (_customFormatter is null)
             {
@@ -453,7 +458,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                FormatCustomFormatter(value, format: null);
+                AppendCustomFormatter(value, format: null);
             }
         }
 
@@ -461,23 +466,23 @@ namespace System.Runtime.CompilerServices
         /// <param name="value">The value to write.</param>
         /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
         /// <param name="format">The format string.</param>
-        public void TryFormatInterpolationHole(string? value, int alignment = 0, string? format = null) =>
+        public void AppendFormatted(string? value, int alignment = 0, string? format = null) =>
             // Format is meaningless for strings and doesn't make sense for someone to specify.  We have the overload
             // simply to disambiguate between ROS<char> and object, just in case someone does specify a format, as
             // string is implicitly convertible to both. Just delegate to the T-based implementation.
-            TryFormatInterpolationHole<string?>(value, alignment, format);
+            AppendFormatted<string?>(value, alignment, format);
         #endregion
 
-        #region TryFormatInterpolationHole object
+        #region AppendFormatted object
         /// <summary>Writes the specified value to the builder.</summary>
         /// <param name="value">The value to write.</param>
         /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
         /// <param name="format">The format string.</param>
-        public void TryFormatInterpolationHole(object? value, int alignment = 0, string? format = null) =>
+        public void AppendFormatted(object? value, int alignment = 0, string? format = null) =>
             // This overload is expected to be used rarely, only if either a) something strongly typed as object is
             // formatted with both an alignment and a format, or b) the compiler is unable to target type to T. It
             // exists purely to help make cases from (b) compile. Just delegate to the T-based implementation.
-            TryFormatInterpolationHole<object?>(value, alignment, format);
+            AppendFormatted<object?>(value, alignment, format);
         #endregion
         #endregion
 
@@ -485,7 +490,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="value">The value to write.</param>
         /// <param name="format">The format string.</param>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void FormatCustomFormatter<T>(T value, string? format)
+        private void AppendCustomFormatter<T>(T value, string? format)
         {
             // This case is very rare, but we need to handle it prior to the other checks in case
             // a provider was used that supplied an ICustomFormatter which wanted to intercept the particular value.
@@ -494,7 +499,7 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(_customFormatter is not null);
             if (((ICustomFormatter)_customFormatter).Format(format, value, _provider) is string customFormatted)
             {
-                TryFormatBaseString(customFormatted); // use TryFormatBaseString to avoid going back through this method recursively
+                AppendLiteral(customFormatted);
             }
         }
 
@@ -544,7 +549,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        /// <summary>Fallback for fast path in <see cref="TryFormatBaseString"/> when there's not enough space in the destination.</summary>
+        /// <summary>Fallback for fast path in <see cref="AppendLiteral"/> when there's not enough space in the destination.</summary>
         /// <param name="value">The string to write.</param>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void GrowThenCopyString(string value)
@@ -554,7 +559,7 @@ namespace System.Runtime.CompilerServices
             _pos += value.Length;
         }
 
-        /// <summary>Fallback for <see cref="TryFormatInterpolationHole(ReadOnlySpan{char})"/> for when not enough space exists in the current buffer.</summary>
+        /// <summary>Fallback for <see cref="AppendFormatted(ReadOnlySpan{char})"/> for when not enough space exists in the current buffer.</summary>
         /// <param name="value">The span to write.</param>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void GrowThenCopySpan(ReadOnlySpan<char> value)
