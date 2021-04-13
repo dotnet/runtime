@@ -5506,7 +5506,6 @@ public:
     const char* fgProcessEscapes(const char* nameIn, escapeMapping_t* map);
     FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR type);
     bool fgDumpFlowGraph(Phases phase);
-
 #endif // DUMP_FLOWGRAPHS
 
 #ifdef DEBUG
@@ -5849,7 +5848,6 @@ private:
                                      unsigned             argIndex,
                                      CORINFO_CLASS_HANDLE copyBlkClass);
 
-    void fgFixupStructReturn(GenTree* call);
     GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
 
 public:
@@ -6545,6 +6543,15 @@ protected:
         }
     }
 
+    // Struct used in optInvertWhileLoop to count interesting constructs to boost the profitability score.
+    struct OptInvertCountTreeInfoType
+    {
+        int sharedStaticHelperCount;
+        int arrayLengthCount;
+    };
+
+    static fgWalkResult optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data);
+
     void optInvertWhileLoop(BasicBlock* block);
 
     bool optComputeLoopRep(int        constInit,
@@ -6573,9 +6580,6 @@ protected:
      *                       Optimization conditions
      *************************************************************************/
 
-    bool optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight);
-    bool optPentium4(void);
-    bool optAvoidIncDec(BasicBlock::weight_t bbWeight);
     bool optAvoidIntMult(void);
 
 protected:
@@ -9445,12 +9449,12 @@ public:
         BOOL hasCircularClassConstraints;
         BOOL hasCircularMethodConstraints;
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
         const char* compMethodName;
         const char* compClassName;
         const char* compFullName;
         double      compPerfScore;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
         // Method hash is logcally const, but computed
@@ -9610,11 +9614,6 @@ public:
 
         return false;
 #endif // TARGET_AMD64
-    }
-
-    bool compDoOldStructRetyping()
-    {
-        return JitConfig.JitDoOldStructRetyping();
     }
 
     // Returns true if the method returns a value in more than one return register

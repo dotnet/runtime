@@ -215,7 +215,7 @@ bool Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
     // If we haven't setup cseMaskTraits, do it now
     if (cseMaskTraits == nullptr)
     {
-        cseMaskTraits = new (getAllocator()) BitVecTraits(optCSECandidateCount, this);
+        cseMaskTraits = new (getAllocator(CMK_CSE)) BitVecTraits(optCSECandidateCount, this);
     }
 
     optCSE_MaskData op1MaskData;
@@ -967,7 +967,7 @@ void Compiler::optCseUpdateCheckedBoundMap(GenTree* compare)
             if (optCseCheckedBoundMap == nullptr)
             {
                 // Allocate map on first use.
-                optCseCheckedBoundMap = new (getAllocator()) NodeToNodeMap(getAllocator());
+                optCseCheckedBoundMap = new (getAllocator(CMK_CSE)) NodeToNodeMap(getAllocator());
             }
 
             optCseCheckedBoundMap->Set(bound, compare);
@@ -997,7 +997,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     const unsigned bitCount = (optCSECandidateCount * 2) + 1;
 
     // Init traits and cseCallKillsMask bitvectors.
-    cseLivenessTraits = new (getAllocator()) BitVecTraits(bitCount, this);
+    cseLivenessTraits = new (getAllocator(CMK_CSE)) BitVecTraits(bitCount, this);
     cseCallKillsMask  = BitVecOps::MakeEmpty(cseLivenessTraits);
     for (unsigned inx = 0; inx < optCSECandidateCount; inx++)
     {

@@ -3772,11 +3772,7 @@ bool CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 
     _ASSERTE(clsHnd);
 
-    // Note that clsHnd.IsValueType() would not return what the JIT expects
-    // for corner cases like ELEMENT_TYPE_FNPTR
-    TypeHandle VMClsHnd(clsHnd);
-    MethodTable * pMT = VMClsHnd.GetMethodTable();
-    ret = (pMT != NULL) ? pMT->IsValueType() : false;
+    ret = TypeHandle(clsHnd).IsValueType();
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -3888,7 +3884,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
         if (pMT->HasComponentSize())
             ret |= CORINFO_FLG_VAROBJSIZE;
 
-        if (pMT->IsValueType())
+        if (VMClsHnd.IsValueType())
         {
             ret |= CORINFO_FLG_VALUECLASS;
 
