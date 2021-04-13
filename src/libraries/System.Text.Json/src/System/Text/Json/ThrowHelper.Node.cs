@@ -14,9 +14,16 @@ namespace System.Text.Json
     {
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_NodeElementCannotBeObjectOrArray()
+        public static void ThrowArgumentException_NodeValueNotAllowed(string argumentName)
         {
-            throw new InvalidOperationException(SR.NodeElementCannotBeObjectOrArray);
+            throw new ArgumentException(SR.NodeValueNotAllowed, argumentName);
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowArgumentNullException_ValueCannotBeNull(string argumentName)
+        {
+            throw new ArgumentNullException(SR.ValueCannotBeNull, argumentName);
         }
 
         [DoesNotReturn]
@@ -35,16 +42,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowArgumentException_NodeValueNotAllowed(string argumentName)
+        public static void ThrowInvalidOperationException_NodeElementCannotBeObjectOrArray()
         {
-            throw new ArgumentException(SR.NodeValueNotAllowed, argumentName);
-        }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowArgumentNullException_ValueCannotBeNull(string argumentName)
-        {
-            throw new ArgumentNullException(SR.ValueCannotBeNull, argumentName);
+            throw new InvalidOperationException(SR.NodeElementCannotBeObjectOrArray);
         }
     }
 }

@@ -64,6 +64,12 @@ namespace System.Text.Json.Node.Tests
         {
             return Encoding.UTF8.GetBytes(value);
         }
+
+        [Fact]
+        public static void GetValue_Throws()
+        {
+            Assert.Throws<InvalidOperationException>(() => JsonNode.Parse("{}").GetValue<object>());
+            Assert.Throws<InvalidOperationException>(() => JsonNode.Parse("[]").GetValue<object>());
+        }
     }
 }
-

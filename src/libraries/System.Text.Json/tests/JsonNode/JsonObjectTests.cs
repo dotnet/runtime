@@ -104,13 +104,6 @@ namespace System.Text.Json.Node.Tests
         }
 
         [Fact]
-        public static void SetItem_Fail()
-        {
-            var jObject = new JsonObject();
-            Assert.Throws<ArgumentNullException>(() => jObject[null] = 42);
-        }
-
-        [Fact]
         public static void IDictionary_KeyValuePair()
         {
             IDictionary<string, JsonNode?> jObject = new JsonObject();
@@ -128,8 +121,6 @@ namespace System.Text.Json.Node.Tests
             jObject.Add("One", 1);
             jObject.Add("Two", 2);
             Assert.Equal(2, jObject.Count);
-            JsonNode node1 = jObject["One"];
-            JsonNode node2 = jObject["Two"];
 
             Assert.True(jObject.ContainsKey("One"));
             Assert.True(jObject.ContainsKey("Two"));

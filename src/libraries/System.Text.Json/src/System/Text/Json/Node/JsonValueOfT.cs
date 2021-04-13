@@ -35,15 +35,13 @@ namespace System.Text.Json.Node
 
         public override T GetValue<[DynamicallyAccessedMembers(MembersAccessedOnRead)] T>()
         {
-            Type returnType = typeof(T);
-
             // If no conversion is needed, just return the raw value.
             if (_value is T returnValue)
             {
                 return returnValue;
             }
 
-            if (_value is JsonElement jsonElement)
+            if (_value is JsonElement)
             {
                 return ConvertJsonElement<T>();
             }
@@ -183,14 +181,12 @@ namespace System.Text.Json.Node
 
                     if (returnType == typeof(char))
                     {
-                        string? strResult = element.GetString();
-                        Debug.Assert(strResult != null);
-                        if (strResult.Length >= 1)
+                        string? str = element.GetString();
+                        Debug.Assert(str != null);
+                        if (str.Length == 1)
                         {
-                            return (TypeToConvert)(object)strResult[0];
+                            return (TypeToConvert)(object)str[0];
                         }
-
-                        throw ThrowHelper.GetFormatException();
                     }
                     break;
 
@@ -331,11 +327,11 @@ namespace System.Text.Json.Node
 
                     if (returnType == typeof(char))
                     {
-                        string? strResult = element.GetString();
-                        Debug.Assert(strResult != null);
-                        if (strResult.Length >= 1)
+                        string? str = element.GetString();
+                        Debug.Assert(str != null);
+                        if (str.Length == 1)
                         {
-                            result = (TypeToConvert)(object)strResult[0];
+                            result = (TypeToConvert)(object)str[0];
                             return true;
                         }
                     }

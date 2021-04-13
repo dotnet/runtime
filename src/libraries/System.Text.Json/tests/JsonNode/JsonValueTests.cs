@@ -23,13 +23,6 @@ namespace System.Text.Json.Node.Tests
             Assert.Throws<ArgumentException>(() => JsonValue.Create(JsonValue.Create(42)));
         }
 
-        [Fact]
-        public static void GetValue_Throws()
-        {
-            Assert.Throws<InvalidOperationException>(() => JsonNode.Parse("{}").GetValue<object>());
-            Assert.Throws<InvalidOperationException>(() => JsonNode.Parse("[]").GetValue<object>());
-        }
-
         private class Polymorphic_Base { }
         private class Polymorphic_Derived : Polymorphic_Base { }
 
@@ -106,7 +99,7 @@ namespace System.Text.Json.Node.Tests
             JsonValue jValue = JsonNode.Parse("\"MyString\"").AsValue();
 
             Assert.True(jValue.TryGetValue(out string _));
-            Assert.True(jValue.TryGetValue(out char _));
+            Assert.False(jValue.TryGetValue(out char _));
             Assert.False(jValue.TryGetValue(out byte _));
             Assert.False(jValue.TryGetValue(out short _));
             Assert.False(jValue.TryGetValue(out int _));
@@ -155,7 +148,7 @@ namespace System.Text.Json.Node.Tests
 
             Assert.True(jValue.TryGetValue(out Guid _));
             Assert.True(jValue.TryGetValue(out string _));
-            Assert.True(jValue.TryGetValue(out char _));
+            Assert.False(jValue.TryGetValue(out char _));
             Assert.False(jValue.TryGetValue(out byte _));
             Assert.False(jValue.TryGetValue(out short _));
             Assert.False(jValue.TryGetValue(out int _));
@@ -182,7 +175,7 @@ namespace System.Text.Json.Node.Tests
             Assert.True(jValue.TryGetValue(out DateTime _));
             Assert.True(jValue.TryGetValue(out DateTimeOffset _));
             Assert.True(jValue.TryGetValue(out string _));
-            Assert.True(jValue.TryGetValue(out char _));
+            Assert.False(jValue.TryGetValue(out char _));
             Assert.False(jValue.TryGetValue(out byte _));
             Assert.False(jValue.TryGetValue(out short _));
             Assert.False(jValue.TryGetValue(out int _));
@@ -200,17 +193,17 @@ namespace System.Text.Json.Node.Tests
 
         [Theory]
         [InlineData("\"A\"")]
-        [InlineData("\"AB\"")]
+        [InlineData("\" \"")]
         public static void FromElement_Char(string json)
         {
             using (JsonDocument document = JsonDocument.Parse(json))
             {
                 JsonValue jValue = JsonValue.Create(document.RootElement);
-                Assert.Equal('A', jValue.GetValue<char>());
+                Assert.Equal(json[1], jValue.GetValue<char>());
 
                 bool success = jValue.TryGetValue(out char ch);
                 Assert.True(success);
-                Assert.Equal('A', ch);
+                Assert.Equal(json[1], ch);
             }
         }
 
@@ -234,27 +227,19 @@ namespace System.Text.Json.Node.Tests
             }
         }
 
-        [Fact]
-        public static void FromElement_Char_Fail()
+        [Theory]
+        [InlineData("42")]
+        [InlineData("\"AB\"")]
+        [InlineData("\"\"")]
+        public static void FromElement_Char_Fail(string json)
         {
-            using (JsonDocument document = JsonDocument.Parse("\"\""))
-            {
-                JsonValue jValue = JsonValue.Create(document.RootElement);
-                Assert.Throws<FormatException>(() => jValue.GetValue<char>());
-
-                bool success = jValue.TryGetValue(out char ch);
-                Assert.False(success);
-                Assert.Equal(default(char), ch);
-            }
-
-            using (JsonDocument document = JsonDocument.Parse("42"))
+            using (JsonDocument document = JsonDocument.Parse(json))
             {
                 JsonValue jValue = JsonValue.Create(document.RootElement);
                 Assert.Throws<InvalidOperationException>(() => jValue.GetValue<char>());
 
                 bool success = jValue.TryGetValue(out char ch);
                 Assert.False(success);
-                Assert.Equal(default(char), ch);
             }
         }
 
