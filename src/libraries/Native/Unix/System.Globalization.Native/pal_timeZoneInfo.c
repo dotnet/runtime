@@ -21,36 +21,13 @@ static const UChar EXEMPLAR_CITY_PATTERN_UCHAR[] = {'V', 'V', 'V', '\0'};       
 /*
 Convert Windows Time Zone Id to IANA Id
 */
-int32_t GlobalizationNative_WindowsIdToIanaId(const UChar* windowsId, const UChar* region, UChar* ianaId, int32_t ianaIdLength)
+int32_t GlobalizationNative_WindowsIdToIanaId(const UChar* windowsId, const char* region, UChar* ianaId, int32_t ianaIdLength)
 {
     UErrorCode status = U_ZERO_ERROR;
 
     if (ucal_getTimeZoneIDForWindowsID_ptr != NULL)
     {
-        #define BUFFER_LENGTH 41 // enough length for the region code including the null termination
-        char buffer[BUFFER_LENGTH];
-        char* regionName = NULL;
-
-        if (region != NULL)
-        {
-            regionName = buffer;
-            int length = 0;
-            while (length < BUFFER_LENGTH - 1 && region[length] != '\0')
-            {
-                buffer[length] = (char)region[length];
-                length++;
-            }
-
-            if (length == BUFFER_LENGTH - 1)
-            {
-                // long region name which shouldn't be correct.
-                return 0;
-            }
-
-            buffer[length] = '\0';
-        }
-
-        int32_t ianaIdFilledLength = ucal_getTimeZoneIDForWindowsID(windowsId, -1, regionName, ianaId, ianaIdLength, &status);
+        int32_t ianaIdFilledLength = ucal_getTimeZoneIDForWindowsID(windowsId, -1, region, ianaId, ianaIdLength, &status);
         if (U_SUCCESS(status))
         {
             return ianaIdFilledLength;

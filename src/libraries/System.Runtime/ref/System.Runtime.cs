@@ -3891,9 +3891,9 @@ namespace System
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public string ToSerializedString() { throw null; }
         public override string ToString() { throw null; }
-        public static bool TryConvertIanaIdToWindowsId(string ianaId, out string windowsId) { throw null; }
-        public static bool TryConvertWindowsIdToIanaId(string windowsId, out string? ianaId) { throw null; }
-        public static bool TryConvertWindowsIdToIanaId(string windowsId, string? region, out string? ianaId) { throw null; }
+        public static bool TryConvertIanaIdToWindowsId(string ianaId, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? windowsId) { throw null; }
+        public static bool TryConvertWindowsIdToIanaId(string windowsId, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? ianaId) { throw null; }
+        public static bool TryConvertWindowsIdToIanaId(string windowsId, string? region, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? ianaId) { throw null; }
         public sealed partial class AdjustmentRule : System.IEquatable<System.TimeZoneInfo.AdjustmentRule?>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
         {
             internal AdjustmentRule() { }

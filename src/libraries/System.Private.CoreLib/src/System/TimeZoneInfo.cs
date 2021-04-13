@@ -911,7 +911,7 @@ namespace System
             string? displayName,
             string? standardDisplayName)
         {
-            bool hasIanaId = TimeZoneInfo.TryConvertIanaIdToWindowsId(id, out string _);
+            bool hasIanaId = TimeZoneInfo.TryConvertIanaIdToWindowsId(id, allocate: false, out string _);
 
             return new TimeZoneInfo(
                 id,
@@ -962,7 +962,7 @@ namespace System
                 adjustmentRules = (AdjustmentRule[])adjustmentRules.Clone();
             }
 
-            bool hasIanaId = TimeZoneInfo.TryConvertIanaIdToWindowsId(id, out string _);
+            bool hasIanaId = TimeZoneInfo.TryConvertIanaIdToWindowsId(id, allocate: false, out string _);
 
             return new TimeZoneInfo(
                 id,
@@ -981,38 +981,7 @@ namespace System
         /// <param name="ianaId">The IANA time zone Id.</param>
         /// <param name="windowsId">String object hold the Windows Id which resulted from the IANA Id conversion.</param>
         /// <returns>True if the Id conversion succeed, false otherwise .</returns>
-        public static unsafe bool TryConvertIanaIdToWindowsId(string ianaId, out string? windowsId)
-        {
-            windowsId = null;
-
-            // This functionality is not enabled in the browser for the sake of size reduction.
-#if !TARGET_BROWSER
-            if (GlobalizationMode.Invariant || GlobalizationMode.UseNls || ianaId is null)
-            {
-                return false;
-            }
-
-            foreach (char c in ianaId)
-            {
-                // ICU uses some characters as a separator and trim the id at that character.
-                // while we should fail if the Id contained one of these characters.
-                if (c == '\\' || c == '\n' || c == '\r')
-                {
-                    return false;
-                }
-            }
-
-            char* buffer = stackalloc char[100];
-            int length = Interop.Globalization.IanaIdToWindowsId(ianaId, buffer, 100);
-            if (length > 0)
-            {
-                windowsId = new string(buffer, 0, length);
-                return true;
-            }
-#endif // !TARGET_BROWSER
-
-            return false;
-        }
+        public static unsafe bool TryConvertIanaIdToWindowsId(string ianaId, [NotNullWhen(true)] out string? windowsId) => TryConvertIanaIdToWindowsId(ianaId, allocate: true, out windowsId);
 
         /// <summary>
         /// Tries to convert Windows time zone Id to IANA Id.
@@ -1020,7 +989,7 @@ namespace System
         /// <param name="windowsId">The Windows time zone Id.</param>
         /// <param name="ianaId">String object hold the IANA Id which resulted from the Windows Id conversion.</param>
         /// <returns>True if the Id conversion succeed, false otherwise .</returns>
-        public static bool TryConvertWindowsIdToIanaId(string windowsId, out string? ianaId) => TryConvertWindowsIdToIanaId(windowsId, null, out ianaId);
+        public static bool TryConvertWindowsIdToIanaId(string windowsId, [NotNullWhen(true)] out string? ianaId) =>  TryConvertWindowsIdToIanaId(windowsId, region: null, allocate: true, out ianaId);
 
         /// <summary>
         /// Tries to convert Windows time zone Id to IANA Id.
@@ -1029,45 +998,7 @@ namespace System
         /// <param name="region">The ISO 3166 for the country/region.</param>
         /// <param name="ianaId">String object hold the IANA Id which resulted from the Windows Id conversion.</param>
         /// <returns>True if the Id conversion succeed, false otherwise .</returns>
-        public static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, out string? ianaId)
-        {
-            ianaId = null;
-
-            // This functionality is not enabled in the browser for the sake of size reduction.
-#if !TARGET_BROWSER
-            if (GlobalizationMode.Invariant || GlobalizationMode.UseNls || windowsId is null)
-            {
-                return false;
-            }
-
-            if (windowsId.Equals("utc", StringComparison.OrdinalIgnoreCase))
-            {
-                // Special case UTC, as previously ICU would convert it to "Etc/GMT" which is incorrect name for UTC.
-                ianaId = "Etc/UTC";
-                return true;
-            }
-
-            foreach (char c in windowsId)
-            {
-                // ICU uses some characters as a separator and trim the id at that character.
-                // while we should fail if the Id contained one of these characters.
-                if (c == '\\' || c == '\n' || c == '\r')
-                {
-                    return false;
-                }
-            }
-
-            char* buffer = stackalloc char[100];
-            int length = Interop.Globalization.WindowsIdToIanaId(windowsId, region, buffer, 100);
-            if (length > 0)
-            {
-                ianaId = new string(buffer, 0, length);
-                return true;
-            }
-#endif // !TARGET_BROWSER
-
-            return false;
-        }
+        public static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, [NotNullWhen(true)] out string? ianaId) => TryConvertWindowsIdToIanaId(windowsId, region, allocate: true, out ianaId);
 
         void IDeserializationCallback.OnDeserialization(object? sender)
         {
