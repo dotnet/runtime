@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.MsQuic.Internal;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -202,23 +203,25 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
-            CancellationTokenRegistration registration = cancellationToken.Register(() =>
+            CancellationTokenRegistration registration = cancellationToken.Register(static (s, token) =>
             {
+                var stream = (MsQuicStream)s!;
                 bool shouldComplete = false;
-                lock (_state)
+                lock (stream._state)
                 {
-                    if (_state.SendState == SendState.None)
+                    if (stream._state.SendState == SendState.None)
                     {
-                        _state.SendState = SendState.Aborted;
+                        stream._state.SendState = SendState.Aborted;
                         shouldComplete = true;
                     }
                 }
 
                 if (shouldComplete)
                 {
-                    _state.SendResettableCompletionSource.CompleteException(new OperationCanceledException("Write was canceled", cancellationToken));
+                    stream._state.SendResettableCompletionSource.CompleteException(
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException("Write was canceled", token)));
                 }
-            });
+            }, this);
 
             // Make sure start has completed
             if (!_started)
@@ -271,24 +274,26 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
-            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+            using CancellationTokenRegistration registration = cancellationToken.Register(static (s, token) =>
             {
+                var stream = (MsQuicStream)s!;
                 bool shouldComplete = false;
-                lock (_state)
+                lock (stream._state)
                 {
-                    if (_state.ReadState == ReadState.None)
+                    if (stream._state.ReadState == ReadState.None)
                     {
                         shouldComplete = true;
                     }
 
-                    _state.ReadState = ReadState.Aborted;
+                    stream._state.ReadState = ReadState.Aborted;
                 }
 
                 if (shouldComplete)
                 {
-                    _state.ReceiveResettableCompletionSource.CompleteException(new OperationCanceledException("Read was canceled", cancellationToken));
+                    stream._state.ReceiveResettableCompletionSource.CompleteException(
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException("Read was canceled", token)));
                 }
-            });
+            }, this);
 
             // TODO there could potentially be a perf gain by storing the buffer from the inital read
             // This reduces the amount of async calls, however it makes it so MsQuic holds onto the buffers
@@ -361,7 +366,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldComplete)
             {
-                _state.ShutdownWriteCompletionSource.SetException(new QuicStreamAbortedException("Shutdown was aborted.", errorCode));
+                _state.ShutdownWriteCompletionSource.SetException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicStreamAbortedException("Shutdown was aborted.", errorCode)));
             }
 
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_SEND, errorCode);
@@ -378,23 +384,25 @@ namespace System.Net.Quic.Implementations.MsQuic
             ThrowIfDisposed();
 
             // TODO do anything to stop writes?
-            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+            using CancellationTokenRegistration registration = cancellationToken.Register(static (s, token) =>
             {
+                var stream = (MsQuicStream)s!;
                 bool shouldComplete = false;
-                lock (_state)
+                lock (stream._state)
                 {
-                    if (_state.ShutdownWriteState == ShutdownWriteState.None)
+                    if (stream._state.ShutdownWriteState == ShutdownWriteState.None)
                     {
-                        _state.ShutdownWriteState = ShutdownWriteState.Canceled;
+                        stream._state.ShutdownWriteState = ShutdownWriteState.Canceled;
                         shouldComplete = true;
                     }
                 }
 
                 if (shouldComplete)
                 {
-                    _state.ShutdownWriteCompletionSource.SetException(new OperationCanceledException("Shutdown was canceled", cancellationToken));
+                    stream._state.ShutdownWriteCompletionSource.SetException(
+                        ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException("Wait for shutdown write was canceled", token)));
                 }
-            });
+            }, this);
 
             await _state.ShutdownWriteCompletionSource.Task.ConfigureAwait(false);
         }
@@ -403,9 +411,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
-                _state.ShutdownCompletionSource.SetException(new OperationCanceledException("Shutdown was canceled", cancellationToken))
-            );
+            using CancellationTokenRegistration registration = cancellationToken.Register(static (s, token) =>
+                ((MsQuicStream)s!)._state.ShutdownCompletionSource.SetException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException("Wait for shutdown was canceled", token))),
+                this);
 
             await _state.ShutdownCompletionSource.Task.ConfigureAwait(false);
         }
@@ -584,7 +593,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldComplete)
             {
-                state.SendResettableCompletionSource.CompleteException(new QuicStreamAbortedException(state.SendErrorCode));
+                state.SendResettableCompletionSource.CompleteException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicStreamAbortedException(state.SendErrorCode)));
             }
 
             return MsQuicStatusCodes.Success;
@@ -684,7 +694,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldComplete)
             {
-                state.ReceiveResettableCompletionSource.CompleteException(new QuicStreamAbortedException(state.ReadErrorCode));
+                state.ReceiveResettableCompletionSource.CompleteException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicStreamAbortedException(state.ReadErrorCode)));
             }
 
             return MsQuicStatusCodes.Success;
