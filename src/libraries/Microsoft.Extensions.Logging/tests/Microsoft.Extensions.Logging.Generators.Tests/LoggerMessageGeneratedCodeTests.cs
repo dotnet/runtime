@@ -178,8 +178,18 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(string.Empty, logger.LastFormattedString);
             Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
+        }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/roslyn/issues/52527")]
+        public void MessageTests_SuppressWarning_WarnAsError_NoError()
+        {
+            // Diagnostics produced by source generators do not respect the /warnAsError or /noWarn compiler flags.
+            // These are handled fine by the logger generator and generate warnings. Unfortunately, the warning suppression is
+            // not being observed by the C# compiler at the moment, so having these here causes build warnings.
 #if false
+            var logger = new MockLogger();
+
             logger.Reset();
             MessageTestExtensions.M2(logger, "Foo", "Bar");
             Assert.Null(logger.LastException);

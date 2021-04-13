@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable SYSLIB0027
+
 namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
     internal static partial class MessageTestExtensions
@@ -12,6 +14,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         public static partial void M1(ILogger logger);
 
 #if false
+        // Diagnostics produced by source generators do not respect the /warnAsError or /noWarn compiler flags.
         // These are disabled due to https://github.com/dotnet/roslyn/issues/52527
         //
         // These are handled fine by the logger generator and generate warnings. Unfortunately, the above warning suppression is
