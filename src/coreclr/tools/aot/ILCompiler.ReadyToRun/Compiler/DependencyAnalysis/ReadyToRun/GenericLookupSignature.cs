@@ -107,12 +107,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 Debug.Assert(_methodArgument.Unboxing == false);
 
+                bool useInstantiatingStub = (_methodArgument.Method.IsSharedByGenericInstantiations &&
+                    (_methodArgument.Method.Signature.IsStatic || _methodArgument.Method.HasInstantiation));
+
                 dataBuilder.EmitMethodSignature(
                     _methodArgument,
                     enforceDefEncoding: false,
                     enforceOwningType: false,
                     context: innerContext,
-                    isInstantiatingStub: true);
+                    isInstantiatingStub: useInstantiatingStub);
             }
             else if (_typeArgument != null)
             {
