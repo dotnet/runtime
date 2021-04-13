@@ -1175,5 +1175,18 @@ namespace System.Text.RegularExpressions.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("inner", () => System.Text.RegularExpressions.Match.Synchronized(null));
         }
+
+        [Fact]
+        public void HowManyAlternationsAreChecked()
+        {
+            // We can statically determine if it's impossible for an alternation branch N + 1 to match after we've gotten to a certain place in matching branch N, e.g. given the alternation "abc|def" we know that once we match the 'a', there's no point in even considering the second branch. We should be able to utilize that knowledge to avoid unnecessarily checking branches when a previous one fails to match.
+
+            Debugger.Launch();
+            var regex = new Regex("(abc|def)xyz");
+            var match = regex.Match("abqabqabqabqabqabqabqabqabqabqabqabqabqabqabqabqabqabqdefxyz");
+            Assert.True(match.Success);
+            Assert.Equal("defxyz", match.Value);
+            Console.WriteLine("BH");
+        }
     }
 }

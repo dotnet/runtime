@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -1058,7 +1059,17 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexCode.Multi:
-                        if (!MatchString(_code.Strings[Operand(0)]))
+                        int stringTableIndex = Operand(0);
+                        char textChar = runtext![runtextpos];
+                        if (_code.FirstLetterToStringTableIndices.TryGetValue(textChar, out HashSet<int>? stringTableIndices))
+                        {
+                            if (!stringTableIndices.Contains(stringTableIndex))
+                            {
+                                // We are trying a pattern that doesn't start with the right char, so there's no way we can match.
+                                break;
+                            }
+                        }
+                        if (!MatchString(_code.Strings[stringTableIndex]))
                         {
                             break;
                         }
