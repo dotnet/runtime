@@ -1167,7 +1167,7 @@ namespace System.Net.Http
         {
             if (DoProxyAuth && ProxyCredentials is not null)
             {
-                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri, async, ProxyCredentials, connection, this, cancellationToken);
+                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, connection, this, cancellationToken);
             }
 
             return connection.SendAsync(request, async, cancellationToken);
