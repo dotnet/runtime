@@ -47,10 +47,16 @@ DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
 {
 }
 
-/*****************************************************************************
- *
- */
-
+//------------------------------------------------------------------------
+// optSetBlockWeights: adjust block weights, as follows:
+// 1. A block that is not reachable from the entry block is marked "run rarely".
+// 2. If we're not using profile weights, then any block with a non-zero weight
+//    that doesn't dominate all the return blocks has its weight dropped in half
+//    (but only if the first block *does* dominate all the returns).
+//
+// Notes:
+//    Depends on dominators, and fgReturnBlocks being set.
+//
 void Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
@@ -60,11 +66,10 @@ void Compiler::optSetBlockWeights()
     bool changed = false;
 #endif
 
-    bool firstBBdomsRets = true;
+    bool       firstBBDominatesAllReturns = true;
+    const bool usingProfileWeights        = fgIsUsingProfileWeights();
 
-    BasicBlock* block;
-
-    for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         /* Blocks that can't be reached via the first block are rarely executed */
         if (!fgReachable(fgFirstBB, block))
@@ -72,38 +77,41 @@ void Compiler::optSetBlockWeights()
             block->bbSetRunRarely();
         }
 
-        if (block->bbWeight != BB_ZERO_WEIGHT)
+        if (!usingProfileWeights && firstBBDominatesAllReturns)
         {
-            // Calculate our bbWeight:
-            //
-            //  o BB_UNITY_WEIGHT if we dominate all BBJ_RETURN blocks
-            //  o otherwise BB_UNITY_WEIGHT / 2
-            //
-            bool domsRets = true; // Assume that we will dominate
-
-            for (BasicBlockList* retBlocks = fgReturnBlocks; retBlocks != nullptr; retBlocks = retBlocks->next)
+            if (block->bbWeight != BB_ZERO_WEIGHT)
             {
-                if (!fgDominate(block, retBlocks->block))
+                // Calculate our bbWeight:
+                //
+                //  o BB_UNITY_WEIGHT if we dominate all BBJ_RETURN blocks
+                //  o otherwise BB_UNITY_WEIGHT / 2
+                //
+                bool blockDominatesAllReturns = true; // Assume that we will dominate
+
+                for (BasicBlockList* retBlocks = fgReturnBlocks; retBlocks != nullptr; retBlocks = retBlocks->next)
                 {
-                    domsRets = false;
-                    break;
+                    if (!fgDominate(block, retBlocks->block))
+                    {
+                        blockDominatesAllReturns = false;
+                        break;
+                    }
                 }
-            }
 
-            if (block == fgFirstBB)
-            {
-                firstBBdomsRets = domsRets;
-            }
-
-            // If we are not using profile weight then we lower the weight
-            // of blocks that do not dominate a return block
-            //
-            if (firstBBdomsRets && !fgIsUsingProfileWeights() && !domsRets)
-            {
-#if DEBUG
-                changed = true;
-#endif
-                block->inheritWeightPercentage(block, 50);
+                if (block == fgFirstBB)
+                {
+                    firstBBDominatesAllReturns = blockDominatesAllReturns;
+                }
+                else
+                {
+                    // If we are not using profile weight then we lower the weight
+                    // of blocks that do not dominate a return block
+                    //
+                    if (!blockDominatesAllReturns)
+                    {
+                        INDEBUG(changed = true);
+                        block->inheritWeightPercentage(block, 50);
+                    }
+                }
             }
         }
     }

@@ -393,7 +393,11 @@ add_custom_command(
 )
 
 if(NOT DISABLE_EXECUTABLES)
-  add_executable(mono-sgen "main-sgen.c")
+  set(sgen_sources "main-sgen.c")
+  if(HOST_WIN32)
+    set(sgen_sources "${sgen_sources};${PROJECT_BINARY_DIR}/../../NativeVersion.rc")
+  endif()
+  add_executable(mono-sgen "${sgen_sources}")
   target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
   if(ICU_LDFLAGS)
     set_property(TARGET mono-sgen APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")

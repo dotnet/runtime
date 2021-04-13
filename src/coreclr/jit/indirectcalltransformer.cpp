@@ -523,25 +523,6 @@ private:
                 return;
             }
 
-            // For now, bail on transforming calls that still appear
-            // to return structs by value as there is deferred work
-            // needed to fix up the return type.
-            //
-            // See for instance fgUpdateInlineReturnExpressionPlaceHolder.
-            if (origCall->TypeGet() == TYP_STRUCT)
-            {
-                JITDUMP("*** %s Bailing on [%06u] -- can't handle by-value struct returns yet\n", Name(),
-                        compiler->dspTreeID(origCall));
-                ClearFlag();
-
-                // For stub calls restore the stub address
-                if (origCall->IsVirtualStub())
-                {
-                    origCall->gtStubCallStubAddr = origCall->gtInlineCandidateInfo->stubAddr;
-                }
-                return;
-            }
-
             likelihood = origCall->gtGuardedDevirtualizationCandidateInfo->likelihood;
             assert((likelihood >= 0) && (likelihood <= 100));
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
