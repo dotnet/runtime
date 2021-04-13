@@ -399,7 +399,7 @@ namespace System
             }
 #endif
 
-            slice = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startIndex), count);
+            slice = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, (nint)(uint)startIndex), count);
             return true;
         }
 
