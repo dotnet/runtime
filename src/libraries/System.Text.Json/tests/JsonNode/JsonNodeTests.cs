@@ -10,37 +10,35 @@ namespace System.Text.Json.Node.Tests
         [Fact]
         public static void JsonTypes_Deserialize()
         {
-            var options = new JsonSerializerOptions();
-
-            Assert.IsType<JsonObject>(JsonSerializer.Deserialize<JsonNode>("{}", options));
+            Assert.IsType<JsonObject>(JsonSerializer.Deserialize<JsonNode>("{}"));
             Assert.IsType<JsonObject>(JsonNode.Parse("{}"));
             Assert.IsType<JsonObject>(JsonNode.Parse(ToUtf8("{}")));
-            Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("{}", options));
+            Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("{}"));
 
-            Assert.IsType<JsonArray>(JsonSerializer.Deserialize<JsonNode>("[]", options));
+            Assert.IsType<JsonArray>(JsonSerializer.Deserialize<JsonNode>("[]"));
             Assert.IsType<JsonArray>(JsonNode.Parse("[]"));
             Assert.IsType<JsonArray>(JsonNode.Parse(ToUtf8("[]")));
-            Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("[]", options));
+            Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("[]"));
 
-            Assert.IsAssignableFrom<JsonValue>(JsonSerializer.Deserialize<JsonNode>("true", options));
+            Assert.IsAssignableFrom<JsonValue>(JsonSerializer.Deserialize<JsonNode>("true"));
             Assert.IsAssignableFrom<JsonValue>(JsonNode.Parse("true"));
             Assert.IsAssignableFrom<JsonValue>(JsonNode.Parse(ToUtf8("true")));
-            Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("true", options));
+            Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("true"));
 
-            Assert.IsAssignableFrom<JsonValue>(JsonSerializer.Deserialize<JsonNode>("0", options));
+            Assert.IsAssignableFrom<JsonValue>(JsonSerializer.Deserialize<JsonNode>("0"));
             Assert.IsAssignableFrom<JsonValue>(JsonNode.Parse("0"));
             Assert.IsAssignableFrom<JsonValue>(JsonNode.Parse(ToUtf8("0")));
-            Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("0", options));
+            Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("0"));
 
-            Assert.IsAssignableFrom<JsonValue>(JsonSerializer.Deserialize<JsonNode>("1.2", options));
+            Assert.IsAssignableFrom<JsonValue>(JsonSerializer.Deserialize<JsonNode>("1.2"));
             Assert.IsAssignableFrom<JsonValue>(JsonNode.Parse("1.2"));
             Assert.IsAssignableFrom<JsonValue>(JsonNode.Parse(ToUtf8("1.2")));
-            Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("1.2", options));
+            Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("1.2"));
 
-            Assert.IsAssignableFrom<JsonValue>(JsonSerializer.Deserialize<JsonNode>("\"str\"", options));
+            Assert.IsAssignableFrom<JsonValue>(JsonSerializer.Deserialize<JsonNode>("\"str\""));
             Assert.IsAssignableFrom<JsonValue>(JsonNode.Parse("\"str\""));
             Assert.IsAssignableFrom<JsonValue>(JsonNode.Parse(ToUtf8("\"str\"")));
-            Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("\"str\"", options));
+            Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("\"str\""));
         }
 
         [Fact]
