@@ -62,7 +62,8 @@ namespace System.IO.Strategies
 
                 if (allocationSize > 0)
                 {
-                    (uint ntStatus, IntPtr fileHandle) = Interop.NtDll.CreateFile(path, mode, access, share, options, allocationSize);
+                    string prefixedAbsolutePath = PathInternal.IsExtended(path) ? path : @"\??\" + Path.GetFullPath(path); // TODO: we might consider getting rid of this managed allocation,
+                    (uint ntStatus, IntPtr fileHandle) = Interop.NtDll.CreateFile(prefixedAbsolutePath, mode, access, share, options, allocationSize);
                     if (ntStatus == 0)
                     {
                         return ValidateFileHandle(new SafeFileHandle(fileHandle, ownsHandle: true), path, (options & FileOptions.Asynchronous) != 0);
