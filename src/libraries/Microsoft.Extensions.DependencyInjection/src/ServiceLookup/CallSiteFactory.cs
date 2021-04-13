@@ -49,6 +49,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         throw new ArgumentException(
                             SR.Format(SR.TypeCannotBeActivated, descriptor.ImplementationType, descriptor.ServiceType));
                     }
+
+                    if (serviceTypeInfo.GetGenericArguments().Length != implementationTypeInfo.GetGenericArguments().Length)
+                    {
+                        throw new ArgumentException(
+                            SR.Format(SR.ArityOfOpenGenericServiceNotEqualArityOfOpenGenericImplementation, descriptor.ServiceType, descriptor.ImplementationType), "descriptors");
+                    }
                 }
                 else if (descriptor.ImplementationInstance == null && descriptor.ImplementationFactory == null)
                 {
