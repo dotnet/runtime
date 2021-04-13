@@ -45,7 +45,6 @@ jobs:
     collectionType: ${{ parameters.collectionType }}
     collectionName: ${{ parameters.collectionName }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
-    librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
     # Test job depends on the corresponding build job
     dependsOn:
      - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -105,8 +104,8 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
-          artifactFileName: '$(librariesTestsArtifactName).tar.gz'
-          artifactName: '$(librariesTestsArtifactName)'
+          artifactFileName: ${{ format('libraries_test_assets_{0}_{1}_{2}.tar.gz', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+          artifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
           displayName: 'generic libraries test artifacts'
 
     # Create Core_Root
