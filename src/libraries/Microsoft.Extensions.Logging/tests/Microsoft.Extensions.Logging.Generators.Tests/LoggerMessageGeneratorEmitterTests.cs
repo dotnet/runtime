@@ -8,10 +8,10 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Test
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
     public class LoggerMessageGeneratorEmitterTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34091", TestRuntimes.Mono)]
         public async Task TestEmitter()
         {
             // The functionality of the resulting code is tested via LoggerMessageGeneratedCodeTests.cs
