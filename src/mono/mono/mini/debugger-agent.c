@@ -901,7 +901,7 @@ socket_transport_recv (void *buf, int len)
 	static gint64 last_keepalive;
 	gint64 msecs;
 
-	MONO_ENTER_GC_SAFE;
+	MONO_REQ_GC_SAFE_MODE;
 
 	do {
 	again:
@@ -921,13 +921,13 @@ socket_transport_recv (void *buf, int len)
 				}
 			}
 			if (need_keepalive) {
+				MONO_ENTER_GC_UNSAFE;
 				process_profiler_event (EVENT_KIND_KEEPALIVE, NULL);
+				MONO_EXIT_GC_UNSAFE;
 				goto again;
 			}
 		}
 	} while ((res > 0 && total < len) || (res == -1 && get_last_sock_error () == MONO_EINTR));
-
-	MONO_EXIT_GC_SAFE;
 
 	return total;
 }
@@ -951,9 +951,8 @@ set_keepalive (void)
 static int
 socket_transport_accept (int socket_fd)
 {
-	MONO_ENTER_GC_SAFE;
+	MONO_REQ_GC_SAFE_MODE;
 	conn_fd = accept (socket_fd, NULL, NULL);
-	MONO_EXIT_GC_SAFE;
 
 	if (conn_fd == -1) {
 		PRINT_ERROR_MSG ("debugger-agent: Unable to listen on %d\n", socket_fd);
@@ -969,13 +968,11 @@ socket_transport_send (void *data, int len)
 {
 	int res;
 
-	MONO_ENTER_GC_SAFE;
+	MONO_REQ_GC_SAFE_MODE;
 
 	do {
 		res = send (conn_fd, (const char*)data, len, 0);
 	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
-
-	MONO_EXIT_GC_SAFE;
 
 	if (res != len)
 		return FALSE;
@@ -1146,20 +1143,16 @@ socket_transport_connect (const char *address)
 					continue;
 				}
 
-				MONO_ENTER_GC_SAFE;
 				res = connect (sfd, &sockaddr.addr, sock_len);
-				MONO_EXIT_GC_SAFE;
 
 				if (res != -1)
 					break;       /* Success */
 				
-				MONO_ENTER_GC_SAFE;
 	#ifdef HOST_WIN32
 				closesocket (sfd);
 	#else
 				close (sfd);
 	#endif
-				MONO_EXIT_GC_SAFE;
 			}
 			elapsedTime = difftime (time (NULL), startTime) * 1000;
 			if (rp == 0)
@@ -1195,9 +1188,7 @@ socket_transport_close1 (void)
 #else
 	shutdown (conn_fd, SHUT_RD);
 	shutdown (listen_fd, SHUT_RDWR);
-	MONO_ENTER_GC_SAFE;
 	close (listen_fd);
-	MONO_EXIT_GC_SAFE;
 #endif
 }
 
@@ -1319,37 +1310,55 @@ transport_init (void)
 void
 transport_connect (const char *address)
 {
+	MONO_ENTER_GC_SAFE;
 	transport->connect (address);
+	MONO_EXIT_GC_SAFE;
 }
 
 static void
 transport_close1 (void)
 {
+	MONO_ENTER_GC_SAFE;
 	transport->close1 ();
+	MONO_EXIT_GC_SAFE;
 }
 
 static void
 transport_close2 (void)
 {
+	MONO_ENTER_GC_SAFE;
 	transport->close2 ();
+	MONO_EXIT_GC_SAFE;
 }
 
 static int
 transport_send (void *buf, int len)
 {
-	return transport->send (buf, len);
+	int result;
+	MONO_ENTER_GC_SAFE;
+	result = transport->send (buf, len);
+	MONO_EXIT_GC_SAFE;
+	return result;
 }
 
 static int
 transport_recv (void *buf, int len)
 {
-	return transport->recv (buf, len);
+	int result;
+	MONO_ENTER_GC_SAFE;
+	result = transport->recv (buf, len);
+	MONO_EXIT_GC_SAFE;
+	return result;
 }
 
 gboolean
 mono_debugger_agent_transport_handshake (void)
 {
-	return transport_handshake ();
+	gboolean result;
+	MONO_ENTER_GC_UNSAFE;
+	result = transport_handshake ();
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 static gboolean
@@ -1359,6 +1368,8 @@ transport_handshake (void)
 	guint8 buf [128];
 	int res;
 	
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	disconnected = TRUE;
 	
 	/* Write handshake message */
@@ -1392,6 +1403,7 @@ transport_handshake (void)
 	 * Set TCP_NODELAY on the socket so the client receives events/command
 	 * results immediately.
 	 */
+	MONO_ENTER_GC_SAFE;
 	if (conn_fd) {
 		int flag = 1;
 		int result = setsockopt (conn_fd,
@@ -1403,6 +1415,7 @@ transport_handshake (void)
 	}
 
 	set_keepalive ();
+	MONO_EXIT_GC_SAFE;
 #endif
 	
 	disconnected = FALSE;
