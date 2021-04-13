@@ -17,8 +17,10 @@ class Program
         IServiceCollection descriptors = new ServiceCollection();
         descriptors.AddLogging(builder =>
         {
+#pragma warning disable CA1416 // Unsupported on Android
             builder.AddConsoleFormatter<CustomFormatter, CustomOptions>();
             builder.AddConsole(o => { o.FormatterName = "custom"; });
+#pragma warning restore CA1416
         });
 
         ServiceProvider provider = descriptors.BuildServiceProvider();
