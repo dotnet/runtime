@@ -551,6 +551,7 @@ namespace System
         /// <returns>true if s was converted successfully; otherwise, false.</returns>
         public static bool TryParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result) =>
                             TryParseExactInternal(s, format, provider, style, out result) == ParseOperationResult.Success;
+
         private static ParseOperationResult TryParseExactInternal(ReadOnlySpan<char> s, ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
         {
             if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
