@@ -13,7 +13,6 @@ using Xunit;
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2007:Consider calling ConfigureAwait on the awaited task", Justification = "Test")]
     public class LoggerMessageGeneratorParserTests
     {
         [Fact]
@@ -611,14 +610,10 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 ";
             }
 
-#pragma warning disable SA1011 // Closing square brackets should be spaced correctly
             Assembly[]? refs = null;
-#pragma warning restore SA1011 // Closing square brackets should be spaced correctly
             if (includeLoggingReferences)
             {
-#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
                 refs = new[] { Assembly.GetAssembly(typeof(ILogger))!, Assembly.GetAssembly(typeof(LoggerMessageAttribute))! };
-#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
             }
 
             var (d, r) = await RoslynTestUtils.RunGenerator(

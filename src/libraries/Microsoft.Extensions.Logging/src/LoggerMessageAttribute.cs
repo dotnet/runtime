@@ -11,7 +11,6 @@ namespace Microsoft.Extensions.Logging
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class LoggerMessageAttribute : Attribute
     {
-#pragma warning disable SA1629 // Documentation text should end with a period
         /// <summary>
         /// Initializes a new instance of the <see cref="LoggerMessageAttribute"/> class
         /// which is used to guide the production of a strongly-typed logging method.
@@ -33,7 +32,6 @@ namespace Microsoft.Extensions.Logging
         /// }
         /// </example>
         public LoggerMessageAttribute() { }
-#pragma warning restore SA1629 // Documentation text should end with a period
 
         /// <summary>
         /// Gets the logging event id for the logging method.

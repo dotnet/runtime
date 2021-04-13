@@ -3,15 +3,6 @@
 
 using Microsoft.Extensions.Logging;
 
-#pragma warning disable CA1801 // Review unused parameters
-#pragma warning disable S1118 // Utility classes should not have public constructors
-#pragma warning disable S3903 // Types should be defined in named namespaces
-#pragma warning disable SA1202 // Elements should be ordered by access
-#pragma warning disable SA1204 // Static elements should appear before instance elements
-#pragma warning disable SA1207 // Protected should come before internal
-#pragma warning disable SA1402 // File may only contain a single type
-#pragma warning disable SA1403 // File may only contain a single namespace
-
 // Used to test use outside of a namespace
 internal static partial class NoNamespace
 {

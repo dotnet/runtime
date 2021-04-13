@@ -387,9 +387,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
         private static void TestCollection(int expected, MockLogger logger)
         {
-#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
             var rol = (logger.LastState as IReadOnlyList<KeyValuePair<string, object?>>)!;
-#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
             Assert.NotNull(rol);
 
             Assert.Equal(expected, rol.Count);

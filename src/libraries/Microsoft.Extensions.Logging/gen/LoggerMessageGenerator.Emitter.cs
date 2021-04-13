@@ -421,7 +421,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
                 else
                 {
-#pragma warning disable S109 // Magic numbers should not be used
                     level = lm.Level switch
                     {
                         0 => "global::Microsoft.Extensions.Logging.LogLevel.Trace",
@@ -433,7 +432,6 @@ namespace Microsoft.Extensions.Logging.Generators
                         6 => "global::Microsoft.Extensions.Logging.LogLevel.None",
                         _ => $"(global::Microsoft.Extensions.Logging.LogLevel){lm.Level}",
                     };
-#pragma warning restore S109 // Magic numbers should not be used
                 }
 
                 string eventName;

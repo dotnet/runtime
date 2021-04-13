@@ -194,14 +194,12 @@ namespace Microsoft.Extensions.Logging.Generators
                                         }
 
                                         var msg = lm.Message;
-#pragma warning disable S1067 // Expressions should not be too complex
                                         if (msg.StartsWith("INFORMATION:", StringComparison.OrdinalIgnoreCase)
                                             || msg.StartsWith("INFO:", StringComparison.OrdinalIgnoreCase)
                                             || msg.StartsWith("WARNING:", StringComparison.OrdinalIgnoreCase)
                                             || msg.StartsWith("WARN:", StringComparison.OrdinalIgnoreCase)
                                             || msg.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase)
                                             || msg.StartsWith("ERR:", StringComparison.OrdinalIgnoreCase))
-#pragma warning restore S1067 // Expressions should not be too complex
                                         {
                                             Diag(DiagDescriptors.RedundantQualifierInMessage, ma.GetLocation(), method.Identifier.ToString());
                                         }
@@ -473,7 +471,6 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                     else
                     {
-#pragma warning disable S109 // Magic numbers should not be used
                         switch (numPositional)
                         {
                             // event id
@@ -500,7 +497,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                 message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
                                 break;
                         }
-#pragma warning restore S109 // Magic numbers should not be used
 
                         numPositional++;
                     }
@@ -509,9 +505,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 return (eventId, level, message, eventName);
             }
 
-#pragma warning disable SA1011 // Closing square brackets should be spaced correctly
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
-#pragma warning restore SA1011 // Closing square brackets should be spaced correctly
             {
                 _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
             }
@@ -570,9 +564,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     if (braceOccurrenceCount > 0 && message[scanIndex] != brace)
                     {
-#pragma warning disable S109 // Magic numbers should not be used
                         if (braceOccurrenceCount % 2 == 0)
-#pragma warning restore S109 // Magic numbers should not be used
                         {
                             // Even number of '{' or '}' found. Proceed search with next occurrence of '{' or '}'.
                             braceOccurrenceCount = 0;
@@ -615,8 +607,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 return findIndex == -1 ? endIndex : findIndex;
             }
         }
-
-#pragma warning disable SA1401 // Fields should be private
 
         /// <summary>
         /// A logger class holding a bunch of logger methods.

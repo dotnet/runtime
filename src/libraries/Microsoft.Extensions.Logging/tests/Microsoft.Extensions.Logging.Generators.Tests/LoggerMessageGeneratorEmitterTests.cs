@@ -23,9 +23,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
                 var (d, r) = await RoslynTestUtils.RunGenerator(
                     new LoggerMessageGenerator(),
-#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
                     new[] { Assembly.GetAssembly(typeof(ILogger))!, Assembly.GetAssembly(typeof(LoggerMessageAttribute))! },
-#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
                     new[] { testSourceCode }).ConfigureAwait(false);
 
                 Assert.Empty(d);
