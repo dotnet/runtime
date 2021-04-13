@@ -37,8 +37,8 @@ namespace Microsoft.Extensions.Logging.Generators
 
             var p = new Parser(context.Compilation, context.ReportDiagnostic, context.CancellationToken);
             var e = new Emitter();
-            var logClasses = p.GetLogClasses(receiver.ClassDeclarations);
-            var result = e.Emit(logClasses, context.CancellationToken);
+            IReadOnlyList<LoggerClass> logClasses = p.GetLogClasses(receiver.ClassDeclarations);
+            string result = e.Emit(logClasses, context.CancellationToken);
 
             context.AddSource(nameof(LoggerMessageGenerator), SourceText.From(result, Encoding.UTF8));
         }

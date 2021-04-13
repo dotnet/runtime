@@ -12,15 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis" Version="3.8.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.1" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.8.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.8.0" PrivateAssets="all" />
-    <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Linq\src\System.Linq.csproj" SkipUseReferenceAssembly="true" />
@@ -32,7 +27,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Debug\src\Microsoft.Extensions.Logging.Debug.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.TraceSource\src\Microsoft.Extensions.Logging.TraceSource.csproj" />
-    <ProjectReference Include="..\..\gen\Microsoft.Extensions.Logging.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\..\gen\Microsoft.Extensions.Logging.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
 
   <ItemGroup>

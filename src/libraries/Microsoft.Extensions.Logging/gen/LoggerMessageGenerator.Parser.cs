@@ -33,42 +33,42 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
 
-                var loggerMessageAttribute = _compilation.GetTypeByMetadataName(LoggerMessageAttribute);
+                INamedTypeSymbol loggerMessageAttribute = _compilation.GetTypeByMetadataName(LoggerMessageAttribute);
                 if (loggerMessageAttribute is null)
                 {
                     // nothing to do if this type isn't available
                     return Array.Empty<LoggerClass>();
                 }
 
-                var loggerSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
+                INamedTypeSymbol loggerSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
                 if (loggerSymbol == null)
                 {
                     // nothing to do if this type isn't available
                     return Array.Empty<LoggerClass>();
                 }
 
-                var logLevelSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LogLevel");
+                INamedTypeSymbol logLevelSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LogLevel");
                 if (logLevelSymbol == null)
                 {
                     // nothing to do if this type isn't available
                     return Array.Empty<LoggerClass>();
                 }
 
-                var exceptionSymbol = _compilation.GetTypeByMetadataName("System.Exception");
+                INamedTypeSymbol exceptionSymbol = _compilation.GetTypeByMetadataName("System.Exception");
                 if (exceptionSymbol == null)
                 {
                     Diag(DiagnosticDescriptors.MissingRequiredType, null, "System.Exception");
                     return Array.Empty<LoggerClass>();
                 }
 
-                var enumerableSymbol = _compilation.GetTypeByMetadataName("System.Collections.IEnumerable");
+                INamedTypeSymbol enumerableSymbol = _compilation.GetTypeByMetadataName("System.Collections.IEnumerable");
                 if (enumerableSymbol == null)
                 {
                     Diag(DiagnosticDescriptors.MissingRequiredType, null, "System.Collections.IEnumerable");
                     return Array.Empty<LoggerClass>();
                 }
 
-                var stringSymbol = _compilation.GetTypeByMetadataName("System.String");
+                INamedTypeSymbol stringSymbol = _compilation.GetTypeByMetadataName("System.String");
                 if (stringSymbol == null)
                 {
                     Diag(DiagnosticDescriptors.MissingRequiredType, null, "System.String");
@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 foreach (var group in classes.GroupBy(x => x.SyntaxTree))
                 {
                     SemanticModel? sm = null;
-                    foreach (var classDec in group)
+                    foreach (ClassDeclarationSyntax classDec in group)
                     {
                         // stop if we're asked to
                         _cancellationToken.ThrowIfCancellationRequested();
@@ -102,22 +102,22 @@ namespace Microsoft.Extensions.Logging.Generators
                                 continue;
                             }
 
-                            foreach (var mal in method.AttributeLists)
+                            foreach (AttributeListSyntax mal in method.AttributeLists)
                             {
-                                foreach (var ma in mal.Attributes)
+                                foreach (AttributeSyntax ma in mal.Attributes)
                                 {
                                     sm ??= _compilation.GetSemanticModel(classDec.SyntaxTree);
 
-                                    var attrCtorSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
+                                    IMethodSymbol attrCtorSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
                                     if (attrCtorSymbol == null || !loggerMessageAttribute.Equals(attrCtorSymbol.ContainingType, SymbolEqualityComparer.Default))
                                     {
                                         // badly formed attribute definition, or not the right attribute
                                         continue;
                                     }
 
-                                    var (eventId, level, message, eventName) = ExtractAttributeValues(ma.ArgumentList!, sm);
+                                    (int eventId, int? level, string? message, string? eventName) = ExtractAttributeValues(ma.ArgumentList!, sm);
 
-                                    var methodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken);
+                                    IMethodSymbol? methodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken);
                                     if (methodSymbol != null)
                                     {
                                         var lm = new LoggerMethod
@@ -157,7 +157,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                         bool isStatic = false;
                                         bool isPartial = false;
-                                        foreach (var mod in method.Modifiers)
+                                        foreach (SyntaxToken mod in method.Modifiers)
                                         {
                                             switch (mod.Text)
                                             {
@@ -193,7 +193,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             _ = ids.Add(lm.EventId);
                                         }
 
-                                        var msg = lm.Message;
+                                        string msg = lm.Message;
                                         if (msg.StartsWith("INFORMATION:", StringComparison.OrdinalIgnoreCase)
                                             || msg.StartsWith("INFO:", StringComparison.OrdinalIgnoreCase)
                                             || msg.StartsWith("WARNING:", StringComparison.OrdinalIgnoreCase)
@@ -207,9 +207,9 @@ namespace Microsoft.Extensions.Logging.Generators
                                         bool foundLogger = false;
                                         bool foundException = false;
                                         bool foundLogLevel = false;
-                                        foreach (var p in method.ParameterList.Parameters)
+                                        foreach (ParameterSyntax p in method.ParameterList.Parameters)
                                         {
-                                            var paramName = p.Identifier.ToString();
+                                            string paramName = p.Identifier.ToString();
                                             if (string.IsNullOrWhiteSpace(paramName))
                                             {
                                                 // semantic problem, just bail quietly
@@ -217,8 +217,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 break;
                                             }
 
-                                            var declSymbol = sm.GetDeclaredSymbol(p);
-                                            var paramSymbol = declSymbol!.Type;
+                                            IParameterSymbol? declSymbol = sm.GetDeclaredSymbol(p);
+                                            ITypeSymbol paramSymbol = declSymbol!.Type;
                                             if (paramSymbol is IErrorTypeSymbol)
                                             {
                                                 // semantic problem, just bail quietly
@@ -226,8 +226,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 break;
                                             }
 
-                                            var declaredType = sm.GetDeclaredSymbol(p);
-                                            var typeName = declaredType!.ToDisplayString();
+                                            IParameterSymbol declaredType = sm.GetDeclaredSymbol(p);
+                                            string typeName = declaredType!.ToDisplayString();
 
                                             var lp = new LoggerParameter
                                             {
@@ -314,10 +314,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 keepMethod = false;
                                             }
 
-                                            foreach (var t in lm.TemplateMap)
+                                            foreach (KeyValuePair<string, string> t in lm.TemplateMap)
                                             {
                                                 bool found = false;
-                                                foreach (var p in lm.AllParameters)
+                                                foreach (LoggerParameter p in lm.AllParameters)
                                                 {
                                                     if (t.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
                                                     {
@@ -392,11 +392,11 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 string? loggerField = null;
 
-                foreach (var m in classDec.Members)
+                foreach (MemberDeclarationSyntax m in classDec.Members)
                 {
                     if (m is FieldDeclarationSyntax fds)
                     {
-                        foreach (var v in fds.Declaration.Variables)
+                        foreach (VariableDeclaratorSyntax v in fds.Declaration.Variables)
                         {
                             var fs = sm.GetDeclaredSymbol(v, _cancellationToken) as IFieldSymbol;
                             if (fs != null)
@@ -432,7 +432,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 string? eventName = null;
                 string? message = null;
                 int numPositional = 0;
-                foreach (var a in args.Arguments)
+                foreach (AttributeArgumentSyntax a in args.Arguments)
                 {
                     if (a.NameEquals != null)
                     {
@@ -480,7 +480,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                             // log level or message
                             case 1:
-                                var o = sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                                object o = sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
                                 if (o is int l)
                                 {
                                     level = l;
@@ -512,7 +512,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest)
             {
-                var conversion = _compilation.ClassifyConversion(source, dest);
+                Conversion conversion = _compilation.ClassifyConversion(source, dest);
                 return conversion.IsIdentity || (conversion.IsReference && conversion.IsImplicit);
             }
 
@@ -528,13 +528,13 @@ namespace Microsoft.Extensions.Logging.Generators
                     return;
                 }
 
-                var scanIndex = 0;
-                var endIndex = message!.Length;
+                int scanIndex = 0;
+                int endIndex = message!.Length;
 
                 while (scanIndex < endIndex)
                 {
-                    var openBraceIndex = FindBraceIndex(message, '{', scanIndex, endIndex);
-                    var closeBraceIndex = FindBraceIndex(message, '}', openBraceIndex, endIndex);
+                    int openBraceIndex = FindBraceIndex(message, '{', scanIndex, endIndex);
+                    int closeBraceIndex = FindBraceIndex(message, '}', openBraceIndex, endIndex);
 
                     if (closeBraceIndex == endIndex)
                     {
@@ -543,9 +543,9 @@ namespace Microsoft.Extensions.Logging.Generators
                     else
                     {
                         // Format item syntax : { index[,alignment][ :formatString] }.
-                        var formatDelimiterIndex = FindIndexOfAny(message, _formatDelimiters, openBraceIndex, closeBraceIndex);
+                        int formatDelimiterIndex = FindIndexOfAny(message, _formatDelimiters, openBraceIndex, closeBraceIndex);
 
-                        var templateName = message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
+                        string templateName = message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
                         templateMap[templateName] = templateName;
                         templateList.Add(templateName);
                         scanIndex = closeBraceIndex + 1;
@@ -556,9 +556,9 @@ namespace Microsoft.Extensions.Logging.Generators
             private static int FindBraceIndex(string message, char brace, int startIndex, int endIndex)
             {
                 // Example: {{prefix{{{Argument}}}suffix}}.
-                var braceIndex = endIndex;
-                var scanIndex = startIndex;
-                var braceOccurrenceCount = 0;
+                int braceIndex = endIndex;
+                int scanIndex = startIndex;
+                int braceOccurrenceCount = 0;
 
                 while (scanIndex < endIndex)
                 {
@@ -603,7 +603,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private static int FindIndexOfAny(string message, char[] chars, int startIndex, int endIndex)
             {
-                var findIndex = message.IndexOfAny(chars, startIndex, endIndex - startIndex);
+                int findIndex = message.IndexOfAny(chars, startIndex, endIndex - startIndex);
                 return findIndex == -1 ? endIndex : findIndex;
             }
         }
