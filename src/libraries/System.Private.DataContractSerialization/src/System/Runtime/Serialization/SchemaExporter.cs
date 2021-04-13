@@ -10,6 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Serialization.Json;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -43,6 +44,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal void Export()
         {
             try
@@ -78,6 +80,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private void ExportDataContract(DataContract dataContract)
         {
             if (dataContract.IsBuiltInDataContract)
@@ -118,6 +121,7 @@ namespace System.Runtime.Serialization
             return topLevelElement;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private void ExportClassDataContract(ClassDataContract classDataContract, XmlSchema schema)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();
@@ -248,6 +252,7 @@ namespace System.Runtime.Serialization
             return actualTypeElement;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private XmlElement ExportGenericInfo(Type clrType, string elementName, string elementNs)
         {
             Type? itemType;
@@ -340,6 +345,7 @@ namespace System.Runtime.Serialization
             return null;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private void ExportCollectionDataContract(CollectionDataContract collectionDataContract, XmlSchema schema)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();
@@ -441,6 +447,7 @@ namespace System.Runtime.Serialization
             return isFlags ? (long)Math.Pow(2, index) : index;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private void ExportISerializableDataContract(ClassDataContract dataContract, XmlSchema schema)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();
@@ -480,6 +487,7 @@ namespace System.Runtime.Serialization
             return extension;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private void ExportXmlDataContract(XmlDataContract dataContract)
         {
             XmlQualifiedName? typeQName;
@@ -566,6 +574,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal static void GetXmlTypeInfo(Type type, out XmlQualifiedName stableName, out XmlSchemaType? xsdType, out bool hasRoot)
         {
             if (IsSpecialXmlType(type, out stableName!, out xsdType, out hasRoot))
@@ -577,6 +586,7 @@ namespace System.Runtime.Serialization
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidXmlDataContractName, DataContract.GetClrTypeFullName(type))));
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private static bool InvokeSchemaProviderMethod(Type clrType, XmlSchemaSet schemas, out XmlQualifiedName stableName, out XmlSchemaType? xsdType, out bool hasRoot)
         {
             xsdType = null;
@@ -667,7 +677,10 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-        private static void InvokeGetSchemaMethod(Type clrType, XmlSchemaSet schemas, XmlQualifiedName stableName)
+        private static void InvokeGetSchemaMethod(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            Type clrType,
+            XmlSchemaSet schemas, XmlQualifiedName stableName)
         {
             IXmlSerializable ixmlSerializable = (IXmlSerializable)Activator.CreateInstance(clrType)!;
             XmlSchema? schema = ixmlSerializable.GetSchema();

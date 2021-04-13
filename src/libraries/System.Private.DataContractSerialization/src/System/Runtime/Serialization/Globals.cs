@@ -11,7 +11,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
-
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {
@@ -733,6 +734,7 @@ namespace System.Runtime.Serialization
         private static Type? s_typeOfHashtable;
         internal static Type TypeOfHashtable
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (s_typeOfHashtable == null)
@@ -787,6 +789,7 @@ namespace System.Runtime.Serialization
 
         private static readonly Type? s_typeOfScriptObject;
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal static ClassDataContract CreateScriptObjectClassDataContract()
         {
             Debug.Assert(s_typeOfScriptObject != null);

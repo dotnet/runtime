@@ -7,11 +7,14 @@ namespace System.Runtime.Serialization
     using System.Security;
     using System.Runtime.CompilerServices;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Runtime.Serialization.Json;
 
     internal sealed class SurrogateDataContract : DataContract
     {
         private readonly SurrogateDataContractCriticalHelper _helper;
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal SurrogateDataContract(Type type, ISerializationSurrogate serializationSurrogate)
             : base(new SurrogateDataContractCriticalHelper(type, serializationSurrogate))
         {
@@ -23,6 +26,7 @@ namespace System.Runtime.Serialization
             get { return _helper.SerializationSurrogate; }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             Debug.Assert(context != null);
@@ -56,6 +60,7 @@ namespace System.Runtime.Serialization
             SerializationSurrogate.GetObjectData(obj, serInfo, context);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             Debug.Assert(context != null);
@@ -82,7 +87,15 @@ namespace System.Runtime.Serialization
         {
             private readonly ISerializationSurrogate serializationSurrogate;
 
-            internal SurrogateDataContractCriticalHelper(Type type, ISerializationSurrogate serializationSurrogate)
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            internal SurrogateDataContractCriticalHelper(
+                [DynamicallyAccessedMembers(
+                    DynamicallyAccessedMemberTypes.PublicConstructors |
+                    DynamicallyAccessedMemberTypes.NonPublicConstructors |
+                    DynamicallyAccessedMemberTypes.PublicMethods |
+                    DynamicallyAccessedMemberTypes.NonPublicMethods)]
+                Type type,
+                ISerializationSurrogate serializationSurrogate)
                 : base(type)
             {
                 this.serializationSurrogate = serializationSurrogate;

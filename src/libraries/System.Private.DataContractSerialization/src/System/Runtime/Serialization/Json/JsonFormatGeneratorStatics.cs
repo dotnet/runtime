@@ -116,6 +116,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetItemContractMethod
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (s_getItemContractMethod == null)
@@ -141,6 +142,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetJsonMemberIndexMethod
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (s_getJsonMemberIndexMethod == null)
@@ -153,6 +155,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetRevisedItemContractMethod
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (s_getRevisedItemContractMethod == null)
@@ -165,6 +168,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetUninitializedObjectMethod
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (s_getUninitializedObjectMethod == null)
@@ -395,6 +399,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo WriteJsonISerializableMethod
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (s_writeJsonISerializableMethod == null)

@@ -183,6 +183,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             private void WriteClass(ClassDataContract classContract)
             {
                 InvokeOnSerializing(classContract);
@@ -211,6 +212,7 @@ namespace System.Runtime.Serialization.Json
                 InvokeOnSerialized(classContract);
             }
 
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             private int WriteMembers(ClassDataContract classContract, LocalBuilder? extensionDataLocal, ClassDataContract derivedMostClassContract)
             {
                 int memberCount = (classContract.BaseContract == null) ? 0 :
@@ -488,6 +490,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             private bool TryWritePrimitive(Type type, LocalBuilder? value, MemberInfo? memberInfo, LocalBuilder? arrayItemIndex, LocalBuilder? name, int nameIndex)
             {
                 PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(type);
@@ -534,6 +537,7 @@ namespace System.Runtime.Serialization.Json
                 return true;
             }
 
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             private bool TryWritePrimitiveArray(Type type, Type itemType, LocalBuilder value, LocalBuilder itemName)
             {
                 PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
@@ -599,6 +603,7 @@ namespace System.Runtime.Serialization.Json
                     JsonGlobals.objectString /* value */);
             }
 
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             private void WriteValue(LocalBuilder memberValue)
             {
                 Type memberType = memberValue.LocalType;

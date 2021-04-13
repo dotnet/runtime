@@ -13,6 +13,7 @@ namespace System.Runtime.Serialization
     using System.Security;
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
     using System.Diagnostics.CodeAnalysis;
+    using System.Runtime.Serialization.Json;
 
     internal class XmlObjectSerializerReadContext : XmlObjectSerializerContext
     {
@@ -90,19 +91,21 @@ namespace System.Runtime.Serialization
             this.attributes = new Attributes();
         }
 
-
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal virtual object? InternalDeserialize(XmlReaderDelegator xmlReader, int id, RuntimeTypeHandle declaredTypeHandle, string name, string ns)
         {
             DataContract dataContract = GetDataContract(id, declaredTypeHandle);
             return InternalDeserialize(xmlReader, name, ns, Type.GetTypeFromHandle(declaredTypeHandle), ref dataContract);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal virtual object? InternalDeserialize(XmlReaderDelegator xmlReader, Type declaredType, string name, string ns)
         {
             DataContract dataContract = GetDataContract(declaredType);
             return InternalDeserialize(xmlReader, name, ns, declaredType, ref dataContract);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal virtual object? InternalDeserialize(XmlReaderDelegator xmlReader, Type declaredType, DataContract? dataContract, string? name, string? ns)
         {
             if (dataContract == null)
@@ -135,6 +138,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         protected object? InternalDeserialize(XmlReaderDelegator reader, string? name, string? ns, Type declaredType, ref DataContract dataContract)
         {
             object? retObj = null;
@@ -214,6 +218,7 @@ namespace System.Runtime.Serialization
             return (xmlReader.MoveToContent() != XmlNodeType.EndElement);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal int GetMemberIndex(XmlReaderDelegator xmlReader, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces, int memberIndex, ExtensionDataObject? extensionData)
         {
             for (int i = memberIndex + 1; i < memberNames.Length; i++)
@@ -225,6 +230,7 @@ namespace System.Runtime.Serialization
             return memberNames.Length;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal int GetMemberIndexWithRequiredMembers(XmlReaderDelegator xmlReader, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces, int memberIndex, int requiredIndex, ExtensionDataObject? extensionData)
         {
             for (int i = memberIndex + 1; i < memberNames.Length; i++)
@@ -255,6 +261,7 @@ namespace System.Runtime.Serialization
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(XmlObjectSerializer.TryAddLineInfo(xmlReader, SR.Format(SR.UnexpectedElementExpectingElements, xmlReader.NodeType, xmlReader.LocalName, xmlReader.NamespaceURI, stringBuilder.ToString()))));
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         protected void HandleMemberNotFound(XmlReaderDelegator xmlReader, ExtensionDataObject? extensionData, int memberIndex)
         {
             xmlReader.MoveToContent();
@@ -267,6 +274,7 @@ namespace System.Runtime.Serialization
                 HandleUnknownElement(xmlReader, extensionData, memberIndex);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal void HandleUnknownElement(XmlReaderDelegator xmlReader, ExtensionDataObject extensionData, int memberIndex)
         {
             if (extensionData.Members == null)
@@ -280,6 +288,7 @@ namespace System.Runtime.Serialization
             xmlReader.Skip();
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal string ReadIfNullOrRef(XmlReaderDelegator xmlReader, Type memberType, bool isMemberTypeSerializable)
         {
             Debug.Assert(attributes != null);
@@ -457,6 +466,7 @@ namespace System.Runtime.Serialization
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.EndElement, xmlReader));
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal object? ReadIXmlSerializable(XmlReaderDelegator xmlReader, XmlDataContract xmlDataContract, bool isMemberType)
         {
             if (_xmlSerializableReader == null)
@@ -464,11 +474,13 @@ namespace System.Runtime.Serialization
             return ReadIXmlSerializable(_xmlSerializableReader, xmlReader, xmlDataContract, isMemberType);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal static object? ReadRootIXmlSerializable(XmlReaderDelegator xmlReader, XmlDataContract xmlDataContract, bool isMemberType)
         {
             return ReadIXmlSerializable(new XmlSerializableReader(), xmlReader, xmlDataContract, isMemberType);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal static object? ReadIXmlSerializable(XmlSerializableReader xmlSerializableReader, XmlReaderDelegator xmlReader, XmlDataContract xmlDataContract, bool isMemberType)
         {
             object? obj = null;
@@ -499,6 +511,7 @@ namespace System.Runtime.Serialization
             return obj;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public SerializationInfo ReadSerializationInfo(XmlReaderDelegator xmlReader, Type type)
         {
             var serInfo = new SerializationInfo(type, XmlObjectSerializer.FormatterConverter);
@@ -542,6 +555,7 @@ namespace System.Runtime.Serialization
             return serInfo;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         protected virtual DataContract? ResolveDataContractFromTypeName()
         {
             Debug.Assert(attributes != null);
@@ -549,6 +563,7 @@ namespace System.Runtime.Serialization
             return (attributes.XsiTypeName == null) ? null : ResolveDataContractFromKnownTypes(attributes.XsiTypeName, attributes.XsiTypeNamespace, null /*memberTypeContract*/, null);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private ExtensionDataMember ReadExtensionDataMember(XmlReaderDelegator xmlReader, int memberIndex)
         {
             var member = new ExtensionDataMember(xmlReader.LocalName, xmlReader.NamespaceURI)
@@ -560,6 +575,7 @@ namespace System.Runtime.Serialization
             return member;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public IDataNode? ReadExtensionDataValue(XmlReaderDelegator xmlReader)
         {
             ReadAttributes(xmlReader);
@@ -657,6 +673,7 @@ namespace System.Runtime.Serialization
         {
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private IDataNode ReadExtensionDataValue(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
         {
             Debug.Assert(attributes != null);
@@ -730,6 +747,7 @@ namespace System.Runtime.Serialization
             return dataNode;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private ClassDataNode ReadUnknownClassData(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
         {
             var dataNode = new ClassDataNode();
@@ -750,6 +768,7 @@ namespace System.Runtime.Serialization
             return dataNode;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private CollectionDataNode ReadUnknownCollectionData(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
         {
             Debug.Assert(attributes != null);
@@ -806,6 +825,7 @@ namespace System.Runtime.Serialization
             return dataNode;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private ISerializableDataNode ReadUnknownISerializableData(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
         {
             Debug.Assert(attributes != null);
@@ -886,6 +906,7 @@ namespace System.Runtime.Serialization
         // all items have the same name and namespace. To recognize as an ISerializable type, it requires that all
         // items be unqualified. If the XML only contains elements (no attributes or other nodes) is recognized as a
         // class/class hierarchy. Otherwise it is deserialized as XML.
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private IDataNode ReadAndResolveUnknownXmlData(XmlReaderDelegator xmlReader, IDictionary<string, string>? namespaces,
             string? dataContractName, string? dataContractNamespace)
         {
@@ -1029,6 +1050,7 @@ namespace System.Runtime.Serialization
             return XmlObjectSerializer.CreateSerializationException(message);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         protected virtual object? ReadDataContractValue(DataContract dataContract, XmlReaderDelegator reader)
         {
             return dataContract.ReadXmlValue(reader, this);

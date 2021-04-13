@@ -21,6 +21,7 @@ namespace System.Runtime.Serialization.Json
             _helper = (base.Helper as JsonClassDataContractCriticalHelper)!;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private JsonFormatClassReaderDelegate CreateJsonFormatReaderDelegate()
         {
             return new ReflectionJsonClassReader(TraditionalClassDataContract).ReflectionReadClass;
@@ -56,6 +57,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private JsonFormatClassWriterDelegate CreateJsonFormatWriterDelegate()
         {
             return new ReflectionJsonFormatWriter().ReflectionWriteClass;

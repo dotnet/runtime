@@ -12,6 +12,7 @@ using System.Xml;
 using System.Security;
 using System.Linq;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {
@@ -21,6 +22,7 @@ namespace System.Runtime.Serialization
 
         public XmlQualifiedName? BaseContractName { get; set; }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal EnumDataContract(Type type) : base(new EnumDataContractCriticalHelper(type))
         {
             _helper = (base.Helper as EnumDataContractCriticalHelper)!;
@@ -96,7 +98,14 @@ namespace System.Runtime.Serialization
                 s_nameToType.Add(stableName, type);
             }
 
-            internal EnumDataContractCriticalHelper(Type type) : base(type)
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            internal EnumDataContractCriticalHelper(
+                [DynamicallyAccessedMembers(
+                    DynamicallyAccessedMemberTypes.PublicConstructors |
+                    DynamicallyAccessedMemberTypes.NonPublicConstructors |
+                    DynamicallyAccessedMemberTypes.PublicMethods |
+                    DynamicallyAccessedMemberTypes.NonPublicMethods)]
+                Type type) : base(type)
             {
                 this.StableName = DataContract.GetStableName(type, out _hasDataContract);
                 Type baseType = Enum.GetUnderlyingType(type);
@@ -355,11 +364,13 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             WriteEnumValue(xmlWriter, obj);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public override object ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             object obj = ReadEnumValue(xmlReader);

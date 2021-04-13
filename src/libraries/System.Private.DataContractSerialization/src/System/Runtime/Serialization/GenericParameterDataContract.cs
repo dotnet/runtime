@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {
@@ -10,6 +12,7 @@ namespace System.Runtime.Serialization
     {
         private readonly GenericParameterDataContractCriticalHelper _helper;
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal GenericParameterDataContract(Type type)
             : base(new GenericParameterDataContractCriticalHelper(type))
         {
@@ -34,7 +37,14 @@ namespace System.Runtime.Serialization
         {
             private readonly int _parameterPosition;
 
-            internal GenericParameterDataContractCriticalHelper(Type type)
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            internal GenericParameterDataContractCriticalHelper(
+                [DynamicallyAccessedMembers(
+                    DynamicallyAccessedMemberTypes.PublicConstructors |
+                    DynamicallyAccessedMemberTypes.NonPublicConstructors |
+                    DynamicallyAccessedMemberTypes.PublicMethods |
+                    DynamicallyAccessedMemberTypes.NonPublicMethods)]
+                Type type)
                 : base(type)
             {
                 SetDataContractName(DataContract.GetStableName(type));

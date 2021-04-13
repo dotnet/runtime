@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {
@@ -30,6 +32,7 @@ namespace System.Runtime.Serialization
             get { return _mode; }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal override object? InternalDeserialize(XmlReaderDelegator xmlReader, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle, string name, string ns)
         {
             if (_mode == SerializationMode.SharedContract)
@@ -45,6 +48,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal override object? InternalDeserialize(XmlReaderDelegator xmlReader, Type declaredType, string name, string ns)
         {
             if (_mode == SerializationMode.SharedContract)
@@ -60,6 +64,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal override object? InternalDeserialize(XmlReaderDelegator xmlReader, Type declaredType, DataContract? dataContract, string? name, string? ns)
         {
             if (_mode == SerializationMode.SharedContract)
@@ -75,6 +80,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private object? InternalDeserializeInSharedTypeMode(XmlReaderDelegator xmlReader, int declaredTypeID, Type declaredType, string? name, string? ns)
         {
             Debug.Assert(attributes != null);
@@ -117,6 +123,7 @@ namespace System.Runtime.Serialization
             return ReadDataContractValue(dataContract, xmlReader);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private object? InternalDeserializeWithSurrogate(XmlReaderDelegator xmlReader, Type declaredType, DataContract? surrogateDataContract, string? name, string? ns)
         {
             Debug.Assert(_serializationSurrogateProvider != null);
@@ -143,6 +150,7 @@ namespace System.Runtime.Serialization
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NetDataContractSerializer);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private DataContract? ResolveDataContractInSharedTypeMode(string assemblyName, string typeName, out Assembly assembly, out Type type)
         {
             type = ResolveDataContractTypeInSharedTypeMode(assemblyName, typeName, out assembly);
@@ -154,6 +162,7 @@ namespace System.Runtime.Serialization
             return null;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         protected override DataContract? ResolveDataContractFromTypeName()
         {
             Debug.Assert(attributes != null);
@@ -174,6 +183,7 @@ namespace System.Runtime.Serialization
             return null;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal override void CheckIfTypeSerializable(Type memberType, bool isMemberTypeSerializable)
         {
             if (_serializationSurrogateProvider != null)
@@ -189,6 +199,7 @@ namespace System.Runtime.Serialization
             base.CheckIfTypeSerializable(memberType, isMemberTypeSerializable);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal override Type GetSurrogatedType(Type type)
         {
             if (_serializationSurrogateProvider == null)

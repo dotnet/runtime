@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -23,12 +25,14 @@ namespace System.Runtime.Serialization
         private static readonly MethodInfo s_createSetterInternal = typeof(FastInvokerBuilder).GetMethod(nameof(CreateSetterInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
         private static readonly MethodInfo s_make = typeof(FastInvokerBuilder).GetMethod(nameof(Make), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public static Func<object> GetMakeNewInstanceFunc(Type type)
         {
             Func<object> make = s_make.MakeGenericMethod(type).CreateDelegate<Func<object>>();
             return make;
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public static Getter CreateGetter(MemberInfo memberInfo)
         {
             if (memberInfo is PropertyInfo propInfo)
@@ -51,6 +55,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public static Setter CreateSetter(MemberInfo memberInfo)
         {
             if (memberInfo is PropertyInfo)

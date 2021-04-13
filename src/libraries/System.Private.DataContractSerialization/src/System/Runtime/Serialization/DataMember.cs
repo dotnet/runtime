@@ -8,7 +8,8 @@ using System.Globalization;
 using System.Reflection;
 using System.Xml;
 using System.Security;
-
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {
@@ -89,12 +90,14 @@ namespace System.Runtime.Serialization
 
         internal DataContract MemberTypeContract
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             { return _helper.MemberTypeContract; }
         }
 
         internal PrimitiveDataContract? MemberPrimitiveContract
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 return _helper.MemberPrimitiveContract;
@@ -122,6 +125,7 @@ namespace System.Runtime.Serialization
         private FastInvokerBuilder.Getter? _getter;
         internal FastInvokerBuilder.Getter Getter
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (_getter == null)
@@ -136,6 +140,7 @@ namespace System.Runtime.Serialization
         private FastInvokerBuilder.Setter? _setter;
         internal FastInvokerBuilder.Setter Setter
         {
+            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (_setter == null)
@@ -160,10 +165,16 @@ namespace System.Runtime.Serialization
             private bool _hasConflictingNameAndType;
             private DataMember? _conflictingMember;
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+               Justification = "The only use of this field is on the following property getter which is already " +
+                "annotated as RequiresUnreferencedCode.")]
             internal CriticalHelper(MemberInfo memberInfo)
             {
                 _emitDefaultValue = Globals.DefaultEmitDefaultValue;
                 _memberInfo = memberInfo;
+#pragma warning disable IL2026 // Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
+                _memberPrimitiveContract = PrimitiveDataContract.NullContract;
+#pragma warning restore IL2026 // Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
             }
 
             internal MemberInfo MemberInfo
@@ -228,6 +239,7 @@ namespace System.Runtime.Serialization
 
             internal DataContract MemberTypeContract
             {
+                [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
                 get
                 {
                     if (_memberTypeContract == null)
@@ -262,10 +274,11 @@ namespace System.Runtime.Serialization
                 set { _conflictingMember = value; }
             }
 
-            private PrimitiveDataContract? _memberPrimitiveContract = PrimitiveDataContract.NullContract;
+            private PrimitiveDataContract? _memberPrimitiveContract;
 
             internal PrimitiveDataContract? MemberPrimitiveContract
             {
+                [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
                 get
                 {
                     if (_memberPrimitiveContract == PrimitiveDataContract.NullContract)

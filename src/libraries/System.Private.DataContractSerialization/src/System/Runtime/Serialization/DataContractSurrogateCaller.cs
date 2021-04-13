@@ -8,9 +8,11 @@ namespace System.Runtime.Serialization
     using System.Reflection;
     using System.Collections.ObjectModel;
     using System.Diagnostics.CodeAnalysis;
+    using System.Runtime.Serialization.Json;
 
     internal static class DataContractSurrogateCaller
     {
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal static Type GetDataContractType(ISerializationSurrogateProvider surrogateProvider, Type type)
         {
             if (DataContract.GetBuiltInDataContract(type) != null)
@@ -19,6 +21,7 @@ namespace System.Runtime.Serialization
         }
 
         [return: NotNullIfNotNull("obj")]
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal static object? GetObjectToSerialize(ISerializationSurrogateProvider surrogateProvider, object? obj, Type objType, Type membertype)
         {
             if (obj == null)
@@ -29,6 +32,7 @@ namespace System.Runtime.Serialization
         }
 
         [return: NotNullIfNotNull("obj")]
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal static object? GetDeserializedObject(ISerializationSurrogateProvider surrogateProvider, object? obj, Type objType, Type memberType)
         {
             if (obj == null)
