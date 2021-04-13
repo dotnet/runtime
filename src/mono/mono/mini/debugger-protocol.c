@@ -53,7 +53,6 @@ m_dbgprot_decode_byte (uint8_t *buf, uint8_t **endbuf, uint8_t *limit)
 
 int
 m_dbgprot_decode_int (uint8_t *buf, uint8_t **endbuf, uint8_t *limit)
-
 {
 	*endbuf = buf + 4;
 	g_assert (*endbuf <= limit);
