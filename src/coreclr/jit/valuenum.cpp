@@ -2673,7 +2673,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             }
             else // We could see GT_OR of a constant ByRef and Null
             {
-                assert((typ == TYP_BYREF) || (typ == TYP_LONG));
+                assert((typ == TYP_BYREF) || (typ == TYP_I_IMPL));
                 size_t resultVal = EvalOp<size_t>(func, arg0Val, arg1Val);
                 result           = VNForByrefCon((target_size_t)resultVal);
             }
