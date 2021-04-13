@@ -244,4 +244,39 @@ public:
     HRESULT STDMETHODCALLTYPE GetElement(ULONG32 cdim, ULONG32 indices[], ICorDebugValue** ppValue);
     HRESULT STDMETHODCALLTYPE GetElementAtPosition(ULONG32 nPosition, ICorDebugValue** ppValue);
 };
+
+class CordbValueEnum : public CordbBaseMono,
+                       public ICorDebugValueEnum
+{
+    long m_nThreadDebuggerId;
+    long m_nFrameDebuggerId;
+    int  m_nCurrentValuePos;
+    int  m_nCount;
+    ILCodeKind m_nFlags;
+    bool m_bIsArgument;
+    ICorDebugValue** m_pValues;
+public:
+    ULONG STDMETHODCALLTYPE AddRef(void)
+    {
+        return (BaseAddRef());
+    }
+    ULONG STDMETHODCALLTYPE Release(void)
+    {
+        return (BaseRelease());
+    }
+    const char* GetClassName()
+    {
+        return "CordbValueEnum";
+    }
+
+    CordbValueEnum(Connection* conn, long nThreadDebuggerId, long nFrameDebuggerId, bool bIsArgument, ILCodeKind m_nFlags = ILCODE_ORIGINAL_IL);
+    HRESULT STDMETHODCALLTYPE Next(ULONG celt, ICorDebugValue* values[], ULONG* pceltFetched);
+    HRESULT STDMETHODCALLTYPE Skip(ULONG celt);
+    HRESULT STDMETHODCALLTYPE Reset(void);
+    HRESULT STDMETHODCALLTYPE Clone(ICorDebugEnum** ppEnum);
+    HRESULT STDMETHODCALLTYPE GetCount(ULONG* pcelt);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
+};
+
+
 #endif

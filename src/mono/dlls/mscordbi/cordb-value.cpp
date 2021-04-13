@@ -98,14 +98,16 @@ HRESULT STDMETHODCALLTYPE CordbValue::GetExactType(ICorDebugType** ppType)
 
 HRESULT STDMETHODCALLTYPE CordbValue::GetSize64(ULONG64* pSize)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbValue - GetSize64 - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    LOG((LF_CORDB, LL_INFO1000000, "CordbValue - GetSize64 - IMPLEMENTED\n"));
+    *pSize = m_size;
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbValue::GetValue(void* pTo)
 {
     LOG((LF_CORDB, LL_INFO1000000, "CordbValue - GetValue - IMPLEMENTED\n"));
-    memcpy(pTo, &m_value, m_size);
+    SIZE_T nSizeRead;
+    conn->GetProcess()->ReadMemory(m_value.pointerValue, m_size, (BYTE*)pTo, &nSizeRead);
     return S_OK;
 }
 
@@ -339,6 +341,11 @@ HRESULT STDMETHODCALLTYPE CordbReferenceValue::Dereference(ICorDebugValue** ppVa
 {
     if (m_debuggerId == -1)
         return CORDBG_E_BAD_REFERENCE_VALUE;
+    if (!m_pClass) {
+        ICorDebugType* cordbType;
+        GetExactType(&cordbType);
+        cordbType->Release();
+    }
     if (m_type == ELEMENT_TYPE_SZARRAY || m_type == ELEMENT_TYPE_ARRAY)
     {
         CordbArrayValue* objectValue = new CordbArrayValue(conn, m_pCordbType, m_debuggerId, m_pClass);
@@ -694,7 +701,7 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection* conn, MdbgProtBuffer* pRe
                 int             type_id2           = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
                 int             token              = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
 
-                CordbClass*          klass    =  conn->GetProcess()->FindOrAddClass(token, module_id);
+                CordbClass*          klass    =  conn->GetProcess()->FindOrAddClass(token, assembly_id);
                 CordbReferenceValue* refValue = new CordbReferenceValue(conn, type, -1, klass);
                 refValue->QueryInterface(IID_ICorDebugValue, (void**)ppValue);
                 free(namespace_str);
@@ -1212,4 +1219,100 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetElementAtPosition(ULONG32 nPositio
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbArrayValue - GetElementAtPosition - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
+}
+
+
+CordbValueEnum::CordbValueEnum(Connection* conn, long nThreadDebuggerId, long nFrameDebuggerId, bool bIsArgument, ILCodeKind nFlags):CordbBaseMono(conn)
+{
+    m_nThreadDebuggerId = nThreadDebuggerId;
+    m_nFrameDebuggerId = nFrameDebuggerId;
+    m_nCurrentValuePos = 0;
+    m_nCount = 0;
+    m_nFlags = nFlags;
+    m_bIsArgument = bIsArgument;
+    m_pValues = NULL;
+}
+
+HRESULT STDMETHODCALLTYPE CordbValueEnum::Next(ULONG celt, ICorDebugValue* values[], ULONG* pceltFetched)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbValueEnum - Next - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
+}
+
+HRESULT STDMETHODCALLTYPE CordbValueEnum::Skip(ULONG celt)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbValueEnum - Skip - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
+}
+
+HRESULT STDMETHODCALLTYPE CordbValueEnum::Reset(void)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbValueEnum - Reset - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
+}
+
+HRESULT STDMETHODCALLTYPE CordbValueEnum::Clone(ICorDebugEnum** ppEnum)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbValueEnum - Clone - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
+}
+
+HRESULT STDMETHODCALLTYPE CordbValueEnum::GetCount(ULONG* pcelt)
+{
+    if (m_nFlags == ILCODE_REJIT_IL)
+    {
+        *pcelt = 0;
+        return S_OK;
+    }
+    if (m_bIsArgument) {
+        LOG((LF_CORDB, LL_INFO1000000, "CordbFrame - GetArgument - IMPLEMENTED\n"));
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            MdbgProtBuffer localbuf;
+            m_dbgprot_buffer_init(&localbuf, 128);
+            m_dbgprot_buffer_add_id(&localbuf, m_nThreadDebuggerId);
+            m_dbgprot_buffer_add_id(&localbuf, m_nFrameDebuggerId);
+            int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_STACK_FRAME, MDBGPROT_CMD_STACK_FRAME_GET_ARGUMENTS, &localbuf);
+            m_dbgprot_buffer_free(&localbuf);
+
+            ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+            CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+            MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+            m_nCount = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+            *pcelt = m_nCount;
+            m_pValues = new ICorDebugValue*[m_nCount];
+            for (int i = 0; i < m_nCount; i++)
+            {
+                hr = CordbObjectValue::CreateCordbValue(conn, pReply, &m_pValues[i]);
+            }
+        }
+        EX_CATCH_HRESULT(hr);
+        return hr;
+    }
+    LOG((LF_CORDB, LL_INFO100000, "CordbValueEnum - GetCount - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
+}
+
+HRESULT STDMETHODCALLTYPE CordbValueEnum::QueryInterface(REFIID id, void** pInterface)
+{
+    if (id == IID_ICorDebugValueEnum)
+    {
+        *pInterface = static_cast<ICorDebugValueEnum*>(this);
+    }
+    else if (id == IID_ICorDebugEnum)
+    {
+        *pInterface = static_cast<ICorDebugEnum*>(this);
+    }
+    else if (id == IID_IUnknown)
+    {
+        *pInterface = static_cast<IUnknown*>(this);
+    }
+    else
+    {
+        *pInterface = NULL;
+        return E_NOINTERFACE;
+    }
+    AddRef();
+    return S_OK;
 }

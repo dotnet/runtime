@@ -17,18 +17,23 @@ CordbStepper::CordbStepper(Connection* conn, CordbThread* thread) : CordbBaseMon
     m_pThread   = thread;
     m_debuggerId = -1;
     conn->GetProcess()->AddStepper(this);
+    m_bIsActive = false;
 }
 
 CordbStepper::~CordbStepper() {}
 
 HRESULT STDMETHODCALLTYPE CordbStepper::IsActive(BOOL* pbActive)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbStepper - IsActive - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    *pbActive = m_bIsActive;
+    LOG((LF_CORDB, LL_INFO100000, "CordbStepper - IsActive - IMPLEMENTED\n"));
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbStepper::Deactivate(void)
 {
+    if (!m_bIsActive)
+        return S_OK;
+    m_bIsActive = false;
     LOG((LF_CORDB, LL_INFO1000000, "CordbStepper - Deactivate - IMPLEMENTED\n"));
     MdbgProtBuffer sendbuf;
     int            buflen = 128;
@@ -60,6 +65,7 @@ HRESULT STDMETHODCALLTYPE CordbStepper::Step(BOOL bStepIn)
 
 HRESULT STDMETHODCALLTYPE CordbStepper::StepRange(BOOL bStepIn, COR_DEBUG_STEP_RANGE ranges[], ULONG32 cRangeCount)
 {
+    m_bIsActive = true;
     LOG((LF_CORDB, LL_INFO1000000, "CordbStepper - StepRange - IMPLEMENTED\n"));
     HRESULT hr = S_OK;
     EX_TRY 
@@ -92,6 +98,7 @@ HRESULT STDMETHODCALLTYPE CordbStepper::StepRange(BOOL bStepIn, COR_DEBUG_STEP_R
 
 HRESULT STDMETHODCALLTYPE CordbStepper::StepOut(void)
 {
+    m_bIsActive = true;
     LOG((LF_CORDB, LL_INFO1000000, "CordbStepper - StepOut - IMPLEMENTED\n"));
     HRESULT hr = S_OK;
     EX_TRY 
@@ -123,7 +130,7 @@ HRESULT STDMETHODCALLTYPE CordbStepper::StepOut(void)
 HRESULT STDMETHODCALLTYPE CordbStepper::SetRangeIL(BOOL bIL)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbStepper - SetRangeIL - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbStepper::QueryInterface(REFIID id, void** pInterface)

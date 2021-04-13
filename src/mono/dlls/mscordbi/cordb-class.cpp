@@ -18,6 +18,27 @@ CordbClass::CordbClass(Connection* conn, mdToken token, int module_id) : CordbBa
 {
     this->m_metadataToken = token;
     this->m_debuggerModuleId    = module_id;
+    m_debuggerId = -1;
+}
+
+int CordbClass::GetDebuggerId() {
+    if (m_debuggerId != -1)
+        return m_debuggerId;
+
+    MdbgProtBuffer localbuf;
+    m_dbgprot_buffer_init(&localbuf, 128);
+    m_dbgprot_buffer_add_int(&localbuf, m_debuggerModuleId);
+    m_dbgprot_buffer_add_int(&localbuf, m_metadataToken);
+
+    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_TYPE_FROM_TOKEN, &localbuf);
+    m_dbgprot_buffer_free(&localbuf);
+
+    ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+    if (received_reply_packet->Error() > 0 || received_reply_packet->Error2() > 0)
+        return -1;
+    MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+    m_debuggerId = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+    return m_debuggerId;
 }
 
 HRESULT STDMETHODCALLTYPE CordbClass::GetModule(ICorDebugModule** pModule)
@@ -47,8 +68,31 @@ HRESULT STDMETHODCALLTYPE CordbClass::GetStaticFieldValue(mdFieldDef       field
                                                           ICorDebugFrame*  pFrame,
                                                           ICorDebugValue** ppValue)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbClass - GetStaticFieldValue - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    GetDebuggerId();
+    LOG((LF_CORDB, LL_INFO100000, "CordbClass - GetStaticFieldValue - IMPLEMENTED\n"));
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        if (m_debuggerId == -1)
+            hr = S_FALSE;
+        else {
+            MdbgProtBuffer localbuf;
+            m_dbgprot_buffer_init(&localbuf, 128);
+            m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
+            m_dbgprot_buffer_add_int(&localbuf, fieldDef);
+
+            int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_TYPE, MDBGPROT_CMD_TYPE_GET_VALUES_ICORDBG, &localbuf);
+            m_dbgprot_buffer_free(&localbuf);
+
+            ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+            CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+            MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+            hr = CordbObjectValue::CreateCordbValue(conn, pReply, ppValue);
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT STDMETHODCALLTYPE CordbClass::QueryInterface(REFIID id, void** pInterface)
@@ -79,7 +123,9 @@ HRESULT STDMETHODCALLTYPE CordbClass::GetParameterizedType(CorElementType  eleme
                                                            ICorDebugType*  ppTypeArgs[],
                                                            ICorDebugType** ppType)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbClass - GetParameterizedType - NOT IMPLEMENTED\n"));
+    LOG((LF_CORDB, LL_INFO100000, "CordbClass - GetParameterizedType - IMPLEMENTED\n"));
+    CordbType *ret = conn->GetProcess()->FindOrAddClassType(elementType, this);
+    ret->QueryInterface(IID_ICorDebugType, (void**)ppType);
     return S_OK;
 }
 

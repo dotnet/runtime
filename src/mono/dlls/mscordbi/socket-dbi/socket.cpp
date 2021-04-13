@@ -41,6 +41,16 @@ Socket::~Socket()
 int Socket::OpenSocketAcceptConnection(const char *address, const char *port) {
     socketId = -1;
 
+#ifdef WIN32
+	WSADATA wsadata;
+	int err;
+
+	err = WSAStartup (2, &wsadata);
+	if (err) {
+        return -1;
+	}
+#endif
+
     struct addrinfo *result = NULL, *ptr = NULL, hints;
     int iResult;
 

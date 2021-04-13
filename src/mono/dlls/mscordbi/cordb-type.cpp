@@ -14,6 +14,8 @@ using namespace std;
 CordbType::CordbType(CorElementType type, Connection* conn, CordbClass* klass, CordbType* typeParameter)
     : CordbBaseMono(conn)
 {
+    if (type == ELEMENT_TYPE_CLASS && klass == NULL)
+        assert(0);
     this->m_pClass         = klass;
     this->m_type           = type;
     this->m_pTypeParameter = typeParameter;
@@ -83,7 +85,9 @@ HRESULT STDMETHODCALLTYPE CordbType::GetStaticFieldValue(mdFieldDef       fieldD
                                                          ICorDebugFrame*  pFrame,
                                                          ICorDebugValue** ppValue)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbType - GetStaticFieldValue - NOT IMPLEMENTED\n"));
+    if (m_pClass) {
+        return m_pClass->GetStaticFieldValue(fieldDef, pFrame, ppValue);
+    }
     return E_NOTIMPL;
 }
 
@@ -131,9 +135,10 @@ CordbTypeEnum::~CordbTypeEnum()
 
 HRESULT STDMETHODCALLTYPE CordbTypeEnum::Next(ULONG celt, ICorDebugType* values[], ULONG* pceltFetched)
 {
-    *pceltFetched = celt;
-    if (m_pType != NULL)
+    if (m_pType != NULL) {
         m_pType->QueryInterface(IID_ICorDebugType, (void**)&values[0]);
+        *pceltFetched = celt;
+    }
     LOG((LF_CORDB, LL_INFO1000000, "CordbTypeEnum - Next - IMPLEMENTED\n"));
     return S_OK;
 }

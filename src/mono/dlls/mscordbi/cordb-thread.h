@@ -74,4 +74,28 @@ public:
     }
 };
 
+class CordbThreadEnum : public CordbBaseMono, public ICorDebugThreadEnum
+{
+public:
+    CordbThreadEnum(Connection* conn);
+    ULONG STDMETHODCALLTYPE AddRef(void)
+    {
+        return (BaseAddRef());
+    }
+    ULONG STDMETHODCALLTYPE Release(void)
+    {
+        return (BaseRelease());
+    }
+    const char* GetClassName()
+    {
+        return "CordbThreadEnum";
+    }
+    HRESULT STDMETHODCALLTYPE Next(ULONG celt, ICorDebugThread* values[], ULONG* pceltFetched);
+    HRESULT STDMETHODCALLTYPE Skip(ULONG celt);
+    HRESULT STDMETHODCALLTYPE Reset(void);
+    HRESULT STDMETHODCALLTYPE Clone(ICorDebugEnum** ppEnum);
+    HRESULT STDMETHODCALLTYPE GetCount(ULONG* pcelt);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
+};
+
 #endif

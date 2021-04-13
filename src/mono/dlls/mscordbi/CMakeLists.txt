@@ -29,14 +29,14 @@ endif()
 add_definitions(-DDBI_COMPONENT_MONO)
 
 include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}/../..
-  ${PROJECT_SOURCE_DIR}/../
-  ${PROJECT_SOURCE_DIR}/../dbi
-  ${PROJECT_SOURCE_DIR}/../dbi/socket-dbi
-  ${PROJECT_SOURCE_DIR}/../../coreclr/md/enc
-  ${PROJECT_SOURCE_DIR}/../../coreclr/inc
-  ${PROJECT_SOURCE_DIR}/../../coreclr/md/inc
-  ${PROJECT_SOURCE_DIR}/../../coreclr/md/compiler)
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../..
+  ${PROJECT_SOURCE_DIR}/../../
+  ${PROJECT_SOURCE_DIR}/../mscordbi
+  ${PROJECT_SOURCE_DIR}/../mscordbi/socket-dbi
+  ${PROJECT_SOURCE_DIR}/../../../coreclr/md/enc
+  ${PROJECT_SOURCE_DIR}/../../../coreclr/inc
+  ${PROJECT_SOURCE_DIR}/../../../coreclr/md/inc
+  ${PROJECT_SOURCE_DIR}/../../../coreclr/md/compiler)
 
 set(mscorbi_sources_base
     cordb.cpp
@@ -65,6 +65,8 @@ set(mscorbi_sources_base
     cordb-process.h
     cordb-register.cpp
     cordb-register.h
+    cordb-stackwalk.cpp
+    cordb-stackwalk.h
     cordb-stepper.cpp
     cordb-stepper.h
     cordb-thread.cpp
@@ -84,54 +86,54 @@ elseif(HOST_WIN32)
 set(OS_LIBS bcrypt.lib Mswsock.lib ws2_32.lib psapi.lib version.lib advapi32.lib winmm.lib kernel32.lib)
 endif()
 
-addprefix(mscorbi_sources ../dbi/ "${mscorbi_sources_base}")
+addprefix(mscorbi_sources ../mscordbi/ "${mscorbi_sources_base}")
 add_subdirectory(${PROJECT_SOURCE_DIR}/socket-dbi)
 
-include(${PROJECT_SOURCE_DIR}/../../../eng/native/configuretools.cmake)
-include(${PROJECT_SOURCE_DIR}/../../../eng/native/configurepaths.cmake)
-include(${PROJECT_SOURCE_DIR}/../../../eng/native/configureplatform.cmake)
-include(${PROJECT_SOURCE_DIR}/../../../eng/native/configurecompiler.cmake)
+include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configuretools.cmake)
+include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configurepaths.cmake)
+include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configureplatform.cmake)
+include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configurecompiler.cmake)
 
 if (CLR_CMAKE_HOST_UNIX)
   # Add custom targets that the pal build expects.
   add_component(${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
   add_component(paltests_install)
-  include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/inc")
-  include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/inc/rt")
-  include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/src/safecrt")
+  include_directories("${PROJECT_SOURCE_DIR}/../../../coreclr/pal/inc")
+  include_directories("${PROJECT_SOURCE_DIR}/../../../coreclr/pal/inc/rt")
+  include_directories("${PROJECT_SOURCE_DIR}/../../../coreclr/pal/src/safecrt")
 
   append("-Wno-missing-prototypes  -Wno-pointer-arith -Wno-macro-redefined" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
-  add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/pal pal)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/../../../coreclr/pal pal)
 
-  include_directories("../../coreclr/pal/inc/rt/cpp")
+  include_directories("../../../coreclr/pal/inc/rt/cpp")
   add_compile_options(-nostdinc)
 endif (CLR_CMAKE_HOST_UNIX)
 
-include_directories("../../coreclr/pal/prebuilt/inc")
-include_directories("../../coreclr/nativeresources")
+include_directories("../../../coreclr/pal/prebuilt/inc")
+include_directories("../../../coreclr/nativeresources")
 
 if (CLR_CMAKE_HOST_UNIX)
-    add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/nativeresources nativeresources)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/../../../coreclr/nativeresources nativeresources)
 endif()
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/md/runtime md/runtime)
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/md/compiler md/compiler)
+add_subdirectory(${PROJECT_SOURCE_DIR}/../../../coreclr/md/runtime md/runtime)
+add_subdirectory(${PROJECT_SOURCE_DIR}/../../../coreclr/md/compiler md/compiler)
 
-include(${PROJECT_SOURCE_DIR}/../../coreclr/clrdefinitions.cmake)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/../)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/../inc/)
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/md/enc md/enc)
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/utilcode utilcode)
+include(${PROJECT_SOURCE_DIR}/../../../coreclr/clrdefinitions.cmake)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/../../)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/../../inc/)
+add_subdirectory(${PROJECT_SOURCE_DIR}/../../../coreclr/md/enc md/enc)
+add_subdirectory(${PROJECT_SOURCE_DIR}/../../../coreclr/utilcode utilcode)
 if (CLR_CMAKE_HOST_UNIX)
-    add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/palrt palrt)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/../../../coreclr/palrt palrt)
     append("-Wno-strict-prototypes -Wno-deprecated -Wno-pointer-arith" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 endif (CLR_CMAKE_HOST_UNIX)
 
-add_library(mscordbi SHARED "${mscorbi_sources};${PROJECT_SOURCE_DIR}/../mono/mini/debugger-protocol.c;${PROJECT_SOURCE_DIR}/../../coreclr/pal/prebuilt/idl/xcordebug_i.cpp;${PROJECT_SOURCE_DIR}/../../coreclr/pal/prebuilt/idl/cordebug_i.cpp")
+add_library(mscordbi SHARED "${mscorbi_sources};${PROJECT_SOURCE_DIR}/../../mono/mini/debugger-protocol.c;${PROJECT_SOURCE_DIR}/../../../coreclr/pal/prebuilt/idl/xcordebug_i.cpp;${PROJECT_SOURCE_DIR}/../../../coreclr/pal/prebuilt/idl/cordebug_i.cpp")
 
 #SET(CMAKE_C_COMPILER ${CMAKE_CXX_COMPILER})
 
-set_source_files_properties(${PROJECT_SOURCE_DIR}/../mono/mini/debugger-protocol.c PROPERTIES LANGUAGE CXX)
+set_source_files_properties(${PROJECT_SOURCE_DIR}/../../mono/mini/debugger-protocol.c PROPERTIES LANGUAGE CXX)
 
 set(COREDBI_LIBRARIES
     utilcodestaticnohost

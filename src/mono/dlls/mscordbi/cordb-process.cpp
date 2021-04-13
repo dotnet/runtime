@@ -531,7 +531,8 @@ HRESULT CordbProcess::HasQueuedCallbacks(ICorDebugThread* pThread, BOOL* pbQueue
 
 HRESULT CordbProcess::EnumerateThreads(ICorDebugThreadEnum** ppThreads)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbProcess - EnumerateThreads - NOT IMPLEMENTED\n"));
+    *ppThreads = new CordbThreadEnum(conn);
+    (*ppThreads)->AddRef();
     return S_OK;
 }
 

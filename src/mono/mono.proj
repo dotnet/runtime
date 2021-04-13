@@ -18,6 +18,13 @@
     <ExeExt Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExt>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
+    <ExeExt Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExt>
+    <LibExt Condition="'$(TargetsWindows)' == 'true'">.dll</LibExt>
+    <LibExt Condition="'$(TargetsOSX)' == 'true'">.dylib</LibExt>
+    <LibExt Condition="'$(TargetsMacCatalyst)' == 'true'">.dylib</LibExt>
+    <LibExt Condition="'$(LibExt)' == ''">.so</LibExt>
+    <LibPrefix Condition="'$(TargetsOSX)' == 'true'">lib</LibPrefix>
+    <LibPrefix Condition="'$(TargetsMacCatalyst)' == 'true'">lib</LibPrefix>
     <EscapedQuoteW Condition="'$(OS)' == 'Windows_NT'">\&quot;</EscapedQuoteW>
     <PythonCmd Condition="'$(OS)' != 'Windows_NT'">python3</PythonCmd>
     <PythonCmd Condition="'$(OS)' == 'Windows_NT'">python</PythonCmd>
@@ -659,6 +666,12 @@
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
         <Destination>$(RuntimeBinDir)libmono-profiler-aot.a</Destination>
       </_MonoRuntimeArtifacts>
+      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)dbgshim$(LibExt)">
+        <Destination>$(RuntimeBinDir)$(LibPrefix)dbgshim$(LibExt)</Destination>
+      </_MonoICorDebugArtifacts>
+      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(LibExt)">
+        <Destination>$(RuntimeBinDir)$(LibPrefix)mscordbi$(LibExt)</Destination>
+      </_MonoICorDebugArtifacts>
 
       <_IcuArtifacts  Condition="'$(_MonoIncludeIcuFiles)' == 'true'"
                       Include="$(_IcuLibdir)\libicuuc.a;
@@ -676,6 +689,11 @@
           DestinationFiles="%(_MonoRuntimeArtifacts.Destination)"
           Condition="'$(MonoGenerateOffsetsOSGroups)' == ''"
           SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(_MonoICorDebugArtifacts)"
+          DestinationFiles="%(_MonoICorDebugArtifacts.Destination)"
+          SkipUnchangedFiles="true"
+          Condition="Exists(@(_MonoICorDebugArtifacts))" />
 
     <Copy SourceFiles="@(_MonoIncludeArtifacts)"
           DestinationFiles="@(_MonoIncludeArtifacts->'$(RuntimeBinDir)include\%(RecursiveDir)%(Filename)%(Extension)')"

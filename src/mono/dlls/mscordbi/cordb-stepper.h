@@ -13,6 +13,7 @@ class CordbStepper : public CordbBaseMono, public ICorDebugStepper, public ICorD
 {
     CordbThread* m_pThread;
     int          m_debuggerId;
+    bool         m_bIsActive;
 
 public:
     CordbStepper(Connection* conn, CordbThread* thread);
