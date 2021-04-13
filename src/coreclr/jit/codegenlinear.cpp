@@ -366,6 +366,8 @@ void CodeGen::genCodeForBBlist()
 
             block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                                              gcInfo.gcRegByrefSetCur, FALSE);
+            JITDUMP("Mapped " FMT_BB " to G_M%03u_IG%02u\n", block->bbNum, compiler->compMethodID,
+                    GetEmitter()->emitCurIG->igNum);
         }
 
         if (block == compiler->fgFirstColdBlock)
