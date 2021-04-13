@@ -55,7 +55,7 @@ namespace System.Text.Json.Node
         }
 
         /// <summary>
-        ///   Write the <see cref="JsonArray"/> into the provided <see cref="Utf8JsonWriter"/> as JSON.
+        ///   Write the <see cref="JsonNode"/> into the provided <see cref="Utf8JsonWriter"/> as JSON.
         /// </summary>
         /// <param name="writer">The <see cref="Utf8JsonWriter"/>.</param>
         /// <exception cref="ArgumentNullException">

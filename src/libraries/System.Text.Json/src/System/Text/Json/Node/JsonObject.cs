@@ -27,7 +27,7 @@ namespace System.Text.Json.Node
         public JsonObject(JsonNodeOptions? options = null) : base(options) { }
 
         /// <summary>
-        ///   Initializes a new instance of the <see cref="JsonObject"/> class that contains properties from the specified <paramref name="properties"/>.
+        ///   Initializes a new instance of the <see cref="JsonObject"/> class that contains the specified <paramref name="properties"/>.
         /// </summary>
         /// <param name="properties">The properties to be added.</param>
         /// <param name="options">Options to control the behavior.</param>

@@ -228,7 +228,9 @@ namespace System.Text.Json.Node.Tests
         public static void FromElement_WrongNodeTypeThrows(string json)
         {
             using (JsonDocument document = JsonDocument.Parse(json))
-            Assert.Throws<InvalidOperationException>(() => JsonObject.Create(document.RootElement));
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonObject.Create(document.RootElement));
+            }
         }
 
         [Fact]
@@ -285,6 +287,8 @@ namespace System.Text.Json.Node.Tests
 
             arr = new KeyValuePair<string, JsonNode?>[3];
             Assert.Throws<ArgumentException>(() => jObject.CopyTo(arr, 1));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.CopyTo(arr, -1));
         }
 
         [Fact]
@@ -479,6 +483,33 @@ namespace System.Text.Json.Node.Tests
 
             string json_out = JsonSerializer.Serialize(blogPosts);
             Assert.Equal(expected, json_out);
+        }
+
+        [Fact]
+        public static void Parent()
+        {
+            var child = JsonValue.Create(42);
+            Assert.Null(child.Options);
+
+            var parent = new JsonObject();
+            Assert.Null(parent.Options);
+            parent.Add("MyProp", child);
+            Assert.Null(child.Options);
+            parent.Clear();
+
+            parent = new JsonObject(new JsonNodeOptions { PropertyNameCaseInsensitive = true });
+            Assert.NotNull(parent.Options);
+            parent.Add("MyProp", child);
+            Assert.NotNull(child.Options);
+            Assert.True(child.Options.Value.PropertyNameCaseInsensitive);
+
+            parent.Clear();
+            Assert.True(child.Options.Value.PropertyNameCaseInsensitive);
+
+            // Adding to a new parent does not affect options previously obtained from a different parent.
+            parent = new JsonObject(new JsonNodeOptions { PropertyNameCaseInsensitive = false });
+            parent.Add("MyProp", child);
+            Assert.True(child.Options.Value.PropertyNameCaseInsensitive);
         }
     }
 }

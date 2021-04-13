@@ -26,7 +26,7 @@ namespace System.Text.Json.Node
             {
                 if (!_options.HasValue && Parent != null)
                 {
-                    return Parent.Options;
+                    _options = Parent.Options;
                 }
 
                 return _options;
@@ -183,7 +183,7 @@ namespace System.Text.Json.Node
         /// </summary>
         /// <param name="index">The zero-based index of the element to get or set.</param>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="index"/> is less than 0 or <paramref name="index"/> is greater then the number of properties.
+        ///   <paramref name="index"/> is less than 0 or <paramref name="index"/> is greater than the number of properties.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         ///   The current <see cref="JsonNode"/> is not a <see cref="JsonArray"/>.

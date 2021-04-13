@@ -96,7 +96,7 @@ namespace System.Text.Json.Node
         /// <summary>
         ///   Removes the element with the specified property name from the <see cref="JsonObject"/>.
         /// </summary>
-        /// <param name="propertyName">The property name of the value to get.</param>
+        /// <param name="propertyName">The property name of the element to remove.</param>
         /// <returns>
         ///   <see langword="true"/> if the element is successfully removed; otherwise, <see langword="false"/>.
         /// </returns>
@@ -137,7 +137,7 @@ namespace System.Text.Json.Node
         /// <param name="array">
         ///   The one-dimensional Array that is the destination of the elements copied from <see cref="JsonObject"/>.
         /// </param>
-        /// <param name="index">The zero-based index in <paramref name="index"/> at which copying begins.</param>
+        /// <param name="index">The zero-based index in <paramref name="array"/> at which copying begins.</param>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="array"/> is <see langword="null"/>.
         /// </exception>
@@ -220,7 +220,7 @@ namespace System.Text.Json.Node
         bool ICollection<KeyValuePair<string, JsonNode?>>.IsReadOnly => false;
 
         /// <summary>
-        ///   Returns an enumerator that iterates through <see cref="JsonObject"/>.
+        ///   Returns an enumerator that iterates through the <see cref="JsonObject"/>.
         /// </summary>
         /// <returns>
         ///   An enumerator that iterates through the <see cref="JsonObject"/>.

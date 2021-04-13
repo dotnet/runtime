@@ -191,6 +191,8 @@ namespace System.Text.Json.Node.Tests
 
             arr = new JsonNode[3];
             Assert.Throws<ArgumentException>(() => jArray.CopyTo(arr, 1));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => jArray.CopyTo(arr, -1));
         }
 
         [Fact]
@@ -427,6 +429,33 @@ namespace System.Text.Json.Node.Tests
             Assert.Equal(1, ((JsonValue)jArrayEnumerator.Current).GetValue<int>());
             Assert.True(jArrayEnumerator.MoveNext());
             Assert.Equal("value", ((JsonValue)jArrayEnumerator.Current).GetValue<string>());
+        }
+
+        [Fact]
+        public static void Parent()
+        {
+            var child = JsonValue.Create(42);
+            Assert.Null(child.Options);
+
+            var parent = new JsonArray();
+            Assert.Null(parent.Options);
+            parent.Add(child);
+            Assert.Null(child.Options);
+            parent.Clear();
+
+            parent = new JsonArray(new JsonNodeOptions { PropertyNameCaseInsensitive = true });
+            Assert.NotNull(parent.Options);
+            parent.Add(child);
+            Assert.NotNull(child.Options);
+            Assert.True(child.Options.Value.PropertyNameCaseInsensitive);
+
+            parent.Clear();
+            Assert.True(child.Options.Value.PropertyNameCaseInsensitive);
+
+            // Adding to a new parent does not affect options previously obtained from a different parent.
+            parent = new JsonArray(new JsonNodeOptions { PropertyNameCaseInsensitive = false });
+            parent.Add(child);
+            Assert.True(child.Options.Value.PropertyNameCaseInsensitive);
         }
     }
 }

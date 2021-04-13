@@ -71,8 +71,11 @@ namespace System.Text.Json.Node.Tests
             Assert.Equal("Hello", (string)obj.MyString);
 
             // Verify other string-based types.
-            // Since this requires a custom converter, an exception is thrown.
-            Assert.ThrowsAny<RuntimeBinderException>(() => (MyCustomEnum)obj.MyString);
+            // Even though a custom converter was used, an explicit deserialize needs to be done.
+            Assert.Equal(42, (int)obj.MyInt);
+            Assert.ThrowsAny<RuntimeBinderException>(() => (MyCustomEnum)obj.MyInt);
+            // Perform the explicit deserialize on the enum.
+            Assert.Equal(MyCustomEnum.FortyTwo, JsonSerializer.Deserialize<MyCustomEnum>(obj.MyInt.ToJsonString()));
 
             Assert.Equal(Serialization.Tests.DynamicTests.MyDateTime, (DateTime)obj.MyDateTime);
             Assert.Equal(Serialization.Tests.DynamicTests.MyGuid, (Guid)obj.MyGuid);
@@ -84,7 +87,7 @@ namespace System.Text.Json.Node.Tests
 
             // Numbers must specify the type through a cast or assignment.
             Assert.IsAssignableFrom<JsonValue>(obj.MyInt);
-            Assert.ThrowsAny<Exception>(() => obj.MyInt == 42L);
+            Assert.ThrowsAny<RuntimeBinderException>(() => obj.MyInt == 42L);
             Assert.Equal(42L, (long)obj.MyInt);
             Assert.Equal((byte)42, (byte)obj.MyInt);
 
@@ -101,7 +104,6 @@ namespace System.Text.Json.Node.Tests
         {
             var options = new JsonSerializerOptions();
             options.UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode;
-            options.Converters.Add(new JsonStringEnumConverter());
 
             dynamic obj = JsonSerializer.Deserialize<object>(Serialization.Tests.DynamicTests.Json, options);
             Assert.IsAssignableFrom<JsonObject>(obj);
@@ -117,6 +119,7 @@ namespace System.Text.Json.Node.Tests
                 count++;
             }
             Assert.Equal(2, count);
+            Assert.Equal(2, obj.MyArray.Count);
 
             obj.MyArray[0] = 10;
             Assert.IsAssignableFrom<JsonValue>(obj.MyArray[0]);
@@ -131,11 +134,13 @@ namespace System.Text.Json.Node.Tests
             options.UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode;
 
             string GuidJson = $"{Serialization.Tests.DynamicTests.MyGuid.ToString("D")}";
-            string GuidJsonWithQuotes = $"\"{GuidJson}\"";
 
             // We can't convert an unquoted string to a Guid
             dynamic dynamicString = JsonValue.Create(GuidJson);
-            Assert.Throws<InvalidOperationException>(() => (Guid)dynamicString);
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => (Guid)dynamicString);
+            // "A value of type 'System.String' cannot be converted to a 'System.Guid'."
+            Assert.Contains(typeof(string).ToString(), ex.Message);
+            Assert.Contains(typeof(Guid).ToString(), ex.Message);
 
             string json;
 
@@ -143,7 +148,7 @@ namespace System.Text.Json.Node.Tests
             using (JsonDocument doc = JsonDocument.Parse($"{decimal.MaxValue}"))
             {
                 dynamic dynamicNumber = JsonValue.Create(doc.RootElement);
-                Assert.Equal<decimal>(decimal.MaxValue, (decimal)dynamicNumber);
+                Assert.Equal(decimal.MaxValue, (decimal)dynamicNumber);
                 json = dynamicNumber.ToJsonString(options);
                 Assert.Equal(decimal.MaxValue.ToString(), json);
             }
@@ -211,7 +216,7 @@ namespace System.Text.Json.Node.Tests
         }
 
         [Fact]
-        public static void ConvertArrayTo()
+        public static void ConvertJsonArrayToIListOfJsonNode()
         {
             dynamic obj = JsonSerializer.Deserialize<JsonArray>("[42]");
             Assert.Equal(42, (int)obj[0]);
@@ -230,12 +235,6 @@ namespace System.Text.Json.Node.Tests
 
             Assert.IsType<JsonObject>(obj);
             Assert.IsAssignableFrom<JsonValue>(obj.MyProperty);
-
-            //dynamic temp = obj.MyProperty;
-            //int sdfsfd = temp;
-            int sdfsfdsdf = (int)obj.MyProperty;
-
-            var sdf = obj.MyProperty;
 
             Assert.Equal(42, (int)obj.MyProperty);
             Assert.Null(obj.myProperty);
