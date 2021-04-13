@@ -1066,6 +1066,7 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => { request.ReadWriteTimeout = -10; });
         }
 
+        [OuterLoop("Uses timeout")]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -1085,7 +1086,7 @@ namespace System.Net.Tests
                 try
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
-                    request.ReadWriteTimeout = 20;
+                    request.ReadWriteTimeout = 100;
                     Exception e = await Assert.ThrowsAnyAsync<Exception>(async () =>
                     {
                         using WebResponse response = await GetResponseAsync(request);
