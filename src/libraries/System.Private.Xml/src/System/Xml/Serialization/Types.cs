@@ -1209,9 +1209,9 @@ namespace System.Xml.Serialization
             {
                 while (currentType != typeToBeReplaced)
                 {
-                    TypeInfo currentInfo = currentType.GetTypeInfo();
+                    const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
-                    foreach (PropertyInfo info in currentInfo.DeclaredProperties)
+                    foreach (PropertyInfo info in currentType.GetProperties(DeclaredOnlyLookup))
                     {
                         if (info.Name == memberInfoToBeReplaced.Name)
                         {
@@ -1232,7 +1232,7 @@ namespace System.Xml.Serialization
                         }
                     }
 
-                    foreach (FieldInfo info in currentInfo.DeclaredFields)
+                    foreach (FieldInfo info in currentType.GetFields(DeclaredOnlyLookup))
                     {
                         if (info.Name == memberInfoToBeReplaced.Name)
                         {

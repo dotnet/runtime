@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             // Don't convert if the expression is already assignable
             if (type.IsAssignableFrom(expression.Type)
-                && (!expression.Type.GetTypeInfo().IsValueType || !forceValueTypeConversion))
+                && (!expression.Type.IsValueType || !forceValueTypeConversion))
             {
                 return expression;
             }

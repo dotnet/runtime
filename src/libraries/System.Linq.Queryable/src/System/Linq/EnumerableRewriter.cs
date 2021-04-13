@@ -172,7 +172,7 @@ namespace System.Linq
                 }
                 if (equiv == null)
                 {
-                    var interfacesWithInfo = pubType.GetInterfaces().Select(IntrospectionExtensions.GetTypeInfo).ToArray();
+                    var interfacesWithInfo = pubType.GetInterfaces();
                     var singleTypeGenInterfacesWithGetType = interfacesWithInfo
                         .Where(i => i.IsGenericType && i.GenericTypeArguments.Length == 1)
                         .Select(i => new { Info = i, GenType = i.GetGenericTypeDefinition() })
