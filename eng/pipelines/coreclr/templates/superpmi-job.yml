@@ -102,7 +102,7 @@ jobs:
           displayName: 'generic managed test artifacts'
 
     # Download and unzip libraries test artifacts
-    - ${{ if eq(parameters.collectionName, 'tests') }}:
+    - ${{ if eq(parameters.collectionName, 'tests_libraries') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
