@@ -262,7 +262,8 @@ namespace System.Net.WebSockets.Client.Tests
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
-                Assert.Contains("CONNECT", await connection.ReadLineAsync());
+                var lines = await connection.ReadRequestHeaderAsync();
+                Assert.Contains("CONNECT", lines[0]);
                 connectionAccepted = true;
 
                 // Send non-success error code so that SocketsHttpHandler won't retry.
