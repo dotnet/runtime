@@ -897,12 +897,6 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 MonoMethod *
 mono_class_inflate_generic_method_checked (MonoMethod *method, MonoGenericContext *context, MonoError *error);
 
-MonoImageSet *
-mono_metadata_get_image_set_for_class (MonoClass *klass);
-
-MonoImageSet *
-mono_metadata_get_image_set_for_method (MonoMethodInflated *method);
-
 MonoMemoryManager *
 mono_metadata_get_mem_manager_for_type (MonoType *type);
 
