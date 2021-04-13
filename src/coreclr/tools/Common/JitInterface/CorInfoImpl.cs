@@ -1580,8 +1580,7 @@ namespace Internal.JitInterface
 
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
         {
-            TypeDesc type = HandleToObject(cls);
-            return type.IsValueType || type.IsPointer || type.IsFunctionPointer;
+            return HandleToObject(cls).IsValueType;
         }
 
         private CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_STRUCT_* cls, CorInfoInlineTypeCheckSource source)
@@ -1602,10 +1601,6 @@ namespace Internal.JitInterface
             // TODO: Support for verification (CORINFO_FLG_GENERIC_TYPE_VARIABLE)
 
             CorInfoFlag result = (CorInfoFlag)0;
-
-            // CoreCLR uses UIntPtr in place of pointers here
-            if (type.IsPointer || type.IsFunctionPointer)
-                type = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.UIntPtr);
 
             var metadataType = type as MetadataType;
 

@@ -161,7 +161,7 @@ static void printIndent(IndentStack* indentStack)
 
 #endif
 
-#if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
+#if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
 
 static const char* opNames[] = {
 #define GTNODE(en, st, cm, ok) #en,
@@ -10805,7 +10805,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     }
     else if (ilNum == (unsigned)ICorDebugInfo::UNKNOWN_ILNUM)
     {
-#if FEATURE_ANYCSE
         if (lclNumIsTrueCSE(lclNum))
         {
             ilKind = "cse";
@@ -10819,7 +10818,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             ilNum  = lclNum - (optCSEstart + optCSEcount);
         }
         else
-#endif // FEATURE_ANYCSE
         {
             if (lclNum == info.compLvFrameListRoot)
             {
@@ -15623,7 +15621,6 @@ GenTree* Compiler::gtNewTempAssign(
         {
             // It could come from `ASG(struct, 0)` that was propagated to `RETURN struct(0)`,
             // and now it is merging to a struct again.
-            assert(!compDoOldStructRetyping());
             assert(tmp == genReturnLocal);
             ok = true;
         }
@@ -15676,7 +15673,6 @@ GenTree* Compiler::gtNewTempAssign(
         // 2. we are propagation `ASG(struct V01, 0)` to `RETURN(struct V01)`, `CNT_INT` doesn't `structHnd`;
         // in these cases, we can use the type of the merge return for the assignment.
         assert(val->OperIs(GT_IND, GT_LCL_FLD, GT_CNS_INT));
-        assert(!compDoOldStructRetyping());
         assert(tmp == genReturnLocal);
         valStructHnd = lvaGetStruct(genReturnLocal);
         assert(valStructHnd != NO_CLASS_HANDLE);
@@ -15684,7 +15680,6 @@ GenTree* Compiler::gtNewTempAssign(
 
     if ((valStructHnd != NO_CLASS_HANDLE) && val->IsConstInitVal())
     {
-        assert(!compDoOldStructRetyping());
         asg = gtNewAssignNode(dest, val);
     }
     else if (varTypeIsStruct(varDsc) && ((valStructHnd != NO_CLASS_HANDLE) || varTypeIsSIMD(valTyp)))

@@ -33654,7 +33654,7 @@ bool gc_heap::find_next_chunk(card_marking_enumerator& card_mark_enumerator, hea
             dprintf (3, ("No more chunks on heap %d\n", heap_number));
             return false;
         }
-        card = card_of (chunk_low);
+        card = max(card, card_of(chunk_low));
         card_word_end = (card_of(align_on_card_word(chunk_high)) / card_word_width);
         dprintf (3, ("Moved to next chunk on heap %d: [%Ix,%Ix[", heap_number, (size_t)chunk_low, (size_t)chunk_high));
     }
