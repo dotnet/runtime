@@ -152,10 +152,23 @@ namespace System.IO.Pipelines
                 return Task.FromCanceled(cancellationToken);
             }
 
-            return CopyToAsyncCore(destination, async (destination, memory, cancellationToken) =>
+            return CopyToAsyncCore(destination, (destination, memory, cancellationToken) =>
             {
-                await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
-                return new FlushResult(isCanceled: false, isCompleted: false);
+                ValueTask task = destination.WriteAsync(memory, cancellationToken);
+
+                if (task.IsCompletedSuccessfully)
+                {
+                    task.GetAwaiter().GetResult();
+                    return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: false));
+                }
+
+                static async ValueTask<FlushResult> Awaited(ValueTask writeTask)
+                {
+                    await writeTask.ConfigureAwait(false);
+                    return new FlushResult(isCanceled: false, isCompleted: false);
+                }
+
+                return Awaited(task);
             },
             cancellationToken);
         }
