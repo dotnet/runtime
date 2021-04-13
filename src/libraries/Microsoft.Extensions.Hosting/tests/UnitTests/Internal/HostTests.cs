@@ -691,15 +691,15 @@ namespace Microsoft.Extensions.Hosting.Internal
         [Fact]
         public async Task HostStopsApplicationWithOneBackgroundServiceErrorAndOthersWithoutError()
         {
-            var executionCount = 0;
+            var wasOtherServiceStarted = false;
             TaskCompletionSource<bool> tcs = new();
 
             using IHost host = CreateBuilder()
                 .ConfigureServices(
                     services =>
                     {
-                        services.AddHostedService(_ => new TestBackgroundService(tcs.Task, i => executionCount = i));
                         services.AddHostedService(_ => new AsyncThrowingService(Task.CompletedTask));
+                        services.AddHostedService(_ => new TestBackgroundService(tcs.Task, () => wasOtherServiceStarted = true));
                         services.Configure<HostOptions>(
                             options =>
                             options.BackgroundServiceExceptionBehavior =
@@ -722,8 +722,9 @@ namespace Microsoft.Extensions.Hosting.Internal
             Assert.True(
                 wasStoppingCalled,
                 $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, stopping should have been called.");
-
-            Assert.True(executionCount > 0);
+            Assert.True(
+                wasOtherServiceStarted,
+                $"The {nameof(TestBackgroundService)} should have started.");
         }
 
         [Fact]
@@ -1470,27 +1471,24 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
-        private class TestBackgroundService : BackgroundService
+        private class TestBackgroundService : IHostedService
         {
-            private readonly Action<int> _counter;
+            private readonly Action _onStart;
             private readonly Task _emulateWorkTask;
 
-            private int _executionCount;
-
-            public TestBackgroundService(Task emulateWorkTask, Action<int> counter)
+            public TestBackgroundService(Task emulateWorkTask, Action onStart)
             {
                 _emulateWorkTask = emulateWorkTask;
-                _counter = counter;
+                _onStart = onStart;
             }
 
-            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            public async Task StartAsync(CancellationToken stoppingToken)
             {
-                while (!stoppingToken.IsCancellationRequested)
-                {
-                    _counter(++_executionCount);
-                    await _emulateWorkTask;
-                }
+                _onStart();
+                await _emulateWorkTask;
             }
+
+            public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         }
 
         private class AsyncThrowingService : BackgroundService
