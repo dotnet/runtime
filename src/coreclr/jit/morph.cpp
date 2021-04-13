@@ -9015,7 +9015,6 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 
     // Finish hooking things up.
     block->bbJumpKind = BBJ_ALWAYS;
-    block->bbJumpDest->bbFlags |= BBF_JMP_TARGET;
     fgAddRefPred(block->bbJumpDest, block);
     block->bbFlags &= ~BBF_HAS_JMP;
 }
@@ -17766,7 +17765,7 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     BasicBlock* cond1Block  = fgNewBBafter(BBJ_COND, block, true);
     BasicBlock* asgBlock    = fgNewBBafter(BBJ_NONE, block, true);
 
-    remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | propagateFlags;
+    remainderBlock->bbFlags |= propagateFlags;
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
@@ -17952,7 +17951,7 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         elseBlock->bbFlags |= BBF_IMPORTED;
     }
 
-    remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | propagateFlags;
+    remainderBlock->bbFlags |= propagateFlags;
 
     condBlock->inheritWeight(block);
 
@@ -17981,8 +17980,6 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
             thenBlock->bbFlags &= ~BBF_INTERNAL;
             thenBlock->bbFlags |= BBF_IMPORTED;
         }
-
-        elseBlock->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
 
         fgAddRefPred(thenBlock, condBlock);
         fgAddRefPred(remainderBlock, thenBlock);

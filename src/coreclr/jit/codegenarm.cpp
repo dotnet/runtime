@@ -129,7 +129,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     assert(block->bbNext->bbJumpDest->bbFlags & BBF_FINALLY_TARGET);
 
     bbFinallyRet = block->bbNext->bbJumpDest;
-    bbFinallyRet->bbFlags |= BBF_JMP_TARGET;
 
     // Load the address where the finally funclet should return into LR.
     // The funclet prolog/epilog will do "push {lr}" / "pop {pc}" to do the return.
@@ -633,7 +632,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
-        noway_assert(target->bbFlags & BBF_JMP_TARGET);
+        noway_assert(target->bbFlags & BBF_HAS_LABEL);
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 

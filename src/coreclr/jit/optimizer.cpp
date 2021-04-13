@@ -4385,9 +4385,6 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
     block->bbJumpKind = BBJ_COND;
     block->bbJumpDest = bTest->bbNext;
 
-    /* Mark the jump dest block as being a jump target */
-    block->bbJumpDest->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
-
     /* Update bbRefs and bbPreds for 'block->bbNext' 'bTest' and 'bTest->bbNext' */
 
     fgAddRefPred(block->bbNext, block);
@@ -7841,7 +7838,6 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
             case BBJ_EHCATCHRET:
                 noway_assert(predBlock->bbJumpDest == top);
                 predBlock->bbJumpDest = preHead;
-                preHead->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
 
                 if (predBlock == head)
                 {
@@ -7871,7 +7867,6 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
                         fgRemoveRefPred(top, predBlock);
                         fgAddRefPred(preHead, predBlock);
-                        preHead->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
                     }
                 } while (++jumpTab, --jumpCnt);
                 break;

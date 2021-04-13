@@ -419,10 +419,6 @@ void BasicBlock::dspFlags()
     {
         printf("label ");
     }
-    if (bbFlags & BBF_JMP_TARGET)
-    {
-        printf("target ");
-    }
     if (bbFlags & BBF_HAS_JMP)
     {
         printf("jmp ");
