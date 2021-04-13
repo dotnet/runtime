@@ -18,14 +18,12 @@ namespace Microsoft.Extensions.Logging.Generators
     public partial class LoggerMessageGenerator : ISourceGenerator
     {
         [ExcludeFromCodeCoverage]
-        [CLSCompliant(false)]
         public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(SyntaxReceiver.Create);
         }
 
         [ExcludeFromCodeCoverage]
-        [CLSCompliant(false)]
         public void Execute(GeneratorExecutionContext context)
         {
             var receiver = context.SyntaxReceiver as SyntaxReceiver;
