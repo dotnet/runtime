@@ -31,6 +31,8 @@ if [ "$1" = "Linux" ]; then
 elif [ "$1" = "MacCatalyst" ] || [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
     engdir=$(dirname "${BASH_SOURCE[0]}")
 
+    echo "Installed xcode version: `xcode-select -p`"
+
     if [ "$3" = "azDO" ]; then
         # workaround for old osx images on hosted agents
         # piped in case we get an agent without these values installed
