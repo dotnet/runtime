@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)..\tests\SourceGenerators\RoslynTestUtils.cs"
+             Link="SourceGenerators\RoslynTestUtils.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel.Tests" />
   </ItemGroup>
 

@@ -7,9 +7,10 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using SourceGenerators.Tests;
 using Xunit;
 
-namespace Microsoft.Extensions.Logging.Generators.Test
+namespace Microsoft.Extensions.Logging.Generators.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2007:Consider calling ConfigureAwait on the awaited task", Justification = "Test")]

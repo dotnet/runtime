@@ -4,7 +4,7 @@
 #pragma warning disable CA1801 // Review unused parameters
 #pragma warning disable S1118
 
-namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
     // test particular method signature variations are generated correctly
     internal static partial class SignatureTestExtensions

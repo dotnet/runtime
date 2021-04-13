@@ -3,10 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging.Generators.Test.TestClasses;
+using Microsoft.Extensions.Logging.Generators.Tests.TestClasses;
 using Xunit;
 
-namespace Microsoft.Extensions.Logging.Generators.Test
+namespace Microsoft.Extensions.Logging.Generators.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
     public class LoggerMessageGeneratedCodeTests

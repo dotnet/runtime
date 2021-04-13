@@ -17,7 +17,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
-namespace Microsoft.Extensions.Logging.Generators.Test
+namespace SourceGenerators.Tests
 {
     internal static class RoslynTestUtils
     {

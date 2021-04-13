@@ -4,9 +4,10 @@
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using SourceGenerators.Tests;
 using Xunit;
 
-namespace Microsoft.Extensions.Logging.Generators.Test
+namespace Microsoft.Extensions.Logging.Generators.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
     public class LoggerMessageGeneratorEmitterTests

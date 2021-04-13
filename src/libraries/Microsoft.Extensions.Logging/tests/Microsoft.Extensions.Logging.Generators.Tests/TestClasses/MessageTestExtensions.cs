@@ -4,7 +4,7 @@
 #pragma warning disable CA1801 // Review unused parameters
 #pragma warning disable LG0015
 
-namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
     internal static partial class MessageTestExtensions
     {

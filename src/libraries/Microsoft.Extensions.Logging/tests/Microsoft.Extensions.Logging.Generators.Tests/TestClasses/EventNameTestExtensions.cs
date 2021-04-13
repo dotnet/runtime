@@ -3,7 +3,7 @@
 
 #pragma warning disable CA1801 // Review unused parameters
 
-namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
     internal static partial class EventNameTestExtensions
     {
