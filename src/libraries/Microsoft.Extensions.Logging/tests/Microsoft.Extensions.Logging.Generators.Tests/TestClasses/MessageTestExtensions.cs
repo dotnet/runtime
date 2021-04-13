@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 
 #if false
         // Diagnostics produced by source generators do not respect the /warnAsError or /noWarn compiler flags.
-        // These are disabled due to https://github.com/dotnet/roslyn/issues/52527
+        // Disabled due to https://github.com/dotnet/roslyn/issues/52527
         //
         // These are handled fine by the logger generator and generate warnings. Unfortunately, the above warning suppression is
         // not being observed by the C# compiler at the moment, so having these here causes build warnings.

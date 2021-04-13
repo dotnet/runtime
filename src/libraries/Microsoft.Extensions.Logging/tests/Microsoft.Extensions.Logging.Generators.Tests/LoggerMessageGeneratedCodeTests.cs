@@ -193,14 +193,22 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             logger.Reset();
             MessageTestExtensions.M2(logger, "Foo", "Bar");
             Assert.Null(logger.LastException);
-            Assert.Equal("{\"p1\":\"Foo\",\"p2\":\"Bar\"}", logger.LastFormattedString);
+            Assert.Equal(string.Empty, logger.LastFormattedString);
+            AssertLastState(logger,
+                new KeyValuePair<string, object?>("p1", "Foo"),
+                new KeyValuePair<string, object?>("p2", "Bar"),
+                new KeyValuePair<string, object?>("{OriginalFormat}", string.Empty));
             Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
             MessageTestExtensions.M3(logger, "Foo", 42);
             Assert.Null(logger.LastException);
-            Assert.Equal("{\"p1\":\"Foo\",\"p2\":\"42\"}", logger.LastFormattedString);
+            Assert.Equal(string.Empty, logger.LastFormattedString);
+            AssertLastState(logger,
+                new KeyValuePair<string, object?>("p1", "Foo"),
+                new KeyValuePair<string, object?>("p2", 42),
+                new KeyValuePair<string, object?>("{OriginalFormat}", string.Empty));
             Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
 #endif
@@ -423,7 +431,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             }
 
             Assert.Equal(expected, count);
-            _ = Assert.Throws<IndexOutOfRangeException>(() => _ = rol[expected]);
+            Assert.Throws<IndexOutOfRangeException>(() => rol[expected]);
         }
     }
 }

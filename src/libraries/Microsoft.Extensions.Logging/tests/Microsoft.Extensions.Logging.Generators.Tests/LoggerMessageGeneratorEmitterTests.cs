@@ -23,11 +23,11 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
                 var (d, r) = await RoslynTestUtils.RunGenerator(
                     new LoggerMessageGenerator(),
-                    new[] { Assembly.GetAssembly(typeof(ILogger))!, Assembly.GetAssembly(typeof(LoggerMessageAttribute))! },
+                    new[] { typeof(ILogger).Assembly, typeof(LoggerMessageAttribute).Assembly },
                     new[] { testSourceCode }).ConfigureAwait(false);
 
                 Assert.Empty(d);
-                _ = Assert.Single(r);
+                Assert.Single(r);
             }
         }
     }

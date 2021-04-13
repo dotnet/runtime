@@ -28,10 +28,8 @@ namespace SourceGenerators.Tests
         /// <param name="includeBaseReferences">Whether to include references to the BCL assemblies.</param>
         public static Project CreateTestProject(IEnumerable<Assembly>? references, bool includeBaseReferences = true)
         {
-#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
-            var corelib = Assembly.GetAssembly(typeof(object))!.Location;
-            var runtimeDir = Path.GetDirectoryName(corelib)!;
-#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
+            string corelib = Assembly.GetAssembly(typeof(object))!.Location;
+            string runtimeDir = Path.GetDirectoryName(corelib)!;
 
             var refs = new List<MetadataReference>();
             if (includeBaseReferences)
@@ -49,13 +47,11 @@ namespace SourceGenerators.Tests
                 }
             }
 
-#pragma warning disable CA2000 // Dispose objects before losing scope
             return new AdhocWorkspace()
                         .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
                         .AddProject("Test", "test.dll", "C#")
                             .WithMetadataReferences(refs)
                             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable));
-#pragma warning restore CA2000 // Dispose objects before losing scope
         }
 
         public static Task CommitChanges(this Project proj, params string[] ignorables)
@@ -66,12 +62,12 @@ namespace SourceGenerators.Tests
 
         public static async Task AssertNoDiagnostic(this Project proj, params string[] ignorables)
         {
-            foreach (var doc in proj.Documents)
+            foreach (Document doc in proj.Documents)
             {
-                var sm = await doc.GetSemanticModelAsync(CancellationToken.None).ConfigureAwait(false);
+                SemanticModel sm = await doc.GetSemanticModelAsync(CancellationToken.None).ConfigureAwait(false);
                 Assert.NotNull(sm);
 
-                foreach (var d in sm!.GetDiagnostics())
+                foreach (Diagnostic d in sm!.GetDiagnostics())
                 {
                     bool ignore = ignorables.Any(ig => d.Id == ig);
 
@@ -87,7 +83,7 @@ namespace SourceGenerators.Tests
 
         public static Document FindDocument(this Project proj, string name)
         {
-            foreach (var doc in proj.Documents)
+            foreach (Document doc in proj.Documents)
             {
                 if (doc.Name == name)
                 {
@@ -133,22 +129,22 @@ namespace SourceGenerators.Tests
             bool includeBaseReferences = true,
             CancellationToken cancellationToken = default)
         {
-            var proj = CreateTestProject(references, includeBaseReferences);
+            Project proj = CreateTestProject(references, includeBaseReferences);
 
-            var count = 0;
-            foreach (var s in sources)
+            int count = 0;
+            foreach (string s in sources)
             {
                 proj = proj.WithDocument($"src-{count++}.cs", s);
             }
 
             Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
 
-            var comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
+            Compilation comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
 
-            var cgd = CSharpGeneratorDriver.Create(new[] { generator }, optionsProvider: optionsProvider);
-            var gd = cgd.RunGenerators(comp!, cancellationToken);
+            CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator }, optionsProvider: optionsProvider);
+            GeneratorDriver gd = cgd.RunGenerators(comp!, cancellationToken);
 
-            var r = gd.GetRunResult();
+            GeneratorDriverRunResult r = gd.GetRunResult();
             return (r.Results[0].Diagnostics, r.Results[0].GeneratedSources);
         }
 
@@ -160,19 +156,19 @@ namespace SourceGenerators.Tests
             IEnumerable<Assembly> references,
             IEnumerable<string> sources)
         {
-            var proj = CreateTestProject(references);
+            Project proj = CreateTestProject(references);
 
-            var count = 0;
-            foreach (var s in sources)
+            int count = 0;
+            foreach (string s in sources)
             {
                 proj = proj.WithDocument($"src-{count++}.cs", s);
             }
 
             await proj.CommitChanges().ConfigureAwait(false);
 
-            var analyzers = ImmutableArray.Create(analyzer);
+            ImmutableArray<DiagnosticAnalyzer> analyzers = ImmutableArray.Create(analyzer);
 
-            var comp = await proj!.GetCompilationAsync().ConfigureAwait(false);
+            Compilation comp = await proj!.GetCompilationAsync().ConfigureAwait(false);
             return await comp!.WithAnalyzers(analyzers).GetAllDiagnosticsAsync().ConfigureAwait(false);
         }
 
@@ -188,20 +184,20 @@ namespace SourceGenerators.Tests
             string? defaultNamespace = null,
             string? extraFile = null)
         {
-            var proj = CreateTestProject(references);
+            Project proj = CreateTestProject(references);
 
-            var count = 0;
+            int count = 0;
             if (sourceNames != null)
             {
-                var l = sourceNames.ToList();
-                foreach (var s in sources)
+                List<string> l = sourceNames.ToList();
+                foreach (string s in sources)
                 {
                     proj = proj.WithDocument(l[count++], s);
                 }
             }
             else
             {
-                foreach (var s in sources)
+                foreach (string s in sources)
                 {
                     proj = proj.WithDocument($"src-{count++}.cs", s);
                 }
@@ -214,12 +210,12 @@ namespace SourceGenerators.Tests
 
             await proj.CommitChanges().ConfigureAwait(false);
 
-            var analyzers = ImmutableArray.Create(analyzer);
+            ImmutableArray<DiagnosticAnalyzer> analyzers = ImmutableArray.Create(analyzer);
 
             while (true)
             {
-                var comp = await proj!.GetCompilationAsync().ConfigureAwait(false);
-                var diags = await comp!.WithAnalyzers(analyzers).GetAllDiagnosticsAsync().ConfigureAwait(false);
+                Compilation comp = await proj!.GetCompilationAsync().ConfigureAwait(false);
+                ImmutableArray<Diagnostic> diags = await comp!.WithAnalyzers(analyzers).GetAllDiagnosticsAsync().ConfigureAwait(false);
                 if (diags.IsEmpty)
                 {
                     // no more diagnostics reported by the analyzers
@@ -227,11 +223,11 @@ namespace SourceGenerators.Tests
                 }
 
                 var actions = new List<CodeAction>();
-                foreach (var d in diags)
+                foreach (Diagnostic d in diags)
                 {
-                    var doc = proj.GetDocument(d.Location.SourceTree);
+                    Document doc = proj.GetDocument(d.Location.SourceTree);
 
-                    var context = new CodeFixContext(doc!, d, (action, _) => actions.Add(action), CancellationToken.None);
+                    CodeFixContext context = new CodeFixContext(doc!, d, (action, _) => actions.Add(action), CancellationToken.None);
                     await fixer.RegisterCodeFixesAsync(context).ConfigureAwait(false);
                 }
 
@@ -241,9 +237,9 @@ namespace SourceGenerators.Tests
                     break;
                 }
 
-                var operations = await actions[0].GetOperationsAsync(CancellationToken.None).ConfigureAwait(false);
-                var solution = operations.OfType<ApplyChangesOperation>().Single().ChangedSolution;
-                var changedProj = solution.GetProject(proj.Id);
+                ImmutableArray<CodeActionOperation> operations = await actions[0].GetOperationsAsync(CancellationToken.None).ConfigureAwait(false);
+                Solution solution = operations.OfType<ApplyChangesOperation>().Single().ChangedSolution;
+                Project changedProj = solution.GetProject(proj.Id);
                 if (changedProj != proj)
                 {
                     proj = await RecreateProjectDocumentsAsync(changedProj!).ConfigureAwait(false);
@@ -254,10 +250,10 @@ namespace SourceGenerators.Tests
 
             if (sourceNames != null)
             {
-                var l = sourceNames.ToList();
+                List<string> l = sourceNames.ToList();
                 for (int i = 0; i < count; i++)
                 {
-                    var s = await proj.FindDocument(l[i]).GetTextAsync().ConfigureAwait(false);
+                    SourceText s = await proj.FindDocument(l[i]).GetTextAsync().ConfigureAwait(false);
                     results.Add(s.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
                 }
             }
@@ -265,14 +261,14 @@ namespace SourceGenerators.Tests
             {
                 for (int i = 0; i < count; i++)
                 {
-                    var s = await proj.FindDocument($"src-{i}.cs").GetTextAsync().ConfigureAwait(false);
+                    SourceText s = await proj.FindDocument($"src-{i}.cs").GetTextAsync().ConfigureAwait(false);
                     results.Add(s.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
                 }
             }
 
             if (extraFile != null)
             {
-                var s = await proj.FindDocument(extraFile).GetTextAsync().ConfigureAwait(false);
+                SourceText s = await proj.FindDocument(extraFile).GetTextAsync().ConfigureAwait(false);
                 results.Add(s.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
             }
 
@@ -281,9 +277,9 @@ namespace SourceGenerators.Tests
 
         private static async Task<Project> RecreateProjectDocumentsAsync(Project project)
         {
-            foreach (var documentId in project.DocumentIds)
+            foreach (DocumentId documentId in project.DocumentIds)
             {
-                var document = project.GetDocument(documentId);
+                Document document = project.GetDocument(documentId);
                 document = await RecreateDocumentAsync(document!).ConfigureAwait(false);
                 project = document.Project;
             }
@@ -293,7 +289,7 @@ namespace SourceGenerators.Tests
 
         private static async Task<Document> RecreateDocumentAsync(Document document)
         {
-            var newText = await document.GetTextAsync().ConfigureAwait(false);
+            SourceText newText = await document.GetTextAsync().ConfigureAwait(false);
             return document.WithText(SourceText.From(newText.ToString(), newText.Encoding, newText.ChecksumAlgorithm));
         }
     }

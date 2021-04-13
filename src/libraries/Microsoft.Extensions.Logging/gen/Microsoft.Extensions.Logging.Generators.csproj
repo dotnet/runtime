@@ -4,7 +4,6 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-    <LangVersion>9.0</LangVersion>
     <UsingToolXliff>true</UsingToolXliff>
   </PropertyGroup>
 

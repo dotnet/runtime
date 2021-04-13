@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodName.Id, d[0].Id);
         }
 
@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.MissingLogLevel.Id, d[0].Id);
         }
 
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.LoggingMethodHasBody.Id, d[0].Id);
         }
 
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate.Id, d[0].Id);
         }
 
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.TemplateHasNoCorrespondingArgument.Id, d[0].Id);
         }
 
@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.RedundantQualifierInMessage.Id, d[0].Id);
         }
 
@@ -120,7 +120,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.ShouldntMentionExceptionInMessage.Id, d[0].Id);
         }
 
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.ShouldntMentionLogLevelInMessage.Id, d[0].Id);
         }
 
@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.ShouldntMentionLoggerInMessage.Id, d[0].Id);
         }
 
@@ -167,7 +167,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.XXX.Id, d[0].Id);
         }
 
@@ -183,7 +183,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.XXX.Id, d[0].Id);
         }
 
@@ -199,7 +199,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.XXX.Id, d[0].Id);
         }
 #endif
@@ -215,7 +215,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterName.Id, d[0].Id);
         }
 
@@ -233,7 +233,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.LoggingMethodInNestedType.Id, d[0].Id);
         }
 
@@ -266,7 +266,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.MissingRequiredType.Id, d[0].Id);
         }
 
@@ -299,7 +299,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.MissingRequiredType.Id, d[0].Id);
         }
 
@@ -329,7 +329,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.MissingRequiredType.Id, d[0].Id);
         }
 
@@ -395,7 +395,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.ShouldntReuseEventIds.Id, d[0].Id);
             Assert.Contains("in class MyClass", d[0].GetMessage(), StringComparison.InvariantCulture);
         }
@@ -413,7 +413,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.LoggingMethodMustReturnVoid.Id, d[0].Id);
         }
 
@@ -428,7 +428,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.MissingLoggerArgument.Id, d[0].Id);
         }
 
@@ -443,7 +443,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.LoggingMethodShouldBeStatic.Id, d[0].Id);
         }
 
@@ -458,7 +458,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.MissingLoggerField.Id, d[0].Id);
         }
 
@@ -476,7 +476,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.MultipleLoggerFields.Id, d[0].Id);
         }
 
@@ -507,7 +507,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            _ = Assert.Single(d);
+            Assert.Single(d);
             Assert.Equal(DiagnosticDescriptors.LoggingMethodIsGeneric.Id, d[0].Id);
         }
 
@@ -547,7 +547,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public async Task Cancellation()
         {
             await Assert.ThrowsAsync<OperationCanceledException>(async () =>
-                _ = await RunGenerator(@"
+                await RunGenerator(@"
                 partial class C
                 {
                     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
