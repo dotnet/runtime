@@ -14,7 +14,6 @@
 // Strings and sets are indices into a string table.
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -107,13 +106,11 @@ namespace System.Text.RegularExpressions
         public readonly int LeadingAnchor;                                              // the leading anchor, if one exists (RegexPrefixAnalyzer.Bol, etc)
         public readonly bool RightToLeft;                                               // true if right to left
 
-        public readonly Dictionary<char, HashSet<int>> FirstLetterToStringTableIndices;
-
         public RegexCode(RegexTree tree, int[] codes, string[] strings, int trackcount,
                          Hashtable? caps, int capsize,
                          RegexBoyerMoore? boyerMoorePrefix,
                          (string CharClass, bool CaseInsensitive)[]? leadingCharClasses,
-                         int leadingAnchor, bool rightToLeft, Dictionary<char, HashSet<int>> firstLetterToStringTableIndices)
+                         int leadingAnchor, bool rightToLeft)
         {
             Debug.Assert(boyerMoorePrefix is null || leadingCharClasses is null);
 
@@ -128,7 +125,6 @@ namespace System.Text.RegularExpressions
             LeadingCharClasses = leadingCharClasses;
             LeadingAnchor = leadingAnchor;
             RightToLeft = rightToLeft;
-            FirstLetterToStringTableIndices = firstLetterToStringTableIndices;
         }
 
         public static bool OpcodeBacktracks(int Op)
