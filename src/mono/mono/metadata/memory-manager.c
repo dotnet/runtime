@@ -19,7 +19,7 @@ lock_free_mempool_free (LockFreeMempool *mp)
 	chunk = mp->chunks;
 	while (chunk) {
 		next = (LockFreeMempoolChunk *)chunk->prev;
-		mono_vfree (chunk, mono_pagesize (), MONO_MEM_ACCOUNT_DOMAIN);
+		mono_vfree (chunk, mono_pagesize (), MONO_MEM_ACCOUNT_MEM_MANAGER);
 		chunk = next;
 	}
 	g_free (mp);
@@ -37,7 +37,7 @@ lock_free_mempool_chunk_new (LockFreeMempool *mp, int len)
 	size = mono_pagesize ();
 	while (size - sizeof (LockFreeMempoolChunk) < len)
 		size += mono_pagesize ();
-	chunk = (LockFreeMempoolChunk *)mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_DOMAIN);
+	chunk = (LockFreeMempoolChunk *)mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_MEM_MANAGER);
 	g_assert (chunk);
 	chunk->mem = (guint8 *)ALIGN_PTR_TO ((char*)chunk + sizeof (LockFreeMempoolChunk), 16);
 	chunk->size = ((char*)chunk + size) - (char*)chunk->mem;
@@ -91,12 +91,15 @@ lock_free_mempool_alloc0 (LockFreeMempool *mp, guint size)
 	return res;
 }
 
-static void
-memory_manager_init (MonoMemoryManager *memory_manager, gboolean collectible)
+MonoMemoryManager*
+mono_mem_manager_new (MonoAssemblyLoadContext **alcs, int nalcs, gboolean collectible)
 {
 	MonoDomain *domain = mono_get_root_domain ();
+	MonoMemoryManager *memory_manager;
 
-	memory_manager->freeing = FALSE;
+	memory_manager = g_new0 (MonoMemoryManager, 1);
+	memory_manager->collectible = collectible;
+	memory_manager->n_alcs = nalcs;
 
 	mono_coop_mutex_init_recursive (&memory_manager->lock);
 	mono_os_mutex_init (&memory_manager->mp_mutex);
@@ -104,6 +107,9 @@ memory_manager_init (MonoMemoryManager *memory_manager, gboolean collectible)
 	memory_manager->_mp = mono_mempool_new ();
 	memory_manager->code_mp = mono_code_manager_new ();
 	memory_manager->lock_free_mp = lock_free_mempool_new ();
+
+	memory_manager->alcs = mono_mempool_alloc0 (memory_manager->_mp, sizeof (MonoAssemblyLoadContext *) * nalcs);
+	memcpy (memory_manager->alcs, alcs, sizeof (MonoAssemblyLoadContext *) * nalcs);
 
 	memory_manager->class_vtable_array = g_ptr_array_new ();
 
@@ -114,18 +120,8 @@ memory_manager_init (MonoMemoryManager *memory_manager, gboolean collectible)
 
 	if (mono_get_runtime_callbacks ()->init_mem_manager)
 		mono_get_runtime_callbacks ()->init_mem_manager (memory_manager);
-}
 
-MonoSingletonMemoryManager *
-mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, gboolean collectible)
-{
-	MonoSingletonMemoryManager *mem_manager = g_new0 (MonoSingletonMemoryManager, 1);
-	memory_manager_init ((MonoMemoryManager *)mem_manager, collectible);
-
-	mem_manager->memory_manager.is_generic = FALSE;
-	mem_manager->alc = alc;
-
-	return mem_manager;
+	return memory_manager;
 }
 
 static void
@@ -199,19 +195,19 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 }
 
 void
-mono_mem_manager_free_objects_singleton (MonoSingletonMemoryManager *memory_manager)
+mono_mem_manager_free_objects (MonoMemoryManager *memory_manager)
 {
-	g_assert (!memory_manager->memory_manager.freeing);
+	g_assert (!memory_manager->freeing);
 
-	memory_manager_delete_objects (&memory_manager->memory_manager);
+	memory_manager_delete_objects (memory_manager);
 }
 
 void
-mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gboolean debug_unload)
+mono_mem_manager_free (MonoMemoryManager *memory_manager, gboolean debug_unload)
 {
-	g_assert (!memory_manager->memory_manager.is_generic);
+	g_assert (!memory_manager->is_generic);
 
-	memory_manager_delete (&memory_manager->memory_manager, debug_unload);
+	memory_manager_delete (memory_manager, debug_unload);
 	g_free (memory_manager);
 }
 
@@ -348,7 +344,7 @@ gpointer
 
 //107, 131, 163
 #define HASH_TABLE_SIZE 163
-static MonoGenericMemoryManager *mem_manager_cache [HASH_TABLE_SIZE];
+static MonoMemoryManager *mem_manager_cache [HASH_TABLE_SIZE];
 static gint32 mem_manager_cache_hit, mem_manager_cache_miss;
 
 static guint32
@@ -378,7 +374,7 @@ hash_alcs (MonoAssemblyLoadContext **alcs, int nalcs)
 }
 
 static gboolean
-match_mem_manager (MonoGenericMemoryManager *mm, MonoAssemblyLoadContext **alcs, int nalcs)
+match_mem_manager (MonoMemoryManager *mm, MonoAssemblyLoadContext **alcs, int nalcs)
 {
 	int j, k;
 
@@ -397,13 +393,12 @@ match_mem_manager (MonoGenericMemoryManager *mm, MonoAssemblyLoadContext **alcs,
 	return j == nalcs;
 }
 
-
-static MonoGenericMemoryManager*
+static MonoMemoryManager*
 mem_manager_cache_get (MonoAssemblyLoadContext **alcs, int nalcs)
 {
 	guint32 hash_code = hash_alcs (alcs, nalcs);
 	int index = hash_code % HASH_TABLE_SIZE;
-	MonoGenericMemoryManager *mm = mem_manager_cache [index];
+	MonoMemoryManager *mm = mem_manager_cache [index];
 	if (!mm || !match_mem_manager (mm, alcs, nalcs)) {
 		UnlockedIncrement (&mem_manager_cache_miss);
 		return NULL;
@@ -413,31 +408,35 @@ mem_manager_cache_get (MonoAssemblyLoadContext **alcs, int nalcs)
 }
 
 static void
-mem_manager_cache_add (MonoGenericMemoryManager *mem_manager)
+mem_manager_cache_add (MonoMemoryManager *mem_manager)
 {
 	guint32 hash_code = hash_alcs (mem_manager->alcs, mem_manager->n_alcs);
 	int index = hash_code % HASH_TABLE_SIZE;
 	mem_manager_cache [index] = mem_manager;
 }
 
-static MonoGenericMemoryManager*
+static MonoMemoryManager*
 get_mem_manager_for_alcs (MonoAssemblyLoadContext **alcs, int nalcs)
 {
 	MonoAssemblyLoadContext *alc;
-	MonoAssemblyLoadContext *tmp_alcs [1];
 	GPtrArray *mem_managers;
-	MonoGenericMemoryManager *res;
+	MonoMemoryManager *res;
+	gboolean collectible;
 
 	/* Can happen for dynamic images */
-	if (nalcs == 0) {
-		nalcs = 1;
-		tmp_alcs [0] = mono_alc_get_default ();
-		alcs = tmp_alcs;
-	}
+	if (nalcs == 0)
+		return mono_alc_get_default ()->memory_manager;
 
 	/* Common case */
-	if (nalcs == 1 && alcs [0]->generic_memory_manager)
-		return alcs [0]->generic_memory_manager;
+	if (nalcs == 1)
+		return alcs [0]->memory_manager;
+
+	collectible = FALSE;
+	for (int i = 0; i < nalcs; ++i)
+		collectible |= alcs [i]->collectible;
+	if (!collectible)
+		/* Can use the default alc */
+		return mono_alc_get_default ()->memory_manager;
 
 	// Check in a lock free cache
 	res = mem_manager_cache_get (alcs, nalcs);
@@ -458,7 +457,7 @@ get_mem_manager_for_alcs (MonoAssemblyLoadContext **alcs, int nalcs)
 
 	res = NULL;
 	for (int mindex = 0; mindex < mem_managers->len; ++mindex) {
-		MonoGenericMemoryManager *mm = (MonoGenericMemoryManager*)g_ptr_array_index (mem_managers, mindex);
+		MonoMemoryManager *mm = (MonoMemoryManager*)g_ptr_array_index (mem_managers, mindex);
 
 		if (match_mem_manager (mm, alcs, nalcs)) {
 			res = mm;
@@ -472,13 +471,9 @@ get_mem_manager_for_alcs (MonoAssemblyLoadContext **alcs, int nalcs)
 		return res;
 
 	/* Create new mem manager */
-	res = g_new0 (MonoGenericMemoryManager, 1);
-	memory_manager_init ((MonoMemoryManager *)res, FALSE);
+	res = mono_mem_manager_new (alcs, nalcs, collectible);
+	res->is_generic = TRUE;
 
-	res->memory_manager.is_generic = TRUE;
-	res->n_alcs = nalcs;
-	res->alcs = mono_mempool_alloc (res->memory_manager._mp, nalcs * sizeof (MonoAssemblyLoadContext*));
-	memcpy (res->alcs, alcs, nalcs * sizeof (MonoAssemblyLoadContext*));
 	/* The hashes are lazily inited in metadata.c */
 
 	/* Register it into its ALCs */
@@ -492,9 +487,6 @@ get_mem_manager_for_alcs (MonoAssemblyLoadContext **alcs, int nalcs)
 
 	mem_manager_cache_add (res);
 
-	if (nalcs == 1 && !alcs [0]->generic_memory_manager)
-		alcs [0]->generic_memory_manager = res;
-
 	return res;
 }
 
@@ -503,7 +495,7 @@ get_mem_manager_for_alcs (MonoAssemblyLoadContext **alcs, int nalcs)
  *
  *   Return a memory manager for allocating memory owned by the set of IMAGES.
  */
-MonoGenericMemoryManager*
+MonoMemoryManager*
 mono_mem_manager_get_generic (MonoImage **images, int nimages)
 {
 	MonoAssemblyLoadContext **alcs = g_newa (MonoAssemblyLoadContext*, nimages);
@@ -533,8 +525,8 @@ mono_mem_manager_get_generic (MonoImage **images, int nimages)
  *
  *   Return a mem manager which depends on the ALCs of MM1/MM2.
  */
-MonoGenericMemoryManager*
-mono_mem_manager_merge (MonoGenericMemoryManager *mm1, MonoGenericMemoryManager *mm2)
+MonoMemoryManager*
+mono_mem_manager_merge (MonoMemoryManager *mm1, MonoMemoryManager *mm2)
 {
 	MonoAssemblyLoadContext **alcs = g_newa (MonoAssemblyLoadContext*, mm1->n_alcs + mm2->n_alcs);
 

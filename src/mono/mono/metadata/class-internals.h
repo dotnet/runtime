@@ -405,7 +405,7 @@ struct _MonoMethodInflated {
 	} method;
 	MonoMethod *declaring;		/* the generic method definition. */
 	MonoGenericContext context;	/* The current instantiation */
-	MonoGenericMemoryManager *owner; /* The mem manager that the inflated method belongs to. */
+	MonoMemoryManager *owner; /* The mem manager that the inflated method belongs to. */
 };
 
 /*
@@ -420,7 +420,7 @@ struct _MonoGenericClass {
 	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */
 
 	/* The mem manager which owns this generic class. */
-	MonoGenericMemoryManager *owner;
+	MonoMemoryManager *owner;
 };
 
 /* Additional details about a MonoGenericParam */
@@ -903,13 +903,13 @@ mono_metadata_get_image_set_for_class (MonoClass *klass);
 MonoImageSet *
 mono_metadata_get_image_set_for_method (MonoMethodInflated *method);
 
-MonoGenericMemoryManager *
+MonoMemoryManager *
 mono_metadata_get_mem_manager_for_type (MonoType *type);
 
-MonoGenericMemoryManager *
+MonoMemoryManager *
 mono_metadata_get_mem_manager_for_class (MonoClass *klass);
 
-MonoGenericMemoryManager*
+MonoMemoryManager*
 mono_metadata_get_mem_manager_for_method (MonoMethodInflated *method);
 
 MONO_API MonoMethodSignature *

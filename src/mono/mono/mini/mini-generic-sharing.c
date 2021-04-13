@@ -3964,7 +3964,6 @@ shared_gparam_equal (gconstpointer ka, gconstpointer kb)
 MonoType*
 mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 {
-	MonoGenericMemoryManager *gen_mm;
 	MonoMemoryManager *mm;
 	MonoGenericParam *par = t->data.generic_param;
 	MonoGSharedGenericParam *copy, key;
@@ -3972,8 +3971,7 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	MonoImage *image = NULL;
 	char *name;
 
-	gen_mm = mono_mem_manager_merge (mono_metadata_get_mem_manager_for_type (t), mono_metadata_get_mem_manager_for_type (constraint));
-	mm = (MonoMemoryManager*)gen_mm;
+	mm = mono_mem_manager_merge (mono_metadata_get_mem_manager_for_type (t), mono_metadata_get_mem_manager_for_type (constraint));
 
 	memset (&key, 0, sizeof (key));
 	key.parent = par;
@@ -3987,13 +3985,13 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	 * is unique wrt T/CONSTRAINT.
 	 */
 	mono_mem_manager_lock (mm);
-	if (!gen_mm->gshared_types) {
-		gen_mm->gshared_types_len = MONO_TYPE_INTERNAL;
-		gen_mm->gshared_types = g_new0 (GHashTable*, gen_mm->gshared_types_len);
+	if (!mm->gshared_types) {
+		mm->gshared_types_len = MONO_TYPE_INTERNAL;
+		mm->gshared_types = g_new0 (GHashTable*, mm->gshared_types_len);
 	}
-	if (!gen_mm->gshared_types [constraint->type])
-		gen_mm->gshared_types [constraint->type] = g_hash_table_new (shared_gparam_hash, shared_gparam_equal);
-	res = (MonoType *)g_hash_table_lookup (gen_mm->gshared_types [constraint->type], &key);
+	if (!mm->gshared_types [constraint->type])
+		mm->gshared_types [constraint->type] = g_hash_table_new (shared_gparam_hash, shared_gparam_equal);
+	res = (MonoType *)g_hash_table_lookup (mm->gshared_types [constraint->type], &key);
 	mono_mem_manager_unlock (mm);
 	if (res)
 		return res;
@@ -4016,7 +4014,7 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 
 	mono_mem_manager_lock (mm);
 	/* Duplicates are ok */
-	g_hash_table_insert (gen_mm->gshared_types [constraint->type], copy, res);
+	g_hash_table_insert (mm->gshared_types [constraint->type], copy, res);
 	mono_mem_manager_unlock (mm);
 
 	return res;

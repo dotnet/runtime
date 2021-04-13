@@ -1209,14 +1209,13 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	if (!mono_class_is_gtd (iresult->declaring->klass) && !mono_class_is_ginst (iresult->declaring->klass))
 		iresult->context.class_inst = NULL;
 
-	MonoGenericMemoryManager *gen_mm = mono_metadata_get_mem_manager_for_method (iresult);
-	MonoMemoryManager *mm = (MonoMemoryManager*)gen_mm;
+	MonoMemoryManager *mm = mono_metadata_get_mem_manager_for_method (iresult);
 
 	// check cache
 	mono_mem_manager_lock (mm);
-	if (!gen_mm->gmethod_cache)
-		gen_mm->gmethod_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
-	cached = (MonoMethodInflated *)g_hash_table_lookup (gen_mm->gmethod_cache, iresult);
+	if (!mm->gmethod_cache)
+		mm->gmethod_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
+	cached = (MonoMethodInflated *)g_hash_table_lookup (mm->gmethod_cache, iresult);
 	mono_mem_manager_unlock (mm);
 
 	if (cached) {
@@ -1311,10 +1310,10 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 	// check cache
 	mono_mem_manager_lock (mm);
-	cached = (MonoMethodInflated *)g_hash_table_lookup (gen_mm->gmethod_cache, iresult);
+	cached = (MonoMethodInflated *)g_hash_table_lookup (mm->gmethod_cache, iresult);
 	if (!cached) {
-		g_hash_table_insert (gen_mm->gmethod_cache, iresult, iresult);
-		iresult->owner = gen_mm;
+		g_hash_table_insert (mm->gmethod_cache, iresult, iresult);
+		iresult->owner = mm;
 		cached = iresult;
 	}
 	mono_mem_manager_unlock (mm);
