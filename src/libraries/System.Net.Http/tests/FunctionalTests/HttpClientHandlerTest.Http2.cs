@@ -3383,16 +3383,15 @@ namespace System.Net.Http.Functional.Tests
                         options.ServerCertificate = Net.Test.Common.Configuration.Certificates.GetServerCertificate();
                         options.ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
                         options.ApplicationProtocols.Add(SslApplicationProtocol.Http2);
+
                         // Negotiate TLS.
                         await sslStream.AuthenticateAsServerAsync(options, CancellationToken.None).ConfigureAwait(false);
+
                         // Send back HTTP/1.1 response
                         await sslStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/1.1 400 Unrecognized request\r\n\r\n"), CancellationToken.None);
                     });
 
-
                     Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => requestTask);
-                    Assert.NotNull(e.InnerException);
-                    Assert.False(e.InnerException is ObjectDisposedException);
                 });
             }
         }
