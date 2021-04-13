@@ -446,7 +446,7 @@ while [[ $# > 0 ]]; do
       ;;
 
       -pgoinstrument)
-      arguments="$arguments /p:pgoinstrument=true"
+      arguments="$arguments /p:PgoInstrument=true"
       shift 1
       ;;
 
