@@ -39,7 +39,6 @@ jobs:
     collectionType: $ {{ parameters.collectionType }}
     collectionName: ${{ parameters.collectionName }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    timeoutInminutes: ${{ parameters.timeoutInMinutes }}
 
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'
@@ -49,6 +48,8 @@ jobs:
     # tests collection takes longer so increase timeout to 8 hours
     ${{ if or(eq(parameters.collectionName, 'tests'), eq(parameters.collectionName, 'tests_libraries')) }}:
       timeoutInMinutes: 480
+    ${{ if and(ne(parameters.collectionName, 'tests'), ne(parameters.collectionName, 'tests_libraries')) }}:
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
 
