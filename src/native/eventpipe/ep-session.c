@@ -49,9 +49,15 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 
 	bool success = true;
 	ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
+	const uint32_t write_time_budget_ms = 100;
+	const uint32_t ms_in_ns = 1000000;
+	int64_t frequency = ep_rt_perf_frequency_query ();
+	int64_t start;
+	int64_t stop;
 
 	EP_GCX_PREEMP_ENTER
 		while (ep_session_get_ipc_streaming_enabled (session)) {
+			start = ep_rt_perf_counter_query ();
 			bool events_written = false;
 			if (!ep_session_write_all_buffers_to_file (session, &events_written)) {
 				success = false;
@@ -63,9 +69,13 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 				ep_rt_wait_event_wait (wait_event, EP_INFINITE_WAIT, false);
 			}
 
-			// Wait until it's time to sample again.
-			const uint32_t timeout_ns = 100000000; // 100 msec.
-			ep_rt_thread_sleep (timeout_ns);
+			stop = ep_rt_perf_counter_query ();
+			uint32_t worked_ms = (uint32_t)(((stop - start) * 1000) / frequency);
+
+			if (worked_ms < write_time_budget_ms) {
+				uint32_t timeout_ns = (write_time_budget_ms - worked_ms) * ms_in_ns;
+				ep_rt_thread_sleep (timeout_ns);
+			}
 		}
 
 		ep_rt_wait_event_set (&session->rt_thread_shutdown_event);

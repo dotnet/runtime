@@ -125,6 +125,16 @@ struct _EventPipeBufferManager_Internal {
 	// The total amount of allocations we can do after one sequence
 	// point before triggering the next one
 	size_t sequence_point_alloc_budget;
+	// An unprotected array of used buffers that is _only_ added to
+	// during buffer_manager_write_all_buffers_to_vile_v4 via call to
+	// buffer_manager_advance_next_non_empty_buffer. The method that
+	// deletes these buffers (deallocate_used_buffers) happens outside
+	// the lock but *cannot* happen at the same time as write_all_buffers_to_file.
+	//
+	// Proper use of this is as follows:
+	//   write_all_buffers_to_file_v4(...);
+	//   deallocate_used_buffers(...);
+	ep_rt_buffer_array_t used_buffer_array;
 
 #ifdef EP_CHECKED_BUILD
 	volatile int64_t num_events_stored;
@@ -234,6 +244,13 @@ ep_buffer_manager_get_next_event (EventPipeBufferManager *buffer_manager);
 // to free their buffer for a very long time.
 void
 ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager);
+
+// Deallocate any buffers in used_buffer_array which is populated
+// during ep_buffer_manager_write_all_buffers_to_file_v4.
+// !!! This function is explicitly not protected by the buffer manager lock.
+// !!! This function cannot be called concurrently with ep_buffer_manager_write_all_buffers_to_file_v4
+void
+ep_buffer_manager_deallocate_used_buffers (EventPipeBufferManager *buffer_manager);
 
 #ifdef EP_CHECKED_BUILD
 bool

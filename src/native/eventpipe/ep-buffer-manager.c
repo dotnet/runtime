@@ -695,7 +695,8 @@ buffer_manager_advance_to_non_empty_buffer (
 				// delete the empty buffer
 				EventPipeBuffer *removed_buffer = ep_buffer_list_get_and_remove_head (buffer_list);
 				EP_ASSERT (current_buffer == removed_buffer);
-				buffer_manager_deallocate_buffer (buffer_manager, removed_buffer);
+				// buffer_manager_deallocate_buffer (buffer_manager, removed_buffer);
+				ep_rt_buffer_array_append(&buffer_manager->used_buffer_array, removed_buffer);
 
 				// get the next buffer
 				current_buffer = buffer_list->head_buffer;
@@ -785,6 +786,9 @@ ep_buffer_manager_alloc (
 	ep_rt_wait_event_alloc (&instance->rt_wait_event, false, true);
 	ep_raise_error_if_nok (ep_rt_wait_event_is_valid (&instance->rt_wait_event));
 
+	ep_rt_buffer_array_alloc (&instance->used_buffer_array);
+	ep_raise_error_if_nok (ep_rt_buffer_array_is_valid (&instance->used_buffer_array));
+
 	instance->session = session;
 	instance->size_of_all_buffers = 0;
 
@@ -831,6 +835,9 @@ ep_buffer_manager_free (EventPipeBufferManager * buffer_manager)
 	ep_rt_wait_event_free (&buffer_manager->rt_wait_event);
 
 	ep_rt_spin_lock_free (&buffer_manager->rt_lock);
+
+	// TODO: Don't we need to free the thread_session_state_list and sequence_point_list too?
+	ep_rt_buffer_array_free (&buffer_manager->used_buffer_array);
 
 	ep_rt_object_free (buffer_manager);
 }
@@ -1056,6 +1063,8 @@ ep_buffer_manager_write_all_buffers_to_file (
 		ep_buffer_manager_write_all_buffers_to_file_v4 (buffer_manager, file, stop_timestamp, events_written);
 	else
 		ep_buffer_manager_write_all_buffers_to_file_v3 (buffer_manager, file, stop_timestamp, events_written);
+
+	ep_buffer_manager_deallocate_used_buffers (buffer_manager);
 }
 
 void
@@ -1328,6 +1337,8 @@ ep_buffer_manager_get_next_event (EventPipeBufferManager *buffer_manager)
 	// buffer at the same time.
 	ep_timestamp_t stop_timetamp = ep_perf_timestamp_get ();
 	buffer_manager_move_next_event_any_thread (buffer_manager, stop_timetamp);
+	if (ep_rt_buffer_array_size (&buffer_manager->used_buffer_array) > 0)
+		ep_buffer_manager_deallocate_used_buffers (buffer_manager);
 	return buffer_manager->current_event;
 }
 
@@ -1394,12 +1405,28 @@ ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager)
 		ep_rt_thread_session_state_array_iterator_next (&thread_session_states_to_remove_iterator);
 	}
 
+	ep_buffer_manager_deallocate_used_buffers (buffer_manager);
+
 ep_on_exit:
 	ep_rt_thread_session_state_array_fini (&thread_session_states_to_remove);
 	return;
 
 ep_on_error:
 	ep_exit_error_handler ();
+}
+
+void
+ep_buffer_manager_deallocate_used_buffers (EventPipeBufferManager *buffer_manager)
+{
+	for (ep_rt_buffer_array_iterator_t buffer_array_iterator = ep_rt_buffer_array_iterator_begin (&buffer_manager->used_buffer_array);
+		 !ep_rt_buffer_array_iterator_end (&buffer_manager->used_buffer_array, &buffer_array_iterator);
+		 ep_rt_buffer_array_iterator_next (&buffer_array_iterator)) {
+
+		EventPipeBuffer *buffer = ep_rt_buffer_array_iterator_value (&buffer_array_iterator);
+		buffer_manager_deallocate_buffer (buffer_manager, buffer);
+	}
+
+	ep_rt_buffer_array_clear (&buffer_manager->used_buffer_array);
 }
 
 #ifdef EP_CHECKED_BUILD
