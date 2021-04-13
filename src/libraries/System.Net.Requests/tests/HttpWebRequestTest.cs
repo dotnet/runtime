@@ -1085,7 +1085,7 @@ namespace System.Net.Tests
                 try
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
-                    request.ReadWriteTimeout = 10;
+                    request.ReadWriteTimeout = 20;
                     Exception e = await Assert.ThrowsAnyAsync<Exception>(async () =>
                     {
                         using WebResponse response = await GetResponseAsync(request);
