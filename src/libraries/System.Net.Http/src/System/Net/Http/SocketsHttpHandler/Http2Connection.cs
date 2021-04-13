@@ -1271,16 +1271,15 @@ namespace System.Net.Http
         {
             Debug.Assert(Monitor.IsEntered(SyncObject));
 
-            // Throw a retryable exception that will allow this unprocessed request to be processed on a new connection.
-            // In rare cases, such as receiving GOAWAY immediately after connection establishment, we will not
-            // actually retry the request, so we must give a useful exception here for these cases.
-
-            Exception innerException;
             if (_abortException != null)
             {
-                innerException = _abortException;
+                // We had an IO failure on the connection. Don't retry in this case.
+                throw new HttpRequestException(SR.net_http_client_execution_error, _abortException);
             }
-            else if (_lastStreamId != -1)
+
+            // Connection is being gracefully shutdown. Allow the request to be retried.
+            Exception innerException;
+            if (_lastStreamId != -1)
             {
                 // We must have received a GOAWAY.
                 innerException = new IOException(SR.net_http_server_shutdown);
@@ -1288,7 +1287,6 @@ namespace System.Net.Http
             else
             {
                 // We must either be disposed or out of stream IDs.
-                // Note that in this case, the exception should never be visible to the user (it should be retried).
                 Debug.Assert(_disposed || _nextStream == MaxStreamId);
 
                 innerException = new ObjectDisposedException(nameof(Http2Connection));
