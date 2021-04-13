@@ -62,19 +62,19 @@ namespace System.IO.Strategies
 
                 if (allocationSize > 0)
                 {
-                    uint ntCreateFileResult = Interop.Kernel32.NtCreateFile(path, mode, access, share, options, allocationSize, out IntPtr fileHandle);
-                    if (ntCreateFileResult == 0)
+                    (uint ntStatus, IntPtr fileHandle) = Interop.NtDll.CreateFile(path, mode, access, share, options, allocationSize);
+                    if (ntStatus == 0)
                     {
                         return ValidateFileHandle(new SafeFileHandle(fileHandle, ownsHandle: true), path, (options & FileOptions.Asynchronous) != 0);
                     }
-                    else if (ntCreateFileResult == ERROR_STATUS_DISK_FULL)
+                    else if (ntStatus == ERROR_STATUS_DISK_FULL)
                     {
                         throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, path, allocationSize));
                     }
 
                     // NtCreateFile has failed for some other reason than a full disk.
                     // Instead of implementing the mapping for every NS Status value (there are plenty of them: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55)
-                    // increasing both the code complexity and the chance for breaking backward compatibility (by throwing a different exception than CreateFileW)
+                    // or using RtlNtStatusToDosError & GetExceptionForWin32Error
                     // the code falls back to CreateFileW that just throws the right exception.
                 }
 
