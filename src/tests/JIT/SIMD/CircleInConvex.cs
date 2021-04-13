@@ -16,6 +16,14 @@ namespace ClassLibrary
 
     public class test
     {
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
         const float EPS = Single.Epsilon;
         const int steps = 100;
         const float INF = Single.PositiveInfinity;
@@ -245,7 +253,7 @@ namespace ClassLibrary
         static int Main(string[] args)
         {
             List<Point> points = new List<Point>();
-            Random random = new Random(13);
+            Random random = new Random(Seed);
             for (int i = 0; i < 100; ++i)
             {
                 Point p;

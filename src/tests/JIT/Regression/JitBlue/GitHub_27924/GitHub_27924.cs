@@ -12,6 +12,14 @@ class Program
     static int returnVal = 100;
     static byte[][] s = new byte[1000][];
 
+    public const int DefaultSeed = 20010415;
+    public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+    {
+        string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+        string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+        _ => DefaultSeed
+    };
+
     static void Work()
     {
         for (uint i = 0; i < 1000000; i++)
@@ -40,7 +48,7 @@ class Program
             tasks.Add(Task.Run(Work));
         }
 
-        Random r = new Random();
+        Random r = new Random(Seed);
         for (uint i = 0; i < 10000; i++)
         {
             s[r.Next(s.Length)] = new byte[3 + r.Next(100)];

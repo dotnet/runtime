@@ -7,9 +7,17 @@ namespace JitInliningTest
 {
     internal class MathFunc
     {
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
         public static int Main()
         {
-            Random r = new Random();
+            Random r = new Random(Seed);
 
             int a = Math.Abs(r.Next(100) - r.Next(100));
             a += Math.Max(r.Next(100), r.Next(100));

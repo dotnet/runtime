@@ -897,9 +897,17 @@ namespace Span
             return data;
         }
 
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
         static void SetData(byte[] data)
         {
-            Random Rnd = new Random(42);
+            Random Rnd = new Random(Seed);
             Rnd.NextBytes(data);
         }
 
