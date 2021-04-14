@@ -2421,166 +2421,64 @@ namespace System.Net.Sockets
             return result.ReceivedBytes;
         }
 
-        // Routine Description:
-        //
-        //    BeginAccept - Does an async winsock accept, creating a new socket on success
-        //
-        //     Works by creating a pending accept request the first time,
-        //     and subsequent calls are queued so that when the first accept completes,
-        //     the next accept can be resubmitted in the callback.
-        //     this routine may go pending at which time,
-        //     but any case the callback Delegate will be called upon completion
-        //
-        // Arguments:
-        //
-        //    Callback - Async Callback Delegate that is called upon Async Completion
-        //    State - State used to track callback, set by caller, not required
-        //
-        // Return Value:
-        //
-        //    IAsyncResult - Async result used to retrieve resultant new socket
-        public IAsyncResult BeginAccept(AsyncCallback? callback, object? state)
-        {
-            if (!_isDisconnected)
-            {
-                return BeginAcceptCommon(acceptSocket: null, receiveSize: 0, callback, state);
-            }
+        public IAsyncResult BeginAccept(AsyncCallback? callback, object? state) =>
+            TaskToApm.Begin(AcceptAsync(), callback, state);
 
-            Debug.Assert(Disposed);
-            ThrowObjectDisposedException();
-            return null; // unreachable
-        }
-
-        private IAsyncResult BeginAcceptCommon(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
+        public Socket EndAccept(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
+            return TaskToApm.End<Socket>(asyncResult);
+        }
 
+        // This method provides support for legacy BeginAccept methods that take a "receiveSize" argument and
+        // allow data to be received as part of the accept operation.
+        // There's no direct equivalent of this in the Task APIs, so we mimic it here.
+        private async Task<(Socket s, byte[] buffer, int bytesReceived)> AcceptAndReceiveHelperAsync(Socket? acceptSocket, int receiveSize)
+        {
             // Validate input parameters.
             if (receiveSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(receiveSize));
             }
 
-            // Set up the async result with flowing.
-            AcceptOverlappedAsyncResult asyncResult = new AcceptOverlappedAsyncResult(this, state, callback);
-            asyncResult.StartPostingAsyncOp(false);
+            Socket s = await AcceptAsync(acceptSocket).ConfigureAwait(false);
 
-            // Start the accept.
-            if (_rightEndPoint == null)
+            byte[] buffer;
+            int bytesReceived;
+            if (receiveSize == 0)
             {
-                throw new InvalidOperationException(SR.net_sockets_mustbind);
+                buffer = Array.Empty<byte>();
+                bytesReceived = 0;
+            }
+            else
+            {
+                buffer = new byte[receiveSize];
+                bytesReceived = await s.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
             }
 
-            if (!_isListening)
-            {
-                throw new InvalidOperationException(SR.net_sockets_mustlisten);
-            }
-
-            SafeSocketHandle? acceptHandle;
-            asyncResult.AcceptSocket = GetOrCreateAcceptSocket(acceptSocket, false, nameof(acceptSocket), out acceptHandle);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"AcceptSocket:{acceptSocket}");
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AcceptStart(_rightEndPoint);
-
-            int socketAddressSize = GetAddressSize(_rightEndPoint);
-            SocketError errorCode;
-            try
-            {
-                errorCode = SocketPal.AcceptAsync(this, _handle, acceptHandle, receiveSize, socketAddressSize, asyncResult);
-            }
-            catch (Exception ex)
-            {
-                if (SocketsTelemetry.Log.IsEnabled())
-                {
-                    SocketsTelemetry.Log.AfterAccept(SocketError.Interrupted, ex.Message);
-                }
-
-                throw;
-            }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"AcceptAsync returns:{errorCode} {asyncResult}");
-
-            // Throw an appropriate SocketException if the native call fails synchronously.
-            if (!CheckErrorAndUpdateStatus(errorCode))
-            {
-                UpdateAcceptSocketErrorForDisposed(ref errorCode);
-
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(errorCode);
-
-                throw new SocketException((int)errorCode);
-            }
-
-            // Finish the flow capture, maybe complete here.
-            asyncResult.FinishPostingAsyncOp(ref Caches.AcceptClosureCache);
-
-            return asyncResult;
+            return (s, buffer, bytesReceived);
         }
 
-        // Routine Description:
-        //
-        //    EndAccept -  Called by user code after I/O is done or the user wants to wait.
-        //                 until Async completion, so it provides End handling for async Accept calls,
-        //                 and retrieves new Socket object
-        //
-        // Arguments:
-        //
-        //    AsyncResult - the AsyncResult Returned from BeginAccept call
-        //
-        // Return Value:
-        //
-        //    Socket - a valid socket if successful
-        public Socket EndAccept(IAsyncResult asyncResult)
+        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state) =>
+            BeginAccept(acceptSocket: null, receiveSize, callback, state);
+
+        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state) =>
+            TaskToApm.Begin(AcceptAndReceiveHelperAsync(acceptSocket, receiveSize), callback, state);
+
+        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
         {
-            return EndAcceptCommon(out _, out _, asyncResult);
-        }
-        private Socket EndAcceptCommon(out byte[]? buffer, out int bytesTransferred, IAsyncResult asyncResult)
-        {
-            if (Disposed)
-            {
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(SocketError.Interrupted);
-
-                ThrowObjectDisposedException();
-            }
-
-            // Validate input parameters.
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-            AcceptOverlappedAsyncResult? castedAsyncResult = asyncResult as AcceptOverlappedAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-            }
-            if (castedAsyncResult.EndCalled)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndAccept"));
-            }
-
-            Socket socket = (Socket)castedAsyncResult.InternalWaitForCompletion()!;
-            bytesTransferred = (int)castedAsyncResult.BytesTransferred;
-            buffer = castedAsyncResult.Buffer;
-
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.BytesReceived(bytesTransferred);
-
-            castedAsyncResult.EndCalled = true;
-
-            // Throw an appropriate SocketException if the native call failed asynchronously.
-            SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
-
-            if (errorCode != SocketError.Success)
-            {
-                UpdateAcceptSocketErrorForDisposed(ref errorCode);
-
-                if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(errorCode);
-
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
-            }
-
-            if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterAccept(SocketError.Success);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Accepted(socket, socket.RemoteEndPoint, socket.LocalEndPoint);
+            Socket socket = EndAccept(out byte[] innerBuffer, out int bytesTransferred, asyncResult);
+            buffer = new byte[bytesTransferred];
+            Buffer.BlockCopy(innerBuffer, 0, buffer, 0, bytesTransferred);
             return socket;
+        }
+
+        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
+        {
+            ThrowIfDisposed();
+            Socket s;
+            (s, buffer, bytesTransferred) = TaskToApm.End<(Socket, byte[], int)>(asyncResult);
+            return s;
         }
 
         // Disables sends and receives on a socket.
