@@ -994,6 +994,8 @@ socket_transport_connect (const char *address)
 	char *host;
 	int port;
 
+	MONO_REQ_GC_SAFE_MODE;
+
 	if (agent_config.address) {
 		res = parse_address (agent_config.address, &host, &port);
 		g_assert (res == 0);
@@ -1009,7 +1011,9 @@ socket_transport_connect (const char *address)
 	conn_fd = -1;
 	listen_fd = -1;
 	
+	MONO_ENTER_GC_UNSAFE;
 	mono_networking_init();
+	MONO_EXIT_GC_UNSAFE;
 
 	if (host) {
 		int hints[] = {
@@ -1020,7 +1024,9 @@ socket_transport_connect (const char *address)
 
 		for (int i = 0; i < sizeof(hints) / sizeof(int); i++) {
 			/* Obtain address(es) matching host/port */
+			MONO_ENTER_GC_UNSAFE;
 			s = mono_get_address_info (host, port, hints[i], &result);
+			MONO_EXIT_GC_UNSAFE;
 			if (s == 0)
 				break;
 		}
@@ -1069,7 +1075,9 @@ socket_transport_connect (const char *address)
 				socklen_t sock_len;
 				int n = 1;
 
+				MONO_ENTER_GC_UNSAFE;
 				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+				MONO_EXIT_GC_UNSAFE;
 
 				sfd = socket (rp->family, rp->socktype, rp->protocol);
 				if (sfd == -1)
@@ -1089,7 +1097,9 @@ socket_transport_connect (const char *address)
 				break;
 			}
 
+			MONO_ENTER_GC_UNSAFE;
 			mono_free_address_info (result);
+			MONO_EXIT_GC_UNSAFE;
 		}
 
 		if (agent_config.defer)
@@ -1106,9 +1116,7 @@ socket_transport_connect (const char *address)
 			FD_ZERO (&readfds);
 			FD_SET (sfd, &readfds);
 
-			MONO_ENTER_GC_SAFE;
 			res = select (sfd + 1, &readfds, NULL, NULL, &tv);
-			MONO_EXIT_GC_SAFE;
 
 			if (res == 0) {
 				PRINT_ERROR_MSG ("debugger-agent: Timed out waiting to connect.\n");
@@ -1132,7 +1140,9 @@ socket_transport_connect (const char *address)
 				MonoSocketAddress sockaddr;
 				socklen_t sock_len;
 
+				MONO_ENTER_GC_UNSAFE;
 				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+				MONO_EXIT_GC_UNSAFE;
 
 				sfd = socket (rp->family, rp->socktype,
 							rp->protocol);
@@ -1167,10 +1177,16 @@ socket_transport_connect (const char *address)
 
 		conn_fd = sfd;
 
+		MONO_ENTER_GC_UNSAFE;
 		mono_free_address_info (result);
+		MONO_EXIT_GC_UNSAFE;
 	}
 	
-	if (!transport_handshake ())
+	gboolean handshake_ok;
+	MONO_ENTER_GC_UNSAFE;
+	handshake_ok = transport_handshake ();
+	MONO_EXIT_GC_UNSAFE;
+	if (!handshake_ok)
 		exit (1);
 }
 
@@ -1226,13 +1242,19 @@ socket_fd_transport_connect (const char *address)
 {
 	int res;
 
+	MONO_REQ_GC_SAFE_MODE;
+
 	res = sscanf (address, "%d", &conn_fd);
 	if (res != 1) {
 		PRINT_ERROR_MSG ("debugger-agent: socket-fd transport address is invalid: '%s'\n", address);
 		exit (1);
 	}
 
-	if (!transport_handshake ())
+	gboolean handshake_ok;
+	MONO_ENTER_GC_UNSAFE;
+	handshake_ok = transport_handshake ();
+	MONO_EXIT_GC_UNSAFE;
+	if (!handshake_ok)
 		exit (1);
 }
 
@@ -9855,6 +9877,8 @@ cmd_to_string (CommandSet set, int command)
 static gboolean
 wait_for_attach (void)
 {
+	MONO_REQ_GC_SAFE_MODE;
+
 #ifndef DISABLE_SOCKET_TRANSPORT
 	if (listen_fd == -1) {
 		PRINT_DEBUG_MSG (1, "[dbg] Invalid listening socket\n");
@@ -9874,7 +9898,10 @@ wait_for_attach (void)
 #endif
 
 	/* Handshake */
+
+	MONO_ENTER_GC_UNSAFE;
 	disconnected = !transport_handshake ();
+	MONO_EXIT_GC_UNSAFE;
 	if (disconnected) {
 		PRINT_DEBUG_MSG (1, "Transport handshake failed!\n");
 		return FALSE;
