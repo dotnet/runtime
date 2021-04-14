@@ -590,10 +590,7 @@ ULONG ManagedObjectWrapper::ReleaseFromReferenceTracker()
     // If we observe the destroy sentinel, then this release
     // must destroy the wrapper.
     if (refCount == DestroySentinel)
-    {
-        _ASSERTE(!IsSet(CreateComInterfaceFlagsEx::IsPegged));
         Destroy(this);
-    }
 
     return GetTrackerCount(refCount);
 }
