@@ -1356,20 +1356,23 @@ private:
 #endif // DEBUG
 
 #if TRACK_LSRA_STATS
-    unsigned    regCandidateVarCount;
-    const char* getStatName(unsigned stat);
+    unsigned regCandidateVarCount;
     void updateLsraStat(LsraStat stat, unsigned currentBBNum);
     void dumpLsraStats(FILE* file);
+    void dumpLsraStatsCsv(FILE* file);
     LsraStat firstRegSelStat = LsraStat::REGSEL_FREE;
+
+public:
+    static const char* getStatName(unsigned stat);
 
 #define INTRACK_STATS(x) x
 #else // !TRACK_LSRA_STATS
 #define INTRACK_STATS(x)
 #endif // !TRACK_LSRA_STATS
 
+private:
     Compiler* compiler;
 
-private:
     CompAllocator getAllocator(Compiler* comp)
     {
         return comp->getAllocator(CMK_LSRA);

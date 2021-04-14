@@ -1291,13 +1291,17 @@ void LinearScan::doLinearScan()
     assert(blockEpoch == compiler->GetCurBasicBlockEpoch());
 
 #if TRACK_LSRA_STATS
-    if ((JitConfig.DisplayLsraStats() != 0)
+    if ((JitConfig.DisplayLsraStats() == 1)
 #ifdef DEBUG
         || VERBOSE
 #endif
         )
     {
         dumpLsraStats(jitstdout);
+    }
+    else if ((JitConfig.DisplayLsraStats() == 2))
+    {
+        dumpLsraStatsCsv(jitstdout);
     }
 #endif // TRACK_LSRA_STATS
 
@@ -9386,8 +9390,8 @@ void LinearScan::dumpLsraStats(FILE* file)
     {
         numSpillTemps += maxSpill[i];
     }
-    fprintf(file, "Total Number of spill temps created: %d\n\n", numSpillTemps);
-    fprintf(file, "----------\n");
+    fprintf(file, "Total Number of spill temps created: %d\n", numSpillTemps);
+    fprintf(file, "..........\n");
     bool addedBlockHeader = false;
     bool anyNonZeroStat   = false;
 
@@ -9456,12 +9460,12 @@ void LinearScan::dumpLsraStats(FILE* file)
         }
     }
 
-    fprintf(file, "----------\n");
+    fprintf(file, "..........\n");
     for (int regSelectI = 0; regSelectI < COUNT; regSelectI++)
     {
         if (regSelectI == firstRegSelStat)
         {
-            fprintf(file, "----------\n");
+            fprintf(file, "..........\n");
         }
         // TODO-review: I don't see a point of displaying Stats (SpillCount, etc.) if they are zero. Thoughts?
         if ((regSelectI < firstRegSelStat) || (sumStats[regSelectI] != 0))
@@ -9479,6 +9483,57 @@ void LinearScan::dumpLsraStats(FILE* file)
             }
         }
     }
+    printf("\n");
+}
+
+// -----------------------------------------------------------
+// dumpLsraStatsCsvFormat - dumps Lsra stats to given file in csv format.
+//
+// Arguments:
+//    file    -  file to which stats are to be written.
+//
+void LinearScan::dumpLsraStatsCsv(FILE* file)
+{
+    unsigned sumStats[LsraStat::COUNT] = {0};
+
+    // Write the header if the file is empty
+    if (ftell(file) == 0)
+    {
+        // header
+        fprintf(file, "\"Method Name\"");
+        for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
+        {
+            fprintf(file, ",\"%s\"", LinearScan::getStatName(statIndex));
+        }
+        fprintf(file, "\n");
+    }
+
+    // bbNum == 0
+    for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
+    {
+        sumStats[statIndex] += blockInfo[0].stats[statIndex];
+    }
+
+    // blocks
+    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        if (block->bbNum > bbNumMaxBeforeResolution)
+        {
+            continue;
+        }
+
+        for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
+        {
+            sumStats[statIndex] += blockInfo[block->bbNum].stats[statIndex];
+        }
+    }
+
+    fprintf(file, "\"%s\"", compiler->info.compFullName);
+    for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
+    {
+        fprintf(file, ",%u", sumStats[statIndex]);
+    }
+    fprintf(file, "\n");
 }
 #endif // TRACK_LSRA_STATS
 
