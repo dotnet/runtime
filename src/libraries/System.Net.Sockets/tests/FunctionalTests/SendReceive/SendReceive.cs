@@ -479,7 +479,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows8x))]
         [MemberData(nameof(LoopbacksAndBuffers))]
         public async Task SendRecvPollSync_TcpListener_Socket(IPAddress listenAt, bool pollBeforeOperation)
         {
