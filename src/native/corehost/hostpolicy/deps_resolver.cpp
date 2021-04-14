@@ -43,28 +43,33 @@ void add_unique_path(
     pal::string_t* non_serviced,
     const pal::string_t& svc_dir)
 {
+    pal::string_t real = path;
+#if defined (TARGET_OSX)
+    pal::realpath(&real);
+#endif
+
     // To optimize startup time, we avoid calling realpath here.
     // Because of this, there might be duplicates in the output
     // whenever path is eiter non-normalized or a symbolic link.
-    if (existing->count(path))
+    if (existing->count(real))
     {
         return;
     }
 
-    trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], path.c_str());
+    trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], real.c_str());
 
-    if (starts_with(path, svc_dir, false))
+    if (starts_with(real, svc_dir, false))
     {
-        serviced->append(path);
+        serviced->append(real);
         serviced->push_back(PATH_SEPARATOR);
     }
     else
     {
-        non_serviced->append(path);
+        non_serviced->append(real);
         non_serviced->push_back(PATH_SEPARATOR);
     }
 
-    existing->insert(path);
+    existing->insert(real);
 }
 
 // Return the filename from deps path; a deps path always uses a '/' for the separator.
