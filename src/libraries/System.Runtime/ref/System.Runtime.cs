@@ -1294,6 +1294,66 @@ namespace System
         public static bool TryToBase64Chars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten, System.Base64FormattingOptions options = System.Base64FormattingOptions.None) { throw null; }
     }
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
+    public readonly struct DateOnly : System.IComparable, System.IComparable<System.DateOnly>, System.IEquatable<System.DateOnly>, System.IFormattable
+    {
+        public static DateOnly MinValue { get { throw null; } }
+        public static DateOnly MaxValue { get { throw null; } }
+        public DateOnly(int year, int month, int day) { throw null; }
+        public DateOnly(int year, int month, int day, System.Globalization.Calendar calendar) { throw null; }
+        public static DateOnly FromDayNumber(int dayNumber) { throw null; }
+        public int Year { get { throw null; } }
+        public int Month { get { throw null; } }
+        public int Day { get { throw null; } }
+        public System.DayOfWeek DayOfWeek { get { throw null; } }
+        public int DayOfYear { get { throw null; } }
+        public int DayNumber { get { throw null; } }
+        public System.DateOnly AddDays(int value)  { throw null; }
+        public System.DateOnly AddMonths(int value) { throw null; }
+        public System.DateOnly AddYears(int value) { throw null; }
+        public static bool operator ==(System.DateOnly left, System.DateOnly right) { throw null; }
+        public static bool operator >(System.DateOnly left, System.DateOnly right) { throw null; }
+        public static bool operator >=(System.DateOnly left, System.DateOnly right) { throw null; }
+        public static bool operator !=(System.DateOnly left, System.DateOnly right) { throw null; }
+        public static bool operator <(System.DateOnly left, System.DateOnly right) { throw null; }
+        public static bool operator <=(System.DateOnly left, System.DateOnly right) { throw null; }
+        public System.DateTime ToDateTime(System.TimeOnly time) { throw null; }
+        public System.DateTime ToDateTime(System.TimeOnly time, System.DateTimeKind kind) { throw null; }
+        public static System.DateOnly FromDateTime(System.DateTime dateTime) { throw null; }
+        public int CompareTo(System.DateOnly value) { throw null; }
+        public int CompareTo(object? value)  { throw null; }
+        public bool Equals(System.DateOnly value) { throw null; }
+        public override bool Equals(object? value) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static System.DateOnly Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider = default, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateOnly ParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider = default, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateOnly ParseExact(System.ReadOnlySpan<char> s, string[] formats) { throw null; }
+        public static System.DateOnly ParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateOnly Parse(string s) { throw null; }
+        public static System.DateOnly Parse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateOnly ParseExact(string s, string format) { throw null; }
+        public static System.DateOnly ParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateOnly ParseExact(string s, string[] formats) { throw null; }
+        public static System.DateOnly ParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out System.DateOnly result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParse(string s, out System.DateOnly result) { throw null; }
+        public static bool TryParse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(string s, string format, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(string s, string[] formats, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public string ToLongDateString() { throw null; }
+        public string ToShortDateString() { throw null; }
+        public override string ToString() { throw null; }
+        public string ToString(string? format) { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+    }
     public readonly partial struct DateTime : System.IComparable, System.IComparable<System.DateTime>, System.IConvertible, System.IEquatable<System.DateTime>, System.IFormattable, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
@@ -3739,6 +3799,71 @@ namespace System
     public partial class ThreadStaticAttribute : System.Attribute
     {
         public ThreadStaticAttribute() { }
+    }
+    public readonly struct TimeOnly : System.IComparable, System.IComparable<System.TimeOnly>, System.IEquatable<System.TimeOnly>, System.IFormattable
+    {
+        public static System.TimeOnly MinValue { get { throw null; } }
+        public static System.TimeOnly MaxValue { get { throw null; } }
+        public TimeOnly(int hour, int minute) { throw null; }
+        public TimeOnly(int hour, int minute, int second) { throw null; }
+        public TimeOnly(int hour, int minute, int second, int millisecond) { throw null; }
+        public TimeOnly(long ticks) { throw null; }
+        public int Hour { get { throw null; } }
+        public int Minute { get { throw null; } }
+        public int Second { get { throw null; } }
+        public int Millisecond { get { throw null; } }
+        public long Ticks { get { throw null; } }
+        public System.TimeOnly Add(System.TimeSpan value) { throw null; }
+        public System.TimeOnly Add(System.TimeSpan value, out int wrappedDays) { throw null; }
+        public System.TimeOnly AddHours(double value) { throw null; }
+        public System.TimeOnly AddHours(double value, out int wrappedDays) { throw null; }
+        public System.TimeOnly AddMinutes(double value) { throw null; }
+        public System.TimeOnly AddMinutes(double value, out int wrappedDays) { throw null; }
+        public bool IsBetween(System.TimeOnly start, System.TimeOnly end) { throw null; }
+        public static bool operator ==(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        public static bool operator >(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        public static bool operator >=(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        public static bool operator !=(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        public static bool operator <(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        public static bool operator <=(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        public static System.TimeSpan operator -(System.TimeOnly t1, System.TimeOnly t2) { throw null; }
+        public static System.TimeOnly FromTimeSpan(System.TimeSpan timeSpan) { throw null; }
+        public static System.TimeOnly FromDateTime(System.DateTime dateTime) { throw null; }
+        public System.TimeSpan ToTimeSpan() { throw null; }
+        public int CompareTo(System.TimeOnly value) { throw null; }
+        public int CompareTo(object? value) { throw null; }
+        public bool Equals(System.TimeOnly value) { throw null; }
+        public override bool Equals(object? value) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static System.TimeOnly Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider = default, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.TimeOnly ParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider = default, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.TimeOnly ParseExact(System.ReadOnlySpan<char> s, string[] formats) { throw null; }
+        public static System.TimeOnly ParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.TimeOnly Parse(string s) { throw null; }
+        public static System.TimeOnly Parse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.TimeOnly ParseExact(string s, string format) { throw null; }
+        public static System.TimeOnly ParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.TimeOnly ParseExact(string s, string[] formats) { throw null; }
+        public static System.TimeOnly ParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out System.TimeOnly result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParse(string s, out System.TimeOnly result) { throw null; }
+        public static bool TryParse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(string s, string format, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(string s, string[] formats, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public string ToLongTimeString() { throw null; }
+        public string ToShortTimeString() { throw null; }
+        public override string ToString() { throw null; }
+        public string ToString(string? format) { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
     }
     public partial class TimeoutException : System.SystemException
     {
