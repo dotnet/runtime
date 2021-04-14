@@ -303,12 +303,9 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             continue;
         }
         pal::string_t probe_dir = config.probe_dir;
-        uint32_t search_options = deps_entry_t::search_options::look_in_bundle;
+        uint32_t search_options = deps_entry_t::search_options::none;
         if (m_has_additional_probing_paths)
             search_options |= deps_entry_t::search_options::file_existence;
-
-        if (config.only_serviceable_assets)
-            search_options |= deps_entry_t::search_options::is_servicing;
 
         if (config.is_fx())
         {
@@ -342,7 +339,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             {
                 if (entry.is_rid_specific)
                 {
-                    if (entry.to_rel_path(deps_dir, candidate, search_options))
+                    if (entry.to_rel_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle))
                     {
                         trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                         return true;
@@ -351,7 +348,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 else
                 {
                     // Non-rid assets, lookup in the published dir.
-                    if (entry.to_dir_path(deps_dir, candidate, search_options, found_in_bundle))
+                    if (entry.to_dir_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle, found_in_bundle))
                     {
                         trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                         return true;
@@ -361,7 +358,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 
             trace::verbose(_X("    Skipping... not found in deps dir '%s'"), deps_dir.c_str());
         }
-        else if (entry.to_full_path(probe_dir, candidate, search_options))
+        else if (entry.to_full_path(probe_dir, candidate, search_options | (config.only_serviceable_assets ? deps_entry_t::search_options::is_servicing : 0)))
         {
             trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
             return true;

@@ -227,6 +227,6 @@ bool deps_entry_t::to_full_path(const pal::string_t& base, pal::string_t* str, u
         append_path(&new_base, library_path.c_str());
     }
 
-    search_options |= deps_entry_t::search_options::look_in_bundle;
+    search_options &= ~deps_entry_t::search_options::look_in_bundle;
     return to_rel_path(new_base, str, search_options);
 }
