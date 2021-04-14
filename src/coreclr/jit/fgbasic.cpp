@@ -893,8 +893,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     }
 
     CORINFO_RESOLVED_TOKEN resolvedToken;
-    CORINFO_RESOLVED_TOKEN constrainedResolvedToken;
-    CORINFO_CALL_INFO      callInfo;
 
     while (codeAddr < codeEndp)
     {
@@ -958,54 +956,35 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     break;
                 }
 
-                CORINFO_METHOD_HANDLE methodHnd   = nullptr;
-                unsigned              methodFlags = 0;
-                bool                  mustExpand  = false;
-                CorInfoIntrinsics     intrinsicID = CORINFO_INTRINSIC_Illegal;
-                NamedIntrinsic        ni          = NI_Illegal;
+                CORINFO_METHOD_HANDLE methodHnd      = nullptr;
+                bool                  isJitIntrinsic = false;
+                bool                  mustExpand     = false;
+                NamedIntrinsic        ni             = NI_Illegal;
 
                 if (resolveTokens)
                 {
                     impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Method);
-                    eeGetCallInfo(&resolvedToken,
-                                  (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                                  combine(combine(CORINFO_CALLINFO_KINDONLY, CORINFO_CALLINFO_ALLOWINSTPARAM),
-                                          (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
-                                  &callInfo);
-
-                    methodHnd   = callInfo.hMethod;
-                    methodFlags = callInfo.methodFlags;
+                    methodHnd      = resolvedToken.hMethod;
+                    isJitIntrinsic = eeIsJitIntrinsic(methodHnd);
                 }
 
-                if ((methodFlags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_JIT_INTRINSIC)) != 0)
+                if (isJitIntrinsic)
                 {
                     intrinsicCalls++;
+                    ni = lookupNamedIntrinsic(methodHnd);
 
-                    if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
+                    switch (ni)
                     {
-                        intrinsicID = info.compCompHnd->getIntrinsicID(methodHnd, &mustExpand);
-                    }
-
-                    if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
-                    {
-                        if (intrinsicID == CORINFO_INTRINSIC_Illegal)
+                        case NI_IsSupported_True:
+                        case NI_IsSupported_False:
                         {
-                            ni = lookupNamedIntrinsic(methodHnd);
+                            pushedStack.PushConstant();
+                            break;
+                        }
 
-                            switch (ni)
-                            {
-                                case NI_IsSupported_True:
-                                case NI_IsSupported_False:
-                                {
-                                    pushedStack.PushConstant();
-                                    break;
-                                }
-
-                                default:
-                                {
-                                    break;
-                                }
-                            }
+                        default:
+                        {
+                            break;
                         }
                     }
                 }
@@ -1162,10 +1141,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 noway_assert(sz == sizeof(unsigned));
                 prefixFlags |= PREFIX_CONSTRAINED;
 
-                if (resolveTokens)
-                {
-                    impResolveToken(codeAddr, &constrainedResolvedToken, CORINFO_TOKENKIND_Constrained);
-                }
                 codeAddr += sizeof(unsigned);
 
                 {
