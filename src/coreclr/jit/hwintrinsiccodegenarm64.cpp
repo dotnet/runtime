@@ -56,7 +56,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
         if (category == HW_Category_SIMDByIndexedElement)
         {
             const HWIntrinsic intrinInfo(intrin);
-            var_types indexedElementOpType;
+            var_types         indexedElementOpType;
 
             if (intrinInfo.numOperands == 3)
             {
