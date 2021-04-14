@@ -40129,6 +40129,8 @@ HRESULT GCHeap::Initialize()
     gc_heap::heap_hard_limit_oh[loh] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
     gc_heap::heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
 
+    gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
+
     if (gc_heap::heap_hard_limit_oh[soh] || gc_heap::heap_hard_limit_oh[loh] || gc_heap::heap_hard_limit_oh[poh])
     {
         if (!gc_heap::heap_hard_limit_oh[soh])
@@ -40136,10 +40138,6 @@ HRESULT GCHeap::Initialize()
             return E_INVALIDARG;
         }
         if (!gc_heap::heap_hard_limit_oh[loh])
-        {
-            return E_INVALIDARG;
-        }
-        if (!gc_heap::heap_hard_limit_oh[poh] && !GCConfig::GetGCLargePages())
         {
             return E_INVALIDARG;
         }
@@ -40177,6 +40175,11 @@ HRESULT GCHeap::Initialize()
         }
     }
 
+    if (gc_heap::heap_hard_limit_oh[soh] && (!gc_heap::heap_hard_limit_oh[poh]) && (!gc_heap::use_large_pages_p))
+    {
+        return E_INVALIDARG;
+    }
+
     if (!(gc_heap::heap_hard_limit))
     {
         uint32_t percent_of_mem = (uint32_t)GCConfig::GetGCHeapHardLimitPercent();
@@ -40196,6 +40199,12 @@ HRESULT GCHeap::Initialize()
             gc_heap::heap_hard_limit = (size_t)max ((20 * 1024 * 1024), physical_mem_for_gc);
         }
     }
+
+    if ((!gc_heap::heap_hard_limit) && gc_heap::use_large_pages_p)
+    {
+        return E_INVALIDARG;
+    }
+
 #endif //HOST_64BIT
 
     uint32_t nhp = 1;
@@ -40268,7 +40277,6 @@ HRESULT GCHeap::Initialize()
 #ifndef USE_REGIONS
     if (gc_heap::heap_hard_limit)
     {
-        gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
         if (gc_heap::heap_hard_limit_oh[soh])
         {
 #ifdef MULTIPLE_HEAPS
