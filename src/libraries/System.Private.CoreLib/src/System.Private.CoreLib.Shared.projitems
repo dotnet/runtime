@@ -1046,6 +1046,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZone.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.AdjustmentRule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.cs" Condition="'$(TargetsBrowser)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.StringSerializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.TransitionTime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneNotFoundException.cs" />
@@ -1904,7 +1905,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.SunOS.cs" Condition="'$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolWorkQueue.AutoreleasePool.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Unix.cs" />
   </ItemGroup>

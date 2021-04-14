@@ -16,7 +16,7 @@ internal static partial class Interop
             int resultLength);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_WindowsIdToIanaId")]
-        internal static extern unsafe int WindowsIdToIanaId(string windowsId, char* ianaId, int ianaIdLength);
+        internal static extern unsafe int WindowsIdToIanaId(string windowsId, [MarshalAs(UnmanagedType.LPStr)] string? region, char* ianaId, int ianaIdLength);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IanaIdToWindowsId")]
         internal static extern unsafe int IanaIdToWindowsId(string ianaId, char* windowsId, int windowsIdLength);

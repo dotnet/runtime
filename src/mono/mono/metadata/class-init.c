@@ -824,7 +824,7 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	if (gclass->cached_class)
 		return gclass->cached_class;
 
-	klass = (MonoClass *)mono_image_set_alloc0 (gclass->owner, sizeof (MonoClassGenericInst));
+	klass = (MonoClass *)mono_mem_manager_alloc0 ((MonoMemoryManager*)gclass->owner, sizeof (MonoClassGenericInst));
 
 	gklass = gclass->container_class;
 
@@ -849,7 +849,6 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->this_arg.byref = TRUE;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
-
 
 	if (gklass->image->assembly_name && !strcmp (gklass->image->assembly_name, "System.Numerics.Vectors") && !strcmp (gklass->name_space, "System.Numerics") && !strcmp (gklass->name, "Vector`1")) {
 		g_assert (gclass->context.class_inst);
@@ -1004,22 +1003,25 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	GSList *list, *rootlist = NULL;
 	int nsize;
 	char *name;
-	MonoImageSet* image_set;
+	MonoMemoryManager *mm;
 
 	if (rank > 1)
 		/* bounded only matters for one-dimensional arrays */
 		bounded = FALSE;
 
 	image = eclass->image;
-	image_set = class_kind_may_contain_generic_instances ((MonoTypeKind)eclass->class_kind) ? mono_metadata_get_image_set_for_class (eclass) : NULL;
 
+	// FIXME: Optimize this
+	mm = class_kind_may_contain_generic_instances ((MonoTypeKind)eclass->class_kind) ? mono_metadata_get_mem_manager_for_class (eclass) : NULL;
 	/* Check cache */
 	cached = NULL;
 	if (rank == 1 && !bounded) {
-		if (image_set) {
-			mono_image_set_lock (image_set);
-			cached = (MonoClass *)g_hash_table_lookup (image_set->szarray_cache, eclass);
-			mono_image_set_unlock (image_set);
+		if (mm) {
+			mono_mem_manager_lock (mm);
+			if (!mm->szarray_cache)
+				mm->szarray_cache = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, NULL);
+			cached = (MonoClass *)g_hash_table_lookup (mm->szarray_cache, eclass);
+			mono_mem_manager_unlock (mm);
 		} else {
 			/*
 			 * This case is very frequent not just during compilation because of calls
@@ -1033,9 +1035,11 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 			mono_os_mutex_unlock (&image->szarray_cache_lock);
 		}
 	} else {
-		if (image_set) {
-			mono_image_set_lock (image_set);
-			rootlist = (GSList *)g_hash_table_lookup (image_set->array_cache, eclass);
+		if (mm) {
+			mono_mem_manager_lock (mm);
+			if (!mm->array_cache)
+				mm->array_cache = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, NULL);
+			rootlist = (GSList *)g_hash_table_lookup (mm->array_cache, eclass);
 			for (list = rootlist; list; list = list->next) {
 				k = (MonoClass *)list->data;
 				if ((m_class_get_rank (k) == rank) && (m_class_get_byval_arg (k)->type == (((rank > 1) || bounded) ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
@@ -1043,7 +1047,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 					break;
 				}
 			}
-			mono_image_set_unlock (image_set);
+			mono_mem_manager_unlock (mm);
 		} else {
 			mono_loader_lock ();
 			if (!image->array_cache)
@@ -1066,7 +1070,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	if (!parent->inited)
 		mono_class_init_internal (parent);
 
-	klass = image_set ? (MonoClass *)mono_image_set_alloc0 (image_set, sizeof (MonoClassArray)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassArray));
+	klass = mm ? (MonoClass *)mono_mem_manager_alloc0 (mm, sizeof (MonoClassArray)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassArray));
 
 	klass->image = image;
 	klass->name_space = eclass->name_space;
@@ -1083,7 +1087,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		name [nsize + maxrank] = '*';
 	name [nsize + maxrank + bounded] = ']';
 	name [nsize + maxrank + bounded + 1] = 0;
-	klass->name = image_set ? mono_image_set_strdup (image_set, name) : mono_image_strdup (image, name);
+	klass->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
 	g_free (name);
 
 	klass->type_token = 0;
@@ -1135,7 +1139,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	klass->element_class = eclass;
 
 	if ((rank > 1) || bounded) {
-		MonoArrayType *at = image_set ? (MonoArrayType *)mono_image_set_alloc0 (image_set, sizeof (MonoArrayType)) : (MonoArrayType *)mono_image_alloc0 (image, sizeof (MonoArrayType));
+		MonoArrayType *at = mm ? (MonoArrayType *)mono_mem_manager_alloc0 (mm, sizeof (MonoArrayType)) : (MonoArrayType *)mono_image_alloc0 (image, sizeof (MonoArrayType));
 		klass->_byval_arg.type = MONO_TYPE_ARRAY;
 		klass->_byval_arg.data.array = at;
 		at->eklass = eclass;
@@ -1162,19 +1166,19 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	/* Check cache again */
 	cached = NULL;
 	if (rank == 1 && !bounded) {
-		if (image_set) {
-			mono_image_set_lock (image_set);
-			cached = (MonoClass *)g_hash_table_lookup (image_set->szarray_cache, eclass);
-			mono_image_set_unlock (image_set);
+		if (mm) {
+			mono_mem_manager_lock (mm);
+			cached = (MonoClass *)g_hash_table_lookup (mm->szarray_cache, eclass);
+			mono_mem_manager_unlock (mm);
 		} else {
 			mono_os_mutex_lock (&image->szarray_cache_lock);
 			cached = (MonoClass *)g_hash_table_lookup (image->szarray_cache, eclass);
 			mono_os_mutex_unlock (&image->szarray_cache_lock);
 		}
 	} else {
-		if (image_set) {
-			mono_image_set_lock (image_set);
-			rootlist = (GSList *)g_hash_table_lookup (image_set->array_cache, eclass);
+		if (mm) {
+			mono_mem_manager_lock (mm);
+			rootlist = (GSList *)g_hash_table_lookup (mm->array_cache, eclass);
 			for (list = rootlist; list; list = list->next) {
 				k = (MonoClass *)list->data;
 				if ((m_class_get_rank (k) == rank) && (m_class_get_byval_arg (k)->type == (((rank > 1) || bounded) ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
@@ -1182,7 +1186,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 					break;
 				}
 			}
-			mono_image_set_unlock (image_set);
+			mono_mem_manager_unlock (mm);
 		} else {
 			rootlist = (GSList *)g_hash_table_lookup (image->array_cache, eclass);
 			for (list = rootlist; list; list = list->next) {
@@ -1205,21 +1209,21 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	++class_array_count;
 
 	if (rank == 1 && !bounded) {
-		if (image_set) {
-			mono_image_set_lock (image_set);
-			g_hash_table_insert (image_set->szarray_cache, eclass, klass);
-			mono_image_set_unlock (image_set);
+		if (mm) {
+			mono_mem_manager_lock (mm);
+			g_hash_table_insert (mm->szarray_cache, eclass, klass);
+			mono_mem_manager_unlock (mm);
 		} else {
 			mono_os_mutex_lock (&image->szarray_cache_lock);
 			g_hash_table_insert (image->szarray_cache, eclass, klass);
 			mono_os_mutex_unlock (&image->szarray_cache_lock);
 		}
 	} else {
-		if (image_set) {
-			mono_image_set_lock (image_set);
+		if (mm) {
+			mono_mem_manager_lock (mm);
 			list = g_slist_append (rootlist, klass);
-			g_hash_table_insert (image_set->array_cache, eclass, list);
-			mono_image_set_unlock (image_set);
+			g_hash_table_insert (mm->array_cache, eclass, list);
+			mono_mem_manager_unlock (mm);
 		} else {
 			list = g_slist_append (rootlist, klass);
 			g_hash_table_insert (image->array_cache, eclass, list);
@@ -1407,21 +1411,21 @@ mono_class_create_ptr (MonoType *type)
 	MonoClass *el_class;
 	MonoImage *image;
 	char *name;
-	MonoImageSet* image_set;
+	MonoMemoryManager *mm;
 
 	el_class = mono_class_from_mono_type_internal (type);
 	image = el_class->image;
-	image_set = class_kind_may_contain_generic_instances ((MonoTypeKind)el_class->class_kind) ? mono_metadata_get_image_set_for_class (el_class) : NULL;
+	// FIXME: Optimize this
+	mm = class_kind_may_contain_generic_instances ((MonoTypeKind)el_class->class_kind) ? mono_metadata_get_mem_manager_for_class (el_class) : NULL;
 
-	if (image_set) {
-		mono_image_set_lock (image_set);
-		if (image_set->ptr_cache) {
-			if ((result = (MonoClass *)g_hash_table_lookup (image_set->ptr_cache, el_class))) {
-				mono_image_set_unlock (image_set);
-				return result;
-			}
-		}
-		mono_image_set_unlock (image_set);
+	if (mm) {
+		mono_mem_manager_lock (mm);
+		if (!mm->ptr_cache)
+			mm->ptr_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		result = (MonoClass *)g_hash_table_lookup (mm->ptr_cache, el_class);
+		mono_mem_manager_unlock (mm);
+		if (result)
+			return result;
 	} else {
 		mono_image_lock (image);
 		if (image->ptr_cache) {
@@ -1433,7 +1437,7 @@ mono_class_create_ptr (MonoType *type)
 		mono_image_unlock (image);
 	}
 	
-	result = image_set ? (MonoClass *)mono_image_set_alloc0 (image_set, sizeof (MonoClassPointer)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassPointer));
+	result = mm ? (MonoClass *)mono_mem_manager_alloc0 (mm, sizeof (MonoClassPointer)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassPointer));
 
 	UnlockedAdd (&classes_size, sizeof (MonoClassPointer));
 	++class_pointer_count;
@@ -1441,7 +1445,7 @@ mono_class_create_ptr (MonoType *type)
 	result->parent = NULL; /* no parent for PTR types */
 	result->name_space = el_class->name_space;
 	name = g_strdup_printf ("%s*", el_class->name);
-	result->name = image_set ? mono_image_set_strdup (image_set, name) : mono_image_strdup (image, name);
+	result->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
 	result->class_kind = MONO_CLASS_POINTER;
 	g_free (name);
 
@@ -1466,21 +1470,17 @@ mono_class_create_ptr (MonoType *type)
 
 	mono_class_setup_supertypes (result);
 
-	if (image_set) {
-		mono_image_set_lock (image_set);
-		if (image_set->ptr_cache) {
-			MonoClass *result2;
-			if ((result2 = (MonoClass *)g_hash_table_lookup (image_set->ptr_cache, el_class))) {
-				mono_image_set_unlock (image_set);
-				MONO_PROFILER_RAISE (class_failed, (result));
-				return result2;
-			}
+	if (mm) {
+		mono_mem_manager_lock (mm);
+		MonoClass *result2;
+		result2 = (MonoClass *)g_hash_table_lookup (mm->ptr_cache, el_class);
+		if (!result2)
+			g_hash_table_insert (mm->ptr_cache, el_class, result);
+		mono_mem_manager_unlock (mm);
+		if (result2) {
+			MONO_PROFILER_RAISE (class_failed, (result));
+			return result2;
 		}
-		else {
-			image_set->ptr_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		}
-		g_hash_table_insert (image_set->ptr_cache, el_class, result);
-		mono_image_set_unlock (image_set);
 	} else {
 		mono_image_lock (image);
 		if (image->ptr_cache) {

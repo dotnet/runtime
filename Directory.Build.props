@@ -200,7 +200,7 @@
 
   <!--Feature switches -->
   <PropertyGroup>
-    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(Configuration)' == 'Release'">true</EnableNgenOptimization>
+    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and ('$(Configuration)' == 'Release' or '$(Configuration)' == 'Checked')">true</EnableNgenOptimization>
     <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
     <!-- Turn off end of life target framework checks as we intentionally build older .NETCoreApp configurations. -->

@@ -3853,6 +3853,7 @@ namespace System
         public System.TimeSpan BaseUtcOffset { get { throw null; } }
         public string DaylightName { get { throw null; } }
         public string DisplayName { get { throw null; } }
+        public bool HasIanaId { get; }
         public string Id { get { throw null; } }
         public static System.TimeZoneInfo Local { get { throw null; } }
         public string StandardName { get { throw null; } }
@@ -3892,6 +3893,9 @@ namespace System
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public string ToSerializedString() { throw null; }
         public override string ToString() { throw null; }
+        public static bool TryConvertIanaIdToWindowsId(string ianaId, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? windowsId) { throw null; }
+        public static bool TryConvertWindowsIdToIanaId(string windowsId, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? ianaId) { throw null; }
+        public static bool TryConvertWindowsIdToIanaId(string windowsId, string? region, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? ianaId) { throw null; }
         public sealed partial class AdjustmentRule : System.IEquatable<System.TimeZoneInfo.AdjustmentRule?>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
         {
             internal AdjustmentRule() { }

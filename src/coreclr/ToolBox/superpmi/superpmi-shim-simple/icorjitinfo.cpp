@@ -12,6 +12,12 @@
 #include "spmiutil.h"
 
 
+bool interceptor_ICJI::isJitIntrinsic(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    return original_ICorJitInfo->isJitIntrinsic(ftn);
+}
+
 uint32_t interceptor_ICJI::getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn)
 {

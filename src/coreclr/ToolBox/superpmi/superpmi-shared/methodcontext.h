@@ -119,6 +119,10 @@ public:
     void dmpGetClassAttribs(DWORDLONG key, DWORD value);
     DWORD repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle);
 
+    void recIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn, bool result);
+    void dmpIsJitIntrinsic(DWORDLONG key, DWORD value);
+    bool repIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn);
+
     void recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs);
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
     DWORD repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle);
@@ -898,7 +902,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 191
+// Highest packet number: 192
 // *************************************************************************************
 enum mcPackets
 {
@@ -1000,6 +1004,7 @@ enum mcPackets
     Packet_GetJustMyCodeHandle                           = 68,
     Packet_GetLikelyClass                                = 182, // Added 9/27/2020
     Packet_GetLocationOfThisType                         = 69,
+    Packet_IsJitIntrinsic                                = 192,
     Packet_GetMethodAttribs                              = 70,
     Packet_GetMethodClass                                = 71,
     Packet_GetMethodModule                               = 181, // Added 11/20/2020
