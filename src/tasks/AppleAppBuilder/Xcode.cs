@@ -252,6 +252,10 @@ internal class Xcode
                 .Append(" CODE_SIGNING_REQUIRED=NO")
                 .Append(" CODE_SIGNING_ALLOWED=NO");
         }
+        else if (string.Equals(devTeamProvisioning, "adhoc",  StringComparison.OrdinalIgnoreCase))
+        {
+            args.Append(" CODE_SIGN_IDENTITY=\"-\"");
+        }
         else
         {
             args.Append(" -allowProvisioningUpdates")
