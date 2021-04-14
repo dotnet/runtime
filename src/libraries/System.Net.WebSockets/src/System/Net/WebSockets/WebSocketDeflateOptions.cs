@@ -12,8 +12,8 @@ namespace System.Net.WebSockets
     /// </remarks>
     public sealed class WebSocketDeflateOptions
     {
-        private int _clientMaxWindowBits = 15;
-        private int _serverMaxWindowBits = 15;
+        private int _clientMaxWindowBits = WebSocketValidate.MaxDeflateWindowBits;
+        private int _serverMaxWindowBits = WebSocketValidate.MaxDeflateWindowBits;
 
         /// <summary>
         /// This parameter indicates the base-2 logarithm of the LZ77 sliding window size of the client context.
