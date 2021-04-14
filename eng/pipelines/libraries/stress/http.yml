@@ -57,8 +57,7 @@ jobs:
 
   - bash: |
       cd '$(httpStressProject)'
-      # The HTTP 1.1 run is being executed with a reduced cancelRate to avoid port exhaustion on the CI
-      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1 -cancelRate 0.05"
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 1.1
@@ -99,7 +98,8 @@ jobs:
 
   - powershell: |
       cd '$(httpStressProject)'
-      $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
+      # The HTTP 1.1 run is being executed with a reduced cancelRate to avoid port exhaustion on the CI
+      $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1 -cancelRate 0.05"
       $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 1.1
