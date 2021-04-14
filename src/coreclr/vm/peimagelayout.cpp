@@ -101,7 +101,7 @@ PEImageLayout* PEImageLayout::Map(PEImage* pOwner)
     }
     CONTRACT_END;
 
-    PEImageLayoutHolder pAlloc = pOwner->GetUncompressedSize() ?
+    PEImageLayoutHolder pAlloc = pOwner->GetUncompressedSize() != 0 ?
         LoadConverted(pOwner, /* isInBundle */ true):
         new MappedImageLayout(pOwner);
 
@@ -754,7 +754,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 #if defined(CORECLR_EMBEDDED)
             // The mapping we have just created refers to the region in the bundle that contains compressed data.
             // We will create another anonymous memory-only mapping and uncompress file there.
-            // The flat image will refer to the anonimous mapping instead and we will release the original mapping.
+            // The flat image will refer to the anonymous mapping instead and we will release the original mapping.
             HandleHolder anonMap = WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL);
             if (anonMap == NULL)
                 ThrowLastError();
