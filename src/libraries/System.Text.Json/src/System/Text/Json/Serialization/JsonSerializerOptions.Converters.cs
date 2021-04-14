@@ -26,6 +26,7 @@ namespace System.Text.Json
             // Nullable converter should always be next since it forwards to any nullable type.
             new NullableConverterFactory(),
             new EnumConverterFactory(),
+            new JsonNodeConverterFactory(),
             // IAsyncEnumerable takes precedence over IEnumerable.
             new IAsyncEnumerableConverterFactory(),
             // IEnumerable should always be second to last since they can convert any IEnumerable.
@@ -39,7 +40,7 @@ namespace System.Text.Json
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
-            const int NumberOfSimpleConverters = 23;
+            const int NumberOfSimpleConverters = 22;
             var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters);
 
             // Use a dictionary for simple converters.
@@ -58,7 +59,6 @@ namespace System.Text.Json
             Add(new Int64Converter());
             Add(new JsonElementConverter());
             Add(new JsonDocumentConverter());
-            Add(new ObjectConverter());
             Add(new SByteConverter());
             Add(new SingleConverter());
             Add(new StringConverter());

@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
+using System.Text.Json.Node;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -35,6 +36,7 @@ namespace System.Text.Json
         private JavaScriptEncoder? _encoder;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
+        private JsonUnknownTypeHandling _unknownTypeHandling;
 
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
@@ -78,6 +80,7 @@ namespace System.Text.Json
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
+            _unknownTypeHandling = options._unknownTypeHandling;
 
             _defaultBufferSize = options._defaultBufferSize;
             _maxDepth = options._maxDepth;
@@ -475,6 +478,19 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Defines how deserializing a type declared as an <see cref="object"/> is handled during deserialization.
+        /// </summary>
+        public JsonUnknownTypeHandling UnknownTypeHandling
+        {
+            get => _unknownTypeHandling;
+            set
+            {
+                VerifyMutable();
+                _unknownTypeHandling = value;
+            }
+        }
+
+        /// <summary>
         /// Defines whether JSON should pretty print which includes:
         /// indenting nested JSON tokens, adding new lines, and adding white space between property names and values.
         /// By default, the JSON is serialized without any extra white space.
@@ -568,6 +584,14 @@ namespace System.Text.Json
         {
             _classes.Clear();
             _lastClass = null;
+        }
+
+        internal JsonNodeOptions GetNodeOptions()
+        {
+            return new JsonNodeOptions
+            {
+                PropertyNameCaseInsensitive = PropertyNameCaseInsensitive
+            };
         }
 
         internal JsonReaderOptions GetReaderOptions()
