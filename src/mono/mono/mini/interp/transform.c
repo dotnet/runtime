@@ -1828,7 +1828,7 @@ interp_handle_magic_type_intrinsics (TransformData *td, MonoMethod *target_metho
 		if (arg_size > SIZEOF_VOID_P) { // 8 -> 4
 			switch (type_index) {
 			case 0: case 1:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I4_I8);
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
 				break;
 			case 2:
 				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_R4_R8);
@@ -1912,7 +1912,7 @@ interp_handle_magic_type_intrinsics (TransformData *td, MonoMethod *target_metho
 		if (src_size > dst_size) { // 8 -> 4
 			switch (type_index) {
 			case 0: case 1:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I4_I8);
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
 				break;
 			case 2:
 				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R4, MINT_CONV_R4_R8);
@@ -5263,7 +5263,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			case STACK_TYPE_I8:
 #if SIZEOF_VOID_P == 4
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_U4_I8);
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_MOV_8);
 #endif
 				break;
 			case STACK_TYPE_MP:
@@ -5303,7 +5303,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			case STACK_TYPE_I8:
 #if SIZEOF_VOID_P == 4
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I4_I8);
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_MOV_8);
 #endif
 				break;
 			default:
@@ -5323,11 +5323,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case STACK_TYPE_I4:
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_U4_I8);
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
 				break;
 			case STACK_TYPE_MP:
 #if SIZEOF_VOID_P == 8
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_U4_I8);
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
 #else
 				SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 #endif
@@ -5349,11 +5349,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case STACK_TYPE_I4:
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I4_I8);
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
 				break;
 			case STACK_TYPE_MP:
 #if SIZEOF_VOID_P == 8
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I4_I8);
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
 #else
 				SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 #endif
@@ -7279,7 +7279,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				CHECK_STACK (td, 1);
 #if SIZEOF_VOID_P == 8
 				if (td->sp [-1].type == STACK_TYPE_I8)
-					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I4_I8);
+					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
 #endif				
 				interp_add_ins (td, MINT_LOCALLOC);
 				if (td->sp != td->stack + 1)
@@ -7793,21 +7793,18 @@ interp_local_deadce (TransformData *td)
 
 #define INTERP_FOLD_UNOP(opcode,val_type,field,op) \
 	case opcode: \
-		g_assert (val->type == val_type); \
 		result.type = val_type; \
 		result.field = op val->field; \
 		break;
 
 #define INTERP_FOLD_CONV(opcode,val_type_dst,field_dst,val_type_src,field_src,cast_type) \
 	case opcode: \
-		g_assert (val->type == val_type_src); \
 		result.type = val_type_dst; \
 		result.field_dst = (cast_type)val->field_src; \
 		break;
 
 #define INTERP_FOLD_CONV_FULL(opcode,val_type_dst,field_dst,val_type_src,field_src,cast_type,cond) \
 	case opcode: \
-		g_assert (val->type == val_type_src); \
 		if (!(cond)) return ins; \
 		result.type = val_type_dst; \
 		result.field_dst = (cast_type)val->field_src; \
@@ -7853,9 +7850,6 @@ interp_fold_unop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 		INTERP_FOLD_CONV (MINT_CONV_I2_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, gint16);
 		INTERP_FOLD_CONV (MINT_CONV_U2_I4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, guint16);
 		INTERP_FOLD_CONV (MINT_CONV_U2_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, guint16);
-
-		INTERP_FOLD_CONV (MINT_CONV_I4_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, gint32);
-		INTERP_FOLD_CONV (MINT_CONV_U4_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, gint32);
 
 		INTERP_FOLD_CONV (MINT_CONV_I8_I4, LOCAL_VALUE_I8, l, LOCAL_VALUE_I4, i, gint32);
 		INTERP_FOLD_CONV (MINT_CONV_I8_U4, LOCAL_VALUE_I8, l, LOCAL_VALUE_I4, i, guint32);
@@ -7913,7 +7907,6 @@ interp_fold_unop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 
 #define INTERP_FOLD_UNOP_BR(_opcode,_local_type,_cond) \
 	case _opcode: \
-		g_assert (val->type == _local_type); \
 		if (_cond) { \
 			ins->opcode = MINT_BR_S; \
 			if (cbb->next_bb != ins->info.target_bb) \
@@ -7960,14 +7953,12 @@ interp_fold_unop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue *
 
 #define INTERP_FOLD_BINOP(opcode,local_type,field,op) \
 	case opcode: \
-		g_assert (val1->type == local_type && val2->type == local_type); \
 		result.type = local_type; \
 		result.field = val1->field op val2->field; \
 		break;
 
 #define INTERP_FOLD_BINOP_FULL(opcode,local_type,field,op,cast_type,cond) \
 	case opcode: \
-		g_assert (val1->type == local_type && val2->type == local_type); \
 		if (!(cond)) return ins; \
 		result.type = local_type; \
 		result.field = (cast_type)val1->field op (cast_type)val2->field; \
@@ -7975,14 +7966,12 @@ interp_fold_unop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue *
 
 #define INTERP_FOLD_SHIFTOP(opcode,local_type,field,shift_op,cast_type) \
 	case opcode: \
-		g_assert (val2->type == LOCAL_VALUE_I4); \
 		result.type = local_type; \
 		result.field = (cast_type)val1->field shift_op val2->i; \
 		break;
 
 #define INTERP_FOLD_RELOP(opcode,local_type,field,relop,cast_type) \
 	case opcode: \
-		g_assert (val1->type == local_type && val2->type == local_type); \
 		result.type = LOCAL_VALUE_I4; \
 		result.i = (cast_type) val1->field relop (cast_type) val2->field; \
 		break;
@@ -8096,8 +8085,6 @@ interp_fold_binop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 // merging quickly find the MINT_BR_S opcode.
 #define INTERP_FOLD_BINOP_BR(_opcode,_local_type,_cond) \
 	case _opcode: \
-		g_assert (val1->type == _local_type); \
-		g_assert (val2->type == _local_type); \
 		if (_cond) { \
 			ins->opcode = MINT_BR_S; \
 			if (cbb->next_bb != ins->info.target_bb) \

@@ -4687,11 +4687,6 @@ call:
 			LOCAL_VAR (ip [1], gint32) = (gint32) LOCAL_VAR (ip [2], double);
 			ip += 3;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_U4_I8)
-		MINT_IN_CASE(MINT_CONV_I4_I8)
-			LOCAL_VAR (ip [1], gint32) = (gint32) LOCAL_VAR (ip [2], gint64);
-			ip += 3;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U4_R4)
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_U4
 			LOCAL_VAR (ip [1], gint32) = mono_rconv_u4 (LOCAL_VAR (ip [2], float));
