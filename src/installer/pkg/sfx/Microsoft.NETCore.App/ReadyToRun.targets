@@ -16,8 +16,7 @@
     <PropertyGroup>
       <CrossDir />
       <CrossDir Condition="'$(BuildArchitecture)' != '$(TargetArchitecture)'">x64</CrossDir>
-      <Crossgen2Dir>$(CoreCLRArtifactsPath)\$(CrossDir)\crossgen2</Crossgen2Dir>
-      <Crossgen2Exe>$(Crossgen2Dir)\crossgen2$(ExeSuffix)</Crossgen2Exe>
+      <Crossgen2Dll>$(CoreCLRArtifactsPath)\$(CrossDir)\crossgen2\crossgen2.dll</Crossgen2Dll>
 
       <PublishReadyToRunUseCrossgen2>true</PublishReadyToRunUseCrossgen2>
       <PublishReadyToRunCrossgen2ExtraArgs>@(PublishReadyToRunCrossgen2ExtraArgsList)</PublishReadyToRunCrossgen2ExtraArgs>
@@ -43,7 +42,7 @@
                     DiaSymReader="$(_diaSymReaderPath)" />
     </ItemGroup>
     <ItemGroup>
-      <Crossgen2Tool Include="$(Crossgen2Exe)" TargetArch="$(TargetArchitecture)" TargetOS="$(TargetOS)" DotNetHostPath="$(RepoRoot)/dotnet$(ScriptExt)" />
+      <Crossgen2Tool Include="$(Crossgen2Dll)" TargetArch="$(TargetArchitecture)" TargetOS="$(TargetOS)" DotNetHostPath="$(RepoRoot)/dotnet$(ScriptExt)" />
     </ItemGroup>
   </Target>
 </Project>
