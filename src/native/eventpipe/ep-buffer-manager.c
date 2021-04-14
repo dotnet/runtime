@@ -69,6 +69,20 @@ buffer_manager_deallocate_buffer (
 	EventPipeBufferManager *buffer_manager,
 	EventPipeBuffer *buffer);
 
+// Attempt to reserve space for a buffer
+static
+bool
+buffer_manager_try_reserve_buffer(
+	EventPipeBufferManager *buffer_manager,
+	uint32_t request_size);
+
+// Release a reserved buffer budget
+static
+void
+buffer_manager_release_buffer(
+	EventPipeBufferManager *buffer_manager,
+	uint32_t size);
+
 // An iterator that can enumerate all the events which have been written into this buffer manager.
 // Initially the iterator starts uninitialized and get_current_event () returns NULL. Calling move_next_xxx ()
 // attempts to advance the cursor to the next event. If there is no event prior to stop_timestamp then
@@ -249,7 +263,7 @@ ep_buffer_list_get_and_remove_head (EventPipeBufferList *buffer_list)
 }
 
 bool
-ep_buffer_manager_try_reserve_buffer(
+buffer_manager_try_reserve_buffer(
 	EventPipeBufferManager *buffer_manager,
 	uint32_t request_size)
 {
@@ -269,7 +283,7 @@ ep_buffer_manager_try_reserve_buffer(
 }
 
 void
-ep_buffer_manager_release_buffer(
+buffer_manager_release_buffer(
 	EventPipeBufferManager *buffer_manager,
 	uint32_t size)
 {
@@ -459,7 +473,7 @@ buffer_manager_allocate_buffer_for_thread (
 	uint32_t size_multiplier = ep_thread_session_state_get_buffer_count_estimate(thread_session_state) + 1;
 	EP_ASSERT(size_multiplier > 0);
 
-	// Pick the base buffer size based.  Checked builds have a smaller size to stress the allocate/steal path more.
+	// Pick the base buffer size.  Checked builds have a smaller size to stress the allocate path more.
 #ifdef EP_CHECKED_BUILD
 	uint32_t base_buffer_size = 30 * 1024; // 30K
 #else
@@ -485,7 +499,7 @@ buffer_manager_allocate_buffer_for_thread (
 
 	// Attempt to reserve the necessary buffer size
 	EP_ASSERT(buffer_size > 0);
-	ep_return_null_if_nok(ep_buffer_manager_try_reserve_buffer(buffer_manager, buffer_size));
+	ep_return_null_if_nok(buffer_manager_try_reserve_buffer(buffer_manager, buffer_size));
 
 	// Allocating a buffer requires us to take the lock.
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
@@ -542,7 +556,7 @@ ep_on_error:
 	ep_buffer_free (new_buffer);
 	new_buffer = NULL;
 
-	ep_buffer_manager_release_buffer(buffer_manager, buffer_size);
+	buffer_manager_release_buffer(buffer_manager, buffer_size);
 
 	ep_exit_error_handler ();
 }
@@ -556,7 +570,7 @@ buffer_manager_deallocate_buffer (
 	EP_ASSERT (buffer_manager != NULL);
 
 	if (buffer) {
-		ep_buffer_manager_release_buffer(buffer_manager, ep_buffer_get_size (buffer));
+		buffer_manager_release_buffer(buffer_manager, ep_buffer_get_size (buffer));
 		ep_buffer_free (buffer);
 #ifdef EP_CHECKED_BUILD
 		buffer_manager->num_buffers_allocated--;

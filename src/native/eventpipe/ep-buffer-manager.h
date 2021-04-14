@@ -170,18 +170,6 @@ ep_buffer_manager_init_sequence_point_thread_list (
 	EventPipeBufferManager *buffer_manager,
 	EventPipeSequencePoint *sequence_point);
 
-// Attempt to reserve space for a buffer
-bool
-ep_buffer_manager_try_reserve_buffer(
-	EventPipeBufferManager *buffer_manager,
-	uint32_t request_size);
-
-// Release a reserved buffer budget
-void
-ep_buffer_manager_release_buffer(
-	EventPipeBufferManager *buffer_manager,
-	uint32_t size);
-
 // Write an event to the input thread's current event buffer.
 // An optional event_thread can be provided for sample profiler events.
 // This is because the thread that writes the events is not the same as the "event thread".
