@@ -289,6 +289,12 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json\tests\ReflectionOnly\System.Runtime.Serialization.Json.ReflectionOnly.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Xml\tests\ReflectionOnly\System.Runtime.Serialization.Xml.ReflectionOnly.Tests.csproj" />
 
+    <!-- Issue: https://github.com/dotnet/runtime/issues/51211 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.VisualC\tests\System.Runtime.CompilerServices.VisualC.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.TypeExtensions\tests\System.Reflection.TypeExtensions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.Lightweight\tests\System.Reflection.Emit.Lightweight.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\tests\Microsoft.Extensions.Configuration.Binder.Tests.csproj" />
+
     <!-- MarkTypeForDynamicallyAccessedMembers stack overflow https://github.com/mono/linker/issues/1881 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations\tests\System.ComponentModel.Annotations.Tests.csproj" />
 
