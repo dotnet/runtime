@@ -79,6 +79,6 @@
     <__ExcludeFromBundle Include="TestAssembly.dll" />
 
     <TrimmerRootAssembly Include="TestAssembly" />
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>

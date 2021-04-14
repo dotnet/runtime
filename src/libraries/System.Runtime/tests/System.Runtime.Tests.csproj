@@ -264,8 +264,8 @@
              Link="System\RealParserTestsBase.cs" />
     <Compile Include="System\RealParserTests.cs" />
 
-    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Castle.xml" />
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" />
+    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptors.Castle.xml" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs"

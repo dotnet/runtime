@@ -244,7 +244,7 @@
 
     <ItemGroup>
       <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'"  />
-      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
     </ItemGroup>
   </Target>
 

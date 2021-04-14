@@ -9,7 +9,7 @@
     <Compile Include="*.cs" />
     <Compile Include="$(CommonTestPath)Extensions\ConfigurationRootTest.cs" Link="Common\Extensions\ConfigurationRootTest.cs" />
 
-    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Castle.xml" />
+    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptors.Castle.xml" />
   </ItemGroup>
 
   <ItemGroup>

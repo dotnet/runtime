@@ -8,6 +8,6 @@
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs" />
 
-    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Serialization.xml" />
+    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptors.Serialization.xml" />
   </ItemGroup>
 </Project>

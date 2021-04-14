@@ -19,8 +19,8 @@
     <Compile Include="..\DI.Common\Common\src\TestLoggerFactory.cs"
              Link="tests\DI.Common\Common\src\TestLoggerFactory.cs" />
 
-    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptor.Castle.xml" />
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" />
+    <TrimmerRootDescriptor Include="$(ILDescriptorsPath)ILLink.Descriptors.Castle.xml" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 
   <ItemGroup>
