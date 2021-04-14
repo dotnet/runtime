@@ -3,6 +3,9 @@
   <PropertyGroup>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
+    <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,
+         so, just setting it true by default -->
+    <IncludeSatelliteAssembliesInVFS Condition="'$(IncludeSatelliteAssembliesInVFS)' == ''">true</IncludeSatelliteAssembliesInVFS>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -77,12 +80,6 @@
              AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
 
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="PrepareForWasmBuildApp">
-    <PropertyGroup>
-      <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,
-           so, just setting it true by default -->
-      <IncludeSatelliteAssembliesInVFS Condition="'$(IncludeSatelliteAssembliesInVFS)' == ''">true</IncludeSatelliteAssembliesInVFS>
-    </PropertyGroup>
-
     <ItemGroup>
       <BundleFiles Include="$(WasmMainJSPath)"                  TargetDir="publish" />
       <BundleFiles Include="@(WasmSatelliteAssemblies)"         TargetDir="publish/%(WasmSatelliteAssemblies.CultureName)" />
@@ -161,6 +158,10 @@
       <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
 
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
+      <WasmFilesToIncludeInFileSystem
+              Include="@(WasmSatelliteAssemblies)"
+              TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.FileName)%(WasmSatelliteAssemblies.Extension)"
+              Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'" />
 
       <_CopyLocalPaths
               Include="@(PublishItemsOutputGroupOutputs)"
