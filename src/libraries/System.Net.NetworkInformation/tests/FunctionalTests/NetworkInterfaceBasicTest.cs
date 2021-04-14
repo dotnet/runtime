@@ -273,6 +273,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/runtime/issues/20029 and https://github.com/Microsoft/WSL/issues/3561
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50567", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void BasicTest_GetIsNetworkAvailable_Success()
         {
             Assert.True(NetworkInterface.GetIsNetworkAvailable());
@@ -284,6 +285,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(false)]
         [InlineData(true)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50567", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task NetworkInterface_LoopbackInterfaceIndex_MatchesReceivedPackets(bool ipv6)
         {
             using (var client = new Socket(SocketType.Dgram, ProtocolType.Udp))
