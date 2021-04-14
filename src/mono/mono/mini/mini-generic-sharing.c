@@ -3964,14 +3964,14 @@ shared_gparam_equal (gconstpointer ka, gconstpointer kb)
 MonoType*
 mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 {
-	MonoImageSet *set;
+	MonoMemoryManager *mm;
 	MonoGenericParam *par = t->data.generic_param;
 	MonoGSharedGenericParam *copy, key;
 	MonoType *res;
 	MonoImage *image = NULL;
 	char *name;
 
-	set = mono_metadata_merge_image_sets (mono_metadata_get_image_set_for_type (t), mono_metadata_get_image_set_for_type (constraint));
+	mm = mono_mem_manager_merge (mono_metadata_get_mem_manager_for_type (t), mono_metadata_get_mem_manager_for_type (constraint));
 
 	memset (&key, 0, sizeof (key));
 	key.parent = par;
@@ -3984,24 +3984,24 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	 * Need a cache to ensure the newly created gparam
 	 * is unique wrt T/CONSTRAINT.
 	 */
-	mono_image_set_lock (set);
-	if (!set->gshared_types) {
-		set->gshared_types_len = MONO_TYPE_INTERNAL;
-		set->gshared_types = g_new0 (GHashTable*, set->gshared_types_len);
+	mono_mem_manager_lock (mm);
+	if (!mm->gshared_types) {
+		mm->gshared_types_len = MONO_TYPE_INTERNAL;
+		mm->gshared_types = g_new0 (GHashTable*, mm->gshared_types_len);
 	}
-	if (!set->gshared_types [constraint->type])
-		set->gshared_types [constraint->type] = g_hash_table_new (shared_gparam_hash, shared_gparam_equal);
-	res = (MonoType *)g_hash_table_lookup (set->gshared_types [constraint->type], &key);
-	mono_image_set_unlock (set);
+	if (!mm->gshared_types [constraint->type])
+		mm->gshared_types [constraint->type] = g_hash_table_new (shared_gparam_hash, shared_gparam_equal);
+	res = (MonoType *)g_hash_table_lookup (mm->gshared_types [constraint->type], &key);
+	mono_mem_manager_unlock (mm);
 	if (res)
 		return res;
-	copy = (MonoGSharedGenericParam *)mono_image_set_alloc0 (set, sizeof (MonoGSharedGenericParam));
+	copy = (MonoGSharedGenericParam *)mono_mem_manager_alloc0 (mm, sizeof (MonoGSharedGenericParam));
 	memcpy (&copy->param, par, sizeof (MonoGenericParamFull));
 	copy->param.info.pklass = NULL;
 	// FIXME:
 	constraint = mono_metadata_type_dup (NULL, constraint);
 	name = get_shared_gparam_name (constraint->type, ((MonoGenericParamFull*)copy)->info.name);
-	copy->param.info.name = mono_image_set_strdup (set, name);
+	copy->param.info.name = mono_mem_manager_strdup (mm, name);
 	g_free (name);
 
 	copy->param.owner = par->owner;
@@ -4012,10 +4012,10 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	res = mono_metadata_type_dup (NULL, t);
 	res->data.generic_param = (MonoGenericParam*)copy;
 
-	mono_image_set_lock (set);
+	mono_mem_manager_lock (mm);
 	/* Duplicates are ok */
-	g_hash_table_insert (set->gshared_types [constraint->type], copy, res);
-	mono_image_set_unlock (set);
+	g_hash_table_insert (mm->gshared_types [constraint->type], copy, res);
+	mono_mem_manager_unlock (mm);
 
 	return res;
 }

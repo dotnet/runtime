@@ -405,7 +405,7 @@ struct _MonoMethodInflated {
 	} method;
 	MonoMethod *declaring;		/* the generic method definition. */
 	MonoGenericContext context;	/* The current instantiation */
-	MonoImageSet *owner; /* The image set that the inflated method belongs to. */
+	MonoMemoryManager *owner; /* The mem manager that the inflated method belongs to. */
 };
 
 /*
@@ -419,12 +419,8 @@ struct _MonoGenericClass {
 	guint need_sync   : 1;      /* Only if dynamic. Need to be synchronized with its container class after its finished. */
 	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */
 
-	/* 
-	 * The image set which owns this generic class. Memory owned by the generic class
-	 * including cached_class should be allocated from the mempool of the image set,
-	 * so it is easy to free.
-	 */
-	MonoImageSet *owner;
+	/* The mem manager which owns this generic class. */
+	MonoMemoryManager *owner;
 };
 
 /* Additional details about a MonoGenericParam */
@@ -901,11 +897,14 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 MonoMethod *
 mono_class_inflate_generic_method_checked (MonoMethod *method, MonoGenericContext *context, MonoError *error);
 
-MonoImageSet *
-mono_metadata_get_image_set_for_class (MonoClass *klass);
+MonoMemoryManager *
+mono_metadata_get_mem_manager_for_type (MonoType *type);
 
-MonoImageSet *
-mono_metadata_get_image_set_for_method (MonoMethodInflated *method);
+MonoMemoryManager *
+mono_metadata_get_mem_manager_for_class (MonoClass *klass);
+
+MonoMemoryManager*
+mono_metadata_get_mem_manager_for_method (MonoMethodInflated *method);
 
 MONO_API MonoMethodSignature *
 mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context);
