@@ -179,6 +179,8 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 
 	mono_coop_mutex_destroy (&memory_manager->lock);
 
+	// FIXME: Free generics caches
+
 	if (debug_unload) {
 		mono_mempool_invalidate (memory_manager->_mp);
 		mono_code_manager_invalidate (memory_manager->code_mp);
