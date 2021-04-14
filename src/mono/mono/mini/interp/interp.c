@@ -4191,6 +4191,72 @@ call:
 			LDIND(double, gdouble, FALSE);
 #endif
 			MINT_IN_BREAK;
+
+#define LDIND_OFFSET(datatype,casttype,unaligned) do { \
+	gpointer ptr = LOCAL_VAR (ip [2], gpointer); \
+	NULL_CHECK (ptr); \
+	ptr = (char*)ptr + LOCAL_VAR (ip [3], mono_i); \
+	if (unaligned && ((gsize)ptr % SIZEOF_VOID_P)) \
+		memcpy (locals + ip [1], ptr, sizeof (datatype)); \
+	else \
+		LOCAL_VAR (ip [1], datatype) = *(casttype*)ptr; \
+	ip += 4; \
+} while (0)
+		MINT_IN_CASE(MINT_LDIND_OFFSET_I1)
+			LDIND_OFFSET(int, gint8, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_U1)
+			LDIND_OFFSET(int, guint8, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_I2)
+			LDIND_OFFSET(int, gint16, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_U2)
+			LDIND_OFFSET(int, guint16, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_I4)
+			LDIND_OFFSET(int, gint32, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_I8)
+#ifdef NO_UNALIGNED_ACCESS
+			LDIND_OFFSET(gint64, gint64, TRUE);
+#else
+			LDIND_OFFSET(gint64, gint64, FALSE);
+#endif
+			MINT_IN_BREAK;
+
+#define LDIND_OFFSET_IMM(datatype,casttype,unaligned) do { \
+	gpointer ptr = LOCAL_VAR (ip [2], gpointer); \
+	NULL_CHECK (ptr); \
+	ptr = (char*)ptr + (gint16)ip [3]; \
+	if (unaligned && ((gsize)ptr % SIZEOF_VOID_P)) \
+		memcpy (locals + ip [1], ptr, sizeof (datatype)); \
+	else \
+		LOCAL_VAR (ip [1], datatype) = *(casttype*)ptr; \
+	ip += 4; \
+} while (0)
+		MINT_IN_CASE(MINT_LDIND_OFFSET_IMM_I1)
+			LDIND_OFFSET_IMM(int, gint8, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_IMM_U1)
+			LDIND_OFFSET_IMM(int, guint8, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_IMM_I2)
+			LDIND_OFFSET_IMM(int, gint16, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_IMM_U2)
+			LDIND_OFFSET_IMM(int, guint16, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_IMM_I4)
+			LDIND_OFFSET_IMM(int, gint32, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_IMM_I8)
+#ifdef NO_UNALIGNED_ACCESS
+			LDIND_OFFSET_IMM(gint64, gint64, TRUE);
+#else
+			LDIND_OFFSET_IMM(gint64, gint64, FALSE);
+#endif
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_REF) {
 			gpointer ptr = LOCAL_VAR (ip [1], gpointer);
 			NULL_CHECK (ptr);
@@ -4231,6 +4297,60 @@ call:
 			STIND(double, TRUE);
 #else
 			STIND(double, FALSE);
+#endif
+			MINT_IN_BREAK;
+
+#define STIND_OFFSET(datatype,unaligned) do { \
+	gpointer ptr = LOCAL_VAR (ip [1], gpointer); \
+	NULL_CHECK (ptr); \
+	ptr = (char*)ptr + LOCAL_VAR (ip [2], mono_i); \
+	if (unaligned && ((gsize)ptr % SIZEOF_VOID_P)) \
+		memcpy (ptr, locals + ip [3], sizeof (datatype)); \
+	else \
+		*(datatype*)ptr = LOCAL_VAR (ip [3], datatype); \
+	ip += 4; \
+} while (0)
+		MINT_IN_CASE(MINT_STIND_OFFSET_I1)
+			STIND_OFFSET(gint8, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STIND_OFFSET_I2)
+			STIND_OFFSET(gint16, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STIND_OFFSET_I4)
+			STIND_OFFSET(gint32, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STIND_OFFSET_I8)
+#ifdef NO_UNALIGNED_ACCESS
+			STIND_OFFSET(gint64, TRUE);
+#else
+			STIND_OFFSET(gint64, FALSE);
+#endif
+			MINT_IN_BREAK;
+
+#define STIND_OFFSET_IMM(datatype,unaligned) do { \
+	gpointer ptr = LOCAL_VAR (ip [1], gpointer); \
+	NULL_CHECK (ptr); \
+	ptr = (char*)ptr + (gint16)ip [3]; \
+	if (unaligned && ((gsize)ptr % SIZEOF_VOID_P)) \
+		memcpy (ptr, locals + ip [2], sizeof (datatype)); \
+	else \
+		*(datatype*)ptr = LOCAL_VAR (ip [2], datatype); \
+	ip += 4; \
+} while (0)
+		MINT_IN_CASE(MINT_STIND_OFFSET_IMM_I1)
+			STIND_OFFSET_IMM(gint8, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STIND_OFFSET_IMM_I2)
+			STIND_OFFSET_IMM(gint16, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STIND_OFFSET_IMM_I4)
+			STIND_OFFSET_IMM(gint32, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STIND_OFFSET_IMM_I8)
+#ifdef NO_UNALIGNED_ACCESS
+			STIND_OFFSET_IMM(gint64, TRUE);
+#else
+			STIND_OFFSET_IMM(gint64, FALSE);
 #endif
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_ATOMIC_STORE_I4)

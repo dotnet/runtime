@@ -44,6 +44,7 @@ MonoInterpStats mono_interp_stats;
 #define MINT_NEG_FP MINT_NEG_R8
 
 #define MINT_ADD_P MINT_ADD_I8
+#define MINT_ADD_P_IMM MINT_ADD_I8_IMM
 #define MINT_SUB_P MINT_SUB_I8
 #define MINT_MUL_P MINT_MUL_I8
 #define MINT_DIV_P MINT_DIV_I8
@@ -90,6 +91,7 @@ MonoInterpStats mono_interp_stats;
 #define MINT_NEG_FP MINT_NEG_R4
 
 #define MINT_ADD_P MINT_ADD_I4
+#define MINT_ADD_P_IMM MINT_ADD_I4_IMM
 #define MINT_SUB_P MINT_SUB_I4
 #define MINT_MUL_P MINT_MUL_I4
 #define MINT_DIV_P MINT_DIV_I4
@@ -8557,6 +8559,64 @@ interp_super_instructions (TransformData *td)
 					if (td->verbose_level) {
 						g_print ("superins: ");
 						dump_interp_inst (new_inst);
+					}
+				}
+			} else if (MINT_IS_LDIND_INT (opcode)) {
+				int sreg_base = ins->sregs [0];
+				InterpInst *def = td->locals [sreg_base].def;
+				if (def != NULL && td->local_ref_count [sreg_base] == 1) {
+					InterpInst *new_inst = NULL;
+					if (def->opcode == MINT_ADD_P) {
+						int ldind_offset_op = MINT_LDIND_OFFSET_I1 + (opcode - MINT_LDIND_I1);
+						new_inst = interp_insert_ins (td, ins, ldind_offset_op);
+						new_inst->dreg = ins->dreg;
+						new_inst->sregs [0] = def->sregs [0]; // base
+						new_inst->sregs [1] = def->sregs [1]; // off
+					} else if (def->opcode == MINT_ADD_P_IMM) {
+						int ldind_offset_imm_op = MINT_LDIND_OFFSET_IMM_I1 + (opcode - MINT_LDIND_I1);
+						new_inst = interp_insert_ins (td, ins, ldind_offset_imm_op);
+						new_inst->dreg = ins->dreg;
+						new_inst->sregs [0] = def->sregs [0]; // base
+						new_inst->data [0] = def->data [0];   // imm value
+					}
+					if (new_inst) {
+						interp_clear_ins (def);
+						interp_clear_ins (ins);
+						local_ref_count [sreg_base]--;
+						mono_interp_stats.super_instructions++;
+						if (td->verbose_level) {
+							g_print ("superins: ");
+							dump_interp_inst (new_inst);
+						}
+					}
+				}
+			} else if (MINT_IS_STIND_INT (opcode)) {
+				int sreg_base = ins->sregs [0];
+				InterpInst *def = td->locals [sreg_base].def;
+				if (def != NULL && td->local_ref_count [sreg_base] == 1) {
+					InterpInst *new_inst = NULL;
+					if (def->opcode == MINT_ADD_P) {
+						int stind_offset_op = MINT_STIND_OFFSET_I1 + (opcode - MINT_STIND_I1);
+						new_inst = interp_insert_ins (td, ins, stind_offset_op);
+						new_inst->sregs [0] = def->sregs [0]; // base
+						new_inst->sregs [1] = def->sregs [1]; // off
+						new_inst->sregs [2] = ins->sregs [1]; // value
+					} else if (def->opcode == MINT_ADD_P_IMM) {
+						int stind_offset_imm_op = MINT_STIND_OFFSET_IMM_I1 + (opcode - MINT_STIND_I1);
+						new_inst = interp_insert_ins (td, ins, stind_offset_imm_op);
+						new_inst->sregs [0] = def->sregs [0]; // base
+						new_inst->sregs [1] = ins->sregs [1]; // value
+						new_inst->data [0] = def->data [0];   // imm value
+					}
+					if (new_inst) {
+						interp_clear_ins (def);
+						interp_clear_ins (ins);
+						local_ref_count [sreg_base]--;
+						mono_interp_stats.super_instructions++;
+						if (td->verbose_level) {
+							g_print ("superins: ");
+							dump_interp_inst (new_inst);
+						}
 					}
 				}
 			} else if (MINT_IS_LDFLD (opcode)) {
