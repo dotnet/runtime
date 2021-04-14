@@ -178,7 +178,6 @@ struct JitInterfaceCallbacks
     void (* reportFatalError)(void * thisHandle, CorInfoExceptionClass** ppException, CorJitResult result);
     JITINTERFACE_HRESULT (* getPgoInstrumentationResults)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t** pInstrumentationData);
     JITINTERFACE_HRESULT (* allocPgoInstrumentationBySchema)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData);
-    CORINFO_CLASS_HANDLE (* getLikelyClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, uint32_t ilOffset, uint32_t* pLikelihood, uint32_t* pNumberOfClasses);
     void (* recordCallSite)(void * thisHandle, CorInfoExceptionClass** ppException, uint32_t instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
     void (* recordRelocation)(void * thisHandle, CorInfoExceptionClass** ppException, void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta);
     uint16_t (* getRelocTypeHint)(void * thisHandle, CorInfoExceptionClass** ppException, void* target);
@@ -1810,19 +1809,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     JITINTERFACE_HRESULT temp = _callbacks->allocPgoInstrumentationBySchema(_thisHandle, &pException, ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CORINFO_CLASS_HANDLE getLikelyClass(
-          CORINFO_METHOD_HANDLE ftnHnd,
-          CORINFO_CLASS_HANDLE baseHnd,
-          uint32_t ilOffset,
-          uint32_t* pLikelihood,
-          uint32_t* pNumberOfClasses)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CORINFO_CLASS_HANDLE temp = _callbacks->getLikelyClass(_thisHandle, &pException, ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
     if (pException != nullptr) throw pException;
     return temp;
 }

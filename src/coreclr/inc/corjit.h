@@ -413,24 +413,6 @@ public:
             uint8_t **                pInstrumentationData         // OUT: `*pInstrumentationData` is set to the address of the instrumentation data.
             ) = 0;
 
-    // Get the likely implementing class for a virtual call or interface call made by ftnHnd
-    // at the indicated IL offset. baseHnd is the interface class or base class for the method
-    // being called. May returns NULL.
-    // 
-    // pLikelihood is the estimated percent chance that the class at runtime is the class
-    // returned by this method. A well-estimated monomorphic call site will return a likelihood
-    // of 100.
-    // 
-    // pNumberOfClasses is the estimated number of different classes seen at the site.
-    // A well-estimated monomorphic call site will return 1.
-    virtual CORINFO_CLASS_HANDLE getLikelyClass(
-            CORINFO_METHOD_HANDLE ftnHnd,
-            CORINFO_CLASS_HANDLE  baseHnd,
-            uint32_t                ilOffset,
-            uint32_t *              pLikelihood,      // OUT, estimated likelihood of the class (0...100)
-            uint32_t *              pNumberOfClasses  // OUT, estimated number of possible classes
-            ) = 0;
-
     // Associates a native call site, identified by its offset in the native code stream, with
     // the signature information and method handle the JIT used to lay out the call site. If
     // the call site has no signature information (e.g. a helper call) or has no method handle

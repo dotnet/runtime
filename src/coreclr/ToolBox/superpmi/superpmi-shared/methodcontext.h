@@ -701,10 +701,6 @@ public:
     void dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value);
     HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData);
 
-    void recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE  baseHnd, UINT32 ilOffset, CORINFO_CLASS_HANDLE classHnd, UINT32* pLikelihood, UINT32* pNumberOfClasses);
-    void dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value);
-    CORINFO_CLASS_HANDLE repGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE  baseHnd, UINT32 ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses);
-
     void recMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, CORINFO_CLASS_HANDLE result);
     void dmpMergeClasses(DLDL key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
@@ -1002,7 +998,7 @@ enum mcPackets
     Packet_GetJitFlags                                   = 154, // Added 2/3/2016
     Packet_GetJitTimeLogFilename                         = 67,
     Packet_GetJustMyCodeHandle                           = 68,
-    Packet_GetLikelyClass                                = 182, // Added 9/27/2020
+    Retired10                                            = 182, // Added 9/27/2020 // was Packet_GetLikelyClass
     Packet_GetLocationOfThisType                         = 69,
     Packet_IsJitIntrinsic                                = 192,
     Packet_GetMethodAttribs                              = 70,

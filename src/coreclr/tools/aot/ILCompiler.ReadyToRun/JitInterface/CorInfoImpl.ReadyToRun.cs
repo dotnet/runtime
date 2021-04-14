@@ -2453,11 +2453,6 @@ namespace Internal.JitInterface
             return 0;
         }
 
-        private CORINFO_CLASS_STRUCT_* getLikelyClass(CORINFO_METHOD_STRUCT_* ftnHnd, CORINFO_CLASS_STRUCT_* baseHnd, uint IlOffset, ref uint pLikelihood, ref uint pNumberOfClasses)
-        {
-            return null;
-        }
-
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
             MethodDesc methodDesc = HandleToObject(method);

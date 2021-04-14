@@ -1185,16 +1185,6 @@ JITINTERFACE_HRESULT interceptor_ICJI::allocPgoInstrumentationBySchema(
     return original_ICorJitInfo->allocPgoInstrumentationBySchema(ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
 }
 
-CORINFO_CLASS_HANDLE interceptor_ICJI::getLikelyClass(
-          CORINFO_METHOD_HANDLE ftnHnd,
-          CORINFO_CLASS_HANDLE baseHnd,
-          uint32_t ilOffset,
-          uint32_t* pLikelihood,
-          uint32_t* pNumberOfClasses)
-{
-    return original_ICorJitInfo->getLikelyClass(ftnHnd, baseHnd, ilOffset, pLikelihood, pNumberOfClasses);
-}
-
 void interceptor_ICJI::recordCallSite(
           uint32_t instrOffset,
           CORINFO_SIG_INFO* callSig,

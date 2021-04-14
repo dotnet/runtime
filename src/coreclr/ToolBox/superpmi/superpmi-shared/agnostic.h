@@ -493,20 +493,6 @@ struct Agnostic_GetPgoInstrumentationResults
     DWORD result;
 };
 
-struct Agnostic_GetLikelyClass
-{
-    DWORDLONG ftnHnd;
-    DWORDLONG baseHnd;
-    DWORD     ilOffset;
-};
-
-struct Agnostic_GetLikelyClassResult
-{
-    DWORDLONG classHnd;
-    DWORD     likelihood;
-    DWORD     numberOfClasses;
-};
-
 struct Agnostic_GetProfilingHandle
 {
     DWORD     bHookFunction;
