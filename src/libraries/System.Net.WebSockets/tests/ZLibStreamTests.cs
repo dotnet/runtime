@@ -3,7 +3,6 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -12,7 +11,7 @@ namespace System.Net.WebSockets.Tests
     public class ZLibStreamTests
     {
         [Fact]
-        public void PoolShouldReuseTheSameInstance()
+        public async Task PoolShouldReuseTheSameInstance()
         {
             var pool = new Pool(timeoutMilliseconds: 100);
 
@@ -30,14 +29,15 @@ namespace System.Net.WebSockets.Tests
             pool.ReturnInflater(inflater);
 
             Assert.Equal(1, pool.ActiveCount);
-            Thread.Sleep(250);
+            await Task.Delay(250);
 
-            // After timeout elapses we should have any active instances
+            // After timeout elapses we should not have any active instances
             Assert.Equal(0, pool.ActiveCount);
         }
 
         [Fact]
-        public void PoolingConcurrently()
+        [PlatformSpecific(~TestPlatforms.Browser)] // There is no concurrency in browser
+        public async Task PoolingConcurrently()
         {
             var pool = new Pool(timeoutMilliseconds: 100);
             var parallelOptions = new ParallelOptions
@@ -60,7 +60,7 @@ namespace System.Net.WebSockets.Tests
 
             Assert.True(pool.ActiveCount >= 2);
             Assert.True(pool.ActiveCount <= parallelOptions.MaxDegreeOfParallelism * 2);
-            Thread.Sleep(250);
+            await Task.Delay(250);
             Assert.Equal(0, pool.ActiveCount);
         }
 
