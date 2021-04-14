@@ -541,12 +541,14 @@ void Compiler::optAssertionInit(bool isLocalProp)
 
     if (!isLocalProp)
     {
-        optValueNumToAsserts = new (getAllocator()) ValueNumToAssertsMap(getAllocator());
+        optValueNumToAsserts =
+            new (getAllocator(CMK_AssertionProp)) ValueNumToAssertsMap(getAllocator(CMK_AssertionProp));
     }
 
     if (optAssertionDep == nullptr)
     {
-        optAssertionDep = new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(), max(1, lvaCount));
+        optAssertionDep =
+            new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(CMK_AssertionProp), max(1, lvaCount));
     }
 
     optAssertionTraitsInit(optMaxAssertionCount);

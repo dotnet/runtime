@@ -2102,8 +2102,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
             shouldPromote = false;
         }
     }
-    else if (!compiler->compDoOldStructRetyping() && (lclNum == compiler->genReturnLocal) &&
-             (structPromotionInfo.fieldCnt > 1))
+    else if ((lclNum == compiler->genReturnLocal) && (structPromotionInfo.fieldCnt > 1))
     {
         // TODO-1stClassStructs: a temporary solution to keep diffs small, it will be fixed later.
         shouldPromote = false;
@@ -3239,6 +3238,7 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 //  if we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (100)
 //  otherwise it returns the number of times that profile data says the method was called.
 //
+// static
 BasicBlock::weight_t BasicBlock::getCalledCount(Compiler* comp)
 {
     // when we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)

@@ -458,19 +458,15 @@ namespace System.Reflection.Emit
 
             // if we are here we passed all the previous checks. Time to look at the arguments
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            object retValue;
-            if (actualCount > 0)
-            {
-                object[] arguments = CheckArguments(parameters!, binder, invokeAttr, culture, sig);
-                retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, false, wrapExceptions);
-                // copy out. This should be made only if ByRef are present.
-                for (int index = 0; index < arguments.Length; index++)
-                    parameters![index] = arguments[index];
-            }
-            else
-            {
-                retValue = RuntimeMethodHandle.InvokeMethod(null, null, sig, false, wrapExceptions);
-            }
+
+            StackAllocedArguments stackArgs = default;
+            Span<object?> arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig);
+            object? retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, false, wrapExceptions);
+
+            // copy out. This should be made only if ByRef are present.
+            // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
+            for (int index = 0; index < arguments.Length; index++)
+                parameters![index] = arguments[index];
 
             GC.KeepAlive(this);
             return retValue;

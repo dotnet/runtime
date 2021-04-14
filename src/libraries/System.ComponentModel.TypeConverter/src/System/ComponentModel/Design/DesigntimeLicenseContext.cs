@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Collections;
@@ -57,6 +58,8 @@ namespace System.ComponentModel.Design
             return uri.LocalPath + uri.Fragment;
         }
 
+        [UnconditionalSuppressMessage("Single file", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Suppressing the warning until gets fixed, see https://github.com/dotnet/runtime/issues/50821")]
         public override string GetSavedLicenseKey(Type type, Assembly resourceAssembly)
         {
             if (_savedLicenseKeys == null || _savedLicenseKeys[type.AssemblyQualifiedName] == null)
@@ -77,11 +80,7 @@ namespace System.ComponentModel.Design
                     // try everything.
                     foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
                     {
-                        // Assemblies loaded in memory return empty string from Location.
-                        // Suppressing the warning until gets fixed, see https://github.com/dotnet/runtime/issues/50821
-#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
                         string location = asm.Location;
-#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
                         if (location == string.Empty)
                             continue;
 
@@ -104,10 +103,7 @@ namespace System.ComponentModel.Design
                 }
                 else
                 {
-                    // Suppressing the warning until gets fixed, see https://github.com/dotnet/runtime/issues/50821
-#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
                     string location = resourceAssembly.Location;
-#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
                     if (location != string.Empty)
                     {
                         string fileName = Path.GetFileName(location);

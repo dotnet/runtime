@@ -10,5 +10,8 @@
   <ItemGroup>
     <Compile Include="Sgen.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+  </ItemGroup>
   <Import Project=".\GenerateThisAssemblyCs.targets" />
 </Project>

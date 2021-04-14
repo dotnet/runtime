@@ -543,6 +543,8 @@ namespace System.ComponentModel.Composition.Hosting
         private string GetDisplayName() =>
             $"{GetType().Name} (Assembly=\"{Assembly.FullName}\")";   // NOLOC
 
+        [UnconditionalSuppressMessage("Single file", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Setting a CodeBase is not single file dangerous")]
         private static Assembly LoadAssembly(string codeBase)
         {
             Requires.NotNullOrEmpty(codeBase, nameof(codeBase));
@@ -556,10 +558,7 @@ namespace System.ComponentModel.Composition.Hosting
             catch (ArgumentException)
             {
                 assemblyName = new AssemblyName();
-                // Setting a CodeBase is not single-file dangerous
-#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
                 assemblyName.CodeBase = codeBase;
-#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
             }
 
             try

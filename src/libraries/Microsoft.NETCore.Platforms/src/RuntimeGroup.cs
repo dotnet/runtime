@@ -1,49 +1,84 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Build.Framework;
 using NuGet.RuntimeModel;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.NETCore.Platforms.BuildTasks
 {
-
-    internal class RuntimeGroup
+    public class RuntimeGroup
     {
         private const string rootRID = "any";
-        private const char VersionDelimiter = '.';
-        private const char ArchitectureDelimiter = '-';
-        private const char QualifierDelimiter = '-';
 
         public RuntimeGroup(ITaskItem item)
         {
             BaseRID = item.ItemSpec;
             Parent = item.GetString(nameof(Parent));
-            Versions = item.GetStrings(nameof(Versions));
+            Versions = new HashSet<RuntimeVersion>(item.GetStrings(nameof(Versions)).Select(v => new RuntimeVersion(v)));
             TreatVersionsAsCompatible = item.GetBoolean(nameof(TreatVersionsAsCompatible), true);
             OmitVersionDelimiter = item.GetBoolean(nameof(OmitVersionDelimiter));
             ApplyVersionsToParent = item.GetBoolean(nameof(ApplyVersionsToParent));
-            Architectures = item.GetStrings(nameof(Architectures));
-            AdditionalQualifiers = item.GetStrings(nameof(AdditionalQualifiers));
+            Architectures = new HashSet<string>(item.GetStrings(nameof(Architectures)));
+            AdditionalQualifiers = new HashSet<string>(item.GetStrings(nameof(AdditionalQualifiers)));
             OmitRIDs = new HashSet<string>(item.GetStrings(nameof(OmitRIDs)));
             OmitRIDDefinitions = new HashSet<string>(item.GetStrings(nameof(OmitRIDDefinitions)));
             OmitRIDReferences = new HashSet<string>(item.GetStrings(nameof(OmitRIDReferences)));
         }
 
+        public RuntimeGroup(string baseRID, string parent, bool treatVersionsAsCompatible = true, bool omitVersionDelimiter = false, bool applyVersionsToParent = false, IEnumerable<string> additionalQualifiers = null)
+        {
+            BaseRID = baseRID;
+            Parent = parent;
+            Versions = new HashSet<RuntimeVersion>();
+            TreatVersionsAsCompatible = treatVersionsAsCompatible;
+            OmitVersionDelimiter = omitVersionDelimiter;
+            ApplyVersionsToParent = applyVersionsToParent;
+            Architectures = new HashSet<string>();
+            AdditionalQualifiers = new HashSet<string>(additionalQualifiers.NullAsEmpty());
+            OmitRIDs = new HashSet<string>();
+            OmitRIDDefinitions = new HashSet<string>();
+            OmitRIDReferences = new HashSet<string>();
+        }
+
         public string BaseRID { get; }
         public string Parent { get; }
-        public IEnumerable<string> Versions { get; }
+        public ICollection<RuntimeVersion> Versions { get; }
         public bool TreatVersionsAsCompatible { get; }
         public bool OmitVersionDelimiter { get; }
         public bool ApplyVersionsToParent { get; }
-        public IEnumerable<string> Architectures { get; }
-        public IEnumerable<string> AdditionalQualifiers { get; }
+        public ICollection<string> Architectures { get; }
+        public ICollection<string> AdditionalQualifiers { get; }
         public ICollection<string> OmitRIDs { get; }
         public ICollection<string> OmitRIDDefinitions { get; }
         public ICollection<string> OmitRIDReferences { get; }
 
-        private class RIDMapping
+        public void ApplyRid(RID rid)
+        {
+            if (!rid.BaseRID.Equals(BaseRID, StringComparison.Ordinal))
+            {
+                throw new ArgumentException($"Cannot apply {nameof(RID)} with {nameof(RID.BaseRID)} {rid.BaseRID} to {nameof(RuntimeGroup)} with {nameof(RuntimeGroup.BaseRID)} {BaseRID}.", nameof(rid));
+            }
+
+            if (rid.HasArchitecture)
+            {
+                Architectures.Add(rid.Architecture);
+            }
+
+            if (rid.HasVersion)
+            {
+                Versions.Add(rid.Version);
+            }
+
+            if (rid.HasQualifier)
+            {
+                AdditionalQualifiers.Add(rid.Qualifier);
+            }
+        }
+
+        internal class RIDMapping
         {
             public RIDMapping(RID runtimeIdentifier)
             {
@@ -62,21 +97,20 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             public IEnumerable<RID> Imports { get; }
         }
 
-        private RID CreateRuntime(string baseRid, string version = null, string architecture = null, string qualifier = null)
+
+        internal RID CreateRuntime(string baseRid, RuntimeVersion version = null, string architecture = null, string qualifier = null)
         {
             return new RID()
             {
                 BaseRID = baseRid,
-                VersionDelimiter = OmitVersionDelimiter ? string.Empty : VersionDelimiter.ToString(),
                 Version = version,
-                ArchitectureDelimiter = ArchitectureDelimiter.ToString(),
+                OmitVersionDelimiter = OmitVersionDelimiter,
                 Architecture = architecture,
-                QualifierDelimiter = QualifierDelimiter.ToString(),
                 Qualifier = qualifier
             };
         }
 
-        private IEnumerable<RIDMapping> GetRIDMappings()
+        internal IEnumerable<RIDMapping> GetRIDMappings()
         {
             // base =>
             //      Parent
@@ -102,7 +136,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
                 yield return new RIDMapping(CreateRuntime(BaseRID, architecture: architecture), imports);
             }
 
-            string lastVersion = null;
+            RuntimeVersion lastVersion = null;
             foreach (var version in Versions)
             {
                 // base + version =>

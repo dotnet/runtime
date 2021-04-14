@@ -707,7 +707,8 @@ endif()
 
 add_subdirectory(mono)
 if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCATALYST)
-  add_subdirectory(dbi)
+  add_subdirectory(dlls/mscordbi)
+  add_subdirectory(dlls/dbgshim)
 endif()
 
 configure_file(cmake/config.h.in config.h)

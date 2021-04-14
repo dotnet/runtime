@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 
@@ -27,6 +28,8 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             // has run.
         }
 
+        [UnconditionalSuppressMessage("Single file", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "The code has a fallback to use AppDomain.CurrentDomain.BaseDirectory so is not single file dangerous")]
         private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
             // apply any existing policy
@@ -38,10 +41,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             Assembly assm = null;
 
             // look next to requesting assembly
-            // The code has a fallback to use AppDomain.CurrentDomain.BaseDirectory so is not single file dangerous
-#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
             assemblyPath = args.RequestingAssembly?.Location;
-#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
             if (!string.IsNullOrEmpty(assemblyPath))
             {
                 probingPath = Path.Combine(Path.GetDirectoryName(assemblyPath), fileName);
@@ -53,10 +53,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             }
 
             // look next to the executing assembly
-            // The code has a fallback to use AppDomain.CurrentDomain.BaseDirectory so is not single file dangerous
-#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
             assemblyPath = Assembly.GetExecutingAssembly().Location;
-#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
             if (!string.IsNullOrEmpty(assemblyPath))
             {
                 probingPath = Path.Combine(Path.GetDirectoryName(assemblyPath), fileName);

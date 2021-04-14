@@ -3,6 +3,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -206,6 +207,8 @@ namespace Microsoft.XmlSerializer.Generator
             return 0;
         }
 
+        [UnconditionalSuppressMessage("Single file", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Code has a fallback")]
         private void GenerateFile(List<string> typeNames, string assemblyName, bool proxyOnly, bool silent, bool warnings, bool force, string outputDirectory, bool parsableerrors)
         {
             Assembly assembly = LoadAssembly(assemblyName, true);
@@ -293,10 +296,7 @@ namespace Microsoft.XmlSerializer.Generator
                     ImportType(type, mappings, importedTypes, warnings, importer, parsableerrors);
                 }
             }
-            // Only used in diagnostics
-#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
             string nameOrLocation = assembly.Location;
-#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
             if (nameOrLocation == string.Empty)
                 nameOrLocation = assembly.FullName;
 
@@ -306,10 +306,7 @@ namespace Microsoft.XmlSerializer.Generator
                 var allMappings = (XmlMapping[])mappings.ToArray(typeof(XmlMapping));
 
                 bool gac = assembly.GlobalAssemblyCache;
-                // Code has a fallback in case the location is null
-#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
-                 outputDirectory = outputDirectory == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
-#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
+                outputDirectory = outputDirectory == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
 
                 if (!Directory.Exists(outputDirectory))
                 {

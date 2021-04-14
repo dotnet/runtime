@@ -2314,7 +2314,7 @@ namespace System.Tests
                 for (int i = -14; i <= 12; i++)
                 {
                     TimeZoneInfo tz = null;
- 
+
                     try
                     {
                         string id = $"Etc/GMT{i:+0;-0}";
@@ -2704,6 +2704,32 @@ namespace System.Tests
                 TimeZoneInfo.ClearCachedData();
                 Environment.SetEnvironmentVariable("TZ", originalTZ);
             }
+        }
+
+        [Fact]
+        public static void AdjustmentRuleBaseUtcOffsetDeltaTest()
+        {
+            TimeZoneInfo.TransitionTime start = TimeZoneInfo.TransitionTime.CreateFixedDateRule(timeOfDay: new DateTime(1, 1, 1, 2, 0, 0), month: 3, day: 7);
+            TimeZoneInfo.TransitionTime end = TimeZoneInfo.TransitionTime.CreateFixedDateRule(timeOfDay: new DateTime(1, 1, 1, 1, 0, 0), month: 11, day: 7);
+            TimeZoneInfo.AdjustmentRule rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(DateTime.MinValue.Date, DateTime.MaxValue.Date, new TimeSpan(1, 0, 0), start, end, baseUtcOffsetDelta: new TimeSpan(1, 0, 0));
+            TimeZoneInfo customTimeZone = TimeZoneInfo.CreateCustomTimeZone(
+                                                            id: "Fake Time Zone",
+                                                            baseUtcOffset: new TimeSpan(0),
+                                                            displayName: "Fake Time Zone",
+                                                            standardDisplayName: "Standard Fake Time Zone",
+                                                            daylightDisplayName: "British Summer Time",
+                                                            new TimeZoneInfo.AdjustmentRule[] { rule });
+
+            TimeZoneInfo.AdjustmentRule[] rules = customTimeZone.GetAdjustmentRules();
+
+            Assert.Equal(1, rules.Length);
+            Assert.Equal(new TimeSpan(1, 0, 0), rules[0].BaseUtcOffsetDelta);
+
+            // BaseUtcOffsetDelta should be counted to the returned offset during the standard time.
+            Assert.Equal(new TimeSpan(1, 0, 0), customTimeZone.GetUtcOffset(new DateTime(2021, 1, 1, 2, 0, 0)));
+
+            // BaseUtcOffsetDelta should be counted to the returned offset during the daylight time.
+            Assert.Equal(new TimeSpan(2, 0, 0), customTimeZone.GetUtcOffset(new DateTime(2021, 3, 10, 2, 0, 0)));
         }
 
         private static bool IsEnglishUILanguage => CultureInfo.CurrentUICulture.Name.Length == 0 || CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
