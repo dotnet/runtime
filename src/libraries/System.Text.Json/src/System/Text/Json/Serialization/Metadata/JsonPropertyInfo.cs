@@ -72,13 +72,8 @@ namespace System.Text.Json.Serialization.Metadata
                 DeterminePropertyName();
                 DetermineIgnoreCondition(ignoreCondition);
 
-                JsonNumberHandling? propertyNumberHandling = null;
                 JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
-                if (attribute != null)
-                {
-                    propertyNumberHandling = attribute.Handling;
-                }
-                DetermineNumberHandlingForProperty(propertyNumberHandling, declaringTypeNumberHandling);
+                DetermineNumberHandlingForProperty(attribute?.Handling, declaringTypeNumberHandling);
             }
         }
 

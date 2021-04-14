@@ -24,7 +24,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Initializes a new instance of <see cref="JsonSerializableAttribute"/> with the specified type.
         /// </summary>
-        /// <param name="type">The type to generated source code for.</param>
+        /// <param name="type">The type to generate source code for.</param>
         public JsonSerializableAttribute(Type type) { }
     }
 }

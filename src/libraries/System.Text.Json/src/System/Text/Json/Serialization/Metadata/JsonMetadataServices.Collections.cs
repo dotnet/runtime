@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates metadata for types assignable to <see cref="List{T}"/>.
         /// </summary>
-        /// <typeparam name="TCollection">The generic definition of the type</typeparam>
+        /// <typeparam name="TCollection">The generic definition of the type.</typeparam>
         /// <typeparam name="TElement">The generic defintion of the element type.</typeparam>
         /// <param name="options"></param>
         /// <param name="createObjectFunc">A <see cref="Func{TResult}"/> to create an instance of the list when deserializing.</param>
@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates metadata for types assignable to <see cref="Dictionary{TKey, TValue}"/>.
         /// </summary>
-        /// <typeparam name="TCollection">The generic definition of the type</typeparam>
+        /// <typeparam name="TCollection">The generic definition of the type.</typeparam>
         /// <typeparam name="TKey">The generic defintion of the key type.</typeparam>
         /// <typeparam name="TValue">The generic defintion of the value type.</typeparam>
         /// <param name="options"></param>

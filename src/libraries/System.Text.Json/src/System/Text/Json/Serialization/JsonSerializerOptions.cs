@@ -132,7 +132,7 @@ namespace System.Text.Json
         {
             if (_context != null)
             {
-                throw new InvalidOperationException();
+                ThrowHelper.ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext();
             }
 
             TContext context = new();

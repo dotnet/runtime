@@ -21,11 +21,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates serialization metadata for a <see cref="ClassType.Value"/>.
         /// </summary>
-        public JsonTypeInfoInternal(JsonSerializerOptions options, JsonConverter converter)
+        public JsonTypeInfoInternal(JsonSerializerOptions options)
             : base (typeof(T), options, ClassType.Value)
         {
-            ConverterBase = converter ?? throw new ArgumentNullException(nameof(converter));
-            PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, Options);
         }
 
         /// <summary>
@@ -38,9 +36,8 @@ namespace System.Text.Json.Serialization.Metadata
             JsonTypeInfo elementInfo,
             JsonNumberHandling numberHandling) : base(typeof(T), options, ClassType.Enumerable)
         {
-            ConverterBase = converter;
             ElementType = converter.ElementType;
-            ElementTypeInfo = elementInfo;
+            ElementTypeInfo = elementInfo ?? throw new ArgumentNullException(nameof(elementInfo));
             NumberHandling = numberHandling;
             PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, Options);
             SetCreateObjectFunc(createObjectFunc);
@@ -54,14 +51,13 @@ namespace System.Text.Json.Serialization.Metadata
             Func<T>? createObjectFunc,
             JsonConverter<T> converter,
             JsonTypeInfo keyInfo,
-            JsonTypeInfo elementInfo,
+            JsonTypeInfo valueInfo,
             JsonNumberHandling numberHandling) : base(typeof(T), options, ClassType.Dictionary)
         {
-            ConverterBase = converter;
             KeyType = converter.KeyType;
-            KeyTypeInfo = keyInfo;
+            KeyTypeInfo = keyInfo ?? throw new ArgumentNullException(nameof(keyInfo)); ;
             ElementType = converter.ElementType;
-            ElementTypeInfo = elementInfo;
+            ElementTypeInfo = valueInfo ?? throw new ArgumentNullException(nameof(valueInfo));
             NumberHandling = numberHandling;
             PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, Options);
             SetCreateObjectFunc(createObjectFunc);
@@ -84,7 +80,6 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter converter = new ObjectSourceGenConverter<T>();
 #pragma warning restore CS8714
 
-            ConverterBase = converter;
             NumberHandling = numberHandling;
             PropInitFunc = propInitFunc;
             PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, options);

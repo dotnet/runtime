@@ -140,8 +140,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal JsonConverter ConverterBase { get; set; }
-
         internal JsonNumberHandling? NumberHandling { get; set; }
 
         internal JsonTypeInfo()
@@ -161,9 +159,8 @@ namespace System.Text.Json.Serialization.Metadata
             Type = type;
             ClassType = classType;
 
-            // Setting these options is deferred to their respective initialization methods.
+            // Setting this option is deferred to the initialization methods of the various metadada info types.
             PropertyInfoForTypeInfo = null!;
-            ConverterBase = null!;
         }
 
         internal JsonTypeInfo(Type type, JsonSerializerOptions options)
@@ -178,7 +175,6 @@ namespace System.Text.Json.Serialization.Metadata
                 out Type runtimeType,
                 Options);
 
-            ConverterBase = converter;
             ClassType = converter.ClassType;
             JsonNumberHandling? typeNumberHandling = GetNumberHandlingForType(Type);
 

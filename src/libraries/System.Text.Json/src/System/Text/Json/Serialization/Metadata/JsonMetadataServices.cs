@@ -14,24 +14,48 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates metadata for a property or field.
         /// </summary>
-        /// <typeparam name="T">The declared type of the property.</typeparam>
+        /// <typeparam name="T">The type that the converter for the property returns or accepts when converting JSON data.</typeparam>
         /// <returns>A <see cref="JsonPropertyInfo"/> instance intialized with the provided metadata.</returns>
         public static JsonPropertyInfo CreatePropertyInfo<T>(
             JsonSerializerOptions options,
             bool isProperty,
             Type declaringType,
-            JsonTypeInfo typeInfo,
-            JsonConverter converter,
-            Func<object, T> getter,
-            Action<object, T> setter,
+            JsonTypeInfo propertyTypeInfo,
+            JsonConverter<T>? converter,
+            Func<object, T>? getter,
+            Action<object, T>? setter,
             JsonIgnoreCondition ignoreCondition,
             JsonNumberHandling numberHandling,
             string propertyName,
             JsonEncodedText jsonPropertyName)
         {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (declaringType == null)
+            {
+                throw new ArgumentNullException(nameof(declaringType));
+            }
+
+            if (propertyTypeInfo == null)
+            {
+                throw new ArgumentNullException(nameof(propertyTypeInfo));
+            }
+
+            if (propertyName == null)
+            {
+                throw new ArgumentNullException(propertyName);
+            }
+
             if (converter == null)
             {
-                throw new ArgumentNullException(nameof(converter));
+                converter = propertyTypeInfo.PropertyInfoForTypeInfo.ConverterBase as JsonConverter<T>;
+                if (converter == null)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.ConverterForPropertyMustBeValid, declaringType, propertyName, typeof(T)));
+                }
             }
 
             JsonPropertyInfo<T> jsonPropertyInfo = new JsonPropertyInfo<T>();
@@ -39,7 +63,7 @@ namespace System.Text.Json.Serialization.Metadata
                 options,
                 isProperty,
                 declaringType,
-                typeInfo,
+                propertyTypeInfo,
                 converter,
                 getter,
                 setter,
@@ -84,7 +108,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (info.ClassType != ClassType.Object)
             {
-                throw new ArgumentException("The value must represent an object class type.", nameof(info));
+                throw new ArgumentException(SR.InitializeTypeInfoAsObjectInvalid, nameof(info));
             }
 
             if (options == null)
@@ -104,8 +128,14 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates metadata for a primitive or a type with a custom converter.
         /// </summary>
         /// <typeparam name="T">The generic type definition.</typeparam>
+        /// <typeparam name="TConverterReturn">The generic type definition.</typeparam>
         /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the type.</returns>
-        public static JsonTypeInfo<T> CreateValueInfo<T>(JsonSerializerOptions options, JsonConverter converter)
-            => new JsonTypeInfoInternal<T>(options, converter);
+        public static JsonTypeInfo<T> CreateValueInfo<T, TConverterReturn>(JsonSerializerOptions options, JsonConverter<TConverterReturn> converter)
+            where TConverterReturn : T
+        {
+            JsonTypeInfo<T> info = new JsonTypeInfoInternal<T>(options);
+            info.PropertyInfoForTypeInfo = JsonPropertyInfo<TConverterReturn>.CreateForSourceGenTypeInfo(typeof(T), runtimeTypeInfo: info, converter, options);
+            return info;
+        }
     }
 }

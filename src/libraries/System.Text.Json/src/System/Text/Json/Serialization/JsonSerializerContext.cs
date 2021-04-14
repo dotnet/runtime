@@ -15,38 +15,46 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonSerializerOptions? _options;
 
         /// <summary>
-        /// Gets the run-time specified options of the context.
+        /// Gets the run-time specified options of the context. If no options were passed
+        /// when instanciating the context, then a new instance is binded and returned.
         /// </summary>
         /// <remarks>
-        /// The instance cannot be mutated once it is bounded with the context instance.
+        /// The instance cannot be mutated once it is binded with the context instance.
         /// </remarks>
         public JsonSerializerOptions Options
         {
             get
             {
-                Debug.Assert(_options != null);
+                if (_options == null)
+                {
+                    _options = new JsonSerializerOptions();
+                    _options._context = this;
+                }
+
                 return _options;
             }
         }
 
         /// <summary>
         /// Creates an instance of <see cref="JsonSerializerContext"/> and binds it with the indicated <see cref="JsonSerializerOptions"/>.
-        /// If no options are provided, then a new instance with default options is created and bound.
         /// </summary>
         /// <param name="options">The run-time provided options for the context instance.</param>
+        /// <remarks>
+        /// If no options are passed, then no options are set until the context is bound using <see cref="JsonSerializerOptions.AddContext{TContext}"/>,
+        /// or until <see cref="Options"/> is called, where a new options instance is created and bound.
+        /// </remarks>
         protected JsonSerializerContext(JsonSerializerOptions? options)
         {
-            if (options == null)
+            if (options != null)
             {
-                options = new JsonSerializerOptions();
-            }
-            else if (options._context != null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext();
-            }
+                if (options._context != null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext();
+                }
 
-            options._context = this;
-            _options = options;
+                _options = options;
+                options._context = this;
+            }
         }
 
         /// <summary>

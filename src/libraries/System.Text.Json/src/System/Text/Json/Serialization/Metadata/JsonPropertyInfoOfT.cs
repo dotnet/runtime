@@ -118,9 +118,9 @@ namespace System.Text.Json.Serialization.Metadata
             bool isProperty,
             Type declaringType,
             JsonTypeInfo typeInfo,
-            JsonConverter converter,
-            Func<object, T> getter,
-            Action<object, T> setter,
+            JsonConverter<T> converter,
+            Func<object, T>? getter,
+            Action<object, T>? setter,
             JsonIgnoreCondition ignoreCondition,
             JsonNumberHandling numberHandling,
             string propertyName,
@@ -130,22 +130,28 @@ namespace System.Text.Json.Serialization.Metadata
             ClrName = propertyName;
 
             byte[] encodedName = jsonPropertyName._utf8Value;
+            string encodedNameAsStr = jsonPropertyName._value;
 
             // Property name settings.
             if (encodedName != null && options.PropertyNamingPolicy == null && options.Encoder == null)
             {
-                NameAsString = jsonPropertyName._value;
+                NameAsString = encodedNameAsStr;
                 NameAsUtf8Bytes = encodedName;
 
                 int nameLength = encodedName.Length;
                 EscapedNameSection = new byte[nameLength + 3];
                 EscapedNameSection[0] = (byte)'"';
+                encodedName.CopyTo(EscapedNameSection, 1);
                 EscapedNameSection[nameLength - 2] = (byte)'"';
                 EscapedNameSection[nameLength - 1] = (byte)':';
             }
             else
             {
-                if (options.PropertyNamingPolicy == null)
+                if (encodedNameAsStr != null)
+                {
+                    NameAsString = encodedNameAsStr;
+                }
+                else if (options.PropertyNamingPolicy == null)
                 {
                     NameAsString = ClrName;
                 }
