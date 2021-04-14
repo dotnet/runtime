@@ -304,7 +304,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
         }
         pal::string_t probe_dir = config.probe_dir;
         uint32_t search_options = deps_entry_t::search_options::none;
-        if (m_has_additional_probing_paths)
+        if (m_has_additional_probing_paths || config.only_serviceable_assets)
             search_options |= deps_entry_t::search_options::file_existence;
 
         if (config.is_fx())

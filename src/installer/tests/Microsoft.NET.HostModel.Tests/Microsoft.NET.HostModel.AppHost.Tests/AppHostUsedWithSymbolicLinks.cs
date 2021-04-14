@@ -102,7 +102,7 @@ namespace Microsoft.NET.HostModel.Tests
 
             var appExe = fixture.TestProject.AppExe;
             var builtDotnet = fixture.BuiltDotnet.BinPath;
-            var testDir = Directory.GetParent(appExe).ToString();
+            var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
             Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(symlinkRelativePath)));
             var symlinkFullPath = Path.Combine(testDir, symlinkRelativePath);
 
@@ -130,7 +130,7 @@ namespace Microsoft.NET.HostModel.Tests
             var appExe = fixture.TestProject.AppExe;
             var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
             var dotnetSymlink = Path.Combine(testDir, "dotnet");
-            var dotnetDir = Directory.GetParent(fixture.BuiltDotnet.DotnetExecutablePath).ToString();
+            var dotnetDir = fixture.BuiltDotnet.BinPath;
 
             CreateSymbolicLink(dotnetSymlink, dotnetDir);
             Command.Create(appExe)
