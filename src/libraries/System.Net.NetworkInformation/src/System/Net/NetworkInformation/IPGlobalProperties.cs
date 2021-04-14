@@ -20,6 +20,7 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets the Active Udp Listeners on this machine.
         /// </summary>
+        [UnsupportedOSPlatform("android")]
         public abstract IPEndPoint[] GetActiveUdpListeners();
 
         /// <summary>

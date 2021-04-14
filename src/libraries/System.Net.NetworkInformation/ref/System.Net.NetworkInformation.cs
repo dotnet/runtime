@@ -134,6 +134,7 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.NetworkInformation.TcpConnectionInformation[] GetActiveTcpConnections();
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public abstract System.Net.IPEndPoint[] GetActiveTcpListeners();
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public abstract System.Net.IPEndPoint[] GetActiveUdpListeners();
         public abstract System.Net.NetworkInformation.IcmpV4Statistics GetIcmpV4Statistics();
         public abstract System.Net.NetworkInformation.IcmpV6Statistics GetIcmpV6Statistics();
