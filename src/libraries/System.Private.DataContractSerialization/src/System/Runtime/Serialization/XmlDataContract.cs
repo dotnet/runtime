@@ -129,11 +129,7 @@ namespace System.Runtime.Serialization
 
             [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             internal XmlDataContractCriticalHelper(
-                [DynamicallyAccessedMembers(
-                    DynamicallyAccessedMemberTypes.PublicConstructors |
-                    DynamicallyAccessedMemberTypes.NonPublicConstructors |
-                    DynamicallyAccessedMemberTypes.PublicMethods |
-                    DynamicallyAccessedMemberTypes.NonPublicMethods)]
+                [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
                 Type type) : base(type)
             {
                 if (type.IsDefined(Globals.TypeOfDataContractAttribute, false))

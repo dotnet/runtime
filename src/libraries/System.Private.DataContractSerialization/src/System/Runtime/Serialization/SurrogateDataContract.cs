@@ -89,11 +89,7 @@ namespace System.Runtime.Serialization
 
             [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             internal SurrogateDataContractCriticalHelper(
-                [DynamicallyAccessedMembers(
-                    DynamicallyAccessedMemberTypes.PublicConstructors |
-                    DynamicallyAccessedMemberTypes.NonPublicConstructors |
-                    DynamicallyAccessedMemberTypes.PublicMethods |
-                    DynamicallyAccessedMemberTypes.NonPublicMethods)]
+                [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
                 Type type,
                 ISerializationSurrogate serializationSurrogate)
                 : base(type)

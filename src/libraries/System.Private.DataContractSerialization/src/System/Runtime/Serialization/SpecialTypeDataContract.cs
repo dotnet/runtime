@@ -11,12 +11,7 @@ namespace System.Runtime.Serialization
         private readonly SpecialTypeDataContractCriticalHelper _helper;
 
         public SpecialTypeDataContract(
-            [DynamicallyAccessedMembers(
-                    DynamicallyAccessedMemberTypes.PublicConstructors |
-                    DynamicallyAccessedMemberTypes.NonPublicConstructors |
-                    DynamicallyAccessedMemberTypes.PublicMethods |
-                    DynamicallyAccessedMemberTypes.NonPublicMethods |
-                    DynamicallyAccessedMemberTypes.PublicFields)]
+            [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
             Type type,
             XmlDictionaryString name, XmlDictionaryString ns) : base(new SpecialTypeDataContractCriticalHelper(type, name, ns))
         {
@@ -28,12 +23,7 @@ namespace System.Runtime.Serialization
         private sealed class SpecialTypeDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             internal SpecialTypeDataContractCriticalHelper(
-                [DynamicallyAccessedMembers(
-                    DynamicallyAccessedMemberTypes.PublicConstructors |
-                    DynamicallyAccessedMemberTypes.NonPublicConstructors |
-                    DynamicallyAccessedMemberTypes.PublicMethods |
-                    DynamicallyAccessedMemberTypes.NonPublicMethods |
-                    DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
                 Type type,
                 XmlDictionaryString name, XmlDictionaryString ns) : base(type)
             {

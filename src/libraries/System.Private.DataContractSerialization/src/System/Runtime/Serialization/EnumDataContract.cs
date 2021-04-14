@@ -100,11 +100,7 @@ namespace System.Runtime.Serialization
 
             [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             internal EnumDataContractCriticalHelper(
-                [DynamicallyAccessedMembers(
-                    DynamicallyAccessedMemberTypes.PublicConstructors |
-                    DynamicallyAccessedMemberTypes.NonPublicConstructors |
-                    DynamicallyAccessedMemberTypes.PublicMethods |
-                    DynamicallyAccessedMemberTypes.NonPublicMethods)]
+                [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
                 Type type) : base(type)
             {
                 this.StableName = DataContract.GetStableName(type, out _hasDataContract);

@@ -34,6 +34,14 @@ namespace System.Runtime.Serialization
 
         private bool _isScriptObject;
 
+        internal const DynamicallyAccessedMemberTypes DataContractPreserveMemberTypes =
+            DynamicallyAccessedMemberTypes.PublicMethods |
+            DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicConstructors |
+            DynamicallyAccessedMemberTypes.NonPublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicFields |
+            DynamicallyAccessedMemberTypes.PublicProperties;
+
         [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal ClassDataContract(Type type) : base(new ClassDataContractCriticalHelper(type))
         {
@@ -730,11 +738,7 @@ namespace System.Runtime.Serialization
             public XmlDictionaryString[]? MemberNamespaces;
 
             [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
-            internal ClassDataContractCriticalHelper([DynamicallyAccessedMembers(
-                    DynamicallyAccessedMemberTypes.PublicMethods |
-                    DynamicallyAccessedMemberTypes.NonPublicMethods |
-                    DynamicallyAccessedMemberTypes.PublicConstructors |
-                    DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            internal ClassDataContractCriticalHelper([DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type) : base(type)
             {
                 XmlQualifiedName stableName = GetStableNameAndSetHasDataContract(type);
@@ -849,11 +853,7 @@ namespace System.Runtime.Serialization
 
             [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             internal ClassDataContractCriticalHelper(
-                [DynamicallyAccessedMembers(
-                    DynamicallyAccessedMemberTypes.PublicConstructors |
-                    DynamicallyAccessedMemberTypes.NonPublicConstructors |
-                    DynamicallyAccessedMemberTypes.PublicMethods |
-                    DynamicallyAccessedMemberTypes.NonPublicMethods)]
+                [DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type, XmlDictionaryString ns, string[] memberNames) : base(type)
             {
                 this.StableName = new XmlQualifiedName(GetStableNameAndSetHasDataContract(type).Name, ns.Value);
@@ -1402,11 +1402,7 @@ namespace System.Runtime.Serialization
 
             [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             private void SetKeyValuePairAdapterFlags(
-                [DynamicallyAccessedMembers(
-                    DynamicallyAccessedMemberTypes.PublicMethods |
-                    DynamicallyAccessedMemberTypes.NonPublicMethods |
-                    DynamicallyAccessedMemberTypes.PublicConstructors |
-                    DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+                [DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type)
             {
                 if (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePairAdapter)

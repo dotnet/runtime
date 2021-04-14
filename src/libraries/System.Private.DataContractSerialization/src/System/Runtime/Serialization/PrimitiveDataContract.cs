@@ -31,12 +31,7 @@ namespace System.Runtime.Serialization
         private readonly PrimitiveDataContractCriticalHelper _helper;
 
         protected PrimitiveDataContract(
-            [DynamicallyAccessedMembers(
-                    DynamicallyAccessedMemberTypes.PublicConstructors |
-                    DynamicallyAccessedMemberTypes.NonPublicConstructors |
-                    DynamicallyAccessedMemberTypes.PublicMethods |
-                    DynamicallyAccessedMemberTypes.NonPublicMethods |
-                    DynamicallyAccessedMemberTypes.PublicFields)]
+            [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
             Type type, XmlDictionaryString name, XmlDictionaryString ns) : base(new PrimitiveDataContractCriticalHelper(type, name, ns))
         {
             _helper = (base.Helper as PrimitiveDataContractCriticalHelper)!;
@@ -150,12 +145,7 @@ namespace System.Runtime.Serialization
             private MethodInfo? _xmlFormatReaderMethod;
 
             internal PrimitiveDataContractCriticalHelper(
-                [DynamicallyAccessedMembers(
-                    DynamicallyAccessedMemberTypes.PublicConstructors |
-                    DynamicallyAccessedMemberTypes.NonPublicConstructors |
-                    DynamicallyAccessedMemberTypes.PublicMethods |
-                    DynamicallyAccessedMemberTypes.NonPublicMethods |
-                    DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
                 Type type,
                 XmlDictionaryString name, XmlDictionaryString ns) : base(type)
             {

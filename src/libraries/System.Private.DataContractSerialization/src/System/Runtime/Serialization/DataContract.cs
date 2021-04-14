@@ -173,12 +173,7 @@ namespace System.Runtime.Serialization
             { return _helper; }
         }
 
-        [DynamicallyAccessedMembers(
-                DynamicallyAccessedMemberTypes.PublicConstructors |
-                DynamicallyAccessedMemberTypes.NonPublicConstructors |
-                DynamicallyAccessedMemberTypes.PublicMethods |
-                DynamicallyAccessedMemberTypes.NonPublicMethods |
-                DynamicallyAccessedMemberTypes.PublicFields)]
+        [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
         public Type UnderlyingType
         {
             get
@@ -364,12 +359,7 @@ namespace System.Runtime.Serialization
             private static readonly object s_namespacesLock = new object();
             private static readonly object s_clrTypeStringsLock = new object();
 
-            [DynamicallyAccessedMembers(
-                DynamicallyAccessedMemberTypes.PublicConstructors |
-                DynamicallyAccessedMemberTypes.NonPublicConstructors |
-                DynamicallyAccessedMemberTypes.PublicMethods |
-                DynamicallyAccessedMemberTypes.NonPublicMethods |
-                DynamicallyAccessedMemberTypes.PublicFields)]
+            [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
             private Type _underlyingType;
             private Type? _originalUnderlyingType;
             private bool _isReference;
@@ -1028,12 +1018,7 @@ namespace System.Runtime.Serialization
             }
 
             internal DataContractCriticalHelper(
-                [DynamicallyAccessedMembers(
-                    DynamicallyAccessedMemberTypes.PublicConstructors |
-                    DynamicallyAccessedMemberTypes.NonPublicConstructors |
-                    DynamicallyAccessedMemberTypes.PublicMethods |
-                    DynamicallyAccessedMemberTypes.NonPublicMethods |
-                    DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
                 Type type)
             {
                 _underlyingType = type;
@@ -1041,12 +1026,7 @@ namespace System.Runtime.Serialization
                 _isValueType = type.IsValueType;
             }
 
-            [DynamicallyAccessedMembers(
-                DynamicallyAccessedMemberTypes.PublicConstructors |
-                DynamicallyAccessedMemberTypes.NonPublicConstructors |
-                DynamicallyAccessedMemberTypes.PublicMethods |
-                DynamicallyAccessedMemberTypes.NonPublicMethods |
-                DynamicallyAccessedMemberTypes.PublicFields)]
+            [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
             internal Type UnderlyingType
             {
                 get { return _underlyingType; }
