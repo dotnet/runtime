@@ -128,7 +128,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Gets the built <see cref="string"/> and clears the builder.</summary>
         /// <returns>The built string.</returns>
         /// <remarks>
-        /// This releases any used resources used by the builder. The method should be invoked only
+        /// This releases any resources used by the builder. The method should be invoked only
         /// once and as the last thing performed on the builder. Subsequent use is erroneous, ill-defined,
         /// and may destabilize the process, as may using any other copies of the builder after ToStringAndClear
         /// is called on any one of them.
@@ -569,28 +569,41 @@ namespace System.Runtime.CompilerServices
             _pos += value.Length;
         }
 
-        /// <summary>Grows <see cref="_chars"/> to have the capacity to store <paramref name="additionalChars"/> beyond <see cref="_pos"/>.</summary>
+        /// <summary>Grows <see cref="_chars"/> to have the capacity to store at least <paramref name="additionalChars"/> beyond <see cref="_pos"/>.</summary>
         [MethodImpl(MethodImplOptions.NoInlining)] // keep consumers as streamlined as possible
         private void Grow(int additionalChars)
         {
-            Debug.Assert(_pos > _chars.Length - additionalChars);
-
-            // We want the max of doubling our capacity and how much space we know we actually required. However,
-            // if doubling would exceed the max array length possible, stick to the number of characters required.
-            uint doubling = (uint)_chars.Length * 2;
-            uint required = (uint)_pos + (uint)additionalChars;
-            GrowCore(doubling > Array.MaxArrayLength || required > doubling ? required : doubling);
+            // This method is called when the remaining space (_chars.Length - _pos) is
+            // insufficient to store a specific number of additional characters.  Thus, we
+            // need to grow to at least that new total. GrowCore will handle growing by more
+            // than that if possible.
+            Debug.Assert(additionalChars > _chars.Length - _pos);
+            GrowCore((uint)_pos + (uint)additionalChars);
         }
 
-        /// <summary>Grow the size of <see cref="_chars"/>.</summary>
+        /// <summary>Grows the size of <see cref="_chars"/>.</summary>
         [MethodImpl(MethodImplOptions.NoInlining)] // keep consumers as streamlined as possible
-        private void Grow() => GrowCore(Math.Min(Array.MaxArrayLength, (uint)_chars.Length * 2));
-
-        /// <summary>Grow the size of <see cref="_chars"/> to the specified <paramref name="newCapacity"/>.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // but reuse this grow logic directly in both of the above grow routines
-        private void GrowCore(uint newCapacity)
+        private void Grow()
         {
-            char[] newArray = ArrayPool<char>.Shared.Rent((int)Math.Clamp(newCapacity, MinimumArrayPoolLength, int.MaxValue));
+            // This method is called when the remaining space in _chars isn't sufficient to continue
+            // the operation.  Thus, we need at least one character beyond _chars.Length.  GrowCore
+            // will handle growing by more than that if possible.
+            GrowCore((uint)_chars.Length + 1);
+        }
+
+        /// <summary>Grow the size of <see cref="_chars"/> to at least the specified <paramref name="requiredMinCapacity"/>.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // but reuse this grow logic directly in both of the above grow routines
+        private void GrowCore(uint requiredMinCapacity)
+        {
+            // We want the max of how much space we actually required and doubling our capacity (without going beyond the max allowed length). We
+            // also want to avoid asking for small arrays, to reduce the number of times we need to grow, and since we're working with unsigned
+            // ints that could technically overflow if someone tried to, for example, append a huge string to a huge string, we also clamp to int.MaxValue.
+            // Even if the array creation fails in such a case, we may later fail in ToStringAndClear.
+
+            uint newCapacity = Math.Max(requiredMinCapacity, Math.Min((uint)_chars.Length * 2, string.MaxLength));
+            int arraySize = (int)Math.Clamp(newCapacity, MinimumArrayPoolLength, int.MaxValue);
+
+            char[] newArray = ArrayPool<char>.Shared.Rent(arraySize);
             _chars.Slice(0, _pos).CopyTo(newArray);
 
             char[]? toReturn = _arrayToReturnToPool;
