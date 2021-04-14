@@ -5,8 +5,6 @@
    	<namespace fullname="System" />
         <type fullname="System.PlatformDetection" />
   </assembly>
-  <assembly fullname="System" />
-  <assembly fullname="mscorlib" />
   <assembly fullname="Castle.Core">
       <namespace fullname="Castle.DynamicProxy" />
       <type fullname="Castle.DynamicProxy.Internal.CompositionInvocation" />
