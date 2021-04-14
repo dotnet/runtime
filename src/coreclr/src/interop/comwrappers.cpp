@@ -694,13 +694,11 @@ HRESULT ManagedObjectWrapper::QueryInterface(
 
 ULONG ManagedObjectWrapper::AddRef(void)
 {
-    _ASSERTE((_refCount & DestroySentinel) == 0);
     return GetComCount(::InterlockedIncrement64(&_refCount));
 }
 
 ULONG ManagedObjectWrapper::Release(void)
 {
-    _ASSERTE((_refCount & DestroySentinel) == 0);
     if (GetComCount(_refCount) == 0)
     {
         _ASSERTE(!"Over release of MOW - COM");
