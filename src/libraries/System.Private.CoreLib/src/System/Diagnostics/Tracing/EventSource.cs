@@ -2586,7 +2586,7 @@ namespace System.Diagnostics.Tracing
                         else
                         {
                             // Already enabled, make it the most verbose of the existing and new filter
-                            if (commandArgs.level > m_level)
+                            if (commandArgs.level == 0 || commandArgs.level > m_level)
                                 m_level = commandArgs.level;
                             if (commandArgs.matchAnyKeyword == 0)
                                 m_matchAnyKeyword = 0;
