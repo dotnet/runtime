@@ -224,6 +224,15 @@ mono_alc_from_gchandle (MonoGCHandle alc_gchandle);
 MonoLoadedImages *
 mono_alc_get_loaded_images (MonoAssemblyLoadContext *alc);
 
+void
+mono_alc_add_assembly (MonoAssemblyLoadContext *alc, MonoAssembly *ass);
+
+MonoAssembly*
+mono_alc_find_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
+
+GPtrArray*
+mono_alc_get_all_loaded_assemblies (void);
+
 MONO_API void
 mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
 

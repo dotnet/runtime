@@ -87,7 +87,7 @@ namespace System.ComponentModel
             string className = GetType().ToString();
             StringBuilder s = new StringBuilder(className);
             string nativeErrorString = NativeErrorCode < 0
-                ? string.Format(CultureInfo.InvariantCulture, "0x{0:X8}", NativeErrorCode)
+                ? $"0x{NativeErrorCode:X8}"
                 : NativeErrorCode.ToString(CultureInfo.InvariantCulture);
             if (HResult == E_FAIL)
             {

@@ -765,9 +765,6 @@
         <ExcludeList Include="$(XunitTestBinBase)Loader/classloader/TypeGeneratorTests/**">
             <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)Interop/ICustomMarshaler/Primitives/**">
-            <Issue>https://github.com/dotnet/runtime/issues/49621</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)tracing/eventcounter/**">
             <Issue>https://github.com/dotnet/runtime/issues/50238</Issue>
         </ExcludeList>

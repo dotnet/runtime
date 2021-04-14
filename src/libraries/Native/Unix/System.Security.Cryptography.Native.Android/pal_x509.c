@@ -12,8 +12,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define INSUFFICIENT_BUFFER -1
-
 static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len);
 
 static void FindCertStart(const uint8_t** buffer, int32_t* len);
@@ -250,6 +248,10 @@ void* AndroidCryptoNative_X509PublicKey(jobject /*X509Certificate*/ cert, PAL_Ke
 
     void* keyHandle;
     jobject key = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
+    if (CheckJNIExceptions(env) || !key)
+    {
+        return NULL;
+    }
     switch (algorithm)
     {
         case PAL_EC:

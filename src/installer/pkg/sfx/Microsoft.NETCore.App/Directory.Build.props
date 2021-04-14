@@ -18,6 +18,9 @@
     <SingleFileHostIncludeFilename Include="somefile.dll" />
   -->
   <ItemGroup>
+    <!-- include at least one item. Otherwise there will be no opt-in list and everything will be included -->
+    <SingleFileHostIncludeFilename Include="NONE" />
+
     <!-- LINUX -->
 
     <!-- OSX -->
@@ -171,6 +174,7 @@
     <PlatformManifestFileEntry Include="libmonosgen-2.0.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="llc" IsNative="true" />
     <PlatformManifestFileEntry Include="mono-aot-cross" IsNative="true" />
+    <PlatformManifestFileEntry Include="mono-aot-cross.exe" IsNative="true" FallbackFileVersion="6.0.0" />
     <PlatformManifestFileEntry Include="opt" IsNative="true" />
     <!-- Mono WASM-specific files -->
     <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
@@ -194,7 +198,6 @@
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
-    <PlatformManifestFileEntry Include="pinvoke-table.h" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-flags.txt" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-version.txt" IsNative="true" />

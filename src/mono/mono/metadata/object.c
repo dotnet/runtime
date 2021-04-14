@@ -5824,6 +5824,35 @@ ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n)
 	return arr;
 }
 
+gboolean
+mono_string_equal_internal (MonoString *s1, MonoString *s2)
+{
+	int l1 = mono_string_length_internal (s1);
+	int l2 = mono_string_length_internal (s2);
+
+	if (s1 == s2)
+		return TRUE;
+	if (l1 != l2)
+		return FALSE;
+
+	return memcmp (mono_string_chars_internal (s1), mono_string_chars_internal (s2), l1 * 2) == 0;
+}
+
+guint
+mono_string_hash_internal (MonoString *s)
+{
+	const gunichar2 *p = mono_string_chars_internal (s);
+	int i, len = mono_string_length_internal (s);
+	guint h = 0;
+
+	for (i = 0; i < len; i++) {
+		h = (h << 5) - h + *p;
+		p++;
+	}
+
+	return h;
+}
+
 /**
  * mono_string_empty_wrapper:
  *

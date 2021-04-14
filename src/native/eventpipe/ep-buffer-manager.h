@@ -135,6 +135,9 @@ struct _EventPipeBufferManager_Internal {
 	//   write_all_buffers_to_file_v4(...);
 	//   deallocate_used_buffers(...);
 	ep_rt_buffer_array_t used_buffer_array;
+	// number of times an event was dropped due to it being too
+	// large to fit in the 64KB size limit
+	volatile int64_t num_oversized_events_dropped;
 
 #ifdef EP_CHECKED_BUILD
 	volatile int64_t num_events_stored;

@@ -98,6 +98,7 @@ int32_t AndroidCryptoNative_X509StoreAddCertificate(jobject /*KeyStore*/ store,
     EntryFlags flags;
     if (ContainsEntryForAlias(env, store, cert, alias, &flags))
     {
+        ReleaseLRef(env, alias);
         EntryFlags matchesFlags = EntryFlags_HasCertificate & EntryFlags_MatchesCertificate;
         if ((flags & matchesFlags) != matchesFlags)
         {
@@ -141,12 +142,14 @@ int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyS
         EntryFlags matchesFlags = EntryFlags_HasCertificate & EntryFlags_MatchesCertificate;
         if ((flags & matchesFlags) != matchesFlags)
         {
+            RELEASE_LOCALS(loc, env);
             LOG_ERROR("Store already contains alias with entry that does not match the expected certificate");
             return FAIL;
         }
 
         if ((flags & EntryFlags_HasPrivateKey) == EntryFlags_HasPrivateKey)
         {
+            RELEASE_LOCALS(loc, env);
             // Certificate with private key is already in store - nothing to do
             LOG_DEBUG("Store already contains certificate with private key");
             return SUCCESS;
@@ -154,7 +157,7 @@ int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyS
 
         // Delete existing entry. We will replace the existing cert with the cert + private key.
         // store.deleteEntry(alias);
-        (*env)->CallVoidMethod(env, store, g_KeyStoreDeleteEntry, alias);
+        (*env)->CallVoidMethod(env, store, g_KeyStoreDeleteEntry, loc[alias]);
     }
 
     bool releasePrivateKey = true;
@@ -326,7 +329,7 @@ int32_t AndroidCryptoNative_X509StoreEnumerateCertificates(jobject /*KeyStore*/ 
 static bool SystemAliasFilter(JNIEnv* env, jstring alias)
 {
     const char systemPrefix[] = "system:";
-    size_t prefixLen = (sizeof(systemPrefix) - 1) / sizeof(char);
+    size_t prefixLen = (sizeof(systemPrefix) / sizeof(*systemPrefix)) - 1;
 
     const char* aliasPtr = (*env)->GetStringUTFChars(env, alias, NULL);
     bool isSystem = (strncmp(aliasPtr, systemPrefix, prefixLen) == 0);

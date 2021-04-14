@@ -284,12 +284,14 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
+    runtimeFlavor: mono
     platforms:
     - Browser_wasm_win
     jobParameters:
       testGroup: innerloop
       nameSuffix: Browser_wasm_Windows
-      buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono -c $(_BuildConfig)
+      buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig)
+      timeoutInMinutes: 120
 
 #
 # CoreCLR Build for running Apple Silicon libraries-innerloop

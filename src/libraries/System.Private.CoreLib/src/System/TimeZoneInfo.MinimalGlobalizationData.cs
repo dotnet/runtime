@@ -12,8 +12,14 @@ namespace System
 
         private static string GetUtcStandardDisplayName()
         {
-            // Just use the invariant display name.
-            return InvariantUtcStandardDisplayName;
+            // For this target, be consistent with other time zone display names that use an abbreviation.
+            return "UTC";
+        }
+
+        private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
+        {
+            // For this target, be consistent with other time zone display names that use the ID.
+            return $"(UTC) {timeZoneId}";
         }
 
         private static string? GetAlternativeId(string id)

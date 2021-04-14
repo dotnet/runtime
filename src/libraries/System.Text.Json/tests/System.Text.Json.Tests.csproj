@@ -40,6 +40,7 @@
     <Compile Include="Serialization\Array.WriteTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />
     <Compile Include="Serialization\CamelCaseUnitTests.cs" />
+    <Compile Include="Serialization\CollectionTests\CollectionTests.AsyncEnumerable.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Concurrent.Write.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Concurrent.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Dictionary.cs" />
@@ -123,6 +124,7 @@
     <Compile Include="Serialization\SerializationWrapper.cs" />
     <Compile Include="Serialization\SpanTests.cs" />
     <Compile Include="Serialization\Stream.Collections.cs" />
+    <Compile Include="Serialization\Stream.DeserializeAsyncEnumerable.cs" />
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />
     <Compile Include="Serialization\TestClasses\TestClasses.ConcurrentCollections.cs" />

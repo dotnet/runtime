@@ -357,6 +357,9 @@
   <data name="SerializationNotSupportedType" xml:space="preserve">
     <value>The type '{0}' is not supported.</value>
   </data>
+  <data name="TypeRequiresAsyncSerialization" xml:space="preserve">
+    <value>The type '{0}' can only be serialized using async serialization methods.</value>
+  </data>
   <data name="InvalidCharacterAtStartOfComment" xml:space="preserve">
     <value>'{0}' is invalid after '/' at the beginning of the comment. Expected either '/' or '*'.</value>
   </data>

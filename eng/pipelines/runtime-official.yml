@@ -182,7 +182,6 @@ stages:
       jobParameters:
         buildArgs: -s mono+packs -c $(_BuildConfig)
                    /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-                   -ninja
         nameSuffix: CrossAOT_Mono
         runtimeVariant: crossaot
         dependsOn:

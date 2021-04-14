@@ -84,7 +84,7 @@
       <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>
       <BuildArgs>$(BuildArgs) rootdir $(RepoRoot)</BuildArgs>
       <BuildArgs>$(BuildArgs) coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
-      <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) ninja</BuildArgs>
+      <BuildArgs Condition="'$(Ninja)' == 'false'">$(BuildArgs) msbuild</BuildArgs>
       <BuildArgs>$(BuildArgs) runtimeflavor $(RuntimeFlavor)</BuildArgs>
       <BuildArgs>$(BuildArgs) runtimeconfiguration $(RuntimeConfiguration)</BuildArgs>
     </PropertyGroup>
