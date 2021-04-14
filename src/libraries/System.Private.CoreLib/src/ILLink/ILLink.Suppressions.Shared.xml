@@ -51,12 +51,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2072</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Diagnostics.Tracing.EventSource.EnsureDescriptorsInitialized</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2075</argument>
       <property name="Scope">member</property>
       <property name="Target">M:Internal.Runtime.InteropServices.ComActivator.ClassRegistrationScenarioForType(Internal.Runtime.InteropServices.ComActivationContext,System.Boolean)</property>

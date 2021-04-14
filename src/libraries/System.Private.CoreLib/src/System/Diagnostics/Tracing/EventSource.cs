@@ -227,6 +227,7 @@ namespace System.Diagnostics.Tracing
     /// }
     /// </code>
     /// </remarks>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public partial class EventSource : IDisposable
     {
 
@@ -2763,9 +2764,15 @@ namespace System.Diagnostics.Tracing
 #endif
             if (m_eventData == null)
             {
+#if !ES_BUILD_STANDALONE
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                    Justification = "Derived type members are safe")]
+#endif
+                byte[]? GetCreateManifestAndDescriptorsViaLocalMethod(string name) => CreateManifestAndDescriptors(this.GetType(), name, this);
+
                 // get the metadata via reflection.
                 Debug.Assert(m_rawManifest == null);
-                m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
+                m_rawManifest = GetCreateManifestAndDescriptorsViaLocalMethod(Name);
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
