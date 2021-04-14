@@ -4377,6 +4377,24 @@ interface ICorDebugThread4 : IUnknown
 };
 
 /*
+ * ICorDebugThread5 is a logical extension to ICorDebugThread.
+ */
+[
+    object,
+    local,
+    uuid(F98421C4-E506-4D24-916F-0237EE853EC6),
+    pointer_default(unique)
+]
+interface ICorDebugThread5 : IUnknown
+{
+    /*
+     * Returns S_OK if it was possible to obtain the allocation information for the thread
+     * and sets the corresponding SOH and UOH allocations.
+     */
+    HRESULT GetBytesAllocated([out] DWORD *pSohAllocatedBytes, [out] DWORD *pUohAllocatedBytes);
+};
+
+/*
  * The new V3.0 stackwalking API.
  */
 [
