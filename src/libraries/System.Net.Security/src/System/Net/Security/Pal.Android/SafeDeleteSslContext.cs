@@ -233,13 +233,9 @@ namespace System.Net
                 Interop.AndroidCrypto.SSLStreamSetEnabledProtocols(handle, s_orderedSslProtocols.AsSpan(minIndex, maxIndex - minIndex + 1));
             }
 
-            if (authOptions.ApplicationProtocols != null)
+            if (authOptions.ApplicationProtocols != null && Interop.AndroidCrypto.SSLSupportsApplicationProtocolsConfiguration())
             {
-                if (!Interop.AndroidCrypto.SSLSupportsApplicationProtocolsConfiguration())
-                {
-                    throw new PlatformNotSupportedException(SR.net_ssl_app_protocol_config_notsupported);
-                }
-
+                // Set application protocols if the platform supports it. Otherwise, we will silently ignore the option.
                 Interop.AndroidCrypto.SSLStreamSetApplicationProtocols(handle, authOptions.ApplicationProtocols);
             }
 
