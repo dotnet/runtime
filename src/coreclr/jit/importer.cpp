@@ -15178,7 +15178,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     assert(tiObj);
 
-                    if (impIsValueType(tiObj))
+                    // If we can resolve the field to be within some local,
+                    // then just spill that local.
+                    //
+                    GenTreeLclVarCommon* const lcl = obj->IsLocalAddrExpr();
+
+                    if (lcl != nullptr)
+                    {
+                        impSpillLclRefs(lcl->GetLclNum());
+                    }
+                    else if (impIsValueType(tiObj))
                     {
                         impSpillEvalStack();
                     }
