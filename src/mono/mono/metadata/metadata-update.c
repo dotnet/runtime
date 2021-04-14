@@ -821,16 +821,16 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 		case MONO_TABLE_METHOD:
 			/* handled above */
 			break;
-		case MONO_TABLE_PROPERTY:
-			if (token_index <= table_info_get_rows (&image_base->tables [token_table])) {
-				/* modifying a property */
+		case MONO_TABLE_PROPERTY: {
+			/* modifying a property, ok */
+			if (token_index <= table_info_get_rows (&image_base->tables [token_table]))
 				break;
-			} else {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support adding new properties.", i, log_token);
-				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding new properties. token=0x%08x", log_token);
-				unsupported_edits = TRUE;
-				continue;
-			}
+			/* adding a property */
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support adding new properties.", i, log_token);
+			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding new properties. token=0x%08x", log_token);
+			unsupported_edits = TRUE;
+			continue;
+		}
 		case MONO_TABLE_METHODSEMANTICS: {
 			if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
 				/* new rows are fine, as long as they point at existing methods */
