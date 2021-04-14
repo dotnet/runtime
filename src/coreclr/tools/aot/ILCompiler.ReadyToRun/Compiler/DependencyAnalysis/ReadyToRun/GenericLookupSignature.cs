@@ -107,15 +107,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 Debug.Assert(_methodArgument.Unboxing == false);
 
-                bool useInstantiatingStub = (_methodArgument.Method.IsSharedByGenericInstantiations &&
-                    (_methodArgument.Method.Signature.IsStatic || _methodArgument.Method.HasInstantiation));
-
                 dataBuilder.EmitMethodSignature(
                     _methodArgument,
                     enforceDefEncoding: false,
                     enforceOwningType: false,
                     context: innerContext,
-                    isInstantiatingStub: useInstantiatingStub);
+                    isInstantiatingStub: true);
             }
             else if (_typeArgument != null)
             {
@@ -143,7 +140,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(": ");
             if (_methodArgument != null)
             {
+                sb.Append(nameMangler.GetMangledTypeName(_methodArgument.OwningType));
+                sb.Append("::");
                 sb.Append(nameMangler.GetMangledMethodName(_methodArgument.Method));
+                if (_methodArgument.ConstrainedType != null)
+                {
+                    sb.Append("@");
+                    sb.Append(nameMangler.GetMangledTypeName(_methodArgument.ConstrainedType));
+                }
                 if (!_methodArgument.Token.IsNull)
                 {
                     sb.Append(" [");
