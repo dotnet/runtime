@@ -1260,7 +1260,7 @@ done:
 }
 #endif // NEED_OPENSSL_1_0 */
 
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
 
 // Only defined in OpenSSL 1.1.1+, has no effect on 1.1.0.
 #ifndef OPENSSL_INIT_NO_ATEXIT
