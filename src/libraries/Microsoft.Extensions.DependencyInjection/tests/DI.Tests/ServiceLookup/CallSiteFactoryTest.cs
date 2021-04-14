@@ -744,7 +744,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Arrange
             var serviceType = typeof(IFakeOpenGenericService<>);
 			var implementationType = typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>);
-            var expectedMessage = $"Arity of open generic service type '{serviceType}' does not equal arity of open generic implementation type '{implementationType}'. (Parameter 'descriptors')";
+            var expectedMessage = $"Arity of open generic service type '{serviceType}' does not equal arity of open generic implementation type '{implementationType}'.{Environment.NewLine}Parameter name: descriptors";
             var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
 
             // Act and Assert
