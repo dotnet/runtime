@@ -227,7 +227,9 @@ namespace System.Diagnostics.Tracing
     /// }
     /// </code>
     /// </remarks>
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+#if !ES_BUILD_STANDALONE
+    [DynamicallyAccessedMembers(ManifestMemberTypes)]
+#endif
     public partial class EventSource : IDisposable
     {
 
@@ -2766,7 +2768,9 @@ namespace System.Diagnostics.Tracing
             {
 #if !ES_BUILD_STANDALONE
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                    Justification = "Derived type members are safe")]
+                    Justification = "Based on the annotation on EventSource class, Trimmer will see from its analysis members " +
+                                    "that are marked with RequiresUnreferencedCode and will warn." +
+                                    "This method will not access any of these members and is safe to call.")]
 #endif
                 byte[]? GetCreateManifestAndDescriptorsViaLocalMethod(string name) => CreateManifestAndDescriptors(this.GetType(), name, this);
 
