@@ -21,7 +21,7 @@
   <!-- GetFilesToPackage assists to place `RuntimeConfigParser.dll` in a NuGet package in Microsoft.NET.Runtime.RuntimeConfigParser.Task.pkgproj for external use -->
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(AssemblyName).dll" TargetPath="tasks" />
+      <FilesToPackage Include="$(OutputPath)\$(AssemblyName).dll" TargetPath="tasks" />
     </ItemGroup>
   </Target>
 
