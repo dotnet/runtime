@@ -2,6 +2,7 @@
   <PropertyGroup>
     <NoWarn>0436</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetFramework)' == 'net461'"
