@@ -44,6 +44,20 @@
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Escaping.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
+    <Compile Include="System\Text\Json\Node\JsonArray.cs" />
+    <Compile Include="System\Text\Json\Node\JsonArray.IList.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNode.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNode.Dynamic.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNode.Operators.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNode.Parse.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNode.To.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNodeOptions.cs" />
+    <Compile Include="System\Text\Json\Node\JsonObject.cs" />
+    <Compile Include="System\Text\Json\Node\JsonObject.Dynamic.cs" />
+    <Compile Include="System\Text\Json\Node\JsonObject.IDictionary.cs" />
+    <Compile Include="System\Text\Json\Node\JsonValue.cs" />
+    <Compile Include="System\Text\Json\Node\JsonValueOfT.cs" />
+    <Compile Include="System\Text\Json\Node\MetaDynamic.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeNumberResult.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderException.cs" />
@@ -95,6 +109,11 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ListOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\QueueOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOfTConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonArrayConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonNodeConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonNodeConverterFactory.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonObjectConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonValueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\JsonObjectConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\KeyValuePairConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectConverterFactory.cs" />
@@ -169,6 +188,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
     <Compile Include="System\Text\Json\Serialization\MemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\MetadataPropertyName.cs" />
     <Compile Include="System\Text\Json\Serialization\ParameterRef.cs" />
@@ -189,6 +209,7 @@
     <Compile Include="System\Text\Json\Serialization\WriteStack.cs" />
     <Compile Include="System\Text\Json\Serialization\WriteStackFrame.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.cs" />
+    <Compile Include="System\Text\Json\ThrowHelper.Node.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.Serialization.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Date.cs" />
@@ -259,8 +280,12 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Diagnostics.Tools" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
+    <Reference Include="System.Linq.Expressions" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Linq.Expressions" Version="$(SystemLinqExpressionsVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />

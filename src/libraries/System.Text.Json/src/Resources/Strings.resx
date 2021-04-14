@@ -560,4 +560,34 @@
   <data name="SerializerConverterFactoryReturnsJsonConverterFactory" xml:space="preserve">
     <value>The converter '{0}' cannot return an instance of JsonConverterFactory.</value>
   </data>
+  <data name="NodeDynamicObjectResultNotAssignable" xml:space="preserve">
+    <value>The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site.</value>
+  </data>
+  <data name="NodeElementWrongType" xml:space="preserve">
+    <value>The element must be of type '{0}'</value>
+  </data>
+  <data name="NodeElementCannotBeObjectOrArray" xml:space="preserve">
+    <value>The element cannot be an object or array.</value>
+  </data>
+  <data name="NodeAlreadyHasParent" xml:space="preserve">
+    <value>The node already has a parent.</value>
+  </data>
+  <data name="NodeCycleDetected" xml:space="preserve">
+    <value>A node cycle was detected.</value>
+  </data>
+  <data name="NodeUnableToConvert" xml:space="preserve">
+    <value>A value of type '{0}' cannot be converted to a '{1}'.</value>
+  </data>
+  <data name="NodeUnableToConvertElement" xml:space="preserve">
+    <value>An element of type '{0}' cannot be converted to a '{1}'.</value>
+  </data>
+  <data name="NodeValueNotAllowed" xml:space="preserve">
+    <value>A JsonNode cannot be used as a value.</value>
+  </data>
+  <data name="NodeWrongType" xml:space="preserve">
+    <value>The node must be of type '{0}'.</value>
+  </data>
+  <data name="ValueCannotBeNull" xml:space="preserve">
+    <value>Value cannot be null. (Parameter '{0}')</value>
+  </data>
 </root>
