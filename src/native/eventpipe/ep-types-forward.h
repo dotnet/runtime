@@ -201,5 +201,7 @@ typedef void (*EventPipeSessionSynchronousCallback)(
 	uint32_t stack_frames_len,
 	uintptr_t *stack_frames);
 
+typedef bool (*EventPipeIpcStreamFactorySuspendedPortsCallback)(void);
+
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_TYPES_FORWARD_H__ */

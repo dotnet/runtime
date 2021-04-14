@@ -125,8 +125,8 @@ typedef bool
  * EventPipe Native Events.
  */
 
-typedef bool
-(*event_pipe_component_write_event_ee_startup_start)(void);
+typedef void
+(*event_pipe_component_write_event_ee_startup_start_func)(void);
 
 /*
  * MonoComponentEventPipe function table.
@@ -149,7 +149,7 @@ typedef struct _MonoComponentEventPipe {
 	event_pipe_component_provider_add_event_func provider_add_event;
 	event_pipe_component_get_session_info_func get_session_info;
 	event_pipe_component_thread_ctrl_activity_id_func thread_ctrl_activity_id;
-	event_pipe_component_write_event_ee_startup_start write_event_ee_startup_start;
+	event_pipe_component_write_event_ee_startup_start_func write_event_ee_startup_start;
 } MonoComponentEventPipe;
 
 #ifdef STATIC_COMPONENTS

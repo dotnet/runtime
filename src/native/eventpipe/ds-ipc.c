@@ -7,6 +7,7 @@
 #define DS_IMPL_IPC_PAL_GETTER_SETTER
 #include "ds-ipc.h"
 #include "ds-protocol.h"
+#include "ep.h"
 #include "ds-rt.h"
 
 /*
@@ -238,6 +239,8 @@ ipc_log_poll_handles (ds_rt_ipc_poll_handle_array_t *ipc_poll_handles)
 bool
 ds_ipc_stream_factory_init (void)
 {
+	ep_ipc_stream_factory_callback_set (ds_ipc_stream_factory_any_suspended_ports);
+
 	ds_rt_port_array_alloc (&_ds_port_array);
 	return ds_rt_port_array_is_valid (&_ds_port_array);
 }
@@ -255,6 +258,8 @@ ds_ipc_stream_factory_fini (void)
 	}
 
 	ds_rt_port_array_free (&_ds_port_array);*/
+
+	ep_ipc_stream_factory_callback_set (NULL);
 }
 
 bool
