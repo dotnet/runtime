@@ -32,13 +32,15 @@ namespace Internal.Cryptography
                     break;
                 case CipherMode.CFB:
 
-                    Debug.Assert(feedbackSize == 1, "TripleDES with CFB should have FeedbackSize set to 1");
+                    Debug.Assert(feedbackSize == 1, "DES with CFB should have FeedbackSize set to 1");
                     algorithm = Interop.Crypto.EvpDesCfb8();
 
                     break;
                 default:
                     throw new NotSupportedException();
             }
+
+            Interop.Crypto.RegisterLegacyAlgorithms();
 
             BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, 0, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);

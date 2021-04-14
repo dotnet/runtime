@@ -7,13 +7,12 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    internal sealed partial class RC2Implementation
+    internal sealed partial class DesImplementation
     {
         private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,
-            int effectiveKeyLength,
             byte[]? iv,
             int blockSize,
             int feedbackSize,
@@ -21,22 +20,27 @@ namespace Internal.Cryptography
             bool encrypting)
         {
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
-            IntPtr algorithm;
+            IntPtr algorithm = IntPtr.Zero;
+
             switch (cipherMode)
             {
                 case CipherMode.CBC:
-                    algorithm = Interop.Crypto.EvpRC2Cbc();
+                    algorithm = Interop.Crypto.EvpDesCbc();
                     break;
                 case CipherMode.ECB:
-                    algorithm = Interop.Crypto.EvpRC2Ecb();
+                    algorithm = Interop.Crypto.EvpDesEcb();
+                    break;
+                case CipherMode.CFB:
+
+                    Debug.Assert(feedbackSize == 1, "DES with CFB should have FeedbackSize set to 1");
+                    algorithm = Interop.Crypto.EvpDesCfb8();
+
                     break;
                 default:
                     throw new NotSupportedException();
             }
 
-            Interop.Crypto.RegisterLegacyAlgorithms();
-
-            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, effectiveKeyLength, iv, encrypting);
+            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, 0, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
     }
