@@ -127,6 +127,9 @@ namespace System.Text.Json.Node.Tests
             Assert.False(jObject.ContainsKey("?"));
 
             jObject.Clear();
+            Assert.False(jObject.ContainsKey("One"));
+            Assert.False(jObject.ContainsKey("Two"));
+            Assert.False(jObject.ContainsKey("?"));
             Assert.Equal(0, jObject.Count);
 
             jObject.Add("One", 1);
@@ -480,33 +483,6 @@ namespace System.Text.Json.Node.Tests
 
             string json_out = JsonSerializer.Serialize(blogPosts);
             Assert.Equal(expected, json_out);
-        }
-
-        [Fact]
-        public static void Parent()
-        {
-            var child = JsonValue.Create(42);
-            Assert.Null(child.Options);
-
-            var parent = new JsonObject();
-            Assert.Null(parent.Options);
-            parent.Add("MyProp", child);
-            Assert.Null(child.Options);
-            parent.Clear();
-
-            parent = new JsonObject(new JsonNodeOptions { PropertyNameCaseInsensitive = true });
-            Assert.NotNull(parent.Options);
-            parent.Add("MyProp", child);
-            Assert.NotNull(child.Options);
-            Assert.True(child.Options.Value.PropertyNameCaseInsensitive);
-
-            parent.Clear();
-            Assert.True(child.Options.Value.PropertyNameCaseInsensitive);
-
-            // Adding to a new parent does not affect options previously obtained from a different parent.
-            parent = new JsonObject(new JsonNodeOptions { PropertyNameCaseInsensitive = false });
-            parent.Add("MyProp", child);
-            Assert.True(child.Options.Value.PropertyNameCaseInsensitive);
         }
     }
 }

@@ -131,6 +131,7 @@ namespace System.Text.Json.Node
         internal void SetItem(int index, JsonNode? value)
         {
             value?.AssignParent(this);
+            DetachParent(List[index]);
             List[index] = value;
         }
 
@@ -167,7 +168,7 @@ namespace System.Text.Json.Node
 
                 for (int i = 0; i < _list.Count; i++)
                 {
-                    JsonNodeConverter.Default.Write(writer, _list[i]!, options);
+                    JsonNodeConverter.Instance.Write(writer, _list[i]!, options);
                 }
 
                 writer.WriteEndArray();

@@ -11,9 +11,6 @@ namespace System.Text.Json.Node
     /// </summary>
     public abstract partial class JsonNode
     {
-        internal const DynamicallyAccessedMemberTypes MembersAccessedOnRead =
-            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields;
-
         private JsonNode? _parent;
         private JsonNodeOptions? _options;
 
@@ -26,21 +23,19 @@ namespace System.Text.Json.Node
             {
                 if (!_options.HasValue && Parent != null)
                 {
+                    // Remember the parent options; if node is re-parented later we still want to keep the
+                    // original options since they may have affected the way the node was created as is the case
+                    // with JsonObject's case-insensitive dictionary.
                     _options = Parent.Options;
                 }
 
                 return _options;
             }
-
-            private set
-            {
-                _options = value;
-            }
         }
 
         internal JsonNode(JsonNodeOptions? options = null)
         {
-            Options = options;
+            _options = options;
         }
 
         /// <summary>
@@ -175,7 +170,7 @@ namespace System.Text.Json.Node
         ///   The current <see cref="JsonNode"/> is not a <see cref="JsonValue"/> or
         ///   is not compatible with {TValue}.
         /// </exception>
-        public virtual TValue GetValue<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>() =>
+        public virtual TValue GetValue<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>() =>
             throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonValue)));
 
         /// <summary>

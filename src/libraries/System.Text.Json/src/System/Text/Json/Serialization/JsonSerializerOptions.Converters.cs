@@ -18,8 +18,6 @@ namespace System.Text.Json
         // The global list of built-in simple converters.
         private static readonly Dictionary<Type, JsonConverter> s_defaultSimpleConverters = GetDefaultSimpleConverters();
 
-        private static readonly JsonNodeConverterFactory s_JsonNodeConverterFactory = new JsonNodeConverterFactory();
-
         // The global list of built-in converters that override CanConvert().
         private static readonly JsonConverter[] s_defaultFactoryConverters = new JsonConverter[]
         {
@@ -28,7 +26,7 @@ namespace System.Text.Json
             // Nullable converter should always be next since it forwards to any nullable type.
             new NullableConverterFactory(),
             new EnumConverterFactory(),
-            s_JsonNodeConverterFactory,
+            new JsonNodeConverterFactory(),
             // IAsyncEnumerable takes precedence over IEnumerable.
             new IAsyncEnumerableConverterFactory(),
             // IEnumerable should always be second to last since they can convert any IEnumerable.

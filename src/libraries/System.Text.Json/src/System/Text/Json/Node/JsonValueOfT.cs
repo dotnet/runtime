@@ -33,7 +33,7 @@ namespace System.Text.Json.Node
             }
         }
 
-        public override T GetValue<[DynamicallyAccessedMembers(MembersAccessedOnRead)] T>()
+        public override T GetValue<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] T>()
         {
             // If no conversion is needed, just return the raw value.
             if (_value is T returnValue)
@@ -52,7 +52,7 @@ namespace System.Text.Json.Node
             throw new InvalidOperationException(SR.Format(SR.NodeUnableToConvert, _value!.GetType(), typeof(T)));
         }
 
-        public override bool TryGetValue<[DynamicallyAccessedMembers(MembersAccessedOnRead)] T>([NotNullWhen(true)] out T value)
+        public override bool TryGetValue<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] T>([NotNullWhen(true)] out T value)
         {
             // If no conversion is needed, just return the raw value.
             if (_value is T returnValue)
@@ -95,91 +95,88 @@ namespace System.Text.Json.Node
         internal TypeToConvert ConvertJsonElement<TypeToConvert>()
         {
             JsonElement element = (JsonElement)(object)_value!;
-            Type returnType = typeof(TypeToConvert);
-            Type? underlyingType = Nullable.GetUnderlyingType(returnType);
-            returnType = underlyingType ?? returnType;
 
             switch (element.ValueKind)
             {
                 case JsonValueKind.Number:
-                    if (returnType == typeof(int))
+                    if (typeof(TypeToConvert) == typeof(int) || typeof(TypeToConvert) == typeof(int?))
                     {
                         return (TypeToConvert)(object)element.GetInt32();
                     }
 
-                    if (returnType == typeof(long))
+                    if (typeof(TypeToConvert) == typeof(long) || typeof(TypeToConvert) == typeof(long?))
                     {
                         return (TypeToConvert)(object)element.GetInt64();
                     }
 
-                    if (returnType == typeof(double))
+                    if (typeof(TypeToConvert) == typeof(double) || typeof(TypeToConvert) == typeof(double?))
                     {
                         return (TypeToConvert)(object)element.GetDouble();
                     }
 
-                    if (returnType == typeof(short))
+                    if (typeof(TypeToConvert) == typeof(short) || typeof(TypeToConvert) == typeof(short?))
                     {
                         return (TypeToConvert)(object)element.GetInt16();
                     }
 
-                    if (returnType == typeof(decimal))
+                    if (typeof(TypeToConvert) == typeof(decimal) || typeof(TypeToConvert) == typeof(decimal?))
                     {
                         return (TypeToConvert)(object)element.GetDecimal();
                     }
 
-                    if (returnType == typeof(byte))
+                    if (typeof(TypeToConvert) == typeof(byte) || typeof(TypeToConvert) == typeof(byte?))
                     {
                         return (TypeToConvert)(object)element.GetByte();
                     }
 
-                    if (returnType == typeof(float))
+                    if (typeof(TypeToConvert) == typeof(float) || typeof(TypeToConvert) == typeof(float?))
                     {
                         return (TypeToConvert)(object)element.GetSingle();
                     }
 
-                    else if (returnType == typeof(uint))
+                    if (typeof(TypeToConvert) == typeof(uint) || typeof(TypeToConvert) == typeof(uint?))
                     {
                         return (TypeToConvert)(object)element.GetUInt32();
                     }
 
-                    if (returnType == typeof(ushort))
+                    if (typeof(TypeToConvert) == typeof(ushort) || typeof(TypeToConvert) == typeof(ushort?))
                     {
                         return (TypeToConvert)(object)element.GetUInt16();
                     }
 
-                    if (returnType == typeof(ulong))
+                    if (typeof(TypeToConvert) == typeof(ulong) || typeof(TypeToConvert) == typeof(ulong?))
                     {
                         return (TypeToConvert)(object)element.GetUInt64();
                     }
 
-                    if (returnType == typeof(sbyte))
+                    if (typeof(TypeToConvert) == typeof(sbyte) || typeof(TypeToConvert) == typeof(sbyte?))
                     {
                         return (TypeToConvert)(object)element.GetSByte();
                     }
                     break;
 
                 case JsonValueKind.String:
-                    if (returnType == typeof(string))
+                    if (typeof(TypeToConvert) == typeof(string))
                     {
                         return (TypeToConvert)(object)element.GetString()!;
                     }
 
-                    if (returnType == typeof(DateTime))
+                    if (typeof(TypeToConvert) == typeof(DateTime) || typeof(TypeToConvert) == typeof(DateTime?))
                     {
                         return (TypeToConvert)(object)element.GetDateTime();
                     }
 
-                    if (returnType == typeof(DateTimeOffset))
+                    if (typeof(TypeToConvert) == typeof(DateTimeOffset) || typeof(TypeToConvert) == typeof(DateTimeOffset?))
                     {
                         return (TypeToConvert)(object)element.GetDateTimeOffset();
                     }
 
-                    if (returnType == typeof(Guid))
+                    if (typeof(TypeToConvert) == typeof(Guid) || typeof(TypeToConvert) == typeof(Guid?))
                     {
                         return (TypeToConvert)(object)element.GetGuid();
                     }
 
-                    if (returnType == typeof(char))
+                    if (typeof(TypeToConvert) == typeof(char) || typeof(TypeToConvert) == typeof(char?))
                     {
                         string? str = element.GetString();
                         Debug.Assert(str != null);
@@ -192,7 +189,7 @@ namespace System.Text.Json.Node
 
                 case JsonValueKind.True:
                 case JsonValueKind.False:
-                    if (returnType == typeof(bool))
+                    if (typeof(TypeToConvert) == typeof(bool) || typeof(TypeToConvert) == typeof(bool?))
                     {
                         return (TypeToConvert)(object)element.GetBoolean();
                     }
@@ -201,8 +198,7 @@ namespace System.Text.Json.Node
 
             throw new InvalidOperationException(SR.Format(SR.NodeUnableToConvertElement,
                 element.ValueKind,
-                 typeof(TypeToConvert))
-            );
+                typeof(TypeToConvert)));
         }
 
         internal bool TryConvertJsonElement<TypeToConvert>([NotNullWhen(true)] out TypeToConvert result)
@@ -210,84 +206,81 @@ namespace System.Text.Json.Node
             bool success;
 
             JsonElement element = (JsonElement)(object)_value!;
-            Type returnType = typeof(TypeToConvert);
-            Type? underlyingType = Nullable.GetUnderlyingType(returnType);
-            returnType = underlyingType ?? returnType;
 
             switch (element.ValueKind)
             {
                 case JsonValueKind.Number:
-                    if (returnType == typeof(int))
+                    if (typeof(TypeToConvert) == typeof(int) || typeof(TypeToConvert) == typeof(int?))
                     {
                         success = element.TryGetInt32(out int value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    if (returnType == typeof(long))
+                    if (typeof(TypeToConvert) == typeof(long) || typeof(TypeToConvert) == typeof(long?))
                     {
                         success = element.TryGetInt64(out long value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    if (returnType == typeof(double))
+                    if (typeof(TypeToConvert) == typeof(double) || typeof(TypeToConvert) == typeof(double?))
                     {
                         success = element.TryGetDouble(out double value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    if (returnType == typeof(short))
+                    if (typeof(TypeToConvert) == typeof(short) || typeof(TypeToConvert) == typeof(short?))
                     {
                         success = element.TryGetInt16(out short value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    if (returnType == typeof(decimal))
+                    if (typeof(TypeToConvert) == typeof(decimal) || typeof(TypeToConvert) == typeof(decimal?))
                     {
                         success = element.TryGetDecimal(out decimal value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    if (returnType == typeof(byte))
+                    if (typeof(TypeToConvert) == typeof(byte) || typeof(TypeToConvert) == typeof(byte?))
                     {
                         success = element.TryGetByte(out byte value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    if (returnType == typeof(float))
+                    if (typeof(TypeToConvert) == typeof(float) || typeof(TypeToConvert) == typeof(float?))
                     {
                         success = element.TryGetSingle(out float value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    else if (returnType == typeof(uint))
+                    if (typeof(TypeToConvert) == typeof(uint) || typeof(TypeToConvert) == typeof(uint?))
                     {
                         success = element.TryGetUInt32(out uint value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    if (returnType == typeof(ushort))
+                    if (typeof(TypeToConvert) == typeof(ushort) || typeof(TypeToConvert) == typeof(ushort?))
                     {
                         success = element.TryGetUInt16(out ushort value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    if (returnType == typeof(ulong))
+                    if (typeof(TypeToConvert) == typeof(ulong) || typeof(TypeToConvert) == typeof(ulong?))
                     {
                         success = element.TryGetUInt64(out ulong value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    if (returnType == typeof(sbyte))
+                    if (typeof(TypeToConvert) == typeof(sbyte) || typeof(TypeToConvert) == typeof(sbyte?))
                     {
                         success = element.TryGetSByte(out sbyte value);
                         result = (TypeToConvert)(object)value;
@@ -296,7 +289,7 @@ namespace System.Text.Json.Node
                     break;
 
                 case JsonValueKind.String:
-                    if (returnType == typeof(string))
+                    if (typeof(TypeToConvert) == typeof(string))
                     {
                         string? strResult = element.GetString();
                         Debug.Assert(strResult != null);
@@ -304,28 +297,28 @@ namespace System.Text.Json.Node
                         return true;
                     }
 
-                    if (returnType == typeof(DateTime))
+                    if (typeof(TypeToConvert) == typeof(DateTime) || typeof(TypeToConvert) == typeof(DateTime?))
                     {
                         success = element.TryGetDateTime(out DateTime value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    if (returnType == typeof(DateTimeOffset))
+                    if (typeof(TypeToConvert) == typeof(DateTimeOffset) || typeof(TypeToConvert) == typeof(DateTimeOffset?))
                     {
                         success = element.TryGetDateTimeOffset(out DateTimeOffset value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    if (returnType == typeof(Guid))
+                    if (typeof(TypeToConvert) == typeof(Guid) || typeof(TypeToConvert) == typeof(Guid?))
                     {
                         success = element.TryGetGuid(out Guid value);
                         result = (TypeToConvert)(object)value;
                         return success;
                     }
 
-                    if (returnType == typeof(char))
+                    if (typeof(TypeToConvert) == typeof(char) || typeof(TypeToConvert) == typeof(char?))
                     {
                         string? str = element.GetString();
                         Debug.Assert(str != null);
@@ -339,7 +332,7 @@ namespace System.Text.Json.Node
 
                 case JsonValueKind.True:
                 case JsonValueKind.False:
-                    if (returnType == typeof(bool))
+                    if (typeof(TypeToConvert) == typeof(bool) || typeof(TypeToConvert) == typeof(bool?))
                     {
                         result = (TypeToConvert)(object)element.GetBoolean();
                         return true;

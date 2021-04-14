@@ -50,9 +50,11 @@ namespace System.Text.Json.Node
                 ThrowHelper.ThrowArgumentNullException_ValueCannotBeNull("propertyName");
             }
 
-            Dictionary.Add(property);
             JsonNode? value = property.Value;
             value?.AssignParent(this);
+            Dictionary.Add(property);
+            _lastKey = property.Key;
+            _lastValue = value;
         }
 
         /// <summary>

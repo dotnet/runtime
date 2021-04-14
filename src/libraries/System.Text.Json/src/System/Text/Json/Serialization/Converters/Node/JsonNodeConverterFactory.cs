@@ -14,30 +14,30 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode)
                 {
-                    return JsonNodeConverter.Default;
+                    return JsonNodeConverter.Instance;
                 }
 
                 // Return the converter for System.Object which uses JsonElement.
-                return JsonNodeConverter.Default.ElementConverter;
+                return JsonNodeConverter.Instance.ElementConverter;
             }
 
             if (typeof(JsonValue).IsAssignableFrom(typeToConvert))
             {
-                return JsonNodeConverter.Default.ValueConverter;
+                return JsonNodeConverter.Instance.ValueConverter;
             }
 
             if (typeof(JsonObject) == typeToConvert)
             {
-                return JsonNodeConverter.Default.ObjectConverter;
+                return JsonNodeConverter.Instance.ObjectConverter;
             }
 
             if (typeof(JsonArray) == typeToConvert)
             {
-                return JsonNodeConverter.Default.ArrayConverter;
+                return JsonNodeConverter.Instance.ArrayConverter;
             }
 
             Debug.Assert(typeof(JsonNode) == typeToConvert);
-            return JsonNodeConverter.Default;
+            return JsonNodeConverter.Instance;
         }
 
         public override bool CanConvert(Type typeToConvert) =>

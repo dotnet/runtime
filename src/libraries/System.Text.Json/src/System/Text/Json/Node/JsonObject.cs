@@ -109,7 +109,7 @@ namespace System.Text.Json.Node
                 foreach (KeyValuePair<string, JsonNode?> kvp in Dictionary)
                 {
                     writer.WritePropertyName(kvp.Key);
-                    JsonNodeConverter.Default.Write(writer, kvp.Value!, options);
+                    JsonNodeConverter.Instance.Write(writer, kvp.Value!, options);
                 }
 
                 writer.WriteEndObject();
@@ -193,11 +193,7 @@ namespace System.Text.Json.Node
         {
             if (_dictionary == null)
             {
-                bool caseInsensitive = false;
-                if (Options?.PropertyNameCaseInsensitive == true)
-                {
-                    caseInsensitive = true;
-                }
+                bool caseInsensitive = Options?.PropertyNameCaseInsensitive == true;
 
                 var dictionary = new Dictionary<string, JsonNode?>(
                     caseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);

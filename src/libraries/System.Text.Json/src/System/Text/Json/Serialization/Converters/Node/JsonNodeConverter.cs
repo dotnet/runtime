@@ -8,7 +8,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal class JsonNodeConverter : JsonConverter<object>
     {
-        public static JsonNodeConverter Default { get; } = new JsonNodeConverter();
+        public static JsonNodeConverter Instance { get; } = new JsonNodeConverter();
         public JsonArrayConverter ArrayConverter { get; } = new JsonArrayConverter();
         public JsonObjectConverter ObjectConverter { get; } = new JsonObjectConverter();
         public JsonValueConverter ValueConverter { get; } = new JsonValueConverter();
