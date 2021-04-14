@@ -4,9 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Text.Json.Serialization;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization.Metadata
 {
     [DebuggerDisplay("MemberInfo={MemberInfo}")]
     internal abstract class JsonPropertyInfo

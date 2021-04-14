@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization.Metadata
 {
     internal abstract class MemberAccessor
     {
