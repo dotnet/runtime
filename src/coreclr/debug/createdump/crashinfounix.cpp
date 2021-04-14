@@ -274,7 +274,10 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
             // necessary is in the core dump.
             if (PopulateForSymbolLookup(baseAddress)) {
                 uint64_t symbolOffset;
-                TryLookupSymbol("g_dacTable", &symbolOffset);
+                if (!TryLookupSymbol("g_dacTable", &symbolOffset))
+                {
+                    TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+                }
             }
         }
     }

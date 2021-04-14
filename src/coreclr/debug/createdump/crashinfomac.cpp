@@ -255,6 +255,12 @@ void CrashInfo::VisitModule(MachOModule& module)
         size_t last = module.Name().rfind(MAKEDLLNAME_A("coreclr"));
         if (last != std::string::npos) {
             m_coreclrPath = module.Name().substr(0, last);
+
+            uint64_t symbolOffset;
+            if (!module.TryLookupSymbol("g_dacTable", &symbolOffset))
+            {
+                TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+            }
         }
     }
     // VisitSegment is called for each segment of the module
