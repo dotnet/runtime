@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Reflection</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -158,6 +158,9 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <Reference Include="System.Diagnostics.Tools" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) or
                         $(TargetFramework.StartsWith('net4'))">
