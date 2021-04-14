@@ -375,6 +375,16 @@ public:
     void ReturnNode(RefInfoListNode* listNode);
 };
 
+
+#if TRACK_LSRA_STATS
+enum LsraStat
+{
+#define LSRA_STAT_DEF(enum_name, enum_str) enum_name,
+#include "lsrastats.h"
+#undef LSRA_STAT_DEF
+};
+#endif // TRACK_LSRA_STATS
+
 struct LsraBlockInfo
 {
     // bbNum of the predecessor to use for the register location of live-in variables.
@@ -389,21 +399,7 @@ struct LsraBlockInfo
 
 #if TRACK_LSRA_STATS
     // Per block maintained LSRA statistics.
-
-    // Number of spills of local vars or tree temps in this basic block.
-    unsigned spillCount;
-
-    // Number of GT_COPY nodes inserted in this basic block while allocating regs.
-    // Note that GT_COPY nodes are also inserted as part of basic block boundary
-    // resolution, which are accounted against resolutionMovCount but not
-    // against copyRegCount.
-    unsigned copyRegCount;
-
-    // Number of resolution moves inserted in this basic block.
-    unsigned resolutionMovCount;
-
-    // Number of critical edges from this block that are split.
-    unsigned splitEdgeCount;
+    unsigned stats[LsraStat::COUNT];
 #endif // TRACK_LSRA_STATS
 };
 
@@ -1202,6 +1198,7 @@ private:
             regMaskTP newCandidates = candidates & selectionCandidate;
             if (newCandidates != RBM_NONE)
             {
+                score += selectionScore;
                 candidates = newCandidates;
                 return true;
             }
@@ -1360,14 +1357,11 @@ private:
 #endif // DEBUG
 
 #if TRACK_LSRA_STATS
-    enum LsraStat{
-        LSRA_STAT_SPILL, LSRA_STAT_COPY_REG, LSRA_STAT_RESOLUTION_MOV, LSRA_STAT_SPLIT_EDGE,
-    };
-
     unsigned regCandidateVarCount;
+    const char* getStatName(unsigned stat);
     void updateLsraStat(LsraStat stat, unsigned currentBBNum);
-
     void dumpLsraStats(FILE* file);
+    LsraStat firstRegSelStat = LsraStat::REGSEL_FREE;
 
 #define INTRACK_STATS(x) x
 #else // !TRACK_LSRA_STATS
