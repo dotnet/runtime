@@ -12,10 +12,10 @@ namespace System.Text.Json
     /// <summary>Handler used to clear JsonSerializerOptions reflection cache upon a metadata update.</summary>
     internal static class JsonSerializerOptionsUpdateHandler
     {
-        public static void BeforeUpdate(Type? type)
+        public static void BeforeUpdate(Type[]? types)
         {
-            // Ignore the type, and just clear out all reflection caches from serializer options.
-            foreach (KeyValuePair<JsonSerializerOptions, object?> options in JsonSerializerOptions.s_allOptionsInstances)
+            // Ignore the types, and just clear out all reflection caches from serializer options.
+            foreach (KeyValuePair<JsonSerializerOptions, object?> options in JsonSerializerOptions.TrackedOptionsInstances.All)
             {
                 options.Key.ClearClasses();
             }

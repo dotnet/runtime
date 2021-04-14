@@ -17,13 +17,6 @@ namespace System.Text.Json
     {
         internal const int BufferSizeDefault = 16 * 1024;
 
-        /// <summary>Tracks all live JsonSerializerOptions instances.</summary>
-        /// <remarks>Instances are added to the table in their constructor.</remarks>
-        internal static readonly ConditionalWeakTable<JsonSerializerOptions, object?> s_allOptionsInstances =
-            // TODO https://github.com/dotnet/runtime/issues/51159:
-            // Look into linking this away / disabling it when hot reload isn't in use.
-            new ConditionalWeakTable<JsonSerializerOptions, object?>();
-
         internal static readonly JsonSerializerOptions s_defaultOptions = new JsonSerializerOptions();
 
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
@@ -109,7 +102,17 @@ namespace System.Text.Json
         }
 
         /// <summary>Tracks the options instance to enable all instances to be enumerated.</summary>
-        private static void TrackOptionsInstance(JsonSerializerOptions options) => s_allOptionsInstances.Add(options, null);
+        private static void TrackOptionsInstance(JsonSerializerOptions options) => TrackedOptionsInstances.All.Add(options, null);
+
+        internal static class TrackedOptionsInstances
+        {
+            /// <summary>Tracks all live JsonSerializerOptions instances.</summary>
+            /// <remarks>Instances are added to the table in their constructor.</remarks>
+            public static ConditionalWeakTable<JsonSerializerOptions, object?> All { get; } =
+                // TODO https://github.com/dotnet/runtime/issues/51159:
+                // Look into linking this away / disabling it when hot reload isn't in use.
+                new ConditionalWeakTable<JsonSerializerOptions, object?>();
+        }
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance with a predefined set of options determined by the specified <see cref="JsonSerializerDefaults"/>.
