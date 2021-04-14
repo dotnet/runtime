@@ -7735,7 +7735,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             {
                 BasicBlock* nextNextBlock = nextBlock->GetUniqueSucc();
 
-                // Check if we have a sequence of GT_ASG blocks where the same variable is assigned 
+                // Check if we have a sequence of GT_ASG blocks where the same variable is assigned
                 // to temp locals over and over.
                 if (nextNextBlock->bbJumpKind != BBJ_RETURN)
                 {
@@ -7753,7 +7753,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                         asgNode = nextNextBlock->firstStmt()->GetRootNode();
                         assert(asgNode->OperIs(GT_ASG));
                         assert(lcl == asgNode->gtGetOp2()->AsLclVarCommon()->GetLclNum());
-                        lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+                        lcl           = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
                         nextNextBlock = nextNextBlock->GetUniqueSucc();
                     }
                 }
