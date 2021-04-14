@@ -178,13 +178,13 @@
     <PlatformManifestFileEntry Include="mono-aot-cross.exe" IsNative="true" FallbackFileVersion="6.0.0" />
     <PlatformManifestFileEntry Include="opt" IsNative="true" />
     <!-- Mono components specific files -->
-    <PlatformManifestFileEntry Include="libmono-component-event_pipe-static.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-event_pipe-static.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-event_pipe-static.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-event_pipe-static.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-event_pipe-stub-static.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-event_pipe-static.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-component-event_pipe-stub-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-stub-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing-stub-static.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.dylib" IsNative="true" />

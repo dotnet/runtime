@@ -38,17 +38,16 @@ MonoComponentHotReload *hot_reload = NULL;
 MonoComponentEventPipe *event_pipe = NULL;
 MonoComponentDiagnosticsServer *diagnostics_server = NULL;
 
-// DiagnosticsServer component currently hosted by EventPipe library.
-#define EVENT_PIPE_LIBRARY_NAME "event_pipe"
-#define DIAGNOSTICS_SERVER_LIBRARY_NAME EVENT_PIPE_LIBRARY_NAME
+// DiagnosticsServer/EventPipe components currently hosted by diagnostics_tracing library.
+#define DIAGNOSTICS_TRACING_LIBRARY_NAME "diagnostics_tracing"
 #define EVENT_PIPE_COMPONENT_NAME "event_pipe"
 #define DIAGNOSTICS_SERVER_COMPONENT_NAME "diagnostics_server"
 
 /* One per component */
 MonoComponentEntry components[] = {
 	{ HOT_RELOAD_LIBRARY_NAME, HOT_RELOAD_COMPONENT_NAME, COMPONENT_INIT_FUNC (hot_reload), (MonoComponent**)&hot_reload, NULL },
-	{ EVENT_PIPE_LIBRARY_NAME, EVENT_PIPE_COMPONENT_NAME, COMPONENT_INIT_FUNC (event_pipe), (MonoComponent**)&event_pipe, NULL },
-	{ DIAGNOSTICS_SERVER_LIBRARY_NAME, DIAGNOSTICS_SERVER_COMPONENT_NAME, COMPONENT_INIT_FUNC (diagnostics_server), (MonoComponent**)&diagnostics_server, NULL },
+	{ DIAGNOSTICS_TRACING_LIBRARY_NAME, EVENT_PIPE_COMPONENT_NAME, COMPONENT_INIT_FUNC (event_pipe), (MonoComponent**)&event_pipe, NULL },
+	{ DIAGNOSTICS_TRACING_LIBRARY_NAME, DIAGNOSTICS_SERVER_COMPONENT_NAME, COMPONENT_INIT_FUNC (diagnostics_server), (MonoComponent**)&diagnostics_server, NULL },
 };
 
 #ifndef STATIC_COMPONENTS

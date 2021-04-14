@@ -17,9 +17,9 @@ set(hot_reload-stub-sources_base
   hot_reload-stub.c
   )
 
-# event_pipe/diagnostics_server
+# diagnostics_tracing (event_pipe/diagnostics_server)
 list(APPEND components
-    event_pipe
+    diagnostics_tracing
 )
 
 set(SHARED_EVENTPIPE_INCLUDE_PATH "../../../native/")
@@ -33,7 +33,7 @@ include_directories(
   ${MONO_EVENTPIPE_SHIM_SOURCE_PATH}
 )
 
-set(event_pipe-sources_base
+set(diagnostics_tracing-sources_base
   ${eventpipe_sources}
   ${diagnostic_server_sources}
   event_pipe.c
@@ -41,7 +41,7 @@ set(event_pipe-sources_base
   diagnostics_server.c
   diagnostics_server.h
   )
-set(event_pipe-stub-sources_base
+set(diagnostics_tracing-stub-sources_base
   event_pipe-stub.c
   diagnostics_server-stub.c
   )
