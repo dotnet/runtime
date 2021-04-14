@@ -9313,7 +9313,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 const char* LinearScan::getStatName(unsigned stat)
 {
     LsraStat lsraStat = (LsraStat)stat;
-    assert (lsraStat != COUNT);
+    assert(lsraStat != COUNT);
 
     static const char* const lsraStatNames[] = {
 #define LSRA_STAT_DEF(stat, name) name,
@@ -9353,7 +9353,7 @@ void LinearScan::updateLsraStat(LsraStat stat, unsigned bbNum)
 //
 void LinearScan::dumpLsraStats(FILE* file)
 {
-    unsigned sumStats[LsraStat::COUNT] = {0};
+    unsigned             sumStats[LsraStat::COUNT] = {0};
     BasicBlock::weight_t wtdStats[LsraStat::COUNT] = {0};
 
     fprintf(file, "----------\n");
@@ -9388,8 +9388,8 @@ void LinearScan::dumpLsraStats(FILE* file)
     }
     fprintf(file, "Total Number of spill temps created: %d\n\n", numSpillTemps);
     fprintf(file, "----------\n");
-    bool addedBlockHeader   = false;
-    bool anyNonZeroStat = false;
+    bool addedBlockHeader = false;
+    bool anyNonZeroStat   = false;
 
     for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
     {
@@ -9426,7 +9426,7 @@ void LinearScan::dumpLsraStats(FILE* file)
         }
 
         addedBlockHeader = false;
-        anyNonZeroStat = false;
+        anyNonZeroStat   = false;
         for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
         {
             unsigned lsraStat = blockInfo[block->bbNum].stats[statIndex];
@@ -9463,7 +9463,7 @@ void LinearScan::dumpLsraStats(FILE* file)
         {
             fprintf(file, "----------\n");
         }
-        //TODO-review: I don't see a point of displaying Stats (SpillCount, etc.) if they are zero. Thoughts?
+        // TODO-review: I don't see a point of displaying Stats (SpillCount, etc.) if they are zero. Thoughts?
         if ((regSelectI < firstRegSelStat) || (sumStats[regSelectI] != 0))
         {
             // Print register selection stats

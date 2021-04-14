@@ -375,7 +375,6 @@ public:
     void ReturnNode(RefInfoListNode* listNode);
 };
 
-
 #if TRACK_LSRA_STATS
 enum LsraStat
 {
@@ -1357,7 +1356,7 @@ private:
 #endif // DEBUG
 
 #if TRACK_LSRA_STATS
-    unsigned regCandidateVarCount;
+    unsigned    regCandidateVarCount;
     const char* getStatName(unsigned stat);
     void updateLsraStat(LsraStat stat, unsigned currentBBNum);
     void dumpLsraStats(FILE* file);
