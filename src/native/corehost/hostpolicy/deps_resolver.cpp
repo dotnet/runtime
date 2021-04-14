@@ -43,33 +43,28 @@ void add_unique_path(
     pal::string_t* non_serviced,
     const pal::string_t& svc_dir)
 {
-    pal::string_t real = path;
-#if defined (TARGET_OSX)
-    pal::realpath(&real);
-#endif
-
     // To optimize startup time, we avoid calling realpath here.
     // Because of this, there might be duplicates in the output
     // whenever path is eiter non-normalized or a symbolic link.
-    if (existing->count(real))
+    if (existing->count(path))
     {
         return;
     }
 
-    trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], real.c_str());
+    trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], path.c_str());
 
-    if (starts_with(real, svc_dir, false))
+    if (starts_with(path, svc_dir, false))
     {
-        serviced->append(real);
+        serviced->append(path);
         serviced->push_back(PATH_SEPARATOR);
     }
     else
     {
-        non_serviced->append(real);
+        non_serviced->append(path);
         non_serviced->push_back(PATH_SEPARATOR);
     }
 
-    existing->insert(real);
+    existing->insert(path);
 }
 
 // Return the filename from deps path; a deps path always uses a '/' for the separator.
@@ -309,7 +304,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
         }
         pal::string_t probe_dir = config.probe_dir;
         uint32_t search_options = deps_entry_t::search_options::none;
-        if (m_has_additional_probing_paths)
+        if (m_has_additional_probing_paths || config.only_serviceable_assets)
             search_options |= deps_entry_t::search_options::file_existence;
 
         if (config.is_fx())
