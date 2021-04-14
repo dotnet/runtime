@@ -91,12 +91,14 @@ if(CLR_CMAKE_TARGET_MACCATALYST)
 endif()
 
 if(CLR_CMAKE_TARGET_TVOS)
+    # with -fembed-bitcode passing -headerpad_max_install_names is not allowed so remove it from the CMake flags
     string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_C_LINK_FLAGS ${CMAKE_C_LINK_FLAGS})
     string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS})
     string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS})
     string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS})
-    add_compile_options(-fembed-bitcode)
-    add_link_options(-fembed-bitcode)
+    add_compile_options(-Wl,-no-undefined)
+    add_compile_options(-fembed-bitcode -fno-gnu-inline-asm)
+    add_link_options(-fembed-bitcode -fno-gnu-inline-asm)
 endif()
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
