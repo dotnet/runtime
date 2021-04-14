@@ -774,10 +774,7 @@ namespace System.Runtime.Loader
 
             AssemblyLoadContext parentALC = GetLoadContext(parentAssembly)!;
 
-            // This call is fine because native call runs before this and checks BindSatelliteResourceFromBundle
-#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
             string? parentDirectory = Path.GetDirectoryName(parentAssembly.Location);
-#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
             if (parentDirectory == null)
                  return null;
 

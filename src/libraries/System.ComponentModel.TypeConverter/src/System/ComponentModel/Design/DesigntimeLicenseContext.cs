@@ -80,6 +80,7 @@ namespace System.ComponentModel.Design
                     // try everything.
                     foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
                     {
+                        // Assemblies loaded in memory return empty string from Location.
                         string location = asm.Location;
                         if (location == string.Empty)
                             continue;
