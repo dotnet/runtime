@@ -1087,9 +1087,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:MakeGenericMethod",
-            Justification = "Warnings about calling getMethod on the interface type are safe since we are annotating both the type and the " +
-            "interface with DynamicallyAccessedMembers.")]
         internal static MethodInfo? GetTargetMethodWithName(string name,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
@@ -1373,9 +1370,6 @@ namespace System.Runtime.Serialization
             return (param == null) ? SR.Format(message, nestedMessage) : SR.Format(message, nestedMessage, param);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:MakeGenericMethod",
-            Justification = "Warnings about calling getMethod on the interface type are safe since we are annotating both the type and the " +
-            "interface with DynamicallyAccessedMembers.")]
         private static void FindCollectionMethodsOnInterface(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
