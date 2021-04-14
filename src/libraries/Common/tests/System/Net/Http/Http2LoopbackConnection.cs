@@ -99,6 +99,11 @@ namespace System.Net.Test.Common
                 // so that SocketsHttpHandler will not induce retry.
                 // The contents of what we send don't really matter, as long as it is interpreted by SocketsHttpHandler as an invalid response.
                 await _connectionStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/2.0 400 Bad Request\r\n\r\n"));
+                _connectionSocket.Shutdown(SocketShutdown.Send);
+
+                // Wait for client close to avoid RST which could lead to retry.
+                byte[] buffer = new byte[1024];
+                while ((await _connectionStream.ReadAsync(buffer)) != 0) { }
                 throw new Exception("HTTP 1.1 request received.");
             }
         }
