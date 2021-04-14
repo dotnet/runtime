@@ -25,10 +25,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             CallSiteFactory.Add(typeof(IServiceProvider), new ServiceProviderCallSite());
             CallSiteFactory.Add(typeof(IServiceScopeFactory), new ServiceScopeFactoryCallSite());
             RealizedServices = new ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object>>();
-            ScopePool = new ScopePool();
+            ScopeTracker = new ScopeTracker();
         }
 
-        internal ScopePool ScopePool { get; }
+        internal ScopeTracker ScopeTracker { get; }
 
         internal ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object>> RealizedServices { get; }
 
