@@ -3,13 +3,12 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("ClassType.{JsonTypeInfo.ClassType}, {JsonTypeInfo.Type.Name}")]
+    [DebuggerDisplay("ConverterStrategy.{JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {JsonTypeInfo.Type.Name}")]
     internal struct WriteStackFrame
     {
         /// <summary>
@@ -99,7 +98,7 @@ namespace System.Text.Json
 
         /// <summary>
         /// Return the property that contains the correct polymorphic properties including
-        /// the ClassType and ConverterBase.
+        /// the ConverterStrategy and ConverterBase.
         /// </summary>
         public JsonPropertyInfo GetPolymorphicJsonPropertyInfo()
         {

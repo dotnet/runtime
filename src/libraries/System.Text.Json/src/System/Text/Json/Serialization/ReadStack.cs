@@ -10,7 +10,7 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("Path:{JsonPath()} Current: ClassType.{Current.JsonTypeInfo.ClassType}, {Current.JsonTypeInfo.Type.Name}")]
+    [DebuggerDisplay("Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo.Type.Name}")]
     internal struct ReadStack
     {
         internal static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
@@ -113,8 +113,9 @@ namespace System.Text.Json
                 {
                     JsonTypeInfo jsonTypeInfo;
                     JsonNumberHandling? numberHandling = Current.NumberHandling;
+                    ConverterStrategy converterStrategy = Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy;
 
-                    if (Current.JsonTypeInfo.ClassType == ClassType.Object)
+                    if (converterStrategy == ConverterStrategy.Object)
                     {
                         if (Current.JsonPropertyInfo != null)
                         {
@@ -125,14 +126,14 @@ namespace System.Text.Json
                             jsonTypeInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeTypeInfo;
                         }
                     }
-                    else if (((ClassType.Value | ClassType.NewValue) & Current.JsonTypeInfo.ClassType) != 0)
+                    else if (converterStrategy == ConverterStrategy.Value)
                     {
-                        // Although ClassType.Value doesn't push, a custom custom converter may re-enter serialization.
+                        // Although ConverterStrategy.Value doesn't push, a custom custom converter may re-enter serialization.
                         jsonTypeInfo = Current.JsonPropertyInfo!.RuntimeTypeInfo;
                     }
                     else
                     {
-                        Debug.Assert(((ClassType.Enumerable | ClassType.Dictionary) & Current.JsonTypeInfo.ClassType) != 0);
+                        Debug.Assert(((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & converterStrategy) != 0);
                         jsonTypeInfo = Current.JsonTypeInfo.ElementTypeInfo!;
                     }
 

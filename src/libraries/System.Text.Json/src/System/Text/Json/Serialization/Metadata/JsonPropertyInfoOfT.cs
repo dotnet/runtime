@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type parentClassType,
             Type declaredPropertyType,
             Type? runtimePropertyType,
-            ClassType runtimeClassType,
+            ConverterStrategy runtimeClassType,
             MemberInfo? memberInfo,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
@@ -190,7 +190,7 @@ namespace System.Text.Json.Serialization.Metadata
                 _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && DeclaredPropertyType != converter.TypeToConvert;
                 PropertyTypeCanBeNull = typeof(T).CanBeNull();
                 _propertyTypeEqualsTypeToConvert = converter.TypeToConvert == typeof(T);
-                ClassType = Converter!.ClassType;
+                ConverterStrategy = Converter!.ConverterStrategy;
                 RuntimePropertyType = DeclaredPropertyType;
                 DetermineIgnoreCondition(IgnoreCondition);
                 // TODO: this method needs to also take the number handling option for the declaring type.
@@ -212,7 +212,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonPropertyInfo<T> jsonPropertyInfo = new JsonPropertyInfo<T>();
             jsonPropertyInfo.DeclaredPropertyType = declaredPropertyType;
             jsonPropertyInfo.RuntimePropertyType = declaredPropertyType;
-            jsonPropertyInfo.ClassType = converter.ClassType;
+            jsonPropertyInfo.ConverterStrategy = converter.ConverterStrategy;
             jsonPropertyInfo.RuntimeTypeInfo = runtimeTypeInfo;
             jsonPropertyInfo.ConverterBase = converter;
             jsonPropertyInfo.Options = options;
@@ -301,7 +301,7 @@ namespace System.Text.Json.Serialization.Metadata
                 if (Converter.HandleNullOnWrite)
                 {
                     // No object, collection, or re-entrancy converter handles null.
-                    Debug.Assert(Converter.ClassType == ClassType.Value);
+                    Debug.Assert(Converter.ConverterStrategy == ConverterStrategy.Value);
 
                     if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {

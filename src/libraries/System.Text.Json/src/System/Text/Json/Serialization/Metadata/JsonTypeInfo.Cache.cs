@@ -100,7 +100,7 @@ namespace System.Text.Json.Serialization.Metadata
                 parentClassType,
                 declaredPropertyType,
                 runtimePropertyType,
-                runtimeClassType: converter.ClassType,
+                runtimeClassType: converter.ConverterStrategy,
                 memberInfo,
                 converter,
                 ignoreCondition,

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -106,8 +107,9 @@ namespace System.Text.Json.Serialization.Metadata
                 throw new ArgumentNullException(nameof(info));
             }
 
-            if (info.ClassType != ClassType.Object)
+            if (info.PropertyInfoForTypeInfo != null)
             {
+                // ConverterStrategy.Object is the only info type we won't have set PropertyInfoForTypeInfo for at this point.
                 throw new ArgumentException(SR.InitializeTypeInfoAsObjectInvalid, nameof(info));
             }
 
@@ -122,6 +124,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             ((JsonTypeInfoInternal<T>)info).InitializeAsObject(options, createObjectFunc, propInitFunc, numberHandling);
+            Debug.Assert(info.PropertyInfoForTypeInfo!.ConverterStrategy == ConverterStrategy.Object);
         }
 
         /// <summary>

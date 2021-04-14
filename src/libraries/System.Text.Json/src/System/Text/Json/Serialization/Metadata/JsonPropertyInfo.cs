@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private JsonTypeInfo? _runtimeTypeInfo;
 
-        internal ClassType ClassType;
+        internal ConverterStrategy ConverterStrategy;
 
         internal abstract JsonConverter ConverterBase { get; set; }
 
@@ -117,7 +117,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(MemberType == MemberTypes.Property || MemberType == MemberTypes.Field);
 
-            if ((ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
+            if ((ConverterStrategy & (ConverterStrategy.Enumerable | ConverterStrategy.Dictionary)) == 0)
             {
                 Debug.Assert(ignoreCondition != JsonIgnoreCondition.Always);
 
@@ -257,7 +257,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             if (!ConverterBase.IsInternalConverter ||
-                ((ClassType.Enumerable | ClassType.Dictionary) & ClassType) == 0)
+                ((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & ConverterStrategy) == 0)
             {
                 return false;
             }
@@ -303,7 +303,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type parentClassType,
             Type declaredPropertyType,
             Type? runtimePropertyType,
-            ClassType runtimeClassType,
+            ConverterStrategy runtimeClassType,
             MemberInfo? memberInfo,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
@@ -316,7 +316,7 @@ namespace System.Text.Json.Serialization.Metadata
             DeclaringType = parentClassType;
             DeclaredPropertyType = declaredPropertyType;
             RuntimePropertyType = runtimePropertyType;
-            ClassType = runtimeClassType;
+            ConverterStrategy = runtimeClassType;
             MemberInfo = memberInfo;
             ConverterBase = converter;
             Options = options;

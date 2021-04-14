@@ -24,7 +24,7 @@ namespace System.Text.Json.Serialization
             {
                 if (!state.IsContinuation)
                 {
-                    if (!SingleValueReadWithReadAhead(ClassType, ref reader, ref state))
+                    if (!SingleValueReadWithReadAhead(ConverterStrategy, ref reader, ref state))
                     {
                         if (state.SupportContinuation)
                         {
@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization
                 {
                     // For a continuation, read ahead here to avoid having to build and then tear
                     // down the call stack if there is more than one buffer fetch necessary.
-                    if (!SingleValueReadWithReadAhead(ClassType.Value, ref reader, ref state))
+                    if (!SingleValueReadWithReadAhead(ConverterStrategy.Value, ref reader, ref state))
                     {
                         state.BytesConsumed += reader.BytesConsumed;
                         return default;

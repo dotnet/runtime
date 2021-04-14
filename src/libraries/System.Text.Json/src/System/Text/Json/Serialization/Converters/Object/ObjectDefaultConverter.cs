@@ -272,7 +272,7 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             if (!jsonPropertyInfo.GetMemberAndWriteJson(objectValue, ref state, writer))
                             {
-                                Debug.Assert(jsonPropertyInfo.ConverterBase.ClassType != ClassType.Value);
+                                Debug.Assert(jsonPropertyInfo.ConverterBase.ConverterStrategy != ConverterStrategy.Value);
                                 return false;
                             }
                         }
@@ -328,7 +328,7 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             if (!jsonPropertyInfo.GetMemberAndWriteJson(objectValue!, ref state, writer))
                             {
-                                Debug.Assert(jsonPropertyInfo.ConverterBase.ClassType != ClassType.Value);
+                                Debug.Assert(jsonPropertyInfo.ConverterBase.ConverterStrategy != ConverterStrategy.Value);
                                 return false;
                             }
                         }
@@ -393,7 +393,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (!state.Current.UseExtensionProperty)
             {
-                if (!SingleValueReadWithReadAhead(jsonPropertyInfo.ConverterBase.ClassType, ref reader, ref state))
+                if (!SingleValueReadWithReadAhead(jsonPropertyInfo.ConverterBase.ConverterStrategy, ref reader, ref state))
                 {
                     return false;
                 }
@@ -401,7 +401,7 @@ namespace System.Text.Json.Serialization.Converters
             else
             {
                 // The actual converter is JsonElement, so force a read-ahead.
-                if (!SingleValueReadWithReadAhead(ClassType.Value, ref reader, ref state))
+                if (!SingleValueReadWithReadAhead(ConverterStrategy.Value, ref reader, ref state))
                 {
                     return false;
                 }

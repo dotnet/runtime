@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Metadata
     /// <summary>
     /// Provides JSON serialization-related metadata about a type.
     /// </summary>
-    [DebuggerDisplay("ClassType.{ClassType}, {Type.Name}")]
+    [DebuggerDisplay("ConverterStrategy.{ConverterStrategy}, {Type.Name}")]
     public partial class JsonTypeInfo
     {
         internal delegate object? ConstructorDelegate();
@@ -27,8 +27,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         // Add method delegate for non-generic Stack and Queue; and types that derive from them.
         internal object? AddMethodDelegate { get; set; }
-
-        internal ClassType ClassType { get; private set; }
 
         internal JsonPropertyInfo? DataExtensionProperty { get; private set; }
 
@@ -48,8 +46,8 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 if (_elementTypeInfo == null && ElementType != null)
                 {
-                    Debug.Assert(ClassType == ClassType.Enumerable ||
-                        ClassType == ClassType.Dictionary);
+                    Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Enumerable ||
+                        PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Dictionary);
 
                     _elementTypeInfo = Options.GetOrAddClass(ElementType);
                 }
@@ -82,7 +80,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 if (_keyTypeInfo == null && KeyType != null)
                 {
-                    Debug.Assert(ClassType == ClassType.Dictionary);
+                    Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Dictionary);
 
                     _keyTypeInfo = Options.GetOrAddClass(KeyType);
                 }
@@ -147,17 +145,16 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(false, "This constructor should not be called.");
         }
 
-        internal JsonTypeInfo(Type type, JsonSerializerOptions options, ClassType classType)
+        internal JsonTypeInfo(Type type, JsonSerializerOptions options, ConverterStrategy converterStrategy)
         {
             // Options setting for object class types is deferred till initialization.
-            if (classType != ClassType.Object && options == null)
+            if (converterStrategy != ConverterStrategy.Object && options == null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
 
             Options = options!;
             Type = type;
-            ClassType = classType;
 
             // Setting this option is deferred to the initialization methods of the various metadada info types.
             PropertyInfoForTypeInfo = null!;
@@ -175,14 +172,13 @@ namespace System.Text.Json.Serialization.Metadata
                 out Type runtimeType,
                 Options);
 
-            ClassType = converter.ClassType;
             JsonNumberHandling? typeNumberHandling = GetNumberHandlingForType(Type);
 
             PropertyInfoForTypeInfo = CreatePropertyInfoForTypeInfo(Type, runtimeType, converter, typeNumberHandling, Options);
 
-            switch (ClassType)
+            switch (PropertyInfoForTypeInfo.ConverterStrategy)
             {
-                case ClassType.Object:
+                case ConverterStrategy.Object:
                     {
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(type);
                         Dictionary<string, JsonPropertyInfo> cache = new Dictionary<string, JsonPropertyInfo>(
@@ -286,32 +282,31 @@ namespace System.Text.Json.Serialization.Metadata
                         }
                     }
                     break;
-                case ClassType.Enumerable:
+                case ConverterStrategy.Enumerable:
                     {
                         ElementType = converter.ElementType;
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
                     }
                     break;
-                case ClassType.Dictionary:
+                case ConverterStrategy.Dictionary:
                     {
                         KeyType = converter.KeyType;
                         ElementType = converter.ElementType;
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
                     }
                     break;
-                case ClassType.Value:
-                case ClassType.NewValue:
+                case ConverterStrategy.Value:
                     {
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(type);
                     }
                     break;
-                case ClassType.None:
+                case ConverterStrategy.None:
                     {
                         ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(type);
                     }
                     break;
                 default:
-                    Debug.Fail($"Unexpected class type: {ClassType}");
+                    Debug.Fail($"Unexpected class type: {PropertyInfoForTypeInfo.ConverterStrategy}");
                     throw new InvalidOperationException();
             }
         }

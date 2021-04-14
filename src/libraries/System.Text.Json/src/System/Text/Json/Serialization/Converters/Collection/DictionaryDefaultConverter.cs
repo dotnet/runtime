@@ -209,7 +209,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         state.Current.PropertyState = StackFramePropertyState.ReadValue;
 
-                        if (!SingleValueReadWithReadAhead(_valueConverter.ClassType, ref reader, ref state))
+                        if (!SingleValueReadWithReadAhead(_valueConverter.ConverterStrategy, ref reader, ref state))
                         {
                             state.Current.DictionaryKey = key;
                             value = default;

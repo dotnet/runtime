@@ -12,29 +12,29 @@ namespace System.Text.Json.Serialization.Metadata
     internal sealed class JsonTypeInfoInternal<T> : JsonTypeInfo<T>
     {
         /// <summary>
-        /// Creates serialization metadata for a <see cref="ClassType.Object"/>.
+        /// Creates serialization metadata for a <see cref="ConverterStrategy.Object"/>.
         /// </summary>
-        public JsonTypeInfoInternal() : base(typeof(T), null!, ClassType.Object)
+        public JsonTypeInfoInternal() : base(typeof(T), null!, ConverterStrategy.Object)
         {
         }
 
         /// <summary>
-        /// Creates serialization metadata for a <see cref="ClassType.Value"/>.
+        /// Creates serialization metadata for a <see cref="ConverterStrategy.Value"/>.
         /// </summary>
         public JsonTypeInfoInternal(JsonSerializerOptions options)
-            : base (typeof(T), options, ClassType.Value)
+            : base (typeof(T), options, ConverterStrategy.Value)
         {
         }
 
         /// <summary>
-        /// Creates serialization metadata for a <see cref="ClassType.Enumerable"/>.
+        /// Creates serialization metadata for a <see cref="ConverterStrategy.Enumerable"/>.
         /// </summary>
         public JsonTypeInfoInternal(
             JsonSerializerOptions options,
             Func<T>? createObjectFunc,
             JsonConverter<T> converter,
             JsonTypeInfo elementInfo,
-            JsonNumberHandling numberHandling) : base(typeof(T), options, ClassType.Enumerable)
+            JsonNumberHandling numberHandling) : base(typeof(T), options, ConverterStrategy.Enumerable)
         {
             ElementType = converter.ElementType;
             ElementTypeInfo = elementInfo ?? throw new ArgumentNullException(nameof(elementInfo));
@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Creates serialization metadata for a <see cref="ClassType.Dictionary"/>.
+        /// Creates serialization metadata for a <see cref="ConverterStrategy.Dictionary"/>.
         /// </summary>
         public JsonTypeInfoInternal(
             JsonSerializerOptions options,
@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter<T> converter,
             JsonTypeInfo keyInfo,
             JsonTypeInfo valueInfo,
-            JsonNumberHandling numberHandling) : base(typeof(T), options, ClassType.Dictionary)
+            JsonNumberHandling numberHandling) : base(typeof(T), options, ConverterStrategy.Dictionary)
         {
             KeyType = converter.KeyType;
             KeyTypeInfo = keyInfo ?? throw new ArgumentNullException(nameof(keyInfo)); ;
@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Initializes serialization metadata for a <see cref="ClassType.Object"/>.
+        /// Initializes serialization metadata for a <see cref="ConverterStrategy.Object"/>.
         /// </summary>
         public void InitializeAsObject(
             JsonSerializerOptions options,
@@ -80,9 +80,9 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter converter = new ObjectSourceGenConverter<T>();
 #pragma warning restore CS8714
 
+            PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, options);
             NumberHandling = numberHandling;
             PropInitFunc = propInitFunc;
-            PropertyInfoForTypeInfo = JsonPropertyInfo<T>.CreateForSourceGenTypeInfo(Type, runtimeTypeInfo: this, converter, options);
             SetCreateObjectFunc(createObjectFunc);
         }
 

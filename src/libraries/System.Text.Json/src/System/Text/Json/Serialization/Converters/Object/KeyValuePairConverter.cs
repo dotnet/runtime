@@ -55,7 +55,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
             ArgumentState? argState = state.Current.CtorArgumentState;
 
-            Debug.Assert(typeInfo.ClassType == ClassType.Object);
+            Debug.Assert(typeInfo.PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
             Debug.Assert(argState != null);
             Debug.Assert(_keyName != null);
             Debug.Assert(_valueName != null);

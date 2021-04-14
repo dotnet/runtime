@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization
             // 2) A converter overroad HandleNull and returned false so HandleNullOnRead and HandleNullOnWrite
             // will be their default values of false.
 
-            CanUseDirectReadOrWrite = !CanBePolymorphic && IsInternalConverter && ClassType == ClassType.Value;
+            CanUseDirectReadOrWrite = !CanBePolymorphic && IsInternalConverter && ConverterStrategy == ConverterStrategy.Value;
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization
             return typeToConvert == typeof(T);
         }
 
-        internal override ClassType ClassType => ClassType.Value;
+        internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Value;
 
         internal sealed override JsonPropertyInfo CreateJsonPropertyInfo()
         {
@@ -145,7 +145,7 @@ namespace System.Text.Json.Serialization
 
         internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
         {
-            if (ClassType == ClassType.Value)
+            if (ConverterStrategy == ConverterStrategy.Value)
             {
                 // A value converter should never be within a continuation.
                 Debug.Assert(!state.IsContinuation);
@@ -342,7 +342,7 @@ namespace System.Text.Json.Serialization
             {
                 if (value == null)
                 {
-                    Debug.Assert(ClassType == ClassType.Value);
+                    Debug.Assert(ConverterStrategy == ConverterStrategy.Value);
                     Debug.Assert(!state.IsContinuation);
                     Debug.Assert(HandleNullOnWrite);
 
@@ -388,7 +388,7 @@ namespace System.Text.Json.Serialization
                 }
             }
 
-            if (ClassType == ClassType.Value)
+            if (ConverterStrategy == ConverterStrategy.Value)
             {
                 Debug.Assert(!state.IsContinuation);
 

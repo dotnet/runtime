@@ -150,7 +150,7 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             state.Current.PropertyState = StackFramePropertyState.ReadValue;
 
-                            if (!SingleValueReadWithReadAhead(elementConverter.ClassType, ref reader, ref state))
+                            if (!SingleValueReadWithReadAhead(elementConverter.ConverterStrategy, ref reader, ref state))
                             {
                                 value = default;
                                 return false;

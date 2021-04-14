@@ -19,11 +19,11 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected JsonConverterFactory() { }
 
-        internal sealed override ClassType ClassType
+        internal sealed override ConverterStrategy ConverterStrategy
         {
             get
             {
-                return ClassType.None;
+                return ConverterStrategy.None;
             }
         }
 
