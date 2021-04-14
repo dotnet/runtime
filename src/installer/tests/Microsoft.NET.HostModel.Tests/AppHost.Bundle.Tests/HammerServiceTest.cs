@@ -60,7 +60,6 @@ namespace AppHost.Bundle.Tests
             Command.Create(singleFile)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .EnvironmentVariable("COREHOST_TRACE", "1")
                 .EnvironmentVariable(BundleHelper.CoreServicingEnvVariable, serviceBasePath)
                 .Execute()
                 .Should()
