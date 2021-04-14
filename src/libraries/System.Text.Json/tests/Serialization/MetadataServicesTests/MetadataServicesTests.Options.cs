@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Xunit;
 

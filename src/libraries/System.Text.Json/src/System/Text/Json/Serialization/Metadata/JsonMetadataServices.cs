@@ -93,7 +93,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="propInitFunc"></param>
         /// <param name="numberHandling"></param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/>, <paramref name="info"/>, or <paramref name="propInitFunc"/> is null.</exception>
-        /// /// <exception cref="ArgumentException">Thrown when <paramref name="info"/>, does not represent a complex class or struct type.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="info"/>, does not represent a complex class or struct type.</exception>
         public static void InitializeObjectInfo<T>(
             JsonTypeInfo<T> info,
             JsonSerializerOptions options,

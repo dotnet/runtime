@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Diagnostics;
+using System.Text.Json.Serialization.Metadata;
 
-namespace System.Text.Json.Serialization.Metadata
+namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// Provides metadata about a set of types that is relevant to JSON serialization.
@@ -16,10 +16,10 @@ namespace System.Text.Json.Serialization.Metadata
 
         /// <summary>
         /// Gets the run-time specified options of the context. If no options were passed
-        /// when instanciating the context, then a new instance is binded and returned.
+        /// when instanciating the context, then a new instance is bound and returned.
         /// </summary>
         /// <remarks>
-        /// The instance cannot be mutated once it is binded with the context instance.
+        /// The instance cannot be mutated once it is bound with the context instance.
         /// </remarks>
         public JsonSerializerOptions Options
         {

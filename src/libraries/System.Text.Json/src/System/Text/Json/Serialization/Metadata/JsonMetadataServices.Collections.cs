@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates metadata for types assignable to <see cref="List{T}"/>.
         /// </summary>
         /// <typeparam name="TCollection">The generic definition of the type.</typeparam>
-        /// <typeparam name="TElement">The generic defintion of the element type.</typeparam>
+        /// <typeparam name="TElement">The generic definition of the element type.</typeparam>
         /// <param name="options"></param>
         /// <param name="createObjectFunc">A <see cref="Func{TResult}"/> to create an instance of the list when deserializing.</param>
         /// <param name="elementInfo">A <see cref="JsonTypeInfo"/> instance representing the element type.</param>
@@ -54,12 +54,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates metadata for types assignable to <see cref="Dictionary{TKey, TValue}"/>.
         /// </summary>
         /// <typeparam name="TCollection">The generic definition of the type.</typeparam>
-        /// <typeparam name="TKey">The generic defintion of the key type.</typeparam>
-        /// <typeparam name="TValue">The generic defintion of the value type.</typeparam>
+        /// <typeparam name="TKey">The generic definition of the key type.</typeparam>
+        /// <typeparam name="TValue">The generic definition of the value type.</typeparam>
         /// <param name="options"></param>
         /// <param name="createObjectFunc">A <see cref="Func{TResult}"/> to create an instance of the list when deserializing.</param>
         /// <param name="keyInfo">A <see cref="JsonTypeInfo"/> instance representing the key type.</param>
-        /// <param name="valueInfo">A <see cref="JsonTypeInfo"/> instance representing the key type.</param>
+        /// <param name="valueInfo">A <see cref="JsonTypeInfo"/> instance representing the value type.</param>
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
         /// <returns></returns>
         public static JsonTypeInfo<TCollection> CreateDictionaryInfo<TCollection, TKey, TValue>(

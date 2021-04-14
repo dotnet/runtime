@@ -236,7 +236,7 @@ namespace System.Text.Json
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
-        public void AddContext<TContext>() where TContext : System.Text.Json.Serialization.Metadata.JsonSerializerContext, new() { }
+        public void AddContext<TContext>() where TContext : System.Text.Json.Serialization.JsonSerializerContext, new() { }
         public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
     }
     public enum JsonTokenType : byte
@@ -719,6 +719,12 @@ namespace System.Text.Json.Serialization
         public JsonSerializableAttribute(System.Type type) { }
         public string? TypeInfoPropertyName { get { throw null; } set { } }
     }
+    public abstract partial class JsonSerializerContext
+    {
+        protected JsonSerializerContext(System.Text.Json.JsonSerializerOptions? options) { }
+        public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }
+        public abstract System.Text.Json.Serialization.Metadata.JsonTypeInfo? GetTypeInfo(System.Type type);
+    }
     public sealed partial class JsonStringEnumConverter : System.Text.Json.Serialization.JsonConverterFactory
     {
         public JsonStringEnumConverter() { }
@@ -788,17 +794,11 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> CreateValueInfo<T, TConverterReturn>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.JsonConverter<TConverterReturn> converter) where TConverterReturn : T { throw null; }
         public static System.Text.Json.Serialization.JsonConverter<T> GetEnumConverter<T>(System.Text.Json.JsonSerializerOptions options) where T : struct { throw null; }
         public static System.Text.Json.Serialization.JsonConverter<T?> GetNullableConverter<T>(System.Text.Json.Serialization.JsonConverter<T> underlyingTypeconverter) where T : struct { throw null; }
-        public static void InitializeObjectInfo<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> info, System.Text.Json.JsonSerializerOptions options, System.Func<T>? createObjectFunc, System.Func<System.Text.Json.Serialization.Metadata.JsonSerializerContext, System.Text.Json.Serialization.Metadata.JsonPropertyInfo[]> propInitFunc, System.Text.Json.Serialization.JsonNumberHandling numberHandling) where T : notnull { }
+        public static void InitializeObjectInfo<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> info, System.Text.Json.JsonSerializerOptions options, System.Func<T>? createObjectFunc, System.Func<System.Text.Json.Serialization.JsonSerializerContext, System.Text.Json.Serialization.Metadata.JsonPropertyInfo[]> propInitFunc, System.Text.Json.Serialization.JsonNumberHandling numberHandling) where T : notnull { }
     }
     public abstract partial class JsonPropertyInfo
     {
         internal JsonPropertyInfo() { }
-    }
-    public abstract partial class JsonSerializerContext
-    {
-        protected JsonSerializerContext(System.Text.Json.JsonSerializerOptions? options) { }
-        public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }
-        public abstract System.Text.Json.Serialization.Metadata.JsonTypeInfo? GetTypeInfo(System.Type type);
     }
     public partial class JsonTypeInfo
     {
