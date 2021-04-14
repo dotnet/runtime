@@ -711,10 +711,13 @@ namespace Microsoft.Extensions.Hosting.Internal
             var wasStartedCalled = false;
             lifetime.ApplicationStarted.Register(() => wasStartedCalled = true);
             var wasStoppingCalled = false;
-            lifetime.ApplicationStopping.Register(() => wasStoppingCalled = true);
+            lifetime.ApplicationStopping.Register(() =>
+            {
+                tcs.SetResult(true);
+                wasStoppingCalled = true;
+            });
 
             await host.StartAsync();
-            tcs.TrySetResult(true);
 
             Assert.True(
                 wasStartedCalled,
