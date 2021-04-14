@@ -19,7 +19,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         CONTEXT,
         FILE,
         FILE_PROTECTED,
-        STUB_NULL = 0xF0000000, // Pass as server cert to stubtls implementation.
+        PKCS12,
     }
 
     [Flags]

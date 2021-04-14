@@ -3931,13 +3931,24 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 
         int offset = 0;
 
+        // OSR can report the root method's frame slot, if that method reported context.
+        //
+        bool isOsrAndUsingRootFrameSlot = false;
         if (compiler->opts.IsOSR())
         {
-            PatchpointInfo* ppInfo = compiler->info.compPatchpointInfo;
-            offset                 = ppInfo->GenericContextArgOffset();
-            assert(offset != -1);
+            PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
+
+            if (ppInfo->HasKeptAliveThis())
+            {
+                offset = ppInfo->GenericContextArgOffset();
+                assert(offset != -1);
+                isOsrAndUsingRootFrameSlot = true;
+            }
         }
-        else
+
+        // If not OSR, or OSR but newly reporting context, use the current frame offset.
+        //
+        if (!isOsrAndUsingRootFrameSlot)
         {
             offset = compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
                                                            compiler->isFramePointerUsed());

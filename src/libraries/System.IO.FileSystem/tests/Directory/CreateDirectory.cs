@@ -216,7 +216,7 @@ namespace System.IO.Tests
 
         [Theory,
             MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Browser does not have a limit on the maximum component length
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not have a limit on the maximum component length")]
         public void DirectoryWithComponentLongerThanMaxComponentAsPath_ThrowsException(string path)
         {
             AssertExtensions.ThrowsAny<IOException, DirectoryNotFoundException, PathTooLongException>(() => Create(path));

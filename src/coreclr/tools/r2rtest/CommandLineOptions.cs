@@ -70,6 +70,7 @@ namespace R2RTest
                         R2RDumpPath(),
                         MeasurePerf(),
                         InputFileSearchString(),
+                        MibcPath(),
                     },
                     CompileDirectoryCommand.CompileDirectory);
 
@@ -107,6 +108,7 @@ namespace R2RTest
                         ExecutionTimeoutMinutes(),
                         R2RDumpPath(),
                         GCStress(),
+                        MibcPath(),
                     },
                     CompileSubtreeCommand.CompileSubtree);
 
@@ -137,6 +139,7 @@ namespace R2RTest
                         MeasurePerf(),
                         InputFileSearchString(),
                         OutputDirectory(),
+                        MibcPath(),
                     },
                     CompileFrameworkCommand.CompileFramework);
 
@@ -155,6 +158,7 @@ namespace R2RTest
                         DegreeOfParallelism(),
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
+                        MibcPath(),
                     },
                     CompileNugetCommand.CompileNuget);
 
@@ -170,6 +174,7 @@ namespace R2RTest
                         Pdb(),
                         CompilationTimeoutMinutes(),
                         Crossgen2Path(),
+                        MibcPath(),
                     },
                     options =>
                     {
@@ -194,6 +199,10 @@ namespace R2RTest
             Option ReferencePath() =>
                 new Option<DirectoryInfo[]>(new[] { "--reference-path", "-r" }, "Folder containing assemblies to reference during compilation")
                 { Argument = new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly() };
+
+            Option MibcPath() =>
+                new Option<FileInfo[]>(new[] { "--mibc-path", "-m" }, "Mibc files to use in compilation")
+                { Argument = new Argument<FileInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly() };
 
             Option Crossgen() =>
                 new Option<bool>(new[] { "--crossgen" }, "Compile the apps using Crossgen in the CORE_ROOT folder");

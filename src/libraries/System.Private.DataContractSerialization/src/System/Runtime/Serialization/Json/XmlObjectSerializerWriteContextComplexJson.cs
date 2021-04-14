@@ -151,6 +151,7 @@ namespace System.Runtime.Serialization.Json
             writer.WriteAttributeString(null, JsonGlobals.serverTypeString, null, typeInformation);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         protected override void WriteDataContractValue(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle declaredTypeHandle)
         {
             JsonDataContract jsonDataContract = JsonDataContract.GetJsonDataContract(dataContract);

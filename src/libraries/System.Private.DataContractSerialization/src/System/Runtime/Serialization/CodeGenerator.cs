@@ -12,6 +12,7 @@ using System.IO;
 using System.Security;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {
@@ -131,7 +132,7 @@ namespace System.Runtime.Serialization
 
         internal void BeginMethod(string methodName, Type delegateType, bool allowPrivateMemberAccess)
         {
-            MethodInfo signature = delegateType.GetMethod("Invoke")!;
+            MethodInfo signature = JsonFormatWriterGenerator.GetInvokeMethod(delegateType);
             ParameterInfo[] parameters = signature.GetParameters();
             Type[] paramTypes = new Type[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)

@@ -3959,6 +3959,11 @@ unsigned ZapInfo::getMethodHash(CORINFO_METHOD_HANDLE ftn)
     return m_pEEJitInfo->getMethodHash(ftn);
 }
 
+bool ZapInfo::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+{
+    return m_pEEJitInfo->isJitIntrinsic(ftn);
+}
+
 uint32_t ZapInfo::getMethodAttribs(CORINFO_METHOD_HANDLE ftn)
 {
     DWORD result = m_pEEJitInfo->getMethodAttribs(ftn);

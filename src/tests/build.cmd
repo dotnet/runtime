@@ -578,7 +578,7 @@ exit /b 1
 
 set "__CrossgenOutputDir=%__TestIntermediatesDir%\crossgen.out"
 
-set __CrossgenCmd="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\R2RTest\R2RTest.dll" compile-framework -cr "%CORE_ROOT%" --output-directory "%__CrossgenOutputDir%" --release --nocleanup --target-arch %__BuildArch% -dop %NUMBER_OF_PROCESSORS%
+set __CrossgenCmd="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\R2RTest\R2RTest.dll" compile-framework -cr "%CORE_ROOT%" --output-directory "%__CrossgenOutputDir%" --release --nocleanup --target-arch %__BuildArch% -dop %NUMBER_OF_PROCESSORS% -m "%CORE_ROOT%\StandardOptimizationData.mibc"
 
 if defined __CreatePdb (
     set __CrossgenCmd=!__CrossgenCmd! --pdb

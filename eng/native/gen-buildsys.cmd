@@ -76,7 +76,7 @@ if not "%__ConfigureOnly%" == "1" (
         if exist "%__CmdLineOptionsUpToDateFile%" (
             set /p __CMakeCmdLineCache=<"%__CmdLineOptionsUpToDateFile%"
             REM Strip the extra space from the end of the cached command line
-            if [!__ExtraCmakeParams!] == [!__CMakeCmdLineCache:~0,-1!] (
+            if "!__ExtraCmakeParams!" == "!__CMakeCmdLineCache:~0,-1!" (
                 echo The CMake command line is the same as the last run. Skipping running CMake.
                 exit /B 0
             ) else (

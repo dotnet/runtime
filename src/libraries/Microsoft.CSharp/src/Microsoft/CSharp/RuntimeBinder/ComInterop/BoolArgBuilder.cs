@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
@@ -15,6 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Debug.Assert(parameterType == typeof(bool));
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression MarshalToRef(Expression parameter)
         {
             // parameter  ? -1 : 0

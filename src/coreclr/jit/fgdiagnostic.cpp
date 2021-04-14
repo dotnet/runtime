@@ -342,6 +342,20 @@ static void fprintfDouble(FILE* fgxFile, double value)
 //    phase       - A phase identifier to indicate which phase is associated with the dump
 //    type        - A (wide) string indicating the type of dump, "dot" or "xml"
 //
+// Notes:
+// The filename to use to write the data comes from the COMPlus_JitDumpFgFile or COMPlus_NgenDumpFgFile
+// configuration. If unset, use "default". The "type" argument is used as a filename extension,
+// e.g., "default.dot".
+//
+// There are several "special" filenames recognized:
+// "profiled" -- only create graphs for methods with profile info, one file per method.
+// "hot" -- only create graphs for the hot region, one file per method.
+// "cold" -- only create graphs for the cold region, one file per method.
+// "jit" -- only create graphs for JITing, one file per method.
+// "all" -- create graphs for all regions, one file per method.
+// "stdout" -- output to stdout, not a file.
+// "stderr" -- output to stderr, not a file.
+//
 // Return Value:
 //    Opens a file to which a flowgraph can be dumped, whose name is based on the current
 //    config vales.
@@ -349,44 +363,43 @@ static void fprintfDouble(FILE* fgxFile, double value)
 FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR type)
 {
     FILE*       fgxFile;
-    LPCWSTR     pattern  = nullptr;
-    LPCWSTR     filename = nullptr;
-    LPCWSTR     pathname = nullptr;
+    LPCWSTR     phasePattern = W("*"); // default (used in Release) is dump all phases
+    bool        dumpFunction = true;   // default (used in Release) is always dump
+    LPCWSTR     filename     = nullptr;
+    LPCWSTR     pathname     = nullptr;
     const char* escapedString;
     bool        createDuplicateFgxFiles = true;
-
-#ifdef DEBUG
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
-    {
-        pattern  = JitConfig.NgenDumpFg();
-        filename = JitConfig.NgenDumpFgFile();
-        pathname = JitConfig.NgenDumpFgDir();
-    }
-    else
-    {
-        pattern  = JitConfig.JitDumpFg();
-        filename = JitConfig.JitDumpFgFile();
-        pathname = JitConfig.JitDumpFgDir();
-    }
-#endif // DEBUG
 
     if (fgBBcount <= 1)
     {
         return nullptr;
     }
 
-    if (pattern == nullptr)
+#ifdef DEBUG
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    {
+        dumpFunction =
+            JitConfig.NgenDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
+        filename = JitConfig.NgenDumpFgFile();
+        pathname = JitConfig.NgenDumpFgDir();
+    }
+    else
+    {
+        dumpFunction =
+            JitConfig.JitDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
+        filename = JitConfig.JitDumpFgFile();
+        pathname = JitConfig.JitDumpFgDir();
+    }
+
+    phasePattern = JitConfig.JitDumpFgPhase();
+#endif // DEBUG
+
+    if (!dumpFunction)
     {
         return nullptr;
     }
 
-    if (wcslen(pattern) == 0)
-    {
-        return nullptr;
-    }
-
-    LPCWSTR phasePattern = JitConfig.JitDumpFgPhase();
-    LPCWSTR phaseName    = PhaseShortNames[phase];
+    LPCWSTR phaseName = PhaseShortNames[phase];
     if (phasePattern == nullptr)
     {
         if (phase != PHASE_DETERMINE_FIRST_COLD_BLOCK)
@@ -397,84 +410,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
     else if (*phasePattern != W('*'))
     {
         if (wcsstr(phasePattern, phaseName) == nullptr)
-        {
-            return nullptr;
-        }
-    }
-
-    if (*pattern != W('*'))
-    {
-        bool hasColon = (wcschr(pattern, W(':')) != nullptr);
-
-        if (hasColon)
-        {
-            const char* className = info.compClassName;
-            if (*pattern == W('*'))
-            {
-                pattern++;
-            }
-            else
-            {
-                while ((*pattern != W(':')) && (*pattern != W('*')))
-                {
-                    if (*pattern != *className)
-                    {
-                        return nullptr;
-                    }
-
-                    pattern++;
-                    className++;
-                }
-                if (*pattern == W('*'))
-                {
-                    pattern++;
-                }
-                else
-                {
-                    if (*className != 0)
-                    {
-                        return nullptr;
-                    }
-                }
-            }
-            if (*pattern != W(':'))
-            {
-                return nullptr;
-            }
-
-            pattern++;
-        }
-
-        const char* methodName = info.compMethodName;
-        if (*pattern == W('*'))
-        {
-            pattern++;
-        }
-        else
-        {
-            while ((*pattern != 0) && (*pattern != W('*')))
-            {
-                if (*pattern != *methodName)
-                {
-                    return nullptr;
-                }
-
-                pattern++;
-                methodName++;
-            }
-            if (*pattern == W('*'))
-            {
-                pattern++;
-            }
-            else
-            {
-                if (*methodName != 0)
-                {
-                    return nullptr;
-                }
-            }
-        }
-        if (*pattern != 0)
         {
             return nullptr;
         }
@@ -645,13 +580,15 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 //    The xml dumps are the historical mechanism for dumping the flowgraph.
 //    The dot format can be viewed by:
 //    - Graphviz (http://www.graphviz.org/)
-//      - The command "C:\Program Files (x86)\Graphviz2.38\bin\dot.exe" -Tsvg -oFoo.svg -Kdot Foo.dot
-//        will produce a Foo.svg file that can be opened with any svg-capable browser (e.g. IE).
+//      - The command:
+//           "C:\Program Files (x86)\Graphviz2.38\bin\dot.exe" -Tsvg -oFoo.svg -Kdot Foo.dot
+//        will produce a Foo.svg file that can be opened with any svg-capable browser.
+//    - https://sketchviz.com/
 //    - http://rise4fun.com/Agl/
 //      - Cut and paste the graph from your .dot file, replacing the digraph on the page, and then click the play
 //        button.
 //      - It will show a rotating '/' and then render the graph in the browser.
-//    MSAGL has also been open-sourced to https://github.com/Microsoft/automatic-graph-layout.git.
+//    MSAGL has also been open-sourced to https://github.com/Microsoft/automatic-graph-layout.
 //
 //    Here are the config values that control it:
 //      COMPlus_JitDumpFg       A string (ala the COMPlus_JitDump string) indicating what methods to dump flowgraphs
@@ -659,30 +596,33 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 //      COMPlus_JitDumpFgDir    A path to a directory into which the flowgraphs will be dumped.
 //      COMPlus_JitDumpFgFile   The filename to use. The default is "default.[xml|dot]".
 //                              Note that the new graphs will be appended to this file if it already exists.
+//      COMPlus_NgenDumpFg      Same as COMPlus_JitDumpFg, but for ngen compiles.
+//      COMPlus_NgenDumpFgDir   Same as COMPlus_JitDumpFgDir, but for ngen compiles.
+//      COMPlus_NgenDumpFgFile  Same as COMPlus_JitDumpFgFile, but for ngen compiles.
 //      COMPlus_JitDumpFgPhase  Phase(s) after which to dump the flowgraph.
 //                              Set to the short name of a phase to see the flowgraph after that phase.
 //                              Leave unset to dump after COLD-BLK (determine first cold block) or set to * for all
 //                              phases.
-//      COMPlus_JitDumpFgDot    Set to non-zero to emit Dot instead of Xml Flowgraph dump. (Default is xml format.)
+//      COMPlus_JitDumpFgDot    0 for xml format, non-zero for dot format. (Default is dot format.)
 
 bool Compiler::fgDumpFlowGraph(Phases phase)
 {
     bool result        = false;
     bool dontClose     = false;
-    bool createDotFile = false;
-    if (JitConfig.JitDumpFgDot())
-    {
-        createDotFile = true;
-    }
+    bool createDotFile = true;
+
+#ifdef DEBUG
+    createDotFile = JitConfig.JitDumpFgDot() != 0;
+#endif // DEBUG
 
     FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, createDotFile ? W("dot") : W("fgx"));
-
     if (fgxFile == nullptr)
     {
         return false;
     }
+
     bool        validWeights  = fgHaveValidEdgeWeights;
-    double      weightDivisor = (double)fgCalledCount;
+    double      weightDivisor = (double)BasicBlock::getCalledCount(this);
     const char* escapedString;
     const char* regionString = "NONE";
 
@@ -824,14 +764,18 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
             }
 
             const char* rootTreeOpName = "n/a";
-            if (block->lastNode() != nullptr)
+            if (block->IsLIR() || (block->lastStmt() != nullptr))
             {
-                rootTreeOpName = GenTree::OpName(block->lastNode()->OperGet());
+                if (block->lastNode() != nullptr)
+                {
+                    rootTreeOpName = GenTree::OpName(block->lastNode()->OperGet());
+                }
             }
 
             fprintf(fgxFile, "\n            weight=");
             fprintfDouble(fgxFile, ((double)block->bbWeight) / weightDivisor);
-            fprintf(fgxFile, "\n            codeEstimate=\"%d\"", fgGetCodeEstimate(block));
+            // fgGetCodeEstimate() will assert if the costs have not yet been initialized.
+            // fprintf(fgxFile, "\n            codeEstimate=\"%d\"", fgGetCodeEstimate(block));
             fprintf(fgxFile, "\n            startOffset=\"%d\"", block->bbCodeOffs);
             fprintf(fgxFile, "\n            rootTreeOp=\"%s\"", rootTreeOpName);
             fprintf(fgxFile, "\n            endOffset=\"%d\"", block->bbCodeOffsEnd);

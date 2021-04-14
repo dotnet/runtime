@@ -230,6 +230,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\CoreLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CurrentSystemTimeZone.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DataMisalignedException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\DateOnly.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeKind.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeOffset.cs" />
@@ -616,6 +617,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeDelegator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Metadata\MetadataUpdateHandlerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ResolveEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ResolveEventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\FastResourceComparer.cs" />
@@ -1040,11 +1042,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandleExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadStaticAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ThrowHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeOnly.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeoutException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeSpan.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZone.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.AdjustmentRule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.cs" Condition="'$(TargetsBrowser)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.StringSerializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.TransitionTime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneNotFoundException.cs" />
@@ -1846,7 +1850,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\RuntimeEventSourceHelper.Unix.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.NoRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.UnixOrBrowser.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.OSX.cs" Condition="'$(IsOSXLike)' == 'true' AND '$(TargetsMacCatalyst)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.MacCatalyst.cs" Condition="'$(TargetsMacCatalyst)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.GetFolderPathCore.Unix.cs" Condition="'$(IsiOSLike)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Unix.cs" />
@@ -1902,7 +1907,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.SunOS.cs" Condition="'$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolWorkQueue.AutoreleasePool.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Unix.cs" />
   </ItemGroup>
@@ -1922,6 +1927,10 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.AutoreleasePool.cs"
              Link="Common\Interop\OSX\System.Native\Interop.AutoreleasePool.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.iOSSupportVersion.cs"
+             Link="Common\Interop\OSX\System.Native\Interop.iOSSupportVersion.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsX86Intrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />

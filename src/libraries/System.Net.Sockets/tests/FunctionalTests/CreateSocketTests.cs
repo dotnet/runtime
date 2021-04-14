@@ -217,7 +217,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(AddressFamily.Packet)]
         [InlineData(AddressFamily.ControllerAreaNetwork)]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public void Ctor_Netcoreapp_Throws(AddressFamily addressFamily)
         {
             // All protocols are Linux specific and throw on other platforms
