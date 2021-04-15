@@ -2475,7 +2475,10 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
  *  Mark the current spot as having a label.
  */
 
-void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BOOL isFinallyTarget)
+void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
+                            regMaskTP        gcrefRegs,
+                            regMaskTP        byrefRegs,
+                            bool isFinallyTarget DEBUG_ARG(unsigned bbNum))
 {
     /* Create a new IG if the current one is non-empty */
 
@@ -2504,6 +2507,8 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
+    JITDUMP("Mapped " FMT_BB " to G_M%03u_IG%02u\n", bbNum, emitComp->compMethodID, emitCurIG->igNum);
+
     if (EMIT_GC_VERBOSE)
     {
         printf("Label: IG%02u, GCvars=%s ", emitCurIG->igNum, VarSetOps::ToString(emitComp, GCvars));
