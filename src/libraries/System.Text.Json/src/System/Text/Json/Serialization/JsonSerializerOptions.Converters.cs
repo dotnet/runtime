@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Converters;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -26,6 +27,7 @@ namespace System.Text.Json
             // Nullable converter should always be next since it forwards to any nullable type.
             new NullableConverterFactory(),
             new EnumConverterFactory(),
+            new JsonNodeConverterFactory(),
             // IAsyncEnumerable takes precedence over IEnumerable.
             new IAsyncEnumerableConverterFactory(),
             // IEnumerable should always be second to last since they can convert any IEnumerable.
@@ -39,34 +41,33 @@ namespace System.Text.Json
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
-            const int NumberOfSimpleConverters = 23;
+            const int NumberOfSimpleConverters = 22;
             var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters);
 
             // Use a dictionary for simple converters.
             // When adding to this, update NumberOfSimpleConverters above.
-            Add(new BooleanConverter());
-            Add(new ByteConverter());
-            Add(new ByteArrayConverter());
-            Add(new CharConverter());
-            Add(new DateTimeConverter());
-            Add(new DateTimeOffsetConverter());
-            Add(new DoubleConverter());
-            Add(new DecimalConverter());
-            Add(new GuidConverter());
-            Add(new Int16Converter());
-            Add(new Int32Converter());
-            Add(new Int64Converter());
+            Add(JsonMetadataServices.BooleanConverter);
+            Add(JsonMetadataServices.ByteConverter);
+            Add(JsonMetadataServices.ByteArrayConverter);
+            Add(JsonMetadataServices.CharConverter);
+            Add(JsonMetadataServices.DateTimeConverter);
+            Add(JsonMetadataServices.DateTimeOffsetConverter);
+            Add(JsonMetadataServices.DoubleConverter);
+            Add(JsonMetadataServices.DecimalConverter);
+            Add(JsonMetadataServices.GuidConverter);
+            Add(JsonMetadataServices.Int16Converter);
+            Add(JsonMetadataServices.Int32Converter);
+            Add(JsonMetadataServices.Int64Converter);
             Add(new JsonElementConverter());
             Add(new JsonDocumentConverter());
-            Add(new ObjectConverter());
-            Add(new SByteConverter());
-            Add(new SingleConverter());
-            Add(new StringConverter());
-            Add(new UInt16Converter());
-            Add(new UInt32Converter());
-            Add(new UInt64Converter());
-            Add(new UriConverter());
-            Add(new VersionConverter());
+            Add(JsonMetadataServices.SByteConverter);
+            Add(JsonMetadataServices.SingleConverter);
+            Add(JsonMetadataServices.StringConverter);
+            Add(JsonMetadataServices.UInt16Converter);
+            Add(JsonMetadataServices.UInt32Converter);
+            Add(JsonMetadataServices.UInt64Converter);
+            Add(JsonMetadataServices.UriConverter);
+            Add(JsonMetadataServices.VersionConverter);
 
             Debug.Assert(NumberOfSimpleConverters == converters.Count);
 

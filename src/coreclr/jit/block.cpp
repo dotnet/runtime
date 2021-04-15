@@ -921,14 +921,22 @@ bool BasicBlock::isEmpty()
 {
     if (!IsLIR())
     {
-        return (this->FirstNonPhiDef() == nullptr);
-    }
-
-    for (GenTree* node : LIR::AsRange(this).NonPhiNodes())
-    {
-        if (node->OperGet() != GT_IL_OFFSET)
+        for (Statement* stmt : Statements())
         {
-            return false;
+            if (!stmt->GetRootNode()->OperIs(GT_PHI, GT_NOP))
+            {
+                return false;
+            }
+        }
+    }
+    else
+    {
+        for (GenTree* node : LIR::AsRange(this).NonPhiNodes())
+        {
+            if (node->OperGet() != GT_IL_OFFSET)
+            {
+                return false;
+            }
         }
     }
 

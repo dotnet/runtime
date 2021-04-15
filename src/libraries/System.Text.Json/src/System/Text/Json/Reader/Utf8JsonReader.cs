@@ -997,7 +997,7 @@ namespace System.Text.Json
             {
                 byte val = localBuffer[_consumed];
 
-                // JSON RFC 8259 section 2 says only these 4 characters count, not all of the Unicode defintions of whitespace.
+                // JSON RFC 8259 section 2 says only these 4 characters count, not all of the Unicode definitions of whitespace.
                 if (val != JsonConstants.Space &&
                     val != JsonConstants.CarriageReturn &&
                     val != JsonConstants.LineFeed &&

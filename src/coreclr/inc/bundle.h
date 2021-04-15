@@ -19,13 +19,15 @@ struct BundleFileLocation
 {
     INT64 Size;
     INT64 Offset;
+    INT64 UncompresedSize;
 
     BundleFileLocation()
     { 
         LIMITED_METHOD_CONTRACT;
 
-        Size = 0; 
+        Size = 0;
         Offset = 0; 
+        UncompresedSize = 0;
     }
 
     static BundleFileLocation Invalid() { LIMITED_METHOD_CONTRACT; return BundleFileLocation(); }

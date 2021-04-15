@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 
 namespace System.Text.Json
 {
@@ -49,6 +50,24 @@ namespace System.Text.Json
 
             Debug.Assert(ret, "TryParseValue returned false with shouldThrow: true.");
             Debug.Assert(document != null, "null document returned with shouldThrow: true.");
+            return document.RootElement;
+        }
+
+        internal static JsonElement ParseValue(Stream utf8Json, JsonDocumentOptions options)
+        {
+            JsonDocument document = JsonDocument.ParseValue(utf8Json, options);
+            return document.RootElement;
+        }
+
+        internal static JsonElement ParseValue(ReadOnlySpan<byte> utf8Json, JsonDocumentOptions options)
+        {
+            JsonDocument document = JsonDocument.ParseValue(utf8Json, options);
+            return document.RootElement;
+        }
+
+        internal static JsonElement ParseValue(string json, JsonDocumentOptions options)
+        {
+            JsonDocument document = JsonDocument.ParseValue(json, options);
             return document.RootElement;
         }
 

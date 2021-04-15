@@ -12546,11 +12546,14 @@ gc_heap::init_gc_heap (int  h_number)
 #endif //BGC_SERVO_TUNING
     freeable_soh_segment = 0;
     gchist_index_per_heap = 0;
-    uint8_t** b_arr = new (nothrow) (uint8_t* [MARK_STACK_INITIAL_LENGTH]);
-    if (!b_arr)
-        return 0;
+    if (gc_can_use_concurrent)
+    {
+        uint8_t** b_arr = new (nothrow) (uint8_t * [MARK_STACK_INITIAL_LENGTH]);
+        if (!b_arr)
+            return 0;
 
-    make_background_mark_stack (b_arr);
+        make_background_mark_stack(b_arr);
+    }
 #endif //BACKGROUND_GC
 
 #ifndef USE_REGIONS
@@ -19073,6 +19076,10 @@ void gc_heap::gc1()
     verify_soh_segment_list();
 
 #ifdef BACKGROUND_GC
+    if (gc_can_use_concurrent)
+    {
+        check_bgc_mark_stack_length();
+    }
     assert (settings.concurrent == (uint32_t)(bgc_thread_id.IsCurrentThread()));
 #endif //BACKGROUND_GC
 
@@ -22154,6 +22161,46 @@ gc_heap::scan_background_roots (promote_func* fn, int hn, ScanContext *pSC)
     }
 }
 
+void gc_heap::grow_bgc_mark_stack (size_t new_size)
+{
+    if ((background_mark_stack_array_length < new_size) &&
+        ((new_size - background_mark_stack_array_length) > (background_mark_stack_array_length / 2)))
+    {
+        dprintf (2, ("h%d: ov grow to %Id", heap_number, new_size));
+
+        uint8_t** tmp = new (nothrow) uint8_t* [new_size];
+        if (tmp)
+        {
+            delete [] background_mark_stack_array;
+            background_mark_stack_array = tmp;
+            background_mark_stack_array_length = new_size;
+            background_mark_stack_tos = background_mark_stack_array;
+        }
+    }
+}
+
+void gc_heap::check_bgc_mark_stack_length()
+{
+    if ((settings.condemned_generation < (max_generation - 1)) || gc_heap::background_running_p())
+        return;
+
+    size_t total_heap_size = get_total_heap_size();
+
+    if (total_heap_size < ((size_t)4*1024*1024*1024))
+        return;
+
+#ifdef MULTIPLE_HEAPS
+    int total_heaps = n_heaps;
+#else
+    int total_heaps = 1;
+#endif //MULTIPLE_HEAPS
+    size_t size_based_on_heap = total_heap_size / (size_t)(100 * 100 * total_heaps * sizeof (uint8_t*)); 
+
+    size_t new_size = max (background_mark_stack_array_length, size_based_on_heap);
+
+    grow_bgc_mark_stack (new_size);
+}
+
 uint8_t* gc_heap::background_seg_end (heap_segment* seg, BOOL concurrent_p)
 {
 #ifndef USE_REGIONS
@@ -22435,20 +22482,7 @@ recheck:
                 new_size = min(new_max_size, new_size);
             }
 
-            if ((background_mark_stack_array_length < new_size) &&
-                ((new_size - background_mark_stack_array_length) > (background_mark_stack_array_length / 2)))
-            {
-                dprintf (2, ("h%d: ov grow to %Id", heap_number, new_size));
-
-                uint8_t** tmp = new (nothrow) uint8_t* [new_size];
-                if (tmp)
-                {
-                    delete [] background_mark_stack_array;
-                    background_mark_stack_array = tmp;
-                    background_mark_stack_array_length = new_size;
-                    background_mark_stack_tos = background_mark_stack_array;
-                }
-            }
+            grow_bgc_mark_stack (new_size);
         }
         else
         {

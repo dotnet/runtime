@@ -2183,6 +2183,7 @@ get_last_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		/* Store the context/lmf for the frame above the last frame */
 		memcpy (&data->ctx, ctx, sizeof (MonoContext));
 		data->lmf = info->lmf;
+		data->domain = mono_get_root_domain ();
 		return TRUE;
 	}
 }

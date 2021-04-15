@@ -37,6 +37,7 @@ namespace bundle
         file_entry_t()
             : m_offset(0)
             , m_size(0)
+            , m_compressedSize(0)
             , m_type(file_type_t::__last)
             , m_relative_path()
             , m_disabled(false)
