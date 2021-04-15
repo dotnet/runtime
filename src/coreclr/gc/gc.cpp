@@ -40135,11 +40135,11 @@ HRESULT GCHeap::Initialize()
     {
         if (!gc_heap::heap_hard_limit_oh[soh])
         {
-            return E_INVALIDARG;
+            return CLR_E_GC_BAD_HARD_LIMIT;
         }
         if (!gc_heap::heap_hard_limit_oh[loh])
         {
-            return E_INVALIDARG;
+            return CLR_E_GC_BAD_HARD_LIMIT;
         }
         gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[soh] + 
             gc_heap::heap_hard_limit_oh[loh] + gc_heap::heap_hard_limit_oh[poh];
@@ -40153,19 +40153,19 @@ HRESULT GCHeap::Initialize()
         {
             if ((percent_of_mem_soh <= 0) || (percent_of_mem_soh >= 100))
             {
-                return E_INVALIDARG;
+                return CLR_E_GC_BAD_HARD_LIMIT;
             }
             if ((percent_of_mem_loh <= 0) || (percent_of_mem_loh >= 100))
             {
-                return E_INVALIDARG;
+                return CLR_E_GC_BAD_HARD_LIMIT;
             }
             else if ((percent_of_mem_poh < 0) || (percent_of_mem_poh >= 100))
             {
-                return E_INVALIDARG;
+                return CLR_E_GC_BAD_HARD_LIMIT;
             }
             if ((percent_of_mem_soh + percent_of_mem_loh + percent_of_mem_poh) >= 100)
             {
-                return E_INVALIDARG;
+                return CLR_E_GC_BAD_HARD_LIMIT;
             }
             gc_heap::heap_hard_limit_oh[soh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
             gc_heap::heap_hard_limit_oh[loh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
@@ -40177,7 +40177,7 @@ HRESULT GCHeap::Initialize()
 
     if (gc_heap::heap_hard_limit_oh[soh] && (!gc_heap::heap_hard_limit_oh[poh]) && (!gc_heap::use_large_pages_p))
     {
-        return E_INVALIDARG;
+        return CLR_E_GC_BAD_HARD_LIMIT;
     }
 
     if (!(gc_heap::heap_hard_limit))
@@ -40202,7 +40202,7 @@ HRESULT GCHeap::Initialize()
 
     if ((!gc_heap::heap_hard_limit) && gc_heap::use_large_pages_p)
     {
-        return E_INVALIDARG;
+        return CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT;
     }
 
 #endif //HOST_64BIT
