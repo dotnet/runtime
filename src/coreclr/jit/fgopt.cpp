@@ -1892,6 +1892,10 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " during compacting.\n", bNext->bbNum,
                     block->bbNum);
         }
+        else
+        {
+            assert(!"bad case");
+        }
     }
 
     // If we're collapsing a block created after the dominators are
