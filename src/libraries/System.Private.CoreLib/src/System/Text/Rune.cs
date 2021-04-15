@@ -919,6 +919,8 @@ namespace System.Text
 #if SYSTEM_PRIVATE_CORELIB
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             TryEncodeToUtf16(destination, out charsWritten);
+
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();
 #endif
 
         /// <summary>

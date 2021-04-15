@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -26,7 +26,7 @@
   <!-- GetFilesToPackage assists to place `MonoAOTCompiler.dll` in a NuGet package in Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj for external use -->
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(AssemblyName).dll" TargetPath="tasks" />
+      <FilesToPackage Include="$(OutputPath)$(AssemblyName).dll" TargetPath="tasks" />
     </ItemGroup>
   </Target>
 </Project>

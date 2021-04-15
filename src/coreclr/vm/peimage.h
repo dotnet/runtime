@@ -148,6 +148,7 @@ public:
     HANDLE GetFileHandle();
     INT64 GetOffset() const;
     INT64 GetSize() const;
+    INT64 GetUncompressedSize() const;
 
     void SetFileHandle(HANDLE hFile);
     HRESULT TryOpenFile();

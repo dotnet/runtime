@@ -176,12 +176,8 @@ __StaticAnalyzer=0
 __UnprocessedBuildArgs=
 __UseNinja=0
 __VerboseBuild=0
-__ValidateCrossArg=1
 __CMakeArgs=""
 __RequestedBuildComponents=""
-__BuildAllJits=1
-__BuildRuntime=1
-__BuildILTools=1
 
 source "$__ProjectRoot"/_build-commons.sh
 

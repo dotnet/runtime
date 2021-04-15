@@ -14906,16 +14906,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_sqrtsd:
         case INS_sqrtpd:
-        case INS_rcpps:
-        case INS_rcpss:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += PERFSCORE_LATENCY_4C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            result.insLatency += PERFSCORE_LATENCY_13C;
             break;
 
+        case INS_rcpps:
+        case INS_rcpss:
         case INS_rsqrtss:
         case INS_rsqrtps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
-            result.insLatency += PERFSCORE_LATENCY_12C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
             break;
 
         case INS_roundpd:

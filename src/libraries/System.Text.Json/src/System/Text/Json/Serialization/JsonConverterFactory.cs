@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
 {
@@ -18,11 +19,11 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected JsonConverterFactory() { }
 
-        internal sealed override ClassType ClassType
+        internal sealed override ConverterStrategy ConverterStrategy
         {
             get
             {
-                return ClassType.None;
+                return ConverterStrategy.None;
             }
         }
 

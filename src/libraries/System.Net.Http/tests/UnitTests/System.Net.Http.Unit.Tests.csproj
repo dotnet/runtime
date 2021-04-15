@@ -42,6 +42,10 @@
              Link="ProductionCode\Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
              Link="Common\System\Text\SimpleRegex.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
+             Link="Common\System\Net\Configuration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs"
+             Link="Common\System\Net\Configuration.Http.cs" />
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
              Link="Common\System\ShouldNotBeInvokedException.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HPackEncoder.cs"
