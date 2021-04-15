@@ -2753,8 +2753,8 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
     // hit only under JIT stress. See if the block is the one we injected.
     // Note that EH canonicalization can inject internal blocks here. We might
     // be able to re-use such a block (but we don't, right now).
-    if ((hndBlk->bbFlags & (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET)) ==
-        (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET))
+    if ((hndBlk->bbFlags & (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE)) ==
+        (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE))
     {
         Statement* stmt = hndBlk->firstStmt();
 
@@ -2801,7 +2801,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 
         /* Create extra basic block for the spill */
         BasicBlock* newBlk = fgNewBBbefore(BBJ_NONE, hndBlk, /* extendRegion */ true);
-        newBlk->bbFlags |= BBF_IMPORTED | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET;
+        newBlk->bbFlags |= BBF_IMPORTED | BBF_DONT_REMOVE;
         newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
