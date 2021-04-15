@@ -27,6 +27,7 @@ namespace System.Net.Http
         private const byte ATYP_IPV6 = 4;
         private const byte Socks5_Success = 0;
         private const byte Socks4_Success = 90;
+        private const byte Socks4_AuthFailed = 93;
 
         public static async ValueTask EstablishSocksTunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, bool async, CancellationToken cancellationToken)
         {
@@ -106,6 +107,9 @@ namespace System.Net.Http
                             // https://tools.ietf.org/html/rfc1929
                             if (credentials is null)
                             {
+                                // If the server is behaving well, it shouldn't pick username and password auth
+                                // because we don't claim to support it when we don't have credentials.
+                                // Just being defensive here.
                                 throw new SocksException(SR.net_socks_auth_required);
                             }
 
@@ -289,9 +293,16 @@ namespace System.Net.Http
                 //    1    1      2              4
                 await ReadToFillAsync(stream, buffer.AsMemory(0, 8), async).ConfigureAwait(false);
                 VerifyProtocolVersion(ProtocolVersion4, buffer[0]);
-                if (buffer[1] != Socks4_Success)
+
+                switch (buffer[1])
                 {
-                    throw new SocksException(SR.net_socks_connection_failed);
+                    case Socks4_Success:
+                        // Nothing to do
+                        break;
+                    case Socks4_AuthFailed:
+                        throw new SocksException(SR.net_socks_auth_failed);
+                    default:
+                        throw new SocksException(SR.net_socks_connection_failed);
                 }
                 // response address not used
             }
