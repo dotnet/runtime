@@ -1296,7 +1296,7 @@ namespace System
         public static bool TryToBase64Chars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten, System.Base64FormattingOptions options = System.Base64FormattingOptions.None) { throw null; }
     }
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
-    public readonly struct DateOnly : System.IComparable, System.IComparable<System.DateOnly>, System.IEquatable<System.DateOnly>, System.IFormattable
+    public readonly struct DateOnly : System.IComparable, System.IComparable<System.DateOnly>, System.IEquatable<System.DateOnly>, System.ISpanFormattable
     {
         public static DateOnly MinValue { get { throw null; } }
         public static DateOnly MaxValue { get { throw null; } }
@@ -3807,7 +3807,7 @@ namespace System
     {
         public ThreadStaticAttribute() { }
     }
-    public readonly struct TimeOnly : System.IComparable, System.IComparable<System.TimeOnly>, System.IEquatable<System.TimeOnly>, System.IFormattable
+    public readonly struct TimeOnly : System.IComparable, System.IComparable<System.TimeOnly>, System.IEquatable<System.TimeOnly>, System.ISpanFormattable
     {
         public static System.TimeOnly MinValue { get { throw null; } }
         public static System.TimeOnly MaxValue { get { throw null; } }
