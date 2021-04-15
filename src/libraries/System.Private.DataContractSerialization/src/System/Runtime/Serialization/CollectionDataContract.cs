@@ -1087,6 +1087,9 @@ namespace System.Runtime.Serialization
             }
         }
 
+        // Once https://github.com/mono/linker/issues/1731 is fixed we can remove the suppression from here as it won't be needed any longer.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:GetMethod",
+            Justification = "The DynamicallyAccessedMembers declarations will ensure the interface methods will be preserved.")]
         internal static MethodInfo? GetTargetMethodWithName(string name,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
@@ -1370,6 +1373,9 @@ namespace System.Runtime.Serialization
             return (param == null) ? SR.Format(message, nestedMessage) : SR.Format(message, nestedMessage, param);
         }
 
+        // Once https://github.com/mono/linker/issues/1731 is fixed we can remove the suppression from here as it won't be needed any longer.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:GetMethod",
+            Justification = "The DynamicallyAccessedMembers declarations will ensure the interface methods will be preserved.")]
         private static void FindCollectionMethodsOnInterface(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
@@ -1441,10 +1447,12 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(IEnumerable<>))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:RequiresUnreferencedCode",
-            Justification = "Method will be preserved by the DynamicDependency attribute.")]
-        private static MethodInfo? GetIEnumerableGetEnumeratorMethod(Type type, Type ienumerableInterface) => GetTargetMethodWithName(Globals.GetEnumeratorMethodName, type, ienumerableInterface);
+        private static MethodInfo? GetIEnumerableGetEnumeratorMethod(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            Type type,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            Type ienumerableInterface)
+                => GetTargetMethodWithName(Globals.GetEnumeratorMethodName, type, ienumerableInterface);
 
         private static bool IsKnownInterface(Type type)
         {

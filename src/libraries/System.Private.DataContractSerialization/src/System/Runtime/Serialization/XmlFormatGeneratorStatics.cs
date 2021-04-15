@@ -605,14 +605,11 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_getArrayLengthMethod;
         internal static MethodInfo GetArrayLengthMethod
         {
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Array))]
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:RequiresUnreferencedCode",
-                Justification = "The DynamicDependency attribute ensures that the right members are preserved.")]
             get
             {
                 if (s_getArrayLengthMethod == null)
                 {
-                    s_getArrayLengthMethod = Globals.TypeOfArray.GetProperty("Length")!.GetMethod;
+                    s_getArrayLengthMethod = typeof(Array).GetProperty("Length")!.GetMethod;
                     Debug.Assert(s_getArrayLengthMethod != null);
                 }
                 return s_getArrayLengthMethod;

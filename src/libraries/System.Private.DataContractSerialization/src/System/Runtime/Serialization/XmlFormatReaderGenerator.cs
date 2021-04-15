@@ -275,10 +275,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicFields, typeof(DBNull))]
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:RequiresUnreferencedCode",
-                Justification = "The DynamicDependency attribute will ensure that DBNull.Value is preserved.")]
-            private static FieldInfo GetDBNullValueField() => Globals.TypeOfDBNull.GetField("Value")!;
+            private static FieldInfo GetDBNullValueField() => typeof(DBNull).GetField("Value")!;
 
             private void InvokeOnDeserializing(ClassDataContract classContract)
             {
