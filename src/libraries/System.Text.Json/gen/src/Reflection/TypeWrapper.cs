@@ -6,16 +6,16 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
-using System.Text;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Reflection
+namespace System.Text.Json.SourceGeneration.Reflection
 {
     internal class TypeWrapper : Type
     {
         private readonly ITypeSymbol _typeSymbol;
 
-        private readonly MetadataLoadContext _metadataLoadContext;
+        private readonly MetadataLoadContextInternal _metadataLoadContext;
 
         private INamedTypeSymbol? _namedTypeSymbol;
 
@@ -23,7 +23,7 @@ namespace System.Reflection
 
         private Type _elementType;
 
-        public TypeWrapper(ITypeSymbol namedTypeSymbol, MetadataLoadContext metadataLoadContext)
+        public TypeWrapper(ITypeSymbol namedTypeSymbol, MetadataLoadContextInternal metadataLoadContext)
         {
             _typeSymbol = namedTypeSymbol;
             _metadataLoadContext = metadataLoadContext;

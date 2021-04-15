@@ -255,7 +255,7 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
-        public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(string json, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static TValue? Deserialize<TValue>(string json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             if (json == null)
             {
@@ -267,10 +267,11 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Parse the text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Parse the text representing a single JSON value into a <paramref name="returnType"/>.
         /// </summary>
-        /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
+        /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
         /// <param name="json">JSON text to parse.</param>
+        /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="jsonSerializerContext">A metadata provider for serializable types.</param>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="json"/> is <see langword="null"/>.
@@ -284,14 +285,14 @@ namespace System.Text.Json
         ///
         /// -or-
         ///
-        /// <typeparamref name="TValue" /> is not compatible with the JSON.
+        /// <paramref name="returnType" /> is not compatible with the JSON.
         ///
         /// -or-
         ///
         /// There is remaining data in the string beyond a single JSON value.</exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// The <see cref="JsonSerializerContext.GetTypeInfo(Type)"/> method of the provided
@@ -300,11 +301,16 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
-        public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(string json, JsonSerializerContext jsonSerializerContext)
+        public static object? Deserialize(string json, Type returnType, JsonSerializerContext jsonSerializerContext)
         {
             if (json == null)
             {
                 throw new ArgumentNullException(nameof(json));
+            }
+
+            if (returnType == null)
+            {
+                throw new ArgumentNullException(nameof(returnType));
             }
 
             if (jsonSerializerContext == null)
@@ -312,9 +318,9 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonSerializerContext));
             }
 
-            return DeserializeUsingMetadata<TValue?>(
+            return DeserializeUsingMetadata<object?>(
                 json,
-                JsonHelpers.GetJsonTypeInfo(jsonSerializerContext, typeof(TValue)));
+                JsonHelpers.GetJsonTypeInfo(jsonSerializerContext, returnType));
         }
 
         private static TValue? DeserializeUsingMetadata<TValue>(string json, JsonTypeInfo? jsonTypeInfo)

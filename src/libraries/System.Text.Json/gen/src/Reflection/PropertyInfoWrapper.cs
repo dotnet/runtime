@@ -3,16 +3,17 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Reflection
+namespace System.Text.Json.SourceGeneration.Reflection
 {
     internal class PropertyInfoWrapper : PropertyInfo
     {
         private readonly IPropertySymbol _property;
-        private MetadataLoadContext _metadataLoadContext;
+        private MetadataLoadContextInternal _metadataLoadContext;
 
-        public PropertyInfoWrapper(IPropertySymbol property, MetadataLoadContext metadataLoadContext)
+        public PropertyInfoWrapper(IPropertySymbol property, MetadataLoadContextInternal metadataLoadContext)
         {
             _property = property;
             _metadataLoadContext = metadataLoadContext;

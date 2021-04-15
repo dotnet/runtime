@@ -1,13 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using Microsoft.CodeAnalysis;
 
-namespace System.Reflection
+namespace System.Text.Json.SourceGeneration.Reflection
 {
     internal static class TypeExtensions
     {
@@ -29,11 +26,6 @@ namespace System.Reflection
             string baseName = name.Substring(0, backTickIndex).Replace('+', '.');
 
             return $"{baseName}<{string.Join(",", type.GetGenericArguments().Select(arg => GetUniqueCompilableTypeName(arg)))}>";
-        }
-
-        public static string GetUniqueFriendlyTypeName(this Type type)
-        {
-            return GetFriendlyTypeName(type.GetUniqueCompilableTypeName());
         }
 
         public static string GetFriendlyTypeName(this Type type)

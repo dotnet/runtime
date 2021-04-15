@@ -4,12 +4,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 
-namespace System.Reflection
+namespace System.Text.Json.SourceGeneration.Reflection
 {
-    public class MetadataLoadContext
+    internal class MetadataLoadContextInternal
     {
         private readonly Dictionary<string, IAssemblySymbol> _assemblies = new Dictionary<string, IAssemblySymbol>(StringComparer.OrdinalIgnoreCase);
 
@@ -17,7 +18,7 @@ namespace System.Reflection
 
         private IAssemblySymbol? _collectionsAssemblySymbol;
 
-        public MetadataLoadContext(Compilation compilation)
+        public MetadataLoadContextInternal(Compilation compilation)
         {
             _compilation = compilation;
             Dictionary<AssemblyName, IAssemblySymbol> assemblies = compilation.References

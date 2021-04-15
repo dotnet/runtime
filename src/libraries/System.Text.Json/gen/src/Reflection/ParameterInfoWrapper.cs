@@ -2,17 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Reflection
+namespace System.Text.Json.SourceGeneration.Reflection
 {
-    public class ParameterInfoWrapper : ParameterInfo
+    internal class ParameterInfoWrapper : ParameterInfo
     {
         private readonly IParameterSymbol _parameter;
 
-        private readonly MetadataLoadContext _metadataLoadContext;
+        private readonly MetadataLoadContextInternal _metadataLoadContext;
 
-        public ParameterInfoWrapper(IParameterSymbol parameter, MetadataLoadContext metadataLoadContext)
+        public ParameterInfoWrapper(IParameterSymbol parameter, MetadataLoadContextInternal metadataLoadContext)
         {
             _parameter = parameter;
             _metadataLoadContext = metadataLoadContext;

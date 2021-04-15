@@ -4,8 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Text.Json.Serialization;
+using System.Text.Json.SourceGeneration.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
@@ -30,10 +30,21 @@ namespace System.Text.Json.SourceGeneration
 
         private const string CreateValueInfoMethodName = "CreateValueInfo";
 
+        // TODO: Enable localization for these descriptors.
+
         private static DiagnosticDescriptor TypeNotSupported { get; } = new DiagnosticDescriptor(
             "SYSLIB2021",
             "Did not generate serialization metadata for type",
             "Did not generate serialization metadata for type {0}",
+            "JSON source generation",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true,
+            description: "Error message: {2}");
+
+        private static DiagnosticDescriptor DuplicateTypeName { get; } = new DiagnosticDescriptor(
+            "SYSLIB2022",
+            "Duplicate type name",
+            "There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.",
             "JSON source generation",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true,
@@ -56,54 +67,42 @@ namespace System.Text.Json.SourceGeneration
 
             _typesWithMetadataGenerated.Add(typeMetadata);
 
-            string metadataFileName = $"{typeMetadata.FriendlyName}.g.cs";
+            string source;
 
             switch (typeMetadata.ClassType)
             {
                 case ClassType.KnownType:
                     {
-                        _executionContext.AddSource(
-                            metadataFileName,
-                            SourceText.From(GenerateForTypeWithKnownConverter(typeMetadata), Encoding.UTF8));
+                        source = GenerateForTypeWithKnownConverter(typeMetadata);
                     }
                     break;
                 case ClassType.TypeWithDesignTimeProvidedCustomConverter:
                     {
-                        _executionContext.AddSource(
-                            metadataFileName,
-                            SourceText.From(GenerateForTypeWithUnknownConverter(typeMetadata), Encoding.UTF8));
+                        source = GenerateForTypeWithUnknownConverter(typeMetadata);
                     }
                     break;
                 case ClassType.Nullable:
                     {
-                        _executionContext.AddSource(
-                            metadataFileName,
-                            SourceText.From(GenerateForNullable(typeMetadata), Encoding.UTF8));
+                        source = GenerateForNullable(typeMetadata);
 
                         GenerateTypeMetadata(typeMetadata.NullableUnderlyingTypeMetadata);
                     }
                     break;
                 case ClassType.Enum:
                     {
-                        _executionContext.AddSource(
-                            metadataFileName,
-                            SourceText.From(GenerateForEnum(typeMetadata), Encoding.UTF8));
+                        source = GenerateForEnum(typeMetadata);
                     }
                     break;
                 case ClassType.Enumerable:
                     {
-                        _executionContext.AddSource(
-                            metadataFileName,
-                            SourceText.From(GenerateForCollection(typeMetadata), Encoding.UTF8));
+                        source = GenerateForCollection(typeMetadata);
 
                         GenerateTypeMetadata(typeMetadata.CollectionValueTypeMetadata);
                     }
                     break;
                 case ClassType.Dictionary:
                     {
-                        _executionContext.AddSource(
-                            metadataFileName,
-                            SourceText.From(GenerateForCollection(typeMetadata), Encoding.UTF8));
+                        source = GenerateForCollection(typeMetadata);
 
                         GenerateTypeMetadata(typeMetadata.CollectionKeyTypeMetadata);
                         GenerateTypeMetadata(typeMetadata.CollectionValueTypeMetadata);
@@ -111,9 +110,7 @@ namespace System.Text.Json.SourceGeneration
                     break;
                 case ClassType.Object:
                     {
-                        _executionContext.AddSource(
-                            metadataFileName,
-                            SourceText.From(GenerateForObject(typeMetadata), Encoding.UTF8));
+                        source = GenerateForObject(typeMetadata);
 
                         if (typeMetadata.PropertiesMetadata != null)
                         {
@@ -134,6 +131,15 @@ namespace System.Text.Json.SourceGeneration
                     {
                         throw new InvalidOperationException();
                     }
+            }
+
+            try
+            {
+                _executionContext.AddSource($"{typeMetadata.FriendlyName}.cs", SourceText.From(source, Encoding.UTF8));
+            }
+            catch (ArgumentException)
+            {
+                _executionContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeMetadata.FriendlyName }));
             }
         }
 
@@ -315,7 +321,8 @@ namespace System.Text.Json.SourceGeneration
 
             StringBuilder sb = new();
 
-            sb.Append($@"private static {JsonPropertyInfoTypeName}[] {propInitFuncVarName}(JsonSerializerContext context)
+            sb.Append($@"
+        private static {JsonPropertyInfoTypeName}[] {propInitFuncVarName}(JsonSerializerContext context)
         {{
             JsonContext {JsonContextVarName} = (JsonContext)context;
             JsonSerializerOptions options = context.Options;
@@ -369,7 +376,7 @@ namespace System.Text.Json.SourceGeneration
                         : "ignoreCondition: default";
 
                     string encodedNameArg;
-                    if (!ContainsNonAscii(clrPropertyName))
+                    if (!NeedsEscaping(clrPropertyName))
                     {
                         byte[] name = Encoding.UTF8.GetBytes(memberMetadata.JsonPropertyName ?? clrPropertyName);
                         string nameBytes = string.Join(", ", name.Select(b => $"{b}"));
@@ -410,15 +417,16 @@ namespace System.Text.Json.SourceGeneration
 
             return sb.ToString();
 
-            static bool ContainsNonAscii(string str)
+            static bool NeedsEscaping(string str)
             {
                 foreach (char c in str)
                 {
-                    if (c > 127)
+                    if (c > 127 || c == '\'' || c == '\\')
                     {
                         return true;
                     }
                 }
+
                 return false;
             }
         }
@@ -511,6 +519,7 @@ namespace {_generationNamespace}
         {{
             System.Collections.Generic.IList<JsonConverter> converters = {OptionsInstanceVariableName}.Converters;
 
+            // TODO: use a dictionary if count > ~15.
             for (int i = 0; i < converters.Count; i++)
             {{
                 JsonConverter converter = converters[i];
@@ -540,12 +549,8 @@ namespace {_generationNamespace}
 
             HashSet<string> usingStatements = new();
 
-            List<TypeMetadata> rootTypeMetadata = new();
-
-            foreach (Type type in _rootSerializableTypes.Values)
+            foreach (TypeMetadata metadata in _rootSerializableTypes.Values)
             {
-                TypeMetadata metadata = _typeMetadataCache[type];
-                rootTypeMetadata.Add(metadata);
                 usingStatements.UnionWith(GetUsingStatements(metadata));
             }
 
@@ -559,14 +564,14 @@ namespace {_generationNamespace}
         {{");
 
             // TODO: Make this Dictionary-lookup-based if _handledType.Count > 64.
-            foreach (TypeMetadata typeMetadata in rootTypeMetadata)
+            foreach (TypeMetadata metadata in _rootSerializableTypes.Values)
             {
-                if (typeMetadata.ClassType != ClassType.TypeUnsupportedBySourceGen)
+                if (metadata.ClassType != ClassType.TypeUnsupportedBySourceGen)
                 {
                     sb.Append($@"
-            if (type == typeof({typeMetadata.Type.GetUniqueCompilableTypeName()}))
+            if (type == typeof({metadata.Type.GetUniqueCompilableTypeName()}))
             {{
-                return this.{typeMetadata.FriendlyName};
+                return this.{metadata.FriendlyName};
             }}
 ");
                 }

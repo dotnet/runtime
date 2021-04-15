@@ -44,7 +44,7 @@ namespace System.Text.Json
                 new ObjectConverterFactory()
             };
 
-            _typeInfoCreationFunc = static (type, options) => new JsonTypeInfo(type, options);
+            _typeInfoCreationFunc ??= static (type, options) => new JsonTypeInfo(type, options);
         }
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()

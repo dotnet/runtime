@@ -22,12 +22,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             Location expected = CreateLocation();
 
-            // Location is renamed to SystemTextJsonSourceGenerationTestsLocation given there
-            // is another type with the name Location,  that the generator processed first
-            // (in this case due to JsonSerializableAttribute ordering).
-            // A warning to the user is displayed with this detail at compile time.
-            string json = JsonSerializer.Serialize(expected, JsonContext.Default.SystemTextJsonSourceGenerationTestsLocation);
-            Location obj = JsonSerializer.Deserialize(json, JsonContext.Default.SystemTextJsonSourceGenerationTestsLocation);
+            string json = JsonSerializer.Serialize(expected, JsonContext.Default.Location);
+            Location obj = JsonSerializer.Deserialize(json, JsonContext.Default.Location);
             VerifyLocation(expected, obj);
         }
 
@@ -91,8 +87,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             RepeatedTypes.Location expected = CreateRepeatedLocation();
 
-            string json = JsonSerializer.Serialize(expected, JsonContext.Default.Location);
-            RepeatedTypes.Location obj = JsonSerializer.Deserialize(json, JsonContext.Default.Location);
+            string json = JsonSerializer.Serialize(expected, JsonContext.Default.RepeatedLocation);
+            RepeatedTypes.Location obj = JsonSerializer.Deserialize(json, JsonContext.Default.RepeatedLocation);
 
             VerifyRepeatedLocation(expected, obj);
         }
@@ -367,8 +363,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             JsonSerializerOptions options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
             JsonContext context = new JsonContext(options);
 
-            string json = JsonSerializer.Serialize(new object[] { "Hello", "World" }, context);
-            object[] arr = JsonSerializer.Deserialize<object[]>(json, context);
+            string json = JsonSerializer.Serialize(new object[] { "Hello", "World" }, typeof(object[]), context);
+            object[] arr = (object[])JsonSerializer.Deserialize(json, typeof(object[]), context);
 
             JsonElement hello = (JsonElement)arr[0];
             JsonElement world = (JsonElement)arr[1];

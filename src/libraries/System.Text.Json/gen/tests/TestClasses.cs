@@ -5,10 +5,8 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Text.Json.SourceGeneration.Tests;
 
-[assembly: JsonSerializable(typeof(System.Text.Json.SourceGeneration.Tests.RepeatedTypes.Location))]
 [assembly: JsonSerializable(typeof(Location))]
-// TODO: add tests for when same type is specified in ths manner.
-[assembly: JsonSerializable(typeof(System.Text.Json.SourceGeneration.Tests.Location))]
+[assembly: JsonSerializable(typeof(System.Text.Json.SourceGeneration.Tests.RepeatedTypes.Location), TypeInfoPropertyName = "RepeatedLocation")]
 [assembly: JsonSerializable(typeof(ActiveOrUpcomingEvent))]
 [assembly: JsonSerializable(typeof(CampaignSummaryViewModel))]
 [assembly: JsonSerializable(typeof(IndexViewModel))]

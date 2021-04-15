@@ -7,8 +7,8 @@
   <ItemGroup>
     <_allSrc Include="$(MSBuildThisFileDirectory)*\src\*.csproj"
              Exclude="@(ProjectExclusions)" />
-    <!-- Include the System.Text.Json.SourceGeneration project -->
-    <_allSrc Include="$(MSBuildThisFileDirectory)System.Text.Json\source_generation\src\System.Text.Json.SourceGeneration.csproj" />
+    <NonNetCoreAppProject Include="$(MSBuildThisFileDirectory)*\gen\*.csproj"
+                          Exclude="@(ProjectExclusions)" />
     <NonNetCoreAppProject Include="@(_allSrc)"
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj')" />
     <NonNetCoreAppProject Include="$(MSBuildThisFileDirectory)*\gen\*.csproj"

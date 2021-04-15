@@ -3,16 +3,17 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Reflection
+namespace System.Text.Json.SourceGeneration.Reflection
 {
     internal class ConstructorInfoWrapper : ConstructorInfo
     {
         private readonly IMethodSymbol _ctor;
-        private readonly MetadataLoadContext _metadataLoadContext;
+        private readonly MetadataLoadContextInternal _metadataLoadContext;
 
-        public ConstructorInfoWrapper(IMethodSymbol ctor, MetadataLoadContext metadataLoadContext)
+        public ConstructorInfoWrapper(IMethodSymbol ctor, MetadataLoadContextInternal metadataLoadContext)
         {
             _ctor = ctor;
             _metadataLoadContext = metadataLoadContext;

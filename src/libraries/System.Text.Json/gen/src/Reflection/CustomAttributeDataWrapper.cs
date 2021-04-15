@@ -3,13 +3,14 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Reflection
+namespace System.Text.Json.SourceGeneration.Reflection
 {
     internal class CustomAttributeDataWrapper : CustomAttributeData
     {
-        public CustomAttributeDataWrapper(AttributeData a, MetadataLoadContext metadataLoadContext)
+        public CustomAttributeDataWrapper(AttributeData a, MetadataLoadContextInternal metadataLoadContext)
         {
             var namedArguments = new List<CustomAttributeNamedArgument>();
             foreach (KeyValuePair<string, TypedConstant> na in a.NamedArguments)

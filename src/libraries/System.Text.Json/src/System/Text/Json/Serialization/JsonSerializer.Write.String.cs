@@ -101,7 +101,7 @@ namespace System.Text.Json
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
         /// and <see cref="SerializeAsync"/>.
         /// </remarks>
-        public static string Serialize<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static string Serialize<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             return SerializeUsingMetadata(value, jsonTypeInfo);
         }
@@ -111,10 +111,11 @@ namespace System.Text.Json
         /// </summary>
         /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
+        /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="jsonSerializerContext">A metadata provider for serializable types.</param>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// for <paramref name="inputType"/> or its serializable members.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// The <see cref="JsonSerializerContext.GetTypeInfo(Type)"/> method of the provided
@@ -124,16 +125,21 @@ namespace System.Text.Json
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
         /// and <see cref="SerializeAsync"/>.
         /// </remarks>
-        public static string Serialize<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(TValue value, JsonSerializerContext jsonSerializerContext)
+        public static string Serialize(object? value, Type inputType, JsonSerializerContext jsonSerializerContext)
         {
+            if (inputType == null)
+            {
+                throw new ArgumentNullException(nameof(inputType));
+            }
+
             if (jsonSerializerContext == null)
             {
                 throw new ArgumentNullException(nameof(jsonSerializerContext));
             }
 
-            Type type = typeof(TValue) == typeof(object) && value != null
+            Type type = inputType == typeof(object) && value != null
                 ? value.GetType()
-                : typeof(TValue);
+                : inputType;
 
             return SerializeUsingMetadata(
                 value,

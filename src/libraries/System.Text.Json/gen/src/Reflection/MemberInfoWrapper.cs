@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Reflection
+namespace System.Text.Json.SourceGeneration.Reflection
 {
     internal class MemberInfoWrapper : MemberInfo
     {
         private readonly ISymbol _member;
-        private readonly MetadataLoadContext _metadataLoadContext;
+        private readonly MetadataLoadContextInternal _metadataLoadContext;
 
-        public MemberInfoWrapper(ISymbol member, MetadataLoadContext metadataLoadContext)
+        public MemberInfoWrapper(ISymbol member, MetadataLoadContextInternal metadataLoadContext)
         {
             _member = member;
             _metadataLoadContext = metadataLoadContext;
