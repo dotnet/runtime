@@ -125,7 +125,7 @@ typedef bool
  * EventPipe Native Events.
  */
 
-typedef void
+typedef bool
 (*event_pipe_component_write_event_ee_startup_start_func)(void);
 
 /*
