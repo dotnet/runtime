@@ -13,7 +13,7 @@ namespace Mono.Linker
 			_context = context;
 		}
 
-		public TypeReference ResolveTypeName (string typeNameString, out AssemblyDefinition typeAssembly)
+		public TypeReference ResolveTypeName (string typeNameString, IMemberDefinition origin, out AssemblyDefinition typeAssembly, bool needsAssemblyName = true)
 		{
 			typeAssembly = null;
 			if (string.IsNullOrEmpty (typeNameString))
@@ -36,15 +36,43 @@ namespace Mono.Linker
 				return ResolveTypeName (typeAssembly, assemblyQualifiedTypeName.TypeName);
 			}
 
-			foreach (var assemblyDefinition in _context.GetReferencedAssemblies ()) {
-				var foundType = ResolveTypeName (assemblyDefinition, parsedTypeName);
-				if (foundType != null) {
-					typeAssembly = assemblyDefinition;
-					return foundType;
-				}
+			// If parsedTypeName doesn't have an assembly name in it but it does have a namespace,
+			// search for the type in the calling object's assembly. If not found, look in the core
+			// assembly.
+			typeAssembly = origin switch {
+				TypeReference tr => tr.Module?.Assembly,
+				null => null,
+				_ => origin.DeclaringType.Module.Assembly
+			};
+
+			if (typeAssembly != null && TryResolveTypeName (typeAssembly, parsedTypeName, out var typeRef))
+				return typeRef;
+
+			// If type is not found in the caller's assembly, try in core assembly.
+			typeAssembly = _context.TryResolve (PlatformAssemblies.CoreLib);
+			if (typeAssembly != null && TryResolveTypeName (typeAssembly, parsedTypeName, out var typeRefFromSPCL))
+				return typeRefFromSPCL;
+
+			// It is common to use Type.GetType for looking if a type is available.
+			// If no type was found only warn and return null.
+			if (needsAssemblyName && origin != null) {
+				_context.LogWarning ($"Type '{typeNameString}' was not found in the caller assembly nor in the base library. " +
+					$"Type name strings used for dynamically accessing a type should be assembly qualified.",
+				2105, new MessageOrigin (origin));
 			}
 
+			typeAssembly = null;
 			return null;
+
+			bool TryResolveTypeName (AssemblyDefinition assemblyDefinition, TypeName typeName, out TypeReference typeReference)
+			{
+				typeReference = null;
+				if (assemblyDefinition == null)
+					return false;
+
+				typeReference = ResolveTypeName (assemblyDefinition, typeName);
+				return typeReference != null;
+			}
 		}
 
 		public TypeReference ResolveTypeName (AssemblyDefinition assembly, string typeNameString)

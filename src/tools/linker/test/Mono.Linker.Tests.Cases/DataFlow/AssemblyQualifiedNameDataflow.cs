@@ -16,6 +16,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestPublicParameterlessConstructor ();
 			TestPublicConstructors ();
 			TestConstructors ();
+			TestUnqualifiedTypeNameWarns ();
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (AssemblyQualifiedNameDataflow), nameof (RequirePublicConstructors), new Type[] { typeof (string) }, messageCode: "IL2072")]
@@ -48,6 +49,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicConstructors (type);
 			RequireNonPublicConstructors (type);
 			RequireNothing (type);
+		}
+
+		[ExpectedWarning ("IL2105",
+			"Type 'System.Invalid.TypeName' was not found in the caller assembly nor in the base library. " +
+			"Type name strings used for dynamically accessing a type should be assembly qualified.")]
+		static void TestUnqualifiedTypeNameWarns ()
+		{
+			RequirePublicConstructors ("System.Invalid.TypeName");
 		}
 
 		private static void RequirePublicParameterlessConstructor (

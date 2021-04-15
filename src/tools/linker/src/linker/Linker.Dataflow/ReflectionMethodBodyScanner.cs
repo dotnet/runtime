@@ -1006,7 +1006,7 @@ namespace Mono.Linker.Dataflow
 						}
 						foreach (var typeNameValue in methodParams[0].UniqueValues ()) {
 							if (typeNameValue is KnownStringValue knownStringValue) {
-								TypeReference foundTypeRef = _context.TypeNameResolver.ResolveTypeName (knownStringValue.Contents, out AssemblyDefinition typeAssembly);
+								TypeReference foundTypeRef = _context.TypeNameResolver.ResolveTypeName (knownStringValue.Contents, callingMethodDefinition, out AssemblyDefinition typeAssembly, false);
 								TypeDefinition foundType = foundTypeRef?.ResolveToMainTypeDefinition ();
 								if (foundType == null) {
 									// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
@@ -2005,7 +2005,7 @@ namespace Mono.Linker.Dataflow
 				} else if (uniqueValue is SystemTypeValue systemTypeValue) {
 					MarkTypeForDynamicallyAccessedMembers (ref reflectionContext, systemTypeValue.TypeRepresented, requiredMemberTypes);
 				} else if (uniqueValue is KnownStringValue knownStringValue) {
-					TypeReference typeRef = _context.TypeNameResolver.ResolveTypeName (knownStringValue.Contents, out AssemblyDefinition typeAssembly);
+					TypeReference typeRef = _context.TypeNameResolver.ResolveTypeName (knownStringValue.Contents, reflectionContext.Source, out AssemblyDefinition typeAssembly);
 					TypeDefinition foundType = typeRef?.ResolveToMainTypeDefinition ();
 					if (foundType == null) {
 						// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.

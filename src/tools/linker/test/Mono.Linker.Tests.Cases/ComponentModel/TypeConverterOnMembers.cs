@@ -15,6 +15,13 @@ namespace Mono.Linker.Tests.Cases.ComponentModel
 		{
 			var r1 = new OnProperty ().Foo;
 			var r2 = new OnField ().Field;
+			TestArgumentWithTypeNameReferencingANonExistentType ();
+		}
+
+		[Kept]
+		public static void TestArgumentWithTypeNameReferencingANonExistentType ()
+		{
+			_ = new OnProperty ().Bar;
 		}
 	}
 
@@ -32,6 +39,16 @@ namespace Mono.Linker.Tests.Cases.ComponentModel
 		[KeptAttributeAttribute (typeof (TypeConverterAttribute))]
 		[KeptBackingField]
 		public string Foo { [Kept] get; set; }
+
+		[TypeConverter ("NonExistentType")]
+
+		[Kept]
+		[KeptAttributeAttribute (typeof (TypeConverterAttribute))]
+		[KeptBackingField]
+		[ExpectedWarning ("IL2105",
+			"Type 'NonExistentType' was not found in the caller assembly nor in the base library. " +
+			"Type name strings used for dynamically accessing a type should be assembly qualified.")]
+		public string Bar { [Kept] get; set; }
 
 		[Kept]
 		[KeptBaseType (typeof (TypeConverter))]

@@ -1893,7 +1893,7 @@ namespace Mono.Linker.Steps
 			TypeDefinition typeDefinition = null;
 			switch (attribute.ConstructorArguments[0].Value) {
 			case string s:
-				typeDefinition = _context.TypeNameResolver.ResolveTypeName (s, out AssemblyDefinition assemblyDefinition)?.Resolve ();
+				typeDefinition = _context.TypeNameResolver.ResolveTypeName (s, sourceLocationMember, out AssemblyDefinition assemblyDefinition)?.Resolve ();
 				if (typeDefinition != null)
 					MarkingHelpers.MarkMatchingExportedType (typeDefinition, assemblyDefinition, new DependencyInfo (DependencyKind.CustomAttribute, provider));
 
