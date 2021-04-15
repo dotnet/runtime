@@ -54,3 +54,4 @@ Currently the identifiers `SYSLIB0001` through `SYSLIB0999` are carved out for o
 |  __`SYSLIB1021`__ | Can't have the same template with different casing |
 |  __`SYSLIB1022`__ | Can't have malformed format strings (like dangling {, etc)  |
 |  __`SYSLIB1023`__ | Generating more than 6 arguments is not supported |
+|  __`SYSLIB1029`__ | *_Blocked range `SYSLIB1024`-`SYSLIB1029` for logging._* |
