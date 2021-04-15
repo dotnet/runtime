@@ -864,6 +864,7 @@ namespace System.ComponentModel
         public virtual object GetService(System.Type service) { throw null; }
         public override string ToString() { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
     public partial class MaskedTextProvider : System.ICloneable
     {
         public MaskedTextProvider(string mask) { }
