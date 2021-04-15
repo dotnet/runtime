@@ -471,7 +471,6 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEvpPKeyHandle.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeEvpPKeyHandle.Unix.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
-    <Compile Include="Internal\Cryptography\DesImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Unix.cs" />
@@ -567,6 +566,7 @@
     <Compile Include="System\Security\Cryptography\AesGcm.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
+    <Compile Include="Internal\Cryptography\DesImplementation.Unix.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaOpenSsl.cs"
              Link="Common\System\Security\Cryptography\ECDsaOpenSsl.cs" />
@@ -584,6 +584,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Rsa.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Rsa.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.LegacyAlgorithms.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.LegacyAlgorithms.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs"
@@ -648,6 +650,7 @@
              Link="Common\System\Security\Cryptography\ECDsaAndroid.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAAndroid.cs"
              Link="Common\System\Security\Cryptography\RSAAndroid.cs" />
+    <Compile Include="Internal\Cryptography\DesImplementation.Android.cs" />
     <Compile Include="Internal\Cryptography\RC2Implementation.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.Android.cs" />

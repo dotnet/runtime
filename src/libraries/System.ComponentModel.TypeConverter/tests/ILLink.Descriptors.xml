@@ -1,0 +1,19 @@
+<!-- This is file is to tell the linker not to remove these assemblies/types/namespace 
+     when aggressive trimming is enabled. -->
+<linker>
+  <assembly fullname="TestUtilities">
+   	<namespace fullname="System" />
+        <type fullname="System.PlatformDetection" />
+  </assembly>
+  <assembly fullname="Castle.Core">
+      <namespace fullname="Castle.DynamicProxy" />
+      <type fullname="Castle.DynamicProxy.Internal.CompositionInvocation" />
+      <type fullname="Castle.DynamicProxy.Internal.AbstractInvocation" />
+      <type fullname="Castle.DynamicProxy.Internal.InheritanceInvocation" />
+  </assembly>
+  <assembly fullname="Moq">
+      <type fullname="Moq.Internals.InterfaceProxy">
+          <method signature="System.Void .ctor()" />
+      </type>
+  </assembly>
+</linker>

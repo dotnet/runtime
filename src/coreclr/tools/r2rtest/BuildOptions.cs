@@ -49,6 +49,7 @@ namespace R2RTest
         public string InputFileSearchString { get; set; }
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");
         public string GCStress { get; set; }
+        public FileInfo[] MibcPath { get; set; }
         public string DotNetCli
         {
             get

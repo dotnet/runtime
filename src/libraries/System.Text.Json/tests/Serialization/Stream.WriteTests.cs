@@ -456,7 +456,7 @@ namespace System.Text.Json.Serialization.Tests
             return list;
         }
 
-        private static List<Order> PopulateLargeObject(int size)
+        internal static List<Order> PopulateLargeObject(int size)
         {
             List<Order> orders = new List<Order>(size);
             for (int i = 0; i < size; i++)

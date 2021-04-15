@@ -34,6 +34,8 @@ namespace Internal.Cryptography
                     throw new NotSupportedException();
             }
 
+            Interop.Crypto.EnsureLegacyAlgorithmsRegistered();
+
             BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, effectiveKeyLength, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }

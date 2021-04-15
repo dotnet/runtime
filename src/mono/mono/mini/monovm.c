@@ -182,15 +182,6 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 		} else if (prop_len == 16 && !strncmp (propertyKeys [i], "PINVOKE_OVERRIDE", 16)) {
 			PInvokeOverrideFn override_fn = (PInvokeOverrideFn)(uintptr_t)strtoull (propertyValues [i], NULL, 0);
 			mono_loader_install_pinvoke_override (override_fn);
-		} else if (prop_len == 30 && !strncmp (propertyKeys [i], "System.Globalization.Invariant", 30)) {
-			// TODO: Ideally we should propagate this through AppContext options
-			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", propertyValues [i], TRUE);
-		} else if (prop_len == 27 && !strncmp (propertyKeys [i], "System.Globalization.UseNls", 27)) {
-			// TODO: Ideally we should propagate this through AppContext options
-			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_USENLS", propertyValues [i], TRUE);
-		} else if (prop_len == 32 && !strncmp (propertyKeys [i], "System.Globalization.AppLocalIcu", 32)) {
-			// TODO: Ideally we should propagate this through AppContext options
-			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", propertyValues [i], TRUE);
 		} else {
 #if 0
 			// can't use mono logger, it's not initialized yet.

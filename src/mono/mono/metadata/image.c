@@ -2165,8 +2165,6 @@ mono_image_close_except_pools (MonoImage *image)
 
 	mono_image_invoke_unload_hook (image);
 
-	mono_metadata_clean_for_image (image);
-
 #ifdef ENABLE_METADATA_UPDATE
 	mono_metadata_update_cleanup_on_close (image);
 #endif

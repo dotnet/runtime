@@ -179,6 +179,8 @@ namespace System
             return false;
         }
 
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString(m_value);
+
         public static char Parse(string s)
         {
             if (s == null)

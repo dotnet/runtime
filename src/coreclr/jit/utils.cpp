@@ -2546,3 +2546,368 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/)
 }
 #endif
 }
+
+namespace CheckedOps
+{
+bool IntAddOverflows(int32_t firstAddend, int32_t secondAddend, bool unsignedAdd)
+{
+    int32_t result = firstAddend + secondAddend;
+
+    if (unsignedAdd)
+    {
+        if ((int64_t)(uint32_t)result != ((int64_t)(uint32_t)firstAddend + (int64_t)(uint32_t)secondAddend))
+        {
+            return true;
+        }
+    }
+    else if ((int64_t)result != ((int64_t)firstAddend + (int64_t)secondAddend))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool IntSubOverflows(int32_t minuend, int32_t subtrahend, bool unsignedSub)
+{
+    int32_t result = minuend - subtrahend;
+
+    if (unsignedSub)
+    {
+        if ((int64_t)(uint32_t)result != ((int64_t)(uint32_t)minuend - (int64_t)(uint32_t)subtrahend))
+        {
+            return true;
+        }
+    }
+    else if ((int64_t)(int32_t)result != ((int64_t)minuend - (int64_t)subtrahend))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool IntMulOverflows(int32_t firstFactor, int32_t secondFactor, bool unsignedMul)
+{
+    int32_t result = firstFactor * secondFactor;
+
+    if (unsignedMul)
+    {
+        if ((int64_t)(uint32_t)result != ((int64_t)(uint32_t)firstFactor * (int64_t)(uint32_t)secondFactor))
+        {
+            return true;
+        }
+    }
+    else if ((int64_t)(int32_t)result != ((int64_t)firstFactor * (int64_t)secondFactor))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool LongAddOverflows(int64_t firstAddend, int64_t secondAddend, bool unsignedAdd)
+{
+    int64_t result = firstAddend + secondAddend;
+
+    // For the SIGNED case - If there is one positive and one negative operand, there can be no overflow.
+    // If both are positive, the result has to be positive, and similary for negatives.
+    // For the UNSIGNED case - If a UINT32 operand is bigger than the result then OVF.
+    if (unsignedAdd)
+    {
+        if (((uint64_t)firstAddend > (uint64_t)result) || ((uint64_t)secondAddend > (uint64_t)result))
+        {
+            return true;
+        }
+    }
+    else if (((firstAddend < 0) == (secondAddend < 0)) && ((firstAddend < 0) != (result < 0)))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool LongSubOverflows(int64_t minuend, int64_t subtrahend, bool unsignedSub)
+{
+    int64_t result = minuend - subtrahend;
+
+    if (unsignedSub)
+    {
+        if ((uint64_t)subtrahend > (uint64_t)minuend)
+        {
+            return true;
+        }
+    }
+    else
+    {
+        // If both operands are positive or negative, there can be no
+        // overflow. Else use the logic for : minuend + (-subtrahend).
+        if ((minuend < 0) != (subtrahend < 0))
+        {
+            if (subtrahend == INT64_MIN)
+            {
+                return true;
+            }
+
+            return LongAddOverflows(minuend, -subtrahend, unsignedSub);
+        }
+    }
+
+    return false;
+}
+
+bool LongMulOverflows(int64_t firstFactor, int64_t secondFactor, bool unsignedMul)
+{
+    int64_t result = firstFactor * secondFactor;
+
+    // No overflow can occur if either of the operands is 0.
+    if (firstFactor == 0 || secondFactor == 0)
+    {
+        return false;
+    }
+
+    if (unsignedMul)
+    {
+        if (((uint64_t)result / (uint64_t)secondFactor) != (uint64_t)firstFactor)
+        {
+            return true;
+        }
+    }
+    else
+    {
+        // This does a multiply and then reverses it.
+        // This test works great except for MIN_INT * -1.
+        // In that case we mess up the sign on the result.  Make sure to double check the sign.
+        // if either is 0, then no overflow.
+
+        if (((firstFactor < 0) == (secondFactor < 0)) && (result < 0))
+        {
+            return true;
+        }
+        if (((firstFactor < 0) != (secondFactor < 0)) && (result > 0))
+        {
+            return true;
+        }
+
+        // TODO-Amd64-Unix: Remove the code that disables optimizations for this method when the
+        // clang
+        // optimizer is fixed and/or the method implementation is refactored in a simpler code.
+        // There is a bug in the clang-3.5 optimizer. The issue is that in release build the
+        // optimizer is mistyping (or just wrongly decides to use 32 bit operation for a corner
+        // case of MIN_LONG) the args of the (result / secondFactor) to int (it does a 32 bit div
+        // operation instead of 64 bit.). For the case of firstFactor and secondFactor equal to MIN_LONG
+        // (0x8000000000000000) this results in raising a SIGFPE.
+        // Optimizations disabled for now. See compiler.h.
+        if ((result / secondFactor) != firstFactor)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned)
+{
+    switch (toType)
+    {
+        case TYP_BYTE:
+            return ((int8_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return (uint8_t)fromValue != fromValue;
+        case TYP_SHORT:
+            return ((int16_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
+        case TYP_USHORT:
+            return (uint16_t)fromValue != fromValue;
+        case TYP_INT:
+            return fromUnsigned && (fromValue < 0);
+        case TYP_UINT:
+        case TYP_ULONG:
+            return !fromUnsigned && (fromValue < 0);
+        case TYP_LONG:
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return false;
+        default:
+            unreached();
+    }
+}
+
+bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigned)
+{
+    switch (toType)
+    {
+        case TYP_BYTE:
+            return ((int8_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return (uint8_t)fromValue != fromValue;
+        case TYP_SHORT:
+            return ((int16_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
+        case TYP_USHORT:
+            return (uint16_t)fromValue != fromValue;
+        case TYP_INT:
+            return ((int32_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
+        case TYP_UINT:
+            return (uint32_t)fromValue != fromValue;
+        case TYP_LONG:
+            return fromUnsigned && (fromValue < 0);
+        case TYP_ULONG:
+            return !fromUnsigned && (fromValue < 0);
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return false;
+        default:
+            unreached();
+    }
+}
+
+//  ________________________________________________
+// |                                                |
+// |  Casting from floating point to integer types  |
+// |________________________________________________|
+//
+// The code below uses the following pattern to determine if an overflow would
+// occur when casting from a floating point type to an integer type:
+//
+//     return !(MIN <= fromValue && fromValue <= MAX);
+//
+// This section will provide some background on how MIN and MAX were derived
+// and why they are in fact the values to use in that comparison.
+//
+// First - edge cases:
+// 1) NaNs - they compare "false" to normal numbers, which MIN and MAX are, making
+//    the condition return "false" as well, which is flipped to true via "!", indicating
+//    overflow - exactly what we want.
+// 2) Infinities - they are outside of range of any normal numbers, making one of the comparisons
+//    always return "false", indicating overflow.
+// 3) Subnormal numbers - have no special behavior with respect to comparisons.
+// 4) Minus zero - compares equal to "+0", which is what we want as it can be safely casted to an integer "0".
+//
+// Binary normal floating point numbers are represented in the following format:
+//
+//     number = sign * (1 + mantissa) * 2^exponent
+//
+// Where "exponent" is a biased binary integer.
+// And "mantissa" is a fixed-point binary fraction of the following form:
+//
+//     mantissa = bits[1] * 2^-1 + bits[2] * 2^-2 + ... + bits[n] * 2^-N
+//
+// Where "N" is the number of digits that depends on the width of floating point type
+// in question. Is is equal to "23" for "float"s and to "52" for "double"s.
+//
+// If we did our calculations with real numbers, the condition to check would simply be:
+//
+//     return !((INT_MIN - 1) < fromValue && fromValue < (INT_MAX + 1));
+//
+// This is because casting uses the "round to zero" semantic: "checked((int)((double)int.MaxValue + 0.9))"
+// yields "(double)int.MaxValue" - not an error. Likewise, "checked((int)((double)int.MinValue - 0.9))"
+// results in "(double)int.MinValue". However, "checked((int)((double)int.MaxValue + 1))" will not compile.
+//
+// The problem, of course, is that we are not dealing with real numbers, but rather floating point approximations.
+// At the same time, some real numbers - powers of two - can be represented in the floating point world exactly.
+// It so happens that both "INT_MIN - 1" and "INT_MAX + 1" can satsify that requirement for most cases.
+// For unsigned integers, where M is the width of the type in bits:
+//
+//     INT_MIN - 1 = 0 - 1 = -2^0 - exactly representable.
+//     INT_MAX + 1 = (2^M - 1) + 1 = 2^M - exactly representable.
+//
+// For signed integers:
+//
+//     INT_MIN - 1 = -(2^(M - 1)) - 1 - not always exactly representable.
+//     INT_MAX + 1 = (2^(M - 1) - 1) + 1 = 2^(M - 1) - exactly representable.
+//
+// So, we have simple values for MIN and MAX in all but the signed MIN case.
+// To find out what value should be used then, the following equation needs to be solved:
+//
+//     -(2^(M - 1)) - 1 = -(2^(M - 1)) * (1 + m)
+//     1 + 1 / 2^(M - 1) = 1 + m
+//     m = 2^(1 - M)
+//
+// In this case "m" is the "mantissa". The result obtained means that we can find the exact
+// value in cases when "|1 - M| <= N" <=> "M <= N - 1" - i. e. the precision is high enough for there to be a position
+// in the fixed point mantissa that could represent the "-1". It is the case for the following combinations of types:
+//
+//     float + int8 / int16
+//     double + int8 / int16 / int32
+//
+// For the remaining cases, we could use a value that is the first representable one for the respective type
+// and is less than the infinitely precise MIN: -(1 + 2^-N) * 2^(M - 1).
+// However, a simpler appoach is to just use a different comparison.
+// Instead of "MIN < fromValue", we'll do "MAX_MIN <= fromValue", where
+// "MAX_MIN" is just "-(2^(M - 1))" - the smallest representable value that can be cast safely.
+// The following table shows the final values and operations for MIN:
+//
+//     | Cast            | MIN                     | Comparison |
+//     |-----------------|-------------------------|------------|
+//     | float -> int8   | -129.0f                 | <          |
+//     | float -> int16  | -32769.0f               | <          |
+//     | float -> int32  | -2147483648.0f          | <=         |
+//     | float -> int64  | -9223372036854775808.0f | <=         |
+//     | double -> int8  | -129.0                  | <          |
+//     | double -> int16 | -32769.0                | <          |
+//     | double -> int32 | -2147483649.0           | <          |
+//     | double -> int64 | -9223372036854775808.0  | <=         |
+//
+// Note: casts from floating point to floating point never overflow.
+
+bool CastFromFloatOverflows(float fromValue, var_types toType)
+{
+    switch (toType)
+    {
+        case TYP_BYTE:
+            return !(-129.0f < fromValue && fromValue < 128.0f);
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return !(-1.0f < fromValue && fromValue < 256.0f);
+        case TYP_SHORT:
+            return !(-32769.0f < fromValue && fromValue < 32768.0f);
+        case TYP_USHORT:
+            return !(-1.0f < fromValue && fromValue < 65536.0f);
+        case TYP_INT:
+            return !(-2147483648.0f <= fromValue && fromValue < 2147483648.0f);
+        case TYP_UINT:
+            return !(-1.0 < fromValue && fromValue < 4294967296.0f);
+        case TYP_LONG:
+            return !(-9223372036854775808.0 <= fromValue && fromValue < 9223372036854775808.0f);
+        case TYP_ULONG:
+            return !(-1.0f < fromValue && fromValue < 18446744073709551616.0f);
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return false;
+        default:
+            unreached();
+    }
+}
+
+bool CastFromDoubleOverflows(double fromValue, var_types toType)
+{
+    switch (toType)
+    {
+        case TYP_BYTE:
+            return !(-129.0 < fromValue && fromValue < 128.0);
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return !(-1.0 < fromValue && fromValue < 256.0);
+        case TYP_SHORT:
+            return !(-32769.0 < fromValue && fromValue < 32768.0);
+        case TYP_USHORT:
+            return !(-1.0 < fromValue && fromValue < 65536.0);
+        case TYP_INT:
+            return !(-2147483649.0 < fromValue && fromValue < 2147483648.0);
+        case TYP_UINT:
+            return !(-1.0 < fromValue && fromValue < 4294967296.0);
+        case TYP_LONG:
+            return !(-9223372036854775808.0 <= fromValue && fromValue < 9223372036854775808.0);
+        case TYP_ULONG:
+            return !(-1.0 < fromValue && fromValue < 18446744073709551616.0);
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return false;
+        default:
+            unreached();
+    }
+}
+}

@@ -337,6 +337,8 @@ stages:
       buildConfig: release
       platforms:
       - windows_x64
+      - windows_x86
+      - Linux_x64
       jobParameters:
         testGroup: innerloop
         pgoType: 'PGO'
@@ -354,6 +356,8 @@ stages:
         pgoType: 'PGO'
       platforms:
       - windows_x64
+      - windows_x86
+      - Linux_x64
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml
