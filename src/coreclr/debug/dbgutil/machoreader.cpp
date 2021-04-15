@@ -189,7 +189,7 @@ MachOModule::ReadLoadCommands()
 
         for (int i = 0; i < m_header.ncmds; i++)
         {
-            m_reader.Trace("CMD: load command cmd %02x (%d) size %d\n", command->cmd, command->cmd, command->cmdsize);
+            m_reader.TraceVerbose("CMD: load command cmd %02x (%d) size %d\n", command->cmd, command->cmd, command->cmdsize);
 
             switch (command->cmd)
             {
@@ -206,10 +206,10 @@ MachOModule::ReadLoadCommands()
                 if (strcmp(segment->segname, SEG_TEXT) == 0)
                 {
                     m_loadBias = m_baseAddress - segment->vmaddr;
-                    m_reader.Trace("CMD: load bias %016llx\n", m_loadBias);
+                    m_reader.TraceVerbose("CMD: load bias %016llx\n", m_loadBias);
                 }
 
-                m_reader.Trace("CMD: vmaddr %016llx vmsize %016llx fileoff %016llx filesize %016llx nsects %d max %c%c%c init %c%c%c %02x %s\n",
+                m_reader.TraceVerbose("CMD: vmaddr %016llx vmsize %016llx fileoff %016llx filesize %016llx nsects %d max %c%c%c init %c%c%c %02x %s\n",
                     segment->vmaddr,
                     segment->vmsize,
                     segment->fileoff,
@@ -227,7 +227,7 @@ MachOModule::ReadLoadCommands()
                 section_64* section = (section_64*)((uint64_t)segment + sizeof(segment_command_64));
                 for (int s = 0; s < segment->nsects; s++, section++)
                 {
-                    m_reader.Trace("     addr %016llx size %016llx off %08x align %02x flags %02x %s\n",
+                    m_reader.TraceVerbose("     addr %016llx size %016llx off %08x align %02x flags %02x %s\n",
                         section->addr,
                         section->size,
                         section->offset,
@@ -257,7 +257,7 @@ MachOModule::ReadSymbolTable()
         _ASSERTE(m_symtabCommand != nullptr);
         _ASSERTE(m_strtab == nullptr);
 
-        m_reader.Trace("SYM: symoff %08x nsyms %d stroff %08x strsize %d\n",
+        m_reader.TraceVerbose("SYM: symoff %08x nsyms %d stroff %08x strsize %d\n",
             m_symtabCommand->symoff,
             m_symtabCommand->nsyms,
             m_symtabCommand->stroff,

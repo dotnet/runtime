@@ -21,9 +21,11 @@ const char* g_help = "createdump [options] pid\n"
 "-h, --withheap - create minidump with heap (default).\n"
 "-t, --triage - create triage minidump.\n"
 "-u, --full - create full core dump.\n"
-"-d, --diag - enable diagnostic messages.\n";
+"-d, --diag - enable diagnostic messages.\n"
+"-vd, --verbose - enable verbose diagnostic messages.\n";
 
 bool g_diagnostics = false;
+bool g_diagnosticsVerbose = false;
 
 //
 // Main entry point
@@ -41,15 +43,6 @@ int __cdecl main(const int argc, const char* argv[])
     const char* dumpPathTemplate = nullptr;
     int exitCode = 0;
     int pid = 0;
-
-#ifdef __APPLE__
-    char* enabled = getenv("COMPlus_DbgEnableElfDumpOnMacOS");
-    if (enabled == nullptr || strcmp(enabled, "1") != 0)
-    {
-        fprintf(stderr, "MachO coredumps are not supported. To enable ELF coredumps on MacOS, set the COMPlus_DbgEnableElfDumpOnMacOS environment variable to 1.\n");
-        return -1;
-    }
-#endif
 
 #ifdef HOST_UNIX
     exitCode = PAL_InitializeDLL();
@@ -113,6 +106,11 @@ int __cdecl main(const int argc, const char* argv[])
             {
                 g_diagnostics = true;
             }
+            else if ((strcmp(*argv, "-vd") == 0) || (strcmp(*argv, "--verbose") == 0))
+            {
+                g_diagnostics = true;
+                g_diagnosticsVerbose = true;
+            }
             else {
                 pid = atoi(*argv);
             }
@@ -168,7 +166,7 @@ void
 trace_printf(const char* format, ...)
 {
     if (g_diagnostics)
-    { 
+    {
         va_list args;
         va_start(args, format);
         vfprintf(stdout, format, args);
@@ -176,4 +174,18 @@ trace_printf(const char* format, ...)
         va_end(args);
     }
 }
+
+void
+trace_verbose_printf(const char* format, ...)
+{
+    if (g_diagnosticsVerbose)
+    {
+        va_list args;
+        va_start(args, format);
+        vfprintf(stdout, format, args);
+        fflush(stdout);
+        va_end(args);
+    }
+}
+
 

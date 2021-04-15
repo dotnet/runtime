@@ -52,17 +52,13 @@ Only lldb is supported by SOS. Gdb can be used to debug the coreclr code but wit
 1. Perform a build of the coreclr repo.
 2. Install the corefx managed assemblies to the binaries directory.
 3. cd to build's binaries: `cd ./artifacts/bin/coreclr/Linux.x64.Debug`
-4. Start lldb: `lldb-3.9 corerun HelloWorld.exe linux`
+4. Start lldb: `lldb corerun HelloWorld.exe linux`
 6. Launch program: `process launch -s`
 7. To stop annoying breaks on SIGUSR1/SIGUSR2 signals used by the runtime run: `process handle -s false SIGUSR1 SIGUSR2`
 8. Get to a point where coreclr is initialized by setting a breakpoint (i.e. `breakpoint set -n LoadLibraryExW` and then `process continue`) or stepping into the runtime.
 9. Run a SOS command like `clrstack` or `sos VerifyHeap`.  The command name is case sensitive.
 
-You can combine steps 4-8 and pass everything on the lldb command line:
-
-`lldb-3.9 -o "plugin load libsosplugin.so" -o "process launch -s" -o "process handle -s false SIGUSR1 SIGUSR2" -o "breakpoint set -n LoadLibraryExW" corerun HelloWorld.exe linux`
-
-For .NET Core version 1.x and 2.0.x, libsosplugin.so is built for and will only work with version 3.6 of lldb. For .NET Core 2.1, the plugin is built for 3.9 lldb and will work with 3.8 and 3.9 lldb.
+See https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos for information on how to install SOS.
 
 **Note:** _corerun_ is a simple host that does not support resolving NuGet dependencies. It relies on libraries being locatable via the `CORE_LIBRARIES` environment variable or present in the same directory as the corerun executable. The instructions above are equally applicable to the _dotnet_ host, however - e.g. for step 4 `lldb-3.9 dotnet bin/Debug/netcoreapp2.1/MvcApplication.dll` will let you debug _MvcApplication_ in the same manner.
 

@@ -141,7 +141,8 @@ setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0
 ---
 ## If it's a macOS dump
 
-Instructions for debugging dumps on macOS are essentially the same as [Linux](#If-it's-a-Linux-dump-on-Linux...) with one exception: `dotnet-dump` cannot analyze macOS system dumps: you must use `lldb` for those. `dotnet-dump` can only analyze dumps created by `dotnet-dump` or `createdump`, by the runtime on crashes when the appropriate environment variables are set, or the [`blame-hang` setting of `dotnet test`](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-test).
+Instructions for debugging dumps on macOS are essentially the same as [Linux](#If-it's-a-Linux-dump-on-Linux...) with one exception: `dotnet-dump` cannot analyze macOS system dumps yet: you must use `lldb` for those. As of .NET 6, createdump on macOS
+will start generating native Mach-O core files. dotnet-dump and ClrMD are still being worked on to handle these dumps.
 
 ---
 # Other Helpful Information
