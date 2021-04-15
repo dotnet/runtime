@@ -10,22 +10,11 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     internal class ScopeTracker
     {
-        // We keep track of the number of the maximum scoped services resolved
-        private volatile int _maxResolvedServices;
-        private volatile int _maxDisposableServices;
+        public State Allocate() => new State(this);
 
-        // Below default ~85K LOH threshold, avoid large temporary garbage
-        private const int MaxCapacity = 2000;
-
-        public State Allocate() => new State(this, _maxResolvedServices, _maxDisposableServices);
-
-        private bool Track(State state)
+        private void Track(State state)
         {
-            // Clamp the size between the min and max
-            _maxResolvedServices = Math.Min(MaxCapacity, Math.Max(state.ResolvedServicesSize, _maxResolvedServices));
-            _maxDisposableServices = Math.Min(MaxCapacity, Math.Max(state.Disposables.Count, _maxDisposableServices));
-
-            return false;
+            DependencyInjectionEventSource.Log.ScopeDisposed(state);
         }
 
         public class State
@@ -35,21 +24,17 @@ namespace Microsoft.Extensions.DependencyInjection
             public IDictionary<ServiceCacheKey, object> ResolvedServices { get; }
             public List<object> Disposables { get; set; }
 
-            public int ResolvedServicesSize => ((Dictionary<ServiceCacheKey, object>)ResolvedServices).Count;
+            public int DisposableServicesCount => Disposables?.Count ?? 0;
+            public int ResolvedServicesCount => ((Dictionary<ServiceCacheKey, object>)ResolvedServices).Count;
 
-            public State(ScopeTracker tracker = null, int initialCapacity = 0, int initialDisposableCapacity = 0)
+            public State(ScopeTracker tracker = null)
             {
                 _tracker = tracker;
 
                 // When tracker is null, we're not tracking the number of resolved services. Also
                 // to reduce lock contention for singletons upon resolve we use a concurrent dictionary.
 
-                ResolvedServices = tracker == null ? new ConcurrentDictionary<ServiceCacheKey, object>() : new Dictionary<ServiceCacheKey, object>(initialCapacity);
-
-                if (initialDisposableCapacity > 0)
-                {
-                    Disposables ??= new List<object>(initialDisposableCapacity);
-                }
+                ResolvedServices = tracker == null ? new ConcurrentDictionary<ServiceCacheKey, object>() : new Dictionary<ServiceCacheKey, object>();
             }
 
             public void Track()

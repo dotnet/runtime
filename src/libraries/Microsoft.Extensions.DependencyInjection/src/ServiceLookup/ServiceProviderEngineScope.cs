@@ -95,8 +95,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                 }
             }
-
-            ClearState();
         }
 
         public ValueTask DisposeAsync()
@@ -115,7 +113,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                             ValueTask vt = asyncDisposable.DisposeAsync();
                             if (!vt.IsCompletedSuccessfully)
                             {
-                                return Await(this, i, vt, toDispose);
+                                return Await(i, vt, toDispose);
                             }
 
                             // If its a IValueTaskSource backed ValueTask,
@@ -134,11 +132,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
             }
 
-            ClearState();
-
             return default;
 
-            static async ValueTask Await(ServiceProviderEngineScope scope, int i, ValueTask vt, List<object> toDispose)
+            static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
             {
                 await vt.ConfigureAwait(false);
                 // vt is acting on the disposable at index i,
@@ -157,25 +153,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         ((IDisposable)disposable).Dispose();
                     }
                 }
-
-                scope.ClearState();
             }
-        }
-
-        private void ClearState()
-        {
-            // Don't attempt to dispose if we're already disposed
-            if (_disposed)
-            {
-                return;
-            }
-
-            // ResolvedServices is never cleared for singletons because there might be a compilation running in background
-            // trying to get a cached singleton service. If it doesn't find it
-            // it will try to create a new one which will result in an ObjectDisposedException.
-
-            // Track statistics about the scope (number of disposable objects and number of disposed services)
-            _state.Track();
         }
 
         private List<object> BeginDispose()
@@ -187,10 +165,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     return null;
                 }
 
+                // Track statistics about the scope (number of disposable objects and number of disposed services)
+                _state.Track();
+
                 // We've transitioned to the disposed state, so future calls to
                 // CaptureDisposable will immediately dispose the object.
                 // No further changes to _state.Disposables, are allowed.
                 _disposed = true;
+
+                // ResolvedServices is never cleared for singletons because there might be a compilation running in background
+                // trying to get a cached singleton service. If it doesn't find it
+                // it will try to create a new one which will result in an ObjectDisposedException.
 
                 return _state.Disposables;
             }

@@ -56,6 +56,21 @@ namespace Microsoft.Extensions.DependencyInjection
             WriteEvent(4, serviceType, methodSize);
         }
 
+        [Event(5, Level = EventLevel.Verbose)]
+        public void ScopeDisposed(int scopedServicesResolved, int disposableServices)
+        {
+            WriteEvent(5, scopedServicesResolved, disposableServices);
+        }
+
+        [NonEvent]
+        public void ScopeDisposed(ScopeTracker.State state)
+        {
+            if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
+            {
+                ScopeDisposed(state.ResolvedServicesCount, state.DisposableServicesCount);
+            }
+        }
+
         [NonEvent]
         public void ServiceResolved(Type serviceType)
         {
