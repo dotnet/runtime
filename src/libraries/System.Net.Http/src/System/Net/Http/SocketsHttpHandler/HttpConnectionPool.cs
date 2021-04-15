@@ -1111,13 +1111,13 @@ namespace System.Net.Http
             if (added)
             {
                 _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds)
-                     .ContinueWith(t =>
-                     {
-                         lock (altSvcBlocklist)
-                         {
-                             altSvcBlocklist.Remove(badAuthority);
-                         }
-                     }, _altSvcBlocklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                    .ContinueWith(t =>
+                    {
+                        lock (altSvcBlocklist)
+                        {
+                            altSvcBlocklist.Remove(badAuthority);
+                        }
+                    }, _altSvcBlocklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
 
             if (disabled)
