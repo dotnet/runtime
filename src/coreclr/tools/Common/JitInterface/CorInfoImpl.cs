@@ -221,7 +221,9 @@ namespace Internal.JitInterface
                     if (classType != IntPtr.Zero)
                     {
                         TypeDesc type = (TypeDesc)handleToObject[classType];
+#if READYTORUN
                         if (compilationModuleGroup.VersionsWithType(type))
+#endif
                         {
                             PgoSchemaElem likelyClassElem = new PgoSchemaElem();
                             likelyClassElem.InstrumentationKind = PgoInstrumentationKind.GetLikelyClass;

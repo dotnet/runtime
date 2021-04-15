@@ -112,6 +112,7 @@ set( JIT_SOURCES
   jittelemetry.cpp
   lclmorph.cpp
   lclvars.cpp
+  likelyclass.cpp
   lir.cpp
   liveness.cpp
   loopcloning.cpp
