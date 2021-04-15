@@ -1445,6 +1445,16 @@ public:
         return OperIsSimple(gtOper);
     }
 
+    static bool OperIsRelop(genTreeOps gtOper)
+    {
+        return (OperKind(gtOper) & GTK_RELOP) != 0;
+    }
+
+    bool OperIsRelop() const
+    {
+        return OperIsRelop(gtOper);
+    }
+
 #ifdef FEATURE_SIMD
     bool isCommutativeSIMDIntrinsic();
 #else  // !
@@ -4423,6 +4433,7 @@ struct GenTreeCall final : public GenTree
     {
         return false;
     }
+
     bool IsTailCallConvertibleToLoop() const
     {
         return false;
@@ -4433,10 +4444,22 @@ struct GenTreeCall final : public GenTree
     {
         return (gtCallMoreFlags & GTF_CALL_M_NONVIRT_SAME_THIS) != 0;
     }
+
     bool IsDelegateInvoke() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0;
     }
+
+    bool IsSpecialIntrinsic() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0;
+    }
+
+    void SetIsSpecialIntrinsic()
+    {
+        gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+    }
+
     bool IsVirtualStubRelativeIndir() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
