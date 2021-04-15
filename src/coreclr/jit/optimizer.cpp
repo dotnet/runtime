@@ -366,6 +366,10 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             break;
         }
     }
+
+#if FEATURE_LOOP_ALIGN
+    assert(!begBlk->isLoopAlign());
+#endif
 }
 
 /*****************************************************************************************************
