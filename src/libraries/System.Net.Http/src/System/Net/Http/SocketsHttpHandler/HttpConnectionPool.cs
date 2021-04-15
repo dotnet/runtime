@@ -14,6 +14,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Text;
 using System.Threading;
@@ -118,7 +119,11 @@ namespace System.Net.Http
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
-            _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
+            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            {
+                _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
+            }
 
             switch (kind)
             {
@@ -244,10 +249,14 @@ namespace System.Net.Http
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
                 }
 
-                if (_http3Enabled)
+                // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+                if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
                 {
-                    _sslOptionsHttp3 = ConstructSslOptions(poolManager, sslHostName);
-                    _sslOptionsHttp3.ApplicationProtocols = s_http3ApplicationProtocols;
+                    if (_http3Enabled)
+                    {
+                        _sslOptionsHttp3 = ConstructSslOptions(poolManager, sslHostName);
+                        _sslOptionsHttp3.ApplicationProtocols = s_http3ApplicationProtocols;
+                    }
                 }
             }
 
@@ -260,9 +269,21 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
         }
 
-        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
+        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = CreateHttp3ApplicationProtocols();
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
+
+        private static List<SslApplicationProtocol> CreateHttp3ApplicationProtocols()
+        {
+            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            {
+                // TODO: Once the HTTP/3 versions are part of SslApplicationProtocol, see https://github.com/dotnet/runtime/issues/1293, move this back to field initialization.
+                return new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
+            }
+
+            return null!;
+        }
 
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
         {
@@ -355,24 +376,28 @@ namespace System.Net.Http
                 }
             }
 
-            // Either H3 explicitly requested or secured upgraded allowed.
-            if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
+            // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+            if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
             {
-                HttpAuthority? authority = _http3Authority;
-                // H3 is explicitly requested, assume prenegotiated H3.
-                if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                // Either H3 explicitly requested or secured upgraded allowed.
+                if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
                 {
-                    authority = authority ?? _originAuthority;
-                }
-                if (authority != null)
-                {
-                    if (IsAltSvcBlocked(authority))
+                    HttpAuthority? authority = _http3Authority;
+                    // H3 is explicitly requested, assume prenegotiated H3.
+                    if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
-                        return ValueTask.FromException<(HttpConnectionBase connection, bool isNewConnection)>(
-                            new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+                        authority = authority ?? _originAuthority;
                     }
+                    if (authority != null)
+                    {
+                        if (IsAltSvcBlocked(authority))
+                        {
+                            return ValueTask.FromException<(HttpConnectionBase connection, bool isNewConnection)>(
+                                new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+                        }
 
-                    return GetHttp3ConnectionAsync(request, authority, cancellationToken);
+                        return GetHttp3ConnectionAsync(request, authority, cancellationToken);
+                    }
                 }
             }
 
@@ -722,6 +747,10 @@ namespace System.Net.Http
             }
         }
 
+        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
         private async ValueTask<(HttpConnectionBase connection, bool isNewConnection)>
             GetHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
         {
@@ -894,14 +923,18 @@ namespace System.Net.Http
                     HandleAltSvc(altSvcHeaderValues, response.Headers.Age);
                 }
 
-                // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
-                // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
-                // In this case, we blocklist the authority and retry the request at the origin.
-                if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection is Http3Connection h3Connection && h3Connection.Authority != _originAuthority)
+                // TODO: Replace with Platform-Guard Assertion Annotations once https://github.com/dotnet/runtime/issues/44922 is finished
+                if ((OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
                 {
-                    response.Dispose();
-                    BlocklistAuthority(h3Connection.Authority);
-                    continue;
+                    // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
+                    // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
+                    // In this case, we blocklist the authority and retry the request at the origin.
+                    if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection is Http3Connection h3Connection && h3Connection.Authority != _originAuthority)
+                    {
+                        response.Dispose();
+                        BlocklistAuthority(h3Connection.Authority);
+                        continue;
+                    }
                 }
 
                 return response;

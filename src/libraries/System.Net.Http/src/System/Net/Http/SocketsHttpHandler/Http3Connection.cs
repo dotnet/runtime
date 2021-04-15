@@ -4,6 +4,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Net.Quic;
 using System.IO;
 using System.Collections.Generic;
@@ -13,6 +14,10 @@ using System.Net.Security;
 
 namespace System.Net.Http
 {
+    // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
     internal sealed class Http3Connection : HttpConnectionBase, IDisposable
     {
         // TODO: once HTTP/3 is standardized, create APIs for this.
