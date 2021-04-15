@@ -449,6 +449,7 @@ namespace ILCompiler
 
             string systemModuleName = _commandLineOptions.SystemModule ?? DefaultSystemModule;
             _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
+            CompilerTypeSystemContext typeSystemContext = _typeSystemContext;
 
             if (_commandLineOptions.SingleFileCompilation)
             {
@@ -460,35 +461,28 @@ namespace ILCompiler
 
                     singleCompilationInputFilePaths.Clear();
                     singleCompilationInputFilePaths.Add(inputFile.Key, inputFile.Value);
-                    _typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
+                    typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
 
                     if (!_commandLineOptions.InputBubble)
                     {
-                        if (!versionBubbleIncludesCoreLib && String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0)
-                            (_typeSystemContext as ReadyToRunCompilerContext).Reconstruct(targetDetails, true);
+                        bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
-                        foreach (EcmaModule module in _referenceableModules)
-                        {
-                            module.CleanResolvedTokens();
-                        }
-                        _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
+                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext);
+                        typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
                     }
 
-                    RunSingleCompilation(singleCompilationInputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, singleCompilationVersionBubbleModulesHash);
-
-                    if (!versionBubbleIncludesCoreLib && String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0)
-                        (_typeSystemContext as ReadyToRunCompilerContext).Reconstruct(targetDetails, false);
+                    RunSingleCompilation(singleCompilationInputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, singleCompilationVersionBubbleModulesHash, typeSystemContext);
                 }
             }
             else
             {
-                RunSingleCompilation(inputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, versionBubbleModulesHash);
+                RunSingleCompilation(inputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, versionBubbleModulesHash, typeSystemContext);
             }
 
             return 0;
         }
 
-        private void RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, string compositeRootPath, Dictionary<string, string> unrootedInputFilePaths, HashSet<ModuleDesc> versionBubbleModulesHash)
+        private void RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, string compositeRootPath, Dictionary<string, string> unrootedInputFilePaths, HashSet<ModuleDesc> versionBubbleModulesHash, CompilerTypeSystemContext typeSystemContext)
         {
             //
             // Initialize output filename
@@ -507,7 +501,7 @@ namespace ILCompiler
 
                     foreach (var inputFile in inFilePaths)
                     {
-                        EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
+                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
                         inputModules.Add(module);
                         rootingModules.Add(module);
                         versionBubbleModulesHash.Add(module);
@@ -525,7 +519,7 @@ namespace ILCompiler
 
                     foreach (var unrootedInputFile in unrootedInputFilePaths)
                     {
-                        EcmaModule module = _typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
+                        EcmaModule module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
                         inputModules.Add(module);
                         versionBubbleModulesHash.Add(module);
                     }
@@ -535,7 +529,7 @@ namespace ILCompiler
                     //
 
                     // Single method mode?
-                    MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(_typeSystemContext);
+                    MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
 
                     var logger = new Logger(Console.Out, _commandLineOptions.Verbose);
 
@@ -558,7 +552,7 @@ namespace ILCompiler
                     {
                         // Compiling just a single method
                         compilationGroup = new SingleMethodCompilationModuleGroup(
-                            _typeSystemContext,
+                            typeSystemContext,
                             _commandLineOptions.Composite,
                             _commandLineOptions.InputBubble,
                             inputModules,
@@ -570,7 +564,7 @@ namespace ILCompiler
                     else if (_commandLineOptions.CompileNoMethods)
                     {
                         compilationGroup = new NoMethodsCompilationModuleGroup(
-                            _typeSystemContext,
+                            typeSystemContext,
                             _commandLineOptions.Composite,
                             _commandLineOptions.InputBubble,
                             inputModules,
@@ -581,7 +575,7 @@ namespace ILCompiler
                     {
                         // Single assembly compilation.
                         compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
-                            _typeSystemContext,
+                            typeSystemContext,
                             _commandLineOptions.Composite,
                             _commandLineOptions.InputBubble,
                             inputModules,
@@ -594,7 +588,7 @@ namespace ILCompiler
 
                     if (!string.IsNullOrEmpty(_commandLineOptions.CallChainProfileFile))
                     {
-                        jsonProfile = new CallChainProfile(_commandLineOptions.CallChainProfileFile, _typeSystemContext, _referenceableModules);
+                        jsonProfile = new CallChainProfile(_commandLineOptions.CallChainProfileFile, typeSystemContext, _referenceableModules);
                     }
 
                     // Examine profile guided information as appropriate
@@ -606,7 +600,7 @@ namespace ILCompiler
                         _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
                         mibcFiles,
                         jsonProfile,
-                        _typeSystemContext,
+                        typeSystemContext,
                         compilationGroup,
                         _commandLineOptions.EmbedPgoData);
 
@@ -645,7 +639,7 @@ namespace ILCompiler
                     //
 
                     ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(
-                        _typeSystemContext, compilationGroup, _allInputFilePaths.Values, compositeRootPath);
+                        typeSystemContext, compilationGroup, _allInputFilePaths.Values, compositeRootPath);
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 

@@ -26,17 +26,12 @@ namespace ILCompiler
         private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
 
-        public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode, bool bubbleIncludesCorelib)
+        public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode, bool bubbleIncludesCorelib, CompilerTypeSystemContext oldTypeSystemContext = null)
             : base(details, genericsMode)
         {
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
-            Reconstruct(details, bubbleIncludesCorelib);
-        }
-
-        public void Reconstruct(TargetDetails details, bool bubbleIncludesCorelib)
-        {
             // Only the Arm64 JIT respects the OS rules for vector type abi currently
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, (details.Architecture == TargetArchitecture.ARM64) ? true : bubbleIncludesCorelib);
 
@@ -48,6 +43,11 @@ namespace ILCompiler
 
             // No architecture has completely stable handling of Vector<T> in the abi (Arm64 may change to SVE)
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType, bubbleIncludesCorelib);
+
+            if (oldTypeSystemContext != null)
+            {
+                InheritOpenModules(oldTypeSystemContext);
+            }
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
