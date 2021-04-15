@@ -180,7 +180,7 @@ public class ApkBuilder
         }
         else
         {
-            nativeLibraries = $"    {monoRuntimeLib}{Environment.NewLine}";
+            nativeLibraries += $"{monoRuntimeLib}{Environment.NewLine}";
         }
 
         string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
@@ -224,6 +224,11 @@ public class ApkBuilder
 
             nativeLibraries += $"    {componentLibToLink}{Environment.NewLine}";
         }
+
+        // There's a circular dependecy between static mono runtime lib and static component libraries.
+        // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
+        // due to circular dependecy.
+        nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
 
         string aotSources = "";
         foreach (string asm in assemblerFiles)
