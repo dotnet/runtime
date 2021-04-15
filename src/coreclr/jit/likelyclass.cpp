@@ -18,6 +18,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#ifndef DLLEXPORT
+#define DLLEXPORT
+#endif // !DLLEXPORT
+
 // Data item in class profile histogram
 //
 struct LikelyClassHistogramEntry
@@ -93,7 +97,7 @@ LikelyClassHistogram::LikelyClassHistogram(uint32_t histogramCount, INT_PTR* his
 }
 
 // This is used by the devirtualization logic below, and by crossgen2 when producing the R2R image (to reduce the size cost of carrying the type histogram)
-extern "C" CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema, UINT32 countSchemaItems, BYTE*pInstrumentationData, int32_t ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
+extern "C" DLLEXPORT CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema, UINT32 countSchemaItems, BYTE*pInstrumentationData, int32_t ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
 {
     *pLikelihood = 0;
     *pNumberOfClasses = 0;
