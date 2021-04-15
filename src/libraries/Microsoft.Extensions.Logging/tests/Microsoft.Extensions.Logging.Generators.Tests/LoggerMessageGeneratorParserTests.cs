@@ -154,23 +154,51 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(DiagnosticDescriptors.ShouldntMentionLoggerInMessage.Id, diagnostics[0].Id);
         }
 
-#if false
-        // TODO: can't have a log level in both the attribute and as a logging method parameter
         [Fact]
-        public async Task DoubleLogLevel()
+        public async Task DoubleLogLevel_InAttributeAndAsParameterButMissingInTemplate_ProducesDiagnostic()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
                 partial class C
                 {
                     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
-                    static partial void M1(ILogger logger, LogLevel level);
+                    static partial void M1(ILogger logger, LogLevel levelParam);
                 }
             ");
 
             Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticDescriptors.XXX.Id, diagnostics[0].Id);
+            Assert.Equal(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate.Id, diagnostics[0].Id);
         }
 
+        [Fact]
+        public async Task LogLevelDoublySet_AndInMessageTemplate_ProducesDiagnostic()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {level2}"")]
+                    static partial void M1(ILogger logger, LogLevel level1, LogLevel level2);
+                }
+            ");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate.Id, diagnostics[0].Id);
+        }
+
+        [Fact]
+        public async Task DoubleLogLevel_FirstOneSetAsMethodParameter_SecondOneInMessageTemplate_Supported()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Message = ""M1 {level2}"")]
+                    static partial void M1(ILogger logger, LogLevel level1, LogLevel level2);
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+#if false
         // TODO: can't have the same template with different casing
         [Fact]
         public async Task InconsistentTemplateCasing()
@@ -613,7 +641,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assembly[]? refs = null;
             if (includeLoggingReferences)
             {
-                refs = new[] { Assembly.GetAssembly(typeof(ILogger))!, Assembly.GetAssembly(typeof(LoggerMessageAttribute))! };
+                refs = new[] { typeof(ILogger).Assembly, typeof(LoggerMessageAttribute).Assembly };
             }
 
             var (d, r) = await RoslynTestUtils.RunGenerator(

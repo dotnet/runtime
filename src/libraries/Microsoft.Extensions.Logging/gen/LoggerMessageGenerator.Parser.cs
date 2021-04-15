@@ -206,7 +206,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                         bool foundLogger = false;
                                         bool foundException = false;
-                                        bool foundLogLevel = false;
+                                        bool foundLogLevel = level != null;
                                         foreach (ParameterSyntax p in method.ParameterList.Parameters)
                                         {
                                             string paramName = p.Identifier.ToString();
@@ -254,6 +254,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                             else if (lp.IsLogLevel && lm.TemplateMap.ContainsKey(paramName))
                                             {
                                                 Diag(DiagnosticDescriptors.ShouldntMentionLogLevelInMessage, p.Identifier.GetLocation(), paramName);
+                                            }
+                                            else if (lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName))
+                                            {
+                                                Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, p.Identifier.GetLocation(), paramName);
                                             }
                                             else if (lp.IsRegular && !lm.TemplateMap.ContainsKey(paramName))
                                             {
