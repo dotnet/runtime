@@ -70,6 +70,7 @@ namespace System.Net.Http.Functional.Tests.Socks
                             catch (Exception ex)
                             {
                                 EventSourceTestLogging.Log.TestAncillaryError(ex);
+                                throw;
                             }
                         });
 
