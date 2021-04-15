@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Logging.Console
