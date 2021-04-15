@@ -9,7 +9,6 @@ namespace System
         public const string Authz = "authz.dll";
         public const string Credui = "credui.dll";
         public const string Dsrole = "dsrole.dll";
-        public const string Kernel32 = "kernel32.dll";
         public const string Logoncli = "logoncli.dll";
         public const string Netutils = "netutils.dll";
         public const string Wkscli = "wkscli.dll";
