@@ -23,7 +23,7 @@ if(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 set(DLL1SOURCES dlltest1.cpp)
-_add_library(paltest_pal_sxs_test1_dll1 SHARED ${DLL1SOURCES})
+add_library_clr(paltest_pal_sxs_test1_dll1 SHARED EXCLUDE_FROM_ALL ${DLL1SOURCES})
 add_custom_target(dlltest1_exports DEPENDS ${EXPORTS_FILE1})
 set_property(TARGET paltest_pal_sxs_test1_dll1 APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION1})
 set_property(TARGET paltest_pal_sxs_test1_dll1 APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE1})
@@ -55,7 +55,7 @@ if(CLR_CMAKE_TARGET_OSX)
 endif(CLR_CMAKE_TARGET_OSX)
 
 set(DLL2SOURCES dlltest2.cpp)
-_add_library(paltest_pal_sxs_test1_dll2 SHARED ${DLL2SOURCES})
+add_library_clr(paltest_pal_sxs_test1_dll2 SHARED EXCLUDE_FROM_ALL ${DLL2SOURCES})
 add_custom_target(dlltest2_exports DEPENDS ${EXPORTS_FILE2})
 set_property(TARGET paltest_pal_sxs_test1_dll2 APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION2})
 set_property(TARGET paltest_pal_sxs_test1_dll2 APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE2})
@@ -72,7 +72,7 @@ target_link_libraries(paltest_pal_sxs_test1_dll2
 
 set(TESTSOURCES exceptionsxs.cpp)
 
-_add_executable(paltest_pal_sxs_test1 ${TESTSOURCES})
+add_executable_clr(paltest_pal_sxs_test1 EXCLUDE_FROM_ALL ${TESTSOURCES})
 
 add_dependencies(paltest_pal_sxs_test1
    paltest_pal_sxs_test1_dll1
@@ -84,6 +84,7 @@ target_link_libraries(paltest_pal_sxs_test1
    paltest_pal_sxs_test1_dll2
 )
 
-_install (TARGETS paltest_pal_sxs_test1 DESTINATION paltests/exception_handling/pal_sxs/test1)
-_install (TARGETS paltest_pal_sxs_test1_dll1 DESTINATION paltests/exception_handling/pal_sxs/test1)
-_install (TARGETS paltest_pal_sxs_test1_dll2 DESTINATION paltests/exception_handling/pal_sxs/test1)
+install (TARGETS paltest_pal_sxs_test1 DESTINATION paltests/exception_handling/pal_sxs/test1 COMPONENT paltests EXCLUDE_FROM_ALL)
+install (TARGETS paltest_pal_sxs_test1_dll1 DESTINATION paltests/exception_handling/pal_sxs/test1 COMPONENT paltests EXCLUDE_FROM_ALL)
+install (TARGETS paltest_pal_sxs_test1_dll2 DESTINATION paltests/exception_handling/pal_sxs/test1 COMPONENT paltests EXCLUDE_FROM_ALL)
+add_dependencies(paltests_install paltest_pal_sxs_test1 paltest_pal_sxs_test1_dll1 paltest_pal_sxs_test1_dll2)

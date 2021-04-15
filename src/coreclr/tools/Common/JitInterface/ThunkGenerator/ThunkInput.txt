@@ -150,6 +150,7 @@ struct _EXCEPTION_POINTERS*,_EXCEPTION_POINTERS*
 ICorJitInfo::errorTrapFunction,void*
 
 FUNCTIONS
+    bool isJitIntrinsic(        CORINFO_METHOD_HANDLE       ftn        );
     uint32_t getMethodAttribs(        CORINFO_METHOD_HANDLE       ftn        );
     void setMethodAttribs(        CORINFO_METHOD_HANDLE       ftn,        CorInfoMethodRuntimeFlags   attribs        );
     void getMethodSig(        CORINFO_METHOD_HANDLE      ftn,        CORINFO_SIG_INFO          *sig,        CORINFO_CLASS_HANDLE      memberParent         );

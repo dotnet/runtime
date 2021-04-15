@@ -24,7 +24,9 @@
          for the lock file, and props/targets from nuget packages. -->
     <BaseIntermediateOutputPath>$(BaseOutputPath)/obj/$(OSPlatformConfig)/Managed/$(BuildProjectRelativeDir)</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$(BaseOutputPath)\obj\$(OSPlatformConfig)\Native\</__NativeTestIntermediatesDir>
+    <UseVisualStudioNativeBinariesLayout Condition="'$(UseVisualStudioNativeBinariesLayout)' == '' and '$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform(Windows))">true</UseVisualStudioNativeBinariesLayout>
+    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == '' and '$(UseVisualStudioNativeBinariesLayout)' != 'true'">$(BaseOutputPath)\obj\$(OSPlatformConfig)\Native\</__NativeTestIntermediatesDir>
+    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == '' and '$(UseVisualStudioNativeBinariesLayout)' == 'true'">$(BaseOutputPath)\obj\$(OSPlatformConfig)\Native\ide\</__NativeTestIntermediatesDir>
 
     <BasePackagePath>$(BaseOutputPath)\packages\$(BuildProjectRelativeDir)</BasePackagePath>
     <BasePackagePath Condition="'$(PackageRuntimeIdentifier)' != ''">$([System.IO.Path]::GetFullPath($(IntermediateOutputPath)\$(PackageRuntimeIdentifier)))</BasePackagePath>
@@ -37,13 +39,5 @@
 
     <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)</OutputPath>
   </PropertyGroup>
-  
-  <PropertyGroup>
-    <DisableImplicitFrameworkReferences Condition="'$(__SkipFXRestore)' == 'true'">true</DisableImplicitFrameworkReferences>
-  </PropertyGroup>
 
-  <ItemGroup Condition="'$(__SkipFXRestore)' == 'true' AND '$(ReferenceSystemPrivateCoreLib)' != 'true'" >
-    <Reference Include="$(__LocalCoreFXPath)\artifacts\bin\ref\$(NetCoreAppCurrent)\*.dll" Private="false" />
-  </ItemGroup>
-  
 </Project>

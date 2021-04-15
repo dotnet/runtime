@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -21,12 +22,12 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
-            if (state.Current.JsonClassInfo.CreateObject == null)
+            if (state.Current.JsonTypeInfo.CreateObject == null)
             {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonClassInfo.Type);
+                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonTypeInfo.Type);
             }
 
-            state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject();
+            state.Current.ReturnValue = state.Current.JsonTypeInfo.CreateObject();
         }
 
         protected internal override bool OnWriteResume(
@@ -50,19 +51,18 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (Dictionary<TKey, TValue>.Enumerator)state.Current.CollectionEnumerator;
             }
 
-            JsonClassInfo elementClassInfo = state.Current.JsonClassInfo.ElementClassInfo!;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
+            _keyConverter ??= GetConverter<TKey>(typeInfo.KeyTypeInfo!);
+            _valueConverter ??= GetConverter<TValue>(typeInfo.ElementTypeInfo!);
 
-            JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
-            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(elementClassInfo);
-
-            if (!state.SupportContinuation && valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+            if (!state.SupportContinuation && _valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
                 // Fast path that avoids validation and extra indirection.
                 do
                 {
                     TKey key = enumerator.Current.Key;
-                    keyConverter.WriteWithQuotes(writer, key, options, ref state);
-                    valueConverter.Write(writer, enumerator.Current.Value, options);
+                    _keyConverter.WriteWithQuotes(writer, key, options, ref state);
+                    _valueConverter.Write(writer, enumerator.Current.Value, options);
                 } while (enumerator.MoveNext());
             }
             else
@@ -80,11 +80,11 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.PropertyState = StackFramePropertyState.Name;
 
                         TKey key = enumerator.Current.Key;
-                        keyConverter.WriteWithQuotes(writer, key, options, ref state);
+                        _keyConverter.WriteWithQuotes(writer, key, options, ref state);
                     }
 
                     TValue element = enumerator.Current.Value;
-                    if (!valueConverter.TryWrite(writer, element, options, ref state))
+                    if (!_valueConverter.TryWrite(writer, element, options, ref state))
                     {
                         state.Current.CollectionEnumerator = enumerator;
                         return false;

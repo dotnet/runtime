@@ -337,6 +337,7 @@
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.FileSystem.DriveInfo" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.IO.Pipes" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />

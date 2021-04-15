@@ -1557,6 +1557,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("calls GetArrayElementType")]
         private object? ReadArray(string? typeName, string? typeNs)
         {
             SoapArrayInfo arrayInfo;
@@ -1756,8 +1757,10 @@ namespace System.Xml.Serialization
             return array;
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected abstract void InitCallbacks();
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected void ReadReferencedElements()
         {
             _r.MoveToContent();
@@ -1772,28 +1775,33 @@ namespace System.Xml.Serialization
             HandleUnreferencedObjects();
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencedElement()
         {
             return ReadReferencedElement(null, null);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencedElement(string? name, string? ns)
         {
             string? dummy;
             return ReadReferencingElement(name, ns, out dummy);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencingElement(out string? fixupReference)
         {
             return ReadReferencingElement(null, null, out fixupReference);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencingElement(string? name, string? ns, out string? fixupReference)
         {
             return ReadReferencingElement(name, ns, false, out fixupReference);
         }
 
         [MemberNotNull(nameof(_callbacks))]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencingElement(string? name, string? ns, bool elementCanBeType, out string? fixupReference)
         {
             object? o = null;
@@ -1832,6 +1840,7 @@ namespace System.Xml.Serialization
         }
 
         [MemberNotNull(nameof(_callbacks))]
+        [RequiresUnreferencedCode("calls InitCallbacks")]
         internal void EnsureCallbackTables()
         {
             if (_callbacks == null)
@@ -2033,7 +2042,7 @@ namespace System.Xml.Serialization
     ///<internalonly/>
     public delegate object? XmlSerializationReadCallback();
 
-    internal class XmlSerializationReaderCodeGen : XmlSerializationCodeGen
+    internal sealed class XmlSerializationReaderCodeGen : XmlSerializationCodeGen
     {
         private readonly Hashtable _idNames = new Hashtable();
         private Hashtable? _enums;
@@ -2053,7 +2062,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private class CreateCollectionInfo
+        private sealed class CreateCollectionInfo
         {
             private readonly string _name;
             private readonly TypeDesc _td;
@@ -2073,7 +2082,7 @@ namespace System.Xml.Serialization
                 get { return _td; }
             }
         }
-        private class Member
+        private sealed class Member
         {
             private readonly string _source;
             private readonly string _arrayName;
@@ -2226,10 +2235,12 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("creates XmlSerializationCodeGen")]
         internal XmlSerializationReaderCodeGen(IndentedWriter writer, TypeScope[] scopes, string access, string className) : base(writer, scopes, access, className)
         {
         }
 
+        [RequiresUnreferencedCode("calls WriteReflectionInit")]
         internal void GenerateBegin()
         {
             Writer.Write(Access);
@@ -2267,6 +2278,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("calls WriteStructMethod")]
         internal override void GenerateMethod(TypeMapping mapping)
         {
             if (GeneratedMethods.Contains(mapping))
@@ -2287,6 +2299,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresUnreferencedCode("calls GenerateReferencedMethods")]
         internal void GenerateEnd(string?[] methods, XmlMapping[] xmlMappings, Type?[]? types)
         {
             GenerateReferencedMethods();

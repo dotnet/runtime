@@ -52,7 +52,7 @@ namespace System.Text.Json
         ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
-        public static TValue? Deserialize<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
+        public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
         {
             if (options == null)
             {
@@ -110,7 +110,7 @@ namespace System.Text.Json
         ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
-        public static object? Deserialize(ref Utf8JsonReader reader, [DynamicallyAccessedMembers(MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
+        public static object? Deserialize(ref Utf8JsonReader reader, [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType == null)
             {

@@ -146,7 +146,7 @@ namespace System.Linq.Parallel
         // requested.
         //
 
-        private class AnyAllSearchOperatorEnumerator<TKey> : QueryOperatorEnumerator<bool, int>
+        private sealed class AnyAllSearchOperatorEnumerator<TKey> : QueryOperatorEnumerator<bool, int>
         {
             private readonly QueryOperatorEnumerator<TInput, TKey> _source; // The source data.
             private readonly Func<TInput, bool> _predicate; // The predicate.
@@ -204,7 +204,7 @@ namespace System.Linq.Parallel
                     do
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         if (_resultFoundFlag.Value)
                         {

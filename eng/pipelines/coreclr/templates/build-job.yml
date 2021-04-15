@@ -130,19 +130,13 @@ jobs:
       value: ''
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
       - name: clrBuildPALTestsBuildArg
-        value: '-paltests '
-
-    - name: ninjaArg
-      value: ''
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - name: ninjaArg
-        value: '-ninja'
+        value: '-component runtime -component alljits -component paltests '
 
     - name: pgoInstrumentArg
       value: ''
     - ${{ if eq(parameters.pgoType, 'PGO' )}}:
       - name: pgoInstrumentArg
-        value: '-pgoInstrument '
+        value: '-pgoinstrument '
 
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
@@ -181,7 +175,7 @@ jobs:
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -194,13 +188,13 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(ninjaArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(ninjaArg) $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -120,7 +121,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             {
                 TypeRefSignatureParserProvider parserHelper = new TypeRefSignatureParserProvider(this, peInfo.handleLookup);
 
-                Func<EntityHandle, TypeDesc> resolverFunc = ResolveTypeRefForPeInfo;
+                Func<EntityHandle, NotFoundBehavior, TypeDesc> resolverFunc = ResolveTypeRefForPeInfo;
                 int memberRefRowCount = peInfo.reader.GetTableRowCount(TableIndex.MemberRef);
                 for (int row = 1; row <= memberRefRowCount; row++)
                 {
@@ -142,7 +143,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                         continue;
                     }
 
-                    EcmaSignatureParser ecmaSigParse = new EcmaSignatureParser(this, ResolveTypeRefForPeInfo, peInfo.reader.GetBlobReader(memberRef.Signature));
+                    EcmaSignatureParser ecmaSigParse = new EcmaSignatureParser(this, ResolveTypeRefForPeInfo, peInfo.reader.GetBlobReader(memberRef.Signature), NotFoundBehavior.ReturnNull);
                     string name = peInfo.reader.GetString(memberRef.Name);
 
                     if (memberRef.GetKind() == MemberReferenceKind.Method)
@@ -157,8 +158,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                     }
                 }
 
-                TypeDesc ResolveTypeRefForPeInfo(EntityHandle handle)
+                TypeDesc ResolveTypeRefForPeInfo(EntityHandle handle, NotFoundBehavior notFoundBehavior)
                 {
+                    Debug.Assert(notFoundBehavior == NotFoundBehavior.ReturnNull);
                     TypeRefTypeSystemType type = null;
                     if (handle.Kind == HandleKind.TypeReference)
                     {

@@ -205,6 +205,10 @@ CORJIT_FLAGS ZapInfo::ComputeJitFlags(CORINFO_METHOD_HANDLE handle)
     }
 #endif  // FEATURE_READYTORUN_COMPILER
 
+#ifdef ARM_SOFTFP
+    jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI);
+#endif
+
     return jitFlags;
 }
 
@@ -3953,6 +3957,11 @@ const char* ZapInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const 
 unsigned ZapInfo::getMethodHash(CORINFO_METHOD_HANDLE ftn)
 {
     return m_pEEJitInfo->getMethodHash(ftn);
+}
+
+bool ZapInfo::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+{
+    return m_pEEJitInfo->isJitIntrinsic(ftn);
 }
 
 uint32_t ZapInfo::getMethodAttribs(CORINFO_METHOD_HANDLE ftn)

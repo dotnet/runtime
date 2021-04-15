@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class TrackedCollectionEnumerator<T> : IEnumerator, IEnumerator<T>
+    internal sealed class TrackedCollectionEnumerator<T> : IEnumerator, IEnumerator<T>
     {
         //
         // Public properties

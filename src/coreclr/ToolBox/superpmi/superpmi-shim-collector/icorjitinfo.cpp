@@ -17,6 +17,17 @@
 // ICorMethodInfo
 //
 /**********************************************************************************/
+
+// Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) &
+// CORINFO_FLG_JIT_INTRINSIC, except faster.
+bool interceptor_ICJI::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+{
+    mc->cr->AddCall("isJitIntrinsic");
+    bool temp = original_ICorJitInfo->isJitIntrinsic(ftn);
+    mc->recIsJitIntrinsic(ftn, temp);
+    return temp;
+}
+
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
 uint32_t interceptor_ICJI::getMethodAttribs(CORINFO_METHOD_HANDLE ftn /* IN */)
 {
@@ -1710,6 +1721,13 @@ void interceptor_ICJI::getCallInfo(
     param.flags                     = flags;
     param.pResult                   = pResult;
 
+#ifdef HOST_UNIX
+    // We don't seem to be able to capture the exception code in PAL exceptions when thrown
+    // from crossgen2. So assume there will be some error, then set it to zero (no error)
+    // if the `getCallInfo` call doesn't throw.
+    param.exceptionCode = 1;
+#endif // HOST_UNIX
+
     PAL_TRY(Param*, pOuterParam, &param)
     {
         PAL_TRY(Param*, pParam, pOuterParam)
@@ -1717,6 +1735,9 @@ void interceptor_ICJI::getCallInfo(
             pParam->pThis->mc->cr->AddCall("getCallInfo");
             pParam->pThis->original_ICorJitInfo->getCallInfo(pParam->pResolvedToken, pParam->pConstrainedResolvedToken,
                                                              pParam->callerHandle, pParam->flags, pParam->pResult);
+#ifdef HOST_UNIX
+            pParam->exceptionCode = 0;
+#endif // HOST_UNIX
         }
         PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
         {

@@ -9,10 +9,11 @@ using System.Text;
 
 internal class Xcode
 {
+    private string RuntimeIdentifier { get; set; }
     private string SysRoot { get; set; }
     private string Target { get; set; }
 
-    public Xcode(string target)
+    public Xcode(string target, string arch)
     {
         Target = target;
         switch (Target)
@@ -20,13 +21,21 @@ internal class Xcode
             case TargetNames.iOS:
                 SysRoot = Utils.RunProcess("xcrun", "--sdk iphoneos --show-sdk-path");
                 break;
+            case TargetNames.iOSsim:
+                SysRoot = Utils.RunProcess("xcrun", "--sdk iphonesimulator --show-sdk-path");
+                break;
             case TargetNames.tvOS:
                 SysRoot = Utils.RunProcess("xcrun", "--sdk appletvos --show-sdk-path");
+                break;
+            case TargetNames.tvOSsim:
+                SysRoot = Utils.RunProcess("xcrun", "--sdk appletvsimulator --show-sdk-path");
                 break;
             default:
                 SysRoot = Utils.RunProcess("xcrun", "--sdk macosx --show-sdk-path");
                 break;
         }
+
+        RuntimeIdentifier = $"{Target}-{arch}";
     }
 
     public bool EnableRuntimeLogging { get; set; }
@@ -74,11 +83,24 @@ internal class Xcode
             }
         }
 
+        var entitlements = new List<KeyValuePair<string, string>>();
+
+        bool hardenedRuntime = false;
+        if (Target == TargetNames.MacCatalyst && !(forceInterpreter || forceAOT)) {
+            hardenedRuntime = true;
+
+            /* for mmmap MAP_JIT */
+            entitlements.Add (KeyValuePair.Create ("com.apple.security.cs.allow-jit", "<true/>"));
+            /* for loading unsigned dylibs like libicu from outside the bundle or libSystem.Native.dylib from inside */
+            entitlements.Add (KeyValuePair.Create ("com.apple.security.cs.disable-library-validation", "<true/>"));
+        }
+
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
             .Replace("%ProjectName%", projectName)
             .Replace("%AppResources%", string.Join(Environment.NewLine, resources.Select(r => "    " + r)))
             .Replace("%MainSource%", nativeMainSource)
-            .Replace("%MonoInclude%", monoInclude);
+            .Replace("%MonoInclude%", monoInclude)
+            .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
 
 
         string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
@@ -107,7 +129,7 @@ internal class Xcode
         }
 
         string frameworks = "";
-        if ((Target == TargetNames.iOS) || (Target == TargetNames.MacCatalyst))
+        if ((Target == TargetNames.iOS) || (Target == TargetNames.iOSsim) || (Target == TargetNames.MacCatalyst))
         {
             frameworks = "\"-framework GSS\"";
         }
@@ -143,9 +165,41 @@ internal class Xcode
             .Replace("%BundleIdentifier%", projectName);
 
         File.WriteAllText(Path.Combine(binDir, "Info.plist"), plist);
+
+        var needEntitlements = entitlements.Count != 0;
+        cmakeLists = cmakeLists.Replace("%HardenedRuntimeUseEntitlementsFile%",
+                                        needEntitlements ? "TRUE" : "FALSE");
+
         File.WriteAllText(Path.Combine(binDir, "CMakeLists.txt"), cmakeLists);
 
-        var targetName = (Target == TargetNames.MacCatalyst) ? "Darwin" : Target.ToString();
+        if (needEntitlements) {
+            var ent = new StringBuilder();
+            foreach ((var key, var value) in entitlements) {
+                ent.AppendLine ($"<key>{key}</key>");
+                ent.AppendLine (value);
+            }
+            string entitlementsTemplate = Utils.GetEmbeddedResource("app.entitlements.template");
+            File.WriteAllText(Path.Combine(binDir, "app.entitlements"), entitlementsTemplate.Replace("%Entitlements%", ent.ToString()));
+        }
+
+        string targetName;
+        switch (Target)
+        {
+            case TargetNames.MacCatalyst:
+                targetName = "Darwin";
+                break;
+            case TargetNames.iOS:
+            case TargetNames.iOSsim:
+                targetName = "iOS";
+                break;
+            case TargetNames.tvOS:
+            case TargetNames.tvOSsim:
+                targetName = "tvOS";
+                break;
+            default:
+                targetName = Target.ToString();
+                break;
+        }
         var deployTarget = (Target == TargetNames.MacCatalyst) ? " -DCMAKE_OSX_ARCHITECTURES=\"x86_64 arm64\"" : " -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1";
         var cmakeArgs = new StringBuilder();
         cmakeArgs
@@ -175,6 +229,7 @@ internal class Xcode
         File.WriteAllText(Path.Combine(binDir, "runtime.m"),
             Utils.GetEmbeddedResource("runtime.m")
                 .Replace("//%DllMap%", dllMap.ToString())
+                .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
                 .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
 
         Utils.RunProcess("cmake", cmakeArgs.ToString(), workingDir: binDir);
@@ -211,8 +266,18 @@ internal class Xcode
                     args.Append(" -arch arm64")
                         .Append(" -sdk " + sdk);
                     break;
+                case TargetNames.iOSsim:
+                    sdk = "iphonesimulator";
+                    args.Append(" -arch arm64")
+                        .Append(" -sdk " + sdk);
+                    break;
                 case TargetNames.tvOS:
                     sdk = "appletvos";
+                    args.Append(" -arch arm64")
+                        .Append(" -sdk " + sdk);
+                    break;
+                case TargetNames.tvOSsim:
+                    sdk = "appletvsimulator";
                     args.Append(" -arch arm64")
                         .Append(" -sdk " + sdk);
                     break;
@@ -229,12 +294,12 @@ internal class Xcode
         {
             switch (Target)
             {
-                case TargetNames.iOS:
+                case TargetNames.iOSsim:
                     sdk = "iphonesimulator";
                     args.Append(" -arch x86_64")
                         .Append(" -sdk " + sdk);
                     break;
-                case TargetNames.tvOS:
+                case TargetNames.tvOSsim:
                     sdk = "appletvsimulator";
                     args.Append(" -arch x86_64")
                         .Append(" -sdk " + sdk);

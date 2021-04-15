@@ -178,9 +178,19 @@ def generateWriteEventBody(template, providerName, eventName):
 
     bool success = true;
 """ % (template.estimated_size, template.estimated_size)
-
     fnSig = template.signature
     pack_list = []
+
+    # Write out replacement for any instances of NULL for UnicodeString type input.
+    # ETW translates these to "NULL", so we are doing the same for EventPipe.
+    for paramName in fnSig.paramlist:
+        parameter = fnSig.getParam(paramName)
+
+        if parameter.winType == "win:UnicodeString":
+            pack_list.append(
+                "    if (!%s) { %s = W(\"NULL\"); }" %
+                (parameter.name, parameter.name))
+
     for paramName in fnSig.paramlist:
         parameter = fnSig.getParam(paramName)
 
@@ -288,7 +298,7 @@ bool ResizeBuffer(char *&buffer, size_t& size, size_t currLen, size_t newSize, b
 
 bool WriteToBuffer(const BYTE *src, size_t len, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
-    if(!src) return true;
+    if (!src) return true;
     if (offset + len > size)
     {
         if (!ResizeBuffer(buffer, size, offset, size + len, fixedBuffer))
@@ -302,7 +312,7 @@ bool WriteToBuffer(const BYTE *src, size_t len, char *&buffer, size_t& offset, s
 
 bool WriteToBuffer(PCWSTR str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
-    if(!str) return true;
+    if (!str) return true;
     size_t byteCount = (wcslen(str) + 1) * sizeof(*str);
 
     if (offset + byteCount > size)
@@ -318,7 +328,7 @@ bool WriteToBuffer(PCWSTR str, char *&buffer, size_t& offset, size_t& size, bool
 
 bool WriteToBuffer(const char *str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
-    if(!str) return true;
+    if (!str) return true;
     size_t len = strlen(str) + 1;
     if (offset + len > size)
     {

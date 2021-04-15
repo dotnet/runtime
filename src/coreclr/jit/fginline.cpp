@@ -618,56 +618,8 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
 #endif // FEATURE_MULTIREG_RET
 
             case SPK_EnclosingType:
-            {
-                // For enclosing type returns, we must return the call value to a temp since
-                // the return type is larger than the struct type.
-                if (!tree->IsCall())
-                {
-                    break;
-                }
-
-                GenTreeCall* call = tree->AsCall();
-
-                assert(call->gtReturnType == TYP_STRUCT);
-
-                if (call->gtReturnType != TYP_STRUCT)
-                {
-                    break;
-                }
-
-                JITDUMP("\nCall returns small struct via enclosing type, retyping. Before:\n");
-                DISPTREE(call);
-
-                // Create new struct typed temp for return value
-                const unsigned tmpNum =
-                    comp->lvaGrabTemp(true DEBUGARG("small struct return temp for rejected inline"));
-                comp->lvaSetStruct(tmpNum, retClsHnd, false);
-                GenTree* assign = comp->gtNewTempAssign(tmpNum, call);
-
-                // Modify assign tree and call return types to the primitive return type
-                call->gtReturnType = returnType;
-                call->gtType       = returnType;
-                assign->gtType     = returnType;
-
-                // Modify the temp reference in the assign as a primitive reference via GT_LCL_FLD
-                GenTree* tempAsPrimitive = assign->AsOp()->gtOp1;
-                assert(tempAsPrimitive->gtOper == GT_LCL_VAR);
-                tempAsPrimitive->gtType = returnType;
-                tempAsPrimitive->ChangeOper(GT_LCL_FLD);
-
-                // Return temp as value of call tree via comma
-                GenTree* tempAsStruct = comp->gtNewLclvNode(tmpNum, TYP_STRUCT);
-                GenTree* comma        = comp->gtNewOperNode(GT_COMMA, TYP_STRUCT, assign, tempAsStruct);
-                parent->ReplaceOperand(pTree, comma);
-
-                JITDUMP("\nAfter:\n");
-                DISPTREE(comma);
-            }
-            break;
-
             case SPK_PrimitiveType:
-                // We should have already retyped the call as a primitive type
-                // when we first imported the call
+                // No work needs to be done, the call has struct type and should keep it.
                 break;
 
             case SPK_ByReference:
@@ -787,11 +739,11 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
     {
         // If we're assigning to a ref typed local that has one definition,
         // we may be able to sharpen the type for the local.
-        GenTree* lhs = tree->gtGetOp1()->gtEffectiveVal();
+        GenTree* const effLhs = tree->gtGetOp1()->gtEffectiveVal();
 
-        if ((lhs->OperGet() == GT_LCL_VAR) && (lhs->TypeGet() == TYP_REF))
+        if ((effLhs->OperGet() == GT_LCL_VAR) && (effLhs->TypeGet() == TYP_REF))
         {
-            const unsigned lclNum = lhs->AsLclVarCommon()->GetLclNum();
+            const unsigned lclNum = effLhs->AsLclVarCommon()->GetLclNum();
             LclVarDsc*     lcl    = comp->lvaGetDesc(lclNum);
 
             if (lcl->lvSingleDef)
@@ -807,6 +759,20 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
                 }
             }
         }
+
+        // If we created a self-assignment (say because we are sharing return spill temps)
+        // we can remove it.
+        //
+        GenTree* const lhs = tree->gtGetOp1();
+        GenTree* const rhs = tree->gtGetOp2();
+        if (lhs->OperIs(GT_LCL_VAR) && GenTree::Compare(lhs, rhs))
+        {
+            comp->gtUpdateNodeSideEffects(tree);
+            assert((tree->gtFlags & GTF_SIDE_EFFECT) == GTF_ASG);
+            JITDUMP("... removing self-assignment\n");
+            DISPTREE(tree);
+            tree->gtBashToNOP();
+        }
     }
     else if (tree->OperGet() == GT_JTRUE)
     {
@@ -817,7 +783,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
 
         if (condTree->OperGet() == GT_CNS_INT)
         {
-            JITDUMP(" ... found foldable jtrue at [%06u] in BB%02u\n", dspTreeID(tree), block->bbNum);
+            JITDUMP(" ... found foldable jtrue at [%06u] in " FMT_BB "\n", dspTreeID(tree), block->bbNum);
             noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
 
             // We have a constant operand, and should have the all clear to optimize.
@@ -849,7 +815,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             // other transitively unreachable blocks.
             if (bNotTaken->bbRefs == 0)
             {
-                JITDUMP("... it looks like BB%02u is now unreachable!\n", bNotTaken->bbNum);
+                JITDUMP("... it looks like " FMT_BB " is now unreachable!\n", bNotTaken->bbNum);
             }
         }
     }
@@ -1365,15 +1331,16 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             continue;
         }
 
-        if (inheritWeight)
+        // If we were unable to compute a scale for some reason, then
+        // try to do something plausible. Entry/exit blocks match call
+        // site, internal blocks scaled by half; all rare blocks left alone.
+        //
+        if (!block->isRunRarely())
         {
-            block->inheritWeight(iciBlock);
-            inheritWeight = false;
+            block->inheritWeightPercentage(iciBlock, inheritWeight ? 100 : 50);
         }
-        else
-        {
-            block->modifyBBWeight(iciBlock->bbWeight / 2);
-        }
+
+        inheritWeight = false;
     }
 
     // Insert inlinee's blocks into inliner's block list.
@@ -1426,7 +1393,30 @@ _Done:
     // Update unmanaged call details
     info.compUnmanagedCallCountWithGCTransition += InlineeCompiler->info.compUnmanagedCallCountWithGCTransition;
 
-// Update optMethodFlags
+    // Update stats for inlinee PGO
+    //
+    if (InlineeCompiler->fgPgoSchema != nullptr)
+    {
+        fgPgoInlineePgo++;
+    }
+    else if (InlineeCompiler->fgPgoFailReason != nullptr)
+    {
+        // Single block inlinees may not have probes
+        // when we've ensabled minimal profiling (which
+        // is now the default).
+        //
+        if (InlineeCompiler->fgBBcount == 1)
+        {
+            fgPgoInlineeNoPgoSingleBlock++;
+        }
+        else
+        {
+            fgPgoInlineeNoPgo++;
+        }
+    }
+
+    // Update optMethodFlags
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     unsigned optMethodFlagsBefore = optMethodFlags;
@@ -1847,8 +1837,6 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 }
                 else
                 {
-                    CORINFO_CLASS_HANDLE structType =
-                        lclVarInfo[lclNum + inlineInfo->argCnt].lclVerTypeInfo.GetClassHandle();
                     tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), // Dest
                                           gtNewIconNode(0),              // Value
                                           false,                         // isVolatile

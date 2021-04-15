@@ -10,11 +10,16 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Net.Http.QPack;
 using System.Runtime.ExceptionServices;
 
 namespace System.Net.Http
 {
+    // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
     internal sealed class Http3RequestStream : IHttpHeadersHandler, IAsyncDisposable, IDisposable
     {
         private readonly HttpRequestMessage _request;
@@ -753,7 +758,6 @@ namespace System.Net.Http
                     case Http3FrameType.ReservedHttp2WindowUpdate:
                     case Http3FrameType.ReservedHttp2Continuation:
                         throw new Http3ConnectionException(Http3ErrorCode.UnexpectedFrame);
-                    case Http3FrameType.DuplicatePush:
                     case Http3FrameType.PushPromise:
                     case Http3FrameType.CancelPush:
                         // Because we haven't sent any MAX_PUSH_ID frames, any of these push-related

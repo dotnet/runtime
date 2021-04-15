@@ -1,9 +1,57 @@
-<Project Sdk="Microsoft.Build.NoTargets">
+﻿<Project Sdk="Microsoft.NET.SDK">
   <!-- These are wrapper project files for packaging.-->
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.0</TargetFrameworks>
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <!-- Avoid trying to binplace non existent documentation file.-->
-    <EnableBinPlacing>false</EnableBinPlacing>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);net472</TargetFrameworks>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
+    <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
+
+    <IsSourceProject>false</IsSourceProject>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <NoWarn>$(NoWarn);NU5128</NoWarn> <!-- No Dependencies-->
+    <PackageDescription>Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.</PackageDescription>
+    
+    <!-- When building from source, ensure the RID we're building for is part of the RID graph -->
+    <AdditionalRuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalRuntimeIdentifiers);$(OutputRID)</AdditionalRuntimeIdentifiers>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <Compile Include="BuildTask.Desktop.cs" />
+    <Compile Include="AssemblyResolver.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="BuildTask.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="GenerateRuntimeGraph.cs" />
+    <Compile Include="RID.cs" />
+    <Compile Include="RuntimeGroupCollection.cs" />
+    <Compile Include="RuntimeGroup.cs" />
+    <Compile Include="RuntimeVersion.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Condition="'$(AdditionalRuntimeIdentifiers)' == ''" Include="runtime.json" PackagePath="/" />
+    <Content Condition="'$(AdditionalRuntimeIdentifiers)' != ''" Include="$(IntermediateOutputPath)runtime.json" PackagePath="/" />
+    <Content Include="_._" PackagePath="lib/netstandard1.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
+    <PackageReference Include="NuGet.ProjectModel" Version="$(RefOnlyNugetProjectModelVersion)" />
+  </ItemGroup>
+
+  <Target Name="GenerateRuntimeJson" Condition="'$(AdditionalRuntimeIdentifiers)' != ''" BeforeTargets="GenerateNuspec">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroupWithQualifiers)"
+                          AdditionalRuntimeIdentifiers="$(AdditionalRuntimeIdentifiers)"
+                          AdditionalRuntimeIdentifierParent="$(AdditionalRuntimeIdentifierParent)"
+                          RuntimeJson="$(IntermediateOutputPath)runtime.json"
+                          UpdateRuntimeFiles="True" />
+  </Target>
+  
+  <Import Project="runtimeGroups.props" />
 </Project>

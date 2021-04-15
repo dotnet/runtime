@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.Serialization;
+using System.Text;
 
 namespace System
 {
@@ -175,7 +176,7 @@ namespace System
 
             static void Write(string source, ref Span<char> dest)
             {
-                source.AsSpan().CopyTo(dest);
+                source.CopyTo(dest);
                 dest = dest.Slice(source.Length);
             }
         }
@@ -197,5 +198,34 @@ namespace System
         public new Type GetType() => base.GetType();
 
         partial void RestoreRemoteStackTrace(SerializationInfo info, StreamingContext context);
+
+        [StackTraceHidden]
+        internal void SetCurrentStackTrace()
+        {
+            if (!CanSetRemoteStackTrace())
+            {
+                return; // early-exit
+            }
+
+            // Store the current stack trace into the "remote" stack trace, which was originally introduced to support
+            // remoting of exceptions cross app-domain boundaries, and is thus concatenated into Exception.StackTrace
+            // when it's retrieved.
+            var sb = new StringBuilder(256);
+            new StackTrace(fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.TrailingNewLine, sb);
+            sb.AppendLine(SR.Exception_EndStackTraceFromPreviousThrow);
+            _remoteStackTraceString = sb.ToString();
+        }
+
+        internal void SetRemoteStackTrace(string stackTrace)
+        {
+            if (!CanSetRemoteStackTrace())
+            {
+                return; // early-exit
+            }
+
+            // Store the provided text into the "remote" stack trace, following the same format SetCurrentStackTrace
+            // would have generated.
+            _remoteStackTraceString = stackTrace + Environment.NewLineConst + SR.Exception_EndStackTraceFromPreviousThrow + Environment.NewLineConst;
+        }
     }
 }

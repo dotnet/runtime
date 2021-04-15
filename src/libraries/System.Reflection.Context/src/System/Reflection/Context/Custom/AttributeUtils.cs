@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Context.Custom
 {
-    internal class AttributeUtils
+    internal static class AttributeUtils
     {
         public static object[] GetCustomAttributes(CustomReflectionContext context, CustomType type, Type attributeFilterType, bool inherit)
         {

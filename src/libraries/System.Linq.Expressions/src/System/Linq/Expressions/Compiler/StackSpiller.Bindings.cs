@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Compiler
 {
-    internal partial class StackSpiller
+    internal sealed partial class StackSpiller
     {
         private abstract class BindingRewriter
         {

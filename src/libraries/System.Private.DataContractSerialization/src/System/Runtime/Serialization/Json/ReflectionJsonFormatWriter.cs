@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -13,7 +14,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class ReflectionJsonFormatWriter
+    internal sealed class ReflectionJsonFormatWriter
     {
         private readonly ReflectionJsonClassWriter _reflectionClassWriter = new ReflectionJsonClassWriter();
 
@@ -22,6 +23,7 @@ namespace System.Runtime.Serialization.Json
             _reflectionClassWriter.ReflectionWriteClass(xmlWriter, obj, context, classContract, memberNames);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         public void ReflectionWriteCollection(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract collectionContract)
         {
             JsonWriterDelegator? jsonWriter = xmlWriter as JsonWriterDelegator;
@@ -188,7 +190,7 @@ namespace System.Runtime.Serialization.Json
         }
     }
 
-    internal class ReflectionJsonClassWriter : ReflectionClassWriter
+    internal sealed class ReflectionJsonClassWriter : ReflectionClassWriter
     {
         protected override int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract, int childElementIndex, XmlDictionaryString[]? memberNames)
         {

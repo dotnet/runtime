@@ -33,8 +33,6 @@ FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, 
     Thread *pThread = GetThread();
     size_t key=0;
 
-    _ASSERTE(pThread);
-
     //Poll and wait if GC is in progress, to avoid blocking GC for too long.
     FC_GC_POLL();
 

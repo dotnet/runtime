@@ -661,7 +661,7 @@ namespace System.Text
             /// <summary>
             /// Used to hold all the chunks indexes when you have many chunks.
             /// </summary>
-            private class ManyChunkInfo
+            private sealed class ManyChunkInfo
             {
                 private readonly StringBuilder[] _chunks;    // These are in normal order (first chunk first)
                 private int _chunkPos;
@@ -1174,6 +1174,8 @@ namespace System.Text
 
         private StringBuilder AppendSpanFormattable<T>(T value) where T : ISpanFormattable
         {
+            Debug.Assert(typeof(T).Assembly.Equals(typeof(object).Assembly), "Implementation trusts the results of TryFormat because T is expected to be something known");
+
             if (value.TryFormat(RemainingCurrentChunk, out int charsWritten, format: default, provider: null))
             {
                 m_ChunkLength += charsWritten;
@@ -1183,8 +1185,10 @@ namespace System.Text
             return Append(value.ToString());
         }
 
-        internal StringBuilder AppendSpanFormattable<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable, IFormattable
+        internal StringBuilder AppendSpanFormattable<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable
         {
+            Debug.Assert(typeof(T).Assembly.Equals(typeof(object).Assembly), "Implementation trusts the results of TryFormat because T is expected to be something known");
+
             if (value.TryFormat(RemainingCurrentChunk, out int charsWritten, format, provider))
             {
                 m_ChunkLength += charsWritten;
@@ -1746,6 +1750,14 @@ namespace System.Text
                         (leftJustify || width == 0) &&
                         spanFormattableArg.TryFormat(RemainingCurrentChunk, out int charsWritten, itemFormatSpan, provider))
                     {
+                        if ((uint)charsWritten > (uint)RemainingCurrentChunk.Length)
+                        {
+                            // Untrusted ISpanFormattable implementations might return an erroneous charsWritten value,
+                            // and m_ChunkLength might end up being used in unsafe code, so fail if we get back an
+                            // out-of-range charsWritten value.
+                            FormatError();
+                        }
+
                         m_ChunkLength += charsWritten;
 
                         // Pad the end, if needed.

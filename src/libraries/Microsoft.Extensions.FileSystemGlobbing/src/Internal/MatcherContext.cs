@@ -171,7 +171,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             }
             else
             {
-                return string.Format("{0}/{1}", left, right);
+                return $"{left}/{right}";
             }
         }
 

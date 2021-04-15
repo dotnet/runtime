@@ -242,7 +242,7 @@ namespace System.ComponentModel
             }
         }
 
-        private class Site : ISite
+        private sealed class Site : ISite
         {
             private string _name;
 

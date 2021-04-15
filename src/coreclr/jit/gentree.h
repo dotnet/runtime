@@ -414,8 +414,6 @@ struct GenTree
     genTreeOps gtOperSave; // Only used to save gtOper when we destroy a node, to aid debugging.
 #endif
 
-#if FEATURE_ANYCSE
-
 #define NO_CSE (0)
 
 #define IS_CSE_INDEX(x) ((x) != 0)
@@ -426,8 +424,6 @@ struct GenTree
 
     signed char gtCSEnum; // 0 or the CSE index (negated if def)
                           // valid only for CSE expressions
-
-#endif // FEATURE_ANYCSE
 
     unsigned char gtLIRFlags; // Used for nodes that are in LIR. See LIR::Flags in lir.h for the various flags.
 
@@ -866,10 +862,11 @@ public:
                                                //             alignment of 1 byte)
 #define GTF_IND_INVARIANT           0x01000000 // GT_IND   -- the target is invariant (a prejit indirection)
 #define GTF_IND_ARR_INDEX           0x00800000 // GT_IND   -- the indirection represents an (SZ) array index
+#define GTF_IND_NONNULL             0x00400000 // GT_IND   -- the indirection never returns null (zero)
 
 #define GTF_IND_FLAGS \
     (GTF_IND_VOLATILE | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF |          \
-     GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_ARR_INDEX | GTF_IND_TGT_NOT_HEAP)
+     GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_NONNULL | GTF_IND_ARR_INDEX | GTF_IND_TGT_NOT_HEAP)
 
 #define GTF_CLS_VAR_VOLATILE        0x40000000 // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
 #define GTF_CLS_VAR_INITCLASS       0x20000000 // GT_FIELD/GT_CLS_VAR -- same as GTF_FLD_INITCLASS
@@ -1085,6 +1082,17 @@ public:
     bool TypeIs(var_types type, T... rest) const
     {
         return TypeIs(type) || TypeIs(rest...);
+    }
+
+    static bool StaticOperIs(genTreeOps operCompare, genTreeOps oper)
+    {
+        return operCompare == oper;
+    }
+
+    template <typename... T>
+    static bool StaticOperIs(genTreeOps operCompare, genTreeOps oper, T... rest)
+    {
+        return StaticOperIs(operCompare, oper) || StaticOperIs(operCompare, rest...);
     }
 
     bool OperIs(genTreeOps oper) const
@@ -1435,6 +1443,16 @@ public:
     bool OperIsSimple() const
     {
         return OperIsSimple(gtOper);
+    }
+
+    static bool OperIsRelop(genTreeOps gtOper)
+    {
+        return (OperKind(gtOper) & GTK_RELOP) != 0;
+    }
+
+    bool OperIsRelop() const
+    {
+        return OperIsRelop(gtOper);
     }
 
 #ifdef FEATURE_SIMD
@@ -1836,7 +1854,7 @@ public:
 
 //---------------------------------------------------------------------
 
-#if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
+#if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
     static const char* OpName(genTreeOps op);
 #endif
 
@@ -4415,6 +4433,7 @@ struct GenTreeCall final : public GenTree
     {
         return false;
     }
+
     bool IsTailCallConvertibleToLoop() const
     {
         return false;
@@ -4425,10 +4444,22 @@ struct GenTreeCall final : public GenTree
     {
         return (gtCallMoreFlags & GTF_CALL_M_NONVIRT_SAME_THIS) != 0;
     }
+
     bool IsDelegateInvoke() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0;
     }
+
+    bool IsSpecialIntrinsic() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0;
+    }
+
+    void SetIsSpecialIntrinsic()
+    {
+        gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+    }
+
     bool IsVirtualStubRelativeIndir() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;

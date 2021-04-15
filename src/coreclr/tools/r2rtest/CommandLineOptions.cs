@@ -70,6 +70,7 @@ namespace R2RTest
                         R2RDumpPath(),
                         MeasurePerf(),
                         InputFileSearchString(),
+                        MibcPath(),
                     },
                     CompileDirectoryCommand.CompileDirectory);
 
@@ -107,6 +108,7 @@ namespace R2RTest
                         ExecutionTimeoutMinutes(),
                         R2RDumpPath(),
                         GCStress(),
+                        MibcPath(),
                     },
                     CompileSubtreeCommand.CompileSubtree);
 
@@ -137,6 +139,7 @@ namespace R2RTest
                         MeasurePerf(),
                         InputFileSearchString(),
                         OutputDirectory(),
+                        MibcPath(),
                     },
                     CompileFrameworkCommand.CompileFramework);
 
@@ -155,6 +158,7 @@ namespace R2RTest
                         DegreeOfParallelism(),
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
+                        MibcPath(),
                     },
                     CompileNugetCommand.CompileNuget);
 
@@ -170,6 +174,7 @@ namespace R2RTest
                         Pdb(),
                         CompilationTimeoutMinutes(),
                         Crossgen2Path(),
+                        MibcPath(),
                     },
                     options =>
                     {
@@ -194,6 +199,10 @@ namespace R2RTest
             Option ReferencePath() =>
                 new Option<DirectoryInfo[]>(new[] { "--reference-path", "-r" }, "Folder containing assemblies to reference during compilation")
                 { Argument = new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly() };
+
+            Option MibcPath() =>
+                new Option<FileInfo[]>(new[] { "--mibc-path", "-m" }, "Mibc files to use in compilation")
+                { Argument = new Argument<FileInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly() };
 
             Option Crossgen() =>
                 new Option<bool>(new[] { "--crossgen" }, "Compile the apps using Crossgen in the CORE_ROOT folder");
@@ -269,7 +278,7 @@ namespace R2RTest
                 new Option<int>(new[] { "--execution-timeout-minutes", "-et" }, "Execution timeout (minutes)");
 
             Option R2RDumpPath() =>
-                new Option<FileInfo>(new[] { "--r2r-dump-path", "-r2r" }, "Path to R2RDump.exe/dll").ExistingOnly();;
+                new Option<FileInfo>(new[] { "--r2r-dump-path", "-r2r" }, "Path to R2RDump.exe/dll").ExistingOnly();
 
             Option MeasurePerf() =>
                 new Option<bool>(new[] { "--measure-perf" }, "Print out compilation time");
@@ -290,7 +299,7 @@ namespace R2RTest
             // compile-nuget specific options
             //
             Option PackageList() =>
-                new Option<FileInfo>(new[] { "--package-list", "-pl" }, "Text file containing a package name on each line").ExistingOnly();;
+                new Option<FileInfo>(new[] { "--package-list", "-pl" }, "Text file containing a package name on each line").ExistingOnly();
 
             //
             // compile-serp specific options

@@ -26,7 +26,7 @@ namespace System
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
-        public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("Android"));
+        public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
@@ -85,6 +85,8 @@ namespace System
 
             }
         }
+
+        public static bool IsLineNumbersSupported => true;
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime; // matches definitions in clr.featuredefines.props
@@ -187,14 +189,14 @@ namespace System
             }
         }
 
-        private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(GetIsInvariantGlobalization);
+        private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.Globalization.GlobalizationMode", "Invariant"));
 
-        private static bool GetIsInvariantGlobalization()
+        private static bool GetStaticNonPublicBooleanPropertyValue(string typeName, string propertyName)
         {
-            Type globalizationMode = Type.GetType("System.Globalization.GlobalizationMode");
+            Type globalizationMode = Type.GetType(typeName);
             if (globalizationMode != null)
             {
-                MethodInfo methodInfo = globalizationMode.GetProperty("Invariant", BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
+                MethodInfo methodInfo = globalizationMode.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
                 if (methodInfo != null)
                 {
                     return (bool)methodInfo.Invoke(null, null);
@@ -234,6 +236,10 @@ namespace System
                               (version >> 8) & 0xFF,
                               version & 0xFF);
         }
+
+        private static readonly Lazy<bool> _net5CompatFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.FileStreamHelpers", "UseNet5CompatStrategy"));
+
+        public static bool IsNet5CompatFileStreamEnabled => _net5CompatFileStream.Value;
 
         private static bool GetIsInContainer()
         {
@@ -285,6 +291,13 @@ namespace System
 
             int ret = Interop.OpenSsl.OpenSslGetProtocolSupport((int)protocol);
             return ret == 1;
+        }
+
+        private static readonly Lazy<SslProtocols> s_androidSupportedSslProtocols = new Lazy<SslProtocols>(Interop.AndroidCrypto.SSLGetSupportedProtocols);
+        private static bool AndroidGetSslProtocolSupport(SslProtocols protocol)
+        {
+            Debug.Assert(IsAndroid);
+            return (protocol & s_androidSupportedSslProtocols.Value) == protocol;
         }
 
         private static bool GetTls10Support()
@@ -352,6 +365,14 @@ namespace System
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
                 return false;
+            }
+            else if (IsAndroid)
+            {
+#if NETFRAMEWORK
+                return false;
+#else
+                return AndroidGetSslProtocolSupport(SslProtocols.Tls13);
+#endif
             }
             else if (IsOpenSslSupported)
             {

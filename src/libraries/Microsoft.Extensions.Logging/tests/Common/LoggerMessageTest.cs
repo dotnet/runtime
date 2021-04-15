@@ -194,6 +194,34 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        public void LogMessage_WithNullParameter_DoesNotMutateArgument()
+        {
+            // Arrange
+            string format = "TestMessage {param1} {param2} {param3}";
+            string param1 = "foo";
+            string param2 = null;
+            int param3 = 10;
+            var testSink = new TestSink();
+            var testLogger = new TestLogger("testlogger", testSink, enabled: true);
+
+            // Act
+            testLogger.LogInformation(format, param1, param2, param3);
+
+            // Assert
+            Assert.Single(testSink.Writes);
+            var write = testSink.Writes.First();
+            var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(write.State);
+            AssertLogValues(new[]
+            {
+                new KeyValuePair<string, object>("param1", param1),
+                new KeyValuePair<string, object>("param2", param2),
+                new KeyValuePair<string, object>("param3", param3),
+                new KeyValuePair<string, object>("{OriginalFormat}", format)
+            },
+            actualLogValues.ToArray());
+        }
+
+        [Fact]
         public void DefineMessage_WithNoParameters_ThrowsException_WhenFormatString_HasNamedParameters()
         {
             // Arrange

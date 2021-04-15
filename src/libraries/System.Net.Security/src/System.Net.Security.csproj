@@ -10,9 +10,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.SystemNetSecurity_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- Use Android native crypto when ANDROID_OPENSSL_AAR is not defined.
-         TODO: [AndroidCrypto] Remove ANDROID_OPENSSL_AAR check once Android native crypto is complete -->
-    <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_OPENSSL_AAR)' == ''">true</UseAndroidCrypto>
+    <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
   </PropertyGroup>
   <PropertyGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">
@@ -333,11 +331,18 @@
              Link="Common\System\Net\Security\Unix\SafeFreeSslCredentials.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
+             Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
     <Compile Include="System\Net\CertificateValidationPal.Android.cs" />
     <Compile Include="System\Net\Security\Pal.Android\SafeDeleteSslContext.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SafeFreeSslCredentials.cs" />
+    <Compile Include="System\Net\Security\Pal.Managed\SslProtocolsValidation.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.Android.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.Linux.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Android.cs" />
@@ -371,6 +376,7 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
     <Compile Include="System\Net\CertificateValidationPal.OSX.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SafeFreeSslCredentials.cs" />
+    <Compile Include="System\Net\Security\Pal.Managed\SslProtocolsValidation.cs" />
     <Compile Include="System\Net\Security\Pal.OSX\SafeDeleteSslContext.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.OSX.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.OSX.cs" />

@@ -19,9 +19,6 @@
     <type fullname="System.Threading.Tasks.Task" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">
       <field name="s_asyncDebuggingEnabled" value="false" initialize="false" />
     </type>
-    <type fullname="System.StartupHookProvider" feature="System.StartupHookProvider.IsSupported" featurevalue="false">
-      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
-    </type>
     <type fullname="System.Resources.ResourceReader" feature="System.Resources.ResourceManager.AllowCustomResourceTypes" featurevalue="false">
       <method signature="System.Boolean get_AllowCustomResourceTypes()" body="stub" value="false" />
     </type>

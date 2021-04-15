@@ -1,18 +1,28 @@
 <Project>
   <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
+    <ItemGroup>
+      <OptimizationMibcFiles Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PublishReadyToRunCrossgen2ExtraArgsList Include="--targetarch:$(TargetArchitecture)"/>
+
+      <!-- Only use mibc files if UsingToolIbcOptimization is false. Allows enabling/disabling using ibc instead of mibc data -->
+      <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'" Include="@(OptimizationMibcFiles->'-m:%(Identity)')"/>
+      <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'" Include="--embed-pgo-data"/>
+    </ItemGroup>
+
     <!-- The following property group can be simplified once runtime repo switches over to SDK 6.0 drop -->
     <PropertyGroup>
       <CrossDir />
       <CrossDir Condition="'$(BuildArchitecture)' != '$(TargetArchitecture)'">x64</CrossDir>
-      <Crossgen2Dir>$(CoreCLRArtifactsPath)\$(CrossDir)\crossgen2</Crossgen2Dir>
-      <Crossgen2Exe>$(Crossgen2Dir)\crossgen2$(ExeSuffix)</Crossgen2Exe>
-      <PublishReadyToRunCrossgen2ExtraArgs>--targetarch:$(TargetArchitecture)</PublishReadyToRunCrossgen2ExtraArgs>
+      <Crossgen2Dll>$(CoreCLRArtifactsPath)\$(CrossDir)\crossgen2\crossgen2.dll</Crossgen2Dll>
 
-      <JitTargetOSComponent>unix</JitTargetOSComponent>
-      <JitTargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</JitTargetOSComponent>
-      <JitBuildArchitecture>$(TargetArchitecture)</JitBuildArchitecture>
-      <JitBuildArchitecture Condition="'$(CrossDir)' != ''">$(CrossDir)</JitBuildArchitecture>
-      <JitLibrary>$(Crossgen2Dir)\$(LibPrefix)clrjit_$(JitTargetOSComponent)_$(TargetArchitecture)_$(JitBuildArchitecture)$(LibSuffix)</JitLibrary>
+      <PublishReadyToRunUseCrossgen2>true</PublishReadyToRunUseCrossgen2>
+      <PublishReadyToRunCrossgen2ExtraArgs>@(PublishReadyToRunCrossgen2ExtraArgsList)</PublishReadyToRunCrossgen2ExtraArgs>
+
+      <ScriptExt>.sh</ScriptExt>
+      <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
@@ -24,41 +34,15 @@
     <ItemGroup Condition="'@(_crossTargetJit)' != '' and '@(_crossTargetCrossgen)' != ''">
       <CrossgenTool Include="@(_crossTargetCrossgen->ClearMetadata())"
                     JitPath="@(_crossTargetJit)"
-                    DiaSymReader="$(_diaSymReaderPathIfExists)" />
+                    DiaSymReader="$(_diaSymReaderPath)" />
     </ItemGroup>
     <ItemGroup Condition="'@(_crossTargetJit)' == '' and '@(_crossTargetCrossgen)' == ''">
       <CrossgenTool Include="@(_crossgen->ClearMetadata())"
                     JitPath="@(_clrjit)"
-                    DiaSymReader="$(_diaSymReaderPathIfExists)" />
+                    DiaSymReader="$(_diaSymReaderPath)" />
     </ItemGroup>
     <ItemGroup>
-      <Crossgen2Tool Include="$(Crossgen2Exe)" JitPath="$(JitLibrary)" />
+      <Crossgen2Tool Include="$(Crossgen2Dll)" TargetArch="$(TargetArchitecture)" TargetOS="$(TargetOS)" DotNetHostPath="$(RepoRoot)/dotnet$(ScriptExt)" />
     </ItemGroup>
   </Target>
-
-  <!-- Hack to patch DOTNET_ROOT for the duration of Crossgen2 compilation to unblock -->
-  <!-- Crossgen2 bring-up before SDK 6.0 Preview 2 propagates to the runtime repo. -->
-  <!-- https://github.com/dotnet/runtime/issues/48252 -->
-
-  <PropertyGroup>
-    <OriginalDotnetRootValue />
-    <DOTNET_ROOT />
-  </PropertyGroup>
-
-  <Target Name="PatchDotnetRootBeforeRunningCrossgen2" BeforeTargets="_CreateR2RImages">
-    <PropertyGroup>
-      <OriginalDotnetRootValue>$(DOTNET_ROOT)</OriginalDotnetRootValue>
-      <DOTNET_ROOT>$(RepoRoot)</DOTNET_ROOT>
-    </PropertyGroup>
-  </Target>
-
-  <Target Name="RestoreDotnetRootAfterRunningCrossgen2" AfterTargets="_CreateR2RImages">
-    <PropertyGroup>
-      <DOTNET_ROOT>$(OriginalDotnetRootValue)</DOTNET_ROOT>
-    </PropertyGroup>
-  </Target>
-
-  <!-- End of hack to patch DOTNET_ROOT for the duration of Crossgen2 compilation. -->
-  <!-- This can be removed once the runtime repo rolled forward to .NET 6 Preview 2 SDK repo drop. -->
-  <!-- https://github.com/dotnet/runtime/issues/48252 -->
 </Project>

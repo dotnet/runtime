@@ -22,7 +22,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="TInputOutput">The kind of elements.</typeparam>
     /// <typeparam name="THashKey">The key used to distribute elements.</typeparam>
     /// <typeparam name="TOrderKey">The kind of keys found in the source.</typeparam>
-    internal class OrderedHashRepartitionEnumerator<TInputOutput, THashKey, TOrderKey> : QueryOperatorEnumerator<Pair<TInputOutput, THashKey>, TOrderKey>
+    internal sealed class OrderedHashRepartitionEnumerator<TInputOutput, THashKey, TOrderKey> : QueryOperatorEnumerator<Pair<TInputOutput, THashKey>, TOrderKey>
     {
         private const int ENUMERATION_NOT_STARTED = -1; // Sentinel to note we haven't begun enumerating yet.
 
@@ -37,7 +37,7 @@ namespace System.Linq.Parallel
         private readonly CancellationToken _cancellationToken; // A token for canceling the process.
         private Mutables? _mutables; // Mutable fields for this enumerator.
 
-        private class Mutables
+        private sealed class Mutables
         {
             internal int _currentBufferIndex; // Current buffer index.
             internal ListChunk<Pair<TInputOutput, THashKey>>? _currentBuffer; // The buffer we're currently enumerating.
@@ -216,7 +216,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref element!, ref key))
             {
                 if ((loopCount++ & CancellationState.POLL_INTERVAL) == 0)
-                    _cancellationToken.ThrowIfCancellationRequested();;
+                    _cancellationToken.ThrowIfCancellationRequested();
 
                 // Calculate the element's destination partition index, placing it into the
                 // appropriate buffer from which partitions will later enumerate.

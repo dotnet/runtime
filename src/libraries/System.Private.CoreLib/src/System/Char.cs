@@ -22,7 +22,7 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Char : IComparable, IComparable<char>, IEquatable<char>, IConvertible
+    public readonly struct Char : IComparable, IComparable<char>, IEquatable<char>, IConvertible, ISpanFormattable
     {
         //
         // Member Variables
@@ -165,6 +165,21 @@ namespace System
         ==============================================================================*/
         // Provides a string representation of a character.
         public static string ToString(char c) => string.CreateFromChar(c);
+
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        {
+            if (!destination.IsEmpty)
+            {
+                destination[0] = m_value;
+                charsWritten = 1;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
+        }
+
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString(m_value);
 
         public static char Parse(string s)
         {

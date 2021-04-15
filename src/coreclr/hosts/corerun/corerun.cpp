@@ -1,544 +1,294 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// Runtime headers
+#include <coreclrhost.h>
 
-//
-// .A simple CoreCLR host that runs on CoreSystem.
-//
+#include "corerun.hpp"
 
-#include "windows.h"
-#include <stdio.h>
-#include "mscoree.h"
-#include "coreclrhost.h"
-#include <Logger.h>
-#include "palclr.h"
-#include "sstring.h"
+using char_t = pal::char_t;
+using string_t = pal::string_t;
 
-// Utility macro for testing whether or not a flag is set.
-#define HAS_FLAG(value, flag) (((value) & (flag)) == (flag))
-
-// Environment variable for setting whether or not to use Server GC.
-// Off by default.
-static const wchar_t *serverGcVar = W("COMPlus_gcServer");
-
-// Environment variable for setting whether or not to use Concurrent GC.
-// On by default.
-static const wchar_t *concurrentGcVar = W("COMPlus_gcConcurrent");
-
-// The name of the CoreCLR native runtime DLL.
-static const wchar_t *coreCLRDll = W("CoreCLR.dll");
-
-// The location where CoreCLR is expected to be installed. If CoreCLR.dll isn't
-//  found in the same directory as the host, it will be looked for here.
-static const wchar_t *coreCLRInstallDirectory = W("%windir%\\system32\\");
-
-// Encapsulates the environment that CoreCLR will run in, including the TPALIST
-class HostEnvironment
+struct configuration
 {
-    // The path to this module
-    PathString m_hostPath;
+    configuration() = default;
+    configuration(const configuration&) = delete;
+    configuration(configuration&&) = delete;
+    configuration& operator=(const configuration&) = delete;
+    configuration& operator=(configuration&&) = delete;
 
-    // The path to the directory containing this module
-    PathString m_hostDirectoryPath;
-
-    // The name of this module, without the path
-    SString m_hostExeName;
-
-    // The list of paths to the assemblies that will be trusted by CoreCLR
-    SString m_tpaList;
-
-    coreclr_initialize_ptr m_CLRRuntimeHostInitialize;
-
-    coreclr_execute_assembly_ptr m_CLRRuntimeHostExecute;
-
-    coreclr_shutdown_2_ptr m_CLRRuntimeHostShutdown;
-
-    HMODULE m_coreCLRModule;
-
-    Logger *m_log;
-
-    // Attempts to load CoreCLR.dll from the given directory.
-    // On success pins the dll, sets m_coreCLRDirectoryPath and returns the HMODULE.
-    // On failure returns nullptr.
-    HMODULE TryLoadCoreCLR(const wchar_t* directoryPath) {
-
-        StackSString coreCLRPath(directoryPath);
-        coreCLRPath.Append(coreCLRDll);
-
-        *m_log << W("Attempting to load: ") << coreCLRPath.GetUnicode() << Logger::endl;
-
-        HMODULE result = WszLoadLibraryEx(coreCLRPath, NULL, 0);
-        if (!result) {
-            *m_log << W("Failed to load: ") << coreCLRPath.GetUnicode() << Logger::endl;
-            *m_log << W("Error code: ") << GetLastError() << Logger::endl;
-            return nullptr;
-        }
-
-        // Pin the module - CoreCLR.dll does not support being unloaded.
-        HMODULE dummy_coreCLRModule;
-        if (!::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, coreCLRPath, &dummy_coreCLRModule)) {
-            *m_log << W("Failed to pin: ") << coreCLRPath.GetUnicode() << Logger::endl;
-            return nullptr;
-        }
-
-        StackSString coreCLRLoadedPath;
-        WszGetModuleFileName(result, coreCLRLoadedPath);
-
-        *m_log << W("Loaded: ") << coreCLRLoadedPath.GetUnicode() << Logger::endl;
-
-        return result;
-    }
-
-public:
-    // The path to the directory that CoreCLR is in
-    PathString m_coreCLRDirectoryPath;
-
-    HostEnvironment(Logger *logger)
-        : m_CLRRuntimeHostInitialize(nullptr)
-        , m_CLRRuntimeHostExecute(nullptr)
-        , m_CLRRuntimeHostShutdown(nullptr)
-        , m_log(logger) {
-
-            // Discover the path to this exe's module. All other files are expected to be in the same directory.
-            WszGetModuleFileName(::GetModuleHandleW(nullptr), m_hostPath);
-
-            // Search for the last backslash in the host path.
-            SString::CIterator lastBackslash = m_hostPath.End();
-            m_hostPath.FindBack(lastBackslash, W('\\'));
-
-            // Copy the directory path
-            m_hostDirectoryPath.Set(m_hostPath, m_hostPath.Begin(), lastBackslash + 1);
-
-            // Save the exe name
-            m_hostExeName = m_hostPath.GetUnicode(lastBackslash + 1);
-
-            *m_log << W("Host directory: ")  << m_hostDirectoryPath.GetUnicode() << Logger::endl;
-
-            // Check for %CORE_ROOT% and try to load CoreCLR.dll from it if it is set
-            StackSString coreRoot;
-            m_coreCLRModule = NULL; // Initialize this here since we don't call TryLoadCoreCLR if CORE_ROOT is unset.
-            if (WszGetEnvironmentVariable(W("CORE_ROOT"), coreRoot) > 0 && coreRoot.GetCount() > 0)
-            {
-                coreRoot.Append(W('\\'));
-                m_coreCLRModule = TryLoadCoreCLR(coreRoot);
-            }
-            else
-            {
-                *m_log << W("CORE_ROOT not set; skipping") << Logger::endl;
-                *m_log << W("You can set the environment variable CORE_ROOT to point to the path") << Logger::endl;
-                *m_log << W("where CoreCLR.dll lives to help CoreRun.exe find it.") << Logger::endl;
-            }
-
-            // Try to load CoreCLR from the directory that coreRun is in
-            if (!m_coreCLRModule)
-            {
-                m_coreCLRModule = TryLoadCoreCLR(m_hostDirectoryPath);
-            }
-
-            if (!m_coreCLRModule)
-            {
-
-                // Failed to load. Try to load from the well-known location.
-                wchar_t coreCLRInstallPath[MAX_LONGPATH];
-                ::ExpandEnvironmentStringsW(coreCLRInstallDirectory, coreCLRInstallPath, MAX_LONGPATH);
-                m_coreCLRModule = TryLoadCoreCLR(coreCLRInstallPath);
-
-            }
-
-            if (m_coreCLRModule)
-            {
-
-                // Save the directory that CoreCLR was found in
-                DWORD modulePathLength = WszGetModuleFileName(m_coreCLRModule, m_coreCLRDirectoryPath);
-
-                // Search for the last backslash and terminate it there to keep just the directory path with trailing slash
-                SString::Iterator lastBackslash = m_coreCLRDirectoryPath.End();
-                m_coreCLRDirectoryPath.FindBack(lastBackslash, W('\\'));
-                m_coreCLRDirectoryPath.Truncate(lastBackslash + 1);
-
-                m_CLRRuntimeHostInitialize = (coreclr_initialize_ptr)GetProcAddress(m_coreCLRModule, "coreclr_initialize");
-                if (!m_CLRRuntimeHostInitialize)
-                {
-                    *m_log << W("Failed to find function coreclr_initialize in ") << coreCLRDll << Logger::endl;
-                }
-
-                m_CLRRuntimeHostExecute = (coreclr_execute_assembly_ptr)GetProcAddress(m_coreCLRModule, "coreclr_execute_assembly");
-                if (!m_CLRRuntimeHostExecute)
-                {
-                    *m_log << W("Failed to find function coreclr_execute_assembly in ") << coreCLRDll << Logger::endl;
-                }
-
-                m_CLRRuntimeHostShutdown = (coreclr_shutdown_2_ptr)GetProcAddress(m_coreCLRModule, "coreclr_shutdown_2");
-                if (!m_CLRRuntimeHostShutdown)
-                {
-                    *m_log << W("Failed to find function coreclr_shutdown_2 in ") << coreCLRDll << Logger::endl;
-                }
-            }
-            else
-            {
-                *m_log << W("Unable to load ") << coreCLRDll << Logger::endl;
-            }
-    }
-
-    bool TPAListContainsFile(_In_z_ wchar_t* fileNameWithoutExtension, _In_reads_(countExtensions) const wchar_t** rgTPAExtensions, int countExtensions)
+    ~configuration()
     {
-        if (m_tpaList.IsEmpty()) return false;
-
-        for (int iExtension = 0; iExtension < countExtensions; iExtension++)
+        for (int i = 0; i < entry_assembly_argc; ++i)
         {
-            StackSString fileName;
-            fileName.Append(W("\\")); // So that we don't match other files that end with the current file name
-            fileName.Append(fileNameWithoutExtension);
-            fileName.Append(rgTPAExtensions[iExtension] + 1);
-            fileName.Append(W(";")); // So that we don't match other files that begin with the current file name
-
-            if (m_tpaList.Find(m_tpaList.Begin(), fileName))
-            {
-                return true;
-            }
+            ::free((void*)entry_assembly_argv[i]);
         }
-        return false;
+        ::free(entry_assembly_argv);
     }
 
-    void RemoveExtensionAndNi(_In_z_ wchar_t* fileName)
-    {
-        // Remove extension, if it exists
-        wchar_t* extension = wcsrchr(fileName, W('.'));
-        if (extension != NULL)
-        {
-            extension[0] = W('\0');
+    //
+    // Settings
+    //
 
-            // Check for .ni
-            size_t len = wcslen(fileName);
-            if (len > 3 &&
-                fileName[len - 1] == W('i') &&
-                fileName[len - 2] == W('n') &&
-                fileName[len - 3] == W('.') )
-            {
-                fileName[len - 3] = W('\0');
-            }
-        }
-    }
+    // CLR path - user supplied location of coreclr binary and managed assemblies.
+    string_t clr_path;
 
-    void AddFilesFromDirectoryToTPAList(_In_z_ const wchar_t* targetPath, _In_reads_(countExtensions) const wchar_t** rgTPAExtensions, int countExtensions)
-    {
-        *m_log << W("Adding assemblies from ") << targetPath << W(" to the TPA list") << Logger::endl;
-        StackSString assemblyPath;
-        const size_t dirLength = wcslen(targetPath);
+    // The full path to the Supplied managed entry assembly.
+    string_t entry_assembly_fullpath;
 
-        for (int iExtension = 0; iExtension < countExtensions; iExtension++)
-        {
-            assemblyPath.Set(targetPath, (DWORD)dirLength);
-            assemblyPath.Append(rgTPAExtensions[iExtension]);
-            WIN32_FIND_DATA data;
-            HANDLE findHandle = WszFindFirstFile(assemblyPath, &data);
+    // Arguments to pass to managed entry assembly.
+    int entry_assembly_argc;
+    const char_t** entry_assembly_argv;
 
-            if (findHandle != INVALID_HANDLE_VALUE) {
-                do {
-                    if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-                        // It seems that CoreCLR doesn't always use the first instance of an assembly on the TPA list (ni's may be preferred
-                        // over il, even if they appear later). So, only include the first instance of a simple assembly name to allow
-                        // users the opportunity to override Framework assemblies by placing dlls in %CORE_LIBRARIES%
+    // Wait for debugger to be attached.
+    bool wait_to_debug;
 
-                        // ToLower for case-insensitive comparisons
-                        wchar_t* fileNameChar = data.cFileName;
-                        while (*fileNameChar)
-                        {
-                            *fileNameChar = towlower(*fileNameChar);
-                            fileNameChar++;
-                        }
-
-                        // Remove extension
-                        wchar_t fileNameWithoutExtension[MAX_PATH_FNAME];
-                        wcscpy_s(fileNameWithoutExtension, MAX_PATH_FNAME, data.cFileName);
-
-                        RemoveExtensionAndNi(fileNameWithoutExtension);
-
-                        // Add to the list if not already on it
-                        if (!TPAListContainsFile(fileNameWithoutExtension, rgTPAExtensions, countExtensions))
-                        {
-                            assemblyPath.Truncate(assemblyPath.Begin() + (DWORD)dirLength);
-                            assemblyPath.Append(data.cFileName);
-                            m_tpaList.Append(assemblyPath);
-                            m_tpaList.Append(W(';'));
-                        }
-                        else
-                        {
-                            *m_log << W("Not adding ") << targetPath << data.cFileName << W(" to the TPA list because another file with the same name is already present on the list") << Logger::endl;
-                        }
-                    }
-                } while (0 != WszFindNextFile(findHandle, &data));
-
-                FindClose(findHandle);
-            }
-        }
-    }
-
-    // Returns the semicolon-separated list of paths to runtime dlls that are considered trusted.
-    // On first call, scans the coreclr directory for dlls and adds them all to the list.
-    const SString& GetTpaList() {
-        if (m_tpaList.IsEmpty()) {
-            const wchar_t *rgTPAExtensions[] = {
-                        W("*.ni.dll"),		// Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
-                        W("*.dll"),
-                        W("*.ni.exe"),
-                        W("*.exe")
-                        };
-
-            // Add files from %CORE_LIBRARIES% if specified
-            StackSString coreLibraries;
-            if (WszGetEnvironmentVariable(W("CORE_LIBRARIES"), coreLibraries) > 0 && coreLibraries.GetCount() > 0)
-            {
-                coreLibraries.Append(W('\\'));
-                AddFilesFromDirectoryToTPAList(coreLibraries, rgTPAExtensions, _countof(rgTPAExtensions));
-            }
-            else
-            {
-                *m_log << W("CORE_LIBRARIES not set; skipping") << Logger::endl;
-                *m_log << W("You can set the environment variable CORE_LIBRARIES to point to a") << Logger::endl;
-                *m_log << W("path containing additional platform assemblies,") << Logger::endl;
-            }
-
-            AddFilesFromDirectoryToTPAList(m_coreCLRDirectoryPath, rgTPAExtensions, _countof(rgTPAExtensions));
-        }
-
-        return m_tpaList;
-    }
-
-    // Returns the path to the host module
-    const SString& GetHostPath() {
-        return m_hostPath;
-    }
-
-    // Returns the path to the host module
-    const SString& GetHostExeName() {
-        return m_hostExeName;
-    }
-
-    bool IsHostLoaded() {
-        return m_coreCLRModule && m_CLRRuntimeHostInitialize && m_CLRRuntimeHostExecute && m_CLRRuntimeHostShutdown;
-    }
-
-    HRESULT InitializeHost(
-        const char *exePath,
-        const char *appDomainFriendlyName,
-        int propertyCount,
-        const char **propertyKeys,
-        const char **propertyValues,
-        void **hostHandle,
-        unsigned int *domainId)
-    {
-        if (m_CLRRuntimeHostInitialize)
-        {
-            return m_CLRRuntimeHostInitialize(exePath, appDomainFriendlyName, propertyCount, propertyKeys, propertyValues, hostHandle, domainId);
-        }
-        else
-        {
-            return E_FAIL;
-        }
-    }
-
-    HRESULT ExecuteAssembly(
-        void *hostHandle,
-        unsigned int domainId,
-        int argc,
-        const char **argv,
-        const char *managedAssemblyPath,
-        unsigned int *exitCode)
-    {
-        if (m_CLRRuntimeHostExecute)
-        {
-            return m_CLRRuntimeHostExecute(hostHandle, domainId, argc, argv, managedAssemblyPath, exitCode);
-        }
-        else
-        {
-            return E_FAIL;
-        }
-    }
-
-    HRESULT ShutdownHost(
-        void *hostHandle,
-        unsigned int domainId,
-        int *latchedExitCode)
-    {
-        if (m_CLRRuntimeHostShutdown)
-        {
-            return m_CLRRuntimeHostShutdown(hostHandle, domainId, latchedExitCode);
-        }
-        else
-        {
-            return E_FAIL;
-        }
-    }
+    // Perform self test.
+    bool self_test;
 };
 
-// Creates the startup flags for the runtime, starting with the default startup
-// flags and adding or removing from them based on environment variables. Only
-// two environment variables are respected right now: serverGcVar, controlling
-// Server GC, and concurrentGcVar, controlling Concurrent GC.
-STARTUP_FLAGS CreateStartupFlags() {
-    auto initialFlags =
-        static_cast<STARTUP_FLAGS>(
-            STARTUP_FLAGS::STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN |
-            STARTUP_FLAGS::STARTUP_SINGLE_APPDOMAIN |
-            STARTUP_FLAGS::STARTUP_CONCURRENT_GC);
+namespace envvar
+{
+    // Points to a path containing the CoreCLR binary.
+    const char_t* coreRoot = W("CORE_ROOT");
 
-    // server GC is off by default, concurrent GC is on by default.
-    auto checkVariable = [&](STARTUP_FLAGS flag, const wchar_t *var) {
-        wchar_t result[25];
-        size_t outsize;
-        if (_wgetenv_s(&outsize, result, 25, var) == 0 && outsize > 0) {
-            // set the flag if the var is present and set to 1,
-            // clear the flag if the var isp resent and set to 0.
-            // Otherwise, ignore it.
-            if (_wcsicmp(result, W("1")) == 0) {
-                initialFlags = static_cast<STARTUP_FLAGS>(initialFlags | flag);
-            } else if (_wcsicmp(result, W("0")) == 0) {
-                initialFlags = static_cast<STARTUP_FLAGS>(initialFlags & ~flag);
-            }
-        }
+    // Points to a path containing additional platform assemblies.
+    const char_t* coreLibraries = W("CORE_LIBRARIES");
+
+    // Variable used to preload a mock hostpolicy for testing.
+    const char_t* mockHostPolicy = W("MOCK_HOSTPOLICY");
+}
+
+static void wait_for_debugger()
+{
+    pal::debugger_state_t state = pal::is_debugger_attached();
+    if (state == pal::debugger_state_t::na)
+    {
+        pal::fprintf(stdout, W("Debugger attach is not available on this platform\n"));
+        return;
+    }
+    else if (state == pal::debugger_state_t::not_attached)
+    {
+        pal::fprintf(stdout, W("Waiting for the debugger to attach. Press any key to continue ...\n"));
+        (void)getchar();
+        state = pal::is_debugger_attached();
+    }
+
+    if (state == pal::debugger_state_t::attached)
+    {
+        pal::fprintf(stdout, W("Debugger is attached.\n"));
+    }
+    else
+    {
+        pal::fprintf(stdout, W("Debugger failed to attach.\n"));
+    }
+}
+
+// N.B. It seems that CoreCLR doesn't always use the first instance of an assembly on the TPA list
+// (for example, ni's may be preferred over il, even if they appear later). Therefore, when building
+// the TPA only include the first instance of a simple assembly name to allow users the opportunity to
+// override Framework assemblies by placing dlls in %CORE_LIBRARIES%.
+static string_t build_tpa(const string_t& core_root, const string_t& core_libraries)
+{
+    static const char_t* const tpa_extensions[] =
+    {
+        W(".ni.dll"),  // Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
+        W(".dll"),
+        W(".ni.exe"),
+        W(".exe"),
+        nullptr
     };
 
-    checkVariable(STARTUP_FLAGS::STARTUP_SERVER_GC, serverGcVar);
-    checkVariable(STARTUP_FLAGS::STARTUP_CONCURRENT_GC, concurrentGcVar);
+    std::set<string_t> name_set;
+    pal::stringstream_t tpa_list;
 
-    return initialFlags;
+    // Iterate over all extensions.
+    for (const char_t* const* curr_ext = tpa_extensions; *curr_ext != nullptr; ++curr_ext)
+    {
+        const char_t* ext = *curr_ext;
+        const size_t ext_len = pal::strlen(ext);
+
+        // Iterate over all supplied directories.
+        for (const string_t& dir : { core_libraries, core_root })
+        {
+            if (dir.empty())
+                continue;
+
+            assert(dir.back() == pal::dir_delim);
+            string_t tmp = pal::build_file_list(dir, ext, [&](const char_t* file)
+                {
+                    string_t file_local{ file };
+
+                    // Strip the extension.
+                    if (pal::string_ends_with(file_local, ext_len, ext))
+                        file_local = file_local.substr(0, file_local.length() - ext_len);
+
+                    // Return true if the file is new.
+                    return name_set.insert(file_local).second;
+                });
+
+            // Add to the TPA.
+            tpa_list << tmp;
+        }
+    }
+
+    return tpa_list.str();
 }
 
-// Class used to manage activation context.
-// See: https://docs.microsoft.com/en-us/windows/desktop/SbsCs/using-the-activation-context-api
-class ActivationContext
+static bool try_get_export(pal::mod_t mod, const char* symbol, void** fptr)
 {
-public:
-    //       logger - Logger to record errors
-    // assemblyPath - Assembly containing activation context manifest
-    ActivationContext(Logger &logger, _In_z_ const WCHAR *assemblyPath)
-        : _logger{ logger }
-        , _actCxt{ INVALID_HANDLE_VALUE }
-        , _actCookie{} 
-    {
-        ACTCTX cxt{};
-        cxt.cbSize = sizeof(cxt);
-        cxt.dwFlags = (ACTCTX_FLAG_APPLICATION_NAME_VALID | ACTCTX_FLAG_RESOURCE_NAME_VALID);
-        cxt.lpSource = assemblyPath;
-        cxt.lpResourceName = MAKEINTRESOURCEW(1); // The CreateProcess manifest which contains the context details
-
-        _actCxt = ::CreateActCtxW(&cxt);
-        if (_actCxt == INVALID_HANDLE_VALUE)
-        {
-            DWORD err = ::GetLastError();
-            if (err == ERROR_RESOURCE_TYPE_NOT_FOUND)
-            {
-                _logger << W("Assembly does not contain a manifest for activation") << Logger::endl;
-            }
-            else
-            {
-                _logger << W("Activation Context creation failed. Error Code: ") << Logger::hresult << err << Logger::endl;
-            }
-        }
-        else
-        {
-            BOOL res = ::ActivateActCtx(_actCxt, &_actCookie);
-            if (res == FALSE)
-                _logger << W("Failed to activate Activation Context. Error Code: ") << Logger::hresult << ::GetLastError() << Logger::endl;
-        }
-    }
-
-    ~ActivationContext()
-    {
-        if (_actCookie != ULONG_PTR{})
-        {
-            BOOL res = ::DeactivateActCtx(0, _actCookie);
-            if (res == FALSE)
-                _logger << W("Failed to de-activate Activation Context. Error Code: ") << Logger::hresult << ::GetLastError() << Logger::endl;
-        }
-
-        if (_actCxt != INVALID_HANDLE_VALUE)
-            ::ReleaseActCtx(_actCxt);
-    }
-
-private:
-    Logger &_logger;
-    HANDLE _actCxt;
-    ULONG_PTR _actCookie;
-};
-
-class ClrInstanceDetails
-{
-    static void * _currentClrInstance;
-    static unsigned int _currentAppDomainId;
-
-public: // static
-    static HRESULT GetDetails(void **clrInstance, unsigned int *appDomainId)
-    {
-        *clrInstance = _currentClrInstance;
-        *appDomainId = _currentAppDomainId;
-        return S_OK;
-    }
-
-public:
-    ClrInstanceDetails(void *clrInstance, unsigned int appDomainId)
-    {
-        _currentClrInstance = clrInstance;
-        _currentAppDomainId = appDomainId;
-    }
-
-    ~ClrInstanceDetails()
-    {
-        _currentClrInstance = nullptr;
-        _currentAppDomainId = 0;
-    }
-};
-
-void * ClrInstanceDetails::_currentClrInstance;
-unsigned int ClrInstanceDetails::_currentAppDomainId;
-
-extern "C" __declspec(dllexport) HRESULT __cdecl GetCurrentClrDetails(void **clrInstance, unsigned int *appDomainId)
-{
-    return ClrInstanceDetails::GetDetails(clrInstance, appDomainId);
-}
-
-bool TryLoadHostPolicy(StackSString& hostPolicyPath)
-{
-    const WCHAR *hostpolicyName = W("hostpolicy.dll");
-    HMODULE hMod = ::GetModuleHandleW(hostpolicyName);
-    if (hMod != nullptr)
-    {
+    assert(mod != nullptr && symbol != nullptr && fptr != nullptr);
+    *fptr = pal::get_module_symbol(mod, symbol);
+    if (*fptr != nullptr)
         return true;
-    }
-    // Check if a hostpolicy exists and if it does, load it.
-    if (INVALID_FILE_ATTRIBUTES != ::GetFileAttributesW(hostPolicyPath.GetUnicode()))
-    {
-        hMod = ::LoadLibraryExW(hostPolicyPath.GetUnicode(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-    }
 
-    return hMod != nullptr;
+    pal::fprintf(stderr, W("Export '%s' not found.\n"), symbol);
+    return false;
 }
 
-HRESULT InitializeHost(
-    Logger& log,
-    HostEnvironment& host,
-    const SString& appPath,
-    const SString& appNiPath,
-    const SString& nativeDllSearchDirs,
-    void **hostHandle,
-    unsigned int *domainId)
+class logger_t final
 {
-    StackScratchBuffer hostExeNameUTF8;
-    StackScratchBuffer tpaListUTF8;
-    StackScratchBuffer appPathUTF8;
-    StackScratchBuffer appNiPathUTF8;
-    StackScratchBuffer nativeDllSearchDirsUTF8;
+    const char* _exePath;
+    int _propertyCount;
+    const char** _propertyKeys;
+    const char** _propertyValues;
+    const char* _managedAssembly;
+    int _argc;
+    const char** _argv;
+public:
+    logger_t(
+        const char* exePath,
+        int propertyCount, const char** propertyKeys, const char** propertyValues,
+        const char* managedAssembly, int argc, const char** argv)
+    : _exePath{ exePath }
+    , _propertyCount{ propertyCount }
+    , _propertyKeys{ propertyKeys }
+    , _propertyValues{ propertyValues }
+    , _managedAssembly{ managedAssembly }
+    , _argc{ argc }
+    , _argv{ argv }
+    { }
 
-    STARTUP_FLAGS flags = CreateStartupFlags();
+    void dump_details(FILE* fd = stdout)
+    {
+        // Using std::fprintf since values have been converted to UTF-8.
+        std::fprintf(fd, "Exe path: %s\n", _exePath);
+        std::fprintf(fd, "Properties:\n");
+        for (int i = 0; i < _propertyCount; ++i)
+        {
+            std::fprintf(fd, "    %s = %s\n", _propertyKeys[i], _propertyValues[i]);
+        }
 
-    //-------------------------------------------------------------
+        std::fprintf(fd, "Managed assembly: %s\n", _managedAssembly);
+        std::fprintf(fd, "Arguments (%d): ", _argc);
+        for (int i = 0; i < _argc; ++i)
+        {
+            std::fprintf(fd, "%s ", _argv[i]);
+        }
+        std::fprintf(fd, "\n");
+    }
+};
 
-    // Initialize host.
+// The current CoreCLR instance details.
+static void* CurrentClrInstance;
+static unsigned int CurrentAppDomainId;
+
+static int run(const configuration& config)
+{
+    platform_specific_actions actions;
+
+    // Check if debugger attach scenario was requested.
+    if (config.wait_to_debug)
+        wait_for_debugger();
+
+    string_t exe_path = pal::get_exe_path();
+
+    // Determine the managed application's path.
+    string_t app_path;
+    {
+        string_t file;
+        pal::split_path_to_dir_filename(config.entry_assembly_fullpath, app_path, file);
+        pal::ensure_trailing_delimiter(app_path);
+    }
+
+    // Define the NI app_path.
+    string_t app_path_ni = app_path + W("NI");
+    pal::ensure_trailing_delimiter(app_path_ni);
+    app_path_ni.append(1, pal::env_path_delim);
+    app_path_ni.append(app_path);
+
+    // Accumulate path for native search path.
+    pal::stringstream_t native_search_dirs;
+    native_search_dirs << app_path << pal::env_path_delim;
+
+    // CORE_LIBRARIES
+    string_t core_libs = pal::getenv(envvar::coreLibraries);
+    if (!core_libs.empty() && core_libs != app_path)
+    {
+        pal::ensure_trailing_delimiter(core_libs);
+        native_search_dirs << core_libs << pal::env_path_delim;
+    }
+
+    // Determine CORE_ROOT.
+    // Check if the path is user supplied and if not try
+    // the CORE_ROOT environment variable.
+    string_t core_root = !config.clr_path.empty()
+        ? config.clr_path
+        : pal::getenv(envvar::coreRoot);
+
+    // If CORE_ROOT wasn't supplied use the exe binary path, otherwise
+    // ensure path is valid and add to native search path.
+    if (core_root.empty())
+    {
+        string_t file;
+        pal::split_path_to_dir_filename(exe_path, core_root, file);
+        pal::ensure_trailing_delimiter(core_root);
+    }
+    else
+    {
+        pal::ensure_trailing_delimiter(core_root);
+        native_search_dirs << core_root << pal::env_path_delim;
+    }
+
+    string_t tpa_list = build_tpa(core_root, core_libs);
+
+    {
+        // Load hostpolicy if requested.
+        string_t mock_hostpolicy = pal::getenv(envvar::mockHostPolicy);
+        if (!mock_hostpolicy.empty()
+            && !pal::try_load_hostpolicy(mock_hostpolicy))
+        {
+            return -1;
+        }
+    }
+
+    actions.before_coreclr_load();
+
+    // Attempt to load CoreCLR.
+    pal::mod_t coreclr_mod;
+    if (!pal::try_load_coreclr(core_root, coreclr_mod))
+    {
+        return -1;
+    }
+
+    // Get CoreCLR exports
+    coreclr_initialize_ptr coreclr_init_func = nullptr;
+    coreclr_execute_assembly_ptr coreclr_execute_func = nullptr;
+    coreclr_shutdown_2_ptr coreclr_shutdown2_func = nullptr;
+    if (!try_get_export(coreclr_mod, "coreclr_initialize", (void**)&coreclr_init_func)
+        || !try_get_export(coreclr_mod, "coreclr_execute_assembly", (void**)&coreclr_execute_func)
+        || !try_get_export(coreclr_mod, "coreclr_shutdown_2", (void**)&coreclr_shutdown2_func))
+    {
+        return -1;
+    }
+
+    // Construct CoreCLR properties.
+    pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(std::move(tpa_list));
+    pal::string_utf8_t app_path_utf8 = pal::convert_to_utf8(std::move(app_path));
+    pal::string_utf8_t app_path_ni_utf8 = pal::convert_to_utf8(std::move(app_path_ni));
+    pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str());
 
     // Allowed property names:
-    // APPBASE
-    // - The base path of the application from which the exe and other assemblies will be loaded
     //
     // TRUSTED_PLATFORM_ASSEMBLIES
     // - The list of complete paths to each of the fully trusted assemblies
@@ -551,308 +301,289 @@ HRESULT InitializeHost(
     //
     // NATIVE_DLL_SEARCH_DIRECTORIES
     // - The list of paths that will be probed for native DLLs called by PInvoke
-    //
-    const char* property_keys[] = {
+    const char* propertyKeys[] =
+    {
         "TRUSTED_PLATFORM_ASSEMBLIES",
         "APP_PATHS",
         "APP_NI_PATHS",
         "NATIVE_DLL_SEARCH_DIRECTORIES",
-        "System.GC.Server",
-        "System.GC.Concurrent"
     };
 
-    const char* property_values[] = {
+    const char* propertyValues[] =
+    {
         // TRUSTED_PLATFORM_ASSEMBLIES
-        host.GetTpaList().GetUTF8(tpaListUTF8),
+        tpa_list_utf8.c_str(),
         // APP_PATHS
-        appPath.GetUTF8(appPathUTF8),
+        app_path_utf8.c_str(),
         // APP_NI_PATHS
-        appNiPath.GetUTF8(appNiPathUTF8),
+        app_path_ni_utf8.c_str(),
         // NATIVE_DLL_SEARCH_DIRECTORIES
-        nativeDllSearchDirs.GetUTF8(nativeDllSearchDirsUTF8),
-        // System.GC.Server
-        flags & STARTUP_SERVER_GC ? "true" : "false",
-        // System.GC.Concurrent
-        flags & STARTUP_CONCURRENT_GC ? "true" : "false"
+        native_search_dirs_utf8.c_str(),
     };
 
-    log << W("Initialize host") << Logger::endl;
-    for (int idx = 0; idx < ARRAYSIZE(property_keys); idx++)
+    int propertyCount = (int)(sizeof(propertyKeys) / sizeof(propertyKeys[0]));
+
+    // Construct arguments
+    pal::string_utf8_t exe_path_utf8 = pal::convert_to_utf8(std::move(exe_path));
+    std::vector<pal::string_utf8_t> argv_lifetime;
+    pal::malloc_ptr<const char*> argv_utf8{ pal::convert_argv_to_utf8(config.entry_assembly_argc, config.entry_assembly_argv, argv_lifetime) };
+    pal::string_utf8_t entry_assembly_utf8 = pal::convert_to_utf8(config.entry_assembly_fullpath.c_str());
+
+    logger_t logger{
+        exe_path_utf8.c_str(),
+        propertyCount, propertyKeys, propertyValues,
+        entry_assembly_utf8.c_str(), config.entry_assembly_argc, argv_utf8.get() };
+
+    int result;
+    result = coreclr_init_func(
+        exe_path_utf8.c_str(),
+        "corerun",
+        propertyCount,
+        propertyKeys,
+        propertyValues,
+        &CurrentClrInstance,
+        &CurrentAppDomainId);
+    if (FAILED(result))
     {
-        log << property_keys[idx] << W("=") << property_values[idx] << Logger::endl;
+        pal::fprintf(stderr, W("BEGIN: coreclr_initialize failed - Error: 0x%08x\n"), result);
+        logger.dump_details();
+        pal::fprintf(stderr, W("END: coreclr_initialize failed - Error: 0x%08x\n"), result);
+        return -1;
     }
 
-    HRESULT hr = host.InitializeHost(
-        NULL,
-        host.GetHostExeName().GetUTF8(hostExeNameUTF8),
-        ARRAYSIZE(property_keys),
-        property_keys,
-        property_values,
-        hostHandle,
-        domainId);
-
-    if (FAILED(hr))
+    int exit_code;
     {
-        log << W("Failed to initialize host. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
+        actions.before_execute_assembly(config.entry_assembly_fullpath);
+
+        result = coreclr_execute_func(
+            CurrentClrInstance,
+            CurrentAppDomainId,
+            config.entry_assembly_argc,
+            argv_utf8.get(),
+            entry_assembly_utf8.c_str(),
+            (uint32_t*)&exit_code);
+        if (FAILED(result))
+        {
+            pal::fprintf(stderr, W("BEGIN: coreclr_execute_assembly failed - Error: 0x%08x\n"), result);
+            logger.dump_details();
+            pal::fprintf(stderr, W("END: coreclr_execute_assembly failed - Error: 0x%08x\n"), result);
+            return -1;
+        }
+
+        actions.after_execute_assembly();
     }
 
-    return hr;
+    int latched_exit_code = 0;
+    result = coreclr_shutdown2_func(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
+    if (FAILED(result))
+    {
+        pal::fprintf(stderr, W("coreclr_shutdown_2 failed - Error: 0x%08x\n"), result);
+        exit_code = -1;
+    }
+
+    if (exit_code != -1)
+        exit_code = latched_exit_code;
+
+    return exit_code;
 }
 
-HRESULT ExecuteAssembly(
-    Logger& log,
-    HostEnvironment& host,
-    const SString& managedAssemblyFullName,
-    void *hostHandle,
-    unsigned int domainId,
-    int argc,
-    const wchar_t *argv[],
-    unsigned int *exitCode)
+// Display the command line options
+static void display_usage()
 {
-    NewArrayHolder<const char*> argvUTF8Holder;
-    NewArrayHolder<SString> argvUTF8Values;
-    if (argc && argv)
+    pal::fprintf(
+        stderr,
+        W("USAGE: corerun [OPTIONS] assembly [ARGUMENTS]\n")
+        W("\n")
+        W("Execute the managed assembly with the passed in arguments\n")
+        W("\n")
+        W("Options:\n")
+        W("    -c, --clr-path - path to CoreCLR binary and managed CLR assemblies\n")
+        W("    -d, --debug - causes corerun to wait for a debugger to attach before executing\n")
+        W("    -?, -h, --help - show this help\n")
+        W("\n")
+        W("CoreCLR is searched for in %%CORE_ROOT%%, then in the directory\n")
+        W("the corerun binary is located.\n"));
+}
+
+// Parse the command line arguments
+static bool parse_args(
+    const int argc,
+    const char_t* argv[],
+    configuration& config)
+{
+    // The command line must contain at least the current exe name and the managed assembly path.
+    if (argc < 2)
     {
-        argvUTF8Holder = new (nothrow) const char*[argc];
-        argvUTF8Values = new (nothrow) SString[argc];
-        if (argvUTF8Holder.GetValue() && argvUTF8Values.GetValue())
+        display_usage();
+        return false;
+    }
+
+    for (int i = 1; i < argc; i++)
+    {
+        bool is_option = pal::is_cli_option(argv[i][0]);
+
+        // First argument that is not an option is the managed assembly to execute.
+        if (!is_option)
         {
-            StackSString conversionBuffer;
-            for (int i = 0; i < argc; i++)
+            config.entry_assembly_fullpath = pal::get_absolute_path(argv[i]);
+            i++; // Move to next argument.
+
+            config.entry_assembly_argc = argc - i;
+            config.entry_assembly_argv = (const char_t**)::malloc(config.entry_assembly_argc * sizeof(const char_t*));
+            assert(config.entry_assembly_argv != nullptr);
+            for (int c = 0; c < config.entry_assembly_argc; ++c)
             {
-                conversionBuffer.Set(argv[i]);
-                conversionBuffer.ConvertToUTF8(argvUTF8Values[i]);
-                argvUTF8Holder[i] = argvUTF8Values[i].GetUTF8NoConvert();
+                config.entry_assembly_argv[c] = pal::strdup(argv[i + c]);
             }
+
+            // Successfully parsed arguments.
+            return true;
         }
-    }
 
-    ActivationContext cxt{ log, managedAssemblyFullName.GetUnicode() };
-    ClrInstanceDetails current{ hostHandle, domainId };
-
-    log << W("Executing assembly: ") << managedAssemblyFullName << Logger::endl;
-
-    StackScratchBuffer managedAssemblyFullNameUTF8;
-    HRESULT hr = host.ExecuteAssembly(hostHandle, domainId, argc, argvUTF8Holder.GetValue(), managedAssemblyFullName.GetUTF8(managedAssemblyFullNameUTF8), exitCode);
-    if (FAILED(hr))
-    {
-        log << W("Failed call to ExecuteAssembly. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
-    }
-
-    return hr;
-}
-
-HRESULT ShutdownHost(
-    Logger& log,
-    HostEnvironment& host,
-    void *hostHandle,
-    unsigned int domainId,
-    unsigned int *exitCode)
-{
-    log << W("Shutting down host") << Logger::endl;
-
-    HRESULT hr = host.ShutdownHost(hostHandle, domainId, (int *)exitCode);
-    if (FAILED(hr))
-    {
-        log << W("Failed to shutdown host. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
-    }
-
-    return hr;
-}
-
-bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbose, const bool waitForDebugger, DWORD &exitCode)
-{
-    // Assume failure
-    exitCode = -1;
-
-    HostEnvironment hostEnvironment(&log);
-
-    //-------------------------------------------------------------
-
-    // Find the specified exe. This is done using LoadLibrary so that
-    // the OS library search semantics are used to find it.
-
-    const wchar_t* exeName = argc > 0 ? argv[0] : nullptr;
-    if(exeName == nullptr)
-    {
-        log << W("No exename specified.") << Logger::endl;
-        return false;
-    }
-
-    StackSString appPath;
-    StackSString appNiPath;
-    StackSString managedAssemblyFullName;
-
-    wchar_t* filePart = NULL;
-
-    COUNT_T size = MAX_LONGPATH;
-    wchar_t* appPathPtr = appPath.OpenUnicodeBuffer(size - 1);
-    DWORD length = WszGetFullPathName(exeName, size, appPathPtr, &filePart);
-    if (length >= size)
-    {
-        appPath.CloseBuffer();
-        size = length;
-        appPathPtr = appPath.OpenUnicodeBuffer(size - 1);
-        length = WszGetFullPathName(exeName, size, appPathPtr, &filePart);
-    }
-    if (length == 0 || length >= size || filePart == NULL)
-    {
-        log << W("Failed to get full path: ") << exeName << Logger::endl;
-        log << W("Error code: ") << GetLastError() << Logger::endl;
-        return false;
-    }
-
-    managedAssemblyFullName.Set(appPathPtr);
-
-    *(filePart) = W('\0');
-    appPath.CloseBuffer(DWORD(filePart - appPathPtr));
-
-    log << W("Loading: ") << managedAssemblyFullName.GetUnicode() << Logger::endl;
-
-    appNiPath.Set(appPath);
-    appNiPath.Append(W("NI"));
-    appNiPath.Append(W(";"));
-    appNiPath.Append(appPath);
-
-    // Construct native search directory paths
-    StackSString nativeDllSearchDirs(appPath);
-    StackSString coreLibraries;
-    if (WszGetEnvironmentVariable(W("CORE_LIBRARIES"), coreLibraries) > 0 && coreLibraries.GetCount() > 0)
-    {
-        nativeDllSearchDirs.Append(W(";"));
-        nativeDllSearchDirs.Append(coreLibraries);
-    }
-    nativeDllSearchDirs.Append(W(";"));
-    nativeDllSearchDirs.Append(hostEnvironment.m_coreCLRDirectoryPath);
-
-    // Preload mock hostpolicy if requested.
-    StackSString hostpolicyPath;
-    if (WszGetEnvironmentVariable(W("MOCK_HOSTPOLICY"), hostpolicyPath) > 0 && hostpolicyPath.GetCount() > 0)
-    {
-        if (!TryLoadHostPolicy(hostpolicyPath))
+        const char_t* arg = argv[i];
+        size_t arg_len = pal::strlen(arg);
+        if (arg_len == 1)
         {
-            log << W("Unable to load requested mock hostpolicy.");
-            return false;
+            pal::fprintf(stderr, W("Option %s: invalid form\n"), arg);
+            break; // Invalid option
         }
-    }
 
-    if (!hostEnvironment.IsHostLoaded())
-    {
-        return false;
-    }
+        const char_t* option = arg + 1;
+        if (option[0] == W('-')) // Handle double '--'
+            option++;
 
-    HRESULT hr = E_FAIL;
-    void* hostHandle = nullptr;
-    DWORD domainId = 0;
-
-    hr = InitializeHost(log, hostEnvironment, appPath, appNiPath, nativeDllSearchDirs, &hostHandle, (unsigned int*)&domainId);
-    if (FAILED(hr))
-    {
-        exitCode = hr;
-        return false;
-    }
-
-    if(waitForDebugger)
-    {
-        if(!IsDebuggerPresent())
+        // Path to core_root
+        if (pal::strcmp(option, W("c")) == 0 || (pal::strcmp(option, W("clr-path")) == 0))
         {
-            log << W("Waiting for the debugger to attach. Press any key to continue ...") << Logger::endl;
-            getchar();
-            if (IsDebuggerPresent())
+            i++;
+            if (i < argc)
             {
-                log << "Debugger is attached." << Logger::endl;
+                config.clr_path = argv[i];
             }
             else
             {
-                log << "Debugger failed to attach." << Logger::endl;
+                pal::fprintf(stderr, W("Option %s: missing path\n"), arg);
+                break;
             }
         }
-    }
-
-    hr = ExecuteAssembly(log, hostEnvironment, managedAssemblyFullName, hostHandle, domainId, argc - 1, (argc - 1) ? &(argv[1]) : NULL, (unsigned int*)&exitCode);
-    if (FAILED(hr))
-    {
-        return false;
-    }
-
-    log << W("App exit value = ") << exitCode << Logger::endl;
-
-    hr = ShutdownHost(log, hostEnvironment, hostHandle, domainId, (unsigned int*)&exitCode);
-    if (FAILED(hr))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-void showHelp() {
-    ::wprintf(
-        W("Runs executables on CoreCLR\r\n")
-        W("\r\n")
-        W("USAGE: coreRun [/d] [/v] Managed.exe\r\n")
-        W("\r\n")
-        W("  where Managed.exe is a managed executable built for CoreCLR\r\n")
-        W("        /v causes verbose output to be written to the console\r\n")
-        W("        /d causes coreRun to wait for a debugger to attach before\r\n")
-        W("         launching Managed.exe\r\n")
-        W("\r\n")
-        W("  CoreCLR is searched for in %%core_root%%, then in the directory\r\n")
-        W("  that coreRun.exe is in, then finally in %s.\r\n"),
-        coreCLRInstallDirectory
-        );
-}
-
-int __cdecl wmain(const int argc, const wchar_t* argv[])
-{
-    // Parse the options from the command line
-
-    bool verbose = false;
-    bool waitForDebugger = false;
-    bool helpRequested = false;
-    int newArgc = argc - 1;
-    const wchar_t **newArgv = argv + 1;
-
-    auto stringsEqual = [](const wchar_t * const a, const wchar_t * const b) -> bool {
-        return ::_wcsicmp(a, b) == 0;
-    };
-
-    auto tryParseOption = [&](const wchar_t* arg) -> bool {
-        if ( stringsEqual(arg, W("/v")) || stringsEqual(arg, W("-v")) ) {
-                verbose = true;
-                return true;
-        } else if ( stringsEqual(arg, W("/d")) || stringsEqual(arg, W("-d")) ) {
-                waitForDebugger = true;
-                return true;
-        } else if ( stringsEqual(arg, W("/?")) || stringsEqual(arg, W("-?")) || stringsEqual(arg, W("-h")) || stringsEqual(arg, W("--help")) ) {
-            helpRequested = true;
+        else if ((pal::strcmp(option, W("d")) == 0 || (pal::strcmp(option, W("debug")) == 0)))
+        {
+            config.wait_to_debug = true;
+        }
+        else if (pal::strcmp(option, W("st")) == 0)
+        {
+            config.self_test = true;
             return true;
-        } else {
-            return false;
         }
-    };
-
-    while (newArgc > 0 && tryParseOption(newArgv[0])) {
-        newArgc--;
-        newArgv++;
+        else if ((pal::strcmp(option, W("?")) == 0 || (pal::strcmp(option, W("h")) == 0 || (pal::strcmp(option, W("help")) == 0))))
+        {
+            display_usage();
+            break;
+        }
+        else
+        {
+            pal::fprintf(stderr, W("Unknown option %s\n"), arg);
+            break;
+        }
     }
 
-    if (argc < 2 || helpRequested || newArgc==0) {
-        showHelp();
-        return -1;
-    } else {
-        Logger log;
-        if (verbose) {
-            log.Enable();
-        } else {
-            log.Disable();
+    return false;
+}
+
+// Forward declaration for self testing method.
+static int self_test();
+
+//
+// Entry points
+//
+
+int MAIN(const int argc, const char_t* argv[])
+{
+    configuration config{};
+    if (!parse_args(argc, argv, config))
+        return EXIT_FAILURE;
+
+    if (config.self_test)
+        return self_test();
+
+    int exit_code = run(config);
+    return exit_code;
+}
+
+#ifdef TARGET_WINDOWS
+// Used by CoreShim to determine running CoreCLR details.
+extern "C" __declspec(dllexport) HRESULT __cdecl GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)
+{
+    assert(clrInstance != nullptr && appDomainId != nullptr);
+    *clrInstance = CurrentClrInstance;
+    *appDomainId = CurrentAppDomainId;
+    return S_OK;
+}
+#endif // TARGET_WINDOWS
+
+//
+// Self testing for corerun.
+//
+
+#define THROW_IF_FALSE(stmt) if (!(stmt)) throw W(#stmt);
+static int self_test()
+{
+    try
+    {
+        {
+            configuration config{};
+            const char_t* args[] = { W(""), W("-d"), W("foo") };
+            THROW_IF_FALSE(parse_args(3, args, config));
+            THROW_IF_FALSE(config.wait_to_debug);
+            THROW_IF_FALSE(config.clr_path.empty());
+            THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
+            THROW_IF_FALSE(config.entry_assembly_argc == 0);
         }
-
-        DWORD exitCode;
-        auto success = TryRun(newArgc, newArgv, log, verbose, waitForDebugger, exitCode);
-
-        log << W("Execution ") << (success ? W("succeeded") : W("failed")) << Logger::endl;
-
-        return exitCode;
+        {
+            configuration config{};
+            const char_t* args[] = { W(""), W("-d"), W("foo"), W("1"), W("2"), W("3") };
+            THROW_IF_FALSE(parse_args(6, args, config));
+            THROW_IF_FALSE(config.wait_to_debug);
+            THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
+            THROW_IF_FALSE(config.entry_assembly_argc == 3);
+        }
+        {
+            configuration config{};
+            const char_t* args[] = { W(""), W("--clr-path"), W("path"), W("foo"), W("1") };
+            THROW_IF_FALSE(parse_args(5, args, config));
+            THROW_IF_FALSE(!config.wait_to_debug);
+            THROW_IF_FALSE(config.clr_path == W("path"));
+            THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
+            THROW_IF_FALSE(config.entry_assembly_argc == 1);
+        }
+        {
+            string_t path;
+            path = W("path");
+            pal::ensure_trailing_delimiter(path);
+            THROW_IF_FALSE(path.back() == pal::dir_delim);
+            path = W("");
+            pal::ensure_trailing_delimiter(path);
+            THROW_IF_FALSE(path.back() == pal::dir_delim);
+            path = W("\\");
+            pal::ensure_trailing_delimiter(path);
+            THROW_IF_FALSE(path.back() == pal::dir_delim || path.length() == 1);
+            path = W("/");
+            pal::ensure_trailing_delimiter(path);
+            THROW_IF_FALSE(path.back() == pal::dir_delim || path.length() == 1);
+        }
+        {
+            THROW_IF_FALSE(!pal::string_ends_with(W(""), W(".cd")));
+            THROW_IF_FALSE(pal::string_ends_with(W("ab.cd"), W(".cd")));
+            THROW_IF_FALSE(!pal::string_ends_with(W("ab.cd"), W(".cde")));
+            THROW_IF_FALSE(!pal::string_ends_with(W("ab.cd"), W("ab.cde")));
+        }
     }
+    catch (const char_t msg[])
+    {
+        pal::fprintf(stderr, W("Fail: %s\n"), msg);
+        return EXIT_FAILURE;
+    }
+
+    pal::fprintf(stdout, W("Self-test passed.\n"));
+    return EXIT_SUCCESS;
 }

@@ -2,10 +2,11 @@
 #include "llvm-runtime.h"
 
 #include <glib.h>
+#include <mono/utils/mono-logger-internals.h>
 
-#ifdef HOST_WASM
-#include <emscripten.h>
-#endif
+#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/profiler.h>
+#include "trace.h"
 
 extern "C" {
 
@@ -14,14 +15,9 @@ mono_llvm_cpp_throw_exception (void)
 {
 	gint32 *ex = NULL;
 
-#ifdef HOST_WASM
-		EM_ASM(
-			   var err = new Error();
-			   console.log ("Throw stacktrace: \n");
-			   console.log (err.stack);
-			   );
-#endif
-
+	if (mono_trace_is_enabled ())
+		mono_runtime_printf_err ("Native Stacktrace (mono_llvm_cpp_throw_exception)\n"); 
+		
 	/* The generated code catches an int32* */
 	throw ex;
 }

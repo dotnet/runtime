@@ -13,7 +13,7 @@
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' != 'true' AND '$(PublishingTestsRun)' != 'true'">
+  <ItemGroup Condition="'$(ArchiveTests)' != 'true' and '$(PublishingTestsRun)' != 'true' and '$(TestSingleFile)' != 'true'">
     <!-- Microsoft.Net.Test.Sdk brings a lot of assemblies with it. To reduce helix payload submission size we disable it on CI. -->
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XUnitRunnerVisualStudioVersion)" GeneratePathProperty="true" />

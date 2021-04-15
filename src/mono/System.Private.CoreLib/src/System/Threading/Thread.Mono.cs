@@ -17,7 +17,7 @@ namespace System.Threading
     public partial class Thread
     {
 #pragma warning disable 169, 414, 649
-        #region Sync with metadata/object-internals.h and InternalThread in mcs/class/corlib/System.Threading/Thread.cs
+        #region Sync with metadata/object-internals.h
         private int lock_thread_id;
         // stores a thread handle
         private IntPtr handle;
@@ -37,9 +37,7 @@ namespace System.Threading
         private int interruption_requested;
         private IntPtr longlived;
         internal bool threadpool_thread;
-        private bool thread_interrupt_requested;
         /* These are used from managed code */
-        internal int stack_size;
         internal byte apartment_state;
         internal int managed_id;
         private int small_id;
@@ -67,6 +65,9 @@ namespace System.Threading
         private StartHelper? _startHelper;
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
+#if TARGET_UNIX || TARGET_BROWSER
+        internal WaitSubsystem.ThreadWaitInfo _waitInfo;
+#endif
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
         // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
@@ -75,20 +76,12 @@ namespace System.Threading
 
         private Thread()
         {
-            InitInternal(this);
+            Initialize();
         }
 
         ~Thread()
         {
             FreeInternal();
-        }
-
-        internal static ulong CurrentOSThreadId
-        {
-            get
-            {
-                return GetCurrentOSThreadId();
-            }
         }
 
         public bool IsAlive
@@ -146,6 +139,10 @@ namespace System.Threading
             }
         }
 
+#if TARGET_UNIX || TARGET_BROWSER
+        internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
+#endif
+
         public ThreadPriority Priority
         {
             get
@@ -188,6 +185,9 @@ namespace System.Threading
 
         public void Interrupt()
         {
+#if TARGET_UNIX || TARGET_BROWSER // TODO: https://github.com/dotnet/runtime/issues/49521
+            WaitSubsystem.Interrupt(this);
+#endif
             InterruptInternal(this);
         }
 
@@ -198,13 +198,25 @@ namespace System.Threading
             return JoinInternal(this, millisecondsTimeout);
         }
 
+#if TARGET_UNIX || TARGET_BROWSER
+        [MemberNotNull(nameof(_waitInfo))]
+        [DynamicDependency(nameof(OnThreadExiting))]
+#endif
         private void Initialize()
         {
             InitInternal(this);
-
-            // TODO: This can go away once the mono/mono mirror is disabled
-            stack_size = _startHelper!._maxStackSize;
+#if TARGET_UNIX || TARGET_BROWSER
+            _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
+#endif
         }
+
+#if TARGET_UNIX || TARGET_BROWSER
+        private void EnsureWaitInfo()
+        {
+            if (_waitInfo == null)
+                _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
+        }
+#endif
 
         public static void SpinWait(int iterations)
         {
@@ -214,16 +226,6 @@ namespace System.Threading
             while (iterations-- > 0)
                 SpinWait_nop();
         }
-
-        public static void Sleep(int millisecondsTimeout)
-        {
-            if (millisecondsTimeout < Timeout.Infinite)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-
-            SleepInternal(millisecondsTimeout, true);
-        }
-
-        internal static void UninterruptibleSleep0() => SleepInternal(0, false);
 
         // Called from the runtime
         internal void StartCallback()
@@ -240,13 +242,13 @@ namespace System.Threading
 
         private void StartCore()
         {
-             StartInternal(this);
+             StartInternal(this, _startHelper?._maxStackSize ?? 0);
         }
 
         [DynamicDependency(nameof(StartCallback))]
         [DynamicDependency(nameof(ThrowThreadStartException))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void StartInternal(Thread runtime_thread);
+        private static extern void StartInternal(Thread runtimeThread, int stackSize);
 
         partial void ThreadNameChanged(string? value)
         {
@@ -282,6 +284,29 @@ namespace System.Threading
             return state;
         }
 
+        internal void SetWaitSleepJoinState()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert((GetState(this) & ThreadState.WaitSleepJoin) == 0);
+
+            SetState(this, ThreadState.WaitSleepJoin);
+        }
+
+        internal void ClearWaitSleepJoinState()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert((GetState(this) & ThreadState.WaitSleepJoin) != 0);
+
+            ClrState(this, ThreadState.WaitSleepJoin);
+        }
+
+        private static void OnThreadExiting(Thread thread)
+        {
+#if TARGET_UNIX || TARGET_BROWSER
+            thread.WaitInfo.OnThreadExiting();
+#endif
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern ulong GetCurrentOSThreadId();
 
@@ -290,12 +315,16 @@ namespace System.Threading
         private static extern void InitInternal(Thread thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void InitializeCurrentThread_icall([NotNull] ref Thread? thread);
+        private static extern Thread GetCurrentThread();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {
-            InitializeCurrentThread_icall(ref t_currentThread);
+            var current = GetCurrentThread();
+#if TARGET_UNIX || TARGET_BROWSER
+            current.EnsureWaitInfo();
+#endif
+            t_currentThread = current;
             return t_currentThread;
         }
 
@@ -325,9 +354,6 @@ namespace System.Threading
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool YieldInternal();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void SleepInternal(int millisecondsTimeout, bool allowInterruption);
 
         [Intrinsic]
         private static void SpinWait_nop()

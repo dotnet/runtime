@@ -771,6 +771,28 @@ DWORD MethodContext::repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle)
     return value;
 }
 
+void MethodContext::recIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn, bool result)
+{
+    if (IsJitIntrinsic == nullptr)
+        IsJitIntrinsic = new LightWeightMap<DWORDLONG, DWORD>();
+
+    IsJitIntrinsic->Add(CastHandle(ftn), (DWORD)result);
+    DEBUG_REC(dmpIsJitIntrinsic(CastHandle(ftn), (DWORD)result));
+}
+void MethodContext::dmpIsJitIntrinsic(DWORDLONG key, DWORD value)
+{
+    printf("IsJitIntrinsic key ftn-%016llX, value res-%u", key, value);
+}
+bool MethodContext::repIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+{
+    AssertCodeMsg((IsJitIntrinsic != nullptr) && (IsJitIntrinsic->GetIndex(CastHandle(ftn)) != -1), EXCEPTIONCODE_MC,
+                  "Didn't find %016llX", CastHandle(ftn));
+
+    bool result = (BOOL)IsJitIntrinsic->Get(CastHandle(ftn));
+    DEBUG_REP(dmpIsJitIntrinsic(CastHandle(ftn), (DWORD)result));
+    return result;
+}
+
 void MethodContext::recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs)
 {
     if (GetMethodAttribs == nullptr)
@@ -2685,8 +2707,11 @@ void MethodContext::dmpGetArgNext(DWORDLONG key, DWORDLONG value)
 }
 CORINFO_ARG_LIST_HANDLE MethodContext::repGetArgNext(CORINFO_ARG_LIST_HANDLE args)
 {
-    CORINFO_ARG_LIST_HANDLE temp = (CORINFO_ARG_LIST_HANDLE)GetArgNext->Get(CastHandle(args));
-    DEBUG_REP(dmpGetArgNext(CastHandle(args), CastHandle(temp)));
+    DWORDLONG key = CastHandle(args);
+    AssertCodeMsg(GetArgNext != nullptr, EXCEPTIONCODE_MC, "Didn't find %016llx", key);
+    AssertCodeMsg(GetArgNext->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llx", key);
+    CORINFO_ARG_LIST_HANDLE temp = (CORINFO_ARG_LIST_HANDLE)GetArgNext->Get(key);
+    DEBUG_REP(dmpGetArgNext(key, CastHandle(temp)));
     return temp;
 }
 void MethodContext::recGetMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_HANDLE memberParent)
@@ -6763,6 +6788,44 @@ int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, in
     }
 
     return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
+}
+
+bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile)
+{
+    hasEdgeProfile = false;
+    hasClassProfile = false;
+
+    // Obtain the Method Info structure for this method
+    CORINFO_METHOD_INFO  info;
+    unsigned             flags = 0;
+    repCompileMethod(&info, &flags);
+
+    if ((GetPgoInstrumentationResults != nullptr) &&
+        (GetPgoInstrumentationResults->GetIndex(CastHandle(info.ftn)) != -1))
+    {
+        ICorJitInfo::PgoInstrumentationSchema* schema = nullptr;
+        UINT32 schemaCount = 0;
+        BYTE* schemaData = nullptr;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, &schema, &schemaCount, &schemaData);
+
+        if (SUCCEEDED(pgoHR))
+        {
+            for (UINT32 i = 0; i < schemaCount; i++)
+            {
+                hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
+                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+
+                if (hasEdgeProfile && hasClassProfile)
+                {
+                    break;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 MethodContext::Environment MethodContext::cloneEnvironment()

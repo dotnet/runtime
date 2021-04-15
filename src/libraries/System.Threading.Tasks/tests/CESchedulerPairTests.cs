@@ -306,7 +306,7 @@ namespace System.Threading.Tasks.Tests
             ManualResetEvent blockMre = new ManualResetEvent(false);
 
             //Schedule a concurrent task and ensure that it is executed, just for fun
-            Task<bool> conTask = readers.StartNew<bool>(() => { new ManualResetEvent(false).WaitOne(10); ; return true; });
+            Task<bool> conTask = readers.StartNew<bool>(() => { new ManualResetEvent(false).WaitOne(10); return true; });
             conTask.Wait();
             Assert.True(conTask.Result, "The concurrenttask when executed successfully should have returned true");
 
@@ -397,7 +397,7 @@ namespace System.Threading.Tasks.Tests
                 }
                 for (int i = 0; i < cesps.Length; i++)
                 {
-                    Action work = () => new ManualResetEvent(false).WaitOne(2); ;
+                    Action work = () => new ManualResetEvent(false).WaitOne(2);
                     Task.Factory.StartNew(work, CancellationToken.None, TaskCreationOptions.None, cesps[i].ConcurrentScheduler);
                     Task.Factory.StartNew(work, CancellationToken.None, TaskCreationOptions.None, cesps[i].ExclusiveScheduler);
                 }

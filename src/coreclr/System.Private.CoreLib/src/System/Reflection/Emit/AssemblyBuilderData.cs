@@ -10,7 +10,7 @@ namespace System.Reflection.Emit
     /// data member for AssemblyBuilder. Note that what ever data members added to
     /// this class cannot be accessed from the EE.
     /// </summary>
-    internal class AssemblyBuilderData
+    internal sealed class AssemblyBuilderData
     {
         public const int AssemblyDefToken = 0x20000001;
 

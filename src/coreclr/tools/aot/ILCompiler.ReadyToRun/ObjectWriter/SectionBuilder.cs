@@ -834,6 +834,16 @@ namespace ILCompiler.PEWriter
                 SymbolTarget symbolTarget = _symbolMap[_win32ResourcesSymbol];
                 Section section = _sections[symbolTarget.SectionIndex];
                 Debug.Assert(section.RVAWhenPlaced != 0);
+
+                // Windows has a bug in its resource processing logic that occurs when 
+                // 1. A PE file is loaded as a data file
+                // 2. The resource data found in the resources has an RVA which has a magnitude greater than the size of the section which holds the resources
+                // 3. The offset of the start of the resource data from the start of the section is not zero.
+                //
+                // As it is impossible to effect condition 1 in the compiler, and changing condition 2 would require bloating the virtual size of the sections,
+                // instead require that the resource data is located at offset 0 within the section.
+                // We achieve that by sorting the Win32ResourcesNode as the first node.
+                Debug.Assert(symbolTarget.Offset == 0);
                 directoriesBuilder.ResourceTable = new DirectoryEntry(section.RVAWhenPlaced + symbolTarget.Offset, _win32ResourcesSize);
             }
 

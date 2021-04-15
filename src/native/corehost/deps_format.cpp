@@ -45,7 +45,7 @@ void deps_json_t::reconcile_libraries_with_targets(
     const pal::string_t& deps_path,
     const json_parser_t::value_t& json,
     const std::function<bool(const pal::string_t&)>& library_exists_fn,
-    const std::function<const vec_asset_t&(const pal::string_t&, int, bool*)>& get_assets_fn)
+    const std::function<const vec_asset_t&(const pal::string_t&, size_t, bool*)>& get_assets_fn)
 {
     pal::string_t deps_file = get_filename(deps_path);
 
@@ -320,7 +320,7 @@ bool deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const
     };
 
     const vec_asset_t empty;
-    auto get_relpaths = [&](const pal::string_t& package, int asset_type_index, bool* rid_specific) -> const vec_asset_t& {
+    auto get_relpaths = [&](const pal::string_t& package, size_t asset_type_index, bool* rid_specific) -> const vec_asset_t& {
 
         *rid_specific = false;
 
@@ -361,7 +361,7 @@ bool deps_json_t::load_self_contained(const pal::string_t& deps_path, const json
         return m_assets.libs.count(package);
     };
 
-    auto get_relpaths = [&](const pal::string_t& package, int type_index, bool* rid_specific) -> const vec_asset_t& {
+    auto get_relpaths = [&](const pal::string_t& package, size_t type_index, bool* rid_specific) -> const vec_asset_t& {
         *rid_specific = false;
         return m_assets.libs[package][type_index];
     };

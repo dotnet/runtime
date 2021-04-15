@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -24,14 +25,9 @@ namespace System.Text.Json.Serialization.Converters
             };
         }
 
-        private JsonConverter<object>? _objectConverter;
-
-        private static JsonConverter<object> GetObjectKeyConverter(JsonSerializerOptions options)
-            => (JsonConverter<object>)options.GetDictionaryKeyConverter(typeof(object));
-
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
             {
@@ -45,12 +41,12 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                if (classInfo.CreateObject == null)
+                if (typeInfo.CreateObject == null)
                 {
                     ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
                 }
 
-                TCollection returnValue = (TCollection)classInfo.CreateObject()!;
+                TCollection returnValue = (TCollection)typeInfo.CreateObject()!;
 
                 if (returnValue.IsReadOnly)
                 {
@@ -77,7 +73,9 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (IDictionaryEnumerator)state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<object?> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo.ElementClassInfo!);
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
+            _valueConverter ??= GetConverter<object?>(typeInfo.ElementTypeInfo!);
+
             do
             {
                 if (ShouldFlush(writer, ref state))
@@ -93,20 +91,19 @@ namespace System.Text.Json.Serialization.Converters
                     // Optimize for string since that's the hot path.
                     if (key is string keyString)
                     {
-                        JsonConverter<string> stringKeyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
-                        stringKeyConverter.WriteWithQuotes(writer, keyString, options, ref state);
+                        _keyConverter ??= GetConverter<string>(typeInfo.KeyTypeInfo!);
+                        _keyConverter.WriteWithQuotes(writer, keyString, options, ref state);
                     }
                     else
                     {
                         // IDictionary is a special case since it has polymorphic object semantics on serialization
                         // but needs to use JsonConverter<string> on deserialization.
-                        JsonConverter<object> objectKeyConverter = _objectConverter ??= GetObjectKeyConverter(options);
-                        objectKeyConverter.WriteWithQuotes(writer, key, options, ref state);
+                        _valueConverter.WriteWithQuotes(writer, key, options, ref state);
                     }
                 }
 
                 object? element = enumerator.Value;
-                if (!valueConverter.TryWrite(writer, element, options, ref state))
+                if (!_valueConverter.TryWrite(writer, element, options, ref state))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;

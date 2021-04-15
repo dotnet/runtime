@@ -140,12 +140,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(": ");
             if (_methodArgument != null)
             {
+                sb.Append(nameMangler.GetMangledTypeName(_methodArgument.OwningType));
+                sb.Append("::");
                 sb.Append(nameMangler.GetMangledMethodName(_methodArgument.Method));
+                if (_methodArgument.ConstrainedType != null)
+                {
+                    sb.Append("@");
+                    sb.Append(nameMangler.GetMangledTypeName(_methodArgument.ConstrainedType));
+                }
                 if (!_methodArgument.Token.IsNull)
                 {
                     sb.Append(" [");
                     sb.Append(_methodArgument.Token.MetadataReader.GetString(_methodArgument.Token.MetadataReader.GetAssemblyDefinition().Name));
-                    sb.Append(":"); ;
+                    sb.Append(":");
                     sb.Append(((uint)_methodArgument.Token.Token).ToString("X8"));
                     sb.Append("]");
                 }

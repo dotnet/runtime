@@ -625,7 +625,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public IntPtr domainSid = IntPtr.Zero;
     }
 
-    internal class UnsafeNativeMethods
+    internal static class UnsafeNativeMethods
     {
         public delegate int DsReplicaConsistencyCheck([In]IntPtr handle, int taskID, int flags);
 

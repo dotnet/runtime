@@ -5,6 +5,12 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
 
+# needed when zLib compression is used
+include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/AnyOS/zlib)
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/Unix/Common)
+endif()
+
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
@@ -67,7 +73,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     debuginfostore.cpp
     decodemd.cpp
     disassembler.cpp
-    dllimport.cpp
     domainfile.cpp
     dynamicmethod.cpp
     ecall.cpp
@@ -107,7 +112,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     onstackreplacement.cpp
     pefile.cpp
     peimage.cpp
-    peimagelayout.cpp
     perfmap.cpp
     perfinfo.cpp
     pgo.cpp
@@ -323,6 +327,7 @@ set(VM_SOURCES_WKS
     customattribute.cpp
     custommarshalerinfo.cpp
     autotrace.cpp
+    dllimport.cpp
     dllimportcallback.cpp
     dynamicinterfacecastable.cpp
     eeconfig.cpp
@@ -358,6 +363,7 @@ set(VM_SOURCES_WKS
     multicorejitplayer.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     nativeeventsource.cpp
     nativeoverlapped.cpp
+    nativelibrary.cpp
     nativelibrarynative.cpp
     objectlist.cpp
     olevariant.cpp
@@ -891,6 +897,11 @@ endif(CLR_CMAKE_TARGET_WIN32)
 set (VM_SOURCES_WKS_SPECIAL
     codeman.cpp
     ceemain.cpp
+    peimagelayout.cpp
+)
+
+list(APPEND VM_SOURCES_DAC
+    peimagelayout.cpp
 )
 
 # gcdecode.cpp is included by both JIT and VM. to avoid duplicate definitions we need to
@@ -909,14 +920,12 @@ convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 convert_to_absolute_path(VM_SOURCES_WKS_SPECIAL ${VM_SOURCES_WKS_SPECIAL})
 
-if (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
-    add_library_clr(cee_dac ${VM_SOURCES_DAC})
-    add_dependencies(cee_dac eventing_headers)
-    set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
-    target_precompile_headers(cee_dac PRIVATE [["common.h"]])
+add_library_clr(cee_dac ${VM_SOURCES_DAC})
+add_dependencies(cee_dac eventing_headers)
+set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
+target_precompile_headers(cee_dac PRIVATE [["common.h"]])
 
-    add_subdirectory(wks)
-endif(CLR_CMAKE_BUILD_SUBSET_RUNTIME)
+add_subdirectory(wks)
 
 if(FEATURE_PERFTRACING)
     add_subdirectory(eventing)

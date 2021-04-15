@@ -357,8 +357,11 @@ namespace Internal.JitInterface
         C,
         Stdcall,
         Thiscall,
-        Fastcall
+        Fastcall,
         // New calling conventions supported with the extensible calling convention encoding go here.
+        CMemberFunction,
+        StdcallMemberFunction,
+        FastcallMemberFunction
     }
 
     public enum CORINFO_CALLINFO_FLAGS
@@ -1266,6 +1269,9 @@ namespace Internal.JitInterface
 
         // token comes from CEE_LDVIRTFTN
         CORINFO_TOKENKIND_Ldvirtftn = 0x400 | CORINFO_TOKENKIND_Method,
+
+        // token comes from devirtualizing a method
+        CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod
@@ -1334,6 +1340,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_NO_INLINING = 42, // JIT should not inline any called method into this method
+        CORJIT_FLAG_SOFTFP_ABI = 43, // On ARM should enable armel calling convention
     }
 
     public struct CORJIT_FLAGS

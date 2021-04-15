@@ -13,7 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
+    internal sealed class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
     {
         private readonly EmitTypeInformation _emitXsiType;
         private bool _perCallXsiTypeAlreadyEmitted;
@@ -151,6 +151,7 @@ namespace System.Runtime.Serialization.Json
             writer.WriteAttributeString(null, JsonGlobals.serverTypeString, null, typeInformation);
         }
 
+        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         protected override void WriteDataContractValue(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle declaredTypeHandle)
         {
             JsonDataContract jsonDataContract = JsonDataContract.GetJsonDataContract(dataContract);
@@ -316,12 +317,12 @@ namespace System.Runtime.Serialization.Json
             Type contractType = contract.GetType();
             if ((contractType == typeof(XmlDataContract)) && !Globals.TypeOfIXmlSerializable.IsAssignableFrom(declaredType))
             {
-                throw System.ServiceModel.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.XmlObjectAssignedToIncompatibleInterface, graph.GetType(), declaredType)));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.XmlObjectAssignedToIncompatibleInterface, graph.GetType(), declaredType)));
             }
 
             if ((contractType == typeof(CollectionDataContract)) && !CollectionDataContract.IsCollectionInterface(declaredType))
             {
-                throw System.ServiceModel.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.CollectionAssignedToIncompatibleInterface, graph.GetType(), declaredType)));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.CollectionAssignedToIncompatibleInterface, graph.GetType(), declaredType)));
             }
         }
 

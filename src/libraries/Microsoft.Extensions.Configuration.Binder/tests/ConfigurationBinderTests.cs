@@ -34,6 +34,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             internal string InternalProperty { get; set; }
             protected string ProtectedProperty { get; set; }
 
+            [ConfigurationKeyName("Named_Property")]
+            public string NamedProperty { get; set; }
+
             protected string ProtectedPrivateSet { get; private set; }
 
             private string PrivateReadOnly { get; }
@@ -199,6 +202,22 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("DerivedSection", childOptions.DerivedSection.Key);
             Assert.Equal("Section:DerivedSection", childOptions.DerivedSection.Path);
             Assert.Null(options.Section.Value);
+        }
+
+        [Fact]
+        public void CanBindConfigurationKeyNameAttributes()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Named_Property", "Yo"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>();
+            
+            Assert.Equal("Yo", options.NamedProperty);
         }
 
         [Fact]

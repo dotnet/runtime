@@ -5,7 +5,7 @@ using System;
 
 namespace GenUnicodeProp
 {
-    internal class TableLevels
+    internal sealed class TableLevels
     {
         public readonly int Level1Bits;
         public readonly int Level2Bits;

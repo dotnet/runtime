@@ -21,6 +21,7 @@ using Xunit.Sdk;
 
 namespace System.Diagnostics.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public partial class ProcessTests : ProcessTestBase
     {
         private class FinalizingProcess : Process
@@ -189,7 +190,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // OSX doesn't support throwing on Process.Start
+        [SkipOnPlatform(TestPlatforms.OSX, "OSX doesn't support throwing on Process.Start")]
         public void TestStartWithBadWorkingDirectory()
         {
             string program;
@@ -541,7 +542,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Getting MaxWorkingSet is not supported on OSX and BSD.
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Getting MaxWorkingSet is not supported on OSX and BSD.")]
         public void MaxWorkingSet_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -596,7 +597,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Getting MinWorkingSet is not supported on OSX and BSD.
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Getting MinWorkingSet is not supported on OSX and BSD.")]
         public void MinWorkingSet_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -895,7 +896,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // getting/setting affinity not supported on OSX and BSD
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "getting/setting affinity not supported on OSX and BSD")]
         public void TestProcessorAffinity()
         {
             CreateDefaultProcess();

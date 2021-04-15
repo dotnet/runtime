@@ -14,6 +14,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class ProcessStreamReadTests : ProcessTestBase
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -344,8 +345,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/44329")]
-        [PlatformSpecific(~TestPlatforms.Windows)] // currently on Windows these operations async-over-sync on Windows	
+        [SkipOnPlatform(TestPlatforms.Windows, "currently on Windows these operations async-over-sync on Windows")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task ReadAsync_OutputStreams_Cancel_RespondsQuickly()
         {

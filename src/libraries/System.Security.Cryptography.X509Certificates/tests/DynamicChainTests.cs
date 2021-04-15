@@ -3,6 +3,7 @@
 
 using System.Formats.Asn1;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Test.Cryptography;
 using Xunit;
@@ -71,10 +72,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509ChainStatusFlags intermediateErrors,
             X509ChainStatusFlags rootErrors)
         {
+            string testName = $"{nameof(BuildInvalidSignatureTwice)} {endEntityErrors} {intermediateErrors} {rootErrors}";
             TestDataGenerator.MakeTestChain3(
                 out X509Certificate2 endEntityCert,
                 out X509Certificate2 intermediateCert,
-                out X509Certificate2 rootCert);
+                out X509Certificate2 rootCert,
+                testName: testName);
 
             X509Certificate2 TamperIfNeeded(X509Certificate2 input, X509ChainStatusFlags flags)
             {
@@ -142,6 +145,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     }
                 }
             }
+            else if (OperatingSystem.IsAndroid())
+            {
+                // Android always validates signature as part of building a path,
+                // so invalid signature comes back as PartialChain with no elements
+                expectedCount = 0;
+                endEntityErrors = X509ChainStatusFlags.PartialChain;
+                intermediateErrors = X509ChainStatusFlags.PartialChain;
+                rootErrors = X509ChainStatusFlags.PartialChain;
+            }
             else if (OperatingSystem.IsWindows())
             {
                 // Windows only reports NotTimeValid on the start-of-chain (end-entity in this case)
@@ -153,11 +165,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             X509ChainStatusFlags expectedAllErrors = endEntityErrors | intermediateErrors | rootErrors;
 
-            // If PartialChain or UntrustedRoot are the only remaining errors, the chain will succeed.
-            const X509ChainStatusFlags SuccessCodes =
-                X509ChainStatusFlags.UntrustedRoot | X509ChainStatusFlags.PartialChain;
+            bool expectSuccess;
+            if (PlatformDetection.IsAndroid)
+            {
+                // Android always validates signature as part of building a path, so chain
+                // building is expected to fail
+                expectSuccess = false;
+            }
+            else
+            {
+                // If PartialChain or UntrustedRoot are the only remaining errors, the chain will succeed.
+                const X509ChainStatusFlags SuccessCodes =
+                    X509ChainStatusFlags.UntrustedRoot | X509ChainStatusFlags.PartialChain;
 
-            bool expectSuccess = (expectedAllErrors & ~SuccessCodes) == 0;
+                expectSuccess = (expectedAllErrors & ~SuccessCodes) == 0;
+            }
 
             using (endEntityCert)
             using (intermediateCert)
@@ -170,8 +192,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.ExtraStore.Add(intermediateCert);
                 chain.ChainPolicy.ExtraStore.Add(rootCert);
 
-                chain.ChainPolicy.VerificationFlags |=
-                    X509VerificationFlags.AllowUnknownCertificateAuthority;
+                // Android doesn't respect AllowUnknownCertificateAuthority
+                if (!PlatformDetection.IsAndroid)
+                {
+                    chain.ChainPolicy.VerificationFlags |=
+                        X509VerificationFlags.AllowUnknownCertificateAuthority;
+                }
 
                 int i = 0;
 
@@ -193,7 +219,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(expectedCount, chain.ChainElements.Count);
                     Assert.Equal(expectedAllErrors, chain.AllStatusFlags());
 
-                    Assert.Equal(endEntityErrors, chain.ChainElements[0].AllStatusFlags());
+                    if (expectedCount > 0)
+                    {
+                        Assert.Equal(endEntityErrors, chain.ChainElements[0].AllStatusFlags());
+                    }
 
                     if (expectedCount > 2)
                     {
@@ -257,7 +286,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.ExtraStore.Add(intermediateCert2);
 
                 Assert.False(chain.Build(endEntityCert));
-                Assert.Equal(X509ChainStatusFlags.InvalidBasicConstraints, chain.AllStatusFlags());
+                Assert.Equal(PlatformBasicConstraints(X509ChainStatusFlags.InvalidBasicConstraints), chain.AllStatusFlags());
             }
         }
 
@@ -287,7 +316,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     rootCert,
                     intermediateCert,
                     endEntityCert,
-                    expectedFlags: X509ChainStatusFlags.InvalidBasicConstraints);
+                    expectedFlags: PlatformBasicConstraints(X509ChainStatusFlags.InvalidBasicConstraints));
             }
         }
 
@@ -319,15 +348,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                     Assert.False(chain.Build(cert));
 
-                    X509ChainElement certElement = chain.ChainElements.OfType<X509ChainElement>().Single();
-                    const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.HasNotSupportedCriticalExtension;
-                    X509ChainStatusFlags actualFlags = certElement.AllStatusFlags();
-                    Assert.True((actualFlags & ExpectedFlag) == ExpectedFlag, $"Has expected flag {ExpectedFlag} but was {actualFlags}");
+                    if (PlatformDetection.IsAndroid)
+                    {
+                        // Android always unsupported critical extensions as part of building a path,
+                        // so errors comes back as PartialChain with no elements
+                        Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+                        Assert.Equal(0, chain.ChainElements.Count);
+                    }
+                    else
+                    {
+                        X509ChainElement certElement = chain.ChainElements.OfType<X509ChainElement>().Single();
+                        const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.HasNotSupportedCriticalExtension;
+                        X509ChainStatusFlags actualFlags = certElement.AllStatusFlags();
+                        Assert.True((actualFlags & ExpectedFlag) == ExpectedFlag, $"Has expected flag {ExpectedFlag} but was {actualFlags}");
+                    }
                 }
             }
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Android, "Android does not support AIA fetching")]
         public static void TestInvalidAia()
         {
             using (RSA key = RSA.Create())
@@ -373,7 +413,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // macOS (10.14) will not load certificates with NumericString in their subject
         // if the 0x12 (NumericString) is changed to 0x13 (PrintableString) then the cert
         // import doesn't fail.
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
         public static void VerifyNumericStringSubject()
         {
             X500DistinguishedName dn = new X500DistinguishedName(
@@ -405,10 +445,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             bool saveAllInCustomTrustStore,
             X509ChainStatusFlags chainFlags)
         {
+            string testName = $"{nameof(CustomRootTrustDoesNotTrustIntermediates)} {saveAllInCustomTrustStore} {chainFlags}";
             TestDataGenerator.MakeTestChain3(
                 out X509Certificate2 endEntityCert,
                 out X509Certificate2 intermediateCert,
-                out X509Certificate2 rootCert);
+                out X509Certificate2 rootCert,
+                testName: testName);
 
             using (endEntityCert)
             using (intermediateCert)
@@ -430,9 +472,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     chain.ChainPolicy.ExtraStore.Add(rootCert);
                 }
 
-                Assert.Equal(saveAllInCustomTrustStore, chain.Build(endEntityCert));
-                Assert.Equal(3, chain.ChainElements.Count);
-                Assert.Equal(chainFlags, chain.AllStatusFlags());
+                if (PlatformDetection.IsAndroid && !saveAllInCustomTrustStore)
+                {
+                    // Android does not support an empty custom root trust
+                    // Only self-issued certs are treated as trusted anchors, so building the chain
+                    // should through PNSE even though the intermediate cert is added to the store
+                    Assert.Throws<PlatformNotSupportedException>(() => chain.Build(endEntityCert));
+                }
+                else
+                {
+                    Assert.Equal(saveAllInCustomTrustStore, chain.Build(endEntityCert));
+                    Assert.Equal(3, chain.ChainElements.Count);
+                    Assert.Equal(chainFlags, chain.AllStatusFlags());
+                }
             }
         }
 
@@ -454,9 +506,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
 
-                Assert.False(chain.Build(endEntityCert));
-                Assert.Equal(1, chain.ChainElements.Count);
-                Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+                if (PlatformDetection.IsAndroid)
+                {
+                    // Android does not support an empty custom root trust
+                    Assert.Throws<PlatformNotSupportedException>(() => chain.Build(endEntityCert));
+                }
+                else
+                {
+                    Assert.False(chain.Build(endEntityCert));
+                    Assert.Equal(1, chain.ChainElements.Count);
+                    Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+                }
             }
         }
 
@@ -481,8 +541,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
             builder.AddDnsName("www.example.com");
 
-            // excluded DNS name constraint for example.com.
+            // excluded DNS name constraint for .example.com.
             string nameConstraints = "3012A110300E820C2E6578616D706C652E636F6D";
+            if (PlatformDetection.IsAndroid)
+            {
+                // Android does not consider the constraint as being violated when it has
+                // the leading period. It checks expects the period as part of the left-side
+                // labels and not the constraint when doing validation.
+                // Use an excluded DNS name constraint without the period: example.com
+                nameConstraints = "3011A10F300D820B6578616D706C652E636F6D";
+            }
 
             TestNameConstrainedChain(nameConstraints, builder, (bool result, X509Chain chain) => {
                 Assert.False(result, "chain.Build");
@@ -491,7 +559,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // macOS appears to just completely ignore min/max.
+        [SkipOnPlatform(TestPlatforms.OSX, "macOS appears to just completely ignore min/max.")]
         public static void NameConstraintViolation_PermittedTree_HasMin()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -507,7 +575,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)] // Windows seems to skip over nonsense GeneralNames.
+        [SkipOnPlatform(TestPlatforms.Windows, "Windows seems to skip over nonsense GeneralNames.")]
+        [SkipOnPlatform(TestPlatforms.Android, "Android will check for a match. Since the permitted name does match the subject alt name, it succeeds.")]
         public static void NameConstraintViolation_InvalidGeneralNames()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -576,7 +645,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_RequireExplicitPolicy()
         {
             X509Extension[] intermediateExtensions = new []
@@ -633,7 +702,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_Valid()
         {
             X509Extension[] intermediateExtensions = new []
@@ -664,7 +733,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_Mismatch()
         {
             X509Extension[] intermediateExtensions = new []
@@ -699,7 +768,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_AnyPolicy()
         {
             X509Extension[] intermediateExtensions = new []
@@ -730,7 +799,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_Mapped()
         {
             X509Extension[] intermediateExtensions = new []
@@ -761,9 +830,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        private static X509ChainStatusFlags PlatformBasicConstraints(X509ChainStatusFlags flags)
+        {
+            if (OperatingSystem.IsAndroid())
+            {
+                // Android always validates basic constraints as part of building a path
+                // so violations comes back as PartialChain with no elements.
+                flags = X509ChainStatusFlags.PartialChain;
+            }
+
+            return flags;
+        }
+
         private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 const X509ChainStatusFlags AnyNameConstraintFlags =
                     X509ChainStatusFlags.HasExcludedNameConstraint |
@@ -778,13 +859,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     flags |= X509ChainStatusFlags.InvalidNameConstraints;
                 }
             }
+            else if (OperatingSystem.IsAndroid())
+            {
+                // Android always validates name constraints as part of building a path
+                // so violations comes back as PartialChain with no elements.
+                flags = X509ChainStatusFlags.PartialChain;
+            }
 
             return flags;
         }
 
         private static X509ChainStatusFlags PlatformPolicyConstraints(X509ChainStatusFlags flags)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 const X509ChainStatusFlags AnyPolicyConstraintFlags =
                     X509ChainStatusFlags.NoIssuanceChainPolicy;
@@ -795,6 +882,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     flags |= X509ChainStatusFlags.InvalidPolicyConstraints;
                 }
             }
+            else if (OperatingSystem.IsAndroid())
+            {
+                // Android always validates policy constraints as part of building a path
+                // so violations comes back as PartialChain with no elements.
+                flags = X509ChainStatusFlags.PartialChain;
+            }
 
             return flags;
         }
@@ -802,7 +895,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         private static void TestNameConstrainedChain(
             string intermediateNameConstraints,
             SubjectAlternativeNameBuilder endEntitySanBuilder,
-            Action<bool, X509Chain> body)
+            Action<bool, X509Chain> body,
+            [CallerMemberName] string testName = null)
         {
             X509Extension[] endEntityExtensions = new []
             {
@@ -832,7 +926,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 out X509Certificate2 intermediateCert,
                 out X509Certificate2 rootCert,
                 intermediateExtensions: intermediateExtensions,
-                endEntityExtensions: endEntityExtensions);
+                endEntityExtensions: endEntityExtensions,
+                testName: testName);
 
             using (endEntityCert)
             using (intermediateCert)

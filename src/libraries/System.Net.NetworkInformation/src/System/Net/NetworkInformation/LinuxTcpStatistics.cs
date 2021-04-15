@@ -4,7 +4,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxTcpStatistics : TcpStatistics
+    internal sealed class LinuxTcpStatistics : TcpStatistics
     {
         private readonly TcpGlobalStatisticsTable _table;
         private readonly int _currentConnections;

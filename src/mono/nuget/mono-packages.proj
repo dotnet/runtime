@@ -13,11 +13,12 @@
     <ProjectReference Include="Microsoft.NET.Runtime.WebAssembly.Sdk\Microsoft.NET.Runtime.WebAssembly.Sdk.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'iOS'">
+  <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'">
     <ProjectReference Include="Microsoft.NET.Runtime.iOS.Sample.Mono\Microsoft.NET.Runtime.iOS.Sample.Mono.pkgproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task\Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj" />
+    <ProjectReference Include="Microsoft.NET.Runtime.RuntimeConfigParser.Task\Microsoft.NET.Runtime.RuntimeConfigParser.Task.pkgproj" />
   </ItemGroup>
 </Project>

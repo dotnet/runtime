@@ -19,13 +19,7 @@ enum var_types_classification
     VTF_S   = 0x0040, // is a struct type
 };
 
-enum var_types : BYTE
-{
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) TYP_##tn,
-#include "typelist.h"
-#undef DEF_TP
-    TYP_COUNT
-};
+#include "vartypesdef.h"
 
 /*****************************************************************************
  * C-style pointers are implemented as TYP_INT or TYP_LONG depending on the
@@ -335,20 +329,23 @@ inline bool varTypeUsesFloatArgReg(T vt)
 template <class T>
 inline bool varTypeIsValidHfaType(T vt)
 {
-#ifdef FEATURE_HFA
-    bool isValid = (TypeGet(vt) != TYP_UNDEF);
-    if (isValid)
+    if (GlobalJitOptions::compFeatureHfa)
     {
+        bool isValid = (TypeGet(vt) != TYP_UNDEF);
+        if (isValid)
+        {
 #ifdef TARGET_ARM64
-        assert(varTypeUsesFloatReg(vt));
+            assert(varTypeUsesFloatReg(vt));
 #else  // !TARGET_ARM64
-        assert(varTypeIsFloating(vt));
+            assert(varTypeIsFloating(vt));
 #endif // !TARGET_ARM64
+        }
+        return isValid;
     }
-    return isValid;
-#else  // !FEATURE_HFA
-    return false;
-#endif // !FEATURE_HFA
+    else
+    {
+        return false;
+    }
 }
 
 /*****************************************************************************/

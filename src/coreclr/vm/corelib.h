@@ -477,6 +477,11 @@ DEFINE_METHOD(MARSHAL,              ALLOC_CO_TASK_MEM,                 AllocCoTa
 DEFINE_METHOD(MARSHAL,              FREE_CO_TASK_MEM,                  FreeCoTaskMem,                 SM_IntPtr_RetVoid)
 DEFINE_FIELD(MARSHAL,               SYSTEM_MAX_DBCS_CHAR_SIZE,         SystemMaxDBCSCharSize)
 
+DEFINE_METHOD(MARSHAL,              STRUCTURE_TO_PTR,                  StructureToPtr,                SM_Obj_IntPtr_Bool_RetVoid)
+DEFINE_METHOD(MARSHAL,              PTR_TO_STRUCTURE,                  PtrToStructure,                SM_IntPtr_Obj_RetVoid)
+DEFINE_METHOD(MARSHAL,              DESTROY_STRUCTURE,                 DestroyStructure,              SM_IntPtr_Type_RetVoid)
+DEFINE_METHOD(MARSHAL,              SIZEOF_TYPE,                       SizeOf,                        SM_Type_RetInt)
+
 DEFINE_CLASS(NATIVELIBRARY, Interop, NativeLibrary)
 DEFINE_METHOD(NATIVELIBRARY,        LOADLIBRARYCALLBACKSTUB, LoadLibraryCallbackStub, SM_Str_AssemblyBase_Bool_UInt_RetIntPtr)
 
@@ -772,6 +777,7 @@ DEFINE_CLASS(CALLCONV_STDCALL,               CompilerServices,       CallConvStd
 DEFINE_CLASS(CALLCONV_THISCALL,              CompilerServices,       CallConvThiscall)
 DEFINE_CLASS(CALLCONV_FASTCALL,              CompilerServices,       CallConvFastcall)
 DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSuppressGCTransition)
+DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 
 DEFINE_CLASS_U(Interop,                SafeHandle,         SafeHandle)
 DEFINE_FIELD_U(handle,                     SafeHandle,            m_handle)

@@ -47,6 +47,14 @@ else ()
         pal_log.c)
 endif ()
 
+if (CLR_CMAKE_TARGET_MACCATALYST)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES}
+        pal_iossupportversion.m)
+else ()
+    list (APPEND NATIVE_SOURCES
+        pal_iossupportversion.c)
+endif ()
+
 if (NOT CLR_CMAKE_TARGET_BROWSER)
     list (APPEND NATIVE_SOURCES pal_networkchange.c)
 endif ()
@@ -92,4 +100,4 @@ add_library(System.Native-Static
 
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
-install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})
+install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)

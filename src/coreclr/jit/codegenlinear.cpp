@@ -93,14 +93,6 @@ void CodeGen::genInitialize()
     initializeVariableLiveKeeper();
 #endif //  USING_VARIABLE_LIVE_RANGE
 
-    // The current implementation of switch tables requires the first block to have a label so it
-    // can generate offsets to the switch label targets.
-    // TODO-CQ: remove this when switches have been re-implemented to not use this.
-    if (compiler->fgHasSwitch)
-    {
-        compiler->fgFirstBB->bbFlags |= BBF_JMP_TARGET;
-    }
-
     genPendingCallLabel = nullptr;
 
     // Initialize the pointer tracking code
@@ -167,8 +159,7 @@ void CodeGen::genCodeForBBlist()
 
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
-    // Prepare the blocks for exception handling codegen: mark the blocks that needs labels.
-    genPrepForEHCodegen();
+    genMarkLabelsForCodegen();
 
     assert(!compiler->fgFirstBBScratch ||
            compiler->fgFirstBB == compiler->fgFirstBBScratch); // compiler->fgFirstBBScratch has to be first.
@@ -321,7 +312,7 @@ void CodeGen::genCodeForBBlist()
 
         // If this block is a jump target or it requires a label then set 'needLabel' to true,
         //
-        bool needLabel = (block->bbFlags & (BBF_JMP_TARGET | BBF_HAS_LABEL)) != 0;
+        bool needLabel = (block->bbFlags & BBF_HAS_LABEL) != 0;
 
         if (block == compiler->fgFirstColdBlock)
         {
@@ -346,6 +337,9 @@ void CodeGen::genCodeForBBlist()
         if ((block->bbPrev != nullptr) && (block->bbPrev->bbJumpKind == BBJ_COND) &&
             (block->bbWeight != block->bbPrev->bbWeight))
         {
+            JITDUMP("Adding label due to BB weight difference: BBJ_COND " FMT_BB " with weight " FMT_WT
+                    " different from " FMT_BB " with weight " FMT_WT "\n",
+                    block->bbPrev->bbNum, block->bbPrev->bbWeight, block->bbNum, block->bbWeight);
             needLabel = true;
         }
 
@@ -362,7 +356,7 @@ void CodeGen::genCodeForBBlist()
             // Mark a label and update the current set of live GC refs
 
             block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                             gcInfo.gcRegByrefSetCur, FALSE);
+                                                             gcInfo.gcRegByrefSetCur, false DEBUG_ARG(block->bbNum));
         }
 
         if (block == compiler->fgFirstColdBlock)
@@ -588,7 +582,7 @@ void CodeGen::genCodeForBBlist()
             {
                 if (!foundMismatchedRegVar)
                 {
-                    JITDUMP("Mismatched live reg vars after BB%02u:", block->bbNum);
+                    JITDUMP("Mismatched live reg vars after " FMT_BB ":", block->bbNum);
                     foundMismatchedRegVar = true;
                 }
                 JITDUMP(" V%02u", compiler->lvaTrackedIndexToLclNum(mismatchLiveVarIndex));
@@ -755,12 +749,24 @@ void CodeGen::genCodeForBBlist()
                 //
                 // During emitter, this information will be used to calculate the loop size.
                 // Depending on the loop size, decision of whether to align a loop or not will be taken.
+                //
+                // In the emitter, we need to calculate the loop size from `block->bbJumpDest` through
+                // `block` (inclusive). Thus, we need to ensure there is a label on the lexical fall-through
+                // block, even if one is not otherwise needed, to be able to calculate the size of this
+                // loop (loop size is calculated by walking the instruction groups; see emitter::getLoopSize()).
 
                 if (block->bbJumpDest->isLoopAlign())
                 {
                     GetEmitter()->emitSetLoopBackEdge(block->bbJumpDest);
+
+                    if (block->bbNext != nullptr)
+                    {
+                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->bbNext->bbNum);
+                        block->bbNext->bbFlags |= BBF_HAS_LABEL;
+                    }
                 }
-#endif
+#endif // FEATURE_LOOP_ALIGN
+
                 break;
 
             default:
@@ -1401,8 +1407,6 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
         unsigned   fieldVarNum = varDsc->lvFieldLclStart + multiRegIndex;
         LclVarDsc* fldVarDsc   = compiler->lvaGetDesc(fieldVarNum);
         assert(fldVarDsc->lvLRACandidate);
-        bool isInReg      = fldVarDsc->lvIsInReg() && reg != REG_NA;
-        bool isInMemory   = !isInReg || fldVarDsc->lvLiveInOutOfHndlr;
         bool isFieldDying = lcl->IsLastUse(multiRegIndex);
 
         if (fldVarDsc->GetRegNum() == REG_STK)
@@ -1507,8 +1511,6 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
             {
                 reg = lcl->AsLclVar()->GetRegNumByIdx(i);
             }
-            bool isInReg      = fldVarDsc->lvIsInReg() && reg != REG_NA;
-            bool isInMemory   = !isInReg || fldVarDsc->lvLiveInOutOfHndlr;
             bool isFieldDying = lcl->IsLastUse(i);
 
             if (fldVarDsc->GetRegNum() == REG_STK)

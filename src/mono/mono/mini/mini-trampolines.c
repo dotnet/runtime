@@ -507,9 +507,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 				/*
 				 * We found AOT compiled code for the method, skip the rest.
 				 */
-				if (mono_domain_owns_vtable_slot (mono_get_root_domain (), vtable_slot))
-					*vtable_slot = addr;
-
+				*vtable_slot = addr;
 				return mono_create_ftnptr (addr);
 			}
 
@@ -690,7 +688,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	vtable_slot = orig_vtable_slot;
 
 	if (vtable_slot) {
-		if (vtable_slot_to_patch && (mono_aot_is_got_entry (code, (guint8*)vtable_slot_to_patch) || mono_domain_owns_vtable_slot (mono_get_root_domain (), vtable_slot_to_patch))) {
+		if (vtable_slot_to_patch) {
 			g_assert (*vtable_slot_to_patch);
 			*vtable_slot_to_patch = mono_get_addr_from_ftnptr (addr);
 		}
@@ -823,9 +821,7 @@ mono_vcall_trampoline (host_mgreg_t *regs, guint8 *code, int slot, guint8 *tramp
 		addr = mono_aot_get_method_from_vt_slot (vt, slot, error);
 		goto_if_nok (error, leave);
 		if (addr && !m_class_is_valuetype (vt->klass)) {
-			if (mono_domain_owns_vtable_slot (mono_get_root_domain (), vtable_slot))
-				*vtable_slot = addr;
-
+			*vtable_slot = addr;
 			res = mono_create_ftnptr (addr);
 			goto leave;
 		}
@@ -1229,14 +1225,6 @@ mono_trampolines_init (void)
 	mono_counters_register ("Static rgctx trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &static_rgctx_trampolines);
 	mono_counters_register ("RGCTX unmanaged lookups", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_unmanaged_lookups);
 	mono_counters_register ("RGCTX num lazy fetch trampolines", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_num_lazy_fetch_trampolines);
-}
-
-void
-mono_trampolines_cleanup (void)
-{
-	g_hash_table_destroy (rgctx_lazy_fetch_trampoline_hash);
-	g_hash_table_destroy (rgctx_lazy_fetch_trampoline_hash_addr);
-	mono_os_mutex_destroy (&trampolines_mutex);
 }
 
 guint8 *

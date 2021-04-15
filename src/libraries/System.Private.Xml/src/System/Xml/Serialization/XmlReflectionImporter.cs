@@ -15,6 +15,8 @@ namespace System.Xml.Serialization
     using System.Xml.Extensions;
     using System.Xml;
     using System.Xml.Serialization;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Runtime.CompilerServices;
 
     ///<internalonly/>
     /// <devdoc>
@@ -86,11 +88,13 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void IncludeTypes(ICustomAttributeProvider provider)
         {
             IncludeTypes(provider, new RecursionLimiter());
         }
 
+        [RequiresUnreferencedCode("calls IncludeType")]
         private void IncludeTypes(ICustomAttributeProvider provider, RecursionLimiter limiter)
         {
             object[] attrs = provider.GetCustomAttributes(typeof(XmlIncludeAttribute), false);
@@ -104,11 +108,13 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void IncludeType(Type type)
         {
             IncludeType(type, new RecursionLimiter());
         }
 
+        [RequiresUnreferencedCode("calls ImportTypeMapping")]
         private void IncludeType(Type type, RecursionLimiter limiter)
         {
             int previousNestingLevel = _arrayNestingLevel;
@@ -132,6 +138,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(Type type)
         {
             return ImportTypeMapping(type, null, null);
@@ -140,6 +147,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(Type type, string? defaultNamespace)
         {
             return ImportTypeMapping(type, null, defaultNamespace);
@@ -148,6 +156,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute? root)
         {
             return ImportTypeMapping(type, root, null);
@@ -156,6 +165,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute? root, string? defaultNamespace)
         {
             if (type == null)
@@ -169,6 +179,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement)
         {
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, false);
@@ -177,6 +188,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool rpc)
         {
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, rpc, false);
@@ -186,6 +198,7 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         ///
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool rpc, bool openModel)
         {
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, rpc, openModel, XmlMappingAccess.Read | XmlMappingAccess.Write);
@@ -195,6 +208,7 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         ///
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool rpc, bool openModel, XmlMappingAccess access)
         {
             ElementAccessor element = new ElementAccessor();
@@ -242,6 +256,7 @@ namespace System.Xml.Serialization
             return new XmlAttributes(memberInfo);
         }
 
+        [RequiresUnreferencedCode("calls ImportTypeMapping")]
         private ElementAccessor ImportElement(TypeModel model, XmlRootAttribute? root, string? defaultNamespace, RecursionLimiter limiter)
         {
             XmlAttributes a = GetAttributes(model.Type, true);
@@ -366,11 +381,13 @@ namespace System.Xml.Serialization
             return new InvalidOperationException(SR.Format(model.IsProperty ? SR.XmlPropertyReflectionError : SR.XmlFieldReflectionError, model.Name), e);
         }
 
+        [RequiresUnreferencedCode("calls ImportTypeMapping")]
         private TypeMapping ImportTypeMapping(TypeModel model, string? ns, ImportContext context, string dataType, XmlAttributes? a, RecursionLimiter limiter)
         {
             return ImportTypeMapping(model, ns, context, dataType, a, false, false, limiter);
         }
 
+        [RequiresUnreferencedCode("calls ImportEnumMapping")]
         private TypeMapping ImportTypeMapping(TypeModel model, string? ns, ImportContext context, string dataType, XmlAttributes? a, bool repeats, bool openModel, RecursionLimiter limiter)
         {
             try
@@ -460,7 +477,8 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal static MethodInfo? GetMethodFromSchemaProvider(XmlSchemaProviderAttribute provider, Type type)
+        internal static MethodInfo? GetMethodFromSchemaProvider(XmlSchemaProviderAttribute provider,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
         {
             if (provider.IsAny)
             {
@@ -484,6 +502,7 @@ namespace System.Xml.Serialization
             return getMethod;
         }
 
+        [RequiresUnreferencedCode("calls IncludeTypes")]
         private SpecialMapping ImportSpecialMapping(Type type, TypeDesc typeDesc, string? ns, ImportContext context, RecursionLimiter limiter)
         {
             if (_specials == null)
@@ -609,6 +628,7 @@ namespace System.Xml.Serialization
             return new InvalidOperationException(SR.Format(SR.XmlIllegalTypeContext, typeDesc.FullName, GetContextName(context)));
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private StructMapping CreateRootMapping()
         {
             TypeDesc typeDesc = _typeScope.GetTypeDesc(typeof(object));
@@ -621,7 +641,8 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
-        private NullableMapping CreateNullableMapping(TypeMapping baseMapping, Type type)
+        private NullableMapping CreateNullableMapping(TypeMapping baseMapping,
+           [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             TypeDesc typeDesc = baseMapping.TypeDesc!.GetNullableTypeDesc(type);
             TypeMapping? existingMapping;
@@ -675,6 +696,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
+        [RequiresUnreferencedCode("calls CreateRootMapping")]
         private StructMapping GetRootMapping()
         {
             if (_root == null)
@@ -699,6 +721,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
+        [RequiresUnreferencedCode("calls GetRootMapping")]
         private StructMapping ImportStructLikeMapping(StructModel model, string? ns, bool openModel, XmlAttributes? a, RecursionLimiter limiter)
         {
             if (model.TypeDesc.Kind == TypeKind.Root) return GetRootMapping();
@@ -764,6 +787,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
+        [RequiresUnreferencedCode("calls GetTypeModel")]
         private bool InitializeStructMembers(StructMapping mapping, StructModel model, bool openModel, string? typeName, RecursionLimiter limiter)
         {
             if (mapping.IsFullyInitialized)
@@ -926,6 +950,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         internal string XsdTypeName(Type type)
         {
             if (type == typeof(object)) return Soap.UrType;
@@ -935,6 +960,7 @@ namespace System.Xml.Serialization
             return XsdTypeName(type, GetAttributes(type, false), typeDesc.Name);
         }
 
+        [RequiresUnreferencedCode("Calls XsdTypeName")]
         internal string XsdTypeName(Type type, XmlAttributes a, string name)
         {
             string typeName = name;
@@ -971,6 +997,7 @@ namespace System.Xml.Serialization
             return sum;
         }
 
+        [RequiresUnreferencedCode("calls XsdTypeName")]
         private void SetArrayMappingType(ArrayMapping mapping, string? defaultNs, Type type)
         {
             XmlAttributes a = GetAttributes(type, false);
@@ -1061,6 +1088,7 @@ namespace System.Xml.Serialization
             mapping.Namespace = ns;
         }
 
+        [RequiresUnreferencedCode("calls SetArrayMappingType")]
         private ArrayMapping ImportArrayLikeMapping(ArrayModel model, string? ns, RecursionLimiter limiter)
         {
             ArrayMapping mapping = new ArrayMapping();
@@ -1156,6 +1184,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
+        [RequiresUnreferencedCode("calls XsdTypeName")]
         private EnumMapping ImportEnumMapping(EnumModel model, string? ns, bool repeats)
         {
             XmlAttributes a = GetAttributes(model.Type, false);
@@ -1214,6 +1243,7 @@ namespace System.Xml.Serialization
             return constant;
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private MembersMapping ImportMembersMapping(XmlReflectionMember[] xmlReflectionMembers, string? ns, bool hasWrapperElement, bool rpc, bool openModel, RecursionLimiter limiter)
         {
             MembersMapping members = new MembersMapping();
@@ -1291,6 +1321,7 @@ namespace System.Xml.Serialization
             return members;
         }
 
+        [RequiresUnreferencedCode("Calls TypeScope.GetTypeDesc(Type) and XmlReflectionImporter.ImportAccessorMapping both of which RequireUnreferencedCode")]
         private MemberMapping ImportMemberMapping(XmlReflectionMember xmlReflectionMember, string? ns, XmlReflectionMember[] xmlReflectionMembers, bool rpc, bool openModel, RecursionLimiter limiter)
         {
             XmlSchemaForm form = rpc ? XmlSchemaForm.Unqualified : XmlSchemaForm.Qualified;
@@ -1371,6 +1402,7 @@ namespace System.Xml.Serialization
             return null;
         }
 
+        [RequiresUnreferencedCode("calls ImportAccessorMapping")]
         private MemberMapping ImportFieldMapping(StructModel parent, FieldModel model, XmlAttributes a, string? ns, RecursionLimiter limiter)
         {
             MemberMapping member = new MemberMapping();
@@ -1428,6 +1460,7 @@ namespace System.Xml.Serialization
             throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferMemberMissing, choice.MemberName, accessorName));
         }
 
+        [RequiresUnreferencedCode("calls GetFieldModel")]
         private Type GetChoiceIdentifierType(XmlChoiceIdentifierAttribute choice, StructModel structModel, bool isArrayLike, string accessorName)
         {
             // check that the choice field exists
@@ -1463,6 +1496,7 @@ namespace System.Xml.Serialization
             return enumType;
         }
 
+        [RequiresUnreferencedCode("calls ImportTypeMapping")]
         private void CreateArrayElementsFromAttributes(ArrayMapping arrayMapping, XmlArrayItemAttributes attributes, Type arrayElementType, string? arrayElementNs, RecursionLimiter limiter)
         {
             NameTable arrayItemElements = new NameTable();   // xmlelementname + xmlns -> ElementAccessor
@@ -1487,6 +1521,7 @@ namespace System.Xml.Serialization
             arrayMapping.Elements = (ElementAccessor[])arrayItemElements.ToArray(typeof(ElementAccessor));
         }
 
+        [RequiresUnreferencedCode("calls GetArrayElementType")]
         private void ImportAccessorMapping(MemberMapping accessor, FieldModel model, XmlAttributes a, string? ns, Type? choiceIdentifierType, bool rpc, bool openModel, RecursionLimiter limiter)
         {
             XmlSchemaForm elementFormDefault = XmlSchemaForm.Qualified;
@@ -2219,6 +2254,7 @@ namespace System.Xml.Serialization
         }
 
         // will create a shallow type mapping for a top-level type
+        [RequiresUnreferencedCode("Calls TypeScope.GetTypeDesc(Type) which has RequiresUnreferencedCode")]
         internal static XmlTypeMapping GetTopLevelMapping(Type type, string? defaultNamespace)
         {
             defaultNamespace = defaultNamespace ?? string.Empty;
@@ -2247,7 +2283,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
     }
-    internal class ImportStructWorkItem
+    internal sealed class ImportStructWorkItem
     {
         private readonly StructModel _model;
         private readonly StructMapping _mapping;
@@ -2262,7 +2298,7 @@ namespace System.Xml.Serialization
         internal StructMapping Mapping { get { return _mapping; } }
     }
 
-    internal class WorkItems
+    internal sealed class WorkItems
     {
         private readonly ArrayList _list = new ArrayList();
 
@@ -2312,7 +2348,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class RecursionLimiter
+    internal sealed class RecursionLimiter
     {
         private readonly int _maxDepth;
         private int _depth;

@@ -78,9 +78,7 @@ struct InitVarDscInfo;     // defined in register_arg_convention.h
 class FgStack;             // defined in fgbasic.cpp
 class Instrumentor;        // defined in fgprofile.cpp
 class SpanningTreeVisitor; // defined in fgprofile.cpp
-#if FEATURE_ANYCSE
-class CSE_DataFlow; // defined in OptCSE.cpp
-#endif
+class CSE_DataFlow;        // defined in OptCSE.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -139,7 +137,6 @@ const int BAD_STK_OFFS = 0xBAADF00D; // for LclVarDsc::lvStkOffs
 //------------------------------------------------------------------------
 // HFA info shared by LclVarDsc and fgArgTabEntry
 //------------------------------------------------------------------------
-#ifdef FEATURE_HFA
 inline bool IsHfa(CorInfoHFAElemType kind)
 {
     return kind != CORINFO_HFA_ELEM_NONE;
@@ -186,7 +183,6 @@ inline CorInfoHFAElemType HfaElemKindFromType(var_types type)
             return CORINFO_HFA_ELEM_NONE;
     }
 }
-#endif // FEATURE_HFA
 
 // The following holds the Local var info (scope information)
 typedef const char* VarName; // Actual ASCII string
@@ -489,9 +485,9 @@ public:
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
 
-#ifdef FEATURE_HFA
+#ifdef FEATURE_HFA_FIELDS_PRESENT
     CorInfoHFAElemType _lvHfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
-#endif                                     // FEATURE_HFA
+#endif                                     // FEATURE_HFA_FIELDS_PRESENT
 
 #ifdef DEBUG
     // TODO-Cleanup: See the note on lvSize() - this flag is only in use by asserts that are checking for struct
@@ -541,6 +537,10 @@ public:
     unsigned char lvFldOffset;
     unsigned char lvFldOrdinal;
 
+#ifdef DEBUG
+    unsigned char lvDisqualifyEHVarReason = 'H';
+#endif
+
 #if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
     {
@@ -561,22 +561,47 @@ public:
     }
 #endif // FEATURE_MULTIREG_ARGS
 
+    CorInfoHFAElemType GetLvHfaElemKind() const
+    {
+#ifdef FEATURE_HFA_FIELDS_PRESENT
+        return _lvHfaElemKind;
+#else
+        NOWAY_MSG("GetLvHfaElemKind");
+        return CORINFO_HFA_ELEM_NONE;
+#endif // FEATURE_HFA_FIELDS_PRESENT
+    }
+
+    void SetLvHfaElemKind(CorInfoHFAElemType elemKind)
+    {
+#ifdef FEATURE_HFA_FIELDS_PRESENT
+        _lvHfaElemKind = elemKind;
+#else
+        NOWAY_MSG("SetLvHfaElemKind");
+#endif // FEATURE_HFA_FIELDS_PRESENT
+    }
+
     bool lvIsHfa() const
     {
-#ifdef FEATURE_HFA
-        return IsHfa(_lvHfaElemKind);
-#else
-        return false;
-#endif
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            return IsHfa(GetLvHfaElemKind());
+        }
+        else
+        {
+            return false;
+        }
     }
 
     bool lvIsHfaRegArg() const
     {
-#ifdef FEATURE_HFA
-        return lvIsRegArg && lvIsHfa();
-#else
-        return false;
-#endif
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            return lvIsRegArg && lvIsHfa();
+        }
+        else
+        {
+            return false;
+        }
     }
 
     //------------------------------------------------------------------------------
@@ -595,7 +620,7 @@ public:
         slots = lvExactSize / sizeof(float);
         assert(slots <= 8);
 #elif defined(TARGET_ARM64)
-        switch (_lvHfaElemKind)
+        switch (GetLvHfaElemKind())
         {
             case CORINFO_HFA_ELEM_NONE:
                 assert(!"lvHfaSlots called for non-HFA");
@@ -921,22 +946,26 @@ public:
 
     var_types GetHfaType() const
     {
-#ifdef FEATURE_HFA
-        assert(lvIsHfa());
-        return HfaTypeFromElemKind(_lvHfaElemKind);
-#else
-        return TYP_UNDEF;
-#endif // FEATURE_HFA
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            assert(lvIsHfa());
+            return HfaTypeFromElemKind(GetLvHfaElemKind());
+        }
+        else
+        {
+            return TYP_UNDEF;
+        }
     }
 
     void SetHfaType(var_types type)
     {
-#ifdef FEATURE_HFA
-        CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
-        _lvHfaElemKind              = elemKind;
-        // Ensure we've allocated enough bits.
-        assert(_lvHfaElemKind == elemKind);
-#endif // FEATURE_HFA
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
+            SetLvHfaElemKind(elemKind);
+            // Ensure we've allocated enough bits.
+            assert(GetLvHfaElemKind() == elemKind);
+        }
     }
 
     var_types lvaArgType();
@@ -1292,6 +1321,7 @@ class JitTimer
     CompTimeInfo m_info; // The CompTimeInfo for this compilation.
 
     static CritSecObject s_csvLock; // Lock to protect the time log file.
+    static FILE*         s_csvFile; // The time log file handle.
     void PrintCsvMethodStats(Compiler* comp);
 
 private:
@@ -1336,6 +1366,8 @@ public:
         }
         return res;
     }
+
+    static void Shutdown();
 };
 #endif // FEATURE_JIT_METHOD_PERF
 
@@ -1481,9 +1513,27 @@ public:
 #ifdef FEATURE_ARG_SPLIT
     bool _isSplit : 1; // True when this argument is split between the registers and OutArg area
 #endif                 // FEATURE_ARG_SPLIT
-#ifdef FEATURE_HFA
+#ifdef FEATURE_HFA_FIELDS_PRESENT
     CorInfoHFAElemType _hfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
 #endif
+    CorInfoHFAElemType GetHfaElemKind() const
+    {
+#ifdef FEATURE_HFA_FIELDS_PRESENT
+        return _hfaElemKind;
+#else
+        NOWAY_MSG("GetHfaElemKind");
+        return CORINFO_HFA_ELEM_NONE;
+#endif
+    }
+
+    void SetHfaElemKind(CorInfoHFAElemType elemKind)
+    {
+#ifdef FEATURE_HFA_FIELDS_PRESENT
+        _hfaElemKind = elemKind;
+#else
+        NOWAY_MSG("SetHfaElemKind");
+#endif
+    }
 
     bool isLateArg() const
     {
@@ -1557,20 +1607,26 @@ public:
 
     bool IsHfaArg() const
     {
-#ifdef FEATURE_HFA
-        return IsHfa(_hfaElemKind);
-#else
-        return false;
-#endif
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            return IsHfa(GetHfaElemKind());
+        }
+        else
+        {
+            return false;
+        }
     }
 
     bool IsHfaRegArg() const
     {
-#ifdef FEATURE_HFA
-        return IsHfa(_hfaElemKind) && isPassedInRegisters();
-#else
-        return false;
-#endif
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            return IsHfa(GetHfaElemKind()) && isPassedInRegisters();
+        }
+        else
+        {
+            return false;
+        }
     }
 
     unsigned intRegCount() const
@@ -1626,57 +1682,61 @@ public:
 
     var_types GetHfaType() const
     {
-#ifdef FEATURE_HFA
-        return HfaTypeFromElemKind(_hfaElemKind);
-#else
-        return TYP_UNDEF;
-#endif // FEATURE_HFA
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            return HfaTypeFromElemKind(GetHfaElemKind());
+        }
+        else
+        {
+            return TYP_UNDEF;
+        }
     }
 
     void SetHfaType(var_types type, unsigned hfaSlots)
     {
-#ifdef FEATURE_HFA
-        if (type != TYP_UNDEF)
+        if (GlobalJitOptions::compFeatureHfa)
         {
-            // We must already have set the passing mode.
-            assert(numRegs != 0 || GetStackByteSize() != 0);
-            // We originally set numRegs according to the size of the struct, but if the size of the
-            // hfaType is not the same as the pointer size, we need to correct it.
-            // Note that hfaSlots is the number of registers we will use. For ARM, that is twice
-            // the number of "double registers".
-            unsigned numHfaRegs = hfaSlots;
-#ifdef TARGET_ARM
-            if (type == TYP_DOUBLE)
+            if (type != TYP_UNDEF)
             {
-                // Must be an even number of registers.
-                assert((numRegs & 1) == 0);
-                numHfaRegs = hfaSlots / 2;
-            }
+                // We must already have set the passing mode.
+                assert(numRegs != 0 || GetStackByteSize() != 0);
+                // We originally set numRegs according to the size of the struct, but if the size of the
+                // hfaType is not the same as the pointer size, we need to correct it.
+                // Note that hfaSlots is the number of registers we will use. For ARM, that is twice
+                // the number of "double registers".
+                unsigned numHfaRegs = hfaSlots;
+#ifdef TARGET_ARM
+                if (type == TYP_DOUBLE)
+                {
+                    // Must be an even number of registers.
+                    assert((numRegs & 1) == 0);
+                    numHfaRegs = hfaSlots / 2;
+                }
 #endif // TARGET_ARM
 
-            if (!IsHfaArg())
-            {
-                // We haven't previously set this; do so now.
-                CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
-                _hfaElemKind                = elemKind;
-                // Ensure we've allocated enough bits.
-                assert(_hfaElemKind == elemKind);
-                if (isPassedInRegisters())
+                if (!IsHfaArg())
                 {
-                    numRegs = numHfaRegs;
+                    // We haven't previously set this; do so now.
+                    CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
+                    SetHfaElemKind(elemKind);
+                    // Ensure we've allocated enough bits.
+                    assert(GetHfaElemKind() == elemKind);
+                    if (isPassedInRegisters())
+                    {
+                        numRegs = numHfaRegs;
+                    }
                 }
-            }
-            else
-            {
-                // We've already set this; ensure that it's consistent.
-                if (isPassedInRegisters())
+                else
                 {
-                    assert(numRegs == numHfaRegs);
+                    // We've already set this; ensure that it's consistent.
+                    if (isPassedInRegisters())
+                    {
+                        assert(numRegs == numHfaRegs);
+                    }
+                    assert(type == HfaTypeFromElemKind(GetHfaElemKind()));
                 }
-                assert(type == HfaTypeFromElemKind(_hfaElemKind));
             }
         }
-#endif // FEATURE_HFA
     }
 
 #ifdef TARGET_ARM
@@ -1749,33 +1809,34 @@ public:
     unsigned getSize() const
     {
         unsigned size = getSlotCount();
-#ifdef FEATURE_HFA
-        if (IsHfaRegArg())
+        if (GlobalJitOptions::compFeatureHfa)
         {
+            if (IsHfaRegArg())
+            {
 #ifdef TARGET_ARM
-            // We counted the number of regs, but if they are DOUBLE hfa regs we have to double the size.
-            if (GetHfaType() == TYP_DOUBLE)
-            {
-                assert(!IsSplit());
-                size <<= 1;
-            }
+                // We counted the number of regs, but if they are DOUBLE hfa regs we have to double the size.
+                if (GetHfaType() == TYP_DOUBLE)
+                {
+                    assert(!IsSplit());
+                    size <<= 1;
+                }
 #elif defined(TARGET_ARM64)
-            // We counted the number of regs, but if they are FLOAT hfa regs we have to halve the size,
-            // or if they are SIMD16 vector hfa regs we have to double the size.
-            if (GetHfaType() == TYP_FLOAT)
-            {
-                // Round up in case of odd HFA count.
-                size = (size + 1) >> 1;
-            }
+                // We counted the number of regs, but if they are FLOAT hfa regs we have to halve the size,
+                // or if they are SIMD16 vector hfa regs we have to double the size.
+                if (GetHfaType() == TYP_FLOAT)
+                {
+                    // Round up in case of odd HFA count.
+                    size = (size + 1) >> 1;
+                }
 #ifdef FEATURE_SIMD
-            else if (GetHfaType() == TYP_SIMD16)
-            {
-                size <<= 1;
-            }
+                else if (GetHfaType() == TYP_SIMD16)
+                {
+                    size <<= 1;
+                }
 #endif // FEATURE_SIMD
 #endif // TARGET_ARM64
+            }
         }
-#endif // FEATURE_HFA
         return size;
     }
 
@@ -2273,10 +2334,6 @@ public:
 
     GenTree* impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass);
 
-#ifdef ARM_SOFTFP
-    bool isSingleFloat32Struct(CORINFO_CLASS_HANDLE hClass);
-#endif // ARM_SOFTFP
-
 #ifdef TARGET_X86
     bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const;
 #endif // TARGET_X86
@@ -2683,6 +2740,7 @@ public:
     GenTree* gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd);
 
     GenTree* gtNewStringLiteralNode(InfoAccessType iat, void* pValue);
+    GenTreeIntCon* gtNewStringLiteralLength(GenTreeStrCon* node);
 
     GenTree* gtNewLconNode(__int64 value);
 
@@ -3784,6 +3842,26 @@ public:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
+
+private:
+    // For prefixFlags
+    enum
+    {
+        PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
+        PREFIX_TAILCALL_IMPLICIT =
+            0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
+        PREFIX_TAILCALL_STRESS =
+            0x00000100, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
+        PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
+        PREFIX_VOLATILE    = 0x00001000,
+        PREFIX_UNALIGNED   = 0x00010000,
+        PREFIX_CONSTRAINED = 0x00100000,
+        PREFIX_READONLY    = 0x01000000
+    };
+
+    static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
+    static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp);
+    static bool impOpcodeIsCallOpcode(OPCODE opcode);
 
 public:
     void impInit();
@@ -5428,7 +5506,6 @@ public:
     const char* fgProcessEscapes(const char* nameIn, escapeMapping_t* map);
     FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR type);
     bool fgDumpFlowGraph(Phases phase);
-
 #endif // DUMP_FLOWGRAPHS
 
 #ifdef DEBUG
@@ -5584,7 +5661,8 @@ protected:
     void        fgIncorporateEdgeCounts();
 
 public:
-    bool                                   fgProfileData_ILSizeMismatch;
+    const char*                            fgPgoFailReason;
+    bool                                   fgPgoDisabled;
     ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
     BYTE*                                  fgPgoData;
     UINT32                                 fgPgoSchemaCount;
@@ -5593,6 +5671,9 @@ public:
     UINT32                                 fgPgoBlockCounts;
     UINT32                                 fgPgoEdgeCounts;
     UINT32                                 fgPgoClassProfiles;
+    unsigned                               fgPgoInlineePgo;
+    unsigned                               fgPgoInlineeNoPgo;
+    unsigned                               fgPgoInlineeNoPgoSingleBlock;
 
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
     void fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t weight);
@@ -5767,7 +5848,6 @@ private:
                                      unsigned             argIndex,
                                      CORINFO_CLASS_HANDLE copyBlkClass);
 
-    void fgFixupStructReturn(GenTree* call);
     GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
 
 public:
@@ -5834,6 +5914,8 @@ private:
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
     GenTree* fgMorphConst(GenTree* tree);
+
+    bool fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2);
 
     GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
     GenTree* fgMorphCommutative(GenTreeOp* tree);
@@ -6014,7 +6096,9 @@ private:
 public:
     void optInit();
 
-    void optRemoveRangeCheck(GenTree* tree, Statement* stmt);
+    GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
+    GenTree* Compiler::optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
+    void Compiler::optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);
     bool optIsRangeCheckRemovable(GenTree* tree);
 
 protected:
@@ -6134,20 +6218,10 @@ public:
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
     PhaseStatus optFindLoops();      // Finds loops and records them in the loop table
 
-    // Optionally clone loops in the loop table.
     void optCloneLoops();
-
-    // Clone loop "loopInd" in the loop table.
     void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
-
-    // Ensure that loop "loopInd" has a unique head block.  (If the existing entry has
-    // non-loop predecessors other than the head entry, create a new, empty block that goes (only) to the entry,
-    // and redirects the preds of the entry to this new block.)  Sets the weight of the newly created block to
-    // "ambientWeight".
     void optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambientWeight);
-
     void optUnrollLoops(); // Unrolls loops (needs to have cost info)
-
     void optRemoveRedundantZeroInits();
 
 protected:
@@ -6261,13 +6335,13 @@ public:
 
         /* The following values are set only for iterator loops, i.e. has the flag LPFLG_ITER set */
 
-        GenTree*   lpIterTree;    // The "i = i <op> const" tree
-        unsigned   lpIterVar();   // iterator variable #
-        int        lpIterConst(); // the constant with which the iterator is incremented
-        genTreeOps lpIterOper();  // the type of the operation on the iterator (ASG_ADD, ASG_SUB, etc.)
-        void       VERIFY_lpIterTree();
+        GenTree*   lpIterTree;          // The "i = i <op> const" tree
+        unsigned   lpIterVar() const;   // iterator variable #
+        int        lpIterConst() const; // the constant with which the iterator is incremented
+        genTreeOps lpIterOper() const;  // the type of the operation on the iterator (ASG_ADD, ASG_SUB, etc.)
+        void       VERIFY_lpIterTree() const;
 
-        var_types lpIterOperType(); // For overflow instructions
+        var_types lpIterOperType() const; // For overflow instructions
 
         union {
             int lpConstInit; // initial constant value of iterator                           : Valid if LPFLG_CONST_INIT
@@ -6275,69 +6349,74 @@ public:
                                 // LPFLG_VAR_INIT
         };
 
-        /* The following is for LPFLG_ITER loops only (i.e. the loop condition is "i RELOP const or var" */
+        // The following is for LPFLG_ITER loops only (i.e. the loop condition is "i RELOP const or var"
 
-        GenTree*   lpTestTree;   // pointer to the node containing the loop test
-        genTreeOps lpTestOper(); // the type of the comparison between the iterator and the limit (GT_LE, GT_GE, etc.)
-        void       VERIFY_lpTestTree();
+        GenTree*   lpTestTree;         // pointer to the node containing the loop test
+        genTreeOps lpTestOper() const; // the type of the comparison between the iterator and the limit (GT_LE, GT_GE,
+                                       // etc.)
+        void VERIFY_lpTestTree() const;
 
-        bool     lpIsReversed(); // true if the iterator node is the second operand in the loop condition
-        GenTree* lpIterator();   // the iterator node in the loop test
-        GenTree* lpLimit();      // the limit node in the loop test
+        bool     lpIsReversed() const; // true if the iterator node is the second operand in the loop condition
+        GenTree* lpIterator() const;   // the iterator node in the loop test
+        GenTree* lpLimit() const;      // the limit node in the loop test
 
-        int lpConstLimit();    // limit   constant value of iterator - loop condition is "i RELOP const" : Valid if
-                               // LPFLG_CONST_LIMIT
-        unsigned lpVarLimit(); // the lclVar # in the loop condition ( "i RELOP lclVar" )                : Valid if
-                               // LPFLG_VAR_LIMIT
-        bool lpArrLenLimit(Compiler* comp, ArrIndex* index); // The array length in the loop condition ( "i RELOP
-                                                             // arr.len" or "i RELOP arr[i][j].len" )  : Valid if
-                                                             // LPFLG_ARRLEN_LIMIT
+        // Limit constant value of iterator - loop condition is "i RELOP const"
+        // : Valid if LPFLG_CONST_LIMIT
+        int lpConstLimit() const;
+
+        // The lclVar # in the loop condition ( "i RELOP lclVar" )
+        // : Valid if LPFLG_VAR_LIMIT
+        unsigned lpVarLimit() const;
+
+        // The array length in the loop condition ( "i RELOP arr.len" or "i RELOP arr[i][j].len" )
+        // : Valid if LPFLG_ARRLEN_LIMIT
+        bool lpArrLenLimit(Compiler* comp, ArrIndex* index) const;
 
         // Returns "true" iff "*this" contains the blk.
-        bool lpContains(BasicBlock* blk)
+        bool lpContains(BasicBlock* blk) const
         {
             return lpFirst->bbNum <= blk->bbNum && blk->bbNum <= lpBottom->bbNum;
         }
         // Returns "true" iff "*this" (properly) contains the range [first, bottom] (allowing firsts
         // to be equal, but requiring bottoms to be different.)
-        bool lpContains(BasicBlock* first, BasicBlock* bottom)
+        bool lpContains(BasicBlock* first, BasicBlock* bottom) const
         {
             return lpFirst->bbNum <= first->bbNum && bottom->bbNum < lpBottom->bbNum;
         }
 
         // Returns "true" iff "*this" (properly) contains "lp2" (allowing firsts to be equal, but requiring
         // bottoms to be different.)
-        bool lpContains(const LoopDsc& lp2)
+        bool lpContains(const LoopDsc& lp2) const
         {
             return lpContains(lp2.lpFirst, lp2.lpBottom);
         }
 
         // Returns "true" iff "*this" is (properly) contained by the range [first, bottom]
         // (allowing firsts to be equal, but requiring bottoms to be different.)
-        bool lpContainedBy(BasicBlock* first, BasicBlock* bottom)
+        bool lpContainedBy(BasicBlock* first, BasicBlock* bottom) const
         {
             return first->bbNum <= lpFirst->bbNum && lpBottom->bbNum < bottom->bbNum;
         }
 
         // Returns "true" iff "*this" is (properly) contained by "lp2"
         // (allowing firsts to be equal, but requiring bottoms to be different.)
-        bool lpContainedBy(const LoopDsc& lp2)
+        bool lpContainedBy(const LoopDsc& lp2) const
         {
             return lpContains(lp2.lpFirst, lp2.lpBottom);
         }
 
         // Returns "true" iff "*this" is disjoint from the range [top, bottom].
-        bool lpDisjoint(BasicBlock* first, BasicBlock* bottom)
+        bool lpDisjoint(BasicBlock* first, BasicBlock* bottom) const
         {
             return bottom->bbNum < lpFirst->bbNum || lpBottom->bbNum < first->bbNum;
         }
         // Returns "true" iff "*this" is disjoint from "lp2".
-        bool lpDisjoint(const LoopDsc& lp2)
+        bool lpDisjoint(const LoopDsc& lp2) const
         {
             return lpDisjoint(lp2.lpFirst, lp2.lpBottom);
         }
         // Returns "true" iff the loop is well-formed (see code for defn).
-        bool lpWellFormed()
+        bool lpWellFormed() const
         {
             return lpFirst->bbNum <= lpTop->bbNum && lpTop->bbNum <= lpEntry->bbNum &&
                    lpEntry->bbNum <= lpBottom->bbNum &&
@@ -6352,6 +6431,11 @@ protected:
 public:
     LoopDsc*      optLoopTable; // loop descriptor table
     unsigned char optLoopCount; // number of tracked loops
+
+#ifdef DEBUG
+    unsigned char loopAlignCandidates; // number of loops identified for alignment
+    unsigned char loopsAligned;        // number of loops actually aligned
+#endif                                 // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
                        BasicBlock*   first,
@@ -6377,9 +6461,9 @@ protected:
                           BasicBlock*   lpBottom,
                           unsigned char lpExitCnt,
                           BasicBlock*   lpExit,
-                          unsigned      parentLoop = BasicBlock::NOT_IN_LOOP);
-    void optPrintLoopInfo(unsigned lnum);
-    void optPrintLoopRecording(unsigned lnum);
+                          unsigned      parentLoop = BasicBlock::NOT_IN_LOOP) const;
+    void optPrintLoopInfo(unsigned lnum) const;
+    void optPrintLoopRecording(unsigned lnum) const;
 
     void optCheckPreds();
 #endif
@@ -6417,8 +6501,6 @@ protected:
     // iff "l2" is not NOT_IN_LOOP, and "l1" contains "l2".
     bool optLoopContains(unsigned l1, unsigned l2);
 
-    // Requires "loopInd" to be a valid index into the loop table.
-
     // Updates the loop table by changing loop "loopInd", whose head is required
     // to be "from", to be "to".  Also performs this transformation for any
     // loop nested in "loopInd" that shares the same head as "loopInd".
@@ -6430,10 +6512,13 @@ protected:
 
     // Marks the containsCall information to "lnum" and any parent loops.
     void AddContainsCallAllContainingLoops(unsigned lnum);
+
     // Adds the variable liveness information from 'blk' to "lnum" and any parent loops.
     void AddVariableLivenessAllContainingLoops(unsigned lnum, BasicBlock* blk);
+
     // Adds "fldHnd" to the set of modified fields of "lnum" and any parent loops.
     void AddModifiedFieldAllContainingLoops(unsigned lnum, CORINFO_FIELD_HANDLE fldHnd);
+
     // Adds "elemType" to the set of modified array element types of "lnum" and any parent loops.
     void AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLASS_HANDLE elemType);
 
@@ -6442,7 +6527,7 @@ protected:
     void optCopyBlkDest(BasicBlock* from, BasicBlock* to);
 
     // Returns true if 'block' is an entry block for any loop in 'optLoopTable'
-    bool optIsLoopEntry(BasicBlock* block);
+    bool optIsLoopEntry(BasicBlock* block) const;
 
     // The depth of the loop described by "lnum" (an index into the loop table.) (0 == top level)
     unsigned optLoopDepth(unsigned lnum)
@@ -6457,6 +6542,15 @@ protected:
             return 1 + optLoopDepth(par);
         }
     }
+
+    // Struct used in optInvertWhileLoop to count interesting constructs to boost the profitability score.
+    struct OptInvertCountTreeInfoType
+    {
+        int sharedStaticHelperCount;
+        int arrayLengthCount;
+    };
+
+    static fgWalkResult optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data);
 
     void optInvertWhileLoop(BasicBlock* block);
 
@@ -6486,12 +6580,7 @@ protected:
      *                       Optimization conditions
      *************************************************************************/
 
-    bool optFastCodeOrBlendedLoop(BasicBlock::weight_t bbWeight);
-    bool optPentium4(void);
-    bool optAvoidIncDec(BasicBlock::weight_t bbWeight);
     bool optAvoidIntMult(void);
-
-#if FEATURE_ANYCSE
 
 protected:
     //  The following is the upper limit on how many expressions we'll keep track
@@ -6652,9 +6741,6 @@ protected:
         return (enckey & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
     }
 
-#endif // FEATURE_ANYCSE
-
-#if FEATURE_VALNUM_CSE
     /**************************************************************************
      *                   Value Number based CSEs
      *************************************************************************/
@@ -6671,9 +6757,6 @@ protected:
     void     optValnumCSE_Availablity();
     void     optValnumCSE_Heuristic();
 
-#endif // FEATURE_VALNUM_CSE
-
-#if FEATURE_ANYCSE
     bool                 optDoCSE;             // True when we have found a duplicate CSE tree
     bool                 optValnumCSE_phase;   // True when we are executing the optValnumCSE_phase
     unsigned             optCSECandidateTotal; // Grand total of CSE candidates for both Lexical and ValNum
@@ -6703,8 +6786,6 @@ protected:
     bool optConfigDisableCSE2();
 #endif
     void optOptimizeCSEs();
-
-#endif // FEATURE_ANYCSE
 
     struct isVarAssgDsc
     {
@@ -7293,7 +7374,7 @@ public:
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree);
+    GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
@@ -7338,7 +7419,7 @@ public:
     void optObtainLoopCloningOpts(LoopCloneContext* context);
     bool optIsLoopClonable(unsigned loopInd);
 
-    bool optCanCloneLoops();
+    bool optLoopCloningEnabled();
 
 #ifdef DEBUG
     void optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore);
@@ -7461,6 +7542,7 @@ public:
     // Get the flags
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
 
@@ -9169,11 +9251,15 @@ public:
         int compJitSaveFpLrWithCalleeSavedRegisters;
 #endif // defined(TARGET_ARM64)
 
+#ifdef CONFIGURABLE_ARM_ABI
+        bool compUseSoftFP = false;
+#else
 #ifdef ARM_SOFTFP
         static const bool compUseSoftFP = true;
-#else // !ARM_SOFTFP
+#else  // !ARM_SOFTFP
         static const bool compUseSoftFP = false;
-#endif
+#endif // ARM_SOFTFP
+#endif // CONFIGURABLE_ARM_ABI
     } opts;
 
     static bool                s_pAltJitExcludeAssembliesListInitialized;
@@ -9267,6 +9353,8 @@ public:
         STRESS_MODE(SWITCH_CMP_BR_EXPANSION)                                                    \
         STRESS_MODE(GENERIC_VARN)                                                               \
         STRESS_MODE(PROFILER_CALLBACKS) /* Will generate profiler hooks for ELT callbacks */    \
+        STRESS_MODE(BYREF_PROMOTION) /* Change undoPromotion decisions for byrefs */            \
+        STRESS_MODE(PROMOTE_FEWER_STRUCTS)/* Don't promote some structs that can be promoted */ \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -9313,6 +9401,8 @@ public:
         return compStressCompile(STRESS_RANDOM_INLINE, 50);
     }
 
+    bool compPromoteFewerStructs(unsigned lclNum);
+
 #endif // DEBUG
 
     bool compTailCallStress()
@@ -9331,7 +9421,7 @@ public:
     const char* compGetTieringName(bool wantShortName = false) const;
     const char* compGetStressMessage() const;
 
-    codeOptimize compCodeOpt()
+    codeOptimize compCodeOpt() const
     {
 #if 0
         // Switching between size & speed has measurable throughput impact
@@ -9360,12 +9450,12 @@ public:
         BOOL hasCircularClassConstraints;
         BOOL hasCircularMethodConstraints;
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
         const char* compMethodName;
         const char* compClassName;
         const char* compFullName;
         double      compPerfScore;
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG) || defined(INLINE_DATA)
         // Method hash is logcally const, but computed
@@ -9525,11 +9615,6 @@ public:
 
         return false;
 #endif // TARGET_AMD64
-    }
-
-    bool compDoOldStructRetyping()
-    {
-        return JitConfig.JitDoOldStructRetyping();
     }
 
     // Returns true if the method returns a value in more than one return register

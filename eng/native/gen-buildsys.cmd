@@ -10,8 +10,9 @@ for %%x in (%*) do Set /A argC+=1
 if %argC% lss 4 GOTO :USAGE
 if %1=="/?" GOTO :USAGE
 
-setlocal
+setlocal enabledelayedexpansion
 set basePath=%~dp0
+set __repoRoot=%~dp0..\..\
 :: remove quotes
 set "basePath=%basePath:"=%"
 :: remove trailing slash
@@ -29,7 +30,7 @@ if /i "%__Ninja%" == "1" (
     if /i NOT "%__Arch%" == "wasm" (
         if /i "%__VSVersion%" == "vs2019" (set __CmakeGenerator=%__CmakeGenerator% 16 2019)
         if /i "%__VSVersion%" == "vs2017" (set __CmakeGenerator=%__CmakeGenerator% 15 2017)
-        
+
         if /i "%__Arch%" == "x64" (set __ExtraCmakeParams=%__ExtraCmakeParams% -A x64)
         if /i "%__Arch%" == "arm" (set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM)
         if /i "%__Arch%" == "arm64" (set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM64)
@@ -40,15 +41,18 @@ if /i "%__Ninja%" == "1" (
 )
 
 if /i "%__Arch%" == "wasm" (
+
     if "%EMSDK_PATH%" == "" (
-       echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
-       exit /B 1
+        if not exist "%__repoRoot%src\mono\wasm\emsdk" (
+            echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
+            exit /B 1
+        )
+
+        set EMSDK_PATH=%__repoRoot%src\mono\wasm\emsdk
+        set EMSDK_PATH=!EMSDK_PATH:\=/!
     )
 
-    if "%EMSCRIPTEN_ROOT%" == "" (
-      set EMSCRIPTEN_ROOT="%EMSDK_PATH/upstream/emscripten%"
-    )
-    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" "-DCMAKE_TOOLCHAIN_FILE=%EMSCRIPTEN%/cmake/Modules/Platform/Emscripten.cmake"
+    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=!EMSDK_PATH!/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
     set __UseEmcmake=1
 ) else (
     set __ExtraCmakeParams=%__ExtraCmakeParams%  "-DCMAKE_SYSTEM_VERSION=10.0"
@@ -63,10 +67,32 @@ goto loop
 
 set __ExtraCmakeParams="-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLR_CMAKE_HOST_ARCH=%__Arch%" %__ExtraCmakeParams%
 
+set __CmdLineOptionsUpToDateFile=%__IntermediatesDir%\cmake_cmd_line.txt
+set __CMakeCmdLineCache=
+if not "%__ConfigureOnly%" == "1" (
+    REM MSBuild can't reload from a CMake reconfigure during build correctly, so only do this
+    REM command-line up to date check for non-VS generators.
+    if not "%__CmakeGenerator%" == "Visual Studio" (
+        if exist "%__CmdLineOptionsUpToDateFile%" (
+            set /p __CMakeCmdLineCache=<"%__CmdLineOptionsUpToDateFile%"
+            REM Strip the extra space from the end of the cached command line
+            if "!__ExtraCmakeParams!" == "!__CMakeCmdLineCache:~0,-1!" (
+                echo The CMake command line is the same as the last run. Skipping running CMake.
+                exit /B 0
+            ) else (
+                echo The CMake command line differs from the last run. Running CMake again.
+                echo %__ExtraCmakeParams% > %__CmdLineOptionsUpToDateFile%
+            )
+        ) else (
+            echo %__ExtraCmakeParams% > %__CmdLineOptionsUpToDateFile%
+        )
+    )
+)
+
 if /i "%__UseEmcmake%" == "1" (
-    emcmake "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir% 
+    call "!EMSDK_PATH!/emsdk_env.bat" > nul 2>&1 && emcmake "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 ) else (
-    "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir% 
+    "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 )
 endlocal
 exit /B %errorlevel%

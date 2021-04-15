@@ -43,6 +43,21 @@ const char* toString(CorInfoType cit);
 
 #define METHOD_IDENTITY_INFO_SIZE 0x10000 // We assume that the METHOD_IDENTITY_INFO_SIZE will not exceed 64KB
 
+// Special "jit flags" for noting some method context features
+
+enum EXTRA_JIT_FLAGS
+{
+    HAS_PGO = 63,
+    HAS_EDGE_PROFILE = 62,
+    HAS_CLASS_PROFILE = 61
+};
+
+// Asserts to catch changes in corjit flags definitions.
+
+static_assert((int)EXTRA_JIT_FLAGS::HAS_PGO == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED36, "Jit Flags Mismatch");
+static_assert((int)EXTRA_JIT_FLAGS::HAS_EDGE_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED35, "Jit Flags Mismatch");
+static_assert((int)EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED34, "Jit Flags Mismatch");
+
 class MethodContext
 {
 public:
@@ -82,6 +97,8 @@ public:
     int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
     int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
 
+    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile);
+
     void recGlobalContext(const MethodContext& other);
 
     void dmpEnvironment(DWORD key, const Agnostic_Environment& value);
@@ -101,6 +118,10 @@ public:
     void recGetClassAttribs(CORINFO_CLASS_HANDLE classHandle, DWORD attribs);
     void dmpGetClassAttribs(DWORDLONG key, DWORD value);
     DWORD repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle);
+
+    void recIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn, bool result);
+    void dmpIsJitIntrinsic(DWORDLONG key, DWORD value);
+    bool repIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
     void recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs);
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
@@ -881,7 +902,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 191
+// Highest packet number: 192
 // *************************************************************************************
 enum mcPackets
 {
@@ -983,6 +1004,7 @@ enum mcPackets
     Packet_GetJustMyCodeHandle                           = 68,
     Packet_GetLikelyClass                                = 182, // Added 9/27/2020
     Packet_GetLocationOfThisType                         = 69,
+    Packet_IsJitIntrinsic                                = 192,
     Packet_GetMethodAttribs                              = 70,
     Packet_GetMethodClass                                = 71,
     Packet_GetMethodModule                               = 181, // Added 11/20/2020

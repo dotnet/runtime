@@ -827,7 +827,7 @@ namespace System.Reflection.Emit
         #endregion
     }
 
-    internal class LocalSymInfo
+    internal sealed class LocalSymInfo
     {
         // This class tracks the local variable's debugging information
         // and namespace information with a given active lexical scope.
@@ -928,7 +928,7 @@ namespace System.Reflection.Emit
             checked { m_iNameSpaceCount++; }
         }
 
-        internal virtual void EmitLocalSymInfo(ISymbolWriter symWriter)
+        internal void EmitLocalSymInfo(ISymbolWriter symWriter)
         {
             int i;
 

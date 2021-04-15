@@ -72,7 +72,7 @@ namespace System.Xml.Xsl.Runtime
         LastSpecial = Zodiac3,
     }
 
-    internal class NumberFormatterBase
+    internal abstract class NumberFormatterBase
     {
         protected const int MaxAlphabeticValue = int.MaxValue;     // Maximum value that can be represented
         private const int MaxAlphabeticLength = 7;                // Number of letters needed to represent the maximum value

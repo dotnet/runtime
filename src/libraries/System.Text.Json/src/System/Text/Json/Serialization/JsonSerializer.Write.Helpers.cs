@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -21,7 +22,7 @@ namespace System.Text.Json
             Debug.Assert(writer != null);
 
             //  We treat typeof(object) special and allow polymorphic behavior.
-            if (inputType == JsonClassInfo.ObjectType && value != null)
+            if (inputType == JsonTypeInfo.ObjectType && value != null)
             {
                 inputType = value.GetType();
             }
@@ -29,8 +30,16 @@ namespace System.Text.Json
             WriteStack state = default;
             JsonConverter jsonConverter = state.Initialize(inputType, options, supportContinuation: false);
 
-            bool success = WriteCore(jsonConverter, writer, value, options, ref state);
-            Debug.Assert(success);
+            try
+            {
+                bool success = WriteCore(jsonConverter, writer, value, options, ref state);
+                Debug.Assert(success);
+            }
+            catch
+            {
+                state.DisposePendingDisposablesOnException();
+                throw;
+            }
         }
 
         private static bool WriteCore<TValue>(

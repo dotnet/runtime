@@ -1690,7 +1690,7 @@ MONO_RESTORE_WARNING
 
 		ji.type = patch_type;
 		ji.data.target = data;
-		target = mono_resolve_patch_target (NULL, NULL, &ji, FALSE, error);
+		target = mono_resolve_patch_target_ext (cfg->mem_manager, NULL, NULL, &ji, FALSE, error);
 		mono_error_assert_ok (error);
 
 		EMIT_NEW_PCONST (cfg, ins, target);
@@ -3603,7 +3603,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 				jit_mm->method_code_hash = g_hash_table_new (NULL, NULL);
 			code_slot = (guint8 **)g_hash_table_lookup (jit_mm->method_code_hash, method);
 			if (!code_slot) {
-				code_slot = (guint8 **)m_method_alloc0 (method, sizeof (gpointer));
+				code_slot = (guint8 **)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (gpointer));
 				g_hash_table_insert (jit_mm->method_code_hash, method, code_slot);
 			}
 			jit_mm_unlock (jit_mm);
@@ -9798,7 +9798,8 @@ field_access_end:
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
-			if (sp [0]->type == STACK_I8 || (TARGET_SIZEOF_VOID_P == 8 && sp [0]->type == STACK_PTR)) {
+#ifndef TARGET_S390X
+			if (sp [0]->type == STACK_I8 && TARGET_SIZEOF_VOID_P == 4) {
 				MONO_INST_NEW (cfg, ins, OP_LCONV_TO_OVF_U4);
 				ins->sreg1 = sp [0]->dreg;
 				ins->type = STACK_I4;
@@ -9806,6 +9807,18 @@ field_access_end:
 				MONO_ADD_INS (cfg->cbb, ins);
 				*sp = mono_decompose_opcode (cfg, ins);
 			}
+#else
+			/* The array allocator expects a 64-bit input, and we cannot rely
+			   on the high bits of a 32-bit result, so we have to extend.  */
+			if (sp [0]->type == STACK_I4 && TARGET_SIZEOF_VOID_P == 8) {
+				MONO_INST_NEW (cfg, ins, OP_ICONV_TO_I8);
+				ins->sreg1 = sp [0]->dreg;
+				ins->type = STACK_I8;
+				ins->dreg = alloc_ireg (cfg);
+				MONO_ADD_INS (cfg->cbb, ins);
+				*sp = mono_decompose_opcode (cfg, ins);
+			}
+#endif
 
 			if (context_used) {
 				MonoInst *args [3];

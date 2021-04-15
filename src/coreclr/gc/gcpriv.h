@@ -342,12 +342,12 @@ class recursive_gc_sync;
 
 #ifdef MULTIPLE_HEAPS
 // This feature hasn't been enabled for regions yet.
-#ifndef USE_REGIONS
+//#ifndef USE_REGIONS
 // card marking stealing only makes sense in server GC
 // but it works and is easier to debug for workstation GC
 // so turn it on for server GC, turn on for workstation GC if necessary
 #define FEATURE_CARD_MARKING_STEALING
-#endif //!USE_REGIONS
+//#endif //!USE_REGIONS
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_CARD_MARKING_STEALING
@@ -2277,6 +2277,12 @@ protected:
     void background_ephemeral_sweep();
     PER_HEAP
     void background_sweep ();
+    // Check if we should grow the mark stack proactively to avoid mark stack
+    // overflow and grow if necessary.
+    PER_HEAP
+    void check_bgc_mark_stack_length();
+    PER_HEAP
+    void grow_bgc_mark_stack (size_t new_size);
     PER_HEAP
     uint8_t* background_seg_end (heap_segment* seg, BOOL concurrent_p);
     PER_HEAP
@@ -5278,8 +5284,6 @@ public:
 // and free_large_regions. These decommitted regions will be returned to region_allocator which
 // mark the space as free blocks.
 // 
-// Make configs available to change these.
-#define REGION_SIZE ((size_t)4 * 1024 * 1024)
 #define LARGE_REGION_FACTOR (8)
 
 #define region_alloc_free_bit (1 << (sizeof (uint32_t) * 8 - 1))
@@ -5328,6 +5332,11 @@ private:
 
     size_t region_alignment;
     size_t large_region_alignment;
+
+    GCSpinLock region_allocator_lock;
+
+    void enter_spin_lock();
+    void leave_spin_lock();
 
     uint32_t* region_map_start;
     uint32_t* region_map_end;
@@ -5663,6 +5672,14 @@ public:
         while (move_next(seg, low, high))
             ;
     }
+
+#ifdef USE_REGIONS
+    void switch_to_segment(heap_segment* seg)
+    {
+        assert(segment == nullptr);
+        segment = seg;
+    }
+#endif
 
     uint8_t* get_chunk_high()
     {

@@ -16,6 +16,7 @@ namespace System.Net.Quic.Tests
     {
         private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
         public async Task BasicTest()
         {
@@ -63,6 +64,7 @@ namespace System.Net.Quic.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
         public async Task MultipleReadsAndWrites()
         {
@@ -228,6 +230,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(0, clientStream.StreamId);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
         public async Task LargeDataSentAndReceived()
         {
@@ -432,7 +435,7 @@ namespace System.Net.Quic.Tests
         public async Task ReadWrite_Random_Success(int readSize, int writeSize)
         {
             byte[] testBuffer = new byte[8192];
-            new Random().NextBytes(testBuffer);
+            Random.Shared.NextBytes(testBuffer);
 
             await RunClientServer(
                 async clientConnection =>
@@ -468,7 +471,8 @@ namespace System.Net.Quic.Tests
                         totalBytesRead += bytesRead;
                     }
 
-                    Assert.True(receiveBuffer.AsSpan().SequenceEqual(testBuffer));
+                    Assert.Equal(testBuffer.Length, receiveBuffer.Length);
+                    Assert.Equal(testBuffer, receiveBuffer);
                 });
         }
 

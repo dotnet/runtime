@@ -552,14 +552,11 @@ namespace System.Reflection
         #endregion
     }
 
-    internal class MetadataException : Exception
+    internal sealed class MetadataException : Exception
     {
         private int m_hr;
         internal MetadataException(int hr) { m_hr = hr; }
 
-        public override string ToString()
-        {
-            return string.Format("MetadataException HResult = {0:x}.", m_hr);
-        }
+        public override string ToString() => $"MetadataException HResult = {m_hr:x}.";
     }
 }

@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
+    [SkipOnPlatform(TestPlatforms.Android, "Android does not support AIA fetching")]
     public static class AiaTests
     {
         [Fact]
