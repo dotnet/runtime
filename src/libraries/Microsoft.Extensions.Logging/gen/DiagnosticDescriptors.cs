@@ -167,5 +167,29 @@ namespace Microsoft.Extensions.Logging.Generators
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor InconsistentTemplateCasing { get; } = new(
+            id: "SYSLIB1021",
+            title: new LocalizableResourceString(nameof(SR.InconsistentTemplateCasingMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.InconsistentTemplateCasingMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor MalformedFormatStrings { get; } = new(
+            id: "SYSLIB1022",
+            title: new LocalizableResourceString(nameof(SR.MalformedFormatStringsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.MalformedFormatStringsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor GeneratingForMax6Arguments { get; } = new(
+            id: "SYSLIB1023",
+            title: new LocalizableResourceString(nameof(SR.GeneratingForMax6ArgumentsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.GeneratingForMax6ArgumentsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

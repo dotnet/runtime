@@ -212,7 +212,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticDescriptors.XXX.Id, diagnostics[0].Id);
+            Assert.Equal(DiagnosticDescriptors.InconsistentTemplateCasing.Id, diagnostics[0].Id);
         }
 
         // TODO: can't have malformed format strings (like dangling {, etc)
@@ -228,7 +228,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticDescriptors.XXX.Id, diagnostics[0].Id);
+            Assert.Equal(DiagnosticDescriptors.MalformedFormatStrings.Id, diagnostics[0].Id);
         }
 #endif
 

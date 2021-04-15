@@ -51,3 +51,6 @@ Currently the identifiers `SYSLIB0001` through `SYSLIB0999` are carved out for o
 |  __`SYSLIB1018`__ | Don't include logger parameters as templates in the logging message |
 |  __`SYSLIB1019`__ | Couldn't find a field of type Microsoft.Extensions.Logging.ILogger |
 |  __`SYSLIB1020`__ | Found multiple fields of type Microsoft.Extensions.Logging.ILogger |
+|  __`SYSLIB1021`__ | Can't have the same template with different casing |
+|  __`SYSLIB1022`__ | Can't have malformed format strings (like dangling {, etc)  |
+|  __`SYSLIB1023`__ | Generating more than 6 arguments is not supported |

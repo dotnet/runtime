@@ -201,4 +201,13 @@
   <data name="MultipleLoggerFieldsTitle" xml:space="preserve">
     <value>Found multiple fields of type Microsoft.Extensions.Logging.ILogger</value>
   </data>
+  <data name="InconsistentTemplateCasingMessage" xml:space="preserve">
+    <value>Can't have the same template with different casing</value>
+  </data>
+  <data name="MalformedFormatStringsMessage" xml:space="preserve">
+    <value>Can't have malformed format strings (like dangling {, etc)</value>
+  </data>
+  <data name="GeneratingForMax6ArgumentsMessage" xml:space="preserve">
+    <value>Generating more than 6 arguments is not supported</value>
+  </data>
 </root>

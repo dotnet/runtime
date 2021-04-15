@@ -12,6 +12,16 @@
         <target state="new">Argument is not referenced from the logging message</target>
         <note />
       </trans-unit>
+      <trans-unit id="GeneratingForMax6ArgumentsMessage">
+        <source>Generating more than 6 arguments is not supported</source>
+        <target state="new">Generating more than 6 arguments is not supported</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InconsistentTemplateCasingMessage">
+        <source>Can't have the same template with different casing</source>
+        <target state="new">Can't have the same template with different casing</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidLoggingMethodNameMessage">
         <source>Logging method names cannot start with _</source>
         <target state="new">Logging method names cannot start with _</target>
@@ -50,6 +60,11 @@
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
         <source>Logging methods must be static</source>
         <target state="new">Logging methods must be static</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsMessage">
+        <source>Can't have malformed format strings (like dangling {, etc)</source>
+        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
