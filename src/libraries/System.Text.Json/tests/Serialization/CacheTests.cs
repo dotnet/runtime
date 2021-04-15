@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
@@ -201,6 +203,37 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             await Task.WhenAll(tasks);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static async Task JsonSerializerOptionsUpdateHandler_ClearingDoesntPreventSerialization()
+        {
+            // This test uses reflection to:
+            // - Access JsonSerializerOptions._classes
+            // - Access JsonSerializerOptionsUpdateHandler.BeforeUpdate
+            //
+            // If either of them changes, this test will need to be kept in sync.
+
+            var options = new JsonSerializerOptions();
+
+            FieldInfo classesField = options.GetType().GetField("_classes", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(classesField);
+            IDictionary classes = (IDictionary)classesField.GetValue(options);
+            Assert.Equal(0, classes.Count);
+
+            SimpleTestClass testObj = new SimpleTestClass();
+            testObj.Initialize();
+            await JsonSerializer.SerializeAsync<SimpleTestClass>(new MemoryStream(), testObj, options);
+            Assert.NotEqual(0, classes.Count);
+
+            Type updateHandler = typeof(JsonSerializerOptions).Assembly.GetType("System.Text.Json.JsonSerializerOptionsUpdateHandler", throwOnError: true, ignoreCase: false);
+            MethodInfo beforeUpdate = updateHandler.GetMethod("BeforeUpdate");
+            beforeUpdate.Invoke(null, new object[] { null });
+            Assert.Equal(0, classes.Count);
+
+            await JsonSerializer.SerializeAsync<SimpleTestClass>(new MemoryStream(), testObj, options);
+            Assert.NotEqual(0, classes.Count);
         }
 
         public static IEnumerable<object[]> WriteSuccessCases

@@ -7,7 +7,7 @@
 
 #include <pthread.h>
 
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
 extern pthread_mutex_t g_err_mutex;
 extern int volatile g_err_unloaded;
 #endif
