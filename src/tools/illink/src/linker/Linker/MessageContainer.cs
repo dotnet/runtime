@@ -134,7 +134,8 @@ namespace Mono.Linker
 
 			if (subcategory == MessageSubCategory.TrimAnalysis) {
 				Debug.Assert (origin.MemberDefinition != null);
-				var assembly = origin.MemberDefinition?.DeclaringType.Module.Assembly;
+				var declaringType = origin.MemberDefinition?.DeclaringType ?? (origin.MemberDefinition as TypeDefinition);
+				var assembly = declaringType.Module.Assembly;
 				var assemblyName = assembly?.Name.Name;
 				if (assemblyName != null && context.IsSingleWarn (assemblyName)) {
 					if (context.AssembliesWithGeneratedSingleWarning.Add (assemblyName))

@@ -6,6 +6,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.LinkAttributes.Dependencies;
 
@@ -77,6 +78,8 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 			TestAttributeFromCopyAssembly ();
 
 			TestEmbeddedAttributeLazyLoadRemoved ();
+
+			TestMarkAllRemove ();
 		}
 
 #pragma warning disable CS0414
@@ -125,6 +128,13 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 			// This needs the DynamicDependency above otherwise linker will not load the assembly at all
 			Activator.CreateInstance (Type.GetType ("Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.TypeWithEmbeddedAttributeToBeRemoved, LinkerAttributeRemovalEmbeddedAndLazyLoad"));
 		}
+
+		[ExpectedWarning ("IL2045")]
+		[Kept]
+		static void TestMarkAllRemove ()
+		{
+			Type.GetType ("Mono.Linker.Tests.Cases.LinkAttributes.TestMarkAllRemoveAttribute").RequiresAll ();
+		}
 	}
 
 	[KeptBaseType (typeof (System.Attribute))]
@@ -141,5 +151,11 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 		public TestRemoveAttribute ()
 		{
 		}
+	}
+
+	[KeptBaseType (typeof (System.Attribute))]
+	[KeptMember (".ctor()")]
+	class TestMarkAllRemoveAttribute : Attribute
+	{
 	}
 }
