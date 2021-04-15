@@ -86,6 +86,9 @@ namespace Microsoft.NET.HostModel.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
+
+            Directory.Delete(firstSymbolicLink);
+            Directory.Delete(secondSymbolicLink);
         }
 
         //[Theory]
@@ -193,6 +196,8 @@ namespace Microsoft.NET.HostModel.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
+
+            Directory.Delete(dotnetSymlink);
         }
 
         [Fact]
