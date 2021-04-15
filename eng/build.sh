@@ -78,6 +78,7 @@ usage()
   echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
   echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
   echo "  --ninja                    Optional argument: set to true to use Ninja instead of Make to run the native build."
+  echo "  --pgoinstrument            Optional argument: build PGO-instrumented runtime"
   echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -442,6 +443,11 @@ while [[ $# > 0 ]]; do
           shift 1
         fi
       fi
+      ;;
+
+      -pgoinstrument)
+      arguments="$arguments /p:PgoInstrument=true"
+      shift 1
       ;;
 
       *)
