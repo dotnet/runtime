@@ -1,15 +1,13 @@
 # MsQuic
 
 `System.Net.Quic` depends on [MsQuic](https://github.com/microsoft/msquic), Microsoft, cross-platform, native implementation of the [QUIC](https://datatracker.ietf.org/wg/quic/about/) protocol.
-Currently, `System.Net.Quic` depends on [**msquic@cc104e836a5d4a5e0d324bc08b42136d2acac997**](https://github.com/microsoft/msquic/commit/cc104e836a5d4a5e0d324bc08b42136d2acac997) revision.
+Currently, `System.Net.Quic` depends on [**msquic@7b31e149a9d1ed7a6850e8253ba3d0af707150e5**](https://github.com/microsoft/msquic/commit/7b31e149a9d1ed7a6850e8253ba3d0af707150e5) revision.
 
 ## Usage
 
 ### Build MsQuic
 
 [MsQuic build docs](https://github.com/microsoft/msquic/blob/main/docs/BUILD.md)
-
-> **Note**: At the moment, we're using stub_tls option to bypass OpenSSL/SChannel, since work with certificates is not fully figured out.
 
 #### Linux
 Prerequisites:

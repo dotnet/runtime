@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Tests
 {
-    // TODO: why do we hawe 2 base clase with some duplicated methods?
+    // TODO: why do we have 2 base classes with some duplicated methods?
     public class MsQuicTestBase
     {
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
