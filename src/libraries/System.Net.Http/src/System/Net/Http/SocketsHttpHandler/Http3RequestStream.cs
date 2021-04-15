@@ -16,10 +16,10 @@ using System.Runtime.ExceptionServices;
 
 namespace System.Net.Http
 {
+    // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
-    [UnsupportedOSPlatform("android")]
     internal sealed class Http3RequestStream : IHttpHeadersHandler, IAsyncDisposable, IDisposable
     {
         private readonly HttpRequestMessage _request;

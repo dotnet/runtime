@@ -101,10 +101,10 @@ namespace System.Net.Http
             return sslStream;
         }
 
+        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        [UnsupportedOSPlatform("android")]
         public static async ValueTask<QuicConnection> ConnectQuicAsync(QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
         {
             QuicConnection con = new QuicConnection(quicImplementationProvider, endPoint, clientAuthenticationOptions);

@@ -744,10 +744,10 @@ namespace System.Net.Http
             }
         }
 
+        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        [UnsupportedOSPlatform("android")]
         private async ValueTask<(HttpConnectionBase connection, bool isNewConnection)>
             GetHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
         {

@@ -188,10 +188,10 @@ namespace System.Net.Http
 
         private byte[]? _http3SettingsFrame;
 
+        // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        [UnsupportedOSPlatform("android")]
         internal byte[] Http3SettingsFrame => _http3SettingsFrame ??= Http3Connection.BuildSettingsFrame(this);
     }
 }

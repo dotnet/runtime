@@ -4,6 +4,5 @@
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <SupportedOSPlatforms>windows;linux;macos</SupportedOSPlatforms>
-    <UnsupportedOSPlatforms>android</UnsupportedOSPlatforms>
   </PropertyGroup>
 </Project>
