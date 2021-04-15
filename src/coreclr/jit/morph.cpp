@@ -7655,7 +7655,31 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             //
             if (nextBlock->bbJumpKind != BBJ_RETURN)
             {
-                BasicBlock* const nextNextBlock = nextBlock->GetUniqueSucc();
+                BasicBlock* nextNextBlock = nextBlock->GetUniqueSucc();
+
+                // Check if we have a sequence of GT_ASG blocks where the same variable is assigned
+                // to temp locals over and over.
+                if (nextNextBlock->bbJumpKind != BBJ_RETURN)
+                {
+                    // Make sure the block has a single statement
+                    assert(nextBlock->firstStmt() == nextBlock->lastStmt());
+                    // And the root node is "ASG(LCL_VAR, LCL_VAR)"
+                    GenTree* asgNode = nextBlock->firstStmt()->GetRootNode();
+                    assert(asgNode->OperIs(GT_ASG));
+
+                    unsigned lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+
+                    while (nextNextBlock->bbJumpKind != BBJ_RETURN)
+                    {
+                        assert(nextNextBlock->firstStmt() == nextNextBlock->lastStmt());
+                        asgNode = nextNextBlock->firstStmt()->GetRootNode();
+                        assert(asgNode->OperIs(GT_ASG));
+                        assert(lcl == asgNode->gtGetOp2()->AsLclVarCommon()->GetLclNum());
+                        lcl           = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+                        nextNextBlock = nextNextBlock->GetUniqueSucc();
+                    }
+                }
+
                 assert(nextNextBlock->bbJumpKind == BBJ_RETURN);
 
                 if (nextNextBlock->hasProfileWeight())
