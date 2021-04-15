@@ -155,7 +155,7 @@ namespace System.Net.Http.Functional.Tests.Socks
                     ns.WriteByte(4);
                     buffer[0] = 93;
                     await ns.WriteAsync(buffer).ConfigureAwait(false);
-                    throw new Exception("Bad username.");
+                    return;
                 }
             }
 
@@ -219,7 +219,7 @@ namespace System.Net.Http.Functional.Tests.Socks
                 if (username != _username || password != _password)
                 {
                     await ns.WriteAsync(new byte[] { 1, 1 }).ConfigureAwait(false);
-                    throw new Exception("Invalid credentials.");
+                    return;
                 }
 
                 await ns.WriteAsync(new byte[] { 1, 0 }).ConfigureAwait(false);
@@ -361,11 +361,16 @@ namespace System.Net.Http.Functional.Tests.Socks
                 _listener.Dispose();
                 _serverStopped.WaitOne();
                 _disposed = true;
+            }
+        }
 
-                if (_listenerExceptions != null)
-                {
-                    throw _listenerExceptions;
-                }
+        public void ThrowAnyExceptions()
+        {
+            Dispose();
+
+            if (_listenerExceptions != null)
+            {
+                throw _listenerExceptions;
             }
         }
     }

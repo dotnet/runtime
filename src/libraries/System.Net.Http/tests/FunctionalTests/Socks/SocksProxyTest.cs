@@ -99,7 +99,15 @@ namespace System.Net.Http.Functional.Tests.Socks
 
             if (ex.Message != exceptionMessage)
             {
-                throw ex;
+                try
+                {
+                    proxy.ThrowAnyExceptions();
+                    throw ex;
+                }
+                catch (Exception pex)
+                {
+                    throw new AggregateException(pex, ex);
+                }
             }
 
             Assert.Equal("SocksException", ex.GetType().Name);
