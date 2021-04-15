@@ -19,6 +19,7 @@ namespace System.Net.Http.Functional.Tests.Socks
     {
         private readonly Socket _listener;
         private readonly ManualResetEvent _serverStopped;
+        private Exception _listenerExceptions;
         private bool _disposed;
 
         private int _connections;
@@ -73,7 +74,6 @@ namespace System.Net.Http.Functional.Tests.Socks
                         });
 
                         activeTasks.TryAdd(connectionTask, 0);
-                        _ = connectionTask.ContinueWith(t => activeTasks.TryRemove(connectionTask, out _), TaskContinuationOptions.ExecuteSynchronously);
                     }
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.OperationAborted)
@@ -91,6 +91,7 @@ namespace System.Net.Http.Functional.Tests.Socks
                 }
                 catch (Exception ex)
                 {
+                    _listenerExceptions = ex;
                     EventSourceTestLogging.Log.TestAncillaryError(ex);
                 }
 
@@ -359,6 +360,11 @@ namespace System.Net.Http.Functional.Tests.Socks
                 _listener.Dispose();
                 _serverStopped.WaitOne();
                 _disposed = true;
+
+                if (_listenerExceptions != null)
+                {
+                    throw _listenerExceptions;
+                }
             }
         }
     }
