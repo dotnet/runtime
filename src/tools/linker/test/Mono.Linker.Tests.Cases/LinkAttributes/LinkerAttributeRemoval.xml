@@ -26,6 +26,9 @@
         <attribute internal="RemoveAttributeInstances"/>
       </method>
     </type>
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.TestMarkAllRemoveAttribute">
+      <attribute internal="RemoveAttributeInstances"/>
+    </type>
   </assembly>
   <assembly fullname="attribute, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
     <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.TestAttributeUsedFromCopyAssemblyAttribute">

@@ -1659,7 +1659,7 @@ namespace Mono.Linker.Steps
 				// will call MarkType on the attribute type itself). 
 				// If for some reason we do keep the attribute type (could be because of previous reference which would cause IL2045
 				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
-				if (sourceLocationMember != null && sourceLocationMember.DeclaringType != type)
+				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type))
 					_context.LogWarning (
 						$"Attribute '{type.GetDisplayName ()}' is being referenced in code but the linker was " +
 						$"instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to " +
