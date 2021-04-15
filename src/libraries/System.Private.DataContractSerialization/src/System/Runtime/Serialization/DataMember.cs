@@ -163,9 +163,6 @@ namespace System.Runtime.Serialization
             private bool _hasConflictingNameAndType;
             private DataMember? _conflictingMember;
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-               Justification = "The only use of this field is on the following property getter which is already " +
-                "annotated as RequiresUnreferencedCode.")]
             internal CriticalHelper(MemberInfo memberInfo)
             {
                 _emitDefaultValue = Globals.DefaultEmitDefaultValue;

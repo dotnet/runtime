@@ -17,7 +17,6 @@ namespace System.Runtime.Serialization
         internal static PrimitiveDataContract? s_NullContract;
         internal static PrimitiveDataContract NullContract
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (s_NullContract == null)
@@ -357,7 +356,9 @@ namespace System.Runtime.Serialization
 
     internal sealed class NullPrimitiveDataContract : PrimitiveDataContract
     {
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This warns because the call to Base has the type annotated with DynamicallyAccessedMembers so it warns" +
+            "when looking into the methods of NullPrimitiveDataContract. Because this just represents null, we suppress.")]
         public NullPrimitiveDataContract() : base(typeof(NullPrimitiveDataContract), DictionaryGlobals.EmptyString, DictionaryGlobals.EmptyString)
         {
 
