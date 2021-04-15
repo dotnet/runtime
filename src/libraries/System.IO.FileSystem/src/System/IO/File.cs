@@ -424,9 +424,10 @@ namespace System.IO
             Debug.Assert(path.Length != 0);
             Debug.Assert(bytes != null);
 
-            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
+            long fileLength = bytes.LongLength;
+            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, allocationSize: fileLength))
             {
-                fs.Write(bytes, 0, bytes.Length);
+                fs.Write(bytes, 0, (int)fileLength);
             }
         }
         public static string[] ReadAllLines(string path)
@@ -886,10 +887,11 @@ namespace System.IO
             Debug.Assert(!string.IsNullOrEmpty(path));
             Debug.Assert(bytes != null);
 
-            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan))
+            long fileLength = bytes.LongLength;
+            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan, allocationSize: fileLength))
             {
 #if MS_IO_REDIST
-                await fs.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+                await fs.WriteAsync(bytes, 0, (int)fileLength, cancellationToken).ConfigureAwait(false);
 #else
                 await fs.WriteAsync(new ReadOnlyMemory<byte>(bytes), cancellationToken).ConfigureAwait(false);
 #endif
