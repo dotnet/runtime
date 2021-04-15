@@ -2469,8 +2469,8 @@ HRESULT CordbThread::GetCurrentCustomDebuggerNotification(ICorDebugValue ** ppNo
  * Returns S_OK if it was possible to obtain the allocation information for the thread
  * and sets the corresponding SOH and UOH allocations.
  */
-HRESULT CordbThread::GetBytesAllocated(DWORD *pSohAllocatedBytes,
-                                       DWORD *pUohAllocatedBytes)
+HRESULT CordbThread::GetBytesAllocated(ULONG64 *pSohAllocatedBytes,
+                                       ULONG64 *pUohAllocatedBytes)
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -10815,4 +10815,3 @@ HRESULT CordbCodeEnum::Next(ULONG celt, ICorDebugCode *values[], ULONG *pceltFet
 
     return hr;
 }
-
