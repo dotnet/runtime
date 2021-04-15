@@ -2766,17 +2766,18 @@ namespace System.Diagnostics.Tracing
 #endif
             if (m_eventData == null)
             {
+                // get the metadata via reflection.
+                Debug.Assert(m_rawManifest == null);
 #if !ES_BUILD_STANDALONE
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                     Justification = "Based on the annotation on EventSource class, Trimmer will see from its analysis members " +
                                     "that are marked with RequiresUnreferencedCode and will warn." +
                                     "This method will not access any of these members and is safe to call.")]
-#endif
                 byte[]? GetCreateManifestAndDescriptorsViaLocalMethod(string name) => CreateManifestAndDescriptors(this.GetType(), name, this);
-
-                // get the metadata via reflection.
-                Debug.Assert(m_rawManifest == null);
                 m_rawManifest = GetCreateManifestAndDescriptorsViaLocalMethod(Name);
+#else
+                m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
+#endif
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
