@@ -11,8 +11,6 @@
   <ItemGroup>
     <Compile Include="System.Drawing.Common.cs" />
     <Compile Include="System.Drawing.Common.Forwards.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs"
-             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netcoreapp3.0'">
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />

@@ -597,9 +597,7 @@ namespace System.Drawing
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
 #if NET50_OBSOLETIONS
-        [System.ObsoleteAttribute(Obsoletions.GetContextInfoMessage, DiagnosticId = Obsoletions.GetContextInfoId, UrlFormat = Obsoletions.SharedUrlFormat)]
-#else
-        [System.ObsoleteAttribute(Obsoletions.GetContextInfoMessage)]
+        [System.ObsoleteAttribute("Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.", DiagnosticId = "SYSLIB0016", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public object GetContextInfo() { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]

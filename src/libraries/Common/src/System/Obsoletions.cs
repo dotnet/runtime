@@ -53,6 +53,6 @@ namespace System
         internal const string DisablePrivateReflectionAttributeDiagId = "SYSLIB0015";
 
         internal const string GetContextInfoMessage = "Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.";
-        internal const string GetContextInfoId = "SYSLIB0016";
+        internal const string GetContextInfoDiagId = "SYSLIB0016";
     }
 }

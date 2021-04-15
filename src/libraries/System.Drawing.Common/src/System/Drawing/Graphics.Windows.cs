@@ -684,7 +684,7 @@ namespace System.Drawing
         /// WARNING: This method is for internal FX support only.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete(Obsoletions.GetContextInfoMessage, DiagnosticId = Obsoletions.GetContextInfoId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [Obsolete(Obsoletions.GetContextInfoMessage, DiagnosticId = Obsoletions.GetContextInfoDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [SupportedOSPlatform("windows")]
         public object GetContextInfo()
         {
