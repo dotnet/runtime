@@ -67,17 +67,17 @@ namespace System.Net.Http.Functional.Tests.Socks
         public static IEnumerable<object[]> TestExceptionalAsync_MemberData()
         {
             foreach (string scheme in new[] { "socks4", "socks4a" })
-                yield return new object[] { scheme, "::1", false, null };
+                yield return new object[] { scheme, "::1", false, null, "SOCKS4 does not support IPv6 addresses." };
             foreach (string scheme in new[] { "socks4", "socks4a", "socks5" })
             {
-                yield return new object[] { scheme, "localhost", true, null };
-                yield return new object[] { scheme, "localhost", true, new NetworkCredential("bad_username", "bad_password") };
+                yield return new object[] { scheme, "localhost", true, null, "SOCKS server did not return a suitable authentication method." };
+                yield return new object[] { scheme, "localhost", true, new NetworkCredential("bad_username", "bad_password"), "Failed to authenticate with the SOCKS server." };
             }
         }
 
         [Theory]
         [MemberData(nameof(TestExceptionalAsync_MemberData))]
-        public async Task TestExceptionalAsync(string scheme, string host, bool useAuth, ICredentials? credentials)
+        public async Task TestExceptionalAsync(string scheme, string host, bool useAuth, ICredentials? credentials, string exceptionMessage)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
@@ -98,6 +98,7 @@ namespace System.Net.Http.Functional.Tests.Socks
                     // SocksException is not public
                     var ex = await Assert.ThrowsAnyAsync<IOException>(() => client.GetStringAsync(uri));
                     Assert.Equal("SocksException", ex.GetType().Name);
+                    Assert.Equal(exceptionMessage, ex.Message);
                 },
                 server => Task.CompletedTask,
                 options: new GenericLoopbackOptions
