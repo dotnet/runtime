@@ -14,12 +14,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         internal Action<object> _captureDisposableCallback;
 
         private bool _disposed;
-        private ScopeTracker.State _state;
+        private readonly ScopeState _state;
 
         public ServiceProviderEngineScope(ServiceProviderEngine engine, bool isRoot = false)
         {
             Engine = engine;
-            _state = isRoot ? new ScopeTracker.State() : engine.ScopeTracker.Allocate();
+            _state = new ScopeState(isRoot);
         }
 
         internal IDictionary<ServiceCacheKey, object> ResolvedServices => _state.ResolvedServices;
@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
 
                 // Track statistics about the scope (number of disposable objects and number of disposed services)
-                _state.Track();
+                _state.Track(Engine);
 
                 // We've transitioned to the disposed state, so future calls to
                 // CaptureDisposable will immediately dispose the object.
