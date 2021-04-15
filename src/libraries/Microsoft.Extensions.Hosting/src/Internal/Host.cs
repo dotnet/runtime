@@ -61,15 +61,12 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             foreach (IHostedService hostedService in _hostedServices)
             {
+                // Fire IHostedService.Start
+                await hostedService.StartAsync(combinedCancellationToken).ConfigureAwait(false);
+
                 if (hostedService is BackgroundService backgroundService)
                 {
-                    _ = TryStartBackgroundServiceAsync(
-                        backgroundService, combinedCancellationToken);
-                }
-                else
-                {
-                    // Fire IHostedService.Start
-                    await hostedService.StartAsync(combinedCancellationToken).ConfigureAwait(false);
+                    _ = TryExecuteBackgroundServiceAsync(backgroundService);
                 }
             }
 
@@ -79,13 +76,10 @@ namespace Microsoft.Extensions.Hosting.Internal
             _logger.Started();
         }
 
-        private async Task TryStartBackgroundServiceAsync(
-            BackgroundService backgroundService, CancellationToken cancellationToken)
+        private async Task TryExecuteBackgroundServiceAsync(BackgroundService backgroundService)
         {
             try
             {
-                // Fire IHostedService.Start
-                await backgroundService.StartAsync(cancellationToken).ConfigureAwait(false);
                 await backgroundService.ExecuteTask.ConfigureAwait(false);
             }
             catch (Exception ex)

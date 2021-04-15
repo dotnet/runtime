@@ -672,34 +672,29 @@ namespace Microsoft.Extensions.Hosting.Internal
                     })
                 .Build();
 
-            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
-            var wasStartedCalled = false;
-            lifetime.ApplicationStarted.Register(() => wasStartedCalled = true);
-            var wasStoppingCalled = false;
-            lifetime.ApplicationStopping.Register(() => wasStoppingCalled = true);
-
-            await host.StartAsync();
-
-            Assert.True(
-                wasStartedCalled,
-                $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, started should not have been called.");
-            Assert.True(
-                wasStoppingCalled,
-                $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, stopping should have been called.");
+            await Assert.ThrowsAsync<Exception>(() => host.StartAsync());
         }
 
         [Fact]
         public async Task HostStopsApplicationWithOneBackgroundServiceErrorAndOthersWithoutError()
-        {
+        { 
             var wasOtherServiceStarted = false;
-            TaskCompletionSource<bool> tcs = new();
+
+            TaskCompletionSource<bool> throwingTcs = new();
+            TaskCompletionSource<bool> otherTcs = new();
 
             using IHost host = CreateBuilder()
                 .ConfigureServices(
                     services =>
                     {
-                        services.AddHostedService(_ => new AsyncThrowingService(Task.CompletedTask));
-                        services.AddHostedService(_ => new TestBackgroundService(tcs.Task, () => wasOtherServiceStarted = true));
+                        services.AddHostedService(_ => new AsyncThrowingService(throwingTcs.Task));
+                        services.AddHostedService(
+                            _ => new TestBackgroundService(otherTcs.Task,
+                            () =>
+                            {
+                                wasOtherServiceStarted = true;
+                                throwingTcs.SetResult(true);
+                            }));
                         services.Configure<HostOptions>(
                             options =>
                             options.BackgroundServiceExceptionBehavior =
@@ -708,26 +703,22 @@ namespace Microsoft.Extensions.Hosting.Internal
                 .Build();
 
             var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+
             var wasStartedCalled = false;
             lifetime.ApplicationStarted.Register(() => wasStartedCalled = true);
+
             var wasStoppingCalled = false;
             lifetime.ApplicationStopping.Register(() =>
             {
-                tcs.SetResult(true);
+                otherTcs.SetResult(true);
                 wasStoppingCalled = true;
             });
 
             await host.StartAsync();
 
-            Assert.True(
-                wasStartedCalled,
-                $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, started should not have been called.");
-            Assert.True(
-                wasStoppingCalled,
-                $"The {nameof(AsyncThrowingService)} should have thrown, calling Host.StopAsync, stopping should have been called.");
-            Assert.True(
-                wasOtherServiceStarted,
-                $"The {nameof(TestBackgroundService)} should have started.");
+            Assert.True(wasStartedCalled);
+            Assert.True(wasStoppingCalled);
+            Assert.True(wasOtherServiceStarted);
         }
 
         [Fact]
