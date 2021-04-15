@@ -103,10 +103,17 @@ jobs:
     - ${{ if eq(parameters.collectionName, 'tests_libraries') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
+          unpackFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries_zipped/$(osGroup).$(archType).$(buildConfigUpper)'
           artifactFileName: ${{ format('libraries_test_assets_{0}_x64_Release.zip', parameters.osGroup) }}
           artifactName: ${{ format('libraries_test_assets_{0}_x64_Release', parameters.osGroup) }}
           displayName: 'generic libraries test artifacts'
+
+    - task: ExtractFiles@1
+      displayName: 'Unzip Tests.zip'
+      inputs:
+        archiveFilePatterns: '$(Build.SourcesDirectory)/artifacts/tests/libraries_zipped/$(osGroup).$(archType).$(buildConfigUpper)/**/*.zip'
+        destinationFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
+        cleanDestinationFolder: true
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
