@@ -409,38 +409,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         instruction ins = INS_invalid;
         switch (intrin.id)
         {
-            case NI_Crc32_ComputeCrc32:
-                if (intrin.baseType == TYP_INT)
-                {
-                    ins = INS_crc32w;
-                }
-                else
-                {
-                    ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
-                }
-                break;
-
-            case NI_Crc32_ComputeCrc32C:
-                if (intrin.baseType == TYP_INT)
-                {
-                    ins = INS_crc32cw;
-                }
-                else
-                {
-                    ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
-                }
-                break;
-
-            case NI_Crc32_Arm64_ComputeCrc32:
-                assert(intrin.baseType == TYP_LONG);
-                ins = INS_crc32x;
-                break;
-
-            case NI_Crc32_Arm64_ComputeCrc32C:
-                assert(intrin.baseType == TYP_LONG);
-                ins = INS_crc32cx;
-                break;
-
             case NI_AdvSimd_AddWideningLower:
                 assert(varTypeIsIntegral(intrin.baseType));
                 if (intrin.op1->TypeGet() == TYP_SIMD8)
