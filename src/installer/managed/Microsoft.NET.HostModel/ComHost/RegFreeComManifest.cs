@@ -22,7 +22,8 @@ namespace Microsoft.NET.HostModel.ComHost
         /// <param name="assemblyVersion">The version of the assembly.</param>
         /// <param name="clsidMapPath">The path to the clsidmap file.</param>
         /// <param name="comManifestPath">The path to which to write the manifest.</param>
-        public static void CreateManifestFromClsidmap(string assemblyName, string comHostName, string assemblyVersion, string clsidMapPath, string comManifestPath)
+        /// <param name="typeLibraries">The type libraries to include in the manifest.</param>
+        public static void CreateManifestFromClsidmap(string assemblyName, string comHostName, string assemblyVersion, string clsidMapPath, string comManifestPath, IReadOnlyDictionary<int, string> typeLibraries = null)
         {
             XNamespace ns = "urn:schemas-microsoft-com:asm.v1";
 
@@ -32,8 +33,23 @@ namespace Microsoft.NET.HostModel.ComHost
                 new XAttribute("name", $"{assemblyName}.X"),
                 new XAttribute("version", assemblyVersion)));
 
-            XElement fileElement = new XElement(ns + "file", new XAttribute("name", comHostName));
+            manifest.Add(CreateComHostFileElement(clsidMapPath, comHostName, ns));
+            AddTypeLibFileElementsToManifest(typeLibraries, ns, manifest);
 
+            XDocument manifestDocument = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"), manifest);
+            XmlWriterSettings settings = new XmlWriterSettings()
+            {
+                Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)
+            };
+            using (XmlWriter manifestWriter = XmlWriter.Create(comManifestPath, settings))
+            {
+                manifestDocument.WriteTo(manifestWriter);
+            }
+        }
+
+        private static XElement CreateComHostFileElement(string clsidMapPath, string comHostName, XNamespace ns)
+        {
+            XElement fileElement = new XElement(ns + "file", new XAttribute("name", comHostName));
             JsonElement clsidMap;
             using (FileStream clsidMapStream = File.OpenRead(clsidMapPath))
             {
@@ -52,17 +68,34 @@ namespace Microsoft.NET.HostModel.ComHost
 
                 fileElement.Add(comClassElement);
             }
+            return fileElement;
+        }
 
-            manifest.Add(fileElement);
-
-            XDocument manifestDocument = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"), manifest);
-            XmlWriterSettings settings = new XmlWriterSettings()
+        private static void AddTypeLibFileElementsToManifest(IReadOnlyDictionary<int, string> typeLibraries, XNamespace ns, XElement manifest)
+        {
+            foreach (var typeLibrary in typeLibraries)
             {
-                Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)
-            };
-            using (XmlWriter manifestWriter = XmlWriter.Create(comManifestPath, settings))
-            {
-                manifestDocument.WriteTo(manifestWriter);
+                try
+                {
+                    byte[] tlbFileBytes = File.ReadAllBytes(typeLibrary.Value);
+                    TypeLibHeaderReader reader = new TypeLibHeaderReader(tlbFileBytes);
+                    if (reader.TryReadTypeLibNameAndVersion(out Guid name, out Version version))
+                    {
+                        throw new InvalidTypeLibraryException(typeLibrary.Value);
+                    }
+                    XElement typelibFileElement = new XElement(ns + "file",
+                            new XAttribute("name", Path.GetFileName(typeLibrary.Value)),
+                            new XElement(ns + "typelib",
+                                new XAttribute("tlbid", name.ToString("B")),
+                                new XAttribute("resourceid", typeLibrary.Key),
+                                new XAttribute("version", version),
+                                new XAttribute("helpdir", "")));
+                    manifest.Add(typelibFileElement);
+                }
+                catch (FileNotFoundException ex)
+                {
+                    throw new TypeLibraryDoesNotExistException(typeLibrary.Value, ex);
+                }
             }
         }
     }
