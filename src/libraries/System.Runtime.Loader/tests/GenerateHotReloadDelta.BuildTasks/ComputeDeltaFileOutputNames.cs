@@ -1,25 +1,34 @@
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class ComputeDeltaFileOutputNames : Task {
+public class ComputeDeltaFileOutputNames : Microsoft.Build.Utilities.Task {
     [Required]
     public string BaseAssemblyName { get; set; }
     [Required]
-    public int DeltaCount { get; set; }
+    public string DeltaScript {get; set; }
 
     [Output]
     public ITaskItem[] DeltaOutputs { get; set; }
 
-    public override bool Execute ()
+    public override bool Execute()
     {
-        int count = DeltaCount;
-        if (count == 0) {
-            Log.LogError("Did not expect 0 deltas");
+        if (!System.IO.File.Exists (DeltaScript)) {
+            Log.LogError("Hot reload delta script {0} does not exist", DeltaScript);
             return false;
         }
         string baseAssemblyName = BaseAssemblyName;
+        int count;
+        try {
+            var json = DeltaScriptParser.Parse (DeltaScript).Result;
+            count = json.Changes.Length;
+        } catch (System.Text.Json.JsonException exn) {
+            Log.LogErrorFromException (exn, showStackTrace: true);
+            return false;
+        }
         ITaskItem[] result = new TaskItem[3*count];
         for (int i = 0; i < count; ++i) {
             int rev = 1+i;
@@ -33,4 +42,5 @@ public class ComputeDeltaFileOutputNames : Task {
         DeltaOutputs = result;
         return true;
     }
+
 }

@@ -12,6 +12,5 @@
 
   <PropertyGroup>
     <DeltaScript>deltascript.json</DeltaScript>
-    <DeltaCount>2</DeltaCount>
   </PropertyGroup>
 </Project>
