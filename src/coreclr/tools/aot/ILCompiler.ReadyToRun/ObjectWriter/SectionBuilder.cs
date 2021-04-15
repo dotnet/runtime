@@ -842,6 +842,7 @@ namespace ILCompiler.PEWriter
                 //
                 // As it is impossible to effect condition 1 in the compiler, and changing condition 2 would require bloating the virtual size of the sections,
                 // instead require that the resource data is located at offset 0 within the section.
+                // We achieve that by sorting the Win32ResourcesNode as the first node.
                 Debug.Assert(symbolTarget.Offset == 0);
                 directoriesBuilder.ResourceTable = new DirectoryEntry(section.RVAWhenPlaced + symbolTarget.Offset, _win32ResourcesSize);
             }
