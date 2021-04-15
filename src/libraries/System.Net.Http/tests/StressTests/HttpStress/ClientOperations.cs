@@ -275,50 +275,50 @@ namespace HttpStress
                     ValidateContent(expectedResponse, await m.Content.ReadAsStringAsync(), $"Uri: {uri}");
                 }),
 
-                ("GET Aborted",
-                async ctx =>
-                {
-                    try
-                    {
-                        using var req = new HttpRequestMessage(HttpMethod.Get, "/abort");
-                        ctx.SetExpectedResponseContentLengthHeader(req.Headers, minLength: 2);
+                //("GET Aborted",
+                //async ctx =>
+                //{
+                //    try
+                //    {
+                //        using var req = new HttpRequestMessage(HttpMethod.Get, "/abort");
+                //        ctx.SetExpectedResponseContentLengthHeader(req.Headers, minLength: 2);
 
-                        await ctx.SendAsync(req);
+                //        await ctx.SendAsync(req);
 
-                        throw new Exception("Completed unexpectedly");
-                    }
-                    catch (Exception e)
-                    {
-                        if (e is HttpRequestException hre && hre.InnerException is IOException)
-                        {
-                            e = hre.InnerException;
-                        }
+                //        throw new Exception("Completed unexpectedly");
+                //    }
+                //    catch (Exception e)
+                //    {
+                //        if (e is HttpRequestException hre && hre.InnerException is IOException)
+                //        {
+                //            e = hre.InnerException;
+                //        }
 
-                        if (e is IOException ioe)
-                        {
-                            if (ctx.HttpVersion < HttpVersion.Version20)
-                            {
-                                return;
-                            }
+                //        if (e is IOException ioe)
+                //        {
+                //            if (ctx.HttpVersion < HttpVersion.Version20)
+                //            {
+                //                return;
+                //            }
 
-                            string? name = e.InnerException?.GetType().Name;
-                            switch (name)
-                            {
-                                case "Http2ProtocolException":
-                                case "Http2ConnectionException":
-                                case "Http2StreamException":
-                                    if ((e.InnerException?.Message?.Contains("INTERNAL_ERROR") ?? false) || // UseKestrel (https://github.com/dotnet/aspnetcore/issues/12256)
-                                        (e.InnerException?.Message?.Contains("CANCEL") ?? false)) // UseHttpSys
-                                    {
-                                        return;
-                                    }
-                                    break;
-                            }
-                        }
+                //            string? name = e.InnerException?.GetType().Name;
+                //            switch (name)
+                //            {
+                //                case "Http2ProtocolException":
+                //                case "Http2ConnectionException":
+                //                case "Http2StreamException":
+                //                    if ((e.InnerException?.Message?.Contains("INTERNAL_ERROR") ?? false) || // UseKestrel (https://github.com/dotnet/aspnetcore/issues/12256)
+                //                        (e.InnerException?.Message?.Contains("CANCEL") ?? false)) // UseHttpSys
+                //                    {
+                //                        return;
+                //                    }
+                //                    break;
+                //            }
+                //        }
 
-                        throw;
-                    }
-                }),
+                //        throw;
+                //    }
+                //}),
 
                 ("POST",
                 async ctx =>
