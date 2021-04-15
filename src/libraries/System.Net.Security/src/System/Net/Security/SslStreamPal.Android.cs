@@ -149,7 +149,9 @@ namespace System.Net.Security
             if (attribute == ChannelBindingKind.Endpoint)
                 return EndpointChannelBindingToken.Build(securityContext);
 
-            throw new NotImplementedException(nameof(QueryContextChannelBinding));
+            // Android doesn't expose the Finished messages, so a Unique binding token cannot be built.
+            // Return null for not supported kinds
+            return null;
         }
 
         public static void QueryContextStreamSizes(
