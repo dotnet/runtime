@@ -9,9 +9,10 @@
              Exclude="@(ProjectExclusions)" />
     <NonNetCoreAppProject Include="@(_allSrc)"
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj')" />
+    <NonNetCoreAppProject Include="$(MSBuildThisFileDirectory)*\gen\*.csproj"
+                          Exclude="@(ProjectExclusions)" />
     <NetCoreAppProject Include="$(CoreLibProject);
                                 @(_allSrc);
-                                $(MSBuildThisFileDirectory)Microsoft.Extensions.Logging\gen\Microsoft.Extensions.Logging.Generators.csproj;
                                 $(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj;
                                 $(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj"
                        Exclude="@(NonNetCoreAppProject)" />
