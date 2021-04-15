@@ -24,7 +24,7 @@ namespace System.Net.Test.Common
         {
             options ??= new GenericLoopbackOptions();
 
-            _cert = Configuration.Certificates.GetSelfSigned13ServerCertificate();
+            _cert = Configuration.Certificates.GetServerCertificate();
 
             var sslOpts = new SslServerAuthenticationOptions
             {
@@ -35,7 +35,7 @@ namespace System.Net.Test.Common
                     new SslApplicationProtocol("h3-30"),
                     new SslApplicationProtocol("h3-29")
                 },
-                //ServerCertificate = _cert,
+                ServerCertificate = _cert,
                 ClientCertificateRequired = false
             };
 
