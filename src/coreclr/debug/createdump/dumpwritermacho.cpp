@@ -138,16 +138,20 @@ DumpWriter::BuildThreadLoadCommands()
         };
 #if defined(__x86_64__)
         threadCommand.gpflavor = x86_THREAD_STATE64;
-        threadCommand.gpcount = sizeof(x86_thread_state64_t) / sizeof(uint32_t);
+        threadCommand.gpcount = x86_THREAD_STATE64_COUNT;
         threadCommand.fpflavor = x86_FLOAT_STATE64;
-        threadCommand.fpcount = sizeof(x86_float_state64_t) / sizeof(uint32_t);
+        threadCommand.fpcount = x86_FLOAT_STATE64_COUNT;
+        assert(x86_THREAD_STATE64_COUNT == sizeof(x86_thread_state64_t) / sizeof(uint32_t));
+        assert(x86_FLOAT_STATE64_COUNT == sizeof(x86_float_state64_t) / sizeof(uint32_t));
         memcpy(&threadCommand.gpregisters, thread->GPRegisters(), sizeof(x86_thread_state64_t));
         memcpy(&threadCommand.fpregisters, thread->FPRegisters(), sizeof(x86_float_state64_t));
 #elif defined(__aarch64__)
         threadCommand.gpflavor = ARM_THREAD_STATE64;
-        threadCommand.gpcount = sizeof(arm_thread_state64_t) / sizeof(uint32_t);
+        threadCommand.gpcount = ARM_THREAD_STATE64_COUNT;
         threadCommand.fpflavor = ARM_NEON_STATE64;
-        threadCommand.fpcount = sizeof(arm_neon_state64_t) / sizeof(uint32_t);
+        threadCommand.fpcount = ARM_NEON_STATE64_COUNT;
+        assert(ARM_THREAD_STATE64_COUNT == sizeof(arm_thread_state64_t) / sizeof(uint32_t));
+        assert(ARM_NEON_STATE64_COUNT == sizeof(arm_neon_state64_t) / sizeof(uint32_t));
         memcpy(&threadCommand.gpregisters, thread->GPRegisters(), sizeof(arm_thread_state64_t));
         memcpy(&threadCommand.fpregisters, thread->FPRegisters(), sizeof(arm_neon_state64_t));
 #endif
@@ -164,12 +168,13 @@ DumpWriter::WriteHeader(uint64_t* pFileOffset)
     header.magic = MH_MAGIC_64;
 #if defined(__x86_64__)
     header.cputype = CPU_TYPE_X86_64;
+    header.cpusubtype = CPU_SUBTYPE_I386_ALL | CPU_SUBTYPE_LITTLE_ENDIAN;
 #elif defined(__aarch64__)
     header.cputype = CPU_TYPE_ARM64;
+    header.cpusubtype = CPU_SUBTYPE_ARM64_ALL | CPU_SUBTYPE_LITTLE_ENDIAN;
 #else
 #error Unexpected architecture
 #endif
-    header.cpusubtype = CPU_SUBTYPE_I386_ALL | CPU_SUBTYPE_LITTLE_ENDIAN;
     header.filetype = MH_CORE;
 
     for (const ThreadCommand& thread : m_threadLoadCommands)
@@ -228,7 +233,8 @@ DumpWriter::WriteSegments()
             // Write the header
             SpecialThreadInfoHeader header = {
                 {SPECIAL_THREADINFO_SIGNATURE},
-                m_crashInfo.Pid()
+                m_crashInfo.Pid(),
+                m_crashInfo.Threads().size()
             };
 
             if (!WriteData(&header, sizeof(header))) {

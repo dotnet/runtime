@@ -20,6 +20,7 @@ struct SpecialThreadInfoHeader
 {
     char signature[16];
     uint32_t pid;
+    uint32_t numThreads;
 };
 
 struct SpecialThreadInfoEntry
