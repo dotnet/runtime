@@ -3906,6 +3906,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_XCOMPARE: {
 			int temp_reg;
+			gboolean is64BitNativeInt = FALSE;
 
 			switch (ins->inst_c0)
 			{
@@ -3956,7 +3957,11 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg1 = ins->sreg2;
 				ins->sreg2 = temp_reg;
 			case CMP_GE_UN:
-				if (mono_hwcap_x86_has_sse41 && ins->inst_c1 != MONO_TYPE_U8) {
+#if TARGET_SIZEOF_VOID_P == 8
+				is64BitNativeInt = ins->inst_c1 == MONO_TYPE_U;
+#endif
+
+				if (mono_hwcap_x86_has_sse41 && ins->inst_c1 != MONO_TYPE_U8 && !is64BitNativeInt) {
 					int temp_reg1 = mono_alloc_ireg (cfg);
 
 					NEW_SIMD_INS (cfg, ins, temp, simd_type_to_max_un_op (ins->inst_c1), temp_reg1, ins->sreg1, ins->sreg2);
