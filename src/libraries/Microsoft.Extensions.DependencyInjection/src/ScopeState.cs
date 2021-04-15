@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public List<object> Disposables { get; set; }
 
         public int DisposableServicesCount => Disposables?.Count ?? 0;
-        public int ResolvedServicesCount => ((Dictionary<ServiceCacheKey, object>)ResolvedServices).Count;
+        public int ResolvedServicesCount => ResolvedServices.Count;
 
         public ScopeState(bool isRoot)
         {
