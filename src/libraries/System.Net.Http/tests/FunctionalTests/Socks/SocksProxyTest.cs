@@ -99,7 +99,7 @@ namespace System.Net.Http.Functional.Tests.Socks
                     var ex = await Assert.ThrowsAnyAsync<IOException>(() => client.GetStringAsync(uri));
                     Assert.Equal("SocksException", ex.GetType().Name);
                 },
-                async server => await server.HandleRequestAsync(content: "Echo"),
+                server => Task.CompletedTask,
                 options: new GenericLoopbackOptions
                 {
                     Address = host == "::1" ? IPAddress.IPv6Loopback : IPAddress.Loopback
