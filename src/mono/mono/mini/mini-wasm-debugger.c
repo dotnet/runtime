@@ -1667,33 +1667,27 @@ set_variable_value_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
 	
-	if (!sig) {
-		data->error = TRUE;
-		return TRUE;
-	}
-
 	if (!header) {
 		mono_error_cleanup(error);
 		data->error = TRUE;
 		return TRUE;
 	}
 
+	if (!sig)
+		goto exit_with_error;
+
 	int pos = data->pos;
 	
 	if (pos < 0) {
 		pos = - pos - 1;
-		if (pos >= sig->param_count) {
-			data->error = TRUE;
-			return TRUE;		
-		}
+		if (pos >= sig->param_count) 
+			goto exit_with_error;
 		is_arg = TRUE;
 		t = sig->params [pos];
 	}
 	else {
-		if (pos >= header->num_locals) {
-			data->error = TRUE;
-			return TRUE;
-		}
+		if (pos >= header->num_locals)
+			goto exit_with_error;
 		t = header->locals [pos];
 	}
 	
@@ -1705,19 +1699,19 @@ set_variable_value_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	
 	val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (t)));
 	
-	if (!decode_value(t, val_buf, data->new_value)) {
-		data->error = TRUE;
-		mono_metadata_free_mh (header);		
-		return TRUE;
-	}
+	if (!decode_value(t, val_buf, data->new_value))
+		goto exit_with_error;
 
 	DbgEngineErrorCode errorCode = mono_de_set_interp_var (t, addr, val_buf);
 	if (errorCode != ERR_NONE) {
-		data->error = TRUE;
-		mono_metadata_free_mh (header);
-		return TRUE;
+		goto exit_with_error;
 	}
-	
+
+	mono_metadata_free_mh (header);
+	return TRUE;
+
+exit_with_error:	
+	data->error = TRUE;
 	mono_metadata_free_mh (header);
 	return TRUE;
 }
@@ -1888,9 +1882,14 @@ handle_parent:
 			exc = (MonoObject*) mono_error_convert_to_exception (error);
 		if (exc) {
 			char *error_message = mono_string_to_utf8_checked_internal (((MonoException *)exc)->message, error);
-			PRINT_DEBUG_MSG (2, "mono_wasm_set_value_on_object exception: %s\n", error_message);
-			g_free (error_message);
-			mono_error_cleanup (error);			
+			if (is_ok (error)) {
+				PRINT_DEBUG_MSG (2, "mono_wasm_set_value_on_object exception: %s\n", error_message);
+				g_free (error_message);
+				mono_error_cleanup (error);			
+			}
+			else {
+				PRINT_DEBUG_MSG (2, "mono_wasm_set_value_on_object exception\n");
+			}
 			return FALSE;
 		}
 		return TRUE;
