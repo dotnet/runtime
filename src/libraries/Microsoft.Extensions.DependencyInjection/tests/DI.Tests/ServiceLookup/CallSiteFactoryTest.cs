@@ -738,20 +738,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
-        [Fact]
-        public void InstantiateCallSiteFactory_Throws_IfOpenGenericTypeArityMismatch()
-        {
-            // Arrange
-            var serviceType = typeof(IFakeOpenGenericService<>);
-			var implementationType = typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>);
-            var expectedMessage = $"Arity of open generic service type '{serviceType}' does not equal arity of open generic implementation type '{implementationType}'.";
-            var descriptor = new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Transient);
-
-            // Act and Assert
-            var ex = Assert.Throws<ArgumentException>(() => new CallSiteFactory(new []{descriptor}));
-            Assert.StartsWith(expectedMessage, ex.Message);
-        }
-
         private static Func<Type, ServiceCallSite> GetCallSiteFactory(params ServiceDescriptor[] descriptors)
         {
             var collection = new ServiceCollection();

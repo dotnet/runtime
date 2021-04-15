@@ -104,6 +104,31 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 exception.Message);
         }
 
+        [Theory]
+        [MemberData(nameof(FailedOpenGenericTypeTestData))]
+        public void CreatingServiceProviderWithUnresolvableOpenGenericTypesThrows(Type serviceType, Type implementationType, string errorMessage)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient(serviceType, implementationType);
+
+            // Act and Assert
+            var exception = Assert.Throws<ArgumentException>(() => serviceCollection.BuildServiceProvider());
+            Assert.StartsWith(errorMessage, exception.Message);
+        }
+
+        public static IEnumerable<object[]> FailedOpenGenericTypeTestData
+        {
+            get
+            {
+				Type serviceType = typeof(IFakeOpenGenericService<>);
+				// Service type is GenericTypeDefintion, implementation type is ConstructedGenericType
+                yield return new object[] {serviceType, typeof(ClassWithNoConstraints<string>), $"Open generic service type '{serviceType}' requires registering an open generic implementation type."};
+				// Service type is GenericTypeDefintion, implementation type has different generic type definition arity
+                yield return new object[] {serviceType, typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>), $"Arity of open generic service type '{serviceType}' does not equal arity of open generic implementation type '{typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>)}'."};
+            }
+        }
+
         [Fact]
         public void DoesNotDisposeSingletonInstances()
         {
@@ -936,6 +961,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         private abstract class AbstractFakeOpenGenericService<T> : IFakeOpenGenericService<T>
         {
             public abstract T Value { get; }
+        }
+
+        private class FakeOpenGenericServiceWithTwoTypeArguments<TVal1, TVal2> : IFakeOpenGenericService<TVal1>
+        {
+            public TVal1 Value { get; }
+            public TVal2 Value2 { get; }
         }
 
         private class Disposable : IDisposable
