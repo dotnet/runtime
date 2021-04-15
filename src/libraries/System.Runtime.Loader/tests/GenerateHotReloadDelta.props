@@ -1,0 +1,8 @@
+<Project>
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)\GenerateHotReloadDelta.BuildTasks\GenerateHotReloadDelta.BuildTasks.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <PropertyGroup>
+    <_generateHotReloadDeltaBuildTasks>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'GenerateHotReloadDelta.BuildTasks', '$(NetCoreAppToolCurrent)-$(Configuration)', , 'GenerateHotReloadDelta.BuildTasks.dll'))</_generateHotReloadDeltaBuildTasks>
+  </PropertyGroup>
+</Project>
