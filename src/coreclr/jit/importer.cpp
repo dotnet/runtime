@@ -1287,8 +1287,20 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         ilOffset = impCurStmtOffs;
     }
 
-    assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR, GT_COMMA) ||
-           (src->TypeGet() != TYP_STRUCT && src->OperIsSimdOrHWintrinsic()));
+#if defined(FEATURE_HW_INTRINSICS) && defined(DEBUG)
+    if (src->OperIs(GT_HWINTRINSIC))
+    {
+        const GenTreeHWIntrinsic* intrinsic     = src->AsHWIntrinsic();
+        const bool                returnsStruct = HWIntrinsicInfo::ReturnsStruct(intrinsic->gtHWIntrinsicId);
+        assert((src->TypeGet() == TYP_STRUCT) == returnsStruct);
+    }
+    else
+#endif
+    {
+        assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR,
+                           GT_COMMA) ||
+               ((src->TypeGet() != TYP_STRUCT) && src->OperIsSIMD()));
+    }
 
     var_types asgType = src->TypeGet();
 
