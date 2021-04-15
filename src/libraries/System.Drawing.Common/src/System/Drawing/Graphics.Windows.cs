@@ -684,7 +684,7 @@ namespace System.Drawing
         /// WARNING: This method is for internal FX support only.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete(DiagnosticId = "SYSLIB0016", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete(Obsoletions.GetContextInfoMessage, DiagnosticId = Obsoletions.GetContextInfoId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [SupportedOSPlatform("windows")]
         public object GetContextInfo()
         {

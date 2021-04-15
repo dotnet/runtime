@@ -165,6 +165,8 @@
              Link="Common\Interop\Windows\Gdi32\Interop.RasterOp.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <EmbeddedResource Include="Resources\System\Drawing\DefaultComponent.bmp">
       <LogicalName>System.Drawing.DefaultComponent.bmp</LogicalName>
     </EmbeddedResource>
