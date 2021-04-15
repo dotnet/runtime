@@ -3,22 +3,19 @@
 
 namespace System.Buffers
 {
-    /// <summary>
-    /// Provides a mechanism for pinning and unpinning objects to prevent the GC from moving them.
-    /// </summary>
+    /// <summary>Provides a mechanism for pinning and unpinning objects to prevent the garbage collector from moving them.</summary>
+    /// <remarks>The <see cref="System.Buffers.MemoryManager{T}" /> class implements the <see cref="IPinnable" /> interface.</remarks>
     public interface IPinnable
     {
-        /// <summary>
-        /// Call this method to indicate that the IPinnable object can not be moved by the garbage collector.
-        /// The address of the pinned object can be taken.
-        /// <param name="elementIndex">The offset to the element within the memory at which the returned <see cref="MemoryHandle"/> points to.</param>
-        /// </summary>
+        /// <summary>Pins a block of memory.</summary>
+        /// <param name="elementIndex">The offset to the element within the memory buffer to which the returned <see cref="System.Buffers.MemoryHandle" /> points.</param>
+        /// <returns>A handle to the block of memory.</returns>
+        /// <remarks>A developer can access an object that implements the <see cref="System.Buffers.IPinnable" /> interface without pinning it only through managed APIs. Pinning is required for access by unmanaged APIs.
+        /// Call this method to indicate that the <see cref="System.Buffers.IPinnable" /> object cannot be moved by the garbage collector so that the address of the pinned object can be used.</remarks>
         MemoryHandle Pin(int elementIndex);
 
-        /// <summary>
-        /// Call this method to indicate that the IPinnable object no longer needs to be pinned.
-        /// The garbage collector is free to move the object now.
-        /// </summary>
+        /// <summary>Frees a block of pinned memory.</summary>
+        /// <remarks>Call this method to indicate that the <see cref="System.Buffers.IPinnable" /> object no longer needs to be pinned, and that the garbage collector can now move the object.</remarks>
         void Unpin();
     }
 }

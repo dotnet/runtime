@@ -35,7 +35,17 @@ namespace System
 
 namespace System.Buffers
 {
+    /// <summary>Encapsulates a method that receives a span of objects of type <typeparamref name="T" /> and a state object of type <typeparamref name="TArg" />.</summary>
+    /// <typeparam name="T">The type of the objects in the span.</typeparam>
+    /// <typeparam name="TArg">The type of the object that represents the state.</typeparam>
+    /// <param name="span">A span of objects of type <typeparamref name="T" />.</param>
+    /// <param name="arg">A state object of type <typeparamref name="TArg" />.</param>
     public delegate void SpanAction<T, in TArg>(Span<T> span, TArg arg);
+    /// <summary>Encapsulates a method that receives a read-only span of objects of type <typeparamref name="T" /> and a state object of type <typeparamref name="TArg" />.</summary>
+    /// <typeparam name="T">The type of the objects in the read-only span.</typeparam>
+    /// <typeparam name="TArg">The type of the object that represents the state.</typeparam>
+    /// <param name="span">A read-only span of objects of type <typeparamref name="T" />.</param>
+    /// <param name="arg">A state object of type <typeparamref name="TArg" />.</param>
     public delegate void ReadOnlySpanAction<T, in TArg>(ReadOnlySpan<T> span, TArg arg);
 
     internal delegate TResult SpanFunc<TSpan, in T1, in T2, in T3, out TResult>(Span<TSpan> span, T1 arg1, T2 arg2, T3 arg3);
