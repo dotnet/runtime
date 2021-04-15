@@ -787,8 +787,8 @@ struct MSLAYOUT DacSharedReJitInfo
 // These represent the allocated bytes so far on the thread.
 struct MSLAYOUT DacThreadAllocInfo
 {
-    ULONG m_allocBytesSOH;
-    ULONG m_allocBytesUOH;
+    ULONG64 m_allocBytesSOH;
+    ULONG64 m_allocBytesUOH;
 };
 
 #include "dacdbistructures.inl"

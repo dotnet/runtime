@@ -6118,8 +6118,8 @@ public:
     COM_METHOD HasUnhandledException();
 
     // ICorDebugThread5
-    COM_METHOD GetBytesAllocated(DWORD *pSohAllocatedBytes,
-                                 DWORD *pUohAllocatedBytes);
+    COM_METHOD GetBytesAllocated(ULONG64 *pSohAllocatedBytes,
+                                 ULONG64 *pUohAllocatedBytes);
 
     COM_METHOD GetBlockingObjects(ICorDebugBlockingObjectEnum **ppBlockingObjectEnum);
 
