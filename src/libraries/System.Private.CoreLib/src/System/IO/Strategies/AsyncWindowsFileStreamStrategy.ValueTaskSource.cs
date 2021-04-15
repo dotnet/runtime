@@ -53,6 +53,9 @@ namespace System.IO.Strategies
                 _strategy = strategy;
                 _result = TaskSourceCodes.NoResult;
 
+                _source = default;
+                _source.RunContinuationsAsynchronously = true;
+
                 _overlapped = bytes != null &&
                               _strategy.CompareExchangeCurrentOverlappedOwner(this, null) == null ?
                               _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(preallocatedOverlapped!) : // allocated when buffer was created, and buffer is non-null
