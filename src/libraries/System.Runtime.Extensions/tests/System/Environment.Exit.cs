@@ -45,6 +45,7 @@ namespace System.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "throws PNSE")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49868", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void ExitCode_VoidMainAppReturnsSetValue(int mode)
         {
             int expectedExitCode = 123;
