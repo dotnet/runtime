@@ -259,7 +259,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             {
                                                 Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, p.Identifier.GetLocation(), paramName);
                                             }
-                                            else if (lp.IsRegular && !lm.TemplateMap.ContainsKey(paramName))
+                                            else if (lp.IsTemplateParameter && !lm.TemplateMap.ContainsKey(paramName))
                                             {
                                                 Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, p.Identifier.GetLocation(), paramName);
                                             }
@@ -272,9 +272,9 @@ namespace Microsoft.Extensions.Logging.Generators
                                             }
 
                                             lm.AllParameters.Add(lp);
-                                            if (lp.IsRegular)
+                                            if (lp.IsTemplateParameter)
                                             {
-                                                lm.RegularParameters.Add(lp);
+                                                lm.TemplateParameters.Add(lp);
                                             }
                                         }
 
@@ -629,7 +629,7 @@ namespace Microsoft.Extensions.Logging.Generators
         internal class LoggerMethod
         {
             public readonly List<LoggerParameter> AllParameters = new ();
-            public readonly List<LoggerParameter> RegularParameters = new ();
+            public readonly List<LoggerParameter> TemplateParameters = new ();
             public readonly Dictionary<string, string> TemplateMap = new (StringComparer.OrdinalIgnoreCase);
             public readonly List<string> TemplateList = new ();
             public string Name = string.Empty;
@@ -653,7 +653,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public bool IsException;
             public bool IsLogLevel;
             public bool IsEnumerable;
-            public bool IsRegular => !IsLogger && !IsException && !IsLogLevel;
+            public bool IsTemplateParameter => !IsLogger && !IsException && !IsLogLevel;
         }
     }
 }

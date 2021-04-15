@@ -47,9 +47,9 @@ namespace Microsoft.Extensions.Logging.Generators
             private static bool UseLoggerMessageDefine(LoggerMethod lm)
             {
                 bool result =
-                    (lm.RegularParameters.Count <= MaxLoggerMessageDefineArguments) && // more args than LoggerMessage.Define can handle
-                    (lm.Level != null) &&                                              // dynamic log level, which LoggerMessage.Define can't handle
-                    (lm.TemplateList.Count == lm.RegularParameters.Count);             // mismatch in template to args, which LoggerMessage.Define can't handle
+                    (lm.TemplateParameters.Count <= MaxLoggerMessageDefineArguments) && // more args than LoggerMessage.Define can handle
+                    (lm.Level != null) &&                                               // dynamic log level, which LoggerMessage.Define can't handle
+                    (lm.TemplateList.Count == lm.TemplateParameters.Count);             // mismatch in template to args, which LoggerMessage.Define can't handle
 
                 if (result)
                 {
@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     int count = 0;
                     foreach (string t in lm.TemplateList)
                     {
-                        if (!t.Equals(lm.RegularParameters[count].Name, StringComparison.OrdinalIgnoreCase))
+                        if (!t.Equals(lm.TemplateParameters[count].Name, StringComparison.OrdinalIgnoreCase))
                         {
                             // order doesn't match, can't use LoggerMessage.Define
                             return false;
@@ -111,7 +111,7 @@ namespace {lc.Namespace}
         {{");
                 GenFields(lm);
 
-                if (lm.RegularParameters.Count > 0)
+                if (lm.TemplateParameters.Count > 0)
                 {
                     _builder.Append($@"
             public __{lm.Name}Struct(");
@@ -137,7 +137,7 @@ namespace {lc.Namespace}
                 _builder.Append($@"
             public static string Format(__{lm.Name}Struct state, global::System.Exception? ex) => state.ToString();
 
-            public int Count => {lm.RegularParameters.Count + 1};
+            public int Count => {lm.TemplateParameters.Count + 1};
 
             public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index]
             {{
@@ -152,7 +152,7 @@ namespace {lc.Namespace}
 
             public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
             {{
-                for (int i = 0; i < {lm.RegularParameters.Count + 1}; i++)
+                for (int i = 0; i < {lm.TemplateParameters.Count + 1}; i++)
                 {{
                     yield return this[i];
                 }}
@@ -165,7 +165,7 @@ namespace {lc.Namespace}
 
             private void GenFields(LoggerMethod lm)
             {
-                foreach (LoggerParameter p in lm.RegularParameters)
+                foreach (LoggerParameter p in lm.TemplateParameters)
                 {
                     _builder.AppendLine($"            private readonly {p.Type} _{p.Name};");
                 }
@@ -173,7 +173,7 @@ namespace {lc.Namespace}
 
             private void GenFieldAssignments(LoggerMethod lm)
             {
-                foreach (LoggerParameter p in lm.RegularParameters)
+                foreach (LoggerParameter p in lm.TemplateParameters)
                 {
                     _builder.AppendLine($"                this._{p.Name} = {p.Name};");
                 }
@@ -184,7 +184,7 @@ namespace {lc.Namespace}
                 foreach (KeyValuePair<string, string> t in lm.TemplateMap)
                 {
                     int index = 0;
-                    foreach (LoggerParameter p in lm.RegularParameters)
+                    foreach (LoggerParameter p in lm.TemplateParameters)
                     {
                         if (t.Key.Equals(p.Name, System.StringComparison.OrdinalIgnoreCase))
                         {
@@ -195,16 +195,16 @@ namespace {lc.Namespace}
                     }
 
                     // check for an index that's too big, this can happen in some cases of malformed input
-                    if (index < lm.RegularParameters.Count)
+                    if (index < lm.TemplateParameters.Count)
                     {
-                        if (lm.RegularParameters[index].IsEnumerable)
+                        if (lm.TemplateParameters[index].IsEnumerable)
                         {
                             _builder.AppendLine($"                var {t.Key} = "
-                                + $"__Enumerate((global::System.Collections.IEnumerable ?)this._{lm.RegularParameters[index].Name});");
+                                + $"__Enumerate((global::System.Collections.IEnumerable ?)this._{lm.TemplateParameters[index].Name});");
                         }
                         else
                         {
-                            _builder.AppendLine($"                var {t.Key} = this._{lm.RegularParameters[index].Name};");
+                            _builder.AppendLine($"                var {t.Key} = this._{lm.TemplateParameters[index].Name};");
                         }
                     }
                 }
@@ -213,7 +213,7 @@ namespace {lc.Namespace}
             private void GenCases(LoggerMethod lm)
             {
                 int index = 0;
-                foreach (LoggerParameter p in lm.RegularParameters)
+                foreach (LoggerParameter p in lm.TemplateParameters)
                 {
                     string name = p.Name;
                     if (lm.TemplateMap.ContainsKey(name))
@@ -230,7 +230,7 @@ namespace {lc.Namespace}
 
             private void GenCallbackArguments(LoggerMethod lm)
             {
-                foreach (LoggerParameter p in lm.RegularParameters)
+                foreach (LoggerParameter p in lm.TemplateParameters)
                 {
                     _builder.Append($"{p.Name}, ");
                 }
@@ -238,7 +238,7 @@ namespace {lc.Namespace}
 
             private void GenDefineTypes(LoggerMethod lm, bool brackets)
             {
-                if (lm.RegularParameters.Count == 0)
+                if (lm.TemplateParameters.Count == 0)
                 {
                     return;
                 }
@@ -248,7 +248,7 @@ namespace {lc.Namespace}
                 }
 
                 bool firstItem = true;
-                foreach (LoggerParameter p in lm.RegularParameters)
+                foreach (LoggerParameter p in lm.TemplateParameters)
                 {
                     if (firstItem)
                     {
@@ -293,7 +293,7 @@ namespace {lc.Namespace}
             private void GenArguments(LoggerMethod lm)
             {
                 bool firstItem = true;
-                foreach (LoggerParameter p in lm.RegularParameters)
+                foreach (LoggerParameter p in lm.TemplateParameters)
                 {
                     if (firstItem)
                     {
@@ -313,9 +313,9 @@ namespace {lc.Namespace}
                 string typeName = $"__{lm.Name}Struct";
 
                 _builder.Append($"new {typeName}(");
-                foreach (LoggerParameter p in lm.RegularParameters)
+                foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    if (p != lm.RegularParameters[0])
+                    if (p != lm.TemplateParameters[0])
                     {
                         _builder.Append(", ");
                     }
@@ -456,7 +456,7 @@ namespace {lc.Namespace}
                 {
                     if (UseLoggerMessageDefine(lm))
                     {
-                        foreach (LoggerParameter p in lm.RegularParameters)
+                        foreach (LoggerParameter p in lm.TemplateParameters)
                         {
                             if (p.IsEnumerable)
                             {
