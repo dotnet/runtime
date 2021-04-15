@@ -8,6 +8,5 @@ namespace System
         public const string Activeds = "activeds.dll";
         public const string Dnsapi = "dnsapi.dll";
         public const string Netapi32 = "netapi32.dll";
-        public const string Oleaut32 = "oleaut32.dll";
     }
 }
