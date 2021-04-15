@@ -137,6 +137,8 @@
     <Compile Include="Interop\NativeMethods.cs" />
     <Compile Include="Interop\SafeNativeMethods.cs" />
     <Compile Include="Interop\UnsafeNativeMethods.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
