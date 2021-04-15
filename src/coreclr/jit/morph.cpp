@@ -10799,6 +10799,17 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
             assert(blockWidth == info.compCompHnd->getClassSize(call->gtRetClsHnd));
 #endif
         }
+#ifdef TARGET_ARM64
+        else if (effectiveVal->OperIsHWIntrinsic())
+        {
+            needsIndirection = false;
+#ifdef DEBUG
+            GenTreeHWIntrinsic* intrinsic = effectiveVal->AsHWIntrinsic();
+            assert(intrinsic->TypeGet() == TYP_STRUCT);
+            assert(HWIntrinsicInfo::ReturnsStruct(intrinsic->gtHWIntrinsicId));
+#endif
+        }
+#endif // TARGET_ARM64
 
         if (lclNode != nullptr)
         {
@@ -11205,6 +11216,19 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             JITDUMP(" src is a call");
             requiresCopyBlock = true;
         }
+
+#ifdef TARGET_ARM64
+        if (src->OperIsHWIntrinsic())
+        {
+            requiresCopyBlock = true;
+#ifdef DEBUG
+            JITDUMP(" src is a hardware intrinsic");
+            GenTreeHWIntrinsic* intrinsic = src->AsHWIntrinsic();
+            assert(intrinsic->TypeGet() == TYP_STRUCT);
+            assert(HWIntrinsicInfo::ReturnsStruct(intrinsic->gtHWIntrinsicId));
+#endif
+        }
+#endif // TARGET_ARM64
 
         // If we passed the above checks, then we will check these two
         if (!requiresCopyBlock)
