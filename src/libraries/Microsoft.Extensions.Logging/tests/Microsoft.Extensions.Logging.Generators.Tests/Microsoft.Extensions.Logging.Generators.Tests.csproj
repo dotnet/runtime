@@ -4,7 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <MicrosoftNetCompilersToolsetVersion>3.10.0-1.final</MicrosoftNetCompilersToolsetVersion>
   </PropertyGroup>
 
   <ItemGroup>

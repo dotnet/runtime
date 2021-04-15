@@ -46,8 +46,8 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- For source generator support -->
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>3.10.0-1.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
-    <MicrosoftCodeAnalysisVersion>3.10.0-1.final</MicrosoftCodeAnalysisVersion>
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>3.8.0</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
+    <MicrosoftCodeAnalysisVersion>3.8.0</MicrosoftCodeAnalysisVersion>
   </PropertyGroup>
   <PropertyGroup>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-preview3.21168.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
