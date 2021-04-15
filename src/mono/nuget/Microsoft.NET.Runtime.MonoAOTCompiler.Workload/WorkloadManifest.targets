@@ -1,3 +1,0 @@
-<Project>
-    <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
-</Project>

@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <PropertyGroup>
-    <PackageDescription>The workload that contains the MonoAOTCompiler MSBuild task</PackageDescription>
+    <PackageDescription>The mono toolchain is a set of tasks and executables to be used by other dotnet sdks</PackageDescription>
   </PropertyGroup>
 
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles" Returns="@(PackageFile)">
@@ -13,6 +13,7 @@
 
     <ItemGroup>
       <_WorkloadManifestValues Include="PackageVersion" Value="$(PackageVersion)" />
+      <_WorkloadManifestValues Include="EmscriptenVersion" Value="$(MicrosoftNETRuntimeEmscriptenVersion)" />
     </ItemGroup>
 
     <GenerateFileFromTemplate
@@ -21,8 +22,8 @@
       OutputPath="$(WorkloadManifestPath)" />
 
     <ItemGroup>
-      <PackageFile Include="$(WorkloadManifestPath)" Pack="true" PackagePath="\" />
-      <PackageFile Include="WorkloadManifest.targets" TargetPath="\" />
+      <PackageFile Include="$(WorkloadManifestPath)" TargetPath="data" />
+      <PackageFile Include="WorkloadManifest.targets" TargetPath="data" />
     </ItemGroup>
   </Target>
 
