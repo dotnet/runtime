@@ -56,6 +56,7 @@ namespace ILCompiler.DependencyAnalysis
             //
             // ReadyToRun Nodes
             //
+            Win32ResourcesNode,
             CorHeaderNode,
             ReadyToRunHeaderNode,
             ReadyToRunAssemblyHeaderNode,
