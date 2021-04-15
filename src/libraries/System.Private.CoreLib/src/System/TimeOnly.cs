@@ -9,7 +9,7 @@ namespace System
     /// <summary>
     /// Represents a time of day, as would be read from a clock, within the range 00:00:00 to 23:59:59.9999999.
     /// </summary>
-    public readonly struct TimeOnly : IComparable, IComparable<TimeOnly>, IEquatable<TimeOnly>, IFormattable, ISpanFormattable
+    public readonly struct TimeOnly : IComparable, IComparable<TimeOnly>, IEquatable<TimeOnly>, ISpanFormattable
     {
         // represent the number of ticks map to the time of the day. 1 ticks = 100-nanosecond in time measurements.
         private readonly long _ticks;
