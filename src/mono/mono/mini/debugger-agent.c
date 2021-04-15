@@ -6623,7 +6623,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_VM_SET_PROTOCOL_VERSION: {
 		major_version = decode_int (p, &p, end);
 		minor_version = decode_int (p, &p, end);
-		if (p <= end)
+		if (p < end)
 			using_icordbg = decode_byte (p, &p, end);
 		protocol_version_set = TRUE;
 		PRINT_DEBUG_MSG (1, "[dbg] Protocol version %d.%d, client protocol version %d.%d.\n", MAJOR_VERSION, MINOR_VERSION, major_version, minor_version);
