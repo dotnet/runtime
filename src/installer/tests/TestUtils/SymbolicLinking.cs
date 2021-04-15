@@ -36,17 +36,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
             internal static extern IntPtr strerror(int errnum);
         }
 
-        static class libSystem
-        {
-            [DllImport("libSystem.dylib", SetLastError = true)]
-            internal static extern int symlink(
-                string targetFileName,
-                string linkPath);
-
-            [DllImport("libSystem.dylib", CharSet = CharSet.Ansi)]
-            internal static extern IntPtr strerror(int errnum);
-        }
-
         public static bool MakeSymbolicLink(string symbolicLinkName, string targetFileName, out string errorMessage)
         {
             errorMessage = string.Empty;
@@ -59,21 +48,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     return false;
                 }
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else 
             {
                 if (libc.symlink(targetFileName, symbolicLinkName) == -1)
                 {
                     int errno = Marshal.GetLastWin32Error();
                     errorMessage = Marshal.PtrToStringAnsi(libc.strerror(errno));
-                    return false; 
-                }
-            }
-            else
-            {
-                if (libSystem.symlink(targetFileName, symbolicLinkName) == -1)
-                {
-                    int errno = Marshal.GetLastWin32Error();
-                    errorMessage = Marshal.PtrToStringAnsi(libSystem.strerror(errno));
                     return false; 
                 }
             }
