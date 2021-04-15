@@ -3521,7 +3521,6 @@ void region_allocator::print_map (const char* msg)
 
     uint32_t* current_index = region_map_left_start;
     uint32_t* end_index = region_map_left_end;
-    uint32_t* map_start = current_index;
 
     for (int i = 0; i < 2; i++)
     {

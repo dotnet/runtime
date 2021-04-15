@@ -5386,7 +5386,7 @@ public:
     void delete_region (uint8_t* start);
     uint32_t get_va_memory_load()
     {
-        return (uint32_t)((global_region_left_used - global_region_start) * 100.0 
+        return (uint32_t)(((global_region_left_used - global_region_start) + ((global_region_end - global_region_right_used)))* 100.0
                           / (global_region_end - global_region_start));
     }
     // Returns the amount of free space + end of unused region space
