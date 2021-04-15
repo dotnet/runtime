@@ -64,7 +64,7 @@ var MonoSupportLib = {
 				this.mono_background_exec = Module.cwrap ("mono_background_exec", null);
 			while (MONO.timeout_queue.length > 0) {
 				--MONO.pump_count;
-				MONO.timeout_queue.shift()();
+				Promise.resolve().then(MONO.timeout_queue.shift()());
 			}
 			while (MONO.pump_count > 0) {
 				--MONO.pump_count;
@@ -2452,11 +2452,7 @@ var MonoSupportLib = {
 
 	schedule_background_exec: function () {
 		++MONO.pump_count;
-		if (typeof globalThis.setTimeout === 'function') {
-			globalThis.setTimeout (MONO.pump_message, 0);
-		} else {
-			Promise.resolve().then (MONO.pump_message);
-		}
+		Promise.resolve().then (MONO.pump_message);
 	},
 
 	mono_set_timeout: function (timeout, id) {

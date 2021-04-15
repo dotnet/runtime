@@ -210,15 +210,17 @@ function loadScript (url){
 		var script = document.createElement ("script");
 		script.src = url;
 		document.head.appendChild (script);
-	} else if (is_node) {
-		return read (url).toString();
 	} else {
 		load (url);
 	}
-	return "";
 }
 
-eval (loadScript ("mono-config.js"));
+if (is_node) {
+	eval (read ("mono-config.js").toString());
+} else {
+	loadScript("mono-config.js");
+}
+
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 	config,
@@ -296,7 +298,11 @@ var Module = {
 	},
 };
 
-eval (loadScript ("dotnet.js"));
+if (is_node) {
+	eval (read ("dotnet.js").toString());
+} else {
+	loadScript ("dotnet.js");
+}
 //var module = require ('./dotnet.js')(Module).then ((va) => console.log (va));
 //globalThis.Module = Module;
 
