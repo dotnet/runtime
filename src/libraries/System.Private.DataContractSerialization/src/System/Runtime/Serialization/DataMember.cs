@@ -125,7 +125,6 @@ namespace System.Runtime.Serialization
         private FastInvokerBuilder.Getter? _getter;
         internal FastInvokerBuilder.Getter Getter
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (_getter == null)
@@ -140,7 +139,6 @@ namespace System.Runtime.Serialization
         private FastInvokerBuilder.Setter? _setter;
         internal FastInvokerBuilder.Setter Setter
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (_setter == null)

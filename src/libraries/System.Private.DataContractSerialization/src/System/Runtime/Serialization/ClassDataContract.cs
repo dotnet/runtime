@@ -208,7 +208,6 @@ namespace System.Runtime.Serialization
         private Func<object>? _makeNewInstance;
         private Func<object> MakeNewInstance
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
             get
             {
                 if (_makeNewInstance == null)
@@ -220,7 +219,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         internal bool CreateNewInstanceViaDefaultConstructor([NotNullWhen(true)] out object? obj)
         {
             ConstructorInfo? ci = GetNonAttributedTypeConstructor();

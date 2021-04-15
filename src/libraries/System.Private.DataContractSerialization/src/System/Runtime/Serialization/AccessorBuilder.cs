@@ -25,14 +25,18 @@ namespace System.Runtime.Serialization
         private static readonly MethodInfo s_createSetterInternal = typeof(FastInvokerBuilder).GetMethod(nameof(CreateSetterInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
         private static readonly MethodInfo s_make = typeof(FastInvokerBuilder).GetMethod(nameof(Make), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
-        public static Func<object> GetMakeNewInstanceFunc(Type type)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "The call to MakeGenericMethod is safe due to the fact that FastInvokerBuilder.Make<T> is not annotated.")]
+        public static Func<object> GetMakeNewInstanceFunc(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            Type type)
         {
             Func<object> make = s_make.MakeGenericMethod(type).CreateDelegate<Func<object>>();
             return make;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "The call to MakeGenericMethod is safe due to the fact that FastInvokerBuilder.CreateGetterInternal<T, T1> is not annotated.")]
         public static Getter CreateGetter(MemberInfo memberInfo)
         {
             if (memberInfo is PropertyInfo propInfo)
@@ -55,7 +59,8 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "The call to MakeGenericMethod is safe due to the fact that FastInvokerBuilder.CreateSetterInternal<T, T1> is not annotated.")]
         public static Setter CreateSetter(MemberInfo memberInfo)
         {
             if (memberInfo is PropertyInfo)

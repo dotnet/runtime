@@ -361,13 +361,11 @@ namespace System.Runtime.Serialization
             };
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private object? ReflectionGetMemberValue(object obj, DataMember dataMember)
         {
             return dataMember.Getter(obj);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private void ReflectionSetMemberValue(ref object obj, object? memberValue, DataMember dataMember)
         {
             dataMember.Setter(ref obj, memberValue);
@@ -416,7 +414,6 @@ namespace System.Runtime.Serialization
             deserializationCallbackObject?.OnDeserialization(null);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
         private static object CreateObject(ClassDataContract classContract)
         {
             object? obj;
