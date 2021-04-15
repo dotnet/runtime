@@ -318,7 +318,7 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         private static unsafe void DispatchTailCalls(
             IntPtr callersRetAddrSlot,
-            delegate*<IntPtr, IntPtr, IntPtr*, void> callTarget,
+            delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> callTarget,
             IntPtr retVal)
         {
             IntPtr callersRetAddr;
@@ -332,6 +332,9 @@ namespace System.Runtime.CompilerServices
 
             PortableTailCallFrame newFrame;
             newFrame.Prev = prevFrame;
+            // GC uses NextCall to keep LoaderAllocator alive after we link it below,
+            // so we must null it out before that.
+            newFrame.NextCall = null;
 
             try
             {
@@ -339,8 +342,7 @@ namespace System.Runtime.CompilerServices
 
                 do
                 {
-                    newFrame.NextCall = null;
-                    callTarget(tls->ArgBuffer, retVal, &newFrame.TailCallAwareReturnAddress);
+                    callTarget(tls->ArgBuffer, retVal, &newFrame);
                     callTarget = newFrame.NextCall;
                 } while (callTarget != null);
             }
@@ -503,7 +505,7 @@ namespace System.Runtime.CompilerServices
     {
         public PortableTailCallFrame* Prev;
         public IntPtr TailCallAwareReturnAddress;
-        public delegate*<IntPtr, IntPtr, IntPtr*, void> NextCall;
+        public delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> NextCall;
     }
 
     [StructLayout(LayoutKind.Sequential)]
