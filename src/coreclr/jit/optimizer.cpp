@@ -366,6 +366,17 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             break;
         }
     }
+
+    JITDUMP("\n");
+
+#if FEATURE_LOOP_ALIGN
+    if (begBlk->isLoopAlign())
+    {
+        // Clear the loop alignment bit on the head of a loop, since it's no longer a loop.
+        begBlk->bbFlags &= ~BBF_LOOP_ALIGN;
+        JITDUMP("Removing LOOP_ALIGN flag from removed loop in " FMT_BB "\n", begBlk->bbNum);
+    }
+#endif
 }
 
 /*****************************************************************************************************

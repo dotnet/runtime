@@ -4667,7 +4667,7 @@ void emitter::emitLoopAlignment()
 //-----------------------------------------------------------------------------
 //  emitEndsWithAlignInstr: Checks if current IG ends with loop align instruction.
 //
-//  Returns:  true if current IG ends with align instruciton.
+//  Returns:  true if current IG ends with align instruction.
 //
 bool emitter::emitEndsWithAlignInstr()
 {
