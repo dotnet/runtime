@@ -555,6 +555,8 @@ static void
 handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame)
 {
 	ERROR_DECL (error);
+	const char *default_error_message = "Failed to get exception message.";
+
 	PRINT_DEBUG_MSG (1, "handle exception - %d - %p - %p - %p\n", pause_on_exc, exc, throw_ctx, catch_ctx);
 	
     //normal mono_runtime_try_invoke does not capture the exception and this is a temporary workaround.
@@ -568,15 +570,13 @@ handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch
 	int obj_id = get_object_id ((MonoObject *)exc);
 	char *error_message = mono_string_to_utf8_checked_internal (exc->message, error);
 
-	if (!is_ok (error))
-		error_message = "Failed to get exception message.";
-
 	const char *class_name = mono_class_full_name (mono_object_class (exc));
-	PRINT_DEBUG_MSG (2, "handle exception - calling mono_wasm_fire_exc(): %d - message - %s, class_name: %s\n", obj_id,  error_message, class_name);
+	PRINT_DEBUG_MSG (2, "handle exception - calling mono_wasm_fire_exc(): %d - message - %s, class_name: %s\n", obj_id,  !is_ok (error) ? error_message : default_error_message, class_name);
 
-	mono_wasm_fire_exception (obj_id, error_message, class_name, !catch_ctx);
+	mono_wasm_fire_exception (obj_id, !is_ok (error) ? error_message : default_error_message, class_name, !catch_ctx);
 
-	g_free (error_message);
+	if (error_message != NULL)
+		g_free (error_message);
 	
 	PRINT_DEBUG_MSG (2, "handle exception - done\n");
 }
@@ -1887,7 +1887,7 @@ handle_parent:
 		if (!is_ok (error) && exc == NULL)
 			exc = (MonoObject*) mono_error_convert_to_exception (error);
 		if (exc) {
-			const char *error_message = mono_string_to_utf8_checked_internal (((MonoException *)exc)->message, error);
+			char *error_message = mono_string_to_utf8_checked_internal (((MonoException *)exc)->message, error);
 			PRINT_DEBUG_MSG (2, "mono_wasm_set_value_on_object exception: %s\n", error_message);
 			g_free (error_message);
 			mono_error_cleanup (error);			
