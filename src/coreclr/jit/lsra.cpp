@@ -3086,10 +3086,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     else if (!found)
     {
         found = selector.applySelection(FREE, freeCandidates);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_FREE, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_FREE, refPosition->bbNum));
     }
 
     // Apply the CONST_AVAILABLE (matching constant) heuristic. Only applies if we have freeCandidates.
@@ -3100,10 +3097,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         {
             matchingConstants = getMatchingConstants(selector.candidates, currentInterval, refPosition);
             found             = selector.applySelection(CONST_AVAILABLE, matchingConstants);
-            if (found)
-            {
-                INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_CONST_AVAILABLE, refPosition->bbNum));
-            }
+            INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_CONST_AVAILABLE, refPosition->bbNum));
         }
     }
 
@@ -3111,10 +3105,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     if (!found && (prevRegRec != nullptr) && (freeCandidates != RBM_NONE))
     {
         found = selector.applySelection(THIS_ASSIGNED, freeCandidates & preferences & prevRegBit);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_THIS_ASSIGNED, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_THIS_ASSIGNED, refPosition->bbNum));
     }
 
     // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
@@ -3192,10 +3183,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     if (!found)
     {
         found = selector.applySelection(COVERS, coversSet & preferenceSet);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_COVERS, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_COVERS, refPosition->bbNum));
     }
 
     // Apply the OWN_PREFERENCE heuristic.
@@ -3204,10 +3192,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     {
         assert((preferenceSet & freeCandidates) == preferenceSet);
         found = selector.applySelection(OWN_PREFERENCE, preferenceSet);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_OWN_PREFERENCE, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_OWN_PREFERENCE, refPosition->bbNum));
     }
 
     // Apply the COVERS_RELATED heuristic.
@@ -3215,40 +3200,28 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     {
         assert((coversRelatedSet & freeCandidates) == coversRelatedSet);
         found = selector.applySelection(COVERS_RELATED, coversRelatedSet);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_COVERS_RELATED, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_COVERS_RELATED, refPosition->bbNum));
     }
 
     // Apply the RELATED_PREFERENCE heuristic.
     if (!found)
     {
         found = selector.applySelection(RELATED_PREFERENCE, relatedPreferences & freeCandidates);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_RELATED_PREFERENCE, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_RELATED_PREFERENCE, refPosition->bbNum));
     }
 
     // Apply the CALLER_CALLEE heuristic.
     if (!found)
     {
         found = selector.applySelection(CALLER_CALLEE, callerCalleePrefs & freeCandidates);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_CALLER_CALLEE, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_CALLER_CALLEE, refPosition->bbNum));
     }
 
     // Apply the UNASSIGNED heuristic.
     if (!found)
     {
         found = selector.applySelection(UNASSIGNED, unassignedSet);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_UNASSIGNED, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_UNASSIGNED, refPosition->bbNum));
     }
 
     // Apply the COVERS_FULL heuristic.
@@ -3256,10 +3229,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     {
         assert((coversFullSet & freeCandidates) == coversFullSet);
         found = selector.applySelection(COVERS_FULL, coversFullSet);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_COVERS_FULL, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_COVERS_FULL, refPosition->bbNum));
     }
 
     // Apply the BEST_FIT heuristic. Only applies if we have freeCandidates.
@@ -3325,10 +3295,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         }
         assert(bestFitSet != RBM_NONE);
         found = selector.applySelection(BEST_FIT, bestFitSet);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_BEST_FIT, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_BEST_FIT, refPosition->bbNum));
     }
 
     // Apply the IS_PREV_REG heuristic. TODO: Check if Only applies if we have freeCandidates.
@@ -3336,10 +3303,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     if ((prevRegRec != nullptr) && ((selector.score & COVERS_FULL) != 0))
     {
         found = selector.applySingleRegSelection(IS_PREV_REG, prevRegBit);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_IS_PREV_REG, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_IS_PREV_REG, refPosition->bbNum));
     }
 
     // Apply the REG_ORDER heuristic. Only applies if we have freeCandidates.
@@ -3364,10 +3328,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         }
         assert(lowestRegOrderBit != RBM_NONE);
         found = selector.applySingleRegSelection(REG_ORDER, lowestRegOrderBit);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_REG_ORDER, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_REG_ORDER, refPosition->bbNum));
     }
 
     // The set of registers with the lowest spill weight.
@@ -3433,7 +3394,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         found = selector.applySelection(SPILL_COST, lowestCostSpillSet);
         if (found)
         {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_SPILL_COST, refPosition->bbNum));
+            INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_SPILL_COST, refPosition->bbNum));
         }
     }
 
@@ -3467,7 +3428,7 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
         found = selector.applySelection(FAR_NEXT_REF, farthestSet);
         if (found)
         {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_FAR_NEXT_REF, refPosition->bbNum));
+            INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_FAR_NEXT_REF, refPosition->bbNum));
         }
     }
 
@@ -3547,20 +3508,14 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
 #endif
         }
         found = selector.applySelection(PREV_REG_OPT, prevRegOptSet);
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_PREV_REG_OPT, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_PREV_REG_OPT, refPosition->bbNum));
     }
 
     // Apply the REG_NUM heuristic.
     if (!found)
     {
         found = selector.applySingleRegSelection(REG_NUM, genFindLowestBit(selector.candidates));
-        if (found)
-        {
-            INTRACK_STATS(updateLsraStat(LsraStat::REGSEL_REG_NUM, refPosition->bbNum));
-        }
+        INTRACK_STATS_IF(found, updateLsraStat(LsraStat::REGSEL_REG_NUM, refPosition->bbNum));
     }
 
     assert(found && isSingleRegister(selector.candidates));

@@ -1366,8 +1366,15 @@ public:
     static const char* getStatName(unsigned stat);
 
 #define INTRACK_STATS(x) x
+#define INTRACK_STATS_IF(condition, work)                                                                              \
+    if (condition)                                                                                                     \
+    {                                                                                                                  \
+        work;                                                                                                          \
+    }
+
 #else // !TRACK_LSRA_STATS
 #define INTRACK_STATS(x)
+#define INTRACK_STATS_IF(condition, work)
 #endif // !TRACK_LSRA_STATS
 
 private:

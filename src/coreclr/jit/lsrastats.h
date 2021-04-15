@@ -49,3 +49,5 @@ LSRA_STAT_DEF(REGSEL_REG_NUM,               "REG_NUM")
 LSRA_STAT_DEF(COUNT,                        "COUNT")
 
 #endif // TRACK_LSRA_STATS
+
+// clang-format on
