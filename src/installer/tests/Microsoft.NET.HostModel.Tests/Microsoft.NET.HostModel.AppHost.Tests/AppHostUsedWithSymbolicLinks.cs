@@ -87,8 +87,11 @@ namespace Microsoft.NET.HostModel.Tests
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
 
-            Directory.Delete(firstSymbolicLink);
-            Directory.Delete(secondSymbolicLink);
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                Directory.Delete(firstSymbolicLink);
+                Directory.Delete(secondSymbolicLink);
+            }
         }
 
         //[Theory]
@@ -197,7 +200,10 @@ namespace Microsoft.NET.HostModel.Tests
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
 
-            Directory.Delete(dotnetSymlink);
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                Directory.Delete(dotnetSymlink);
+            }
         }
 
         [Fact]
