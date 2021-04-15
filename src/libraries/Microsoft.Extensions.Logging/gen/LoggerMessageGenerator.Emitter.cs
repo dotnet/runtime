@@ -39,9 +39,9 @@ namespace Microsoft.Extensions.Logging.Generators
             private static string EscapeMessageString(string message)
             {
                 return message
-                    .Replace("\n", "\\n")
-                    .Replace("\r", "\\r")
-                    .Replace("\"", "\\\"");
+                    .ReplaceOrdinal("\n", "\\n")
+                    .ReplaceOrdinal("\r", "\\r")
+                    .ReplaceOrdinal("\"", "\\\"");
             }
 
             private static bool UseLoggerMessageDefine(LoggerMethod lm)
@@ -509,6 +509,40 @@ namespace {lc.Namespace}
                     }
                 }
             }
+        }
+    }
+
+    internal static class StringHelper
+    {
+        // Replace operations need to be done with StringComparison.Ordinal
+        // (Adding code snippet below, since the API taking StringComparison is not available in netstandard2.0)
+        internal static string ReplaceOrdinal(this string s, string oldValue, string newValue)
+        {
+            int index = s.IndexOf(oldValue, StringComparison.Ordinal);
+            if (index < 0)
+            {
+                return s;
+            }
+
+            StringBuilder sb = new StringBuilder(s.Length);
+            sb.Append(s, 0, index);
+            sb.Append(newValue);
+            index += oldValue.Length;
+            int newIndex;
+
+            while (index < s.Length && (newIndex = s.IndexOf(oldValue, index, StringComparison.Ordinal)) > 0)
+            {
+                sb.Append(s, index, newIndex - index);
+                sb.Append(newValue);
+                index = newIndex + oldValue.Length;
+            }
+
+            if (index < s.Length)
+            {
+                sb.Append(s, index, s.Length - index);
+            }
+
+            return sb.ToString();
         }
     }
 }
