@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Drawing.Tests
 {
-#pragma warning disable CS0618 // Type or member is obsolete
+#pragma warning disable SYSLIB0016 // Type or member is obsolete
     public partial class Graphics_GetContextTests : DrawingTest
     {
         [ConditionalFact(Helpers.IsWindows)]
@@ -164,5 +164,5 @@ namespace System.Drawing.Tests
             }
         }
     }
-#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning restore SYSLIB0016 // Type or member is obsolete
 }
