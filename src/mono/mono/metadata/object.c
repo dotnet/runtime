@@ -2105,7 +2105,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 			const char *data = mono_field_get_data (field);
 
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT));
-			t = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
+			t = (char*)mono_static_field_get_addr (vt, field);
 			/* some fields don't really have rva, they are just zeroed (bss? bug #343083) */
 			if (!data)
 				continue;
@@ -2776,15 +2776,7 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 	if ((field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
 		return;
 
-	if (field->offset == -1) {
-		ERROR_DECL (error);
-		/* Special static */
-		gpointer addr = mono_special_static_field_get_offset (field, error);
-		mono_error_assert_ok (error);
-		dest = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-	} else {
-		dest = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
-	}
+	dest = mono_static_field_get_addr (vt, field);
 	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
 }
 
@@ -2837,20 +2829,28 @@ mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+		return mono_static_field_get_addr (vt, field);
+	else
+		return (guint8*)obj + field->offset;
+}
+
+guint8*
+mono_static_field_get_addr (MonoVTable *vt, MonoClassField *field)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	guint8 *src;
 
-	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
-		if (field->offset == -1) {
-			/* Special static */
-			ERROR_DECL (error);
-			gpointer addr = mono_special_static_field_get_offset (field, error);
-			mono_error_assert_ok (error);
-			src = (guint8 *)mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-		} else {
-			src = (guint8*)mono_vtable_get_static_field_data (vt) + field->offset;
-		}
+	g_assert (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+	if (field->offset == -1) {
+		/* Special static */
+		ERROR_DECL (error);
+		gpointer addr = mono_special_static_field_get_offset (field, error);
+		mono_error_assert_ok (error);
+		src = (guint8 *)mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	} else {
-		src = (guint8*)obj + field->offset;
+		src = (guint8*)mono_vtable_get_static_field_data (vt) + field->offset;
 	}
 
 	return src;
@@ -3199,14 +3199,7 @@ mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *
 		return;
 	}
 
-	if (field->offset == -1) {
-		/* Special static */
-		gpointer addr = mono_special_static_field_get_offset (field, error);
-		mono_error_assert_ok (error);
-		src = mono_get_special_static_data_for_thread (thread, GPOINTER_TO_UINT (addr));
-	} else {
-		src = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
-	}
+	src = mono_static_field_get_addr (vt, field);
 	mono_copy_value (field->type, value, src, TRUE);
 }
 
