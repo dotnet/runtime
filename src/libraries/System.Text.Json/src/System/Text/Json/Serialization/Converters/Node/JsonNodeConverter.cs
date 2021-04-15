@@ -12,7 +12,6 @@ namespace System.Text.Json.Serialization.Converters
         public JsonArrayConverter ArrayConverter { get; } = new JsonArrayConverter();
         public JsonObjectConverter ObjectConverter { get; } = new JsonObjectConverter();
         public JsonValueConverter ValueConverter { get; } = new JsonValueConverter();
-        public ObjectConverter ElementConverter { get; } = new ObjectConverter();
 
         public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
         {

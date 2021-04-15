@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -26,7 +27,7 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
             {
@@ -40,12 +41,12 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                if (classInfo.CreateObject == null)
+                if (typeInfo.CreateObject == null)
                 {
                     ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
                 }
 
-                TCollection returnValue = (TCollection)classInfo.CreateObject()!;
+                TCollection returnValue = (TCollection)typeInfo.CreateObject()!;
 
                 if (returnValue.IsReadOnly)
                 {
@@ -72,8 +73,8 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = (IDictionaryEnumerator)state.Current.CollectionEnumerator;
             }
 
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
-            _valueConverter ??= GetConverter<object?>(classInfo.ElementClassInfo!);
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
+            _valueConverter ??= GetConverter<object?>(typeInfo.ElementTypeInfo!);
 
             do
             {
@@ -90,7 +91,7 @@ namespace System.Text.Json.Serialization.Converters
                     // Optimize for string since that's the hot path.
                     if (key is string keyString)
                     {
-                        _keyConverter ??= GetConverter<string>(classInfo.KeyClassInfo!);
+                        _keyConverter ??= GetConverter<string>(typeInfo.KeyTypeInfo!);
                         _keyConverter.WriteWithQuotes(writer, keyString, options, ref state);
                     }
                     else

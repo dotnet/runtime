@@ -8,11 +8,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace System.Text.Json.Serialization
+namespace System.Text.Json.Serialization.Metadata
 {
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
-        public override JsonClassInfo.ConstructorDelegate? CreateConstructor(Type type)
+        public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(Type type)
         {
             Debug.Assert(type != null);
             ConstructorInfo? realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization
 
             var dynamicMethod = new DynamicMethod(
                 ConstructorInfo.ConstructorName,
-                JsonClassInfo.ObjectType,
+                JsonTypeInfo.ObjectType,
                 Type.EmptyTypes,
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
@@ -52,11 +52,11 @@ namespace System.Text.Json.Serialization
 
             generator.Emit(OpCodes.Ret);
 
-            return (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(typeof(JsonClassInfo.ConstructorDelegate));
+            return (JsonTypeInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(typeof(JsonTypeInfo.ConstructorDelegate));
         }
 
-        public override JsonClassInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
-            CreateDelegate<JsonClassInfo.ParameterizedConstructorDelegate<T>>(CreateParameterizedConstructor(constructor));
+        public override JsonTypeInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
+            CreateDelegate<JsonTypeInfo.ParameterizedConstructorDelegate<T>>(CreateParameterizedConstructor(constructor));
 
         private static DynamicMethod? CreateParameterizedConstructor(ConstructorInfo constructor)
         {
@@ -99,9 +99,9 @@ namespace System.Text.Json.Serialization
             return dynamicMethod;
         }
 
-        public override JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
+        public override JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
             CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo constructor) =>
-            CreateDelegate<JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>>(
+            CreateDelegate<JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>>(
                 CreateParameterizedConstructor(constructor, typeof(TArg0), typeof(TArg1), typeof(TArg2), typeof(TArg3)));
 
         private static DynamicMethod? CreateParameterizedConstructor(ConstructorInfo constructor, Type parameterType1, Type parameterType2, Type parameterType3, Type parameterType4)
@@ -156,7 +156,7 @@ namespace System.Text.Json.Serialization
             var dynamicMethod = new DynamicMethod(
                 realMethod.Name,
                 typeof(void),
-                new[] { collectionType, JsonClassInfo.ObjectType },
+                new[] { collectionType, JsonTypeInfo.ObjectType },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
@@ -363,7 +363,7 @@ namespace System.Text.Json.Serialization
             new DynamicMethod(
                 memberName + "Getter",
                 memberType,
-                new[] { JsonClassInfo.ObjectType },
+                new[] { JsonTypeInfo.ObjectType },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
@@ -371,7 +371,7 @@ namespace System.Text.Json.Serialization
             new DynamicMethod(
                 memberName + "Setter",
                 typeof(void),
-                new[] { JsonClassInfo.ObjectType, memberType },
+                new[] { JsonTypeInfo.ObjectType, memberType },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 

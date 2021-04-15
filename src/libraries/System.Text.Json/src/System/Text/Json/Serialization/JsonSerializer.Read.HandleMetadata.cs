@@ -28,7 +28,7 @@ namespace System.Text.Json
             ref ReadStack state,
             JsonSerializerOptions options)
         {
-            JsonConverter converter = state.Current.JsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
+            JsonConverter converter = state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
 
             if (state.Current.ObjectState < StackFrameObjectState.ReadAheadNameOrEndObject)
             {
@@ -169,7 +169,7 @@ namespace System.Text.Json
             ref ReadStack state,
             JsonSerializerOptions options)
         {
-            JsonConverter converter = state.Current.JsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
+            JsonConverter converter = state.Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
 
             if (state.Current.ObjectState < StackFrameObjectState.ReadAheadNameOrEndObject)
             {

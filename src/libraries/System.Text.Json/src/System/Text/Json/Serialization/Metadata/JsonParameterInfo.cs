@@ -3,9 +3,8 @@
 
 using System.Diagnostics;
 using System.Reflection;
-using System.Text.Json.Serialization;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
     /// Holds relevant state about a method parameter, like the default value of
@@ -21,7 +20,7 @@ namespace System.Text.Json
 
         public bool IgnoreDefaultValuesOnRead { get; private set; }
 
-        // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
+        // Options can be referenced here since all JsonPropertyInfos originate from a JsonTypeInfo that is cached on JsonSerializerOptions.
         public JsonSerializerOptions? Options { get; set; } // initialized in Init method
 
         // The name of the parameter as UTF-8 bytes.
@@ -32,19 +31,19 @@ namespace System.Text.Json
         // The zero-based position of the parameter in the formal parameter list.
         public int Position { get; private set; }
 
-        private JsonClassInfo? _runtimeClassInfo;
-        public JsonClassInfo RuntimeClassInfo
+        private JsonTypeInfo? _runtimeTypeInfo;
+        public JsonTypeInfo RuntimeTypeInfo
         {
             get
             {
                 Debug.Assert(ShouldDeserialize);
-                if (_runtimeClassInfo == null)
+                if (_runtimeTypeInfo == null)
                 {
                     Debug.Assert(Options != null);
-                    _runtimeClassInfo = Options!.GetOrAddClass(RuntimePropertyType);
+                    _runtimeTypeInfo = Options!.GetOrAddClass(RuntimePropertyType);
                 }
 
-                return _runtimeClassInfo;
+                return _runtimeTypeInfo;
             }
         }
 

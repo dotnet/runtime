@@ -4,15 +4,15 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization.Metadata
 {
     internal abstract class MemberAccessor
     {
-        public abstract JsonClassInfo.ConstructorDelegate? CreateConstructor(Type classType);
+        public abstract JsonTypeInfo.ConstructorDelegate? CreateConstructor(Type classType);
 
-        public abstract JsonClassInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor);
+        public abstract JsonTypeInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor);
 
-        public abstract JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
+        public abstract JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
             CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo constructor);
 
         public abstract Action<TCollection, object?> CreateAddMethodDelegate<TCollection>();

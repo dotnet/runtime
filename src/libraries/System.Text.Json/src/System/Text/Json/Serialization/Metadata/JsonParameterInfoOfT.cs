@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Reflection;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
     /// Represents a strongly-typed parameter to prevent boxing where have less than 4 parameters.

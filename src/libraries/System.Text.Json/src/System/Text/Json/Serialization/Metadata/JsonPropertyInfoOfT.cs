@@ -4,15 +4,14 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Text.Json.Serialization;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
     /// Represents a strongly-typed property to prevent boxing and to create a direct delegate to the getter\setter.
     /// </summary>
     /// <typeparamref name="T"/> is the <see cref="JsonConverter{T}.TypeToConvert"/> for either the property's converter,
-    /// or a type's converter, if the current instance is a <see cref="JsonClassInfo.PropertyInfoForClassInfo"/>.
+    /// or a type's converter, if the current instance is a <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/>.
     internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
         /// <summary>
@@ -27,16 +26,16 @@ namespace System.Text.Json
         // the property's type, we track that and whether the property type can be null.
         private bool _propertyTypeEqualsTypeToConvert;
 
-        public Func<object, T>? Get { get; private set; }
-        public Action<object, T>? Set { get; private set; }
+        internal Func<object, T>? Get { get; set; }
+        internal Action<object, T>? Set { get; set; }
 
         public JsonConverter<T> Converter { get; internal set; } = null!;
 
-        public override void Initialize(
+        internal override void Initialize(
             Type parentClassType,
             Type declaredPropertyType,
             Type? runtimePropertyType,
-            ClassType runtimeClassType,
+            ConverterStrategy runtimeClassType,
             MemberInfo? memberInfo,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
@@ -74,6 +73,8 @@ namespace System.Text.Json
                             Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
                         }
 
+                        MemberType = MemberTypes.Property;
+
                         break;
                     }
 
@@ -90,12 +91,14 @@ namespace System.Text.Json
                             Set = options.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
                         }
 
+                        MemberType = MemberTypes.Field;
+
                         break;
                     }
 
                 default:
                     {
-                        IsForClassInfo = true;
+                        IsForTypeInfo = true;
                         HasGetter = true;
                         HasSetter = true;
 
@@ -107,10 +110,123 @@ namespace System.Text.Json
             PropertyTypeCanBeNull = DeclaredPropertyType.CanBeNull();
             _propertyTypeEqualsTypeToConvert = typeof(T) == DeclaredPropertyType;
 
-            GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: PropertyTypeCanBeNull);
+            GetPolicies(ignoreCondition, parentTypeNumberHandling);
         }
 
-        public override JsonConverter ConverterBase
+        internal void InitializeForSourceGen(
+            JsonSerializerOptions options,
+            bool isProperty,
+            Type declaringType,
+            JsonTypeInfo typeInfo,
+            JsonConverter<T> converter,
+            Func<object, T>? getter,
+            Action<object, T>? setter,
+            JsonIgnoreCondition ignoreCondition,
+            JsonNumberHandling numberHandling,
+            string propertyName,
+            JsonEncodedText jsonPropertyName)
+        {
+            Options = options;
+            ClrName = propertyName;
+
+            byte[] encodedName = jsonPropertyName._utf8Value;
+            string encodedNameAsStr = jsonPropertyName._value;
+
+            // Property name settings.
+            if (encodedName != null && options.PropertyNamingPolicy == null && options.Encoder == null)
+            {
+                NameAsString = encodedNameAsStr;
+                NameAsUtf8Bytes = encodedName;
+
+                int nameLength = encodedName.Length;
+                EscapedNameSection = new byte[nameLength + 3];
+                EscapedNameSection[0] = (byte)'"';
+                encodedName.CopyTo(EscapedNameSection, 1);
+                EscapedNameSection[nameLength - 2] = (byte)'"';
+                EscapedNameSection[nameLength - 1] = (byte)':';
+            }
+            else
+            {
+                if (encodedNameAsStr != null)
+                {
+                    NameAsString = encodedNameAsStr;
+                }
+                else if (options.PropertyNamingPolicy == null)
+                {
+                    NameAsString = ClrName;
+                }
+                else
+                {
+                    NameAsString = options.PropertyNamingPolicy.ConvertName(ClrName);
+                    if (NameAsString == null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(DeclaringType, this);
+                    }
+                }
+
+                NameAsUtf8Bytes ??= Encoding.UTF8.GetBytes(NameAsString!);
+                EscapedNameSection ??= JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
+            }
+
+            if (ignoreCondition == JsonIgnoreCondition.Always)
+            {
+                IsIgnored = true;
+                Debug.Assert(!ShouldSerialize);
+                Debug.Assert(!ShouldDeserialize);
+            }
+            else
+            {
+                Get = getter;
+                Set = setter;
+                HasGetter = Get != null;
+                HasSetter = Set != null;
+                ConverterBase = converter;
+                RuntimeTypeInfo = typeInfo;
+                DeclaredPropertyType = typeof(T);
+                DeclaringType = declaringType;
+                IgnoreCondition = ignoreCondition;
+                MemberType = isProperty ? MemberTypes.Property : MemberTypes.Field;
+
+                _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && DeclaredPropertyType != converter.TypeToConvert;
+                PropertyTypeCanBeNull = typeof(T).CanBeNull();
+                _propertyTypeEqualsTypeToConvert = converter.TypeToConvert == typeof(T);
+                ConverterStrategy = Converter!.ConverterStrategy;
+                RuntimePropertyType = DeclaredPropertyType;
+                DetermineIgnoreCondition(IgnoreCondition);
+                // TODO: this method needs to also take the number handling option for the declaring type.
+                DetermineNumberHandlingForProperty(numberHandling, declaringTypeNumberHandling: null);
+                DetermineSerializationCapabilities(IgnoreCondition);
+            }
+        }
+
+        /// <summary>
+        /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
+        /// See <seealso cref="JsonTypeInfo.PropertyInfoForTypeInfo"/>.
+        /// </summary>
+        internal static JsonPropertyInfo CreateForSourceGenTypeInfo(
+            Type declaredPropertyType,
+            JsonTypeInfo runtimeTypeInfo,
+            JsonConverter converter,
+            JsonSerializerOptions options)
+        {
+            JsonPropertyInfo<T> jsonPropertyInfo = new JsonPropertyInfo<T>();
+            jsonPropertyInfo.DeclaredPropertyType = declaredPropertyType;
+            jsonPropertyInfo.RuntimePropertyType = declaredPropertyType;
+            jsonPropertyInfo.ConverterStrategy = converter.ConverterStrategy;
+            jsonPropertyInfo.RuntimeTypeInfo = runtimeTypeInfo;
+            jsonPropertyInfo.ConverterBase = converter;
+            jsonPropertyInfo.Options = options;
+            jsonPropertyInfo.IsForTypeInfo = true;
+            jsonPropertyInfo.HasGetter = true;
+            jsonPropertyInfo.HasSetter = true;
+            // TODO (perf): can we pre-compute some of these values during source gen?
+            jsonPropertyInfo._converterIsExternalAndPolymorphic = !converter.IsInternalConverter && declaredPropertyType != converter.TypeToConvert;
+            jsonPropertyInfo.PropertyTypeCanBeNull = declaredPropertyType.CanBeNull();
+            jsonPropertyInfo._propertyTypeEqualsTypeToConvert = typeof(T) == declaredPropertyType;
+            return jsonPropertyInfo;
+        }
+
+        internal override JsonConverter ConverterBase
         {
             get
             {
@@ -123,9 +239,9 @@ namespace System.Text.Json
             }
         }
 
-        public override object? GetValueAsObject(object obj)
+        internal override object? GetValueAsObject(object obj)
         {
-            if (IsForClassInfo)
+            if (IsForTypeInfo)
             {
                 return obj;
             }
@@ -134,7 +250,7 @@ namespace System.Text.Json
             return Get!(obj);
         }
 
-        public override bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer)
+        internal override bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer)
         {
             T value = Get!(obj);
 
@@ -167,10 +283,10 @@ namespace System.Text.Json
                     }
                     else
                     {
-                        Debug.Assert(RuntimeClassInfo.Type == DeclaredPropertyType);
+                        Debug.Assert(RuntimeTypeInfo.Type == DeclaredPropertyType);
 
                         // Use a late-bound call to EqualityComparer<DeclaredPropertyType>.
-                        if (RuntimeClassInfo.GenericMethods.IsDefaultValue(value))
+                        if (RuntimeTypeInfo.GenericMethods.IsDefaultValue(value))
                         {
                             return true;
                         }
@@ -185,7 +301,7 @@ namespace System.Text.Json
                 if (Converter.HandleNullOnWrite)
                 {
                     // No object, collection, or re-entrancy converter handles null.
-                    Debug.Assert(Converter.ClassType == ClassType.Value);
+                    Debug.Assert(Converter.ConverterStrategy == ConverterStrategy.Value);
 
                     if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {
@@ -219,7 +335,7 @@ namespace System.Text.Json
             }
         }
 
-        public override bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer)
+        internal override bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer)
         {
             bool success;
             T value = Get!(obj);
@@ -236,7 +352,7 @@ namespace System.Text.Json
             return success;
         }
 
-        public override bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader)
+        internal override bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader)
         {
             bool success;
 
@@ -306,7 +422,7 @@ namespace System.Text.Json
             return success;
         }
 
-        public override bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
+        internal override bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
@@ -341,7 +457,7 @@ namespace System.Text.Json
             return success;
         }
 
-        public override void SetExtensionDictionaryAsObject(object obj, object? extensionDict)
+        internal override void SetExtensionDictionaryAsObject(object obj, object? extensionDict)
         {
             Debug.Assert(HasSetter);
             T typedValue = (T)extensionDict!;

@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace System.Text.Json.Serialization
+namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
     /// Allows virtual dispatch to GenericMethodHolder{T}.

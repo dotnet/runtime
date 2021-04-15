@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Node;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -10,7 +11,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            if (JsonClassInfo.ObjectType == typeToConvert)
+            if (JsonTypeInfo.ObjectType == typeToConvert)
             {
                 if (options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode)
                 {
@@ -18,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Return the converter for System.Object which uses JsonElement.
-                return JsonNodeConverter.Instance.ElementConverter;
+                return JsonMetadataServices.ObjectConverter;
             }
 
             if (typeof(JsonValue).IsAssignableFrom(typeToConvert))
@@ -41,7 +42,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         public override bool CanConvert(Type typeToConvert) =>
-            typeToConvert == JsonClassInfo.ObjectType ||
+            typeToConvert == JsonTypeInfo.ObjectType ||
             typeof(JsonNode).IsAssignableFrom(typeToConvert);
     }
 }
