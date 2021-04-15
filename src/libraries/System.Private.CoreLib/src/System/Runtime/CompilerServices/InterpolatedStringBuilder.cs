@@ -130,7 +130,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Gets the built <see cref="string"/>.</summary>
         /// <returns>The built string.</returns>
-        public override string ToString() => _chars.Slice(0, _pos).ToString();
+        public override string ToString() => new string(_chars.Slice(0, _pos));
 
         /// <summary>Gets the built <see cref="string"/> and clears the builder.</summary>
         /// <returns>The built string.</returns>
@@ -142,7 +142,7 @@ namespace System.Runtime.CompilerServices
         /// </remarks>
         public string ToStringAndClear()
         {
-            string result = _chars.Slice(0, _pos).ToString();
+            string result = new string(_chars.Slice(0, _pos));
 
             char[]? toReturn = _arrayToReturnToPool;
             this = default; // defensive clear
