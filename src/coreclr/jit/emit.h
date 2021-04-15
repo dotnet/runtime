@@ -255,11 +255,8 @@ struct insGroup
     insGroup* igLoopBackEdge; // "last" back-edge that branches back to an aligned loop head.
 #endif
 
-#define IGF_GC_VARS 0x0001    // new set of live GC ref variables
-#define IGF_BYREF_REGS 0x0002 // new set of live by-ref registers
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-#define IGF_FINALLY_TARGET 0x0004 // this group is the start of a basic block that is returned to after a finally.
-#endif                            // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+#define IGF_GC_VARS 0x0001        // new set of live GC ref variables
+#define IGF_BYREF_REGS 0x0002     // new set of live by-ref registers
 #define IGF_FUNCLET_PROLOG 0x0008 // this group belongs to a funclet prolog
 #define IGF_FUNCLET_EPILOG 0x0010 // this group belongs to a funclet epilog.
 #define IGF_EPILOG 0x0020         // this group belongs to a main function epilog
@@ -495,11 +492,6 @@ protected:
     }
 
 #endif // FEATURE_EH_FUNCLETS
-
-    // If "ig" corresponds to the start of a basic block that is the
-    // target of a funclet return, generate GC information for it's start
-    // address "cp", as if it were the return address of a call.
-    void emitGenGCInfoIfFuncletRetTarget(insGroup* ig, BYTE* cp);
 
     void emitRecomputeIGoffsets();
 
@@ -1896,7 +1888,7 @@ private:
     // Sets the emitter's record of the currently live GC variables
     // and registers.  The "isFinallyTarget" parameter indicates that the current location is
     // the start of a basic block that is returned to after a finally clause in non-exceptional execution.
-    void* emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BOOL isFinallyTarget = FALSE);
+    void* emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs DEBUG_ARG(unsigned bbNum));
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
     // continues to track GC info as if there was no label.
