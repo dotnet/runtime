@@ -57,17 +57,17 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [Event(5, Level = EventLevel.Verbose)]
-        public void ScopeDisposed(int scopedServicesResolved, int disposableServices)
+        public void ScopeDisposed(int trackerHashCode, int scopedServicesResolved, int disposableServices)
         {
-            WriteEvent(5, scopedServicesResolved, disposableServices);
+            WriteEvent(5, trackerHashCode, scopedServicesResolved, disposableServices);
         }
 
         [NonEvent]
-        public void ScopeDisposed(ScopeTracker.State state)
+        public void ScopeDisposed(ScopeTracker tracker, ScopeTracker.State state)
         {
             if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
             {
-                ScopeDisposed(state.ResolvedServicesCount, state.DisposableServicesCount);
+                ScopeDisposed(tracker.GetHashCode(), state.ResolvedServicesCount, state.DisposableServicesCount);
             }
         }
 

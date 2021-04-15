@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private void Track(State state)
         {
-            DependencyInjectionEventSource.Log.ScopeDisposed(state);
+            DependencyInjectionEventSource.Log.ScopeDisposed(this, state);
         }
 
         public class State
