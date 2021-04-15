@@ -1547,6 +1547,12 @@ var MonoSupportLib = {
 			Module.ccall ('mono_wasm_load_profiler_coverage', null, ['string'], [arg]);
 		},
 
+		mono_wasm_register_custom_marshaler: function (fullName, marshalerFullName) {
+			if (MONO._custom_marshaler_name_table[fullName])
+				throw new Error(`A custom marshaler for ${fullName} is already registered.`);
+			MONO._custom_marshaler_name_table[fullName] = marshalerFullName;			
+		},
+
 		_apply_configuration_from_args: function (args) {
 			for (var k in (args.environment_variables || {}))
 				MONO.mono_wasm_setenv (k, args.environment_variables[k]);
@@ -1559,6 +1565,20 @@ var MonoSupportLib = {
 
 			if (args.coverage_profiler_options)
 				MONO.mono_wasm_init_coverage_profiler (args.coverage_profiler_options);
+
+			MONO._custom_marshaler_name_table = args.custom_marshalers || {};
+
+			// HACK: Until the msbuild goo necessary for this is wired up
+			var cmt = MONO._custom_marshaler_name_table;
+			cmt["System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal.CustomClass"] =
+				"System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal.CustomClassMarshaler";
+			cmt["System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal.CustomStruct"] =
+				"System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal.CustomStructMarshaler";
+			cmt["System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal.CustomDate"] =
+				"System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal.CustomDateMarshaler";
+			cmt["System.Uri"] = "System.Runtime.InteropServices.JavaScript.UriMarshaler";
+			cmt["System.DateTime"] = "System.Runtime.InteropServices.JavaScript.DateTimeMarshaler";
+			cmt["System.DateTimeOffset"] = "System.Runtime.InteropServices.JavaScript.DateTimeOffsetMarshaler";
 		},
 
 		_get_fetch_file_cb_from_args: function (args) {
@@ -1740,6 +1760,8 @@ var MonoSupportLib = {
 		//      "invariant": operate in invariant globalization mode.
 		//      "auto" (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
 		//    diagnostic_tracing: (optional) enables diagnostic log messages during startup
+		//    custom_marshalers: (optional) a dictionary-style Object. keys identify managed types by 
+		//      FullName, and values specify the FullName of a marshaler type responsible for them.
 		mono_load_runtime_and_bcl_args: function (args) {
 			try {
 				return this._load_assets_and_runtime (args);
@@ -1814,6 +1836,7 @@ var MonoSupportLib = {
 			try {
 				tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 			} catch {}
+
 			MONO.mono_wasm_setenv ("TZ", tz || "UTC");
 			MONO.mono_wasm_runtime_ready ();
 			args.loaded_cb ();

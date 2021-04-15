@@ -420,8 +420,10 @@ namespace System.Runtime.InteropServices.JavaScript
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
-        public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr) {
+        public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr, string marshalerFullName) {
             if (typePtr == IntPtr.Zero)
+                return "null";
+            else if (string.IsNullOrEmpty(marshalerFullName))
                 return "null";
 
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
@@ -429,33 +431,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var typeHandle = tmp.typeHandle;
 
             var type = Type.GetTypeFromHandle(typeHandle);
-            Type? marshalerType = null;
-
-            foreach (var cad in type.GetCustomAttributesData()) {
-                if (cad.AttributeType.FullName != "System.Runtime.InteropServices.JavaScript.CustomJavaScriptMarshalerAttribute")
-                    continue;
-
-                var args = cad.ConstructorArguments;
-                if (args.Count != 1)
-                    throw new Exception("CustomJavaScriptMarshalerAttribute must accept one argument");
-
-                var arg = args[0];
-                object? v = arg.Value;
-                if (v == null)
-                    throw new Exception($"CustomJavaScriptMarshalerAttribute's argument must be either a Type or the name of a type, but was null");
-                else if (arg.ArgumentType == typeof(Type))
-                    marshalerType = (Type)v;
-                else if (arg.ArgumentType == typeof(string))
-                    marshalerType = Type.GetType((string)v);
-                else
-                    throw new Exception($"CustomJavaScriptMarshalerAttribute's argument {arg.Value} must be either a Type or the name of a type");
-
-                if (marshalerType == null)
-                    throw new Exception($"No marshaler type could be located based on the CustomJavaScriptMarshalerAttribute argument {arg.Value}");
-
-                break;
-            }
-
+            var marshalerType = Type.GetType(marshalerFullName) ?? type.Assembly.GetType(marshalerFullName);
             if (marshalerType == null)
                 return "null";
 

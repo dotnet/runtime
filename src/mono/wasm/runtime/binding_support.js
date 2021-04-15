@@ -138,7 +138,7 @@ var BindingSupportLib = {
 			//  the process of binding other methods relies on it.
 			this.make_marshal_signature_info = bind_runtime_method ("MakeMarshalSignatureInfo", "iiii");
 
-			this.get_custom_marshaler_info = bind_runtime_method ("GetCustomMarshalerInfoForType", "i");
+			this.get_custom_marshaler_info = bind_runtime_method ("GetCustomMarshalerInfoForType", "is");
 
 			// NOTE: The bound methods have a _ prefix on their names to ensure
 			//  that any code relying on the old get_method/call_method pattern will
@@ -1088,13 +1088,22 @@ var BindingSupportLib = {
 		_get_custom_marshaler_info_for_type: function (typePtr) {
 			if (!typePtr)
 				return null;
+			if (!MONO._custom_marshaler_name_table)
+				return null;
 
 			if (!this._custom_marshaler_info_cache)
 				this._custom_marshaler_info_cache = new Map ();
 			
 			var result;
 			if (!this._custom_marshaler_info_cache.has (typePtr)) {
-				var json = this.get_custom_marshaler_info (typePtr);
+				var fullName = this.mono_wasm_get_type_name (typePtr);
+				var marshalerFullName = MONO._custom_marshaler_name_table[fullName];
+				if (!marshalerFullName) {
+					console.log (`No custom marshaler configured for ${fullName}`);
+					this._custom_marshaler_info_cache[typePtr] = null;
+					return null;
+				}
+				var json = this.get_custom_marshaler_info (typePtr, marshalerFullName);
 				result = JSON.parse(json);
 				this._custom_marshaler_info_cache.set (typePtr, result);
 			} else {
