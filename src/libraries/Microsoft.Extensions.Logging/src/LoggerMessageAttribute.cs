@@ -8,6 +8,22 @@ namespace Microsoft.Extensions.Logging
     /// <summary>
     /// Provides information to guide the production of a strongly-typed logging method.
     /// </summary>
+    /// <remarks>
+    /// The method this attribute is applied to:
+    ///    - Must be a partial method.
+    ///    - Must return <c>void</c>.
+    ///    - Must not be generic.
+    ///    - Must have an <see cref="ILogger"/> as one of its parameters.
+    ///    - Must have a <see cref="Microsoft.Extensions.Logging.LogLevel"/> as one of its parameters.
+    ///    - None of the parameters can be generic.
+    /// </remarks>
+    /// <example>
+    /// static partial class Log
+    /// {
+    ///     [LoggerMessage(EventId = 0, Message = "Could not open socket for {hostName}")]
+    ///     static partial void CouldNotOpenSocket(ILogger logger, LogLevel level, string hostName);
+    /// }
+    /// </example>
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class LoggerMessageAttribute : Attribute
     {
@@ -15,22 +31,6 @@ namespace Microsoft.Extensions.Logging
         /// Initializes a new instance of the <see cref="LoggerMessageAttribute"/> class
         /// which is used to guide the production of a strongly-typed logging method.
         /// </summary>
-        /// <remarks>
-        /// The method this attribute is applied to:
-        ///    - Must be a partial method.
-        ///    - Must return <c>void</c>.
-        ///    - Must not be generic.
-        ///    - Must have an <see cref="ILogger"/> as one of its parameters.
-        ///    - Must have a <see cref="Microsoft.Extensions.Logging.LogLevel"/> as one of its parameters.
-        ///    - None of the parameters can be generic.
-        /// </remarks>
-        /// <example>
-        /// static partial class Log
-        /// {
-        ///     [LoggerMessage(EventId = 0, Message = "Could not open socket for {hostName}")]
-        ///     static partial void CouldNotOpenSocket(ILogger logger, LogLevel level, string hostName);
-        /// }
-        /// </example>
         public LoggerMessageAttribute() { }
 
         /// <summary>

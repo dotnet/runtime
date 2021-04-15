@@ -23,16 +23,7 @@
     <Content Include="TestClasses\*.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Baselines\TestWithDynamicLogLevel.generated.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Baselines\TestWithMoreThan6Params.generated.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Baselines\TestWithOneParam.generated.txt">
+    <Content Include="Baselines\*.generated.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

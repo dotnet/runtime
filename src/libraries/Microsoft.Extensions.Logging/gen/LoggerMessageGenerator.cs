@@ -34,11 +34,14 @@ namespace Microsoft.Extensions.Logging.Generators
             }
 
             var p = new Parser(context.Compilation, context.ReportDiagnostic, context.CancellationToken);
-            var e = new Emitter();
             IReadOnlyList<LoggerClass> logClasses = p.GetLogClasses(receiver.ClassDeclarations);
-            string result = e.Emit(logClasses, context.CancellationToken);
-
-            context.AddSource(nameof(LoggerMessageGenerator), SourceText.From(result, Encoding.UTF8));
+            if (logClasses.Count > 0)
+            {
+                var e = new Emitter();
+                string result = e.Emit(logClasses, context.CancellationToken);
+    
+                context.AddSource(nameof(LoggerMessageGenerator), SourceText.From(result, Encoding.UTF8));
+            }
         }
 
         [ExcludeFromCodeCoverage]

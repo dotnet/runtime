@@ -653,6 +653,8 @@ namespace Microsoft.Extensions.Logging.Generators
             public bool IsException;
             public bool IsLogLevel;
             public bool IsEnumerable;
+            // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
+            // but instead is supposed to be taken as a parameter for the template.
             public bool IsTemplateParameter => !IsLogger && !IsException && !IsLogLevel;
         }
     }
