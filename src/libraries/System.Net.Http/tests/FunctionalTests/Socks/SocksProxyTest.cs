@@ -95,8 +95,13 @@ namespace System.Net.Http.Functional.Tests.Socks
             HttpRequestMessage request = CreateRequest(HttpMethod.Get, new Uri($"http://{host}/"), UseVersion, exactVersion: true);
 
             // SocksException is not public
-            var ex = await Assert.ThrowsAnyAsync<IOException>(() => client.SendAsync(TestAsync, request));
-            Assert.Equal(exceptionMessage, ex.Message);
+            var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(TestAsync, request));
+
+            if (ex.Message != exceptionMessage)
+            {
+                throw ex;
+            }
+
             Assert.Equal("SocksException", ex.GetType().Name);
         }
     }
