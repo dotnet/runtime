@@ -1573,6 +1573,23 @@ void TestMethod(MethodInfo methodInfo)
 
 The assembly 'assembly' produced trim analysis warnings in the context of the app. This means the assembly has not been fully annotated for trimming. Consider contacting the library author to request they add trim annotations to the library. To see detailed warnings for this assembly, turn off grouped warnings by passing either `--singlewarn-` to show detailed warnings for all assemblies, or `--singlewarn- "assembly"` to show detailed warnings for that assembly. https://aka.ms/dotnet-illink/libraries has more information on annotating libraries for trimming.
 
+#### `IL2105`: Type 'type' was not found in the caller assembly nor in the base library. Type name strings used for dynamically accessing a type should be assembly qualified.
+
+Type name strings representing dynamically accessed types must be assembly qualified, otherwise linker will first search for the type name in the caller's assembly and then in System.Private.CoreLib.
+If the linker fails to resolve the type name, null will be returned.
+
+```C#
+void TestInvalidTypeName()
+{
+    RequirePublicMethodOnAType("Foo.Unqualified.TypeName");
+}
+void RequirePublicMethodOnAType(
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+    string typeName)
+{
+}
+```
+
 ## Single-File Warning Codes
 
 #### `IL3000`: 'member' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'
