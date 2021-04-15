@@ -2277,6 +2277,12 @@ protected:
     void background_ephemeral_sweep();
     PER_HEAP
     void background_sweep ();
+    // Check if we should grow the mark stack proactively to avoid mark stack
+    // overflow and grow if necessary.
+    PER_HEAP
+    void check_bgc_mark_stack_length();
+    PER_HEAP
+    void grow_bgc_mark_stack (size_t new_size);
     PER_HEAP
     uint8_t* background_seg_end (heap_segment* seg, BOOL concurrent_p);
     PER_HEAP
