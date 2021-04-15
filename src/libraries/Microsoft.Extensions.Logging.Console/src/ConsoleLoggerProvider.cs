@@ -13,7 +13,6 @@ namespace Microsoft.Extensions.Logging.Console
     /// <summary>
     /// A provider of <see cref="ConsoleLogger"/> instances.
     /// </summary>
-    [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
     [ProviderAlias("Console")]
     public class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
@@ -48,7 +47,7 @@ namespace Microsoft.Extensions.Logging.Console
             _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
 
             _messageQueue = new ConsoleLoggerProcessor();
-            if (DoesConsoleSupportAnsi())
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || DoesConsoleSupportAnsi())
             {
                 _messageQueue.Console = new AnsiLogConsole();
                 _messageQueue.ErrorConsole = new AnsiLogConsole(stdErr: true);

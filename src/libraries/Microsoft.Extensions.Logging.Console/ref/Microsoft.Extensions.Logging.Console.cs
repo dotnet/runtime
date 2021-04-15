@@ -6,7 +6,6 @@
 
 namespace Microsoft.Extensions.Logging
 {
-    [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public static partial class ConsoleLoggerExtensions
     {
@@ -65,7 +64,6 @@ namespace Microsoft.Extensions.Logging.Console
         [System.ObsoleteAttribute("ConsoleLoggerOptions.UseUtcTimestamp has been deprecated. Please use ConsoleFormatterOptions.UseUtcTimestamp instead.", false)]
         public bool UseUtcTimestamp { get { throw null; } set { } }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     [Microsoft.Extensions.Logging.ProviderAliasAttribute("Console")]
     public partial class ConsoleLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IDisposable

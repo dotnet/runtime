@@ -13,7 +13,6 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
-    [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
     public static class ConsoleLoggerExtensions
     {
@@ -157,7 +156,6 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
-    [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
     internal sealed class ConsoleLoggerFormatterConfigureOptions<TFormatter, TOptions> : ConfigureFromConfigurationOptions<TOptions>
         where TOptions : ConsoleFormatterOptions
@@ -169,7 +167,6 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
-    [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
     internal sealed class ConsoleLoggerFormatterOptionsChangeTokenSource<TFormatter, TOptions> : ConfigurationChangeTokenSource<TOptions>
         where TOptions : ConsoleFormatterOptions

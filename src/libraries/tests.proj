@@ -28,8 +28,6 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Android'">
     <!-- Never going to run on Android -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl\tests\System.Security.Cryptography.OpenSsl.Tests.csproj" />
-
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Console\tests\TrimmingTests\Microsoft.Extensions.Logging.Console.TrimmingTests.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(RunDisabledAndroidTests)' != 'true'">
