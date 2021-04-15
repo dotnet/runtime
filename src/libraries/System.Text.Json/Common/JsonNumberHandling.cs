@@ -3,21 +3,17 @@
 
 namespace System.Text.Json.Serialization
 {
-#if BUILDING_SOURCE_GENERATOR
-    // cref references below are not present when compiling this assembly.
-    internal enum JsonNumberHandling
-    {
-        Strict = 0x0,
-        AllowReadingFromString = 0x1,
-        WriteAsString = 0x2,
-        AllowNamedFloatingPointLiterals = 0x4
-    }
-#else
     /// <summary>
     /// Determines how <see cref="JsonSerializer"/> handles numbers when serializing and deserializing.
     /// </summary>
     [Flags]
-    public enum JsonNumberHandling
+#if BUILDING_SOURCE_GENERATOR
+    // cref references below are not present when compiling this assembly.
+    internal
+#else
+    public
+#endif
+     enum JsonNumberHandling
     {
         /// <summary>
         /// Numbers will only be read from <see cref="JsonTokenType.Number"/> tokens and will only be written as JSON numbers (without quotes).
@@ -47,5 +43,4 @@ namespace System.Text.Json.Serialization
         /// </summary>
         AllowNamedFloatingPointLiterals = 0x4
     }
-#endif
 }

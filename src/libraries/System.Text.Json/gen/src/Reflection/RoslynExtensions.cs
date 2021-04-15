@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Reflection
+namespace System.Text.Json.SourceGeneration.Reflection
 {
-    public static class RoslynExtensions
+    internal static class RoslynExtensions
     {
-        public static Type AsType(this ITypeSymbol typeSymbol, MetadataLoadContext metadataLoadContext)
+        public static Type AsType(this ITypeSymbol typeSymbol, MetadataLoadContextInternal metadataLoadContext)
         {
             if (typeSymbol == null)
             {
@@ -18,7 +19,7 @@ namespace System.Reflection
             return new TypeWrapper(typeSymbol, metadataLoadContext);
         }
 
-        public static MethodInfo AsMethodInfo(this IMethodSymbol methodSymbol, MetadataLoadContext metadataLoadContext) => (methodSymbol == null ? null : new MethodInfoWrapper(methodSymbol, metadataLoadContext))!;
+        public static MethodInfo AsMethodInfo(this IMethodSymbol methodSymbol, MetadataLoadContextInternal metadataLoadContext) => (methodSymbol == null ? null : new MethodInfoWrapper(methodSymbol, metadataLoadContext))!;
 
         public static IEnumerable<INamedTypeSymbol> BaseTypes(this INamedTypeSymbol typeSymbol)
         {

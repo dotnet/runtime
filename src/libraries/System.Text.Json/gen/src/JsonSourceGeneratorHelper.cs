@@ -8,6 +8,8 @@ using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using System.Text.Json.Serialization;
+using System.Text.Json.SourceGeneration.Reflection;
+using System.Linq;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -31,9 +33,6 @@ namespace System.Text.Json.SourceGeneration
 
         private readonly HashSet<Type> _knownTypes = new();
 
-        // Contains used JsonTypeInfo<T> identifiers.
-        private readonly HashSet<string> _usedFriendlyTypeNames = new();
-
         /// <summary>
         /// Type information for member types in input object graphs.
         /// </summary>
@@ -42,23 +41,33 @@ namespace System.Text.Json.SourceGeneration
         /// <summary>
         /// Types that were specified with System.Text.Json.Serialization.JsonSerializableAttribute.
         /// </summary>
-        private readonly Dictionary<string, Type> _rootSerializableTypes;
+        private Dictionary<string, TypeMetadata> _rootSerializableTypes;
 
         private readonly GeneratorExecutionContext _executionContext;
 
-        private readonly MetadataLoadContext _metadataLoadContext;
+        private readonly MetadataLoadContextInternal _metadataLoadContext;
+
+        private const string SystemTextJsonNamespace = "System.Text.Json";
 
         private const string JsonConverterAttributeFullName = "System.Text.Json.Serialization.JsonConverterAttribute";
 
+        private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
+
+        private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
+
+        private const string JsonIncludeAttributeFullName = "System.Text.Json.Serialization.JsonIncludeAttribute";
+
+        private const string JsonNumberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonNumberHandlingAttribute";
+
+        private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
+
         public JsonSourceGeneratorHelper(
             GeneratorExecutionContext executionContext,
-            MetadataLoadContext metadataLoadContext,
-            Dictionary<string, Type> rootSerializableTypes)
+            MetadataLoadContextInternal metadataLoadContext)
         {
             _generationNamespace = $"{executionContext.Compilation.AssemblyName}.JsonSourceGeneration";
             _executionContext = executionContext;
             _metadataLoadContext = metadataLoadContext;
-            _rootSerializableTypes = rootSerializableTypes;
 
             _ienumerableType = metadataLoadContext.Resolve(typeof(IEnumerable));
             _listOfTType = metadataLoadContext.Resolve(typeof(List<>));
@@ -70,7 +79,6 @@ namespace System.Text.Json.SourceGeneration
             _dateTimeType = metadataLoadContext.Resolve(typeof(DateTime));
             _dateTimeOffsetType = metadataLoadContext.Resolve(typeof(DateTimeOffset));
             _guidType = metadataLoadContext.Resolve(typeof(Guid));
-
             _stringType = metadataLoadContext.Resolve(typeof(string));
             _uriType = metadataLoadContext.Resolve(typeof(Uri));
             _versionType = metadataLoadContext.Resolve(typeof(Version));
@@ -78,15 +86,22 @@ namespace System.Text.Json.SourceGeneration
             PopulateKnownTypes(metadataLoadContext);
         }
 
+        public void RegisterRootSerializableType(Type type, string? typeInfoPropertyName)
+        {
+            _rootSerializableTypes ??= new Dictionary<string, TypeMetadata>();
+            _rootSerializableTypes[type.FullName] = GetOrAddTypeMetadata(type, typeInfoPropertyName);
+        }
+
         public void GenerateSerializationMetadata()
         {
-            Debug.Assert(_rootSerializableTypes != null);
-            Debug.Assert(_rootSerializableTypes.Count > 0);
-
-            foreach (KeyValuePair<string, Type> pair in _rootSerializableTypes)
+            if (_rootSerializableTypes?.Count < 1)
             {
-                Type type = pair.Value;
-                TypeMetadata typeMetadata = GetOrAddTypeMetadata(type);
+                return;
+            }
+
+            foreach (KeyValuePair<string, TypeMetadata> pair in _rootSerializableTypes)
+            {
+                TypeMetadata typeMetadata = pair.Value;
                 GenerateTypeMetadata(typeMetadata);
             }
 
@@ -97,7 +112,7 @@ namespace System.Text.Json.SourceGeneration
             _executionContext.AddSource("JsonContext.GetJsonTypeInfo.g.cs", SourceText.From(GetGetTypeInfoImplementation(), Encoding.UTF8));
         }
 
-        private TypeMetadata GetOrAddTypeMetadata(Type type)
+        private TypeMetadata GetOrAddTypeMetadata(Type type, string? typeInfoPropertyName = null)
         {
             if (_typeMetadataCache.TryGetValue(type, out TypeMetadata? typeMetadata))
             {
@@ -205,8 +220,6 @@ namespace System.Text.Json.SourceGeneration
                     constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
                 }
 
-                Dictionary<string, PropertyMetadata>? ignoredMembers = null;
-
                 for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                 {
                     const BindingFlags bindingFlags =
@@ -215,12 +228,12 @@ namespace System.Text.Json.SourceGeneration
                         BindingFlags.NonPublic |
                         BindingFlags.DeclaredOnly;
 
-                    foreach (Reflection.PropertyInfo propertyInfo in currentType.GetProperties(bindingFlags))
+                    foreach (PropertyInfo propertyInfo in currentType.GetProperties(bindingFlags))
                     {
                         PropertyMetadata metadata = GetPropertyMetadata(propertyInfo);
 
-                        // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
-                        if (propertyInfo.GetIndexParameters().Length > 0 || PropertyIsOverridenAndIgnored(metadata, ignoredMembers))
+                        // Ignore indexers.
+                        if (propertyInfo.GetIndexParameters().Length > 0)
                         {
                             continue;
                         }
@@ -242,11 +255,6 @@ namespace System.Text.Json.SourceGeneration
                     {
                         PropertyMetadata metadata = GetPropertyMetadata(fieldInfo);
 
-                        if (PropertyIsOverridenAndIgnored(metadata, ignoredMembers))
-                        {
-                            continue;
-                        }
-
                         if (metadata.HasGetter || metadata.HasSetter)
                         {
                             (propertiesMetadata ??= new()).Add(metadata);
@@ -255,21 +263,9 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            string compilableName = type.GetUniqueCompilableTypeName();
-            string friendlyName = type.GetFriendlyTypeName();
-
-            if (_usedFriendlyTypeNames.Contains(friendlyName))
-            {
-                friendlyName = type.GetUniqueFriendlyTypeName();
-            }
-            else
-            {
-                _usedFriendlyTypeNames.Add(friendlyName);
-            }
-
             typeMetadata.Initialize(
-                compilableName,
-                friendlyName,
+                compilableName: type.GetUniqueCompilableTypeName(),
+                friendlyName: typeInfoPropertyName ?? type.GetFriendlyTypeName(),
                 type,
                 classType,
                 isValueType: type.IsValueType,
@@ -284,23 +280,6 @@ namespace System.Text.Json.SourceGeneration
                 containsOnlyPrimitives);
 
             return typeMetadata;
-        }
-
-        private static bool PropertyIsOverridenAndIgnored(PropertyMetadata currentMemberMetadata, Dictionary<string, PropertyMetadata>? ignoredMembers)
-        {
-            if (ignoredMembers == null || !ignoredMembers.TryGetValue(currentMemberMetadata.ClrName, out PropertyMetadata? ignoredMemberMetadata))
-            {
-                return false;
-            }
-
-            return currentMemberMetadata.TypeMetadata.Type == ignoredMemberMetadata.TypeMetadata.Type &&
-                PropertyIsVirtual(currentMemberMetadata) &&
-                PropertyIsVirtual(ignoredMemberMetadata);
-        }
-
-        private static bool PropertyIsVirtual(PropertyMetadata? propertyMetadata)
-        {
-            return propertyMetadata != null && (propertyMetadata.GetterIsVirtual == true || propertyMetadata.SetterIsVirtual == true);
         }
 
         private PropertyMetadata GetPropertyMetadata(MemberInfo memberInfo)
@@ -324,11 +303,11 @@ namespace System.Text.Json.SourceGeneration
                     foundDesignTimeCustomConverter = true;
                     converterInstantiationLogic = GetConverterInstantiationLogic(attributeData);
                 }
-                else if (attributeType.Assembly.FullName == "System.Text.Json")
+                else if (attributeType.Assembly.FullName == SystemTextJsonNamespace)
                 {
                     switch (attributeData.AttributeType.FullName)
                     {
-                        case "System.Text.Json.Serialization.JsonIgnoreAttribute":
+                        case JsonIgnoreAttributeFullName:
                             {
                                 IList<CustomAttributeNamedArgument> namedArgs = attributeData.NamedArguments;
 
@@ -338,36 +317,26 @@ namespace System.Text.Json.SourceGeneration
                                 }
                                 else if (namedArgs.Count == 1 &&
                                     namedArgs[0].MemberInfo.MemberType == MemberTypes.Property &&
-                                    ((Reflection.PropertyInfo)namedArgs[0].MemberInfo).PropertyType.FullName == "System.Text.Json.Serialization.JsonIgnoreCondition")
+                                    ((PropertyInfo)namedArgs[0].MemberInfo).PropertyType.FullName == JsonIgnoreConditionFullName)
                                 {
                                     ignoreCondition = (JsonIgnoreCondition)namedArgs[0].TypedValue.Value;
                                 }
                             }
                             break;
-                        case "System.Text.Json.Serialization.JsonIncludeAttribute":
+                        case JsonIncludeAttributeFullName:
                             {
                                 hasJsonInclude = true;
                             }
                             break;
-                        case "System.Text.Json.Serialization.JsonNumberHandlingAttribute":
+                        case JsonNumberHandlingAttributeFullName:
                             {
                                 IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
-                                if (ctorArgs.Count != 1)
-                                {
-                                    throw new InvalidOperationException($"Invalid use of 'JsonNumberHandlingAttribute' detected on '{memberInfo.DeclaringType}.{memberInfo.Name}'.");
-                                }
-
                                 numberHandling = (JsonNumberHandling)ctorArgs[0].Value;
                             }
                             break;
-                        case "System.Text.Json.Serialization.JsonPropertyNameAttribute":
+                        case JsonPropertyNameAttributeFullName:
                             {
                                 IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
-                                if (ctorArgs.Count != 1 || ctorArgs[0].ArgumentType != _stringType)
-                                {
-                                    throw new InvalidOperationException($"Invalid use of 'JsonPropertyNameAttribute' detected on '{memberInfo.DeclaringType}.{memberInfo.Name}'.");
-                                }
-
                                 jsonPropertyName = (string)ctorArgs[0].Value;
                                 // Null check here is done at runtime within JsonSerializer.
                             }
@@ -386,7 +355,7 @@ namespace System.Text.Json.SourceGeneration
 
             switch (memberInfo)
             {
-                case Reflection.PropertyInfo propertyInfo:
+                case PropertyInfo propertyInfo:
                     {
                         MethodInfo setMethod = propertyInfo.SetMethod;
 
@@ -448,7 +417,7 @@ namespace System.Text.Json.SourceGeneration
             return $"new {converterType.GetUniqueCompilableTypeName()}()";
         }
 
-        private void PopulateNumberTypes(MetadataLoadContext metadataLoadContext)
+        private void PopulateNumberTypes(MetadataLoadContextInternal metadataLoadContext)
         {
             Debug.Assert(_numberTypes != null);
             _numberTypes.Add(metadataLoadContext.Resolve(typeof(byte)));
@@ -464,7 +433,7 @@ namespace System.Text.Json.SourceGeneration
             _numberTypes.Add(metadataLoadContext.Resolve(typeof(ulong)));
         }
 
-        private void PopulateKnownTypes(MetadataLoadContext metadataLoadContext)
+        private void PopulateKnownTypes(MetadataLoadContextInternal metadataLoadContext)
         {
             PopulateNumberTypes(metadataLoadContext);
 
@@ -493,7 +462,6 @@ namespace System.Text.Json.SourceGeneration
         private bool IsPrimitive(Type type)
             => _knownTypes.Contains(type) && type != _uriType && type != _versionType;
 
-        private bool IsStringBasedType(Type type)
-            => type == _stringType || type == _dateTimeType || type == _dateTimeOffsetType || type == _guidType;
+        public Dictionary<string, Type> GetSerializableTypes() => _rootSerializableTypes?.ToDictionary(p => p.Key, p => p.Value.Type);
     }
 }

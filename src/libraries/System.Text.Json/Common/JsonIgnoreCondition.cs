@@ -3,9 +3,6 @@
 
 namespace System.Text.Json.Serialization
 {
-#if BUILDING_SOURCE_GENERATOR
-    internal
-#else
     /// <summary>
     /// When specified on <see cref="JsonSerializerOptions.DefaultIgnoreCondition"/>,
     /// determines when properties and fields across the type graph are ignored.
@@ -13,6 +10,9 @@ namespace System.Text.Json.Serialization
     /// a property is ignored during serialization and deserialization. This option
     /// overrides the setting on <see cref="JsonSerializerOptions.DefaultIgnoreCondition"/>.
     /// </summary>
+#if BUILDING_SOURCE_GENERATOR
+    internal
+#else
     public
 #endif
     enum JsonIgnoreCondition

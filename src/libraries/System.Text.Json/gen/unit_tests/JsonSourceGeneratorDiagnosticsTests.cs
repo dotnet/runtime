@@ -129,11 +129,21 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void NameClashSourceGeneration()
         {
+            // Without resolution.
             Compilation compilation = CompilationHelper.CreateRepeatedLocationsCompilation();
-
             JsonSourceGenerator generator = new JsonSourceGenerator();
-
             CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            string[] expectedWarningDiagnostics = new string[] { "There are multiple types named Location. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision." };
+
+            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
+            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, expectedWarningDiagnostics);
+            CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
+
+            // With resolution.
+            compilation = CompilationHelper.CreateRepeatedLocationsWithResolutionCompilation();
+            generator = new JsonSourceGenerator();
+            CompilationHelper.RunGenerators(compilation, out generatorDiags, generator);
 
             CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
             CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, Array.Empty<string>());

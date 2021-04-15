@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 using System.Globalization;
 
-namespace System.Reflection
+namespace System.Text.Json.SourceGeneration.Reflection
 {
     internal class FieldInfoWrapper : FieldInfo
     {
         private readonly IFieldSymbol _field;
-        private readonly MetadataLoadContext _metadataLoadContext;
-        public FieldInfoWrapper(IFieldSymbol parameter, MetadataLoadContext metadataLoadContext)
+        private readonly MetadataLoadContextInternal _metadataLoadContext;
+        public FieldInfoWrapper(IFieldSymbol parameter, MetadataLoadContextInternal metadataLoadContext)
         {
             _field = parameter;
             _metadataLoadContext = metadataLoadContext;

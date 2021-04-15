@@ -1,17 +1,21 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <MicrosoftNetCompilersToolsetVersion>3.10.0-1.final</MicrosoftNetCompilersToolsetVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\source_generation\src\System.Text.Json.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
+
+    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
+    <ProjectReference Include="..\..\gen\src\System.Text.Json.SourceGeneration.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="TestClasses.cs" />
+    <Compile Include="CompilationHelper.cs" />
+    <Compile Include="JsonSourceGeneratorDiagnosticsTests.cs" />
     <Compile Include="JsonSourceGeneratorTests.cs" />
+    <Compile Include="TypeWrapperTests.cs" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">
@@ -19,4 +23,5 @@
       <CustomAdditionalCompileInputs Include="@(Analyzer)" />
     </ItemGroup>
   </Target>
+
 </Project>
