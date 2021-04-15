@@ -2475,7 +2475,10 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
  *  Mark the current spot as having a label.
  */
 
-void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BOOL isFinallyTarget)
+void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
+                            regMaskTP        gcrefRegs,
+                            regMaskTP        byrefRegs,
+                            bool isFinallyTarget DEBUG_ARG(unsigned bbNum))
 {
     /* Create a new IG if the current one is non-empty */
 
@@ -2504,6 +2507,8 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
+    JITDUMP("Mapped " FMT_BB " to G_M%03u_IG%02u\n", bbNum, emitComp->compMethodID, emitCurIG->igNum);
+
     if (EMIT_GC_VERBOSE)
     {
         printf("Label: IG%02u, GCvars=%s ", emitCurIG->igNum, VarSetOps::ToString(emitComp, GCvars));
@@ -4697,9 +4702,41 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
         loopSize += igInLoop->igSize;
         if (igInLoop->isLoopAlign())
         {
-            // If igInLoop's next IG is a loop and needs alignment, then igInLoop should be the last IG
-            // of the current loop and should have backedge to current loop header.
-            assert(igInLoop->igLoopBackEdge == igLoopHeader);
+            // If igInLoop is marked as "IGF_LOOP_ALIGN", the basic block flow detected a loop start.
+            // If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
+            // set for them and such loops are not aligned. For such cases, the loop size threshold will never
+            // be met and we would break as soon as loopSize > maxLoopSize.
+            //
+            // IG05:
+            //      ...
+            //      jmp IG18
+            // ...
+            // IG18:
+            //      ...
+            //      jne IG05
+            //
+            // If igInLoop is a legitimate loop, and igInLoop's next IG is also a loop that needs alignment,
+            // then igInLoop should be the last IG of the current loop and should have backedge to current
+            // loop header.
+            //
+            // Below, IG05 is the last IG of loop IG04-IG05 and its backedge points to IG04.
+            //
+            // IG03:
+            //      ...
+            //      align
+            // IG04:
+            //      ...
+            //      ...
+            // IG05:
+            //      ...
+            //      jne IG04
+            //      align     ; <---
+            // IG06:
+            //      ...
+            //      jne IG06
+            //
+            //
+            assert((igInLoop->igLoopBackEdge == nullptr) || (igInLoop->igLoopBackEdge == igLoopHeader));
 
 #ifdef DEBUG
             if (isAlignAdjusted)
