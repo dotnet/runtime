@@ -278,4 +278,3 @@ In each runtime pack we include:
 - An MSBuild targets file that defines targets to copy a specified set of components to the app publish folder (if components are dynamic); or to link the runtime together with stubs and a set of enabled components (if components are static)
 
 ** TODO ** Write this up in more detail
-
