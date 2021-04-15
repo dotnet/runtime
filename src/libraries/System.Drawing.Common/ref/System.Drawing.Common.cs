@@ -596,7 +596,7 @@ namespace System.Drawing
         public static System.Drawing.Graphics FromImage(System.Drawing.Image image) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        [Obsolete("Use one of the other overloads.")]
+        [System.ObsoleteAttribute(DiagnosticId = "SYSLIB0016", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public object GetContextInfo() { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void GetContextInfo(out PointF offset) { throw null; }

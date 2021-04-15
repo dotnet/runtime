@@ -684,7 +684,7 @@ namespace System.Drawing
         /// WARNING: This method is for internal FX support only.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("Use one of the other overloads.")]
+        [Obsolete(DiagnosticId = "SYSLIB0016", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [SupportedOSPlatform("windows")]
         public object GetContextInfo()
         {
