@@ -35,11 +35,16 @@ static bool IsHandshaking(int handshakeStatus)
 
 static PAL_SSLStreamStatus Close(JNIEnv* env, SSLStream* sslStream)
 {
+    // Call wrap to clear any remaining data before closing
+    int unused;
+    PAL_SSLStreamStatus ret = DoWrap(env, sslStream, &unused);
+
     // sslEngine.closeOutbound();
     (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineCloseOutbound);
+    if (ret != SSLStreamStatus_OK)
+        return ret;
 
-    // Call wrap to clear any remaining data
-    int unused;
+    // Flush any remaining data (e.g. sending close notification)
     return DoWrap(env, sslStream, &unused);
 }
 
