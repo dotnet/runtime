@@ -184,6 +184,7 @@ void deps_resolver_t::setup_shared_store_probes(
         {
             // Shared Store probe: DOTNET_SHARED_STORE environment variable
             m_probes.push_back(probe_config_t::lookup(shared));
+            m_needs_file_existence_checks = true;
         }
     }
 
@@ -191,6 +192,7 @@ void deps_resolver_t::setup_shared_store_probes(
     {
         // Path relative to the location of "dotnet.exe" if it's being used to run the app
         m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
+        m_needs_file_existence_checks = true;
     }
 
     for (const auto& global_shared : args.global_shared_stores)
@@ -199,6 +201,7 @@ void deps_resolver_t::setup_shared_store_probes(
         {
             // Global store probe: the global location
             m_probes.push_back(probe_config_t::lookup(global_shared));
+            m_needs_file_existence_checks = true;
         }
     }
 }
@@ -235,6 +238,8 @@ void deps_resolver_t::setup_probe_config(
         pal::string_t ext_pkgs = args.core_servicing;
         append_path(&ext_pkgs, _X("pkgs"));
         m_probes.push_back(probe_config_t::svc(ext_pkgs));
+
+        m_needs_file_existence_checks = true;
     }
 
     // The published deps directory to be probed: either app or FX directory.
@@ -252,10 +257,15 @@ void deps_resolver_t::setup_probe_config(
 
     setup_shared_store_probes(args);
 
-    for (const auto& probe : m_additional_probes)
+    if (m_additional_probes.size() > 0)
     {
-        // Additional paths
-        m_probes.push_back(probe_config_t::lookup(probe));
+        for (const auto& probe : m_additional_probes)
+        {
+            // Additional paths
+            m_probes.push_back(probe_config_t::lookup(probe));
+        }
+
+        m_needs_file_existence_checks = true;
     }
 
     if (trace::is_enabled())
@@ -304,8 +314,10 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
         }
         pal::string_t probe_dir = config.probe_dir;
         uint32_t search_options = deps_entry_t::search_options::none;
-        if (m_has_additional_probing_paths || config.only_serviceable_assets)
+        if (needs_file_existence_checks())
+        {
             search_options |= deps_entry_t::search_options::file_existence;
+        }
 
         if (config.is_fx())
         {
