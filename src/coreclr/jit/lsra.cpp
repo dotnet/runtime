@@ -9460,7 +9460,7 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
         {
             fprintf(file, ",\"%s\"", LinearScan::getStatName(statIndex));
         }
-        fprintf(file, "\n");
+        fprintf(file, ",\"PerfScore\"\n");
     }
 
     // bbNum == 0
@@ -9488,7 +9488,7 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
     {
         fprintf(file, ",%u", sumStats[statIndex]);
     }
-    fprintf(file, "\n");
+    fprintf(file, ",%.2f\n", compiler->info.compPerfScore);
 }
 #endif // TRACK_LSRA_STATS
 

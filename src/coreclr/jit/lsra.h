@@ -1359,10 +1359,10 @@ private:
     unsigned regCandidateVarCount;
     void updateLsraStat(LsraStat stat, unsigned currentBBNum);
     void dumpLsraStats(FILE* file);
-    void dumpLsraStatsCsv(FILE* file);
     LsraStat firstRegSelStat = LsraStat::REGSEL_FREE;
 
 public:
+    virtual void dumpLsraStatsCsv(FILE* file);
     static const char* getStatName(unsigned stat);
 
 #define INTRACK_STATS(x) x
