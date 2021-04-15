@@ -763,7 +763,9 @@ var MonoSupportLib = {
 
 		mono_wasm_set_variable_value: function (scope, index, name, newValue) {
 			console.debug (">> mono_wasm_set_variable_value " + name + " - " + newValue);
-			var ret = this._c_fn_table.mono_wasm_set_variable_value_native_wrapper(scope, index, name, newValue);
+			var ret = this._c_fn_table.mono_wasm_set_variable_on_frame_wrapper(scope, index, name, newValue);
+			if (ret == false)
+				throw new Error(`Could not get a value for ${name}`);
             return ret;
         },
 
@@ -1426,7 +1428,7 @@ var MonoSupportLib = {
 			this._register_c_var_fn ('mono_wasm_get_local_vars',          	'bool', [ 'number', 'number', 'number']);
 			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     	'bool', [ 'number', 'number']);
 			this._register_c_fn     ('mono_wasm_set_value_on_object',     	'bool', [ 'number', 'string', 'string' ]);
-			this._register_c_fn     ('mono_wasm_set_variable_value_native', 'bool', [ 'number', 'number', 'string', 'string']);
+			this._register_c_fn     ('mono_wasm_set_variable_on_frame', 'bool', [ 'number', 'number', 'string', 'string']);
 			// DO NOT REMOVE - magic debugger init function
 			if (globalThis.dotnetDebugger)
 				debugger;

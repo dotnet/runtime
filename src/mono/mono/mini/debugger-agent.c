@@ -8991,7 +8991,9 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame->interp_frame, pos);
 				else
 					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_local (frame->interp_frame, pos);
-				mono_de_set_interp_var (t, addr, val_buf);
+				err = mono_de_set_interp_var (t, addr, val_buf);
+				if (err != ERR_NONE)
+					return err;
 			} else {
 				set_var (t, var, &frame->ctx, frame->de.domain, val_buf, frame->reg_locations, &tls->restore_state.ctx);
 			}
@@ -9022,7 +9024,9 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			guint8 *addr;
 
 			addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
-			mono_de_set_interp_var (m_class_get_this_arg (frame->actual_method->klass), addr, val_buf);
+			err = mono_de_set_interp_var (m_class_get_this_arg (frame->actual_method->klass), addr, val_buf);
+			if (err != ERR_NONE)
+				return err;			
 		} else {
 			var = jit->this_var;
 			if (!var) {

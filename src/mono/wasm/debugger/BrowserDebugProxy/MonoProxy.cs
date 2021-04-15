@@ -499,7 +499,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (varToSetValue == null)
                 return false;
             Result res = await SendMonoCommand(id, MonoCommands.SetVariableValue(scopeId, varToSetValue.Index, varName, varValue["value"].Value<string>()), token);
-            if (res.Value["result"]?["value"].Value<int>() == 1)
+            if (res.IsOk)
                 SendResponse(id, Result.Ok(new JObject()), token);
             else
                 SendResponse(id, Result.Err($"Unable to set '{varValue["value"].Value<string>()}' to variable '{varName}'"), token);

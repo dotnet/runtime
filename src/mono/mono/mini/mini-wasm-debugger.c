@@ -53,7 +53,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_object (int object_id, 
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attached);
-EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_variable_value_native (int scope, int index, const char* name, const char* value);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_variable_on_frame (int scope, int index, const char* name, const char* value);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_value_on_object (int object_id, const char* name, const char* value);
 
 //JS functions imported that we use
@@ -566,7 +566,7 @@ handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch
 		return;
 
 	int obj_id = get_object_id ((MonoObject *)exc);
-	const char *error_message = mono_string_to_utf8_checked_internal (exc->message, error);
+	char *error_message = mono_string_to_utf8_checked_internal (exc->message, error);
 
 	if (!is_ok (error))
 		error_message = "Failed to get exception message.";
@@ -576,6 +576,8 @@ handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch
 
 	mono_wasm_fire_exception (obj_id, error_message, class_name, !catch_ctx);
 
+	g_free (error_message);
+	
 	PRINT_DEBUG_MSG (2, "handle exception - done\n");
 }
 
@@ -1541,6 +1543,8 @@ decode_value (MonoType *t, guint8 *addr, const char* variableValue)
 				return FALSE;
 			break;
 		case MONO_TYPE_CHAR:
+			if (strlen (variableValue) > 1)
+				return FALSE;
 			*(gunichar2*)addr = variableValue [0];
 			break;
 		case MONO_TYPE_I1: {
@@ -1631,6 +1635,8 @@ decode_value (MonoType *t, guint8 *addr, const char* variableValue)
 			*(gdouble*)addr = val;
 			break;
 		}
+		default:
+			return FALSE;
 	}
 	return TRUE;
 }
@@ -1660,17 +1666,37 @@ set_variable_value_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	MonoMethod *method = frame->imethod->method;
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
+	
+	if (!sig) {
+		data->error = TRUE;
+		return TRUE;
+	}
+
+	if (!header) {
+		mono_error_cleanup(error);
+		data->error = TRUE;
+		return TRUE;
+	}
+
 	int pos = data->pos;
 	
 	if (pos < 0) {
 		pos = - pos - 1;
+		if (pos >= sig->param_count) {
+			data->error = TRUE;
+			return TRUE;		
+		}
 		is_arg = TRUE;
 		t = sig->params [pos];
 	}
 	else {
+		if (pos >= header->num_locals) {
+			data->error = TRUE;
+			return TRUE;
+		}
 		t = header->locals [pos];
 	}
-
+	
 	guint8 *addr;
 	if (is_arg)
 		addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame, pos);
@@ -1681,10 +1707,18 @@ set_variable_value_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	
 	if (!decode_value(t, val_buf, data->new_value)) {
 		data->error = TRUE;
+		mono_metadata_free_mh (header);		
 		return TRUE;
 	}
 
-	mono_de_set_interp_var (t, addr, val_buf);
+	DbgEngineErrorCode errorCode = mono_de_set_interp_var (t, addr, val_buf);
+	if (errorCode != ERR_NONE) {
+		data->error = TRUE;
+		mono_metadata_free_mh (header);
+		return TRUE;
+	}
+	
+	mono_metadata_free_mh (header);
 	return TRUE;
 }
 
@@ -1726,8 +1760,9 @@ describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	mono_metadata_free_mh (header);
 	return TRUE;
 }
+
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_set_variable_value_native (int scope, int index, const char* name, const char* value)
+mono_wasm_set_variable_on_frame (int scope, int index, const char* name, const char* value)
 {
 	if (scope < 0)
 		return FALSE;
@@ -1826,7 +1861,10 @@ handle_parent:
 		if (!decode_value(f->type, val_buf, value)) {
 			return FALSE;
 		}		
-		mono_de_set_interp_var (f->type, (guint8*)obj + f->offset, val_buf);
+		DbgEngineErrorCode errorCode = mono_de_set_interp_var (f->type, (guint8*)obj + f->offset, val_buf);
+		if (errorCode != ERR_NONE) {
+			return FALSE;
+		}
 		return TRUE;
 	}
 
@@ -1851,6 +1889,8 @@ handle_parent:
 		if (exc) {
 			const char *error_message = mono_string_to_utf8_checked_internal (((MonoException *)exc)->message, error);
 			PRINT_DEBUG_MSG (2, "mono_wasm_set_value_on_object exception: %s\n", error_message);
+			g_free (error_message);
+			mono_error_cleanup (error);			
 			return FALSE;
 		}
 		return TRUE;
