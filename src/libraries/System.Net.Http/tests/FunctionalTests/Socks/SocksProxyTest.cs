@@ -42,8 +42,6 @@ namespace System.Net.Http.Functional.Tests.Socks
                     using HttpClientHandler handler = CreateHttpClientHandler();
                     using HttpClient client = CreateHttpClient(handler);
 
-                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-
                     handler.Proxy = new WebProxy($"{scheme}://localhost:{proxy.Port}");
                     handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
@@ -54,7 +52,11 @@ namespace System.Net.Http.Functional.Tests.Socks
 
                     uri = new UriBuilder(uri) { Host = host }.Uri;
 
-                    Assert.Equal("Echo", await client.GetStringAsync(uri));
+                    HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+
+                    using HttpResponseMessage response = await client.SendAsync(TestAsync, request);
+                    string responseString = await response.Content.ReadAsStringAsync();
+                    Assert.Equal("Echo", responseString);
                 },
                 async server => await server.HandleRequestAsync(content: "Echo"),
                 options: new GenericLoopbackOptions
@@ -68,7 +70,7 @@ namespace System.Net.Http.Functional.Tests.Socks
         {
             foreach (string scheme in new[] { "socks4", "socks4a" })
             {
-                yield return new object[] { scheme, "::1", false, null, "SOCKS4 does not support IPv6 addresses." };
+                yield return new object[] { scheme, "[::1]", false, null, "SOCKS4 does not support IPv6 addresses." };
                 yield return new object[] { scheme, "localhost", true, null, "Failed to authenticate with the SOCKS server." };
                 yield return new object[] { scheme, "localhost", true, new NetworkCredential("bad_username", "bad_password"), "Failed to authenticate with the SOCKS server." };
             }
@@ -81,50 +83,44 @@ namespace System.Net.Http.Functional.Tests.Socks
         [MemberData(nameof(TestExceptionalAsync_MemberData))]
         public async Task TestExceptionalAsync(string scheme, string host, bool useAuth, ICredentials? credentials, string exceptionMessage)
         {
-            await LoopbackServerFactory.CreateClientAndServerAsync(
-                async uri =>
-                {
-                    using LoopbackSocksServer proxy = useAuth ? LoopbackSocksServer.Create("DOTNET", "424242") : LoopbackSocksServer.Create();
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    using HttpClient client = CreateHttpClient(handler);
+            using LoopbackSocksServer proxy = useAuth ? LoopbackSocksServer.Create("DOTNET", "424242") : LoopbackSocksServer.Create();
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            using HttpClient client = CreateHttpClient(handler);
 
-                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            handler.Proxy = new WebProxy($"{scheme}://localhost:{proxy.Port}")
+            {
+                Credentials = credentials
+            };
 
-                    handler.Proxy = new WebProxy($"{scheme}://localhost:{proxy.Port}")
-                    {
-                        Credentials = credentials
-                    };
+            HttpRequestMessage request = CreateRequest(HttpMethod.Get, new Uri($"http://{host}/"), UseVersion, exactVersion: true);
 
-                    uri = new UriBuilder(uri) { Host = host }.Uri;
-
-                    // SocksException is not public
-                    var ex = await Assert.ThrowsAnyAsync<IOException>(() => client.GetStringAsync(uri));
-                    Assert.Equal("SocksException", ex.GetType().Name);
-                    Assert.Equal(exceptionMessage, ex.Message);
-                },
-                server => Task.CompletedTask,
-                options: new GenericLoopbackOptions
-                {
-                    Address = host == "::1" ? IPAddress.IPv6Loopback : IPAddress.Loopback
-                });
+            // SocksException is not public
+            var ex = await Assert.ThrowsAnyAsync<IOException>(() => client.SendAsync(TestAsync, request));
+            Assert.Equal(exceptionMessage, ex.Message);
+            Assert.Equal("SocksException", ex.GetType().Name);
         }
     }
 
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public sealed class SocksProxyTest_Http1 : SocksProxyTest
+    public sealed class SocksProxyTest_Http1_Async : SocksProxyTest
     {
-        public SocksProxyTest_Http1(ITestOutputHelper helper) : base(helper) { }
-
+        public SocksProxyTest_Http1_Async(ITestOutputHelper helper) : base(helper) { }
         protected override Version UseVersion => HttpVersion.Version11;
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public sealed class SocksProxyTest_Http1_Sync : SocksProxyTest
+    {
+        public SocksProxyTest_Http1_Sync(ITestOutputHelper helper) : base(helper) { }
+        protected override Version UseVersion => HttpVersion.Version11;
+        protected override bool TestAsync => false;
+    }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocksProxyTest_Http2 : SocksProxyTest
     {
         public SocksProxyTest_Http2(ITestOutputHelper helper) : base(helper) { }
-
         protected override Version UseVersion => HttpVersion.Version20;
     }
 }
