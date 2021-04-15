@@ -2,7 +2,7 @@
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestResultsName>testResults.xml</TestResultsName>
-    <UseXunitExcludesTxtFile Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">true</UseXunitExcludesTxtFile>
+    <UseXunitExcludesTxtFile Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">true</UseXunitExcludesTxtFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' != 'true' and '$(TestSingleFile)' != 'true'">
