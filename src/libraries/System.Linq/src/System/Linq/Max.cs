@@ -6,9 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
-    /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="System.Collections.Generic.IEnumerable{T}" />.</summary>
-    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="System.Collections.Generic.IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
-    /// The majority of the methods in this class are defined as extension methods that extend <see cref="System.Collections.Generic.IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="System.Collections.Generic.IEnumerable{T}" />.
+    /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="IEnumerable{T}" />.</summary>
+    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
+    /// The majority of the methods in this class are defined as extension methods that extend <see cref="IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="IEnumerable{T}" />.
     /// Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</remarks>
     /// <related type="Article" href="https://msdn.microsoft.com/library/24cda21e-8af8-4632-b519-c404a839b9b2">Standard Query Operators Overview</related>
     /// <related type="Article" href="/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension Methods (C# Programming Guide)</related>
@@ -20,8 +20,8 @@ namespace System.Linq
         /// <returns>The maximum value in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
-        /// <remarks>The <see cref="System.Linq.Enumerable.Max(System.Collections.Generic.IEnumerable{int})" /> method uses the <see cref="int" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Max" />.</remarks>
+        /// <remarks>The <see cref="Max(IEnumerable{int})" /> method uses the <see cref="int" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static int Max(this IEnumerable<int> source)
         {
@@ -56,9 +56,9 @@ namespace System.Linq
         /// <param name="source">A sequence of nullable <see cref="int" /> values to determine the maximum value of.</param>
         /// <returns>A value of type <c>Nullable&lt;Int32&gt;</c> in C# or <c>Nullable(Of Int32)</c> in Visual Basic that corresponds to the maximum value in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>The <see cref="System.Linq.Enumerable.Max(System.Collections.Generic.IEnumerable{System.Nullable{int}})" /> method uses the <see cref="int" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// <remarks>The <see cref="Max(IEnumerable{System.Nullable{int}})" /> method uses the <see cref="int" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
         /// If the source sequence is empty or contains only values that are <see langword="null" />, this function returns <see langword="null" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Max" />.</remarks>
+        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static int? Max(this IEnumerable<int?> source)
         {
@@ -127,9 +127,9 @@ namespace System.Linq
         /// <returns>The maximum value in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
-        /// <remarks>The <see cref="System.Linq.Enumerable.Max(System.Collections.Generic.IEnumerable{long})" /> method uses the <see cref="long" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Max" />.</remarks>
-        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Max(System.Collections.Generic.IEnumerable{long})" /> to determine the maximum value in a sequence.
+        /// <remarks>The <see cref="Max(IEnumerable{long})" /> method uses the <see cref="long" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="Max(IEnumerable{long})" /> to determine the maximum value in a sequence.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet52":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet52":::</example>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
@@ -166,9 +166,9 @@ namespace System.Linq
         /// <param name="source">A sequence of nullable <see cref="long" /> values to determine the maximum value of.</param>
         /// <returns>A value of type <c>Nullable&lt;Int64&gt;</c> in C# or <c>Nullable(Of Int64)</c> in Visual Basic that corresponds to the maximum value in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>The <see cref="System.Linq.Enumerable.Max(System.Collections.Generic.IEnumerable{System.Nullable{long}})" /> method uses the <see cref="long" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// <remarks>The <see cref="Max(IEnumerable{System.Nullable{long}})" /> method uses the <see cref="long" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
         /// If the source sequence is empty or contains only values that are <see langword="null" />, this function returns <see langword="null" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Max" />.</remarks>
+        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static long? Max(this IEnumerable<long?> source)
         {
@@ -231,8 +231,8 @@ namespace System.Linq
         /// <returns>The maximum value in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
-        /// <remarks>The <see cref="System.Linq.Enumerable.Max(System.Collections.Generic.IEnumerable{double})" /> method uses the <see cref="double" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Max" />.</remarks>
+        /// <remarks>The <see cref="Max(IEnumerable{double})" /> method uses the <see cref="double" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static double Max(this IEnumerable<double> source)
         {
@@ -282,10 +282,10 @@ namespace System.Linq
         /// <param name="source">A sequence of nullable <see cref="double" /> values to determine the maximum value of.</param>
         /// <returns>A value of type <c>Nullable&lt;Double&gt;</c> in C# or <c>Nullable(Of Double)</c> in Visual Basic that corresponds to the maximum value in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>The <see cref="System.Linq.Enumerable.Max(System.Collections.Generic.IEnumerable{System.Nullable{double}})" /> method uses the <see cref="double" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// <remarks>The <see cref="Max(IEnumerable{System.Nullable{double}})" /> method uses the <see cref="double" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
         /// If the source sequence is empty or contains only values that are <see langword="null" />, this function returns <see langword="null" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Max" />.</remarks>
-        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Max(System.Collections.Generic.IEnumerable{System.Nullable{double}})" /> to determine the maximum value in a sequence.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="Max(IEnumerable{System.Nullable{double}})" /> to determine the maximum value in a sequence.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet54":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet54":::</example>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
@@ -348,8 +348,8 @@ namespace System.Linq
         /// <returns>The maximum value in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
-        /// <remarks>The <see cref="System.Linq.Enumerable.Max(System.Collections.Generic.IEnumerable{float})" /> method uses the <see cref="float" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Max" />.</remarks>
+        /// <remarks>The <see cref="Max(IEnumerable{float})" /> method uses the <see cref="float" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static float Max(this IEnumerable<float> source)
         {
@@ -394,9 +394,9 @@ namespace System.Linq
         /// <param name="source">A sequence of nullable <see cref="float" /> values to determine the maximum value of.</param>
         /// <returns>A value of type <c>Nullable&lt;Single&gt;</c> in C# or <c>Nullable(Of Single)</c> in Visual Basic that corresponds to the maximum value in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>The <see cref="System.Linq.Enumerable.Max(System.Collections.Generic.IEnumerable{System.Nullable{float}})" /> method uses the <see cref="float" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// <remarks>The <see cref="Max(IEnumerable{System.Nullable{float}})" /> method uses the <see cref="float" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
         /// If the source sequence is empty or contains only values that are <see langword="null" />, this function returns <see langword="null" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Max" />.</remarks>
+        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static float? Max(this IEnumerable<float?> source)
         {
@@ -457,8 +457,8 @@ namespace System.Linq
         /// <returns>The maximum value in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
-        /// <remarks>The <see cref="System.Linq.Enumerable.Max(System.Collections.Generic.IEnumerable{decimal})" /> method uses the <see cref="decimal" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Max" />.</remarks>
+        /// <remarks>The <see cref="Max(IEnumerable{decimal})" /> method uses the <see cref="decimal" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static decimal Max(this IEnumerable<decimal> source)
         {
@@ -493,9 +493,9 @@ namespace System.Linq
         /// <param name="source">A sequence of nullable <see cref="decimal" /> values to determine the maximum value of.</param>
         /// <returns>A value of type <c>Nullable&lt;Decimal&gt;</c> in C# or <c>Nullable(Of Decimal)</c> in Visual Basic that corresponds to the maximum value in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>The <see cref="System.Linq.Enumerable.Max(System.Collections.Generic.IEnumerable{System.Nullable{decimal}})" /> method uses the <see cref="decimal" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// <remarks>The <see cref="Max(IEnumerable{System.Nullable{decimal}})" /> method uses the <see cref="decimal" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
         /// If the source sequence is empty or contains only values that are <see langword="null" />, this function returns <see langword="null" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Max" />.</remarks>
+        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static decimal? Max(this IEnumerable<decimal?> source)
         {
@@ -540,10 +540,10 @@ namespace System.Linq
         /// <returns>The maximum value in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException">No object in <paramref name="source" /> implements the <see cref="System.IComparable" /> or <see cref="System.IComparable{T}" /> interface.</exception>
-        /// <remarks>If type <typeparamref name="TSource" /> implements <see cref="System.IComparable{T}" />, the <see cref="System.Linq.Enumerable.Max{T}(System.Collections.Generic.IEnumerable{T})" /> method uses that implementation to compare values. Otherwise, if type <typeparamref name="TSource" /> implements <see cref="System.IComparable" />, that implementation is used to compare values.
+        /// <remarks>If type <typeparamref name="TSource" /> implements <see cref="System.IComparable{T}" />, the <see cref="Max{T}(IEnumerable{T})" /> method uses that implementation to compare values. Otherwise, if type <typeparamref name="TSource" /> implements <see cref="System.IComparable" />, that implementation is used to compare values.
         /// If <typeparamref name="TSource" /> is a reference type and the source sequence is empty or contains only values that are <see langword="null" />, this method returns <see langword="null" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Max" />.</remarks>
-        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Max{T}(System.Collections.Generic.IEnumerable{T})" /> to determine the maximum value in a sequence of <see cref="System.IComparable{T}" /> objects.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="Max{T}(IEnumerable{T})" /> to determine the maximum value in a sequence of <see cref="System.IComparable{T}" /> objects.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet57":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet57":::</example>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
@@ -710,10 +710,10 @@ namespace System.Linq
         /// <returns>The maximum value in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
-        /// <remarks>The <see cref="System.Linq.Enumerable.Max{T}(System.Collections.Generic.IEnumerable{T},System.Func{T,int})" /> method uses the <see cref="int" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
+        /// <remarks>The <see cref="Max{T}(IEnumerable{T},Func{T,int})" /> method uses the <see cref="int" /> implementation of <see cref="System.IComparable{T}" /> to compare values.
         /// You can apply this method to a sequence of arbitrary values if you provide a function, <paramref name="selector" />, that projects the members of <paramref name="source" /> into a numeric type, specifically <see cref="int" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Max" />.</remarks>
-        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Max{T}(System.Collections.Generic.IEnumerable{T},System.Func{T,int})" /> to determine the maximum value in a sequence of projected values.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="Max{T}(IEnumerable{T},Func{T,int})" /> to determine the maximum value in a sequence of projected values.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet58":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet58":::</example>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>

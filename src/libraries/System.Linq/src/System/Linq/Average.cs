@@ -5,9 +5,9 @@ using System.Collections.Generic;
 
 namespace System.Linq
 {
-    /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="System.Collections.Generic.IEnumerable{T}" />.</summary>
-    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="System.Collections.Generic.IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
-    /// The majority of the methods in this class are defined as extension methods that extend <see cref="System.Collections.Generic.IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="System.Collections.Generic.IEnumerable{T}" />.
+    /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="IEnumerable{T}" />.</summary>
+    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
+    /// The majority of the methods in this class are defined as extension methods that extend <see cref="IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="IEnumerable{T}" />.
     /// Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</remarks>
     /// <related type="Article" href="https://msdn.microsoft.com/library/24cda21e-8af8-4632-b519-c404a839b9b2">Standard Query Operators Overview</related>
     /// <related type="Article" href="/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension Methods (C# Programming Guide)</related>
@@ -19,8 +19,8 @@ namespace System.Linq
         /// <returns>The average of the sequence of values.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
-        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Average" />.</remarks>
-        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Average(System.Collections.Generic.IEnumerable{int})" /> to calculate an average.
+        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:Enumerable.Average" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="Average(IEnumerable{int})" /> to calculate an average.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet8":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet8":::</example>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
@@ -58,7 +58,7 @@ namespace System.Linq
         /// <returns>The average of the sequence of values, or <see langword="null" /> if the source sequence is empty or contains only values that are <see langword="null" />.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The sum of the elements in the sequence is larger than <see cref="long.MaxValue" />.</exception>
-        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Average" />.</remarks>
+        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:Enumerable.Average" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static double? Average(this IEnumerable<int?> source)
         {
@@ -102,7 +102,7 @@ namespace System.Linq
         /// <returns>The average of the sequence of values.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
-        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Average" />.</remarks>
+        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:Enumerable.Average" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static double Average(this IEnumerable<long> source)
         {
@@ -138,8 +138,8 @@ namespace System.Linq
         /// <returns>The average of the sequence of values, or <see langword="null" /> if the source sequence is empty or contains only values that are <see langword="null" />.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The sum of the elements in the sequence is larger than <see cref="long.MaxValue" />.</exception>
-        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Average" />.</remarks>
-        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Average(System.Collections.Generic.IEnumerable{System.Nullable{long}})" /> to calculate an average.
+        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:Enumerable.Average" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="Average(IEnumerable{System.Nullable{long}})" /> to calculate an average.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet12":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet12":::</example>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
@@ -185,7 +185,7 @@ namespace System.Linq
         /// <returns>The average of the sequence of values.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
-        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Average" />.</remarks>
+        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:Enumerable.Average" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static float Average(this IEnumerable<float> source)
         {
@@ -217,7 +217,7 @@ namespace System.Linq
         /// <param name="source">A sequence of nullable <see cref="float" /> values to calculate the average of.</param>
         /// <returns>The average of the sequence of values, or <see langword="null" /> if the source sequence is empty or contains only values that are <see langword="null" />.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Average" />.</remarks>
+        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:Enumerable.Average" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static float? Average(this IEnumerable<float?> source)
         {
@@ -262,7 +262,7 @@ namespace System.Linq
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
         /// <remarks>If the sum of the elements is too large to represent as a <see cref="double" />, this method returns positive or negative infinity.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Average" />.</remarks>
+        /// In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:Enumerable.Average" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static double Average(this IEnumerable<double> source)
         {
@@ -298,7 +298,7 @@ namespace System.Linq
         /// <returns>The average of the sequence of values, or <see langword="null" /> if the source sequence is empty or contains only values that are <see langword="null" />.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <remarks>If the sum of the elements is too large to represent as a <see cref="double" />, this method returns positive or negative infinity.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Average" />.</remarks>
+        /// In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:Enumerable.Average" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static double? Average(this IEnumerable<double?> source)
         {
@@ -342,7 +342,7 @@ namespace System.Linq
         /// <returns>The average of the sequence of values.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
-        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Average" />.</remarks>
+        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:Enumerable.Average" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static decimal Average(this IEnumerable<decimal> source)
         {
@@ -375,7 +375,7 @@ namespace System.Linq
         /// <returns>The average of the sequence of values, or <see langword="null" /> if the source sequence is empty or contains only values that are <see langword="null" />.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The sum of the elements in the sequence is larger than <see cref="decimal.MaxValue" />.</exception>
-        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Average" />.</remarks>
+        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:Enumerable.Average" />.</remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static decimal? Average(this IEnumerable<decimal?> source)
         {
@@ -419,8 +419,8 @@ namespace System.Linq
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
         /// <exception cref="System.OverflowException">The sum of the elements in the sequence is larger than <see cref="long.MaxValue" />.</exception>
-        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Average" />.</remarks>
-        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Average{T}(System.Collections.Generic.IEnumerable{T},System.Func{T,int})" /> to calculate an average.
+        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:Enumerable.Average" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="Average{T}(IEnumerable{T},Func{T,int})" /> to calculate an average.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet18":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet18":::</example>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
@@ -524,8 +524,8 @@ namespace System.Linq
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException"><paramref name="source" /> contains no elements.</exception>
         /// <exception cref="System.OverflowException">The sum of the elements in the sequence is larger than <see cref="long.MaxValue" />.</exception>
-        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Average" />.</remarks>
-        /// <example>The following code example demonstrates how to use <see cref="System.Linq.Enumerable.Average{T}(System.Collections.Generic.IEnumerable{T},System.Func{T,long})" /> to calculate an average.
+        /// <remarks>In Visual Basic query expression syntax, an `Aggregate Into Average()` clause translates to an invocation of <see cref="O:Enumerable.Average" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="Average{T}(IEnumerable{T},Func{T,long})" /> to calculate an average.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet16":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet16":::</example>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>

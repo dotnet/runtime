@@ -6,18 +6,11 @@ using System.Collections.Generic;
 
 namespace System.Linq
 {
-    /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="System.Collections.Generic.IEnumerable{T}" />.</summary>
-    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="System.Collections.Generic.IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
-    /// The majority of the methods in this class are defined as extension methods that extend <see cref="System.Collections.Generic.IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="System.Collections.Generic.IEnumerable{T}" />.
-    /// Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</remarks>
-    /// <related type="Article" href="https://msdn.microsoft.com/library/24cda21e-8af8-4632-b519-c404a839b9b2">Standard Query Operators Overview</related>
-    /// <related type="Article" href="/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension Methods (C# Programming Guide)</related>
-    /// <related type="Article" href="/dotnet/visual-basic/programming-guide/language-features/procedures/extension-methods">Extension Methods (Visual Basic)</related>
     public static partial class Enumerable
     {
         /// <summary>Determines whether a sequence contains any elements.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
-        /// <param name="source">The <see cref="System.Collections.Generic.IEnumerable{T}" /> to check for emptiness.</param>
+        /// <param name="source">The <see cref="IEnumerable{T}" /> to check for emptiness.</param>
         /// <returns><see langword="true" /> if the source sequence contains any elements; otherwise, <see langword="false" />.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <remarks><format type="text/markdown"><![CDATA[
@@ -25,14 +18,14 @@ namespace System.Linq
         /// >  This method does not return any one element of a collection. Instead, it determines whether the collection contains any elements.
         /// ]]></format>
         /// The enumeration of <paramref name="source" /> is stopped as soon as the result can be determined.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Any()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Any" />.</remarks>
-        /// <example>The following code example demonstrates how to use <see cref="O:System.Linq.Enumerable.Any" /> to determine whether a sequence contains any elements.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Any()` clause translates to an invocation of <see cref="O:Enumerable.Any" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="O:Enumerable.Any" /> to determine whether a sequence contains any elements.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet5":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet5":::
-        /// The Boolean value that the <see cref="System.Linq.Enumerable.Any{T}(System.Collections.Generic.IEnumerable{T})" /> method returns is typically used in the predicate of a `where` clause (`Where` clause in Visual Basic) or a direct call to the <see cref="System.Linq.Enumerable.Where{T}(System.Collections.Generic.IEnumerable{T},System.Func{T,bool})" /> method. The following example demonstrates this use of the `Any` method.
+        /// The Boolean value that the <see cref="Any{T}(IEnumerable{T})" /> method returns is typically used in the predicate of a `where` clause (`Where` clause in Visual Basic) or a direct call to the <see cref="Where{T}(IEnumerable{T},Func{T,bool})" /> method. The following example demonstrates this use of the `Any` method.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet130":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet130":::</example>
-        /// <altmember cref="System.Linq.Enumerable.Any{T}(System.Collections.Generic.IEnumerable{T},System.Func{T,bool})"/>
+        /// <altmember cref="Any{T}(IEnumerable{T},Func{T,bool})"/>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static bool Any<TSource>(this IEnumerable<TSource> source)
         {
@@ -72,7 +65,7 @@ namespace System.Linq
 
         /// <summary>Determines whether any element of a sequence satisfies a condition.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
-        /// <param name="source">An <see cref="System.Collections.Generic.IEnumerable{T}" /> whose elements to apply the predicate to.</param>
+        /// <param name="source">An <see cref="IEnumerable{T}" /> whose elements to apply the predicate to.</param>
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <returns><see langword="true" /> if the source sequence is not empty and at least one of its elements passes the test in the specified predicate; otherwise, <see langword="false" />.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="predicate" /> is <see langword="null" />.</exception>
@@ -81,8 +74,8 @@ namespace System.Linq
         /// >  This method does not return any one element of a collection. Instead, it determines whether any elements of a collection satisfy a condition.
         /// ]]></format>
         /// The enumeration of <paramref name="source" /> is stopped as soon as the result can be determined.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Any()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.Any" />.</remarks>
-        /// <example>The following code example demonstrates how to use <see cref="O:System.Linq.Enumerable.Any" /> to determine whether any element in a sequence satisfies a condition.
+        /// In Visual Basic query expression syntax, an `Aggregate Into Any()` clause translates to an invocation of <see cref="O:Enumerable.Any" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="O:Enumerable.Any" /> to determine whether any element in a sequence satisfies a condition.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet6":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet6":::</example>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
@@ -111,7 +104,7 @@ namespace System.Linq
 
         /// <summary>Determines whether all elements of a sequence satisfy a condition.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
-        /// <param name="source">An <see cref="System.Collections.Generic.IEnumerable{T}" /> that contains the elements to apply the predicate to.</param>
+        /// <param name="source">An <see cref="IEnumerable{T}" /> that contains the elements to apply the predicate to.</param>
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <returns><see langword="true" /> if every element of the source sequence passes the test in the specified predicate, or if the sequence is empty; otherwise, <see langword="false" />.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="predicate" /> is <see langword="null" />.</exception>
@@ -120,11 +113,11 @@ namespace System.Linq
         /// >  This method does not return all the elements of a collection. Instead, it determines whether all the elements of a collection satisfy a condition.
         /// ]]></format>
         /// The enumeration of <paramref name="source" /> is stopped as soon as the result can be determined.
-        /// In Visual Basic query expression syntax, an `Aggregate Into All()` clause translates to an invocation of <see cref="O:System.Linq.Enumerable.All" />.</remarks>
-        /// <example>The following code example demonstrates how to use <see cref="O:System.Linq.Enumerable.All" /> to determine whether all the elements in a sequence satisfy a condition. Variable `allStartWithB` is true if all the pet names start with "B" or if the `pets` array is empty.
+        /// In Visual Basic query expression syntax, an `Aggregate Into All()` clause translates to an invocation of <see cref="O:Enumerable.All" />.</remarks>
+        /// <example>The following code example demonstrates how to use <see cref="O:Enumerable.All" /> to determine whether all the elements in a sequence satisfy a condition. Variable `allStartWithB` is true if all the pet names start with "B" or if the `pets` array is empty.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet4":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet4":::
-        /// The Boolean value that the <see cref="O:System.Linq.Enumerable.All" /> method returns is typically used in the predicate of a `where` clause (`Where` clause in Visual Basic) or a direct call to the <see cref="O:System.Linq.Enumerable.Where" /> method. The following example demonstrates this use of the `All` method.
+        /// The Boolean value that the <see cref="O:Enumerable.All" /> method returns is typically used in the predicate of a `where` clause (`Where` clause in Visual Basic) or a direct call to the <see cref="O:Enumerable.Where" /> method. The following example demonstrates this use of the `All` method.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet129":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet129":::</example>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>

@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace System.Collections.Generic
 {
     /// <summary>
-    /// Represents a position within a <see cref="System.Collections.Generic.LargeArrayBuilder{T}"/>.
+    /// Represents a position within a <see cref="LargeArrayBuilder{T}"/>.
     /// </summary>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal readonly struct CopyPosition
@@ -26,7 +26,7 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Represents a position at the start of a <see cref="System.Collections.Generic.LargeArrayBuilder{T}"/>.
+        /// Represents a position at the start of a <see cref="LargeArrayBuilder{T}"/>.
         /// </summary>
         public static CopyPosition Start => default(CopyPosition);
 
