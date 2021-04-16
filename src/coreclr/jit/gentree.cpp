@@ -14490,7 +14490,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                         if (tree->gtOverflow() &&
                             ((op1->TypeIs(TYP_DOUBLE) && CheckedOps::CastFromDoubleOverflows(d1, tree->CastToType())) ||
                              (op1->TypeIs(TYP_FLOAT) &&
-                              CheckedOps::CastFromDoubleOverflows(forceCastToFloat(d1), tree->CastToType()))))
+                              CheckedOps::CastFromFloatOverflows(forceCastToFloat(d1), tree->CastToType()))))
                         {
                             return tree;
                         }
