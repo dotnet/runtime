@@ -2475,7 +2475,10 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
  *  Mark the current spot as having a label.
  */
 
-void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BOOL isFinallyTarget)
+void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
+                            regMaskTP        gcrefRegs,
+                            regMaskTP        byrefRegs,
+                            bool isFinallyTarget DEBUG_ARG(unsigned bbNum))
 {
     /* Create a new IG if the current one is non-empty */
 
@@ -2504,6 +2507,8 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
+    JITDUMP("Mapped " FMT_BB " to G_M%03u_IG%02u\n", bbNum, emitComp->compMethodID, emitCurIG->igNum);
+
     if (EMIT_GC_VERBOSE)
     {
         printf("Label: IG%02u, GCvars=%s ", emitCurIG->igNum, VarSetOps::ToString(emitComp, GCvars));
@@ -3600,7 +3605,16 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
             printf("%sbyrefRegs=", separator);
             printRegMaskInt(ig->igByrefRegs());
             emitDispRegSet(ig->igByrefRegs());
+            separator = ", ";
         }
+
+#if FEATURE_LOOP_ALIGN
+        if (ig->igLoopBackEdge != nullptr)
+        {
+            printf("%sloop=IG%02u", separator, ig->igLoopBackEdge->igNum);
+            separator = ", ";
+        }
+#endif // FEATURE_LOOP_ALIGN
 
         emitDispIGflags(ig->igFlags);
 
@@ -4193,8 +4207,7 @@ AGAIN:
                 }
                 else
                 {
-                    printf("-- ERROR, no emitter cookie for " FMT_BB "; it is probably missing BBF_JMP_TARGET or "
-                           "BBF_HAS_LABEL.\n",
+                    printf("-- ERROR, no emitter cookie for " FMT_BB "; it is probably missing BBF_HAS_LABEL.\n",
                            jmp->idAddr()->iiaBBlabel->bbNum);
                 }
             }
@@ -4659,7 +4672,7 @@ void emitter::emitLoopAlignment()
 //-----------------------------------------------------------------------------
 //  emitEndsWithAlignInstr: Checks if current IG ends with loop align instruction.
 //
-//  Returns:  true if current IG ends with align instruciton.
+//  Returns:  true if current IG ends with align instruction.
 //
 bool emitter::emitEndsWithAlignInstr()
 {
@@ -4689,9 +4702,41 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
         loopSize += igInLoop->igSize;
         if (igInLoop->isLoopAlign())
         {
-            // If igInLoop's next IG is a loop and needs alignment, then igInLoop should be the last IG
-            // of the current loop and should have backedge to current loop header.
-            assert(igInLoop->igLoopBackEdge == igLoopHeader);
+            // If igInLoop is marked as "IGF_LOOP_ALIGN", the basic block flow detected a loop start.
+            // If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
+            // set for them and such loops are not aligned. For such cases, the loop size threshold will never
+            // be met and we would break as soon as loopSize > maxLoopSize.
+            //
+            // IG05:
+            //      ...
+            //      jmp IG18
+            // ...
+            // IG18:
+            //      ...
+            //      jne IG05
+            //
+            // If igInLoop is a legitimate loop, and igInLoop's next IG is also a loop that needs alignment,
+            // then igInLoop should be the last IG of the current loop and should have backedge to current
+            // loop header.
+            //
+            // Below, IG05 is the last IG of loop IG04-IG05 and its backedge points to IG04.
+            //
+            // IG03:
+            //      ...
+            //      align
+            // IG04:
+            //      ...
+            //      ...
+            // IG05:
+            //      ...
+            //      jne IG04
+            //      align     ; <---
+            // IG06:
+            //      ...
+            //      jne IG06
+            //
+            //
+            assert((igInLoop->igLoopBackEdge == nullptr) || (igInLoop->igLoopBackEdge == igLoopHeader));
 
 #ifdef DEBUG
             if (isAlignAdjusted)
@@ -4974,7 +5019,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     // No padding if loop is already aligned
     if ((offset & (alignmentBoundary - 1)) == 0)
     {
-        JITDUMP(";; Skip alignment: 'Loop already aligned at %dB boundary.'\n", alignmentBoundary);
+        JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u already aligned at %dB boundary.'\n",
+                emitComp->compMethodID, ig->igNext->igNum, alignmentBoundary);
         return 0;
     }
 
@@ -4998,7 +5044,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     // No padding if loop is big
     if (loopSize > maxLoopSize)
     {
-        JITDUMP(";; Skip alignment: 'Loop is big. LoopSize= %d, MaxLoopSize= %d.'\n", loopSize, maxLoopSize);
+        JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u is big. LoopSize= %d, MaxLoopSize= %d.'\n",
+                emitComp->compMethodID, ig->igNext->igNum, loopSize, maxLoopSize);
         return 0;
     }
 
@@ -5024,15 +5071,17 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
             if (nPaddingBytes == 0)
             {
                 skipPadding = true;
-                JITDUMP(";; Skip alignment: 'Loop already aligned at %uB boundary.'\n", alignmentBoundary);
+                JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u already aligned at %uB boundary.'\n",
+                        emitComp->compMethodID, ig->igNext->igNum, alignmentBoundary);
             }
             // Check if the alignment exceeds new maxPadding limit
             else if (nPaddingBytes > nMaxPaddingBytes)
             {
                 skipPadding = true;
-                JITDUMP(";; Skip alignment: 'PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
+                JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
                         "AlignmentBoundary= %dB.'\n",
-                        nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary);
+                        emitComp->compMethodID, ig->igNext->igNum, nPaddingBytes, nMaxPaddingBytes, loopSize,
+                        alignmentBoundary);
             }
         }
 
@@ -5054,8 +5103,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
             else
             {
                 // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
-                JITDUMP(";; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.'\n",
-                        minBlocksNeededForLoop, alignmentBoundary);
+                JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u is aligned to fit in %d blocks of %d chunks.'\n",
+                        emitComp->compMethodID, ig->igNext->igNum, minBlocksNeededForLoop, alignmentBoundary);
             }
         }
     }
@@ -5083,8 +5132,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
         else
         {
             // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
-            JITDUMP(";; Skip alignment: 'Loop is aligned to fit in %d blocks of %d chunks.'\n", minBlocksNeededForLoop,
-                    alignmentBoundary);
+            JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u is aligned to fit in %d blocks of %d chunks.'\n",
+                    emitComp->compMethodID, ig->igNext->igNum, minBlocksNeededForLoop, alignmentBoundary);
         }
     }
 
@@ -5098,7 +5147,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     return paddingToAdd;
 }
 
-#endif
+#endif // FEATURE_LOOP_ALIGN
 
 void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 {

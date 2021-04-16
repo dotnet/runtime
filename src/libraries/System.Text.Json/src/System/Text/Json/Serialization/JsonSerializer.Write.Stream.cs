@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -108,7 +109,7 @@ namespace System.Text.Json
             using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
             {
                 //  We treat typeof(object) special and allow polymorphic behavior.
-                if (inputType == JsonClassInfo.ObjectType && value != null)
+                if (inputType == JsonTypeInfo.ObjectType && value != null)
                 {
                     inputType = value!.GetType();
                 }

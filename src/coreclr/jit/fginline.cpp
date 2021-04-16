@@ -739,11 +739,11 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
     {
         // If we're assigning to a ref typed local that has one definition,
         // we may be able to sharpen the type for the local.
-        GenTree* lhs = tree->gtGetOp1()->gtEffectiveVal();
+        GenTree* const effLhs = tree->gtGetOp1()->gtEffectiveVal();
 
-        if ((lhs->OperGet() == GT_LCL_VAR) && (lhs->TypeGet() == TYP_REF))
+        if ((effLhs->OperGet() == GT_LCL_VAR) && (effLhs->TypeGet() == TYP_REF))
         {
-            const unsigned lclNum = lhs->AsLclVarCommon()->GetLclNum();
+            const unsigned lclNum = effLhs->AsLclVarCommon()->GetLclNum();
             LclVarDsc*     lcl    = comp->lvaGetDesc(lclNum);
 
             if (lcl->lvSingleDef)
@@ -758,6 +758,20 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
                     comp->lvaUpdateClass(lclNum, newClass, isExact);
                 }
             }
+        }
+
+        // If we created a self-assignment (say because we are sharing return spill temps)
+        // we can remove it.
+        //
+        GenTree* const lhs = tree->gtGetOp1();
+        GenTree* const rhs = tree->gtGetOp2();
+        if (lhs->OperIs(GT_LCL_VAR) && GenTree::Compare(lhs, rhs))
+        {
+            comp->gtUpdateNodeSideEffects(tree);
+            assert((tree->gtFlags & GTF_SIDE_EFFECT) == GTF_ASG);
+            JITDUMP("... removing self-assignment\n");
+            DISPTREE(tree);
+            tree->gtBashToNOP();
         }
     }
     else if (tree->OperGet() == GT_JTRUE)
