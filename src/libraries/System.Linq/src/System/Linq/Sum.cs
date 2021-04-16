@@ -5,13 +5,6 @@ using System.Collections.Generic;
 
 namespace System.Linq
 {
-    /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="IEnumerable{T}" />.</summary>
-    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
-    /// The majority of the methods in this class are defined as extension methods that extend <see cref="IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="IEnumerable{T}" />.
-    /// Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</remarks>
-    /// <related type="Article" href="https://msdn.microsoft.com/library/24cda21e-8af8-4632-b519-c404a839b9b2">Standard Query Operators Overview</related>
-    /// <related type="Article" href="/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension Methods (C# Programming Guide)</related>
-    /// <related type="Article" href="/dotnet/visual-basic/programming-guide/language-features/procedures/extension-methods">Extension Methods (Visual Basic)</related>
     public static partial class Enumerable
     {
         /// <summary>Computes the sum of a sequence of <see cref="int" /> values.</summary>
@@ -19,8 +12,10 @@ namespace System.Linq
         /// <returns>The sum of the values in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The sum is larger than <see cref="int.MaxValue" />.</exception>
-        /// <remarks>This method returns zero if <paramref name="source" /> contains no elements.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</remarks>
+        /// <remarks>
+        /// <para>This method returns zero if <paramref name="source" /> contains no elements.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</para>
+        /// </remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static int Sum(this IEnumerable<int> source)
         {
@@ -46,9 +41,11 @@ namespace System.Linq
         /// <returns>The sum of the values in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The sum is larger than <see cref="int.MaxValue" />.</exception>
-        /// <remarks>This method returns zero if <paramref name="source" /> contains no elements.
-        /// The result does not include values that are <see langword="null" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</remarks>
+        /// <remarks>
+        /// <para>This method returns zero if <paramref name="source" /> contains no elements.</para>
+        /// <para>The result does not include values that are <see langword="null" />.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</para>
+        /// </remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static int? Sum(this IEnumerable<int?> source)
         {
@@ -77,8 +74,10 @@ namespace System.Linq
         /// <returns>The sum of the values in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The sum is larger than <see cref="long.MaxValue" />.</exception>
-        /// <remarks>This method returns zero if <paramref name="source" /> contains no elements.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</remarks>
+        /// <remarks>
+        /// <para>This method returns zero if <paramref name="source" /> contains no elements.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</para>
+        /// </remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static long Sum(this IEnumerable<long> source)
         {
@@ -104,9 +103,11 @@ namespace System.Linq
         /// <returns>The sum of the values in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The sum is larger than <see cref="long.MaxValue" />.</exception>
-        /// <remarks>This method returns zero if <paramref name="source" /> contains no elements.
-        /// The result does not include values that are <see langword="null" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</remarks>
+        /// <remarks>
+        /// <para>This method returns zero if <paramref name="source" /> contains no elements.</para>
+        /// <para>The result does not include values that are <see langword="null" />.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</para>
+        /// </remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static long? Sum(this IEnumerable<long?> source)
         {
@@ -134,8 +135,10 @@ namespace System.Linq
         /// <param name="source">A sequence of <see cref="float" /> values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>This method returns zero if <paramref name="source" /> contains no elements.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</remarks>
+        /// <remarks>
+        /// <para>This method returns zero if <paramref name="source" /> contains no elements.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="Sum(IEnumerable{float})" /> to sum the values of a sequence.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet120":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet120":::</example>
@@ -160,9 +163,11 @@ namespace System.Linq
         /// <param name="source">A sequence of nullable <see cref="float" /> values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>This method returns zero if <paramref name="source" /> contains no elements.
-        /// The result does not include values that are <see langword="null" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</remarks>
+        /// <remarks>
+        /// <para>This method returns zero if <paramref name="source" /> contains no elements.</para>
+        /// <para>The result does not include values that are <see langword="null" />.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="Sum(IEnumerable{System.Nullable{float}})" /> to sum the values of a sequence.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet121":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet121":::</example>
@@ -190,8 +195,10 @@ namespace System.Linq
         /// <param name="source">A sequence of <see cref="double" /> values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>This method returns zero if <paramref name="source" /> contains no elements.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</remarks>
+        /// <remarks>
+        /// <para>This method returns zero if <paramref name="source" /> contains no elements.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</para>
+        /// </remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static double Sum(this IEnumerable<double> source)
         {
@@ -213,9 +220,11 @@ namespace System.Linq
         /// <param name="source">A sequence of nullable <see cref="double" /> values to calculate the sum of.</param>
         /// <returns>The sum of the values in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>This method returns zero if <paramref name="source" /> contains no elements.
-        /// The result does not include values that are <see langword="null" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</remarks>
+        /// <remarks>
+        /// <para>This method returns zero if <paramref name="source" /> contains no elements.</para>
+        /// <para>The result does not include values that are <see langword="null" />.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</para>
+        /// </remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static double? Sum(this IEnumerable<double?> source)
         {
@@ -241,8 +250,10 @@ namespace System.Linq
         /// <returns>The sum of the values in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The sum is larger than <see cref="decimal.MaxValue" />.</exception>
-        /// <remarks>The <see cref="Sum(IEnumerable{decimal})" /> method returns zero if <paramref name="source" /> contains no elements.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</remarks>
+        /// <remarks>
+        /// <para>The <see cref="Sum(IEnumerable{decimal})" /> method returns zero if <paramref name="source" /> contains no elements.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</para>
+        /// </remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static decimal Sum(this IEnumerable<decimal> source)
         {
@@ -265,9 +276,11 @@ namespace System.Linq
         /// <returns>The sum of the values in the sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The sum is larger than <see cref="decimal.MaxValue" />.</exception>
-        /// <remarks>This method returns zero if <paramref name="source" /> contains no elements.
-        /// The result doesnot include values that are <see langword="null" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</remarks>
+        /// <remarks>
+        /// <para>This method returns zero if <paramref name="source" /> contains no elements.</para>
+        /// <para>The result doesnot include values that are <see langword="null" />.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</para>
+        /// </remarks>
         /// <related type="Article" href="/dotnet/visual-basic/language-reference/queries/aggregate-clause">Aggregate Clause (Visual Basic)</related>
         public static decimal? Sum(this IEnumerable<decimal?> source)
         {
@@ -553,9 +566,11 @@ namespace System.Linq
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The sum of the projected values.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="selector" /> is <see langword="null" />.</exception>
-        /// <remarks>This method returns zero if <paramref name="source" /> contains no elements.
-        /// You can apply this method to a sequence of arbitrary values if you provide a function, <paramref name="selector" />, that projects the members of <paramref name="source" /> into a numeric type, specifically <see cref="double" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</remarks>
+        /// <remarks>
+        /// <para>This method returns zero if <paramref name="source" /> contains no elements.</para>
+        /// <para>You can apply this method to a sequence of arbitrary values if you provide a function, <paramref name="selector" />, that projects the members of <paramref name="source" /> into a numeric type, specifically <see cref="double" />.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Sum()` clause translates to an invocation of <see cref="O:Enumerable.Sum" />.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="Sum{T}(IEnumerable{T},Func{T,double})" /> to sum the projected values of a sequence.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet98":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet98":::</example>

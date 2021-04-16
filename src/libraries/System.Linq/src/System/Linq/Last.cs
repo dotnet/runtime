@@ -7,9 +7,11 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Linq
 {
     /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="IEnumerable{T}" />.</summary>
-    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
-    /// The majority of the methods in this class are defined as extension methods that extend <see cref="IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="IEnumerable{T}" />.
-    /// Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</remarks>
+    /// <remarks>
+    /// <para>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.</para>
+    /// <para>The majority of the methods in this class are defined as extension methods that extend <see cref="IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="IEnumerable{T}" />.</para>
+    /// <para>Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</para>
+    /// </remarks>
     /// <related type="Article" href="https://msdn.microsoft.com/library/24cda21e-8af8-4632-b519-c404a839b9b2">Standard Query Operators Overview</related>
     /// <related type="Article" href="/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension Methods (C# Programming Guide)</related>
     /// <related type="Article" href="/dotnet/visual-basic/programming-guide/language-features/procedures/extension-methods">Extension Methods (Visual Basic)</related>
@@ -65,8 +67,10 @@ namespace System.Linq
         /// <param name="source">An <see cref="IEnumerable{T}" /> to return the last element of.</param>
         /// <returns><see langword="default" />(<typeparamref name="TSource" />) if the source sequence is empty; otherwise, the last element in the <see cref="IEnumerable{T}" />.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>The default value for reference and nullable types is <see langword="null" />.
-        /// The <see cref="O:Enumerable.LastOrDefault" /> method does not provide a way to specify a default value. If you want to specify a default value other than `default(TSource)`, use the <see cref="DefaultIfEmpty{T}(IEnumerable{T},T)" /> method as described in the Example section.</remarks>
+        /// <remarks>
+        /// <para>The default value for reference and nullable types is <see langword="null" />.</para>
+        /// <para>The <see cref="O:Enumerable.LastOrDefault" /> method does not provide a way to specify a default value. If you want to specify a default value other than `default(TSource)`, use the <see cref="DefaultIfEmpty{T}(IEnumerable{T},T)" /> method as described in the Example section.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="LastOrDefault{T}(IEnumerable{T})" /> on an empty array.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet45":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet45":::

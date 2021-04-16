@@ -7,13 +7,6 @@ using static System.Linq.Utilities;
 
 namespace System.Linq
 {
-    /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="IEnumerable{T}" />.</summary>
-    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
-    /// The majority of the methods in this class are defined as extension methods that extend <see cref="IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="IEnumerable{T}" />.
-    /// Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</remarks>
-    /// <related type="Article" href="https://msdn.microsoft.com/library/24cda21e-8af8-4632-b519-c404a839b9b2">Standard Query Operators Overview</related>
-    /// <related type="Article" href="/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension Methods (C# Programming Guide)</related>
-    /// <related type="Article" href="/dotnet/visual-basic/programming-guide/language-features/procedures/extension-methods">Extension Methods (Visual Basic)</related>
     public static partial class Enumerable
     {
         /// <summary>Produces the set union of two sequences by using the default equality comparer.</summary>
@@ -22,10 +15,12 @@ namespace System.Linq
         /// <param name="second">An <see cref="IEnumerable{T}" /> whose distinct elements form the second set for the union.</param>
         /// <returns>An <see cref="IEnumerable{T}" /> that contains the elements from both input sequences, excluding duplicates.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="first" /> or <paramref name="second" /> is <see langword="null" />.</exception>
-        /// <remarks>This method is implemented by using deferred execution. The immediate return value is an object that stores all the information that is required to perform the action. The query represented by this method is not executed until the object is enumerated either by calling its `GetEnumerator` method directly or by using `foreach` in Visual C# or `For Each` in Visual Basic.
-        /// This method excludes duplicates from the return set. This is different behavior to the <see cref="O:Enumerable.Concat" /> method, which returns all the elements in the input sequences including duplicates.
-        /// The default equality comparer, <see cref="O:EqualityComparer{T}.Default" />, is used to compare values of the types that implement the <see cref="IEqualityComparer{T}" /> generic interface. To compare a custom data type, you need to implement this interface and provide your own <see cref="O:object.GetHashCode" /> and <see cref="O:object.Equals" /> methods for the type.
-        /// When the object returned by this method is enumerated, `Union` enumerates <paramref name="first" /> and <paramref name="second" /> in that order and yields each element that has not already been yielded.</remarks>
+        /// <remarks>
+        /// <para>This method is implemented by using deferred execution. The immediate return value is an object that stores all the information that is required to perform the action. The query represented by this method is not executed until the object is enumerated either by calling its `GetEnumerator` method directly or by using `foreach` in Visual C# or `For Each` in Visual Basic.</para>
+        /// <para>This method excludes duplicates from the return set. This is different behavior to the <see cref="O:Enumerable.Concat" /> method, which returns all the elements in the input sequences including duplicates.</para>
+        /// <para>The default equality comparer, <see cref="O:EqualityComparer{T}.Default" />, is used to compare values of the types that implement the <see cref="IEqualityComparer{T}" /> generic interface. To compare a custom data type, you need to implement this interface and provide your own <see cref="O:object.GetHashCode" /> and <see cref="O:object.Equals" /> methods for the type.</para>
+        /// <para>When the object returned by this method is enumerated, `Union` enumerates <paramref name="first" /> and <paramref name="second" /> in that order and yields each element that has not already been yielded.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="Union{TSource}(IEnumerable{TSource}, IEnumerable{TSource})"/> to obtain the union of two sequences of integers.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet109":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet109":::
@@ -46,10 +41,12 @@ namespace System.Linq
         /// <param name="comparer">The <see cref="IEqualityComparer{T}" /> to compare values.</param>
         /// <returns>An <see cref="IEnumerable{T}" /> that contains the elements from both input sequences, excluding duplicates.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="first" /> or <paramref name="second" /> is <see langword="null" />.</exception>
-        /// <remarks>This method is implemented by using deferred execution. The immediate return value is an object that stores all the information that is required to perform the action. The query represented by this method is not executed until the object is enumerated either by calling its `GetEnumerator` method directly or by using `foreach` in Visual C# or `For Each` in Visual Basic.
-        /// If <paramref name="comparer" /> is <see langword="null" />, the default equality comparer, <see cref="O:EqualityComparer{T}.Default" />, is used to compare values.
-        /// When the object returned by this method is enumerated, <see cref="O:Enumerable.Union" /> enumerates <paramref name="first" /> and <paramref name="second" /> in that order and yields each element that has not already been yielded.
-        /// The <see cref="O:Enumerable.Concat" /> method differs from the <see cref="O:Enumerable.Union" /> method because the <see cref="O:Enumerable.Concat" /> method returns all the elements in the input sequences including duplicates, whereas <see cref="O:Enumerable.Union" /> returns only unique values.</remarks>
+        /// <remarks>
+        /// <para>This method is implemented by using deferred execution. The immediate return value is an object that stores all the information that is required to perform the action. The query represented by this method is not executed until the object is enumerated either by calling its `GetEnumerator` method directly or by using `foreach` in Visual C# or `For Each` in Visual Basic.</para>
+        /// <para>If <paramref name="comparer" /> is <see langword="null" />, the default equality comparer, <see cref="O:EqualityComparer{T}.Default" />, is used to compare values.</para>
+        /// <para>When the object returned by this method is enumerated, <see cref="O:Enumerable.Union" /> enumerates <paramref name="first" /> and <paramref name="second" /> in that order and yields each element that has not already been yielded.</para>
+        /// <para>The <see cref="O:Enumerable.Concat" /> method differs from the <see cref="O:Enumerable.Union" /> method because the <see cref="O:Enumerable.Concat" /> method returns all the elements in the input sequences including duplicates, whereas <see cref="O:Enumerable.Union" /> returns only unique values.</para>
+        /// </remarks>
         /// <example>The following example shows how to implement an equality comparer that can be used in the <see cref="O:Enumerable.Union" /> method.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_VBCSharp/CsLINQCustomComparer/CS/CustomComparer.cs" id="Snippet1":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_VBCSharp/CsLINQCustomComparer/VB/CustomComparer.vb" id="Snippet1":::

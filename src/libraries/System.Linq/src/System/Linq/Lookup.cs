@@ -8,9 +8,11 @@ using System.Diagnostics;
 namespace System.Linq
 {
     /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="IEnumerable{T}" />.</summary>
-    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
-    /// The majority of the methods in this class are defined as extension methods that extend <see cref="IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="IEnumerable{T}" />.
-    /// Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</remarks>
+    /// <remarks>
+    /// <para>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.</para>
+    /// <para>The majority of the methods in this class are defined as extension methods that extend <see cref="IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="IEnumerable{T}" />.</para>
+    /// <para>Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</para>
+    /// </remarks>
     /// <related type="Article" href="https://msdn.microsoft.com/library/24cda21e-8af8-4632-b519-c404a839b9b2">Standard Query Operators Overview</related>
     /// <related type="Article" href="/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension Methods (C# Programming Guide)</related>
     /// <related type="Article" href="/dotnet/visual-basic/programming-guide/language-features/procedures/extension-methods">Extension Methods (Visual Basic)</related>
@@ -23,8 +25,10 @@ namespace System.Linq
         /// <param name="keySelector">A function to extract a key from each element.</param>
         /// <returns>A <see cref="Lookup{T1,T2}" /> that contains keys and values. The values within each group are in the same order as in <paramref name="source" />.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="keySelector" /> is <see langword="null" />.</exception>
-        /// <remarks>The <see cref="ToLookup{T1,T2}(IEnumerable{T1},Func{T1,T2})" /> method returns a <see cref="Lookup{T1,T2}" />, a one-to-many dictionary that maps keys to collections of values. A <see cref="Lookup{T1,T2}" /> differs from a <see cref="Dictionary{T1,T2}" />, which performs a one-to-one mapping of keys to single values.
-        /// The default equality comparer <see cref="O:EqualityComparer{T}.Default" /> is used to compare keys.</remarks>
+        /// <remarks>
+        /// <para>The <see cref="ToLookup{T1,T2}(IEnumerable{T1},Func{T1,T2})" /> method returns a <see cref="Lookup{T1,T2}" />, a one-to-many dictionary that maps keys to collections of values. A <see cref="Lookup{T1,T2}" /> differs from a <see cref="Dictionary{T1,T2}" />, which performs a one-to-one mapping of keys to single values.</para>
+        /// <para>The default equality comparer <see cref="O:EqualityComparer{T}.Default" /> is used to compare keys.</para>
+        /// </remarks>
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>
             ToLookup(source, keySelector, null);
 
@@ -36,8 +40,10 @@ namespace System.Linq
         /// <param name="comparer">An <see cref="IEqualityComparer{T}" /> to compare keys.</param>
         /// <returns>A <see cref="Lookup{T1,T2}" /> that contains keys and values. The values within each group are in the same order as in <paramref name="source" />.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="keySelector" /> is <see langword="null" />.</exception>
-        /// <remarks>The <see cref="ToLookup{T1,T2}(IEnumerable{T1},Func{T1,T2},IEqualityComparer{T2})" /> method returns a <see cref="Lookup{T1,T2}" />, a one-to-many dictionary that maps keys to collections of values. A <see cref="Lookup{T1,T2}" /> is different to a <see cref="Dictionary{T1,T2}" />, which performs a one-to-one mapping of keys to single values.
-        /// If <paramref name="comparer" /> is <see langword="null" />, the default equality comparer <see cref="O:EqualityComparer{T}.Default" /> is used to compare keys.</remarks>
+        /// <remarks>
+        /// <para>The <see cref="ToLookup{T1,T2}(IEnumerable{T1},Func{T1,T2},IEqualityComparer{T2})" /> method returns a <see cref="Lookup{T1,T2}" />, a one-to-many dictionary that maps keys to collections of values. A <see cref="Lookup{T1,T2}" /> is different to a <see cref="Dictionary{T1,T2}" />, which performs a one-to-one mapping of keys to single values.</para>
+        /// <para>If <paramref name="comparer" /> is <see langword="null" />, the default equality comparer <see cref="O:EqualityComparer{T}.Default" /> is used to compare keys.</para>
+        /// </remarks>
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
         {
             if (source == null)
@@ -62,8 +68,10 @@ namespace System.Linq
         /// <param name="elementSelector">A transform function to produce a result element value from each element.</param>
         /// <returns>A <see cref="Lookup{T1,T2}" /> that contains values of type <typeparamref name="TElement" /> selected from the input sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="keySelector" /> or <paramref name="elementSelector" /> is <see langword="null" />.</exception>
-        /// <remarks>The <see cref="ToLookup{T1,T2,T3}(IEnumerable{T1},Func{T1,T2},Func{T1,T3})" /> method returns a <see cref="Lookup{T1,T2}" />, a one-to-many dictionary that maps keys to collections of values. A <see cref="Lookup{T1,T2}" /> differs from a <see cref="Dictionary{T1,T2}" />, which performs a one-to-one mapping of keys to single values.
-        /// The default equality comparer <see cref="O:EqualityComparer{T}.Default" /> is used to compare keys.</remarks>
+        /// <remarks>
+        /// <para>The <see cref="ToLookup{T1,T2,T3}(IEnumerable{T1},Func{T1,T2},Func{T1,T3})" /> method returns a <see cref="Lookup{T1,T2}" />, a one-to-many dictionary that maps keys to collections of values. A <see cref="Lookup{T1,T2}" /> differs from a <see cref="Dictionary{T1,T2}" />, which performs a one-to-one mapping of keys to single values.</para>
+        /// <para>The default equality comparer <see cref="O:EqualityComparer{T}.Default" /> is used to compare keys.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="ToLookup{T1,T2,T3}(IEnumerable{T1},Func{T1,T2},Func{T1,T3})" /> to create a <see cref="Lookup{T1,T2}" /> by using a key selector function and an element selector function.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet107":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet107":::</example>
@@ -80,8 +88,10 @@ namespace System.Linq
         /// <param name="comparer">An <see cref="IEqualityComparer{T}" /> to compare keys.</param>
         /// <returns>A <see cref="Lookup{T1,T2}" /> that contains values of type <typeparamref name="TElement" /> selected from the input sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="keySelector" /> or <paramref name="elementSelector" /> is <see langword="null" />.</exception>
-        /// <remarks>The <see cref="ToLookup{T1,T2,T3}(IEnumerable{T1},Func{T1,T2},Func{T1,T3},IEqualityComparer{T2})" /> method returns a <see cref="Lookup{T1,T2}" />, a one-to-many dictionary that maps keys to collections of values. A <see cref="Lookup{T1,T2}" /> differs from a <see cref="Dictionary{T1,T2}" />, which performs a one-to-one mapping of keys to single values.
-        /// If <paramref name="comparer" /> is <see langword="null" />, the default equality comparer <see cref="O:EqualityComparer{T}.Default" /> is used to compare keys.</remarks>
+        /// <remarks>
+        /// <para>The <see cref="ToLookup{T1,T2,T3}(IEnumerable{T1},Func{T1,T2},Func{T1,T3},IEqualityComparer{T2})" /> method returns a <see cref="Lookup{T1,T2}" />, a one-to-many dictionary that maps keys to collections of values. A <see cref="Lookup{T1,T2}" /> differs from a <see cref="Dictionary{T1,T2}" />, which performs a one-to-one mapping of keys to single values.</para>
+        /// <para>If <paramref name="comparer" /> is <see langword="null" />, the default equality comparer <see cref="O:EqualityComparer{T}.Default" /> is used to compare keys.</para>
+        /// </remarks>
         public static ILookup<TKey, TElement> ToLookup<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer)
         {
             if (source == null)
@@ -106,8 +116,10 @@ namespace System.Linq
     /// <summary>Defines an indexer, size property, and Boolean search method for data structures that map keys to <see cref="IEnumerable{T}" /> sequences of values.</summary>
     /// <typeparam name="TKey">The type of the keys in the <see cref="ILookup{T1,T2}" />.</typeparam>
     /// <typeparam name="TElement">The type of the elements in the <see cref="IEnumerable{T}" /> sequences that make up the values in the <see cref="ILookup{T1,T2}" />.</typeparam>
-    /// <remarks>The type <see cref="Lookup{T1,T2}" /> implements the <see cref="ILookup{T1,T2}" /> interface.
-    /// The extension method <see cref="O:Enumerable.ToLookup" />, which can be appended to the end of a LINQ query, returns an object of type <see cref="ILookup{T1,T2}" />.</remarks>
+    /// <remarks>
+    /// <para>The type <see cref="Lookup{T1,T2}" /> implements the <see cref="ILookup{T1,T2}" /> interface.</para>
+    /// <para>The extension method <see cref="O:Enumerable.ToLookup" />, which can be appended to the end of a LINQ query, returns an object of type <see cref="ILookup{T1,T2}" />.</para>
+    /// </remarks>
     /// <example>The following code example creates an <see cref="ILookup{T1,T2}" /> object and iterates through its contents.
     /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.ILookup/cs/ILookup.cs" id="Snippet1":::
     /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.ILookup/vb/ILookup.vb" id="Snippet1":::</example>

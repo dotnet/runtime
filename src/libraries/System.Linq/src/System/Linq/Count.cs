@@ -6,13 +6,6 @@ using System.Collections.Generic;
 
 namespace System.Linq
 {
-    /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="IEnumerable{T}" />.</summary>
-    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
-    /// The majority of the methods in this class are defined as extension methods that extend <see cref="IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="IEnumerable{T}" />.
-    /// Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</remarks>
-    /// <related type="Article" href="https://msdn.microsoft.com/library/24cda21e-8af8-4632-b519-c404a839b9b2">Standard Query Operators Overview</related>
-    /// <related type="Article" href="/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension Methods (C# Programming Guide)</related>
-    /// <related type="Article" href="/dotnet/visual-basic/programming-guide/language-features/procedures/extension-methods">Extension Methods (Visual Basic)</related>
     public static partial class Enumerable
     {
         /// <summary>Returns the number of elements in a sequence.</summary>
@@ -21,9 +14,11 @@ namespace System.Linq
         /// <returns>The number of elements in the input sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The number of elements in <paramref name="source" /> is larger than <see cref="int.MaxValue" />.</exception>
-        /// <remarks>If the type of <paramref name="source" /> implements <see cref="ICollection{T}" />, that implementation is used to obtain the count of elements. Otherwise, this method determines the count.
-        /// Use the <see cref="O:Enumerable.LongCount" /> method when you expect and want to allow the result to be greater than <see cref="int.MaxValue" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Count()` clause translates to an invocation of <see cref="O:Enumerable.Count" />.</remarks>
+        /// <remarks>
+        /// <para>If the type of <paramref name="source" /> implements <see cref="ICollection{T}" />, that implementation is used to obtain the count of elements. Otherwise, this method determines the count.</para>
+        /// <para>Use the <see cref="O:Enumerable.LongCount" /> method when you expect and want to allow the result to be greater than <see cref="int.MaxValue" />.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Count()` clause translates to an invocation of <see cref="O:Enumerable.Count" />.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="Count{T}(IEnumerable{T})" /> to count the elements in an array.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet22":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet22":::</example>
@@ -72,9 +67,11 @@ namespace System.Linq
         /// <returns>A number that represents how many elements in the sequence satisfy the condition in the predicate function.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="predicate" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The number of elements in <paramref name="source" /> is larger than <see cref="int.MaxValue" />.</exception>
-        /// <remarks>If the type of <paramref name="source" /> implements <see cref="ICollection{T}" />, that implementation is used to obtain the count of elements. Otherwise, this method determines the count.
-        /// You should use the <see cref="O:Enumerable.LongCount" /> method when you expect and want to allow the result to be greater than <see cref="int.MaxValue" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Count()` clause translates to an invocation of <see cref="O:Enumerable.Count" />.</remarks>
+        /// <remarks>
+        /// <para>If the type of <paramref name="source" /> implements <see cref="ICollection{T}" />, that implementation is used to obtain the count of elements. Otherwise, this method determines the count.</para>
+        /// <para>You should use the <see cref="O:Enumerable.LongCount" /> method when you expect and want to allow the result to be greater than <see cref="int.MaxValue" />.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Count()` clause translates to an invocation of <see cref="O:Enumerable.Count" />.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="Count{T}(IEnumerable{T},Func{T,bool})" /> to count the elements in an array that satisfy a condition.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet23":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet23":::</example>
@@ -119,12 +116,15 @@ namespace System.Linq
         ///   otherwise, <see langword="false" />.
         /// </returns>
         /// <remarks>
+        /// <para>
         ///   The method performs a series of type tests, identifying common subtypes whose
         ///   count can be determined without enumerating; this includes <see cref="ICollection{T}"/>,
         ///   <see cref="ICollection"/> as well as internal types used in the LINQ implementation.
-        ///
+        /// </para>
+        /// <para>
         ///   The method is typically a constant-time operation, but ultimately this depends on the complexity
         ///   characteristics of the underlying collection implementation.
+        /// </para>
         /// </remarks>
         public static bool TryGetNonEnumeratedCount<TSource>(this IEnumerable<TSource> source, out int count)
         {
@@ -165,8 +165,10 @@ namespace System.Linq
         /// <returns>The number of elements in the source sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The number of elements exceeds <see cref="long.MaxValue" />.</exception>
-        /// <remarks>Use this method rather than <see cref="O:Enumerable.Count" /> when you expect the result to be greater than <see cref="int.MaxValue" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into LongCount()` clause translates to an invocation of <see cref="O:Enumerable.LongCount" />.</remarks>
+        /// <remarks>
+        /// <para>Use this method rather than <see cref="O:Enumerable.Count" /> when you expect the result to be greater than <see cref="int.MaxValue" />.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into LongCount()` clause translates to an invocation of <see cref="O:Enumerable.LongCount" />.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="LongCount{T}(IEnumerable{T})" /> to count the elements in an array.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet47":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet47":::</example>
@@ -200,8 +202,10 @@ namespace System.Linq
         /// <returns>A number that represents how many elements in the sequence satisfy the condition in the predicate function.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> or <paramref name="predicate" /> is <see langword="null" />.</exception>
         /// <exception cref="System.OverflowException">The number of matching elements exceeds <see cref="long.MaxValue" />.</exception>
-        /// <remarks>Use this method rather than <see cref="O:Enumerable.Count" /> when you expect the result to be greater than <see cref="int.MaxValue" />.
-        /// In Visual Basic query expression syntax, an `Aggregate Into LongCount()` clause translates to an invocation of <see cref="O:Enumerable.LongCount" />.</remarks>
+        /// <remarks>
+        /// <para>Use this method rather than <see cref="O:Enumerable.Count" /> when you expect the result to be greater than <see cref="int.MaxValue" />.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into LongCount()` clause translates to an invocation of <see cref="O:Enumerable.LongCount" />.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="LongCount{T}(IEnumerable{T},Func{T,bool})" /> to count the elements in an array that satisfy a condition.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet48":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet48":::</example>

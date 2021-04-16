@@ -5,13 +5,6 @@ using System.Collections.Generic;
 
 namespace System.Linq
 {
-    /// <summary>Provides a set of <see langword="static" /> (<see langword="Shared" /> in Visual Basic) methods for querying objects that implement <see cref="IEnumerable{T}" />.</summary>
-    /// <remarks>The methods in this class provide an implementation of the standard query operators for querying data sources that implement <see cref="IEnumerable{T}" />. The standard query operators are general purpose methods that follow the LINQ pattern and enable you to express traversal, filter, and projection operations over data in any .NET-based programming language.
-    /// The majority of the methods in this class are defined as extension methods that extend <see cref="IEnumerable{T}" />. This means they can be called like an instance method on any object that implements <see cref="IEnumerable{T}" />.
-    /// Methods that are used in a query that returns a sequence of values do not consume the target data until the query object is enumerated. This is known as deferred execution. Methods that are used in a query that returns a singleton value execute and consume the target data immediately.</remarks>
-    /// <related type="Article" href="https://msdn.microsoft.com/library/24cda21e-8af8-4632-b519-c404a839b9b2">Standard Query Operators Overview</related>
-    /// <related type="Article" href="/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension Methods (C# Programming Guide)</related>
-    /// <related type="Article" href="/dotnet/visual-basic/programming-guide/language-features/procedures/extension-methods">Extension Methods (Visual Basic)</related>
     public static partial class Enumerable
     {
         /// <summary>Creates an array from a <see cref="IEnumerable{T}" />.</summary>
@@ -19,8 +12,10 @@ namespace System.Linq
         /// <param name="source">An <see cref="IEnumerable{T}" /> to create an array from.</param>
         /// <returns>An array that contains the elements from the input sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>The <see cref="ToArray{T}(IEnumerable{T})" /> method forces immediate query evaluation and returns an array that contains the query results. You can append this method to your query in order to obtain a cached copy of the query results.
-        /// <see cref="O:Enumerable.ToList" /> has similar behavior but returns a <see cref="List{T}" /> instead of an array.</remarks>
+        /// <remarks>
+        /// <para>The <see cref="ToArray{T}(IEnumerable{T})" /> method forces immediate query evaluation and returns an array that contains the query results. You can append this method to your query in order to obtain a cached copy of the query results.</para>
+        /// <para><see cref="O:Enumerable.ToList" /> has similar behavior but returns a <see cref="List{T}" /> instead of an array.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="O:Enumerable.ToArray" /> to force immediate query evaluation and return an array of results.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet104":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet104":::</example>
@@ -41,8 +36,10 @@ namespace System.Linq
         /// <param name="source">The <see cref="IEnumerable{T}" /> to create a <see cref="List{T}" /> from.</param>
         /// <returns>A <see cref="List{T}" /> that contains elements from the input sequence.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
-        /// <remarks>The <see cref="ToList{T}(IEnumerable{T})" /> method forces immediate query evaluation and returns a <see cref="List{T}" /> that contains the query results. You can append this method to your query in order to obtain a cached copy of the query results.
-        /// <see cref="O:Enumerable.ToArray" /> has similar behavior but returns an array instead of a <see cref="List{T}" />.</remarks>
+        /// <remarks>
+        /// <para>The <see cref="ToList{T}(IEnumerable{T})" /> method forces immediate query evaluation and returns a <see cref="List{T}" /> that contains the query results. You can append this method to your query in order to obtain a cached copy of the query results.</para>
+        /// <para><see cref="O:Enumerable.ToArray" /> has similar behavior but returns an array instead of a <see cref="List{T}" />.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="O:Enumerable.ToList" /> to force immediate query evaluation and return a <see cref="List{T}" /> that contains the query results.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet106":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet106":::</example>

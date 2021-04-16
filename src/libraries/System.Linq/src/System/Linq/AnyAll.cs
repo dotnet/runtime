@@ -17,8 +17,9 @@ namespace System.Linq
         /// > [!NOTE]
         /// >  This method does not return any one element of a collection. Instead, it determines whether the collection contains any elements.
         /// ]]></format>
-        /// The enumeration of <paramref name="source" /> is stopped as soon as the result can be determined.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Any()` clause translates to an invocation of <see cref="O:Enumerable.Any" />.</remarks>
+        /// <para>The enumeration of <paramref name="source" /> is stopped as soon as the result can be determined.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Any()` clause translates to an invocation of <see cref="O:Enumerable.Any" />.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="O:Enumerable.Any" /> to determine whether a sequence contains any elements.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" interactive="try-dotnet-method" id="Snippet5":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet5":::
@@ -73,8 +74,9 @@ namespace System.Linq
         /// > [!NOTE]
         /// >  This method does not return any one element of a collection. Instead, it determines whether any elements of a collection satisfy a condition.
         /// ]]></format>
-        /// The enumeration of <paramref name="source" /> is stopped as soon as the result can be determined.
-        /// In Visual Basic query expression syntax, an `Aggregate Into Any()` clause translates to an invocation of <see cref="O:Enumerable.Any" />.</remarks>
+        /// <para>The enumeration of <paramref name="source" /> is stopped as soon as the result can be determined.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Any()` clause translates to an invocation of <see cref="O:Enumerable.Any" />.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="O:Enumerable.Any" /> to determine whether any element in a sequence satisfies a condition.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet6":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet6":::</example>
@@ -112,8 +114,9 @@ namespace System.Linq
         /// > [!NOTE]
         /// >  This method does not return all the elements of a collection. Instead, it determines whether all the elements of a collection satisfy a condition.
         /// ]]></format>
-        /// The enumeration of <paramref name="source" /> is stopped as soon as the result can be determined.
-        /// In Visual Basic query expression syntax, an `Aggregate Into All()` clause translates to an invocation of <see cref="O:Enumerable.All" />.</remarks>
+        /// <para>The enumeration of <paramref name="source" /> is stopped as soon as the result can be determined.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into All()` clause translates to an invocation of <see cref="O:Enumerable.All" />.</para>
+        /// </remarks>
         /// <example>The following code example demonstrates how to use <see cref="O:Enumerable.All" /> to determine whether all the elements in a sequence satisfy a condition. Variable `allStartWithB` is true if all the pet names start with "B" or if the `pets` array is empty.
         /// :::code language="csharp" source="~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Linq.Enumerable/CS/enumerable.cs" id="Snippet4":::
         /// :::code language="vb" source="~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Linq.Enumerable/VB/Enumerable.vb" id="Snippet4":::
