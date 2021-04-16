@@ -604,7 +604,7 @@ namespace System.IO.Strategies
             }
             else
             {
-                Debug.Assert(_writePos == _bufferSize - 1);
+                Debug.Assert(_writePos <= _bufferSize);
                 FlushWrite();
             }
 

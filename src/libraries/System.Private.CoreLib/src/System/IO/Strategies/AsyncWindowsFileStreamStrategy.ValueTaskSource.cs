@@ -15,7 +15,7 @@ namespace System.IO.Strategies
         /// <summary>
         /// Type that helps reduce allocations for FileStream.ReadAsync and FileStream.WriteAsync.
         /// </summary>
-        private unsafe class ValueTaskSource : IValueTaskSource<int>, IValueTaskSource
+        private sealed unsafe class ValueTaskSource : IValueTaskSource<int>, IValueTaskSource
         {
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
             private MemoryHandle _handle;
@@ -133,9 +133,7 @@ namespace System.IO.Strategies
                 // in which case the operation being completed is its _currentOverlappedOwner, or it'll
                 // be directly the ValueTaskSource that's completing (in the case where the preallocated
                 // overlapped was already in use by another operation).
-                object? state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
-                Debug.Assert(state is ValueTaskSource);
-                ValueTaskSource valueTaskSource = (ValueTaskSource)state;
+                ValueTaskSource valueTaskSource = (ValueTaskSource)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
                 Debug.Assert(valueTaskSource != null);
                 Debug.Assert(valueTaskSource._overlapped == pOverlapped, "Overlaps don't match");
 
