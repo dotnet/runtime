@@ -198,6 +198,7 @@ namespace System.IO.Strategies
                     // Failure to do so looks like we are freeing a pending overlapped later.
                     intOverlapped->InternalLow = IntPtr.Zero;
                     valueTaskSource.ReleaseNativeResource();
+                    TryToReuse(valueTaskSource);
                     return new ValueTask<int>(0);
                 }
                 else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
@@ -208,6 +209,7 @@ namespace System.IO.Strategies
                     }
 
                     valueTaskSource.ReleaseNativeResource();
+                    TryToReuse(valueTaskSource);
 
                     if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
                     {
@@ -301,6 +303,7 @@ namespace System.IO.Strategies
                     // Not an error, but EOF. AsyncFSCallback will NOT be called.
                     // Completing TCS and return cached task allowing the GC to collect TCS.
                     valueTaskSource.ReleaseNativeResource();
+                    TryToReuse(valueTaskSource);
                     return ValueTask.CompletedTask;
                 }
                 else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
@@ -311,6 +314,7 @@ namespace System.IO.Strategies
                     }
 
                     valueTaskSource.ReleaseNativeResource();
+                    TryToReuse(valueTaskSource);
 
                     if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
                     {

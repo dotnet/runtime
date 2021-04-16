@@ -119,10 +119,6 @@ namespace System.IO.Strategies
                     _strategy._fileHandle.ThreadPoolBinding!.FreeNativeOverlapped(_overlapped);
                     _overlapped = null;
                 }
-
-                // Ensure we're no longer set as the current ValueTaskSource (we may not have been to begin with).
-                // Only one operation at a time is eligible to use the preallocated overlapped
-                _strategy.TryToReuse(this);
             }
 
             private static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
@@ -193,6 +189,9 @@ namespace System.IO.Strategies
                     Debug.Assert(result == TaskSourceCodes.ResultSuccess, "Unknown result");
                     _source.SetResult((int)(packedResult & uint.MaxValue));
                 }
+
+                // The instance is ready to be reused
+                _strategy.TryToReuse(this);
             }
 
             private void Cancel(CancellationToken token)
