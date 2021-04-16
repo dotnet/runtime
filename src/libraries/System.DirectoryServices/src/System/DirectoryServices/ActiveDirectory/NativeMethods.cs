@@ -320,7 +320,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 ULONG Flags,
                 PDOMAIN_CONTROLLER_INFO* DomainControllerInfo
                 );*/
-        [DllImport(ExternDll.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
         internal static extern int DsGetDcName(
             [In] string? computerName,
             [In] string? domainName,
@@ -338,7 +338,7 @@ namespace System.DirectoryServices.ActiveDirectory
                          ULONG DcFlags,
                          PHANDLE RetGetDcContext
                          );*/
-        [DllImport(ExternDll.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcOpenW", CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcOpenW", CharSet = CharSet.Unicode)]
         internal static extern int DsGetDcOpen(
             [In] string? dnsName,
             [In] int optionFlags,
@@ -354,7 +354,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         LPSOCKET_ADDRESS* SockAddresses,
                         LPTSTR* DnsHostName
                         );*/
-        [DllImport(ExternDll.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNextW", CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNextW", CharSet = CharSet.Unicode)]
         internal static extern int DsGetDcNext(
             [In] IntPtr getDcContextHandle,
             [In, Out] ref IntPtr sockAddressCount,
@@ -364,14 +364,14 @@ namespace System.DirectoryServices.ActiveDirectory
         /*void WINAPI DsGetDcClose(
                         HANDLE GetDcContextHandle
                         );*/
-        [DllImport(ExternDll.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcCloseW", CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcCloseW", CharSet = CharSet.Unicode)]
         internal static extern void DsGetDcClose(
             [In] IntPtr getDcContextHandle);
 
         /*NET_API_STATUS NetApiBufferFree(
                 LPVOID Buffer
                 );*/
-        [DllImport(ExternDll.Netapi32)]
+        [DllImport(global::Interop.Libraries.Netapi32)]
         internal static extern int NetApiBufferFree(
             [In] IntPtr buffer);
 
@@ -472,7 +472,7 @@ namespace System.DirectoryServices.ActiveDirectory
             PDNS_RECORD *ppQueryResultsSet,
             PVOID *pReserved
             );*/
-        [DllImport(ExternDll.Dnsapi, EntryPoint = "DnsQuery_W", CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Dnsapi, EntryPoint = "DnsQuery_W", CharSet = CharSet.Unicode)]
         internal static extern int DnsQuery(
             [In] string recordName,
             [In] short recordType,
@@ -485,7 +485,7 @@ namespace System.DirectoryServices.ActiveDirectory
             PDNS_RECORD pRecordList,
             DNS_FREE_TYPE FreeType
             );*/
-        [DllImport(ExternDll.Dnsapi, CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Dnsapi, CharSet = CharSet.Unicode)]
         internal static extern void DnsRecordListFree(
             [In] IntPtr dnsResultList,
             [In] bool dnsFreeType);

@@ -32,7 +32,7 @@ namespace System.DirectoryServices.AccountManagement
 
     internal static class UnsafeNativeMethods
     {
-        [DllImport(ExternDll.Activeds, ExactSpelling = true, EntryPoint = "ADsOpenObject", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Activeds, ExactSpelling = true, EntryPoint = "ADsOpenObject", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
         private static extern int IntADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject);
         public static int ADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject)
         {
@@ -431,7 +431,7 @@ namespace System.DirectoryServices.AccountManagement
           PBYTE* Buffer
         ); */
 
-        [DllImport(ExternDll.Dsrole, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsRoleGetPrimaryDomainInformation", CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Dsrole, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsRoleGetPrimaryDomainInformation", CharSet = CharSet.Unicode)]
         public static extern int DsRoleGetPrimaryDomainInformation(
             [MarshalAs(UnmanagedType.LPTStr)] string lpServer,
             [In] DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
@@ -467,7 +467,7 @@ namespace System.DirectoryServices.AccountManagement
           PVOID Buffer
         );
         */
-        [DllImport(ExternDll.Dsrole)]
+        [DllImport(Interop.Libraries.Dsrole)]
         public static extern int DsRoleFreeMemory(
             [In] IntPtr buffer);
 
@@ -479,7 +479,7 @@ namespace System.DirectoryServices.AccountManagement
             ULONG Flags,
             PDOMAIN_CONTROLLER_INFO* DomainControllerInfo
         );*/
-        [DllImport(ExternDll.Logoncli, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Logoncli, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
         public static extern int DsGetDcName(
             [In] string computerName,
             [In] string domainName,
@@ -505,10 +505,10 @@ namespace System.DirectoryServices.AccountManagement
             public int wki100_ver_minor;
         };
 
-        [DllImport(ExternDll.Wkscli, CallingConvention = CallingConvention.StdCall, EntryPoint = "NetWkstaGetInfo", CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Wkscli, CallingConvention = CallingConvention.StdCall, EntryPoint = "NetWkstaGetInfo", CharSet = CharSet.Unicode)]
         public static extern int NetWkstaGetInfo(string server, int level, ref IntPtr buffer);
 
-        [DllImport(ExternDll.Netutils)]
+        [DllImport(Interop.Libraries.Netutils)]
         public static extern int NetApiBufferFree(
             [In] IntPtr buffer);
 
@@ -546,7 +546,7 @@ namespace System.DirectoryServices.AccountManagement
         [DllImport(Interop.Libraries.Kernel32)]
         public static extern IntPtr LocalFree(IntPtr ptr);
 
-        [DllImport(ExternDll.Credui, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Credui, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode)]
         public static extern unsafe int CredUIParseUserName(
             string pszUserName,
             char* pszUser,
@@ -570,7 +570,7 @@ namespace System.DirectoryServices.AccountManagement
             public static int AUTHZ_VALID_RM_INIT_FLAGS = (AUTHZ_RM_FLAG_NO_AUDIT | AUTHZ_RM_FLAG_INITIALIZE_UNDER_IMPERSONATION);
         }
 
-        [DllImport(ExternDll.Authz, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzInitializeResourceManager", CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Authz, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzInitializeResourceManager", CharSet = CharSet.Unicode)]
         public static extern bool AuthzInitializeResourceManager(
                                         int flags,
                                         IntPtr pfnAccessCheck,
@@ -591,7 +591,7 @@ namespace System.DirectoryServices.AccountManagement
             PAUTHZ_CLIENT_CONTEXT_HANDLE pAuthzClientContext
         );
         */
-        [DllImport(ExternDll.Authz, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzInitializeContextFromSid", CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Authz, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzInitializeContextFromSid", CharSet = CharSet.Unicode)]
         public static extern bool AuthzInitializeContextFromSid(
                                         int Flags,
                                         IntPtr UserSid,
@@ -603,7 +603,7 @@ namespace System.DirectoryServices.AccountManagement
                                         );
 
         /*
-                [DllImport(ExternDll.Authz, SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzInitializeContextFromToken", CharSet=CharSet.Unicode)]
+                [DllImport(Interop.Libraries.Authz, SetLastError=true, CallingConvention=CallingConvention.StdCall, EntryPoint="AuthzInitializeContextFromToken", CharSet=CharSet.Unicode)]
                 static extern public bool AuthzInitializeContextFromToken(
                                                 int Flags,
                                                 IntPtr TokenHandle,
@@ -614,7 +614,7 @@ namespace System.DirectoryServices.AccountManagement
                                                 out IntPtr pAuthzClientContext
                                                 );
         */
-        [DllImport(ExternDll.Authz, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzGetInformationFromContext", CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Authz, SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzGetInformationFromContext", CharSet = CharSet.Unicode)]
         public static extern bool AuthzGetInformationFromContext(
                                         IntPtr hAuthzClientContext,
                                         int InfoClass,
@@ -623,12 +623,12 @@ namespace System.DirectoryServices.AccountManagement
                                         IntPtr Buffer
                                         );
 
-        [DllImport(ExternDll.Authz, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzFreeContext", CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Authz, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzFreeContext", CharSet = CharSet.Unicode)]
         public static extern bool AuthzFreeContext(
                                         IntPtr AuthzClientContext
                                         );
 
-        [DllImport(ExternDll.Authz, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzFreeResourceManager", CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Authz, CallingConvention = CallingConvention.StdCall, EntryPoint = "AuthzFreeResourceManager", CharSet = CharSet.Unicode)]
         public static extern bool AuthzFreeResourceManager(
                                         IntPtr rm
                                         );

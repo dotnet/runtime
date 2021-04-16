@@ -642,23 +642,23 @@ namespace System.DirectoryServices.ActiveDirectory
         [DllImport(global::Interop.Libraries.Kernel32, EntryPoint = "LocalFree")]
         public static extern int LocalFree(IntPtr mem);
 
-        [DllImport(ExternDll.Activeds, EntryPoint = "ADsEncodeBinaryData", CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Activeds, EntryPoint = "ADsEncodeBinaryData", CharSet = CharSet.Unicode)]
         public static extern int ADsEncodeBinaryData(byte[] data, int length, ref IntPtr result);
 
-        [DllImport(ExternDll.Activeds, EntryPoint = "FreeADsMem")]
+        [DllImport(global::Interop.Libraries.Activeds, EntryPoint = "FreeADsMem")]
         public static extern bool FreeADsMem(IntPtr pVoid);
 
-        [DllImport(ExternDll.Netapi32, EntryPoint = "DsGetSiteNameW", CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetSiteNameW", CharSet = CharSet.Unicode)]
         public static extern int DsGetSiteName(string? dcName, ref IntPtr ptr);
 
         public delegate int DsListDomainsInSiteW(IntPtr handle, [MarshalAs(UnmanagedType.LPWStr)] string site, ref IntPtr info);
 
         public delegate void DsFreeNameResultW(IntPtr result);
 
-        [DllImport(ExternDll.Netapi32, EntryPoint = "DsEnumerateDomainTrustsW", CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsEnumerateDomainTrustsW", CharSet = CharSet.Unicode)]
         public static extern int DsEnumerateDomainTrustsW(string serverName, int flags, out IntPtr domains, out int count);
 
-        [DllImport(ExternDll.Netapi32, EntryPoint = "NetApiBufferFree")]
+        [DllImport(global::Interop.Libraries.Netapi32, EntryPoint = "NetApiBufferFree")]
         public static extern int NetApiBufferFree(IntPtr buffer);
 
         [DllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LogonUserW", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -706,7 +706,7 @@ namespace System.DirectoryServices.ActiveDirectory
         [DllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaDeleteTrustedDomain")]
         public static extern int LsaDeleteTrustedDomain(PolicySafeHandle handle, IntPtr pSid);
 
-        [DllImport(ExternDll.Netapi32, EntryPoint = "I_NetLogonControl2", CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Netapi32, EntryPoint = "I_NetLogonControl2", CharSet = CharSet.Unicode)]
         public static extern int I_NetLogonControl2(string serverName, int FunctionCode, int QueryLevel, IntPtr data, out IntPtr buffer);
 
         [DllImport(global::Interop.Libraries.Kernel32, EntryPoint = "GetSystemTimeAsFileTime")]
@@ -749,13 +749,13 @@ namespace System.DirectoryServices.ActiveDirectory
           PBYTE* Buffer
         ); */
 
-        [DllImport(ExternDll.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsRoleGetPrimaryDomainInformation", CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsRoleGetPrimaryDomainInformation", CharSet = CharSet.Unicode)]
         public static extern int DsRoleGetPrimaryDomainInformation(
             [MarshalAs(UnmanagedType.LPTStr)] string lpServer,
             [In] DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
             out IntPtr Buffer);
 
-        [DllImport(ExternDll.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsRoleGetPrimaryDomainInformation", CharSet = CharSet.Unicode)]
+        [DllImport(global::Interop.Libraries.Netapi32, CallingConvention = CallingConvention.StdCall, EntryPoint = "DsRoleGetPrimaryDomainInformation", CharSet = CharSet.Unicode)]
         public static extern int DsRoleGetPrimaryDomainInformation(
             [In] IntPtr lpServer,
             [In] DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
@@ -840,7 +840,7 @@ namespace System.DirectoryServices.ActiveDirectory
           PVOID Buffer
         );
         */
-        [DllImport(ExternDll.Netapi32)]
+        [DllImport(global::Interop.Libraries.Netapi32)]
         public static extern int DsRoleFreeMemory(
             [In] IntPtr buffer);
     }
