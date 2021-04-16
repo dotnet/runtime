@@ -110,7 +110,7 @@ namespace System.IO.Strategies
             _reusableValueTaskSource = new ValueTaskSource(this, buffer);
         }
 
-        private void TryToReuse(ValueTaskSource source) => Interlocked.CompareExchange(ref _reusableValueTaskSource, null, source);
+        private void TryToReuse(ValueTaskSource source) => Interlocked.CompareExchange(ref _reusableValueTaskSource, source, null);
 
         public override int Read(byte[] buffer, int offset, int count)
         {
