@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void Export()
         {
             try
@@ -80,7 +80,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportDataContract(DataContract dataContract)
         {
             if (dataContract.IsBuiltInDataContract)
@@ -121,7 +121,7 @@ namespace System.Runtime.Serialization
             return topLevelElement;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportClassDataContract(ClassDataContract classDataContract, XmlSchema schema)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();
@@ -252,7 +252,7 @@ namespace System.Runtime.Serialization
             return actualTypeElement;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private XmlElement ExportGenericInfo(Type clrType, string elementName, string elementNs)
         {
             Type? itemType;
@@ -345,7 +345,7 @@ namespace System.Runtime.Serialization
             return null;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportCollectionDataContract(CollectionDataContract collectionDataContract, XmlSchema schema)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();
@@ -447,7 +447,7 @@ namespace System.Runtime.Serialization
             return isFlags ? (long)Math.Pow(2, index) : index;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportISerializableDataContract(ClassDataContract dataContract, XmlSchema schema)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();
@@ -487,7 +487,7 @@ namespace System.Runtime.Serialization
             return extension;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportXmlDataContract(XmlDataContract dataContract)
         {
             XmlQualifiedName? typeQName;
@@ -574,7 +574,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static void GetXmlTypeInfo(Type type, out XmlQualifiedName stableName, out XmlSchemaType? xsdType, out bool hasRoot)
         {
             if (IsSpecialXmlType(type, out stableName!, out xsdType, out hasRoot))
@@ -586,7 +586,7 @@ namespace System.Runtime.Serialization
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidXmlDataContractName, DataContract.GetClrTypeFullName(type))));
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static bool InvokeSchemaProviderMethod(Type clrType, XmlSchemaSet schemas, out XmlQualifiedName stableName, out XmlSchemaType? xsdType, out bool hasRoot)
         {
             xsdType = null;

@@ -14,14 +14,14 @@ namespace System.Runtime.Serialization.Json
     {
         private readonly JsonClassDataContractCriticalHelper _helper;
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonClassDataContract(ClassDataContract traditionalDataContract)
             : base(new JsonClassDataContractCriticalHelper(traditionalDataContract))
         {
             _helper = (base.Helper as JsonClassDataContractCriticalHelper)!;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private JsonFormatClassReaderDelegate CreateJsonFormatReaderDelegate()
         {
             return new ReflectionJsonClassReader(TraditionalClassDataContract).ReflectionReadClass;
@@ -29,7 +29,7 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatClassReaderDelegate JsonFormatReaderDelegate
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (_helper.JsonFormatReaderDelegate == null)
@@ -57,7 +57,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private JsonFormatClassWriterDelegate CreateJsonFormatWriterDelegate()
         {
             return new ReflectionJsonFormatWriter().ReflectionWriteClass;
@@ -65,7 +65,7 @@ namespace System.Runtime.Serialization.Json
 
         internal JsonFormatClassWriterDelegate JsonFormatWriterDelegate
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (_helper.JsonFormatWriterDelegate == null)
@@ -99,7 +99,7 @@ namespace System.Runtime.Serialization.Json
 
         private ClassDataContract TraditionalClassDataContract => _helper.TraditionalClassDataContract;
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             jsonReader.Read();
@@ -108,7 +108,7 @@ namespace System.Runtime.Serialization.Json
             return o;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             Debug.Assert(context != null);
@@ -124,7 +124,7 @@ namespace System.Runtime.Serialization.Json
             private readonly ClassDataContract _traditionalClassDataContract;
             private readonly string _typeName;
 
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public JsonClassDataContractCriticalHelper(ClassDataContract traditionalDataContract)
                 : base(traditionalDataContract)
             {

@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization
 
         public XmlQualifiedName? BaseContractName { get; set; }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal EnumDataContract(Type type) : base(new EnumDataContractCriticalHelper(type))
         {
             _helper = (base.Helper as EnumDataContractCriticalHelper)!;
@@ -98,7 +98,7 @@ namespace System.Runtime.Serialization
                 s_nameToType.Add(stableName, type);
             }
 
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal EnumDataContractCriticalHelper(
                 [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
                 Type type) : base(type)
@@ -360,13 +360,13 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             WriteEnumValue(xmlWriter, obj);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override object ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             object obj = ReadEnumValue(xmlReader);

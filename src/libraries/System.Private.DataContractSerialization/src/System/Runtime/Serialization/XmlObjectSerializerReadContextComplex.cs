@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization
             get { return _mode; }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? InternalDeserialize(XmlReaderDelegator xmlReader, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle, string name, string ns)
         {
             if (_mode == SerializationMode.SharedContract)
@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? InternalDeserialize(XmlReaderDelegator xmlReader, Type declaredType, string name, string ns)
         {
             if (_mode == SerializationMode.SharedContract)
@@ -64,7 +64,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? InternalDeserialize(XmlReaderDelegator xmlReader, Type declaredType, DataContract? dataContract, string? name, string? ns)
         {
             if (_mode == SerializationMode.SharedContract)
@@ -80,7 +80,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private object? InternalDeserializeInSharedTypeMode(XmlReaderDelegator xmlReader, int declaredTypeID, Type declaredType, string? name, string? ns)
         {
             Debug.Assert(attributes != null);
@@ -123,7 +123,7 @@ namespace System.Runtime.Serialization
             return ReadDataContractValue(dataContract, xmlReader);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private object? InternalDeserializeWithSurrogate(XmlReaderDelegator xmlReader, Type declaredType, DataContract? surrogateDataContract, string? name, string? ns)
         {
             Debug.Assert(_serializationSurrogateProvider != null);
@@ -150,7 +150,7 @@ namespace System.Runtime.Serialization
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NetDataContractSerializer);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract? ResolveDataContractInSharedTypeMode(string assemblyName, string typeName, out Assembly assembly, out Type type)
         {
             type = ResolveDataContractTypeInSharedTypeMode(assemblyName, typeName, out assembly);
@@ -162,7 +162,7 @@ namespace System.Runtime.Serialization
             return null;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override DataContract? ResolveDataContractFromTypeName()
         {
             Debug.Assert(attributes != null);
@@ -183,7 +183,7 @@ namespace System.Runtime.Serialization
             return null;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void CheckIfTypeSerializable(Type memberType, bool isMemberTypeSerializable)
         {
             if (_serializationSurrogateProvider != null)
@@ -199,7 +199,7 @@ namespace System.Runtime.Serialization
             base.CheckIfTypeSerializable(memberType, isMemberTypeSerializable);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override Type GetSurrogatedType(Type type)
         {
             if (_serializationSurrogateProvider == null)

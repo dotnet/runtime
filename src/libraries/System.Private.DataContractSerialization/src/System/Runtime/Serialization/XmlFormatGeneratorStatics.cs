@@ -117,7 +117,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_getItemContractMethod;
         internal static MethodInfo GetItemContractMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getItemContractMethod == null)
@@ -160,7 +160,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_getUninitializedObjectMethod;
         internal static MethodInfo GetUninitializedObjectMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getUninitializedObjectMethod == null)
@@ -208,7 +208,7 @@ namespace System.Runtime.Serialization
         private static ConstructorInfo? s_hashtableCtor;
         internal static ConstructorInfo HashtableCtor
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_hashtableCtor == null)
@@ -349,7 +349,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_internalDeserializeMethod;
         internal static MethodInfo InternalDeserializeMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_internalDeserializeMethod == null)
@@ -378,7 +378,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_getMemberIndexMethod;
         internal static MethodInfo GetMemberIndexMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getMemberIndexMethod == null)
@@ -393,7 +393,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_getMemberIndexWithRequiredMembersMethod;
         internal static MethodInfo GetMemberIndexWithRequiredMembersMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getMemberIndexWithRequiredMembersMethod == null)
@@ -436,7 +436,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_readIfNullOrRefMethod;
         internal static MethodInfo ReadIfNullOrRefMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_readIfNullOrRefMethod == null)
@@ -633,7 +633,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_readSerializationInfoMethod;
         internal static MethodInfo ReadSerializationInfoMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_readSerializationInfoMethod == null)
@@ -662,7 +662,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_internalSerializeReferenceMethod;
         internal static MethodInfo InternalSerializeReferenceMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_internalSerializeReferenceMethod == null)
@@ -677,7 +677,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_internalSerializeMethod;
         internal static MethodInfo InternalSerializeMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_internalSerializeMethod == null)
@@ -692,7 +692,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_writeNullMethod;
         internal static MethodInfo WriteNullMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_writeNullMethod == null)
@@ -812,7 +812,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_writeISerializableMethod;
         internal static MethodInfo WriteISerializableMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_writeISerializableMethod == null)
@@ -842,7 +842,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_writeExtensionDataMethod;
         internal static MethodInfo WriteExtensionDataMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_writeExtensionDataMethod == null)
@@ -856,7 +856,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_writeXmlValueMethod;
         internal static MethodInfo WriteXmlValueMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_writeXmlValueMethod == null)
@@ -871,7 +871,7 @@ namespace System.Runtime.Serialization
         private static MethodInfo? s_readXmlValueMethod;
         internal static MethodInfo ReadXmlValueMethod
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_readXmlValueMethod == null)
@@ -932,7 +932,7 @@ namespace System.Runtime.Serialization
         private static PropertyInfo? s_childElementNamespacesProperty;
         internal static PropertyInfo ChildElementNamespacesProperty
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_childElementNamespacesProperty == null)
@@ -961,7 +961,7 @@ namespace System.Runtime.Serialization
         private static PropertyInfo? s_childElementNamespaceProperty;
         internal static PropertyInfo ChildElementNamespaceProperty
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_childElementNamespaceProperty == null)

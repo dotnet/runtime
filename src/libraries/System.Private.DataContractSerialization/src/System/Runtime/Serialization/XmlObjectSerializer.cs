@@ -17,14 +17,14 @@ namespace System.Runtime.Serialization
 
     public abstract class XmlObjectSerializer
     {
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public abstract void WriteStartObject(XmlDictionaryWriter writer, object? graph);
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public abstract void WriteObjectContent(XmlDictionaryWriter writer, object? graph);
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public abstract void WriteEndObject(XmlDictionaryWriter writer);
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual void WriteObject(Stream stream, object? graph)
         {
             CheckNull(stream, nameof(stream));
@@ -33,47 +33,47 @@ namespace System.Runtime.Serialization
             writer.Flush();
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual void WriteObject(XmlWriter writer, object? graph)
         {
             CheckNull(writer, nameof(writer));
             WriteObject(XmlDictionaryWriter.CreateDictionaryWriter(writer), graph);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual void WriteStartObject(XmlWriter writer, object? graph)
         {
             CheckNull(writer, nameof(writer));
             WriteStartObject(XmlDictionaryWriter.CreateDictionaryWriter(writer), graph);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual void WriteObjectContent(XmlWriter writer, object? graph)
         {
             CheckNull(writer, nameof(writer));
             WriteObjectContent(XmlDictionaryWriter.CreateDictionaryWriter(writer), graph);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual void WriteEndObject(XmlWriter writer)
         {
             CheckNull(writer, nameof(writer));
             WriteEndObject(XmlDictionaryWriter.CreateDictionaryWriter(writer));
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual void WriteObject(XmlDictionaryWriter writer, object? graph)
         {
             WriteObjectHandleExceptions(new XmlWriterDelegator(writer), graph);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void WriteObjectHandleExceptions(XmlWriterDelegator writer, object? graph)
         {
             WriteObjectHandleExceptions(writer, graph, null);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void WriteObjectHandleExceptions(XmlWriterDelegator writer, object? graph, DataContractResolver? dataContractResolver)
         {
             try
@@ -95,14 +95,14 @@ namespace System.Runtime.Serialization
 
         internal virtual DataContractDictionary? KnownDataContracts
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 return null;
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void InternalWriteObject(XmlWriterDelegator writer, object? graph)
         {
             WriteStartObject(writer.Writer, graph);
@@ -110,32 +110,32 @@ namespace System.Runtime.Serialization
             WriteEndObject(writer.Writer);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void InternalWriteObject(XmlWriterDelegator writer, object? graph, DataContractResolver? dataContractResolver)
         {
             InternalWriteObject(writer, graph);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void InternalWriteStartObject(XmlWriterDelegator writer, object? graph)
         {
             DiagnosticUtility.DebugAssert("XmlObjectSerializer.InternalWriteStartObject should never get called");
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
         }
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void InternalWriteObjectContent(XmlWriterDelegator writer, object? graph)
         {
             DiagnosticUtility.DebugAssert("XmlObjectSerializer.InternalWriteObjectContent should never get called");
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
         }
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void InternalWriteEndObject(XmlWriterDelegator writer)
         {
             DiagnosticUtility.DebugAssert("XmlObjectSerializer.InternalWriteEndObject should never get called");
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void WriteStartObjectHandleExceptions(XmlWriterDelegator writer, object? graph)
         {
             try
@@ -153,7 +153,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void WriteObjectContentHandleExceptions(XmlWriterDelegator writer, object? graph)
         {
             try
@@ -175,7 +175,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void WriteEndObjectHandleExceptions(XmlWriterDelegator writer)
         {
             try
@@ -239,72 +239,72 @@ namespace System.Runtime.Serialization
                 || (contract.Name.Value == declaredContract.Name.Value && contract.Namespace.Value == declaredContract.Namespace.Value);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual object? ReadObject(Stream stream)
         {
             CheckNull(stream, nameof(stream));
             return ReadObject(XmlDictionaryReader.CreateTextReader(stream, XmlDictionaryReaderQuotas.Max));
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual object? ReadObject(XmlReader reader)
         {
             CheckNull(reader, nameof(reader));
             return ReadObject(XmlDictionaryReader.CreateDictionaryReader(reader));
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual object? ReadObject(XmlDictionaryReader reader)
         {
             return ReadObjectHandleExceptions(new XmlReaderDelegator(reader), true /*verifyObjectName*/);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual object? ReadObject(XmlReader reader, bool verifyObjectName)
         {
             CheckNull(reader, nameof(reader));
             return ReadObject(XmlDictionaryReader.CreateDictionaryReader(reader), verifyObjectName);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public abstract object? ReadObject(XmlDictionaryReader reader, bool verifyObjectName);
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual bool IsStartObject(XmlReader reader)
         {
             CheckNull(reader, nameof(reader));
             return IsStartObject(XmlDictionaryReader.CreateDictionaryReader(reader));
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public abstract bool IsStartObject(XmlDictionaryReader reader);
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual object? InternalReadObject(XmlReaderDelegator reader, bool verifyObjectName)
         {
             return ReadObject(reader.UnderlyingReader, verifyObjectName);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual object? InternalReadObject(XmlReaderDelegator reader, bool verifyObjectName, DataContractResolver? dataContractResolver)
         {
             return InternalReadObject(reader, verifyObjectName);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual bool InternalIsStartObject(XmlReaderDelegator reader)
         {
             DiagnosticUtility.DebugAssert("XmlObjectSerializer.InternalIsStartObject should never get called");
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal object? ReadObjectHandleExceptions(XmlReaderDelegator reader, bool verifyObjectName)
         {
             return ReadObjectHandleExceptions(reader, verifyObjectName, null);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal object? ReadObjectHandleExceptions(XmlReaderDelegator reader, bool verifyObjectName, DataContractResolver? dataContractResolver)
         {
             try
@@ -322,7 +322,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal bool IsStartObjectHandleExceptions(XmlReaderDelegator reader)
         {
             try
@@ -350,7 +350,7 @@ namespace System.Runtime.Serialization
             return (reader.MoveToElement() || reader.IsStartElement());
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal bool IsRootElement(XmlReaderDelegator reader, DataContract contract, XmlDictionaryString? name, XmlDictionaryString? ns)
         {
             reader.MoveToElement();

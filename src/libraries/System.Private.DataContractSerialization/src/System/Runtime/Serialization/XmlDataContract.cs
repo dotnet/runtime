@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization
     {
         private readonly XmlDataContractCriticalHelper _helper;
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal XmlDataContract(Type type) : base(new XmlDataContractCriticalHelper(type))
         {
             _helper = (base.Helper as XmlDataContractCriticalHelper)!;
@@ -30,7 +30,7 @@ namespace System.Runtime.Serialization
 
         public override DataContractDictionary? KnownDataContracts
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             { return _helper.KnownDataContracts; }
 
@@ -86,7 +86,7 @@ namespace System.Runtime.Serialization
 
         internal CreateXmlSerializableDelegate CreateXmlSerializableDelegate
         {
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 // We create XmlSerializableDelegate via CodeGen when CodeGen is enabled;
@@ -127,7 +127,7 @@ namespace System.Runtime.Serialization
             private CreateXmlSerializableDelegate? _createXmlSerializable;
             private XmlSchemaType? _xsdType;
 
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal XmlDataContractCriticalHelper(
                 [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
                 Type type) : base(type)
@@ -175,7 +175,7 @@ namespace System.Runtime.Serialization
 
             internal override DataContractDictionary? KnownDataContracts
             {
-                [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+                [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 get
                 {
                     if (!_isKnownTypeAttributeChecked && UnderlyingType != null)
@@ -255,7 +255,7 @@ namespace System.Runtime.Serialization
             return ctor;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal CreateXmlSerializableDelegate GenerateCreateXmlSerializableDelegate()
         {
             Type type = this.UnderlyingType;
@@ -372,7 +372,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             if (context == null)
@@ -381,7 +381,7 @@ namespace System.Runtime.Serialization
                 context.WriteIXmlSerializable(xmlWriter, obj);
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             object? o;

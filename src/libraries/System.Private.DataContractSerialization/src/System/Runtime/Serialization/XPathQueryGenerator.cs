@@ -19,14 +19,14 @@ namespace System.Runtime.Serialization
         private const string XPathSeparator = "/";
         private const string NsSeparator = ":";
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static string CreateFromDataContractSerializer(Type type, MemberInfo[] pathToMember, out XmlNamespaceManager namespaces)
         {
             return CreateFromDataContractSerializer(type, pathToMember, null, out namespaces);
         }
 
         // Here you can provide your own root element Xpath which will replace the Xpath of the top level element
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static string CreateFromDataContractSerializer(Type type, MemberInfo[] pathToMember, StringBuilder? rootElementXpath, out XmlNamespaceManager namespaces)
         {
             if (type == null)
@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization
             return context.XPath;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static DataContract ProcessDataContract(DataContract contract, ExportContext context, MemberInfo memberNode)
         {
             if (contract is ClassDataContract)
@@ -70,7 +70,7 @@ namespace System.Runtime.Serialization
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound));
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static DataContract ProcessClassDataContract(ClassDataContract contract, ExportContext context, MemberInfo memberNode)
         {
             string prefix = context.SetNamespace(contract.Namespace!.Value);

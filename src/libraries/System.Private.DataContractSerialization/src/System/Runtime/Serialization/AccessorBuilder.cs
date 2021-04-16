@@ -26,9 +26,9 @@ namespace System.Runtime.Serialization
         private static readonly MethodInfo s_make = typeof(FastInvokerBuilder).GetMethod(nameof(Make), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-            Justification = "The call to MakeGenericMethod is safe due to the fact that FastInvokerBuilder.Make<T> is not annotated.")]
+            Justification = "The call to MakeGenericMethod is safe due to the fact that we are preserving the constructors of type wich is what Make() is doing.")]
         public static Func<object> GetMakeNewInstanceFunc(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             Type type)
         {
             Func<object> make = s_make.MakeGenericMethod(type).CreateDelegate<Func<object>>();
