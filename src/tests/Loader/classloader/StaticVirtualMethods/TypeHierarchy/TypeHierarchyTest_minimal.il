@@ -7,7 +7,7 @@
 .assembly extern System.Runtime {}
 .assembly extern TypeHierarchyCommonCs {}
 .assembly TypeHierarchyTest {}
-.class public abstract auto ansi InterfaceScenario1
+.class interface public abstract auto ansi InterfaceScenario1
 {
   .method public newslot virtual abstract static int32 Method() cil managed noinlining
   {
@@ -15,11 +15,11 @@
 } // end of class InterfaceScenario1
 .class public auto ansi BaseScenario1
        extends [System.Runtime]System.Object
-       implements class InterfaceScenario1
+       implements InterfaceScenario1
 {
   .method public static int32 Method() cil managed noinlining
   {
-    .override method int32 class InterfaceScenario1::Method()
+    .override method int32 InterfaceScenario1::Method()
     .locals init (int32 V_O)
     ldloca.s 0
     initobj int32
@@ -28,19 +28,19 @@
   } // end of method Method
 } // end of class BaseScenario1
 .class public auto ansi DerivedScenario1
-       extends class BaseScenario1
+       extends BaseScenario1
 {
-    .override method int32 class InterfaceScenario1::Method() with method int32 class BaseScenario1::Method()
 } // end of class DerivedScenario1
 .class public auto ansi TestEntrypoint
        extends [System.Runtime]System.Object
 {
   .method public static void Test_Scenario1() cil managed noinlining
   {
-    constrained. class DerivedScenario1
-    call int32 class InterfaceScenario1::Method()
-    ldstr ""
-    ldstr ""
+    constrained. DerivedScenario1
+    call int32 InterfaceScenario1::Method()
+    pop
+    ldstr "Scenario1"
+    ldnull
     call void [TypeHierarchyCommonCs]Statics::CheckForFailure(string,string)
     ret
   } // end of method Test_Scenario1

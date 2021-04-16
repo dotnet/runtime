@@ -31,7 +31,7 @@
 }
 .class public auto ansi NonGenericClass
        extends [System.Runtime]System.Object
-       implements class IFaceNonGeneric,
+       implements IFaceNonGeneric,
                   class IFaceGeneric`1<string>,
                   class IFaceGeneric`1<object>,
                   class IFaceCuriouslyRecurringGeneric`1<class NonGenericClass>
@@ -46,7 +46,7 @@
   }
   .method public static void 'IFaceNonGeneric.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceNonGeneric::NormalMethod()
+    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::NormalMethod()
     ldtoken class NonGenericClass
     call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.NormalMethod'"
@@ -56,7 +56,7 @@
   } // end of method 'IFaceNonGeneric.NormalMethod'
   .method public static void 'IFaceNonGeneric.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceNonGeneric::GenericMethod()
+    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::GenericMethod()
     ldtoken class NonGenericClass
     call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.GenericMethod'"
@@ -148,14 +148,14 @@
 } // end of class NonGenericClass
 .class public auto ansi sealed NonGenericValuetype
        extends [System.Runtime]System.ValueType
-       implements class IFaceNonGeneric,
+       implements IFaceNonGeneric,
                   class IFaceGeneric`1<string>,
                   class IFaceGeneric`1<object>,
                   class IFaceCuriouslyRecurringGeneric`1<class NonGenericValuetype>
 {
   .method public static void 'IFaceNonGeneric.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceNonGeneric::NormalMethod()
+    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::NormalMethod()
     ldtoken valuetype NonGenericValuetype
     call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.NormalMethod'"
@@ -165,7 +165,7 @@
   } // end of method 'IFaceNonGeneric.NormalMethod'
   .method public static void 'IFaceNonGeneric.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceNonGeneric::GenericMethod()
+    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::GenericMethod()
     ldtoken valuetype NonGenericValuetype
     call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.GenericMethod'"
@@ -257,7 +257,7 @@
 } // end of class NonGenericValuetype
 .class public auto ansi GenericClass`1<T>
        extends [System.Runtime]System.Object
-       implements class IFaceNonGeneric,
+       implements IFaceNonGeneric,
                   class IFaceGeneric`1<string>,
                   class IFaceGeneric`1<object>,
                   class IFaceCuriouslyRecurringGeneric`1<class GenericClass`1<!0>>
@@ -272,7 +272,7 @@
   }
   .method public static void 'IFaceNonGeneric.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceNonGeneric::NormalMethod()
+    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::NormalMethod()
     ldtoken class GenericClass`1<!0>
     call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.NormalMethod'"
@@ -282,7 +282,7 @@
   } // end of method 'IFaceNonGeneric.NormalMethod'
   .method public static void 'IFaceNonGeneric.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceNonGeneric::GenericMethod()
+    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::GenericMethod()
     ldtoken class GenericClass`1<!0>
     call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.GenericMethod'"
@@ -374,14 +374,14 @@
 } // end of class GenericClass`1
 .class public auto ansi sealed GenericValuetype`1<T>
        extends [System.Runtime]System.ValueType
-       implements class IFaceNonGeneric,
+       implements IFaceNonGeneric,
                   class IFaceGeneric`1<string>,
                   class IFaceGeneric`1<object>,
                   class IFaceCuriouslyRecurringGeneric`1<class GenericValuetype`1<!0>>
 {
   .method public static void 'IFaceNonGeneric.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceNonGeneric::NormalMethod()
+    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::NormalMethod()
     ldtoken valuetype GenericValuetype`1<!0>
     call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.NormalMethod'"
@@ -391,7 +391,7 @@
   } // end of method 'IFaceNonGeneric.NormalMethod'
   .method public static void 'IFaceNonGeneric.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementations]IFaceNonGeneric::GenericMethod()
+    .override method void [GenericContextCommonAndImplementations]IFaceNonGeneric::GenericMethod()
     ldtoken valuetype GenericValuetype`1<!0>
     call string [GenericContextCommonCs]Statics::MakeTypeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGeneric.GenericMethod'"

@@ -202,6 +202,18 @@ namespace VirtualStaticInterfaceMethodTestGen
             public string MethodFlags;
         }
 
+        static string ToILDasmTypeName(string typeName, string instantiation)
+        {
+            if (instantiation != "")
+            {
+                return $"class {typeName}{instantiation}";
+            }
+            else
+            {
+                return typeName;
+            }
+        }
+
         static void EmitMethod(TextWriter tw, MethodDesc md)
         {
             tw.WriteLine($"  .method { md.MethodFlags} {md.ReturnType} {md.Name}({md.Arguments}) cil managed noinlining");
@@ -247,17 +259,17 @@ namespace VirtualStaticInterfaceMethodTestGen
 
                 if (constrainedTypeDefinition.ToString().StartsWith("Generic"))
                 {
-                    GenerateImpl(implClass.Name + "<!0>", "IFaceNonGeneric", false);
-                    GenerateImpl(implClass.Name + "<!0>", "IFaceGeneric`1<string>", true);
-                    GenerateImpl(implClass.Name + "<!0>", "IFaceGeneric`1<object>", true);
-                    GenerateImpl(implClass.Name + "<!0>", $"IFaceCuriouslyRecurringGeneric`1<class {implClass.Name}<!0>>", true);
+                    GenerateImpl(implClass.Name + "<!0>", "IFaceNonGeneric", "", false);
+                    GenerateImpl(implClass.Name + "<!0>", "IFaceGeneric`1", "<string>", true);
+                    GenerateImpl(implClass.Name + "<!0>", "IFaceGeneric`1", "<object>", true);
+                    GenerateImpl(implClass.Name + "<!0>", $"IFaceCuriouslyRecurringGeneric`1", $"<class {implClass.Name}<!0>>", true);
                 }
                 else
                 {
-                    GenerateImpl(implClass.Name, "IFaceNonGeneric", false);
-                    GenerateImpl(implClass.Name, "IFaceGeneric`1<string>", true);
-                    GenerateImpl(implClass.Name, "IFaceGeneric`1<object>", true);
-                    GenerateImpl(implClass.Name, $"IFaceCuriouslyRecurringGeneric`1<class {implClass.Name}>", true);
+                    GenerateImpl(implClass.Name, "IFaceNonGeneric", "", false);
+                    GenerateImpl(implClass.Name, "IFaceGeneric`1", "<string>", true);
+                    GenerateImpl(implClass.Name, "IFaceGeneric`1", "<object>", true);
+                    GenerateImpl(implClass.Name, $"IFaceCuriouslyRecurringGeneric`1", $"<class {implClass.Name}>", true);
                 }
 
                 EmitClass(tw, implClass);
@@ -275,23 +287,23 @@ namespace VirtualStaticInterfaceMethodTestGen
                 tw.WriteLine(implsGenerated.ToString());
                 EmitEndClass(tw, implClass);
 
-                void GenerateImpl(string implType, string iface, bool isGeneric)
+                void GenerateImpl(string implType, string iface, string ifaceGenericArguments, bool isGeneric)
                 {
-                    interfacesImplemented.Add("class " + iface);
+                    interfacesImplemented.Add(ToILDasmTypeName(iface, ifaceGenericArguments));
 
                     MethodDesc implMethodDesc = new MethodDesc();
-                    implMethodDesc.Name = $"'{iface}.NormalMethod'";
+                    implMethodDesc.Name = $"'{iface}{ifaceGenericArguments}.NormalMethod'";
                     implMethodDesc.MethodFlags = "public static";
                     implMethodDesc.ReturnType = "void";
                     implMethodDesc.HasBody = true;
-                    implMethodDesc.MethodImpls = new string[] { $"method void class {ImplPrefix}{iface}::NormalMethod()" };
+                    implMethodDesc.MethodImpls = new string[] { $"method void {ToILDasmTypeName(ImplPrefix+iface, ifaceGenericArguments)}::NormalMethod()" };
 
                     EmitMethod(implsGenerated, implMethodDesc);
                     GenerateMethodBody(false);
                     EmitEndMethod(implsGenerated, implMethodDesc);
 
-                    implMethodDesc.Name = $"'{iface}.GenericMethod'<U>";
-                    implMethodDesc.MethodImpls = new string[] { $"method void class {ImplPrefix}{iface}::GenericMethod()" };
+                    implMethodDesc.Name = $"'{iface}{ifaceGenericArguments}.GenericMethod'<U>";
+                    implMethodDesc.MethodImpls = new string[] { $"method void {ToILDasmTypeName(ImplPrefix + iface, ifaceGenericArguments)}::GenericMethod()" };
                     EmitMethod(implsGenerated, implMethodDesc);
                     GenerateMethodBody(true);
                     EmitEndMethod(implsGenerated, implMethodDesc);

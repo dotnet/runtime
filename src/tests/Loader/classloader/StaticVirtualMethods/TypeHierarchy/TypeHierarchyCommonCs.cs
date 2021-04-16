@@ -4,7 +4,7 @@
 using System;
 using System.Text;
 
-static class Statics
+public static class Statics
 {
     public static string String;
     public static int Failures;
@@ -12,22 +12,30 @@ static class Statics
     public static volatile IntPtr FtnHolder;
     public static volatile Action ActionHolder;
 
-    public static void CheckForFailure(string scenario, string expectedResult)
+    public static void CheckForFailure(string scenario, string expectedResult, string actualResult)
     {
-        if (String != expectedResult)
+        if (expectedResult != actualResult)
         {
-            Console.WriteLine($"Scenario {scenario} failed");
+            Console.WriteLine($"Scenario {scenario} failed - expected {expectedResult ?? "<null>"}, got {actualResult ?? "<null>"}");
             Failures++;
         }
         else
         {
+            Console.WriteLine($"Scenario {scenario} succeeded ({expectedResult ?? "<null>"})");
             Successes++;
         }
     }
+
+    public static void CheckForFailure(string scenario, string expectedResult)
+    {
+        CheckForFailure(scenario, expectedResult, String);
+    }
+
     public static string MakeName(RuntimeTypeHandle t)
     {
         return MakeName(Type.GetTypeFromHandle(t));
     }
+
     public static int ReportResults()
     {
         Console.WriteLine($"{Successes} successes reported");
