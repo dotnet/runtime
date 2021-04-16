@@ -318,11 +318,11 @@ MachOModule::GetSymbolName(int index)
             m_reader.Trace("ERROR: Failed to read string table at %p\n", (void*)strtabAddress);
             break;
         }
-        result.append(1, c);
         if (c == '\0')
         {
             break;
         }
+        result.append(1, c);
         strtabAddress++;
     }
     return result.c_str();
