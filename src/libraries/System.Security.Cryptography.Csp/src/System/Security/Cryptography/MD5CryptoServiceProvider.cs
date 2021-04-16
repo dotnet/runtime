@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
@@ -19,8 +20,15 @@ namespace System.Security.Cryptography
 
         public override void Initialize()
         {
-            // Nothing to do here. We expect HashAlgorithm to invoke HashFinal() and Initialize() as a pair. This reflects the
-            // reality that our native crypto providers (e.g. CNG) expose hash finalization and object reinitialization as an atomic operation.
+            Span<byte> destination = stackalloc byte[HashSizeBits / 8];
+
+            if (!_incrementalHash.TryGetHashAndReset(destination, out _))
+            {
+                Debug.Fail("Reset expected a properly sized buffer.");
+                throw new CryptographicException();
+            }
+
+            CryptographicOperations.ZeroMemory(destination);
         }
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize) =>

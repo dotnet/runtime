@@ -44,7 +44,7 @@ namespace Internal.Cryptography
                 {
                     // If we got here, we're running on a downlevel OS (pre-Win8) that doesn't support reusable CNG hash objects. Fall back to creating a
                     // new HASH object each time.
-                    ResetHashObject();
+                    Reset();
                 }
                 else if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                 {
@@ -66,6 +66,8 @@ namespace Internal.Cryptography
             {
                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
             }
+
+            _running = true;
         }
 
         public override int FinalizeHashAndReset(Span<byte> destination)
@@ -79,7 +81,8 @@ namespace Internal.Cryptography
                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
             }
 
-            ResetHashObject();
+            _running = false;
+            Reset();
             return _hashSize;
         }
 
@@ -118,9 +121,9 @@ namespace Internal.Cryptography
 
         public sealed override int HashSizeInBytes => _hashSize;
 
-        private void ResetHashObject()
+        public void Reset()
         {
-            if (_reusable)
+            if (_reusable && !_running)
                 return;
             DestroyHash();
 
@@ -150,5 +153,6 @@ namespace Internal.Cryptography
         private readonly bool _reusable;
 
         private readonly int _hashSize;
+        private bool _running;
     }
 }
