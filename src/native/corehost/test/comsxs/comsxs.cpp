@@ -5,7 +5,6 @@
 #include <thread>
 #include <windows.h>
 #include <pal.h>
-#include "comsxs.h"
 
 #define IfFailRet(F) if (FAILED(hr = (F))) return hr
 
