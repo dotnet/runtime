@@ -716,12 +716,12 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     {
         if (createDotFile)
         {
-            fprintf(fgxFile, "    " FMT_BB " [label = \"" FMT_BB "\\n\\n", block->bbNum, block->bbNum);
+            fprintf(fgxFile, "    " FMT_BB " [label = \"" FMT_BB, block->bbNum, block->bbNum);
 
             // "Raw" Profile weight
             if (block->hasProfileWeight())
             {
-                fprintf(fgxFile, "%7.2f", ((double)block->getBBWeight(this)) / BB_UNITY_WEIGHT);
+                fprintf(fgxFile, "\\n\\n%7.2f", ((double)block->getBBWeight(this)) / BB_UNITY_WEIGHT);
             }
 
             // end of block label
