@@ -15,7 +15,7 @@
       <_Dotnet>$(RepoRoot)dotnet$(_ScriptExt)</_Dotnet>
       <_AOTFlag Condition="'$(RunAOTCompilation)' != ''">/p:RunAOTCompilation=$(RunAOTCompilation)</_AOTFlag>
     </PropertyGroup>
-    <Exec Command="$(_Dotnet) publish /p:TargetArchitecture=wasm /p:TargetOS=Browser $(_AOTFlag) $(_SampleProject)" />
+    <Exec Command="$(_Dotnet) publish /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=Browser $(_AOTFlag) $(_SampleProject)" />
   </Target>
   <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree">
     <Exec Command="cd bin/$(Configuration)/AppBundle &amp;&amp; v8 --expose_wasm runtime.js -- $(DOTNET_MONO_LOG_LEVEL) --run Wasm.Console.Sample.dll" IgnoreExitCode="true" />

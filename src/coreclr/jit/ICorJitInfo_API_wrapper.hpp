@@ -12,6 +12,15 @@
 // clang-format off
 /**********************************************************************************/
 
+bool WrapICorJitInfo::isJitIntrinsic(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    API_ENTER(isJitIntrinsic);
+    bool temp = wrapHnd->isJitIntrinsic(ftn);
+    API_LEAVE(isJitIntrinsic);
+    return temp;
+}
+
 uint32_t WrapICorJitInfo::getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn)
 {

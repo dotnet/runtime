@@ -8,10 +8,10 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Strategies
 {
-    internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy, IFileStreamCompletionSourceStrategy
+    internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
-        private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
-        private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
+        private PreAllocatedOverlapped? _preallocatedOverlapped; // optimization for async ops to avoid per-op allocations
+        private ValueTaskSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
         internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
             : base(handle, access, share)
@@ -108,26 +108,27 @@ namespace System.IO.Strategies
         {
             Debug.Assert(_preallocatedOverlapped == null);
 
-            _preallocatedOverlapped = new PreAllocatedOverlapped(FileStreamCompletionSource.s_ioCallback, this, buffer);
+            _preallocatedOverlapped = new PreAllocatedOverlapped(ValueTaskSource.s_ioCallback, this, buffer);
         }
 
-        SafeFileHandle IFileStreamCompletionSourceStrategy.FileHandle => _fileHandle;
-
-        FileStreamCompletionSource? IFileStreamCompletionSourceStrategy.CurrentOverlappedOwner => _currentOverlappedOwner;
-
-        FileStreamCompletionSource? IFileStreamCompletionSourceStrategy.CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource? newSource, FileStreamCompletionSource? existingSource)
+        private ValueTaskSource? CompareExchangeCurrentOverlappedOwner(ValueTaskSource? newSource, ValueTaskSource? existingSource)
             => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
         public override int Read(byte[] buffer, int offset, int count)
-            => ReadAsyncInternal(new Memory<byte>(buffer, offset, count)).GetAwaiter().GetResult();
+        {
+            ValueTask<int> vt = ReadAsyncInternal(new Memory<byte>(buffer, offset, count), CancellationToken.None);
+            return vt.IsCompleted ?
+                vt.Result :
+                vt.AsTask().GetAwaiter().GetResult();
+        }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            => ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken);
+            => ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
 
         public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
-            => new ValueTask<int>(ReadAsyncInternal(destination, cancellationToken));
+            => ReadAsyncInternal(destination, cancellationToken);
 
-        private unsafe Task<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken = default)
+        private unsafe ValueTask<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken = default)
         {
             if (!CanRead)
             {
@@ -137,8 +138,8 @@ namespace System.IO.Strategies
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, _preallocatedOverlapped, 0, destination);
-            NativeOverlapped* intOverlapped = completionSource.Overlapped;
+            ValueTaskSource valueTaskSource = ValueTaskSource.Create(this, _preallocatedOverlapped, destination);
+            NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
             long positionBefore = _filePosition;
@@ -185,7 +186,7 @@ namespace System.IO.Strategies
             if (r == -1)
             {
                 // For pipes, when they hit EOF, they will come here.
-                if (errorCode == ERROR_BROKEN_PIPE)
+                if (errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
                 {
                     // Not an error, but EOF.  AsyncFSCallback will NOT be
                     // called.  Call the user callback here.
@@ -193,18 +194,19 @@ namespace System.IO.Strategies
                     // We clear the overlapped status bit for this special case.
                     // Failure to do so looks like we are freeing a pending overlapped later.
                     intOverlapped->InternalLow = IntPtr.Zero;
-                    completionSource.SetCompletedSynchronously(0);
+                    valueTaskSource.ReleaseNativeResource();
+                    return new ValueTask<int>(0);
                 }
-                else if (errorCode != ERROR_IO_PENDING)
+                else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
                 {
                     if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
                     {
                         _filePosition = positionBefore;
                     }
 
-                    completionSource.ReleaseNativeResource();
+                    valueTaskSource.ReleaseNativeResource();
 
-                    if (errorCode == ERROR_HANDLE_EOF)
+                    if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
                     {
                         ThrowHelper.ThrowEndOfFileException();
                     }
@@ -216,7 +218,7 @@ namespace System.IO.Strategies
                 else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
                 {
                     // Only once the IO is pending do we register for cancellation
-                    completionSource.RegisterForCancellation(cancellationToken);
+                    valueTaskSource.RegisterForCancellation(cancellationToken);
                 }
             }
             else
@@ -230,7 +232,7 @@ namespace System.IO.Strategies
                 // results.
             }
 
-            return completionSource.Task;
+            return new ValueTask<int>(valueTaskSource, valueTaskSource.Version);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -242,12 +244,7 @@ namespace System.IO.Strategies
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => WriteAsyncInternal(buffer, cancellationToken);
 
-        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush
-
-        private ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
-            => new ValueTask(WriteAsyncInternalCore(source, cancellationToken));
-
-        private unsafe Task WriteAsyncInternalCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        private unsafe ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             if (!CanWrite)
             {
@@ -257,8 +254,8 @@ namespace System.IO.Strategies
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, _preallocatedOverlapped, 0, source);
-            NativeOverlapped* intOverlapped = completionSource.Overlapped;
+            ValueTaskSource valueTaskSource = ValueTaskSource.Create(this, _preallocatedOverlapped, source);
+            NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
 
             long positionBefore = _filePosition;
             if (CanSeek)
@@ -291,23 +288,23 @@ namespace System.IO.Strategies
             if (r == -1)
             {
                 // For pipes, when they are closed on the other side, they will come here.
-                if (errorCode == ERROR_NO_DATA)
+                if (errorCode == Interop.Errors.ERROR_NO_DATA)
                 {
                     // Not an error, but EOF. AsyncFSCallback will NOT be called.
                     // Completing TCS and return cached task allowing the GC to collect TCS.
-                    completionSource.SetCompletedSynchronously(0);
-                    return Task.CompletedTask;
+                    valueTaskSource.ReleaseNativeResource();
+                    return ValueTask.CompletedTask;
                 }
-                else if (errorCode != ERROR_IO_PENDING)
+                else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
                 {
                     if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
                     {
                         _filePosition = positionBefore;
                     }
 
-                    completionSource.ReleaseNativeResource();
+                    valueTaskSource.ReleaseNativeResource();
 
-                    if (errorCode == ERROR_HANDLE_EOF)
+                    if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
                     {
                         ThrowHelper.ThrowEndOfFileException();
                     }
@@ -319,7 +316,7 @@ namespace System.IO.Strategies
                 else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
                 {
                     // Only once the IO is pending do we register for cancellation
-                    completionSource.RegisterForCancellation(cancellationToken);
+                    valueTaskSource.RegisterForCancellation(cancellationToken);
                 }
             }
             else
@@ -333,8 +330,10 @@ namespace System.IO.Strategies
                 // results.
             }
 
-            return completionSource.Task;
+            return new ValueTask(valueTaskSource, valueTaskSource.Version);
         }
+
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {

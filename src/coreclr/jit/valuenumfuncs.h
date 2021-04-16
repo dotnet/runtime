@@ -29,7 +29,7 @@ ValueNumFuncDef(Cast, 2, false, false, false)           // VNF_Cast: Cast Operat
                                                         //           Args: 0: Source for the cast operation.
                                                         //                 1: Constant integer representing the operation .
                                                         //                    Use VNForCastOper() to construct.
-ValueNumFuncDef(CastOvf, 2, false, false, false)        // Same as a VNF_Cast but also can throw an overflow exception, currently we don't try to constant fold this
+ValueNumFuncDef(CastOvf, 2, false, false, false)        // Same as a VNF_Cast but also can throw an overflow exception.
 
 ValueNumFuncDef(CastClass, 2, false, false, false)          // Args: 0: Handle of class being cast to, 1: object being cast.
 ValueNumFuncDef(IsInstanceOf, 2, false, false, false)       // Args: 0: Handle of class being queried, 1: object being queried.
@@ -68,12 +68,6 @@ ValueNumFuncDef(InvalidCastExc, 2, false, false, false)     // CastClass check, 
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false, false)  // Raises Integer overflow when Arg 0 is negative
 ValueNumFuncDef(HelperMultipleExc, 0, false, false, false)  // Represents one or more different exceptions that could be thrown by a Jit Helper method
 
-ValueNumFuncDef(Lng2Dbl, 1, false, false, false)
-ValueNumFuncDef(ULng2Dbl, 1, false, false, false)
-ValueNumFuncDef(Dbl2Int, 1, false, false, false)
-ValueNumFuncDef(Dbl2UInt, 1, false, false, false)
-ValueNumFuncDef(Dbl2Lng, 1, false, false, false)
-ValueNumFuncDef(Dbl2ULng, 1, false, false, false)
 ValueNumFuncDef(FltRound, 1, false, false, false)
 ValueNumFuncDef(DblRound, 1, false, false, false)
 
@@ -151,8 +145,6 @@ ValueNumFuncDef(LT_UN, 2, false, false, false)      // unsigned or unordered com
 ValueNumFuncDef(LE_UN, 2, false, false, false)
 ValueNumFuncDef(GE_UN, 2, false, false, false)
 ValueNumFuncDef(GT_UN, 2, false, false, false)
-
-// currently we don't constant fold the next six
 
 ValueNumFuncDef(ADD_OVF, 2, true, false, false)     // overflow checking operations
 ValueNumFuncDef(SUB_OVF, 2, false, false, false)

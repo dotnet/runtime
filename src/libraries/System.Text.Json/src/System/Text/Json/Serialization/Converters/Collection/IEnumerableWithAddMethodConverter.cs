@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -12,15 +13,15 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(in object? value, ref ReadStack state)
         {
-            var addMethodDelegate = ((Action<TCollection, object?>?)state.Current.JsonClassInfo.AddMethodDelegate);
+            var addMethodDelegate = ((Action<TCollection, object?>?)state.Current.JsonTypeInfo.AddMethodDelegate);
             Debug.Assert(addMethodDelegate != null);
             addMethodDelegate((TCollection)state.Current.ReturnValue!, value);
         }
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
-            JsonClassInfo.ConstructorDelegate? constructorDelegate = classInfo.CreateObject;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
+            JsonTypeInfo.ConstructorDelegate? constructorDelegate = typeInfo.CreateObject;
 
             if (constructorDelegate == null)
             {
@@ -30,10 +31,10 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ReturnValue = constructorDelegate();
 
             // Initialize add method used to populate the collection.
-            if (classInfo.AddMethodDelegate == null)
+            if (typeInfo.AddMethodDelegate == null)
             {
                 // We verified this exists when we created the converter in the enumerable converter factory.
-                classInfo.AddMethodDelegate = options.MemberAccessorStrategy.CreateAddMethodDelegate<TCollection>();
+                typeInfo.AddMethodDelegate = options.MemberAccessorStrategy.CreateAddMethodDelegate<TCollection>();
             }
         }
 

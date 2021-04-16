@@ -41,7 +41,7 @@ mono_alc_init (MonoAssemblyLoadContext *alc, gboolean collectible)
 	mono_loaded_images_init (li, alc);
 	alc->loaded_images = li;
 	alc->loaded_assemblies = NULL;
-	alc->memory_manager = mono_mem_manager_create_singleton (alc, collectible);
+	alc->memory_manager = mono_mem_manager_new (&alc, 1, collectible);
 	alc->generic_memory_managers = g_ptr_array_new ();
 	mono_coop_mutex_init (&alc->memory_managers_lock);
 	alc->unloading = FALSE;
@@ -172,7 +172,7 @@ mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 
 	mono_alc_cleanup_assemblies (alc);
 
-	mono_mem_manager_free_singleton (alc->memory_manager, FALSE);
+	mono_mem_manager_free (alc->memory_manager, FALSE);
 	alc->memory_manager = NULL;
 
 	/*for (int i = 0; i < alc->generic_memory_managers->len; i++) {

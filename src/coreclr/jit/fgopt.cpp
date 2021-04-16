@@ -1357,7 +1357,7 @@ void Compiler::fgRemoveEmptyBlocks()
                     fgSetTryBeg(HBtab, newTryEntry);
 
                     // Try entry blocks get specially marked and have special protection.
-                    HBtab->ebdTryBeg->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG | BBF_HAS_LABEL;
+                    HBtab->ebdTryBeg->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG;
 
                     // We are keeping this try region
                     removeTryRegion = false;
@@ -1539,7 +1539,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         JITDUMP("Second block has multiple incoming edges\n");
 
         assert(block->isEmpty());
-        block->bbFlags |= BBF_JMP_TARGET;
         for (flowList* pred = bNext->bbPreds; pred; pred = pred->flNext)
         {
             fgReplaceJumpTarget(pred->getBlock(), block, bNext);
@@ -1882,16 +1881,11 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
     }
 
-    // Add the LOOP_ALIGN flag
     if (bNext->isLoopAlign())
     {
-        // Only if the new block is jump target or has label
-        if (((block->bbFlags & BBF_JMP_TARGET) != 0) || ((block->bbFlags & BBF_HAS_LABEL) != 0))
-        {
-            block->bbFlags |= BBF_LOOP_ALIGN;
-            JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " during compacting.\n", bNext->bbNum,
-                    block->bbNum);
-        }
+        block->bbFlags |= BBF_LOOP_ALIGN;
+        JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " during compacting.\n", bNext->bbNum,
+                block->bbNum);
     }
 
     // If we're collapsing a block created after the dominators are
@@ -3128,7 +3122,6 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // The new block 'next' will inherit its weight from 'block'
     next->inheritWeight(block);
     next->bbJumpDest = target->bbNext;
-    target->bbNext->bbFlags |= BBF_JMP_TARGET;
     fgAddRefPred(next, block);
     fgAddRefPred(next->bbJumpDest, next);
 
@@ -3558,9 +3551,6 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     bJump->bbJumpKind = BBJ_COND;
     bJump->bbJumpDest = bDest->bbNext;
-
-    /* Mark the jump dest block as being a jump target */
-    bJump->bbJumpDest->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
 
     /* Update bbRefs and bbPreds */
 
@@ -5064,7 +5054,6 @@ bool Compiler::fgReorderBlocks()
             {
                 /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
                 bPrev->bbJumpDest = bStart;
-                bStart->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
             }
             else
             {
@@ -5073,7 +5062,6 @@ bool Compiler::fgReorderBlocks()
 
                 /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
                 bPrev->bbJumpDest = block;
-                block->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
             }
         }
 

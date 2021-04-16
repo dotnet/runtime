@@ -22,10 +22,23 @@ namespace System
             return $"(UTC) {timeZoneId}";
         }
 
-        private static string? GetAlternativeId(string id)
+        private static string? GetAlternativeId(string id, out bool idIsIana)
         {
             // No alternative IDs in this target.
+            idIsIana = false;
             return null;
+        }
+
+        private static unsafe bool TryConvertIanaIdToWindowsId(string ianaId, bool allocate, out string? windowsId)
+        {
+            windowsId = null;
+            return false;
+        }
+
+        private static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, bool allocate,  out string? ianaId)
+        {
+            ianaId = null;
+            return false;
         }
     }
 }

@@ -419,10 +419,6 @@ void BasicBlock::dspFlags()
     {
         printf("label ");
     }
-    if (bbFlags & BBF_JMP_TARGET)
-    {
-        printf("target ");
-    }
     if (bbFlags & BBF_HAS_JMP)
     {
         printf("jmp ");
@@ -921,14 +917,22 @@ bool BasicBlock::isEmpty()
 {
     if (!IsLIR())
     {
-        return (this->FirstNonPhiDef() == nullptr);
-    }
-
-    for (GenTree* node : LIR::AsRange(this).NonPhiNodes())
-    {
-        if (node->OperGet() != GT_IL_OFFSET)
+        for (Statement* stmt : Statements())
         {
-            return false;
+            if (!stmt->GetRootNode()->OperIs(GT_PHI, GT_NOP))
+            {
+                return false;
+            }
+        }
+    }
+    else
+    {
+        for (GenTree* node : LIR::AsRange(this).NonPhiNodes())
+        {
+            if (node->OperGet() != GT_IL_OFFSET)
+            {
+                return false;
+            }
         }
     }
 

@@ -683,7 +683,7 @@ namespace System
         public unsafe static void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy) { }
         public static void SetByte(System.Array array, int index, byte value) { }
     }
-    public readonly partial struct Byte : System.IComparable, System.IComparable<byte>, System.IConvertible, System.IEquatable<byte>, System.IFormattable
+    public readonly partial struct Byte : System.IComparable, System.IComparable<byte>, System.IConvertible, System.IEquatable<byte>, System.ISpanFormattable
     {
         private readonly byte _dummyPrimitive;
         public const byte MaxValue = (byte)255;
@@ -731,7 +731,7 @@ namespace System
         public CannotUnloadAppDomainException(string? message) { }
         public CannotUnloadAppDomainException(string? message, System.Exception? innerException) { }
     }
-    public readonly partial struct Char : System.IComparable, System.IComparable<char>, System.IConvertible, System.IEquatable<char>
+    public readonly partial struct Char : System.IComparable, System.IComparable<char>, System.IConvertible, System.IEquatable<char>, System.ISpanFormattable
     {
         private readonly char _dummyPrimitive;
         public const char MaxValue = '\uFFFF';
@@ -806,6 +806,8 @@ namespace System
         public static System.Char ToUpper(System.Char c, System.Globalization.CultureInfo culture) { throw null; }
         public static System.Char ToUpperInvariant(System.Char c) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Char result) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        string System.IFormattable.ToString(string? format, IFormatProvider? formatProvider) { throw null; }
     }
     public sealed partial class CharEnumerator : System.Collections.Generic.IEnumerator<char>, System.Collections.IEnumerator, System.ICloneable, System.IDisposable
     {
@@ -1294,7 +1296,67 @@ namespace System
         public static bool TryToBase64Chars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten, System.Base64FormattingOptions options = System.Base64FormattingOptions.None) { throw null; }
     }
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
-    public readonly partial struct DateTime : System.IComparable, System.IComparable<System.DateTime>, System.IConvertible, System.IEquatable<System.DateTime>, System.IFormattable, System.Runtime.Serialization.ISerializable
+    public readonly struct DateOnly : System.IComparable, System.IComparable<System.DateOnly>, System.IEquatable<System.DateOnly>, System.ISpanFormattable
+    {
+        public static DateOnly MinValue { get { throw null; } }
+        public static DateOnly MaxValue { get { throw null; } }
+        public DateOnly(int year, int month, int day) { throw null; }
+        public DateOnly(int year, int month, int day, System.Globalization.Calendar calendar) { throw null; }
+        public static DateOnly FromDayNumber(int dayNumber) { throw null; }
+        public int Year { get { throw null; } }
+        public int Month { get { throw null; } }
+        public int Day { get { throw null; } }
+        public System.DayOfWeek DayOfWeek { get { throw null; } }
+        public int DayOfYear { get { throw null; } }
+        public int DayNumber { get { throw null; } }
+        public System.DateOnly AddDays(int value)  { throw null; }
+        public System.DateOnly AddMonths(int value) { throw null; }
+        public System.DateOnly AddYears(int value) { throw null; }
+        public static bool operator ==(System.DateOnly left, System.DateOnly right) { throw null; }
+        public static bool operator >(System.DateOnly left, System.DateOnly right) { throw null; }
+        public static bool operator >=(System.DateOnly left, System.DateOnly right) { throw null; }
+        public static bool operator !=(System.DateOnly left, System.DateOnly right) { throw null; }
+        public static bool operator <(System.DateOnly left, System.DateOnly right) { throw null; }
+        public static bool operator <=(System.DateOnly left, System.DateOnly right) { throw null; }
+        public System.DateTime ToDateTime(System.TimeOnly time) { throw null; }
+        public System.DateTime ToDateTime(System.TimeOnly time, System.DateTimeKind kind) { throw null; }
+        public static System.DateOnly FromDateTime(System.DateTime dateTime) { throw null; }
+        public int CompareTo(System.DateOnly value) { throw null; }
+        public int CompareTo(object? value)  { throw null; }
+        public bool Equals(System.DateOnly value) { throw null; }
+        public override bool Equals(object? value) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static System.DateOnly Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider = default, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateOnly ParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider = default, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateOnly ParseExact(System.ReadOnlySpan<char> s, string[] formats) { throw null; }
+        public static System.DateOnly ParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateOnly Parse(string s) { throw null; }
+        public static System.DateOnly Parse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateOnly ParseExact(string s, string format) { throw null; }
+        public static System.DateOnly ParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateOnly ParseExact(string s, string[] formats) { throw null; }
+        public static System.DateOnly ParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out System.DateOnly result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParse(string s, out System.DateOnly result) { throw null; }
+        public static bool TryParse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(string s, string format, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(string s, string[] formats, out System.DateOnly result) { throw null; }
+        public static bool TryParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
+        public string ToLongDateString() { throw null; }
+        public string ToShortDateString() { throw null; }
+        public override string ToString() { throw null; }
+        public string ToString(string? format) { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+    }
+    public readonly partial struct DateTime : System.IComparable, System.IComparable<System.DateTime>, System.IConvertible, System.IEquatable<System.DateTime>, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.DateTime MaxValue;
@@ -1422,7 +1484,7 @@ namespace System
         Utc = 1,
         Local = 2,
     }
-    public readonly partial struct DateTimeOffset : System.IComparable, System.IComparable<System.DateTimeOffset>, System.IEquatable<System.DateTimeOffset>, System.IFormattable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
+    public readonly partial struct DateTimeOffset : System.IComparable, System.IComparable<System.DateTimeOffset>, System.IEquatable<System.DateTimeOffset>, System.ISpanFormattable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.DateTimeOffset MaxValue;
@@ -1550,7 +1612,7 @@ namespace System
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
     }
-    public readonly partial struct Decimal : System.IComparable, System.IComparable<decimal>, System.IConvertible, System.IEquatable<decimal>, System.IFormattable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
+    public readonly partial struct Decimal : System.IComparable, System.IComparable<decimal>, System.IConvertible, System.IEquatable<decimal>, System.ISpanFormattable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         [System.Runtime.CompilerServices.DecimalConstantAttribute((byte)0, (byte)0, (uint)4294967295, (uint)4294967295, (uint)4294967295)]
@@ -1737,7 +1799,7 @@ namespace System
         public DivideByZeroException(string? message) { }
         public DivideByZeroException(string? message, System.Exception? innerException) { }
     }
-    public readonly partial struct Double : System.IComparable, System.IComparable<double>, System.IConvertible, System.IEquatable<double>, System.IFormattable
+    public readonly partial struct Double : System.IComparable, System.IComparable<double>, System.IConvertible, System.IEquatable<double>, System.ISpanFormattable
     {
         private readonly double _dummyPrimitive;
         public const double Epsilon = 5E-324;
@@ -2185,7 +2247,7 @@ namespace System
     {
         public GopherStyleUriParser() { }
     }
-    public readonly partial struct Guid : System.IComparable, System.IComparable<System.Guid>, System.IEquatable<System.Guid>, System.IFormattable
+    public readonly partial struct Guid : System.IComparable, System.IComparable<System.Guid>, System.IEquatable<System.Guid>, System.ISpanFormattable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.Guid Empty;
@@ -2218,8 +2280,9 @@ namespace System
         public static bool TryParseExact(System.ReadOnlySpan<char> input, System.ReadOnlySpan<char> format, out System.Guid result) { throw null; }
         public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? format, out System.Guid result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
     }
-    public readonly partial struct Half : System.IComparable, System.IComparable<System.Half>, System.IEquatable<System.Half>, System.IFormattable
+    public readonly partial struct Half : System.IComparable, System.IComparable<System.Half>, System.IEquatable<System.Half>, System.ISpanFormattable
     {
         private readonly int _dummyPrimitive;
         public static System.Half Epsilon { get { throw null; } }
@@ -2390,7 +2453,7 @@ namespace System
         public InsufficientMemoryException(string? message) { }
         public InsufficientMemoryException(string? message, System.Exception? innerException) { }
     }
-    public readonly partial struct Int16 : System.IComparable, System.IComparable<short>, System.IConvertible, System.IEquatable<short>, System.IFormattable
+    public readonly partial struct Int16 : System.IComparable, System.IComparable<short>, System.IConvertible, System.IEquatable<short>, System.ISpanFormattable
     {
         private readonly short _dummyPrimitive;
         public const short MaxValue = (short)32767;
@@ -2431,7 +2494,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Int16 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Int16 result) { throw null; }
     }
-    public readonly partial struct Int32 : System.IComparable, System.IComparable<int>, System.IConvertible, System.IEquatable<int>, System.IFormattable
+    public readonly partial struct Int32 : System.IComparable, System.IComparable<int>, System.IConvertible, System.IEquatable<int>, System.ISpanFormattable
     {
         private readonly int _dummyPrimitive;
         public const int MaxValue = 2147483647;
@@ -2472,7 +2535,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Int32 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Int32 result) { throw null; }
     }
-    public readonly partial struct Int64 : System.IComparable, System.IComparable<long>, System.IConvertible, System.IEquatable<long>, System.IFormattable
+    public readonly partial struct Int64 : System.IComparable, System.IComparable<long>, System.IConvertible, System.IEquatable<long>, System.ISpanFormattable
     {
         private readonly long _dummyPrimitive;
         public const long MaxValue = (long)9223372036854775807;
@@ -2513,7 +2576,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Int64 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Int64 result) { throw null; }
     }
-    public readonly partial struct IntPtr : System.IComparable, System.IComparable<System.IntPtr>, System.IEquatable<System.IntPtr>, System.IFormattable, System.Runtime.Serialization.ISerializable
+    public readonly partial struct IntPtr : System.IComparable, System.IComparable<System.IntPtr>, System.IEquatable<System.IntPtr>, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.IntPtr Zero;
@@ -2604,6 +2667,10 @@ namespace System
     public partial interface IProgress<in T>
     {
         void Report(T value);
+    }
+    public partial interface ISpanFormattable : System.IFormattable
+    {
+        bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider);
     }
     public partial class Lazy<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
     {
@@ -3334,7 +3401,7 @@ namespace System
         public static bool operator !=(System.RuntimeTypeHandle left, object? right) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
-    public readonly partial struct SByte : System.IComparable, System.IComparable<sbyte>, System.IConvertible, System.IEquatable<sbyte>, System.IFormattable
+    public readonly partial struct SByte : System.IComparable, System.IComparable<sbyte>, System.IConvertible, System.IEquatable<sbyte>, System.ISpanFormattable
     {
         private readonly sbyte _dummyPrimitive;
         public const sbyte MaxValue = (sbyte)127;
@@ -3380,7 +3447,7 @@ namespace System
     {
         public SerializableAttribute() { }
     }
-    public readonly partial struct Single : System.IComparable, System.IComparable<float>, System.IConvertible, System.IEquatable<float>, System.IFormattable
+    public readonly partial struct Single : System.IComparable, System.IComparable<float>, System.IConvertible, System.IEquatable<float>, System.ISpanFormattable
     {
         private readonly float _dummyPrimitive;
         public const float Epsilon = 1E-45f;
@@ -3740,6 +3807,71 @@ namespace System
     {
         public ThreadStaticAttribute() { }
     }
+    public readonly struct TimeOnly : System.IComparable, System.IComparable<System.TimeOnly>, System.IEquatable<System.TimeOnly>, System.ISpanFormattable
+    {
+        public static System.TimeOnly MinValue { get { throw null; } }
+        public static System.TimeOnly MaxValue { get { throw null; } }
+        public TimeOnly(int hour, int minute) { throw null; }
+        public TimeOnly(int hour, int minute, int second) { throw null; }
+        public TimeOnly(int hour, int minute, int second, int millisecond) { throw null; }
+        public TimeOnly(long ticks) { throw null; }
+        public int Hour { get { throw null; } }
+        public int Minute { get { throw null; } }
+        public int Second { get { throw null; } }
+        public int Millisecond { get { throw null; } }
+        public long Ticks { get { throw null; } }
+        public System.TimeOnly Add(System.TimeSpan value) { throw null; }
+        public System.TimeOnly Add(System.TimeSpan value, out int wrappedDays) { throw null; }
+        public System.TimeOnly AddHours(double value) { throw null; }
+        public System.TimeOnly AddHours(double value, out int wrappedDays) { throw null; }
+        public System.TimeOnly AddMinutes(double value) { throw null; }
+        public System.TimeOnly AddMinutes(double value, out int wrappedDays) { throw null; }
+        public bool IsBetween(System.TimeOnly start, System.TimeOnly end) { throw null; }
+        public static bool operator ==(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        public static bool operator >(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        public static bool operator >=(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        public static bool operator !=(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        public static bool operator <(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        public static bool operator <=(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        public static System.TimeSpan operator -(System.TimeOnly t1, System.TimeOnly t2) { throw null; }
+        public static System.TimeOnly FromTimeSpan(System.TimeSpan timeSpan) { throw null; }
+        public static System.TimeOnly FromDateTime(System.DateTime dateTime) { throw null; }
+        public System.TimeSpan ToTimeSpan() { throw null; }
+        public int CompareTo(System.TimeOnly value) { throw null; }
+        public int CompareTo(object? value) { throw null; }
+        public bool Equals(System.TimeOnly value) { throw null; }
+        public override bool Equals(object? value) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static System.TimeOnly Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider = default, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.TimeOnly ParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider = default, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.TimeOnly ParseExact(System.ReadOnlySpan<char> s, string[] formats) { throw null; }
+        public static System.TimeOnly ParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.TimeOnly Parse(string s) { throw null; }
+        public static System.TimeOnly Parse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.TimeOnly ParseExact(string s, string format) { throw null; }
+        public static System.TimeOnly ParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.TimeOnly ParseExact(string s, string[] formats) { throw null; }
+        public static System.TimeOnly ParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out System.TimeOnly result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParse(string s, out System.TimeOnly result) { throw null; }
+        public static bool TryParse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(string s, string format, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(string s, string[] formats, out System.TimeOnly result) { throw null; }
+        public static bool TryParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
+        public string ToLongTimeString() { throw null; }
+        public string ToShortTimeString() { throw null; }
+        public override string ToString() { throw null; }
+        public string ToString(string? format) { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+    }
     public partial class TimeoutException : System.SystemException
     {
         public TimeoutException() { }
@@ -3747,7 +3879,7 @@ namespace System
         public TimeoutException(string? message) { }
         public TimeoutException(string? message, System.Exception? innerException) { }
     }
-    public readonly partial struct TimeSpan : System.IComparable, System.IComparable<System.TimeSpan>, System.IEquatable<System.TimeSpan>, System.IFormattable
+    public readonly partial struct TimeSpan : System.IComparable, System.IComparable<System.TimeSpan>, System.IEquatable<System.TimeSpan>, System.ISpanFormattable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.TimeSpan MaxValue;
@@ -3853,6 +3985,7 @@ namespace System
         public System.TimeSpan BaseUtcOffset { get { throw null; } }
         public string DaylightName { get { throw null; } }
         public string DisplayName { get { throw null; } }
+        public bool HasIanaId { get; }
         public string Id { get { throw null; } }
         public static System.TimeZoneInfo Local { get { throw null; } }
         public string StandardName { get { throw null; } }
@@ -3892,6 +4025,9 @@ namespace System
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public string ToSerializedString() { throw null; }
         public override string ToString() { throw null; }
+        public static bool TryConvertIanaIdToWindowsId(string ianaId, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? windowsId) { throw null; }
+        public static bool TryConvertWindowsIdToIanaId(string windowsId, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? ianaId) { throw null; }
+        public static bool TryConvertWindowsIdToIanaId(string windowsId, string? region, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? ianaId) { throw null; }
         public sealed partial class AdjustmentRule : System.IEquatable<System.TimeZoneInfo.AdjustmentRule?>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
         {
             internal AdjustmentRule() { }
@@ -4502,7 +4638,7 @@ namespace System
         public TypeUnloadedException(string? message, System.Exception? innerException) { }
     }
     [System.CLSCompliantAttribute(false)]
-    public readonly partial struct UInt16 : System.IComparable, System.IComparable<ushort>, System.IConvertible, System.IEquatable<ushort>, System.IFormattable
+    public readonly partial struct UInt16 : System.IComparable, System.IComparable<ushort>, System.IConvertible, System.IEquatable<ushort>, System.ISpanFormattable
     {
         private readonly ushort _dummyPrimitive;
         public const ushort MaxValue = (ushort)65535;
@@ -4544,7 +4680,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.UInt16 result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
-    public readonly partial struct UInt32 : System.IComparable, System.IComparable<uint>, System.IConvertible, System.IEquatable<uint>, System.IFormattable
+    public readonly partial struct UInt32 : System.IComparable, System.IComparable<uint>, System.IConvertible, System.IEquatable<uint>, System.ISpanFormattable
     {
         private readonly uint _dummyPrimitive;
         public const uint MaxValue = (uint)4294967295;
@@ -4586,7 +4722,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.UInt32 result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
-    public readonly partial struct UInt64 : System.IComparable, System.IComparable<ulong>, System.IConvertible, System.IEquatable<ulong>, System.IFormattable
+    public readonly partial struct UInt64 : System.IComparable, System.IComparable<ulong>, System.IConvertible, System.IEquatable<ulong>, System.ISpanFormattable
     {
         private readonly ulong _dummyPrimitive;
         public const ulong MaxValue = (ulong)18446744073709551615;
@@ -4628,7 +4764,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.UInt64 result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
-    public readonly partial struct UIntPtr : System.IComparable, System.IComparable<System.UIntPtr>, System.IEquatable<System.UIntPtr>, System.IFormattable, System.Runtime.Serialization.ISerializable
+    public readonly partial struct UIntPtr : System.IComparable, System.IComparable<System.UIntPtr>, System.IEquatable<System.UIntPtr>, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.UIntPtr Zero;
@@ -5071,7 +5207,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override string? ToString() { throw null; }
     }
-    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>
+    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>, System.ISpanFormattable
     {
         public Version() { }
         public Version(int major, int minor) { }
@@ -5104,6 +5240,8 @@ namespace System
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version? result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version? result) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        string System.IFormattable.ToString(string? format, IFormatProvider? formatProvider) { throw null; }
     }
     public partial struct Void
     {
@@ -9455,6 +9593,27 @@ namespace System.Runtime.CompilerServices
         public bool AllInternalsVisible { get { throw null; } set { } }
         public string AssemblyName { get { throw null; } }
     }
+    public ref struct InterpolatedStringBuilder
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public void AppendLiteral(string value) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
+        public void AppendFormatted<T>(T value) { }
+        public void AppendFormatted<T>(T value, string? format) { }
+        public void AppendFormatted<T>(T value, int alignment) { }
+        public void AppendFormatted<T>(T value, int alignment, string? format) { }
+        public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
+        public void AppendFormatted(string? value) { throw null; }
+        public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
+        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int literalLength, int formattedCount) { throw null; }
+        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int literalLength, int formattedCount, System.IFormatProvider? provider) { throw null; }
+        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int literalLength, int formattedCount, System.Span<char> scratchBuffer) { throw null; }
+        public static System.Runtime.CompilerServices.InterpolatedStringBuilder Create(int literalLength, int formattedCount, System.IFormatProvider? provider, System.Span<char> scratchBuffer) { throw null; }
+        public override string ToString() { throw null; }
+        public string ToStringAndClear() { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class IsByRefLikeAttribute : System.Attribute
@@ -10805,7 +10964,7 @@ namespace System.Text
         FormKC = 5,
         FormKD = 6,
     }
-    public readonly partial struct Rune : System.IComparable, System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>
+    public readonly partial struct Rune : System.IComparable, System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>, System.ISpanFormattable
     {
         private readonly int _dummyPrimitive;
         public Rune(char ch) { throw null; }
@@ -10871,6 +11030,8 @@ namespace System.Text
         public bool TryEncodeToUtf8(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryGetRuneAt(string input, int index, out System.Text.Rune value) { throw null; }
         int System.IComparable.CompareTo(object? obj) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        string System.IFormattable.ToString(string? format, IFormatProvider? formatProvider) { throw null; }
     }
     public sealed partial class StringBuilder : System.Runtime.Serialization.ISerializable
     {

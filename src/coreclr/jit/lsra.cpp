@@ -9023,22 +9023,25 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             targetRegsReady &= ~targetRegMask;
             regNumber targetReg = genRegNumFromMask(targetRegMask);
             assert(location[targetReg] != targetReg);
+            assert(targetReg < REG_COUNT);
             regNumber sourceReg = (regNumber)source[targetReg];
-            regNumber fromReg   = (regNumber)location[sourceReg];
-            assert(fromReg < UCHAR_MAX && sourceReg < UCHAR_MAX);
+            assert(sourceReg < REG_COUNT);
+            regNumber fromReg = (regNumber)location[sourceReg];
+            // stack to reg movs should be done last as part of "targetRegsFromStack"
+            assert(fromReg < REG_STK);
             Interval* interval = sourceIntervals[sourceReg];
             assert(interval != nullptr);
             addResolution(block, insertionPoint, interval, targetReg, fromReg);
             JITDUMP(" (%s)\n", resolveTypeName[resolveType]);
             sourceIntervals[sourceReg] = nullptr;
             location[sourceReg]        = REG_NA;
+            regMaskTP fromRegMask      = genRegMask(fromReg);
 
             // Do we have a free targetReg?
             if (fromReg == sourceReg)
             {
-                if (source[fromReg] != REG_NA)
+                if (source[fromReg] != REG_NA && ((targetRegsFromStack & fromRegMask) != fromRegMask))
                 {
-                    regMaskTP fromRegMask = genRegMask(fromReg);
                     targetRegsReady |= fromRegMask;
 #ifdef TARGET_ARM
                     if (genIsValidDoubleReg(fromReg))
@@ -9058,24 +9061,27 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 {
                     // We may have freed up the other half of a double where the lower half
                     // was already free.
-                    regNumber lowerHalfReg    = REG_PREV(fromReg);
-                    regNumber lowerHalfSrcReg = (regNumber)source[lowerHalfReg];
-                    regNumber lowerHalfSrcLoc = (regNumber)location[lowerHalfReg];
+                    regNumber lowerHalfReg     = REG_PREV(fromReg);
+                    regNumber lowerHalfSrcReg  = (regNumber)source[lowerHalfReg];
+                    regNumber lowerHalfSrcLoc  = (regNumber)location[lowerHalfReg];
+                    regMaskTP lowerHalfRegMask = genRegMask(lowerHalfReg);
                     // Necessary conditions:
                     // - There is a source register for this reg (lowerHalfSrcReg != REG_NA)
                     // - It is currently free                    (lowerHalfSrcLoc == REG_NA)
                     // - The source interval isn't yet completed (sourceIntervals[lowerHalfSrcReg] != nullptr)
-                    // - It's not in the ready set               ((targetRegsReady & genRegMask(lowerHalfReg)) ==
+                    // - It's not in the ready set               ((targetRegsReady & lowerHalfRegMask) ==
                     //                                            RBM_NONE)
-                    //
+                    // - It's not resolved from stack            ((targetRegsFromStack & lowerHalfRegMask) !=
+                    //                                            lowerHalfRegMask)
                     if ((lowerHalfSrcReg != REG_NA) && (lowerHalfSrcLoc == REG_NA) &&
                         (sourceIntervals[lowerHalfSrcReg] != nullptr) &&
-                        ((targetRegsReady & genRegMask(lowerHalfReg)) == RBM_NONE))
+                        ((targetRegsReady & lowerHalfRegMask) == RBM_NONE) &&
+                        ((targetRegsFromStack & lowerHalfRegMask) != lowerHalfRegMask))
                     {
                         // This must be a double interval, otherwise it would be in targetRegsReady, or already
                         // completed.
                         assert(sourceIntervals[lowerHalfSrcReg]->registerType == TYP_DOUBLE);
-                        targetRegsReady |= genRegMask(lowerHalfReg);
+                        targetRegsReady |= lowerHalfRegMask;
                     }
 #endif // TARGET_ARM
                 }
@@ -9183,12 +9189,39 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         JITDUMP(" (%s)\n", resolveTypeName[resolveType]);
                         location[source[otherTargetReg]] = REG_STK;
 
-                        // Now, move the interval that is going to targetReg, and add its "fromReg" to
-                        // "targetRegsReady".
+                        regMaskTP otherTargetRegMask = genRegMask(otherTargetReg);
+                        targetRegsFromStack |= otherTargetRegMask;
+                        stackToRegIntervals[otherTargetReg] = otherInterval;
+                        targetRegsToDo &= ~otherTargetRegMask;
+
+                        // Now, move the interval that is going to targetReg.
                         addResolution(block, insertionPoint, sourceIntervals[sourceReg], targetReg, fromReg);
                         JITDUMP(" (%s)\n", resolveTypeName[resolveType]);
                         location[sourceReg] = REG_NA;
-                        targetRegsReady |= genRegMask(fromReg);
+
+                        // Add its "fromReg" to "targetRegsReady", only if:
+                        // - It was one of the target register we originally determined.
+                        // - It is not the eventual target (otherTargetReg) because its
+                        //   value will be retrieved from STK.
+                        if (source[fromReg] != REG_NA && fromReg != otherTargetReg)
+                        {
+                            regMaskTP fromRegMask = genRegMask(fromReg);
+                            targetRegsReady |= fromRegMask;
+#ifdef TARGET_ARM
+                            if (genIsValidDoubleReg(fromReg))
+                            {
+                                // Ensure that either:
+                                // - the Interval targeting fromReg is not double, or
+                                // - the other half of the double is free.
+                                Interval* otherInterval = sourceIntervals[source[fromReg]];
+                                regNumber upperHalfReg  = REG_NEXT(fromReg);
+                                if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
+                                {
+                                    targetRegsReady &= ~fromRegMask;
+                                }
+                            }
+#endif // TARGET_ARM
+                        }
                     }
                     targetRegsToDo &= ~targetRegMask;
                 }

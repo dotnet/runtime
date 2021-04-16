@@ -37,7 +37,7 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static ValueTask<TValue?> DeserializeAsync<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(
+        public static ValueTask<TValue?> DeserializeAsync<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(
             Stream utf8Json,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
@@ -75,7 +75,7 @@ namespace System.Text.Json
         /// </exception>
         public static ValueTask<object?> DeserializeAsync(
             Stream utf8Json,
-            [DynamicallyAccessedMembers(MembersAccessedOnRead)] Type returnType,
+            [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
@@ -100,7 +100,7 @@ namespace System.Text.Json
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
-        public static IAsyncEnumerable<TValue> DeserializeAsyncEnumerable<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(
+        public static IAsyncEnumerable<TValue> DeserializeAsyncEnumerable<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(
             Stream utf8Json,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)

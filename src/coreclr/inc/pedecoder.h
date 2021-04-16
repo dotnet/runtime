@@ -236,7 +236,7 @@ class PEDecoder
     BOOL IsILOnly() const;
     CHECK CheckILOnly() const;
 
-    void LayoutILOnly(void *base, BOOL allowFullPE = FALSE) const;
+    void LayoutILOnly(void *base, bool enableExecution) const;
 
     // Strong name & hashing support
 
