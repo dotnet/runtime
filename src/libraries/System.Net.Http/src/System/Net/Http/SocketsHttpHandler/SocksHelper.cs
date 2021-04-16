@@ -346,7 +346,7 @@ namespace System.Net.Http
 
         private static async ValueTask ReadToFillAsync(Stream stream, Memory<byte> buffer, bool async)
         {
-            while (!buffer.IsEmpty)
+            while (buffer.Length != 0)
             {
                 int bytesRead = async
                     ? await stream.ReadAsync(buffer).ConfigureAwait(false)
