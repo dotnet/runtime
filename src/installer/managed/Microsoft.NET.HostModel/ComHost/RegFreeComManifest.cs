@@ -78,8 +78,8 @@ namespace Microsoft.NET.HostModel.ComHost
                 try
                 {
                     byte[] tlbFileBytes = File.ReadAllBytes(typeLibrary.Value);
-                    TypeLibHeaderReader reader = new TypeLibHeaderReader(tlbFileBytes);
-                    if (reader.TryReadTypeLibNameAndVersion(out Guid name, out Version version))
+                    TypeLibReader reader = new TypeLibReader(tlbFileBytes);
+                    if (!reader.TryReadTypeLibNameAndVersion(out Guid name, out Version version))
                     {
                         throw new InvalidTypeLibraryException(typeLibrary.Value);
                     }

@@ -10,6 +10,7 @@ import "ocidl.idl";
 ]
 interface IServer : IDispatch
 {
+    HRESULT MethodCall(void);
 };
 
 [
