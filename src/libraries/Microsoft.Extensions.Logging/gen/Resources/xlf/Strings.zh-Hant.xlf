@@ -75,17 +75,17 @@
       <trans-unit id="MissingLoggerArgumentMessage">
         <source>One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</source>
         <target state="new">One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</target>
-        <note />
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingLoggerFieldMessage">
         <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
         <target state="new">Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</target>
-        <note />
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingLoggerFieldTitle">
         <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</source>
         <target state="new">Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</target>
-        <note />
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingRequiredTypeMessage">
         <source>Could not find definition for type {0}</source>
@@ -100,12 +100,12 @@
       <trans-unit id="MultipleLoggerFieldsMessage">
         <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
         <target state="new">Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</target>
-        <note />
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MultipleLoggerFieldsTitle">
         <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger</source>
         <target state="new">Found multiple fields of type Microsoft.Extensions.Logging.ILogger</target>
-        <note />
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>

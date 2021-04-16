@@ -143,6 +143,7 @@
   </data>
   <data name="MissingLoggerArgumentMessage" xml:space="preserve">
     <value>One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</value>
+    <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
   </data>
   <data name="LoggingMethodShouldBeStaticMessage" xml:space="preserve">
     <value>Logging methods must be static</value>
@@ -191,15 +192,19 @@
   </data>
   <data name="MissingLoggerFieldMessage" xml:space="preserve">
     <value>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</value>
+    <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
   </data>
   <data name="MissingLoggerFieldTitle" xml:space="preserve">
     <value>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</value>
+    <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
   </data>
   <data name="MultipleLoggerFieldsMessage" xml:space="preserve">
     <value>Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</value>
+    <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
   </data>
   <data name="MultipleLoggerFieldsTitle" xml:space="preserve">
     <value>Found multiple fields of type Microsoft.Extensions.Logging.ILogger</value>
+    <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
   </data>
   <data name="InconsistentTemplateCasingMessage" xml:space="preserve">
     <value>Can't have the same template with different casing</value>
