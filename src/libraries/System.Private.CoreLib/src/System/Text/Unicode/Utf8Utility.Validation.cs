@@ -24,10 +24,6 @@ namespace System.Text.Unicode
         /// <remarks>
         /// Returns a pointer to the end of <paramref name="pInputBuffer"/> if the buffer is well-formed.
         /// </remarks>
-        /// <param name="pInputBuffer">Pointer to Utf8 byte buffer</param>
-        /// <param name="inputLength">Buffer length in bytes</param>
-        /// <param name="utf16CodeUnitCountAdjustment">Zero or negative number to be added to the "bytes processed" return value to come up with the total UTF-16 code unit count.</param>
-        /// <param name="scalarCountAdjustment">Zero or negative number to be added to the "total UTF-16 code unit count" value to come up with the total scalar count.</param>
         public static byte* GetPointerToFirstInvalidByte(byte* pInputBuffer, int inputLength, out int utf16CodeUnitCountAdjustment, out int scalarCountAdjustment)
         {
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");
