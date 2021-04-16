@@ -6,14 +6,22 @@ using System.Text.Json.Node;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class JsonNodeConverter : JsonConverter<object>
+    /// <summary>
+    /// Converter for JsonNode-derived types. The {T} value must be Object and not JsonNode
+    /// since we allow Object-declared members\variables to deserialize as {JsonNode}.
+    /// </summary>
+    internal sealed class JsonNodeConverter : JsonConverter<object?>
     {
-        public static JsonNodeConverter Instance { get; } = new JsonNodeConverter();
-        public JsonArrayConverter ArrayConverter { get; } = new JsonArrayConverter();
-        public JsonObjectConverter ObjectConverter { get; } = new JsonObjectConverter();
-        public JsonValueConverter ValueConverter { get; } = new JsonValueConverter();
+        private JsonArrayConverter? _arrayConverter;
+        private JsonObjectConverter? _objectConverter;
+        private JsonValueConverter? _valueConverter;
 
-        public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+        public static JsonNodeConverter Instance { get; } = new JsonNodeConverter();
+        public JsonArrayConverter ArrayConverter => _arrayConverter ?? (_arrayConverter = new JsonArrayConverter());
+        public JsonObjectConverter ObjectConverter => _objectConverter ?? (_objectConverter = new JsonObjectConverter());
+        public JsonValueConverter ValueConverter => _valueConverter ?? (_valueConverter = new JsonValueConverter());
+
+        public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
         {
             if (value == null)
             {
@@ -41,8 +49,6 @@ namespace System.Text.Json.Serialization.Converters
         {
             switch (reader.TokenType)
             {
-                case JsonTokenType.Null:
-                    return null;
                 case JsonTokenType.String:
                 case JsonTokenType.False:
                 case JsonTokenType.True:

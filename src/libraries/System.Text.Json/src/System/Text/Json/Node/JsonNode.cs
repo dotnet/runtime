@@ -212,7 +212,6 @@ namespace System.Text.Json.Node
             {
                 return AsObject().GetItem(propertyName);
             }
-
             set
             {
                 AsObject().SetItem(propertyName, value);

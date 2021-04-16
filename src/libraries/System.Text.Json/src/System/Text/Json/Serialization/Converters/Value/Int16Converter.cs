@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization.Converters
             writer.WritePropertyName(value);
         }
 
-        internal override short ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+        internal override short ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
         {
             if (reader.TokenType == JsonTokenType.String &&
                 (JsonNumberHandling.AllowReadingFromString & handling) != 0)

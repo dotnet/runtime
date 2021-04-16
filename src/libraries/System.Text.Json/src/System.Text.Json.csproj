@@ -57,6 +57,9 @@
     <Compile Include="System\Text\Json\Node\JsonObject.cs" />
     <Compile Include="System\Text\Json\Node\JsonObject.Dynamic.cs" />
     <Compile Include="System\Text\Json\Node\JsonObject.IDictionary.cs" />
+    <Compile Include="System\Text\Json\Node\JsonObject.KeyCollection.cs" />
+    <Compile Include="System\Text\Json\Node\JsonObject.List.cs" />
+    <Compile Include="System\Text\Json\Node\JsonObject.ValueCollection.cs" />
     <Compile Include="System\Text\Json\Node\JsonValue.cs" />
     <Compile Include="System\Text\Json\Node\JsonValueOfT.cs" />
     <Compile Include="System\Text\Json\Node\MetaDynamic.cs" />

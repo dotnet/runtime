@@ -4,7 +4,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Node
 {
@@ -28,10 +27,8 @@ namespace System.Text.Json.Node
                 throw new ArgumentNullException(nameof(propertyName));
             }
 
+            AddNode(propertyName, value);
             value?.AssignParent(this);
-            Dictionary.Add(propertyName, value);
-            _lastKey = propertyName;
-            _lastValue = value;
         }
 
         /// <summary>
@@ -40,21 +37,15 @@ namespace System.Text.Json.Node
         /// <param name="property">
         ///   The KeyValuePair structure representing the property name and value to add to the <see cref="JsonObject"/>.
         /// </param>
+        /// <exception cref="ArgumentException">
+        ///   An element with the same property name already exists in the <see cref="JsonObject"/>.
+        /// </exception>
         /// <exception cref="ArgumentNullException">
         ///   The property name of <paramref name="property"/> is <see langword="null"/>.
         /// </exception>
         public void Add(KeyValuePair<string, JsonNode?> property)
         {
-            if (property.Key == null)
-            {
-                ThrowHelper.ThrowArgumentNullException_ValueCannotBeNull("propertyName");
-            }
-
-            JsonNode? value = property.Value;
-            value?.AssignParent(this);
-            Dictionary.Add(property);
-            _lastKey = property.Key;
-            _lastValue = value;
+            Add(property.Key, property.Value);
         }
 
         /// <summary>
@@ -62,12 +53,7 @@ namespace System.Text.Json.Node
         /// </summary>
         public void Clear()
         {
-            foreach (JsonNode? node in Dictionary.Values)
-            {
-                DetachParent(node);
-            }
-
-            Dictionary.Clear();
+            ClearNodes();
         }
 
         /// <summary>
@@ -87,13 +73,13 @@ namespace System.Text.Json.Node
                 throw new ArgumentNullException(nameof(propertyName));
             }
 
-            return Dictionary.ContainsKey(propertyName);
+            return ContainsNode(propertyName);
         }
 
         /// <summary>
         ///   Gets the number of elements contained in <see cref="JsonObject"/>.
         /// </summary>
-        public int Count => Dictionary.Count;
+        public int Count => NodeCount;
 
         /// <summary>
         ///   Removes the element with the specified property name from the <see cref="JsonObject"/>.
@@ -112,26 +98,24 @@ namespace System.Text.Json.Node
                 throw new ArgumentNullException(nameof(propertyName));
             }
 
-            if (!Dictionary.TryGetValue(propertyName, out JsonNode? item))
+            bool success = TryRemoveNode(propertyName, out JsonNode? removedNode);
+            if (success)
             {
-                return false;
+                DetachParent(removedNode);
             }
 
-            bool success = Dictionary.Remove(propertyName);
-            Debug.Assert(success);
-            DetachParent(item);
-            return true;
+            return success;
         }
 
-        #region Explicit interface implementation
         /// <summary>
-        ///   Determines whether the <see cref="JsonObject"/> contains a specific property name and value.
+        ///   Determines whether the <see cref="JsonObject"/> contains a specific property name and <see cref="JsonNode"/> reference.
         /// </summary>
         /// <param name="item">The element to locate in the <see cref="JsonObject"/>.</param>
         /// <returns>
         ///   <see langword="true"/> if the <see cref="JsonObject"/> contains an element with the property name; otherwise, <see langword="false"/>.
         /// </returns>
-        bool ICollection<KeyValuePair<string, JsonNode?>>.Contains(KeyValuePair<string, JsonNode?> item) => Dictionary.Contains(item);
+        bool ICollection<KeyValuePair<string, JsonNode?>>.Contains(KeyValuePair<string, JsonNode?> item) =>
+            ContainsNode(item);
 
         /// <summary>
         ///   Copies the elements of the <see cref="JsonObject"/> to an array of type KeyValuePair starting at the specified array index.
@@ -150,8 +134,26 @@ namespace System.Text.Json.Node
         ///   The number of elements in the source ICollection is greater than the available space from <paramref name="index"/>
         ///   to the end of the destination <paramref name="array"/>.
         /// </exception>
-        void ICollection<KeyValuePair<string, JsonNode?>>.CopyTo(KeyValuePair<string, JsonNode?>[] array, int index) =>
-            Dictionary.CopyTo(array, index);
+        void ICollection<KeyValuePair<string, JsonNode?>>.CopyTo(KeyValuePair<string, JsonNode?>[] array, int index)
+        {
+            if (index < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException_NodeArrayIndexNegative(nameof(index));
+            }
+
+            CreateList();
+            Debug.Assert(_list != null);
+
+            foreach (KeyValuePair<string, JsonNode?> item in _list)
+            {
+                if (index >= array.Length)
+                {
+                    ThrowHelper.ThrowArgumentException_NodeArrayTooSmall(nameof(array));
+                }
+
+                array[index++] = item;
+            }
+        }
 
         /// <summary>
         ///   Returns an enumerator that iterates through the <see cref="JsonObject"/>.
@@ -159,7 +161,16 @@ namespace System.Text.Json.Node
         /// <returns>
         ///   An enumerator that iterates through the <see cref="JsonObject"/>.
         /// </returns>
-        public IEnumerator<KeyValuePair<string, JsonNode?>> GetEnumerator() => Dictionary.GetEnumerator();
+        public IEnumerator<KeyValuePair<string, JsonNode?>> GetEnumerator()
+        {
+            CreateList();
+            Debug.Assert(_list != null);
+
+            foreach (KeyValuePair<string, JsonNode?> item in _list)
+            {
+                yield return item;
+            }
+        }
 
         /// <summary>
         ///   Removes a key and value from the <see cref="JsonObject"/>.
@@ -170,27 +181,17 @@ namespace System.Text.Json.Node
         /// <returns>
         ///   <see langword="true"/> if the element is successfully removed; otherwise, <see langword="false"/>.
         /// </returns>
-        bool ICollection<KeyValuePair<string, JsonNode?>>.Remove(KeyValuePair<string, JsonNode?> item)
-        {
-            if (Dictionary.Remove(item))
-            {
-                JsonNode? node = item.Value;
-                DetachParent(node);
-                return true;
-            }
-
-            return false;
-        }
+        bool ICollection<KeyValuePair<string, JsonNode?>>.Remove(KeyValuePair<string, JsonNode?> item) => Remove(item.Key);
 
         /// <summary>
         ///   Gets a collection containing the property names in the <see cref="JsonObject"/>.
         /// </summary>
-        ICollection<string> IDictionary<string, JsonNode?>.Keys => Dictionary.Keys;
+        ICollection<string> IDictionary<string, JsonNode?>.Keys => GetKeyCollection(this);
 
         /// <summary>
         ///   Gets a collection containing the property values in the <see cref="JsonObject"/>.
         /// </summary>
-        ICollection<JsonNode?> IDictionary<string, JsonNode?>.Values => Dictionary.Values;
+        ICollection<JsonNode?> IDictionary<string, JsonNode?>.Values => GetValueCollection(this);
 
         /// <summary>
         ///   Gets the value associated with the specified property name.
@@ -206,14 +207,14 @@ namespace System.Text.Json.Node
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
-        bool IDictionary<string, JsonNode?>.TryGetValue(string propertyName, [NotNullWhen(true)] out JsonNode? jsonNode)
+        bool IDictionary<string, JsonNode?>.TryGetValue(string propertyName, out JsonNode? jsonNode)
         {
             if (propertyName == null)
             {
                 throw new ArgumentNullException(nameof(propertyName));
             }
 
-            return Dictionary.TryGetValue(propertyName, out jsonNode);
+            return TryFindNode(propertyName, out jsonNode);
         }
 
         /// <summary>
@@ -227,20 +228,15 @@ namespace System.Text.Json.Node
         /// <returns>
         ///   An enumerator that iterates through the <see cref="JsonObject"/>.
         /// </returns>
-        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)Dictionary).GetEnumerator();
-
-        #endregion
-
-        private void DetachParent(JsonNode? item)
+        IEnumerator IEnumerable.GetEnumerator()
         {
-            if (item != null)
-            {
-                item.Parent = null;
-            }
+            CreateList();
+            Debug.Assert(_list != null);
 
-            // Prevent previous child from being returned from these cached variables.
-            _lastKey = null;
-            _lastValue = null;
+            foreach (KeyValuePair<string, JsonNode?> item in _list)
+            {
+                yield return item;
+            }
         }
     }
 }

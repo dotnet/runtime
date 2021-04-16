@@ -34,6 +34,24 @@ namespace System.Text.Json.Serialization
 
         internal bool CanBePolymorphic { get; set; }
 
+        /// <summary>
+        /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
+        /// </summary>
+        internal virtual object CreateObject(JsonSerializerOptions options) { throw new InvalidOperationException(); }
+
+        /// <summary>
+        /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
+        /// </summary>
+        internal virtual void ReadElementAndSetProperty(
+            object obj,
+            string propertyName,
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
+            ref ReadStack state)
+        {
+            throw new InvalidOperationException();
+        }
+
         internal abstract JsonPropertyInfo CreateJsonPropertyInfo();
 
         internal abstract JsonParameterInfo CreateJsonParameterInfo();

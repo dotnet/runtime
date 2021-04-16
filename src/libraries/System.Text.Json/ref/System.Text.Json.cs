@@ -638,7 +638,7 @@ namespace System.Text.Json.Node
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Node.JsonNode?>>.Contains(System.Collections.Generic.KeyValuePair<string, System.Text.Json.Node.JsonNode> item) { throw null; }
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Node.JsonNode?>>.CopyTo(System.Collections.Generic.KeyValuePair<string, System.Text.Json.Node.JsonNode>[] array, int index) { }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Node.JsonNode?>>.Remove(System.Collections.Generic.KeyValuePair<string, System.Text.Json.Node.JsonNode> item) { throw null; }
-        bool System.Collections.Generic.IDictionary<string, System.Text.Json.Node.JsonNode?>.TryGetValue(string propertyName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.Json.Node.JsonNode jsonNode) { throw null; }
+        bool System.Collections.Generic.IDictionary<string, System.Text.Json.Node.JsonNode?>.TryGetValue(string propertyName, out System.Text.Json.Node.JsonNode? jsonNode) { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public bool TryGetPropertyValue(string propertyName, out System.Text.Json.Node.JsonNode? jsonNode) { throw null; }
         public override void WriteTo(System.Text.Json.Utf8JsonWriter writer, System.Text.Json.JsonSerializerOptions? options = null) { }

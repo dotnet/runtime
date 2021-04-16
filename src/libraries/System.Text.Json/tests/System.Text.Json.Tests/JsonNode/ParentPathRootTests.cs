@@ -69,11 +69,11 @@ namespace System.Text.Json.Node.Tests
         [Fact]
         public static void DetectCycles_Object()
         {
-            var jObject = new JsonObject { };
+            var jObject = new JsonObject();
             Assert.Throws<InvalidOperationException>(() => jObject.Add("a", jObject));
 
-            var jObject2 = new JsonObject { };
-            jObject.Add("a", jObject2);
+            var jObject2 = new JsonObject();
+            jObject.Add("b", jObject2);
             Assert.Throws<InvalidOperationException>(() => jObject2.Add("b", jObject));
         }
 

@@ -11,17 +11,6 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            if (JsonTypeInfo.ObjectType == typeToConvert)
-            {
-                if (options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode)
-                {
-                    return JsonNodeConverter.Instance;
-                }
-
-                // Return the converter for System.Object which uses JsonElement.
-                return JsonMetadataServices.ObjectConverter;
-            }
-
             if (typeof(JsonValue).IsAssignableFrom(typeToConvert))
             {
                 return JsonNodeConverter.Instance.ValueConverter;
@@ -42,7 +31,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         public override bool CanConvert(Type typeToConvert) =>
-            typeToConvert == JsonTypeInfo.ObjectType ||
+            typeToConvert != JsonTypeInfo.ObjectType &&
             typeof(JsonNode).IsAssignableFrom(typeToConvert);
     }
 }

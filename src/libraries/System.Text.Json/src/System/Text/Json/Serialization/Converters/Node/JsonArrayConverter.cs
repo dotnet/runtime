@@ -6,7 +6,7 @@ using System.Text.Json.Node;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class JsonArrayConverter : JsonConverter<JsonArray>
+    internal sealed class JsonArrayConverter : JsonConverter<JsonArray>
     {
         public override void Write(Utf8JsonWriter writer, JsonArray value, JsonSerializerOptions options)
         {
@@ -20,8 +20,6 @@ namespace System.Text.Json.Serialization.Converters
             {
                 case JsonTokenType.StartArray:
                     return ReadList(ref reader, options.GetNodeOptions());
-                case JsonTokenType.Null:
-                    return null;
                 default:
                     Debug.Assert(false);
                     throw ThrowHelper.GetInvalidOperationException_ExpectedArray(reader.TokenType);
