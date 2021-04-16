@@ -2037,6 +2037,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	vt->klass = klass;
 	vt->rank = m_class_get_rank (klass);
 	vt->domain = domain;
+	vt->loader_alloc = mono_mem_manager_get_loader_alloc (mem_manager);
 	if ((vt->rank > 0) || klass == mono_get_string_class ())
 		vt->flags |= MONO_VT_FLAG_ARRAY_OR_STRING;
 

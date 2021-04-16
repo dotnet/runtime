@@ -360,6 +360,7 @@ struct MonoVTable {
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
 	gpointer    type; /* System.Type type for klass */
 	guint8     *interface_bitmap;
+	MonoGCHandle loader_alloc; /* LoaderAllocator object for objects in collectible alcs */
 	guint32     max_interface_id;
 	guint8      rank;
 	/* Keep this a guint8, the jit depends on it */
