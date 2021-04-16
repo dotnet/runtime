@@ -33,13 +33,15 @@ namespace System.IO.Strategies
             {
                 _strategy = strategy;
                 _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, null);
+
+                _source = default;
+                _source.RunContinuationsAsynchronously = true;
             }
 
             internal NativeOverlapped* Configure(ReadOnlyMemory<byte> memory)
             {
                 _result = TaskSourceCodes.NoResult;
-                _source = default;
-                _source.RunContinuationsAsynchronously = true;
+                _source.Reset();
 
                 _handle = memory.Pin();
                 _overlapped = _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
