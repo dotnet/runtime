@@ -498,7 +498,14 @@ def main(main_args):
             print('Adding exclusions for crossgen2')
             # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
             exclude_files += [ "Microsoft.Build.dll" ]
-        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory, exclude_files)
+
+        if coreclr_args.collection_name == "tests_libraries":
+            # tests_libraries artifacts contains files from core_root folder. Exclude them.
+            core_root_dir = coreclr_args.core_root_directory
+            exclude_files += [item for item in os.listdir(core_root_dir)
+                              if isfile(join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]
+        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory,
+                        exclude_files)
 
     # Set variables
     print('Setting pipeline variables:')
