@@ -627,6 +627,9 @@
   <data name="net_socks_unexpected_version" xml:space="preserve">
     <value>Unexpected SOCKS protocol version. Required {0}, got {1}.</value>
   </data>
+  <data name="net_socks_string_too_long" xml:space="preserve">
+    <value>Encoding the {0} took more than the maximum of 255 bytes.</value>
+  </data>
   <data name="net_socks_auth_required" xml:space="preserve">
     <value>SOCKS server requested username &amp; password authentication.</value>
   </data>

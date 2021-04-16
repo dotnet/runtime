@@ -73,10 +73,18 @@ namespace System.Net.Http.Functional.Tests.Socks
                 yield return new object[] { scheme, "[::1]", false, null, "SOCKS4 does not support IPv6 addresses." };
                 yield return new object[] { scheme, "localhost", true, null, "Failed to authenticate with the SOCKS server." };
                 yield return new object[] { scheme, "localhost", true, new NetworkCredential("bad_username", "bad_password"), "Failed to authenticate with the SOCKS server." };
+                yield return new object[] { scheme, "localhost", true, new NetworkCredential(new string('a', 256), "foo"), "Encoding the UserName took more than the maximum of 255 bytes." };
+            }
+
+            foreach (string scheme in new[] { "socks4a", "socks5" })
+            {
+                yield return new object[] { scheme, new string('a', 256), false, null, "Encoding the host took more than the maximum of 255 bytes." };
             }
 
             yield return new object[] { "socks5", "localhost", true, null, "SOCKS server did not return a suitable authentication method." };
             yield return new object[] { "socks5", "localhost", true, new NetworkCredential("bad_username", "bad_password"), "Failed to authenticate with the SOCKS server." };
+            yield return new object[] { "socks5", "localhost", true, new NetworkCredential(new string('a', 256), "foo"), "Encoding the UserName took more than the maximum of 255 bytes." };
+            yield return new object[] { "socks5", "localhost", true, new NetworkCredential("foo", new string('a', 256)), "Encoding the Password took more than the maximum of 255 bytes." };
         }
 
         [Theory]

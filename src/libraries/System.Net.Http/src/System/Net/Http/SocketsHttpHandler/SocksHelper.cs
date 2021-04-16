@@ -14,11 +14,11 @@ namespace System.Net.Http
 {
     internal static class SocksHelper
     {
-        // socks protocol limits address length to 1 byte, thus the maximum possible buffer is 256+other fields
-        private const int BufferSize = 512;
+        // Largest possible message size is 513 bytes (Socks5 username & password auth)
+        private const int BufferSize = 513;
         private const int ProtocolVersion4 = 4;
         private const int ProtocolVersion5 = 5;
-        private const int SubnegotiationVersion = 1; // Socks5 username/password auth
+        private const int SubnegotiationVersion = 1; // Socks5 username & password auth
         private const byte METHOD_NO_AUTH = 0;
         private const byte METHOD_USERNAME_PASSWORD = 2;
         private const byte CMD_CONNECT = 1;
@@ -35,17 +35,19 @@ namespace System.Net.Http
             {
                 try
                 {
+                    NetworkCredential? credentials = proxyCredentials?.GetCredential(proxyUri, proxyUri.Scheme);
+
                     if (string.Equals(proxyUri.Scheme, "socks5", StringComparison.OrdinalIgnoreCase))
                     {
-                        await EstablishSocks5TunnelAsync(stream, host, port, proxyUri, proxyCredentials, async).ConfigureAwait(false);
+                        await EstablishSocks5TunnelAsync(stream, host, port, proxyUri, credentials, async).ConfigureAwait(false);
                     }
                     else if (string.Equals(proxyUri.Scheme, "socks4a", StringComparison.OrdinalIgnoreCase))
                     {
-                        await EstablishSocks4TunnelAsync(stream, isVersion4a: true, host, port, proxyUri, proxyCredentials, async, cancellationToken).ConfigureAwait(false);
+                        await EstablishSocks4TunnelAsync(stream, isVersion4a: true, host, port, proxyUri, credentials, async, cancellationToken).ConfigureAwait(false);
                     }
                     else if (string.Equals(proxyUri.Scheme, "socks4", StringComparison.OrdinalIgnoreCase))
                     {
-                        await EstablishSocks4TunnelAsync(stream, isVersion4a: false, host, port, proxyUri, proxyCredentials, async, cancellationToken).ConfigureAwait(false);
+                        await EstablishSocks4TunnelAsync(stream, isVersion4a: false, host, port, proxyUri, credentials, async, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -60,10 +62,9 @@ namespace System.Net.Http
             }
         }
 
-        private static async ValueTask EstablishSocks5TunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, bool async)
+        private static async ValueTask EstablishSocks5TunnelAsync(Stream stream, string host, int port, Uri proxyUri, NetworkCredential? credentials, bool async)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
-
             try
             {
                 // https://tools.ietf.org/html/rfc1928
@@ -74,7 +75,6 @@ namespace System.Net.Http
                 // | 1  |    1     | 1 to 255 |
                 // +----+----------+----------+
                 buffer[0] = ProtocolVersion5;
-                NetworkCredential? credentials = proxyCredentials?.GetCredential(proxyUri, "");
                 if (credentials is null)
                 {
                     buffer[1] = 1;
@@ -119,9 +119,9 @@ namespace System.Net.Http
                             // | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
                             // +----+------+----------+------+----------+
                             buffer[0] = SubnegotiationVersion;
-                            byte usernameLength = checked((byte)Encoding.UTF8.GetBytes(credentials.UserName, buffer.AsSpan(2)));
+                            byte usernameLength = EncodeString(credentials.UserName, buffer.AsSpan(2), nameof(credentials.UserName));
                             buffer[1] = usernameLength;
-                            byte passwordLength = checked((byte)Encoding.UTF8.GetBytes(credentials.Password, buffer.AsSpan(3 + usernameLength)));
+                            byte passwordLength = EncodeString(credentials.Password, buffer.AsSpan(3 + usernameLength), nameof(credentials.Password));
                             buffer[2 + usernameLength] = passwordLength;
                             await WriteAsync(stream, buffer.AsMemory(0, 3 + usernameLength + passwordLength), async).ConfigureAwait(false);
 
@@ -174,9 +174,9 @@ namespace System.Net.Http
                 else
                 {
                     buffer[3] = ATYP_DOMAIN_NAME;
-                    byte bytesEncoded = checked((byte)Encoding.UTF8.GetBytes(host, buffer.AsSpan(5)));
-                    buffer[4] = bytesEncoded;
-                    addressLength = bytesEncoded + 1;
+                    byte hostLength = EncodeString(host, buffer.AsSpan(5), nameof(host));
+                    buffer[4] = hostLength;
+                    addressLength = hostLength + 1;
                 }
 
                 BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(addressLength + 4), (ushort)port);
@@ -210,10 +210,9 @@ namespace System.Net.Http
             }
         }
 
-        private static async ValueTask EstablishSocks4TunnelAsync(Stream stream, bool isVersion4a, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, bool async, CancellationToken cancellationToken)
+        private static async ValueTask EstablishSocks4TunnelAsync(Stream stream, bool isVersion4a, string host, int port, Uri proxyUri, NetworkCredential? credentials, bool async, CancellationToken cancellationToken)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
-
             try
             {
                 // https://www.openssh.com/txt/socks4.protocol
@@ -222,7 +221,6 @@ namespace System.Net.Http
                 // | VN | CD | DSTPORT |      DSTIP        | USERID       |NULL|
                 // +----+----+----+----+----+----+----+----+----+----+....+----+
                 //    1    1      2              4           variable       1
-                string? username = proxyCredentials?.GetCredential(proxyUri, "")?.UserName;
                 buffer[0] = ProtocolVersion4;
                 buffer[1] = CMD_CONNECT;
 
@@ -273,14 +271,14 @@ namespace System.Net.Http
                     Debug.Assert(bytesWritten == 4);
                 }
 
-                byte usernameLength = checked((byte)Encoding.UTF8.GetBytes(username, buffer.AsSpan(8)));
+                byte usernameLength = EncodeString(credentials?.UserName, buffer.AsSpan(8), nameof(credentials.UserName));
                 buffer[8 + usernameLength] = 0;
                 int totalLength = 9 + usernameLength;
 
                 if (ipv4Address is null)
                 {
                     // https://www.openssh.com/txt/socks4a.protocol
-                    byte hostLength = checked((byte)Encoding.UTF8.GetBytes(host, buffer.AsSpan(totalLength)));
+                    byte hostLength = EncodeString(host, buffer.AsSpan(totalLength), nameof(host));
                     buffer[totalLength + hostLength] = 0;
                     totalLength += hostLength + 1;
                 }
@@ -309,6 +307,19 @@ namespace System.Net.Http
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        private static byte EncodeString(ReadOnlySpan<char> chars, Span<byte> buffer, string parameterName)
+        {
+            try
+            {
+                return checked((byte)Encoding.UTF8.GetBytes(chars, buffer));
+            }
+            catch
+            {
+                Debug.Assert(Encoding.UTF8.GetByteCount(chars) > 255);
+                throw new SocksException(SR.Format(SR.net_socks_string_too_long, parameterName));
             }
         }
 
