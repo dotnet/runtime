@@ -1840,7 +1840,7 @@ public:
     inline bool IsMultiRegNode() const;
 
     // Returns the number of registers defined by a multireg node.
-    unsigned GetMultiRegCount();
+    unsigned GetMultiRegCount() const;
 
     // Returns the regIndex'th register defined by a possibly-multireg node.
     regNumber GetRegByIndex(int regIndex);
@@ -6720,7 +6720,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 #endif
     }
 
-    unsigned GetRegCount()
+    unsigned GetRegCount() const
     {
 #if FEATURE_MULTIREG_RET
         // We need to return the highest index for which we have a valid register.
@@ -7550,12 +7550,12 @@ inline bool GenTree::IsMultiRegNode() const
         return true;
     }
 #endif // FEATURE_MULTIREG_RET
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
+
+    if (OperIsHWIntrinsic())
     {
         return (TypeGet() == TYP_STRUCT);
     }
-#endif
+
     if (IsMultiRegLclVar())
     {
         return true;
@@ -7571,7 +7571,7 @@ inline bool GenTree::IsMultiRegNode() const
 // Return Value:
 //     Returns the number of registers defined by this node.
 //
-inline unsigned GenTree::GetMultiRegCount()
+inline unsigned GenTree::GetMultiRegCount() const
 {
 #if FEATURE_MULTIREG_RET
     if (IsMultiRegCall())
@@ -7598,13 +7598,33 @@ inline unsigned GenTree::GetMultiRegCount()
         return AsCopyOrReload()->GetRegCount();
     }
 #endif // FEATURE_MULTIREG_RET
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
+
+    if (OperIsHWIntrinsic())
     {
         assert(TypeGet() == TYP_STRUCT);
+#ifdef TARGET_ARM64
+        const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId = intrinsic->gtHWIntrinsicId;
+
+        switch (intrinsicId)
+        {
+            // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector64:
+            case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector128:
+            case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+                return 2;
+
+            default:
+                unreached();
+        }
+#elif defined(TARGET_XARCH)
         return 2;
-    }
 #endif
+    }
+
     if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
     {
         assert((gtFlags & GTF_VAR_MULTIREG) != 0);
@@ -7667,13 +7687,14 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
         return AsCopyOrReload()->GetRegNumByIdx(regIndex);
     }
 #endif // FEATURE_MULTIREG_RET
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#ifdef FEATURE_HW_INTRINSICS
     if (OperIs(GT_HWINTRINSIC))
     {
         assert(regIndex == 1);
+        // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
         return AsHWIntrinsic()->GetOtherReg();
     }
-#endif
+#endif // FEATURE_HW_INTRINSICS
     if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
     {
         return AsLclVar()->GetRegNumByIdx(regIndex);
@@ -7724,15 +7745,26 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex)
 
 #endif // FEATURE_MULTIREG_RET
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
+    if (OperIsHWIntrinsic())
     {
+        assert(TypeGet() == TYP_STRUCT);
+#ifdef TARGET_ARM64
+        if (AsHWIntrinsic()->GetSimdSize() == 16)
+        {
+            return TYP_SIMD16;
+        }
+        else
+        {
+            assert(AsHWIntrinsic()->GetSimdSize() == 8);
+            return TYP_SIMD8;
+        }
+#elif defined(TARGET_XARCH)
         // At this time, the only multi-reg HW intrinsics all return the type of their
         // arguments. If this changes, we will need a way to record or determine this.
-        assert(TypeGet() == TYP_STRUCT);
         return gtGetOp1()->TypeGet();
-    }
 #endif
+    }
+
     if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
     {
         if (TypeGet() == TYP_LONG)

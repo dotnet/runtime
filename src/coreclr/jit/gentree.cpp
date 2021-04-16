@@ -715,14 +715,33 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
 #endif
     }
 #endif
-
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
+    else if (OperIsHWIntrinsic())
     {
         assert(TypeGet() == TYP_STRUCT);
+#ifdef TARGET_ARM64
+        const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId = intrinsic->gtHWIntrinsicId;
+        assert(HWIntrinsicInfo::ReturnsStruct(intrinsicId));
+
+        switch (intrinsicId)
+        {
+            // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector64:
+            case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector128:
+            case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+                return 2;
+
+            default:
+                unreached();
+        }
+#elif defined(TARGET_XARCH)
         return 2;
-    }
 #endif
+    }
+
     if (OperIsScalarLocal())
     {
         return AsLclVar()->GetFieldCount(compiler);
