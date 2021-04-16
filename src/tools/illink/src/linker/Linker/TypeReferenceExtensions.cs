@@ -11,8 +11,11 @@ namespace Mono.Linker
 		public static string GetDisplayName (this TypeReference type)
 		{
 			var builder = GetDisplayNameWithoutNamespace (type);
-			builder.Insert (0, ".");
-			builder.Insert (0, type.GetNamespaceDisplayName ());
+			var namespaceDisplayName = type.GetNamespaceDisplayName ();
+			if (!string.IsNullOrEmpty (namespaceDisplayName)) {
+				builder.Insert (0, ".");
+				builder.Insert (0, namespaceDisplayName);
+			}
 
 			return builder.ToString ();
 		}
