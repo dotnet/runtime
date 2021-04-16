@@ -2130,33 +2130,39 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     int       srcOffset      = 0;
     GenTree*  src            = node->Data();
 
-    assert(src->isContained());
-
-    if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    if (src->isContained())
     {
-        srcLclNum = src->AsLclVarCommon()->GetLclNum();
-        srcOffset = src->AsLclVarCommon()->GetLclOffs();
-    }
-    else
-    {
-        assert(src->OperIs(GT_IND));
-        GenTree* srcAddr = src->AsIndir()->Addr();
-
-        if (!srcAddr->isContained())
+        if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
-            srcAddrBaseReg = genConsumeReg(srcAddr);
-        }
-        else if (srcAddr->OperIsAddrMode())
-        {
-            srcAddrBaseReg = genConsumeReg(srcAddr->AsAddrMode()->Base());
-            srcOffset      = srcAddr->AsAddrMode()->Offset();
+            srcLclNum = src->AsLclVarCommon()->GetLclNum();
+            srcOffset = src->AsLclVarCommon()->GetLclOffs();
         }
         else
         {
-            assert(srcAddr->OperIsLocalAddr());
-            srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
-            srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
+            assert(src->OperIs(GT_IND));
+            GenTree* srcAddr = src->AsIndir()->Addr();
+
+            if (!srcAddr->isContained())
+            {
+                srcAddrBaseReg = genConsumeReg(srcAddr);
+            }
+            else if (srcAddr->OperIsAddrMode())
+            {
+                srcAddrBaseReg = genConsumeReg(srcAddr->AsAddrMode()->Base());
+                srcOffset      = srcAddr->AsAddrMode()->Offset();
+            }
+            else
+            {
+                assert(srcAddr->OperIsLocalAddr());
+                srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
+                srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
+            }
         }
+    }
+    else
+    {
+        assert(src->OperIsHWIntrinsic());
+        assert(src->TypeGet() == TYP_STRUCT);
     }
 
     if (node->IsVolatile())
@@ -2175,6 +2181,34 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
 
 #ifdef TARGET_ARM64
+    if (src->OperIsHWIntrinsic())
+    {
+        const GenTreeHWIntrinsic* intrinsic = src->AsHWIntrinsic();
+
+        assert(src->IsMultiRegNode());
+        const int srcCount = src->GetMultiRegCount();
+
+        for (int srcIndex = 0; srcIndex < srcCount; srcIndex++)
+        {
+            const regNumber srcReg     = src->GetRegByIndex(srcIndex);
+            const var_types srcRegType = src->GetRegTypeByIndex(srcIndex);
+            const int       srcRegSize = genTypeSize(srcRegType);
+            const emitAttr  attr       = emitTypeSize(srcRegType);
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                GetEmitter()->emitIns_S_R(INS_str, attr, srcReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                GetEmitter()->emitIns_R_R_I(INS_str, attr, srcReg, dstAddrBaseReg, dstOffset);
+            }
+
+            dstOffset += srcRegSize;
+            size -= srcRegSize;
+        }
+    }
+
     if (size >= 2 * REGSIZE_BYTES)
     {
         regNumber tempReg2 = node->ExtractTempReg(RBM_ALLINT);
