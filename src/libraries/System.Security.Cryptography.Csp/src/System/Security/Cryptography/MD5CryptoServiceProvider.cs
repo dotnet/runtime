@@ -27,8 +27,6 @@ namespace System.Security.Cryptography
                 Debug.Fail("Reset expected a properly sized buffer.");
                 throw new CryptographicException();
             }
-
-            CryptographicOperations.ZeroMemory(destination);
         }
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize) =>
