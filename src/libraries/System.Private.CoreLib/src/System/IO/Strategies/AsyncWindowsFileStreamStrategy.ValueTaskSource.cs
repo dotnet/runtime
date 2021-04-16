@@ -109,11 +109,6 @@ namespace System.IO.Strategies
 
             private static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
-                // Extract the ValueTaskSource from the overlapped.  The state in the overlapped
-                // will either be a AsyncWindowsFileStreamStrategy (in the case where the preallocated overlapped was used),
-                // in which case the operation being completed is its _currentOverlappedOwner, or it'll
-                // be directly the ValueTaskSource that's completing (in the case where the preallocated
-                // overlapped was already in use by another operation).
                 ValueTaskSource valueTaskSource = (ValueTaskSource)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
                 Debug.Assert(valueTaskSource._overlapped == pOverlapped, "Overlaps don't match");
 
