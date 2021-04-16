@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             return Enabled;
         }
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             LastLogLevel = logLevel;
             LastEventId = eventId;

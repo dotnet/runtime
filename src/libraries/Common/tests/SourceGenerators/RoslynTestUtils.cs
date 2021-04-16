@@ -64,7 +64,7 @@ namespace SourceGenerators.Tests
         {
             foreach (Document doc in proj.Documents)
             {
-                SemanticModel sm = await doc.GetSemanticModelAsync(CancellationToken.None).ConfigureAwait(false);
+                SemanticModel? sm = await doc.GetSemanticModelAsync(CancellationToken.None).ConfigureAwait(false);
                 Assert.NotNull(sm);
 
                 foreach (Diagnostic d in sm!.GetDiagnostics())
@@ -139,7 +139,7 @@ namespace SourceGenerators.Tests
 
             Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
 
-            Compilation comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
+            Compilation? comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
 
             CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator }, optionsProvider: optionsProvider);
             GeneratorDriver gd = cgd.RunGenerators(comp!, cancellationToken);
@@ -168,7 +168,7 @@ namespace SourceGenerators.Tests
 
             ImmutableArray<DiagnosticAnalyzer> analyzers = ImmutableArray.Create(analyzer);
 
-            Compilation comp = await proj!.GetCompilationAsync().ConfigureAwait(false);
+            Compilation? comp = await proj!.GetCompilationAsync().ConfigureAwait(false);
             return await comp!.WithAnalyzers(analyzers).GetAllDiagnosticsAsync().ConfigureAwait(false);
         }
 
@@ -214,7 +214,7 @@ namespace SourceGenerators.Tests
 
             while (true)
             {
-                Compilation comp = await proj!.GetCompilationAsync().ConfigureAwait(false);
+                Compilation? comp = await proj!.GetCompilationAsync().ConfigureAwait(false);
                 ImmutableArray<Diagnostic> diags = await comp!.WithAnalyzers(analyzers).GetAllDiagnosticsAsync().ConfigureAwait(false);
                 if (diags.IsEmpty)
                 {
@@ -225,7 +225,7 @@ namespace SourceGenerators.Tests
                 var actions = new List<CodeAction>();
                 foreach (Diagnostic d in diags)
                 {
-                    Document doc = proj.GetDocument(d.Location.SourceTree);
+                    Document? doc = proj.GetDocument(d.Location.SourceTree);
 
                     CodeFixContext context = new CodeFixContext(doc!, d, (action, _) => actions.Add(action), CancellationToken.None);
                     await fixer.RegisterCodeFixesAsync(context).ConfigureAwait(false);
@@ -239,7 +239,7 @@ namespace SourceGenerators.Tests
 
                 ImmutableArray<CodeActionOperation> operations = await actions[0].GetOperationsAsync(CancellationToken.None).ConfigureAwait(false);
                 Solution solution = operations.OfType<ApplyChangesOperation>().Single().ChangedSolution;
-                Project changedProj = solution.GetProject(proj.Id);
+                Project? changedProj = solution.GetProject(proj.Id);
                 if (changedProj != proj)
                 {
                     proj = await RecreateProjectDocumentsAsync(changedProj!).ConfigureAwait(false);
@@ -279,7 +279,7 @@ namespace SourceGenerators.Tests
         {
             foreach (DocumentId documentId in project.DocumentIds)
             {
-                Document document = project.GetDocument(documentId);
+                Document? document = project.GetDocument(documentId);
                 document = await RecreateDocumentAsync(document!).ConfigureAwait(false);
                 project = document.Project;
             }

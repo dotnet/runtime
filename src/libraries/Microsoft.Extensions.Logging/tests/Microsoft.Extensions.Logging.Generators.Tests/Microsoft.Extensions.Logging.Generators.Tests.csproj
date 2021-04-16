@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
