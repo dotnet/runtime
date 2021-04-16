@@ -119,6 +119,8 @@ namespace Mono.Linker
 
 		public bool KeepUsedAttributeTypesOnly { get; set; }
 
+		public bool DisableSerializationDiscovery { get; set; }
+
 		public bool IgnoreDescriptors { get; set; }
 
 		public bool IgnoreSubstitutions { get; set; }
@@ -193,6 +195,8 @@ namespace Mono.Linker
 
 		public HashSet<string> AssembliesWithGeneratedSingleWarning { get; set; }
 
+		public SerializationMarker SerializationMarker { get; }
+
 		public LinkContext (Pipeline pipeline, ILogger logger)
 		{
 			_pipeline = pipeline;
@@ -210,6 +214,7 @@ namespace Mono.Linker
 			var factory = new UnintializedContextFactory ();
 			_annotations = factory.CreateAnnotationStore (this);
 			MarkingHelpers = factory.CreateMarkingHelpers (this);
+			SerializationMarker = new SerializationMarker (this);
 			Tracer = factory.CreateTracer (this);
 			ReflectionPatternRecorder = new LoggingReflectionPatternRecorder (this);
 			MarkedKnownMembers = new KnownMembers ();

@@ -308,6 +308,12 @@ namespace Mono.Linker
 			Debug.Assert (preserve != TypePreserve.Nothing);
 			if (!preserved_types.TryGetValue (type, out (TypePreserve preserve, bool applied) existing)) {
 				preserved_types.Add (type, (preserve, false));
+				if (IsProcessed (type)) {
+					// Required to track preserve for marked types where the existing preserve
+					// was Nothing (since these aren't explicitly tracked.)
+					var addedPending = pending_preserve.Add (type);
+					Debug.Assert (addedPending);
+				}
 				return;
 			}
 			Debug.Assert (existing.preserve != TypePreserve.Nothing);
