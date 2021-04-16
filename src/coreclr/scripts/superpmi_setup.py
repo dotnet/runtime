@@ -308,7 +308,10 @@ def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda pa
                 if match_func(src_item):
                     if verbose_output:
                         print("> copy {0} => {1}".format(src_item, dst_item))
-                    shutil.copy2(src_item, dst_item)
+                    try:
+                        shutil.copy2(src_item, dst_item)
+                    except PermissionError as pe_error:
+                        print('Ignoring PermissionError: {0}'.format(pe_error))
                 else:
                     if verbose_output:
                         print("> skipping {0}".format(src_item))
