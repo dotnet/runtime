@@ -274,7 +274,7 @@ buffer_manager_try_reserve_buffer(
 		old_size_of_all_buffers = buffer_manager->size_of_all_buffers;
 		new_size_of_all_buffers = old_size_of_all_buffers + request_size;
 		iters++;
-		if (iters % 64 == 0) {
+		if (iters % 8 == 0) {
 			ep_rt_thread_sleep (0); // yield the thread to the scheduler in case we're in high contention
 		}
 	} while (new_size_of_all_buffers <= buffer_manager->max_size_of_all_buffers && ep_rt_atomic_compare_exchange_size_t (&buffer_manager->size_of_all_buffers, old_size_of_all_buffers, new_size_of_all_buffers) != old_size_of_all_buffers);
@@ -294,7 +294,7 @@ buffer_manager_release_buffer(
 		old_size_of_all_buffers = buffer_manager->size_of_all_buffers;
 		new_size_of_all_buffers = old_size_of_all_buffers - size;
 		iters++;
-		if (iters % 64 == 0) {
+		if (iters % 8 == 0) {
 			ep_rt_thread_sleep (0); // yield the thread to the scheduler in case we're in high contention
 		}
 	} while (new_size_of_all_buffers >= 0 && ep_rt_atomic_compare_exchange_size_t (&buffer_manager->size_of_all_buffers, old_size_of_all_buffers, new_size_of_all_buffers) != old_size_of_all_buffers);
