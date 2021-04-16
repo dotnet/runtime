@@ -1104,10 +1104,10 @@
     <Compile Include="$(CommonPath)Interop\Interop.ResultCode.cs">
       <Link>Common\Interop\Interop.ResultCode.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneDisplayNameType.cs" Condition="'$(TargetsBrowser)' != 'true'" >
+    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneDisplayNameType.cs" Condition="'$(TargetsBrowser)' != 'true'">
       <Link>Common\Interop\Interop.TimeZoneDisplayNameType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.cs" Condition="'$(TargetsBrowser)' != 'true'" >
+    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.cs" Condition="'$(TargetsBrowser)' != 'true'">
       <Link>Common\Interop\Interop.TimeZoneInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Utils.cs">
@@ -1656,8 +1656,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathHelper.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\AsyncWindowsFileStreamStrategy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\AsyncWindowsFileStreamStrategy.ValueTaskSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\FileStreamHelpers.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\FileStreamCompletionSource.Win32.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.CompletionSource.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\SyncWindowsFileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\WindowsFileStreamStrategy.cs" />

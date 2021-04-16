@@ -510,6 +510,8 @@ DbgEngineErrorCode mono_de_ss_create (MonoInternalThread *thread, StepSize size,
 void mono_de_cancel_ss (SingleStepReq *req);
 void mono_de_cancel_all_ss (void);
 
+DbgEngineErrorCode mono_de_set_interp_var (MonoType *t, gpointer addr, guint8 *val_buf);
+
 gboolean set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame);
 MonoClass * get_class_to_get_builder_field(DbgEngineStackFrame *frame);
 gpointer get_this_addr (DbgEngineStackFrame *the_frame);

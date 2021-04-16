@@ -2753,8 +2753,8 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
     // hit only under JIT stress. See if the block is the one we injected.
     // Note that EH canonicalization can inject internal blocks here. We might
     // be able to re-use such a block (but we don't, right now).
-    if ((hndBlk->bbFlags & (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET)) ==
-        (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET))
+    if ((hndBlk->bbFlags & (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE)) ==
+        (BBF_IMPORTED | BBF_INTERNAL | BBF_DONT_REMOVE))
     {
         Statement* stmt = hndBlk->firstStmt();
 
@@ -2801,7 +2801,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 
         /* Create extra basic block for the spill */
         BasicBlock* newBlk = fgNewBBbefore(BBJ_NONE, hndBlk, /* extendRegion */ true);
-        newBlk->bbFlags |= BBF_IMPORTED | BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_JMP_TARGET;
+        newBlk->bbFlags |= BBF_IMPORTED | BBF_DONT_REMOVE;
         newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
@@ -4315,7 +4315,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_RET_EXPR))
                 {
                     GenTreeCall* call = impStackTop().val->AsRetExpr()->gtInlineCandidate->AsCall();
-                    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+                    if (call->IsSpecialIntrinsic())
                     {
                         if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Threading_Thread_get_CurrentThread)
                         {
@@ -8417,7 +8417,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // Mark call if it's one of the ones we will maybe treat as an intrinsic
         if (isSpecialIntrinsic)
         {
-            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+            call->AsCall()->SetIsSpecialIntrinsic();
         }
     }
     assert(sig);
@@ -9279,7 +9279,7 @@ DONE_CALL:
                     {
                         spillStack = false;
                     }
-                    else if ((callNode->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0)
+                    else if (callNode->IsSpecialIntrinsic())
                     {
                         spillStack = false;
                     }

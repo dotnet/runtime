@@ -84,8 +84,8 @@ namespace System.Net
             }
             else
             {
-                IntPtr[] ptrs = Interop.AndroidCrypto.SSLStreamGetPeerCertificates(sslContext);
-                if (ptrs.Length > 0)
+                IntPtr[]? ptrs = Interop.AndroidCrypto.SSLStreamGetPeerCertificates(sslContext);
+                if (ptrs != null && ptrs.Length > 0)
                 {
                     // This is intentionally a different object from the cert added to the remote certificate store
                     // to match the behaviour on other platforms.

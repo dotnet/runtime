@@ -419,10 +419,6 @@ void BasicBlock::dspFlags()
     {
         printf("label ");
     }
-    if (bbFlags & BBF_JMP_TARGET)
-    {
-        printf("target ");
-    }
     if (bbFlags & BBF_HAS_JMP)
     {
         printf("jmp ");
@@ -917,16 +913,27 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
     return ptr->bbNum;
 }
 
+//------------------------------------------------------------------------
+// isEmpty: check if block is empty or contains only ignorable statements
+//
+// Return Value:
+//    True if block is empty, or contains only PHI assignments,
+//    or contains zero or more PHI assignments followed by NOPs.
+//
 bool BasicBlock::isEmpty()
 {
     if (!IsLIR())
     {
-        for (Statement* stmt : Statements())
+        Statement* stmt = FirstNonPhiDef();
+
+        while (stmt != nullptr)
         {
-            if (!stmt->GetRootNode()->OperIs(GT_PHI, GT_NOP))
+            if (!stmt->GetRootNode()->OperIs(GT_NOP))
             {
                 return false;
             }
+
+            stmt = stmt->GetNextStmt();
         }
     }
     else
