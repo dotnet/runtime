@@ -326,6 +326,8 @@ BEGIN
 	MSG_FOR_URT_HR(CLR_E_GC_OOM) "Failfast due to an OOM during a GC"
 	MSG_FOR_URT_HR(CLR_E_GC_BAD_AFFINITY_CONFIG) "GCHeapAffinitizeMask or GCHeapAffinitizeRanges didn't specify any CPUs the current process is affinitized to."
 	MSG_FOR_URT_HR(CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT) "GCHeapAffinitizeRanges configuration string has invalid format."
+	MSG_FOR_URT_HR(CLR_E_GC_BAD_HARD_LIMIT) "GC heap hard limit configuration is invalid."
+	MSG_FOR_URT_HR(CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT) "GC large page support requires hard limit settings."
 	MSG_FOR_URT_HR(CLR_E_CROSSGEN_NO_IBC_DATA_FOUND) "Cannot compile using the PartialNgen flag because no IBC data was found."
 	MSG_FOR_URT_HR(COR_E_BADIMAGEFORMAT) "The format of a DLL or executable being loaded is invalid."
 END

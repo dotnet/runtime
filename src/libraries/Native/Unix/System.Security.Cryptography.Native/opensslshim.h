@@ -41,6 +41,10 @@
 #define OPENSSL_VERSION_1_1_0_RTM 0x10100000L
 #define OPENSSL_VERSION_1_0_2_RTM 0x10002000L
 
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
+#include <openssl/provider.h>
+#endif
+
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
 #define HAVE_OPENSSL_SET_CIPHERSUITES 1
 #else
@@ -391,6 +395,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     RENAMED_FUNCTION(OPENSSL_sk_push, sk_push) \
     RENAMED_FUNCTION(OPENSSL_sk_value, sk_value) \
     FALLBACK_FUNCTION(OpenSSL_version_num) \
+    LIGHTUP_FUNCTION(OSSL_PROVIDER_try_load) \
     REQUIRED_FUNCTION(PEM_read_bio_PKCS7) \
     REQUIRED_FUNCTION(PEM_read_bio_X509) \
     REQUIRED_FUNCTION(PEM_read_bio_X509_AUX) \
@@ -820,6 +825,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OPENSSL_sk_push OPENSSL_sk_push_ptr
 #define OPENSSL_sk_value OPENSSL_sk_value_ptr
 #define OpenSSL_version_num OpenSSL_version_num_ptr
+#define OSSL_PROVIDER_try_load OSSL_PROVIDER_try_load_ptr
 #define PEM_read_bio_PKCS7 PEM_read_bio_PKCS7_ptr
 #define PEM_read_bio_X509 PEM_read_bio_X509_ptr
 #define PEM_read_bio_X509_AUX PEM_read_bio_X509_AUX_ptr

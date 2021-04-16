@@ -130,21 +130,18 @@ PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetProtocol(SSLStream* sslStream,
 /*
 Get the peer certificate for the current session
 
-Returns 1 on success, 0 otherwise
+Returns the peer certificate or null if there is no peer certificate.
 */
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLStream* sslStream,
-                                                                  jobject* /*X509Certificate*/ out);
+PALEXPORT jobject /*X509Certificate*/ AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLStream* sslStream);
 
 /*
 Get the peer certificates for the current session
 
 The peer's own certificate will be first, followed by any certificate authorities.
-
-Returns 1 on success, 0 otherwise
 */
-PALEXPORT int32_t AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream,
-                                                                   jobject** /*X509Certificate[]*/ out,
-                                                                   int32_t* outLen);
+PALEXPORT void AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream,
+                                                                jobject** /*X509Certificate[]*/ out,
+                                                                int32_t* outLen);
 
 /*
 Set enabled protocols

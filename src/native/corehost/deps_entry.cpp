@@ -30,17 +30,15 @@ static pal::string_t normalize_dir_separator(const pal::string_t& path)
 // Parameters:
 //    base - The base directory to look for the relative path of this entry
 //    ietf_dir - If this is a resource asset, the IETF intermediate directory
-//    look_in_base - Whether to search as a relative path
-//    look_in_bundle - Whether to look within the single-file bundle
-//    is_servicing - Whether the base directory is the core-servicing directory
 //    str  - (out parameter) If the method returns true, contains the file path for this deps entry
+//    search_options - Flags to instruct where to look for this deps entry
 //    found_in_bundle - (out parameter) True if the candidate is located within the single-file bundle.
 //    
 // Returns:
 //    If the file exists in the path relative to the "base" directory within the 
 //    single-file or on disk.
 
-bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_dir, bool look_in_base, bool look_in_bundle, bool is_servicing, pal::string_t* str, bool &found_in_bundle) const
+bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_dir, pal::string_t* str, uint32_t search_options, bool &found_in_bundle) const
 {
     pal::string_t& candidate = *str;
 
@@ -58,6 +56,9 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
     // Reserve space for the path below
     candidate.reserve(base.length() + ietf_dir.length() + normalized_path.length() + 3);
 
+    bool look_in_base = search_options & deps_entry_t::search_options::look_in_base;
+    bool look_in_bundle = search_options & deps_entry_t::search_options::look_in_bundle;
+    bool is_servicing = search_options & deps_entry_t::search_options::is_servicing;
     pal::string_t file_path = look_in_base ? get_filename(normalized_path) : normalized_path;
     pal::string_t sub_path = ietf_dir;
     append_path(&sub_path, file_path.c_str());
@@ -94,36 +95,41 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
     candidate.assign(base);
     append_path(&candidate, sub_path.c_str());
 
-    bool exists = pal::file_exists(candidate);
     const pal::char_t* query_type = look_in_base ? _X("Local") : _X("Relative");
-    if (!exists)
+    if (search_options & deps_entry_t::search_options::file_existence)
     {
-        trace::verbose(_X("    %s path query did not exist %s"), query_type, candidate.c_str());
-        candidate.clear();
+        if (!pal::file_exists(candidate))
+        {
+            trace::verbose(_X("    %s path query did not exist %s"), query_type, candidate.c_str());
+            candidate.clear();
+            return false;
+        }
+
+        trace::verbose(_X("    %s path query exists %s"), query_type, candidate.c_str());
     }
     else
     {
-        trace::verbose(_X("    %s path query exists %s"), query_type, candidate.c_str());
+        trace::verbose(_X("    %s path query %s (skipped file existence check)"), query_type, candidate.c_str());
+    }
 
-        // If a file is resolved to the servicing directory, mark it as disabled in the bundle.
-        // This step is necessary because runtime will try to resolve assemblies from the bundle 
-        // before it uses the TPA. So putting the servicing entry into TPA is not enough, since runtime would
-        // resolve it from the bundle first anyway. Disabling the file's entry in the bundle
-        // ensures that the servicing entry in the TPA gets priority.
-        if (is_servicing && bundle::info_t::is_single_file_bundle())
+    // If a file is resolved to the servicing directory, mark it as disabled in the bundle.
+    // This step is necessary because runtime will try to resolve assemblies from the bundle 
+    // before it uses the TPA. So putting the servicing entry into TPA is not enough, since runtime would
+    // resolve it from the bundle first anyway. Disabling the file's entry in the bundle
+    // ensures that the servicing entry in the TPA gets priority.
+    if (is_servicing && bundle::info_t::is_single_file_bundle())
+    {
+        bundle::runner_t* app = bundle::runner_t::mutable_app();
+        assert(!app->has_base(base));
+        assert(!found_in_bundle);
+
+        if (app->disable(sub_path))
         {
-            bundle::runner_t* app = bundle::runner_t::mutable_app();
-            assert(!app->has_base(base));
-            assert(!found_in_bundle);
-
-            if (app->disable(sub_path))
-            {
-                trace::verbose(_X("    %s disabled in bundle because of servicing override %s"), sub_path.c_str(), candidate.c_str());
-            }
+            trace::verbose(_X("    %s disabled in bundle because of servicing override %s"), sub_path.c_str(), candidate.c_str());
         }
     }
 
-    return exists;
+    return true;
 }
 
 // -----------------------------------------------------------------------------
@@ -132,12 +138,13 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
 // Parameters:
 //    base - The base directory to look for the relative path of this entry
 //    str  - If the method returns true, contains the file path for this deps entry 
+//    search_options - Flags to instruct where to look for this deps entry
 //    look_in_bundle - Whether to look within the single-file bundle
 //
 // Returns:
 //    If the file exists in the path relative to the "base" directory.
 //
-bool deps_entry_t::to_dir_path(const pal::string_t& base, bool look_in_bundle, pal::string_t* str, bool& found_in_bundle) const
+bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str, uint32_t search_options, bool& found_in_bundle) const
 {
     pal::string_t ietf_dir;
 
@@ -159,7 +166,10 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, bool look_in_bundle, p
                         base.c_str(), ietf_dir.c_str(), asset.name.c_str());
     }
 
-    return to_path(base, ietf_dir, true, look_in_bundle, false, str, found_in_bundle);
+
+    search_options |= deps_entry_t::search_options::look_in_base;
+    search_options &= ~deps_entry_t::search_options::is_servicing;
+    return to_path(base, ietf_dir, str, search_options, found_in_bundle);
 }
 
 // -----------------------------------------------------------------------------
@@ -169,16 +179,16 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, bool look_in_bundle, p
 // Parameters:
 //    base - The base directory to look for the relative path of this entry
 //    str  - If the method returns true, contains the file path for this deps entry 
-//    look_in_bundle - Whether to look within the single-file bundle
-//    is_servicing - Whether the base directory is the core-servicing directory
+//    search_options - Flags to instruct where to look for this deps entry
 //
 // Returns:
 //    If the file exists in the path relative to the "base" directory.
 //
-bool deps_entry_t::to_rel_path(const pal::string_t& base, bool look_in_bundle, bool is_servicing, pal::string_t* str) const
+bool deps_entry_t::to_rel_path(const pal::string_t& base, pal::string_t* str, uint32_t search_options) const
 {
     bool found_in_bundle;
-    bool result = to_path(base, _X(""), false, look_in_bundle, is_servicing, str, found_in_bundle);
+    search_options &= ~deps_entry_t::search_options::look_in_base;
+    bool result = to_path(base, _X(""), str, search_options, found_in_bundle);
     assert(!found_in_bundle);
     return result;
 }
@@ -190,12 +200,12 @@ bool deps_entry_t::to_rel_path(const pal::string_t& base, bool look_in_bundle, b
 // Parameters:
 //    base - The base directory to look for the relative path of this entry
 //    str  - If the method returns true, contains the file path for this deps entry 
-//    is_servicing - Whether the base directory is the core-servicing directory
+//    search_options - Flags to instruct where to look for this deps entry
 //
 // Returns:
 //    If the file exists in the path relative to the "base" directory.
 //
-bool deps_entry_t::to_full_path(const pal::string_t& base, bool is_servicing, pal::string_t* str) const
+bool deps_entry_t::to_full_path(const pal::string_t& base, pal::string_t* str, uint32_t search_options) const
 {
     str->clear();
 
@@ -217,5 +227,6 @@ bool deps_entry_t::to_full_path(const pal::string_t& base, bool is_servicing, pa
         append_path(&new_base, library_path.c_str());
     }
 
-    return to_rel_path(new_base, false, is_servicing, str);
+    search_options &= ~deps_entry_t::search_options::look_in_bundle;
+    return to_rel_path(new_base, str, search_options);
 }

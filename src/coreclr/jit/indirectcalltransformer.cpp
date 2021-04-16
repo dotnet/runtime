@@ -230,7 +230,7 @@ private:
         void CreateRemainder()
         {
             remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
-            remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | BBF_INTERNAL;
+            remainderBlock->bbFlags |= BBF_INTERNAL;
         }
 
         virtual void CreateCheck() = 0;

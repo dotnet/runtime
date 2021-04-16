@@ -430,7 +430,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         top->bbJumpDest = bottom;
         top->bbJumpKind = BBJ_COND;
-        bottom->bbFlags |= BBF_JMP_TARGET;
 
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
@@ -1748,9 +1747,9 @@ void Compiler::fgAddSyncMethodEnterExit()
         // EH regions in fgFindBasicBlocks(). Note that the try has no enclosing
         // handler, and the fault has no enclosing try.
 
-        tryBegBB->bbFlags |= BBF_HAS_LABEL | BBF_DONT_REMOVE | BBF_TRY_BEG | BBF_IMPORTED;
+        tryBegBB->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG | BBF_IMPORTED;
 
-        faultBB->bbFlags |= BBF_HAS_LABEL | BBF_DONT_REMOVE | BBF_IMPORTED;
+        faultBB->bbFlags |= BBF_DONT_REMOVE | BBF_IMPORTED;
         faultBB->bbCatchTyp = BBCT_FAULT;
 
         tryBegBB->setTryIndex(XTnew);
@@ -2293,8 +2292,6 @@ private:
         BasicBlock* newReturnBB = comp->fgNewBBinRegion(BBJ_RETURN);
         newReturnBB->bbRefs     = 1; // bbRefs gets update later, for now it should be 1
         comp->fgReturnCount++;
-
-        newReturnBB->bbFlags |= (BBF_INTERNAL | BBF_JMP_TARGET);
 
         noway_assert(newReturnBB->bbNext == nullptr);
 
@@ -3177,10 +3174,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     /* Allocate a new basic block */
 
     BasicBlock* newHead = bbNewBasicBlock(BBJ_NONE);
-
-    // In fgComputePreds() we set the BBF_JMP_TARGET and BBF_HAS_LABEL for all of the handler entry points
-    //
-    newHead->bbFlags |= (BBF_INTERNAL | BBF_JMP_TARGET | BBF_HAS_LABEL);
+    newHead->bbFlags |= BBF_INTERNAL;
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
 
@@ -3221,8 +3215,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     assert(nullptr == fgGetPredForBlock(block, newHead));
     fgAddRefPred(block, newHead);
 
-    assert((newHead->bbFlags & (BBF_INTERNAL | BBF_JMP_TARGET | BBF_HAS_LABEL)) ==
-           (BBF_INTERNAL | BBF_JMP_TARGET | BBF_HAS_LABEL));
+    assert((newHead->bbFlags & BBF_INTERNAL) == BBF_INTERNAL);
 }
 
 /*****************************************************************************
@@ -3578,14 +3571,9 @@ void Compiler::fgDetermineFirstColdBlock()
         }
     }
 
-    if (firstColdBlock != nullptr)
+    for (block = firstColdBlock; block != nullptr; block = block->bbNext)
     {
-        firstColdBlock->bbFlags |= BBF_JMP_TARGET;
-
-        for (block = firstColdBlock; block; block = block->bbNext)
-        {
-            block->bbFlags |= BBF_COLD;
-        }
+        block->bbFlags |= BBF_COLD;
     }
 
 EXIT:;
@@ -3694,8 +3682,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     BasicBlock* newBlk;
 
     newBlk = add->acdDstBlk = fgNewBBinRegion(jumpKinds[kind], srcBlk, /* runRarely */ true, /* insertAtEnd */ true);
-
-    add->acdDstBlk->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
 
 #ifdef DEBUG
     if (verbose)

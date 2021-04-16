@@ -576,7 +576,6 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
                 fgRemoveRefPred(block, predBlock);
                 fgReplaceJumpTarget(predBlock, falseTarget, block);
                 fgAddRefPred(falseTarget, predBlock);
-                falseTarget->bbFlags |= BBF_JMP_TARGET;
             }
         }
     }
