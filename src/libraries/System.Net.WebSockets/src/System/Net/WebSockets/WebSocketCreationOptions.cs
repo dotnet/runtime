@@ -53,7 +53,10 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>
-        /// The agreed upon options for per message deflate.
+        /// The agreed upon options for per message deflate.<para />
+        /// Be aware that enabling compression makes the application subject to CRIME/BREACH type of attacks.
+        /// It is strongly advised to turn off compression when sending data containing secrets by
+        /// specifying <see cref="WebSocketMessageFlags.DisableCompression" /> flag for such messages.
         /// </summary>
         public WebSocketDeflateOptions? DangerousDeflateOptions { get; set; }
     }

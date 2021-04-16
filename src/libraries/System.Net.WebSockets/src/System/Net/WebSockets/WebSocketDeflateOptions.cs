@@ -8,7 +8,6 @@ namespace System.Net.WebSockets
     /// </summary>
     /// <remarks>
     /// Although the WebSocket spec allows window bits from 8 to 15, the current implementation doesn't support 8 bits.
-    /// For more information refer to the zlib manual https://zlib.net/manual.html.
     /// </remarks>
     public sealed class WebSocketDeflateOptions
     {

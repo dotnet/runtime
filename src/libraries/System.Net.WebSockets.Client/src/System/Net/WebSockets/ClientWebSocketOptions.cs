@@ -152,7 +152,10 @@ namespace System.Net.WebSockets
         /// Gets or sets the options for the per-message-deflate extension.
         /// When present, the options are sent to the server during the handshake phase. If the server
         /// supports per-message-deflate and the options are accepted, the <see cref="WebSocket"/> instance
-        /// will be created with compression enabled by default for all messages.
+        /// will be created with compression enabled by default for all messages.<para />
+        /// Be aware that enabling compression makes the application subject to CRIME/BREACH type of attacks.
+        /// It is strongly advised to turn off compression when sending data containing secrets by
+        /// specifying <see cref="WebSocketMessageFlags.DisableCompression" /> flag for such messages.
         /// </summary>
         [UnsupportedOSPlatform("browser")]
         public WebSocketDeflateOptions? DangerousDeflateOptions { get; set; }

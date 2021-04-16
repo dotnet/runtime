@@ -255,7 +255,7 @@ namespace System.Net.WebSockets
                 int end = extension.IndexOf(';');
                 ReadOnlySpan<char> value = (end >= 0 ? extension[..end] : extension).Trim();
 
-                if (!value.IsEmpty)
+                if (value.Length > 0)
                 {
                     if (value.Equals(ClientWebSocketDeflateConstants.ClientNoContextTakeover, StringComparison.Ordinal))
                     {

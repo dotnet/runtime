@@ -214,7 +214,7 @@ namespace System.Net.WebSockets.Compression
 
         private static unsafe bool IsFinished(ZLibStreamHandle stream, out byte? remainingByte)
         {
-            // There is no other way to make sure that we'e consumed all data
+            // There is no other way to make sure that we've consumed all data
             // but to try to inflate again with at least one byte of output buffer.
             byte b;
             if (Inflate(stream, new Span<byte>(&b, 1), FlushCode.SyncFlush) == 0)
