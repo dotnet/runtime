@@ -109,7 +109,6 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
-    <!-- DiaSymReader for the target architecture, which is placed into the package -->
     <DiaSymReaderTargetArch>$(TargetArchitectureForSharedLibraries)</DiaSymReaderTargetArch>
     <DiaSymReaderTargetArch Condition="'$(DiaSymReaderTargetArch)' == 'x64'">amd64</DiaSymReaderTargetArch>
     <DiaSymReaderTargetArchFileName>Microsoft.DiaSymReader.Native.$(DiaSymReaderTargetArch).dll</DiaSymReaderTargetArchFileName>
