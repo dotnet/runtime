@@ -158,6 +158,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.OSX, "On OSX, ProcessName returns the script interpreter.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ProcessNameMatchesScriptName()
         {
             string scriptName = GetTestFileName();
@@ -476,6 +477,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestStartOnUnixWithBadPermissions()
         {
             string path = GetTestFilePath();
@@ -487,6 +489,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestStartOnUnixWithBadFormat()
         {
             string path = GetTestFilePath();

@@ -172,18 +172,21 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ProcessStart_TryExitCommandAsFileName_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "exit", Arguments = "42" }));
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ProcessStart_UseShellExecuteFalse_FilenameIsUrl_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = "https://www.github.com/corefx" }));
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ProcessStart_TryOpenFolder_UseShellExecuteIsFalse_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = Path.GetTempPath() }));
@@ -273,6 +276,7 @@ namespace System.Diagnostics.Tests
             nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(true), InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ProcessStart_UseShellExecute_Executes(bool filenameAsUrl)
         {
             string filename = WriteScriptFile(TestDirectory, GetTestFileName(), returnValue: 42);
@@ -341,6 +345,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsServerCore),
             nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ProcessStart_UseShellExecute_WorkingDirectory()
         {
             // Create a directory that will ProcessStartInfo.WorkingDirectory
@@ -470,6 +475,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Kill_NotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -543,6 +549,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Getting MaxWorkingSet is not supported on OSX and BSD.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void MaxWorkingSet_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -598,6 +605,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Getting MinWorkingSet is not supported on OSX and BSD.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void MinWorkingSet_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -1375,6 +1383,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestStartWithMissingFile(bool fullPath)
         {
             string path = Guid.NewGuid().ToString("N");

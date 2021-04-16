@@ -31,6 +31,7 @@ namespace System.Diagnostics.Tests
             => PlatformDetection.IsWindowsAndElevated && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51384", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestEnvironmentProperty()
         {
             Assert.NotEqual(0, new Process().StartInfo.Environment.Count);
@@ -773,6 +774,7 @@ namespace System.Diagnostics.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Test case is specific to Unix
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51386", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestEnvironmentVariablesPropertyUnix()
         {
             ProcessStartInfo psi = new ProcessStartInfo();
