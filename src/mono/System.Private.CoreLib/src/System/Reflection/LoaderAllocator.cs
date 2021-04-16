@@ -40,7 +40,11 @@ namespace System.Reflection
 #region Sync with MonoManagedLoaderAllocator in object-internals.h
 #pragma warning disable CA1823, 414, 169
         private LoaderAllocatorScout m_scout;
+        // These point to objects created by the runtime which are kept
+        // alive by this LoaderAllocator
+        private object[]? m_slots;
         private object[]? m_hashes;
+        private int m_nslots;
 #pragma warning restore CA1823, 414, 169
 #endregion
 

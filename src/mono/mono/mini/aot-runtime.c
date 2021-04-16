@@ -1928,6 +1928,13 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	if (image_is_dynamic (assembly->image))
 		return;
 
+	if (mono_image_get_alc (assembly->image)->collectible)
+		/*
+		 * Assemblies loaded into collectible ALCs require different codegen
+		 * due to static variable access etc.
+		 */
+		return;
+
 	gboolean loaded = FALSE;
 
 	mono_aot_lock ();
