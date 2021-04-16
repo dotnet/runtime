@@ -82,18 +82,7 @@ namespace System.Reflection.Tests
         public void FullyQualifiedName()
         {
 #if SINGLE_FILE_TEST_RUNNER
-            // Documented to either throw or return <Unknown>, so both are fine.
-            string name;
-            try
-            {
-                name = Module.FullyQualifiedName;
-            }
-            catch
-            {
-                return;
-            }
-
-            Assert.Equal("<Unknown>", name, ignoreCase: true);
+            Assert.Equal("<Unknown>", Module.FullyQualifiedName);
 #else
             var loc = AssemblyPathHelper.GetAssemblyLocation(Assembly.GetExecutingAssembly());
 
