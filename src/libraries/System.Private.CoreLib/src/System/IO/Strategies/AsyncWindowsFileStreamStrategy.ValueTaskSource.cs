@@ -30,25 +30,17 @@ namespace System.IO.Strategies
 #endif
 
             internal ValueTaskSource(AsyncWindowsFileStreamStrategy strategy)
-            {
-                _strategy = strategy;
-                _result = TaskSourceCodes.NoResult;
-                _source = default;
-                _source.RunContinuationsAsynchronously = true;
-            }
+                => _strategy = strategy;
 
             internal ValueTaskSource(AsyncWindowsFileStreamStrategy strategy, byte[] internalBuffer) : this(strategy)
+                => _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, internalBuffer);
+
+            internal NativeOverlapped* Configure(ReadOnlyMemory<byte> memory)
             {
-                _strategy = strategy;
                 _result = TaskSourceCodes.NoResult;
                 _source = default;
                 _source.RunContinuationsAsynchronously = true;
 
-                _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, internalBuffer);
-            }
-
-            internal void Configure(ReadOnlyMemory<byte> memory)
-            {
                 // The array of preallocatedOverlapped is the same as the memory array when flushing in buffered mode,
                 // because the ReadOnlyMemory object passed to WriteAsync/ReadAsync is the internal buffer that we need
                 // to write to disk at the end
@@ -65,10 +57,9 @@ namespace System.IO.Strategies
                     _overlapped = _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(s_ioCallback, this, null);
                 }
 
-                Debug.Assert(_overlapped != null, "AllocateNativeOverlapped returned null");
+                return _overlapped;
             }
 
-            internal NativeOverlapped* Overlapped => _overlapped;
             public ValueTaskSourceStatus GetStatus(short token) => _source.GetStatus(token);
             public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _source.OnCompleted(continuation, state, token, flags);
             void IValueTaskSource.GetResult(short token) => _source.GetResult(token);

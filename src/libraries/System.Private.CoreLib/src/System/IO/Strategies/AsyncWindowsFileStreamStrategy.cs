@@ -139,15 +139,10 @@ namespace System.IO.Strategies
             // - First time calling ReadAsync in buffered mode
             // - Second+ time calling ReadAsync, both buffered or unbuffered
             // - On buffered flush, when source memory is also the internal buffer
-            ValueTaskSource? valueTaskSource = Interlocked.Exchange(ref _reusableValueTaskSource, null);
             // valueTaskSource is null when:
             // - First time calling ReadAsync in unbuffered mode
-            if (valueTaskSource == null)
-            {
-                valueTaskSource = new ValueTaskSource(this);
-            }
-            valueTaskSource.Configure(destination);
-            NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
+            ValueTaskSource valueTaskSource = Interlocked.Exchange(ref _reusableValueTaskSource, null) ?? new ValueTaskSource(this);
+            NativeOverlapped* intOverlapped = valueTaskSource.Configure(destination);
 
             // Calculate position in the file we should be at after the read is done
             long positionBefore = _filePosition;
@@ -265,15 +260,10 @@ namespace System.IO.Strategies
             // - First time calling WriteAsync in buffered mode
             // - Second+ time calling WriteAsync, both buffered or unbuffered
             // - On buffered flush, when source memory is also the internal buffer
-            ValueTaskSource? valueTaskSource = Interlocked.Exchange(ref _reusableValueTaskSource, null);
             // valueTaskSource is null when:
             // - First time calling WriteAsync in unbuffered mode
-            if (valueTaskSource == null)
-            {
-                valueTaskSource = new ValueTaskSource(this);
-            }
-            valueTaskSource.Configure(source);
-            NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
+            ValueTaskSource valueTaskSource = Interlocked.Exchange(ref _reusableValueTaskSource, null) ?? new ValueTaskSource(this);
+            NativeOverlapped* intOverlapped = valueTaskSource.Configure(source);
 
             long positionBefore = _filePosition;
             if (CanSeek)
