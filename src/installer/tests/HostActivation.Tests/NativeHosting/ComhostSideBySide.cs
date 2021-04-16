@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
-        public void ActivateClassLocateEmbeddedTlb()
+        public void ActivateClass()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
 
             string [] args = {
-                sharedState.TypeLibId,
+                "activation",
                 sharedState.ClsidString
             };
 
@@ -43,6 +43,30 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             result.Should().Pass()
                 .And.HaveStdOutContaining("New instance of Server created");
+        }
+
+        [Fact]
+        public void LocateEmbeddedTlb()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // COM activation is only supported on Windows
+                return;
+            }
+
+            string [] args = {
+                "typelib_lookup",
+                sharedState.TypeLibId
+            };
+
+            CommandResult result = Command.Create(sharedState.ComSxsPath, args)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(sharedState.ComLibraryFixture.BuiltDotnet.BinPath)
+                .MultilevelLookup(false)
+                .Execute();
+
+            result.Should().Pass()
+                .And.HaveStdOutContaining("Located type library by typeid.");
         }
 
         public class SharedTestState : Comhost.SharedTestState
