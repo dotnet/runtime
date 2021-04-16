@@ -15,13 +15,13 @@ namespace System.IO.Strategies
         /// <summary>
         /// Type that helps reduce allocations for FileStream.ReadAsync and FileStream.WriteAsync.
         /// </summary>
-        private unsafe class ValueTaskSource : IValueTaskSource<int>, IValueTaskSource
+        private sealed unsafe class ValueTaskSource : IValueTaskSource<int>, IValueTaskSource
         {
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
-
+            internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
             private readonly AsyncWindowsFileStreamStrategy _strategy;
-
-            private ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
+            private MemoryHandle _handle;
+            internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
             private NativeOverlapped* _overlapped;
             private CancellationTokenRegistration _cancellationRegistration;
             private long _result; // Using long since this needs to be used in Interlocked APIs
@@ -29,46 +29,42 @@ namespace System.IO.Strategies
             private bool _cancellationHasBeenRegistered;
 #endif
 
-            public static ValueTaskSource Create(
-                AsyncWindowsFileStreamStrategy strategy,
-                PreAllocatedOverlapped? preallocatedOverlapped,
-                ReadOnlyMemory<byte> memory)
-            {
-                // If the memory passed in is the strategy's internal buffer, we can use the base AwaitableProvider,
-                // which has a PreAllocatedOverlapped with the memory already pinned.  Otherwise, we use the derived
-                // MemoryAwaitableProvider, which Retains the memory, which will result in less pinning in the case
-                // where the underlying memory is backed by pre-pinned buffers.
-                return preallocatedOverlapped != null &&
-                       MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer) &&
-                       preallocatedOverlapped.IsUserObject(buffer.Array) ?
-                            new ValueTaskSource(strategy, preallocatedOverlapped, buffer.Array) :
-                            new MemoryValueTaskSource(strategy, memory);
-            }
-
-            protected ValueTaskSource(
-                AsyncWindowsFileStreamStrategy strategy,
-                PreAllocatedOverlapped? preallocatedOverlapped,
-                byte[]? bytes)
+            internal ValueTaskSource(AsyncWindowsFileStreamStrategy strategy)
             {
                 _strategy = strategy;
-                _result = TaskSourceCodes.NoResult;
+                _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, null);
 
-                _source = default;
                 _source.RunContinuationsAsynchronously = true;
-
-                _overlapped = bytes != null &&
-                              _strategy.CompareExchangeCurrentOverlappedOwner(this, null) == null ?
-                              _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(preallocatedOverlapped!) : // allocated when buffer was created, and buffer is non-null
-                              _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(s_ioCallback, this, bytes);
-
-                Debug.Assert(_overlapped != null, "AllocateNativeOverlapped returned null");
             }
 
-            internal NativeOverlapped* Overlapped => _overlapped;
+            internal NativeOverlapped* Configure(ReadOnlyMemory<byte> memory)
+            {
+                _result = TaskSourceCodes.NoResult;
+
+                _handle = memory.Pin();
+                _overlapped = _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
+
+                return _overlapped;
+            }
+
             public ValueTaskSourceStatus GetStatus(short token) => _source.GetStatus(token);
             public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _source.OnCompleted(continuation, state, token, flags);
-            void IValueTaskSource.GetResult(short token) => _source.GetResult(token);
-            int IValueTaskSource<int>.GetResult(short token) => _source.GetResult(token);
+            void IValueTaskSource.GetResult(short token) => GetResultAndRelease(token);
+            int IValueTaskSource<int>.GetResult(short token) => GetResultAndRelease(token);
+
+            private int GetResultAndRelease(short token)
+            {
+                try
+                {
+                    return _source.GetResult(token);
+                }
+                finally
+                {
+                    // The instance is ready to be reused
+                    _strategy.TryToReuse(this);
+                }
+            }
+
             internal short Version => _source.Version;
 
             internal void RegisterForCancellation(CancellationToken cancellationToken)
@@ -106,8 +102,10 @@ namespace System.IO.Strategies
                 }
             }
 
-            internal virtual void ReleaseNativeResource()
+            internal void ReleaseNativeResource()
             {
+                _handle.Dispose();
+
                 // Ensure that cancellation has been completed and cleaned up.
                 _cancellationRegistration.Dispose();
 
@@ -119,27 +117,11 @@ namespace System.IO.Strategies
                     _strategy._fileHandle.ThreadPoolBinding!.FreeNativeOverlapped(_overlapped);
                     _overlapped = null;
                 }
-
-                // Ensure we're no longer set as the current AwaitableProvider (we may not have been to begin with).
-                // Only one operation at a time is eligible to use the preallocated overlapped
-                _strategy.CompareExchangeCurrentOverlappedOwner(null, this);
             }
 
             private static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
-                // Extract the AwaitableProvider from the overlapped.  The state in the overlapped
-                // will either be a AsyncWindowsFileStreamStrategy (in the case where the preallocated overlapped was used),
-                // in which case the operation being completed is its _currentOverlappedOwner, or it'll
-                // be directly the AwaitableProvider that's completing (in the case where the preallocated
-                // overlapped was already in use by another operation).
-                object? state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
-                Debug.Assert(state is AsyncWindowsFileStreamStrategy or ValueTaskSource);
-                ValueTaskSource valueTaskSource = state switch
-                {
-                    AsyncWindowsFileStreamStrategy strategy => strategy._currentOverlappedOwner!, // must be owned
-                    _ => (ValueTaskSource)state
-                };
-                Debug.Assert(valueTaskSource != null);
+                ValueTaskSource valueTaskSource = (ValueTaskSource)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
                 Debug.Assert(valueTaskSource._overlapped == pOverlapped, "Overlaps don't match");
 
                 // Handle reading from & writing to closed pipes.  While I'm not sure
@@ -222,29 +204,6 @@ namespace System.IO.Strategies
                         _source.SetException(e);
                     }
                 }
-            }
-        }
-
-        /// <summary>
-        /// Extends <see cref="ValueTaskSource"/> with to support disposing of a
-        /// <see cref="MemoryHandle"/> when the operation has completed.  This should only be used
-        /// when memory doesn't wrap a byte[].
-        /// </summary>
-        private sealed class MemoryValueTaskSource : ValueTaskSource
-        {
-            private MemoryHandle _handle; // mutable struct; do not make this readonly
-
-            // this type handles the pinning, so bytes are null
-            internal unsafe MemoryValueTaskSource(AsyncWindowsFileStreamStrategy strategy, ReadOnlyMemory<byte> memory)
-                : base(strategy, null, null) // this type handles the pinning, so null is passed for bytes to the base
-            {
-                _handle = memory.Pin();
-            }
-
-            internal override void ReleaseNativeResource()
-            {
-                _handle.Dispose();
-                base.ReleaseNativeResource();
             }
         }
     }

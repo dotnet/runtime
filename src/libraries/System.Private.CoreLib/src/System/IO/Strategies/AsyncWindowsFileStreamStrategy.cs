@@ -10,8 +10,7 @@ namespace System.IO.Strategies
 {
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
-        private PreAllocatedOverlapped? _preallocatedOverlapped; // optimization for async ops to avoid per-op allocations
-        private ValueTaskSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
+        private ValueTaskSource? _reusableValueTaskSource; // reusable ValueTaskSource that is currently NOT being used
 
         internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
             : base(handle, access, share)
@@ -32,7 +31,7 @@ namespace System.IO.Strategies
             ValueTask result = base.DisposeAsync();
             Debug.Assert(result.IsCompleted, "the method must be sync, as it performs no flushing");
 
-            _preallocatedOverlapped?.Dispose();
+            Interlocked.Exchange(ref _reusableValueTaskSource, null)?._preallocatedOverlapped.Dispose();
 
             return result;
         }
@@ -43,7 +42,7 @@ namespace System.IO.Strategies
             // before _preallocatedOverlapped is disposed
             base.Dispose(disposing);
 
-            _preallocatedOverlapped?.Dispose();
+            Interlocked.Exchange(ref _reusableValueTaskSource, null)?._preallocatedOverlapped.Dispose();
         }
 
         protected override void OnInitFromHandle(SafeFileHandle handle)
@@ -103,16 +102,15 @@ namespace System.IO.Strategies
             }
         }
 
-        // called by BufferedFileStreamStrategy
-        internal override void OnBufferAllocated(byte[] buffer)
+        private void TryToReuse(ValueTaskSource source)
         {
-            Debug.Assert(_preallocatedOverlapped == null);
+            source._source.Reset();
 
-            _preallocatedOverlapped = new PreAllocatedOverlapped(ValueTaskSource.s_ioCallback, this, buffer);
+            if (Interlocked.CompareExchange(ref _reusableValueTaskSource, source, null) is not null)
+            {
+                source._preallocatedOverlapped.Dispose();
+            }
         }
-
-        private ValueTaskSource? CompareExchangeCurrentOverlappedOwner(ValueTaskSource? newSource, ValueTaskSource? existingSource)
-            => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -137,9 +135,14 @@ namespace System.IO.Strategies
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
-            // Create and store async stream class library specific data in the async result
-            ValueTaskSource valueTaskSource = ValueTaskSource.Create(this, _preallocatedOverlapped, destination);
-            NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
+            // valueTaskSource is not null when:
+            // - First time calling ReadAsync in buffered mode
+            // - Second+ time calling ReadAsync, both buffered or unbuffered
+            // - On buffered flush, when source memory is also the internal buffer
+            // valueTaskSource is null when:
+            // - First time calling ReadAsync in unbuffered mode
+            ValueTaskSource valueTaskSource = Interlocked.Exchange(ref _reusableValueTaskSource, null) ?? new ValueTaskSource(this);
+            NativeOverlapped* intOverlapped = valueTaskSource.Configure(destination);
 
             // Calculate position in the file we should be at after the read is done
             long positionBefore = _filePosition;
@@ -195,6 +198,7 @@ namespace System.IO.Strategies
                     // Failure to do so looks like we are freeing a pending overlapped later.
                     intOverlapped->InternalLow = IntPtr.Zero;
                     valueTaskSource.ReleaseNativeResource();
+                    TryToReuse(valueTaskSource);
                     return new ValueTask<int>(0);
                 }
                 else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
@@ -205,6 +209,7 @@ namespace System.IO.Strategies
                     }
 
                     valueTaskSource.ReleaseNativeResource();
+                    TryToReuse(valueTaskSource);
 
                     if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
                     {
@@ -253,9 +258,14 @@ namespace System.IO.Strategies
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
-            // Create and store async stream class library specific data in the async result
-            ValueTaskSource valueTaskSource = ValueTaskSource.Create(this, _preallocatedOverlapped, source);
-            NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
+            // valueTaskSource is not null when:
+            // - First time calling WriteAsync in buffered mode
+            // - Second+ time calling WriteAsync, both buffered or unbuffered
+            // - On buffered flush, when source memory is also the internal buffer
+            // valueTaskSource is null when:
+            // - First time calling WriteAsync in unbuffered mode
+            ValueTaskSource valueTaskSource = Interlocked.Exchange(ref _reusableValueTaskSource, null) ?? new ValueTaskSource(this);
+            NativeOverlapped* intOverlapped = valueTaskSource.Configure(source);
 
             long positionBefore = _filePosition;
             if (CanSeek)
@@ -293,6 +303,7 @@ namespace System.IO.Strategies
                     // Not an error, but EOF. AsyncFSCallback will NOT be called.
                     // Completing TCS and return cached task allowing the GC to collect TCS.
                     valueTaskSource.ReleaseNativeResource();
+                    TryToReuse(valueTaskSource);
                     return ValueTask.CompletedTask;
                 }
                 else if (errorCode != Interop.Errors.ERROR_IO_PENDING)
@@ -303,6 +314,7 @@ namespace System.IO.Strategies
                     }
 
                     valueTaskSource.ReleaseNativeResource();
+                    TryToReuse(valueTaskSource);
 
                     if (errorCode == Interop.Errors.ERROR_HANDLE_EOF)
                     {
