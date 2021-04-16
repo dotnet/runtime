@@ -20,7 +20,7 @@ namespace System.IO.Strategies
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
             private MemoryHandle _handle;
             private readonly AsyncWindowsFileStreamStrategy _strategy;
-            internal PreAllocatedOverlapped? _preallocatedOverlapped;
+            internal readonly PreAllocatedOverlapped? _preallocatedOverlapped;
             private ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
             private NativeOverlapped* _overlapped;
             private CancellationTokenRegistration _cancellationRegistration;
@@ -105,7 +105,7 @@ namespace System.IO.Strategies
                 }
             }
 
-            internal virtual void ReleaseNativeResource()
+            internal void ReleaseNativeResource()
             {
                 _handle.Dispose();
 
