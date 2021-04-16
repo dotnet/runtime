@@ -1317,8 +1317,12 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// Tests when a BackgroundService throws an exception asynchronously
         /// (after an await), the exception gets logged correctly.
         /// </summary>
-        [Fact]
-        public async Task BackgroundServiceAsyncExceptionGetsLogged()
+        [Theory]
+        [InlineData(BackgroundServiceExceptionBehavior.Ignore, "BackgroundService failed")]
+        [InlineData(BackgroundServiceExceptionBehavior.StopHost, "BackgroundService failed", "The HostOptions.BackgroundServiceExceptionBehavior is configured to StopHost")]
+        public async Task BackgroundServiceAsyncExceptionGetsLogged(
+            BackgroundServiceExceptionBehavior testBehavior,
+            params string[] expectedExceptionMessages)
         {
             using TestEventListener listener = new TestEventListener();
             var backgroundDelayTaskSource = new TaskCompletionSource<bool>();
@@ -1330,6 +1334,9 @@ namespace Microsoft.Extensions.Hosting.Internal
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.Configure<HostOptions>(
+                        options =>
+                        options.BackgroundServiceExceptionBehavior = testBehavior);
                     services.AddHostedService(sp => new AsyncThrowingService(backgroundDelayTaskSource.Task));
                 })
                 .Start();
@@ -1337,15 +1344,19 @@ namespace Microsoft.Extensions.Hosting.Internal
             backgroundDelayTaskSource.SetResult(true);
 
             // give the background service 1 minute to log the failure
-            TimeSpan timeout = TimeSpan.FromMinutes(1);
+            var timeout = TimeSpan.FromMinutes(1);
             Stopwatch sw = Stopwatch.StartNew();
 
             while (true)
             {
-                EventWrittenEventArgs[] events = listener.EventData.ToArray();
-                if (events.Any(e =>
-                    e.EventSource.Name == "Microsoft-Extensions-Logging" &&
-                    e.Payload.OfType<string>().Any(p => p.Contains("BackgroundService failed"))))
+                EventWrittenEventArgs[] events =
+                    listener.EventData.Where(
+                        e => e.EventSource.Name == "Microsoft-Extensions-Logging").ToArray();
+
+                if (expectedExceptionMessages.All(
+                        expectedMessage => events.Any(
+                            e => e.Payload.OfType<string>().Any(
+                                p => p.Contains(expectedMessage)))))
                 {
                     break;
                 }
