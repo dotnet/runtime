@@ -7,7 +7,7 @@ XX                                                                           XX
 XX                           Likely Class Processing                         XX
 XX                                                                           XX
 XX   Parses Pgo data to find the most likely class in use at a given         XX
-XX   in a method. Used by both the JIT, and by crossgen                      XX
+XX   IL offset in a method. Used by both the JIT, and by crossgen            XX
 XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
