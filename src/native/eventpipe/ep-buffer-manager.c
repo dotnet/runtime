@@ -570,7 +570,7 @@ buffer_manager_deallocate_buffer (
 	EP_ASSERT (buffer_manager != NULL);
 
 	if (buffer) {
-		buffer_manager_release_buffer(buffer_manager, ep_buffer_get_size (buffer));
+		// buffer_manager_release_buffer(buffer_manager, ep_buffer_get_size (buffer));
 		ep_buffer_free (buffer);
 #ifdef EP_CHECKED_BUILD
 		buffer_manager->num_buffers_allocated--;
@@ -747,7 +747,7 @@ buffer_manager_advance_to_non_empty_buffer (
 				// delete the empty buffer
 				EventPipeBuffer *removed_buffer = ep_buffer_list_get_and_remove_head (buffer_list);
 				EP_ASSERT (current_buffer == removed_buffer);
-				// buffer_manager_deallocate_buffer (buffer_manager, removed_buffer);
+				buffer_manager_release_buffer(buffer_manager, ep_buffer_get_size (removed_buffer));
 				ep_rt_buffer_array_append(&buffer_manager->used_buffer_array, removed_buffer);
 
 				// get the next buffer
@@ -1429,6 +1429,7 @@ ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager)
 			// Iterate over all nodes in the buffer list and deallocate them.
 			EventPipeBuffer *buffer = ep_buffer_list_get_and_remove_head (buffer_list);
 			while (buffer) {
+				buffer_manager_release_buffer(buffer_manager, ep_buffer_get_size (buffer));
 				buffer_manager_deallocate_buffer (buffer_manager, buffer);
 				buffer = ep_buffer_list_get_and_remove_head (buffer_list);
 			}
