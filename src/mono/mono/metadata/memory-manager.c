@@ -695,3 +695,11 @@ mono_mem_manager_init_reflection_hashes (MonoMemoryManager *mem_manager)
 	}
 	mono_mem_manager_unlock (mem_manager);
 }
+
+void
+mono_mem_manager_start_unload (MonoMemoryManager *mem_manager)
+{
+	/* Free the strong handle so the LoaderAllocator object can be freed */
+	MonoGCHandle loader_handle = mem_manager->loader_allocator_handle;
+	mono_gchandle_free_internal (loader_handle);
+}

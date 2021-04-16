@@ -208,4 +208,6 @@ ICALL_EXPORT MonoBoolean ves_icall_System_Array_IsValueOfElementTypeInternal (Mo
 
 ICALL_EXPORT MonoBoolean ves_icall_System_Array_FastCopy (MonoObjectHandleOnStack source_handle, int source_idx, MonoObjectHandleOnStack dest_handle, int dest_idx, int length);
 
+ICALL_EXPORT MonoBoolean ves_icall_System_Reflection_LoaderAllocatorScout_Destroy (gpointer native);
+
 #endif // __MONO_METADATA_ICALL_DECL_H__

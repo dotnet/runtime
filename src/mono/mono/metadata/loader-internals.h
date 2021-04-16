@@ -382,6 +382,9 @@ mono_mem_manager_get_loader_alloc (MonoMemoryManager *mem_manager);
 void
 mono_mem_manager_init_reflection_hashes (MonoMemoryManager *mem_manager);
 
+void
+mono_mem_manager_start_unload (MonoMemoryManager *mem_manager);
+
 G_END_DECLS
 
 #endif
