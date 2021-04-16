@@ -8,15 +8,15 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "6.0.0.0")]
         private readonly struct __Method9Struct : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
         {
-            private readonly int _p1;
-            private readonly int _p2;
-            private readonly int _p3;
-            private readonly int _p4;
-            private readonly int _p5;
-            private readonly int _p6;
-            private readonly int _p7;
+            private readonly global::System.Int32 _p1;
+            private readonly global::System.Int32 _p2;
+            private readonly global::System.Int32 _p3;
+            private readonly global::System.Int32 _p4;
+            private readonly global::System.Int32 _p5;
+            private readonly global::System.Int32 _p6;
+            private readonly global::System.Int32 _p7;
 
-            public __Method9Struct(int p1, int p2, int p3, int p4, int p5, int p6, int p7)
+            public __Method9Struct(global::System.Int32 p1, global::System.Int32 p2, global::System.Int32 p3, global::System.Int32 p4, global::System.Int32 p5, global::System.Int32 p6, global::System.Int32 p7)
             {
                 this._p1 = p1;
                 this._p2 = p2;
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         }
 
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "6.0.0.0")]
-        public static partial void Method9(Microsoft.Extensions.Logging.ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7)
+        public static partial void Method9(global::Microsoft.Extensions.Logging.ILogger logger, global::System.Int32 p1, global::System.Int32 p2, global::System.Int32 p3, global::System.Int32 p4, global::System.Int32 p5, global::System.Int32 p6, global::System.Int32 p7)
         {
             if (logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Error))
             {

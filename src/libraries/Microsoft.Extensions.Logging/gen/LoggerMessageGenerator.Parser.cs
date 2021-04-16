@@ -227,7 +227,9 @@ namespace Microsoft.Extensions.Logging.Generators
                                             }
 
                                             IParameterSymbol declaredType = sm.GetDeclaredSymbol(p);
-                                            string typeName = declaredType!.ToDisplayString();
+                                            string typeName = declaredType!.Type.ToDisplayString(
+                                                SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                                                    SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
                                             var lp = new LoggerParameter
                                             {

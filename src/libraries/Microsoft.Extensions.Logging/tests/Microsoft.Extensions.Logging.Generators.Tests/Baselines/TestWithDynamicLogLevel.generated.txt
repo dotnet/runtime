@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         }
 
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "6.0.0.0")]
-        public static partial void M9(Microsoft.Extensions.Logging.LogLevel level, Microsoft.Extensions.Logging.ILogger logger)
+        public static partial void M9(global::Microsoft.Extensions.Logging.LogLevel level, global::Microsoft.Extensions.Logging.ILogger logger)
         {
             if (logger.IsEnabled(level))
             {
