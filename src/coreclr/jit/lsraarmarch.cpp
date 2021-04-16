@@ -701,8 +701,20 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     {
         useCount += BuildAddrUses(dstAddr->AsAddrMode()->Base());
     }
-
-    if (srcAddrOrFill != nullptr)
+#ifdef TARGET_ARM64
+    if (src->IsMultiRegNode())
+    {
+        assert(src->OperIsHWIntrinsic());
+        const int srcCount = src->GetMultiRegCount();
+        for (int i = 0; i < srcCount; ++i)
+        {
+            BuildUse(src, RBM_NONE, i);
+        }
+        useCount += srcCount;
+    }
+    else
+#endif
+        if (srcAddrOrFill != nullptr)
     {
         if (!srcAddrOrFill->isContained())
         {
