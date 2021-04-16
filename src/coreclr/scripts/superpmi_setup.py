@@ -177,13 +177,13 @@ def setup_args(args):
     return coreclr_args
 
 
-def get_files_sorted_by_size(src_directory, exclude_directories, skip_file_func):
+def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
     """ For a given src_directory, returns all the .dll files sorted by size.
 
     Args:
         src_directory (string): Path of directory to enumerate.
         exclude_directories ([string]): Directory names to exclude.
-        skip_file_func ((string, string, [string])->bool): Skip file function
+        exclude_files ([string]): File names to exclude.
     """
 
     def sorter_by_size(pair):
@@ -201,10 +201,14 @@ def get_files_sorted_by_size(src_directory, exclude_directories, skip_file_func)
         # Credit: https://stackoverflow.com/a/19859907
         dirs[:] = [d for d in dirs if d not in exclude_directories]
         for name in files:
-            if skip_file_func(file_path, name):
+            if name in exclude_files:
                 continue
-
             curr_file_path = path.join(file_path, name)
+
+            if not isfile(curr_file_path):
+                continue
+            if not name.endswith(".dll") and not name.endswith(".exe"):
+                continue
 
             size = getsize(curr_file_path)
             filename_with_size.append((curr_file_path, size))
@@ -280,47 +284,6 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False):
     return command_stdout, command_stderr, return_code
 
 
-def skip_file(file_path, file_name, exclude_files):
-    """Filter the files
-
-    Args:
-        file_path (string): full directory path of the file
-        file_name (string): file name
-        exclude_files ([string]): File names to exclude.
-    """
-    if file_name in exclude_files:
-        return True
-
-    curr_file_path = path.join(file_path, file_name)
-
-    if not isfile(curr_file_path):
-        return True
-    if not file_name.endswith(".dll") and not file_name.endswith(".exe"):
-        return True
-
-    return False
-
-
-def skip_file_tests_libraries(file_path, file_name, exclude_files):
-    """Filter the files
-
-    Args:
-        file_path (string): full directory path of the file
-        file_name (string): file name
-        exclude_files ([string]): File names to exclude.
-    """
-    if file_name == "Microsoft.Build.dll":
-        return True
-
-    if skip_file(file_path, file_name, exclude_files):
-        return True
-
-    if not file_name.endswith(".Tests.dll"):
-        return True
-
-    return False
-
-
 def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda path: True):
     """Copies directory in 'src_path' to 'dst_path' maintaining the directory
     structure. https://docs.python.org/3.5/library/shutil.html#shutil.copytree can't
@@ -376,19 +339,20 @@ def copy_files(src_path, dst_path, file_names):
             print('Ignoring PermissionError: {0}'.format(pe_error))
 
 
-def partition_files(src_directory, dst_directory, max_size, skip_file_func, exclude_directories=[]):
+def partition_files(src_directory, dst_directory, max_size, exclude_directories=[],
+                    exclude_files=native_binaries_to_ignore):
     """ Copy bucketized files based on size to destination folder.
 
     Args:
         src_directory (string): Source folder containing files to be copied.
         dst_directory (string): Destination folder where files should be copied.
         max_size (int): Maximum partition size in bytes
-        skip_file_func ((string, string, [string])->bool): Skip file function
         exclude_directories ([string]): List of folder names to be excluded.
+        exclude_files ([string]): List of files names to be excluded.
     """
 
     print('Partitioning files from {0} to {1}'.format(src_directory, dst_directory))
-    sorted_by_size = get_files_sorted_by_size(src_directory, exclude_directories, skip_file_func)
+    sorted_by_size = get_files_sorted_by_size(src_directory, exclude_directories, exclude_files)
     partitions = first_fit(sorted_by_size, max_size)
 
     index = 0
@@ -483,11 +447,10 @@ def main(main_args):
         acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
     else:
         # Need to accept files without any extension, which is how executable file's names look.
-        acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(
-            path.endswith(extension) for extension in [".py", ".dll", ".so", ".json"])
+        acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".json"])
 
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
-    # copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, match_func=acceptable_copy)
+    copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, match_func=acceptable_copy)
 
     # Copy common test files to CORE_ROOT
     if coreclr_args.collection_name == "tests_libraries":
@@ -562,12 +525,8 @@ def main(main_args):
             exclude_files += [item for item in os.listdir(core_root_dir)
                               if isfile(join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]
 
-            skip_file_func = lambda file_path, file_name: skip_file_tests_libraries(file_path, file_name, exclude_files)
-        else:
-            skip_file_func = lambda file_path, file_name: skip_file(file_path, file_name, exclude_files)
-
-        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, skip_file_func,
-                        exclude_directory)
+        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory,
+                        exclude_files)
 
     # Set variables
     print('Setting pipeline variables:')
