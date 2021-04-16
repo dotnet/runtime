@@ -104,6 +104,8 @@ namespace System.IO.Strategies
 
         private void TryToReuse(ValueTaskSource source)
         {
+            source._source.Reset();
+
             if (Interlocked.CompareExchange(ref _reusableValueTaskSource, source, null) is not null)
             {
                 source._preallocatedOverlapped.Dispose();

@@ -1069,7 +1069,7 @@ namespace System.IO.Strategies
 
             void AllocateBuffer() // logic kept in a separate method to get EnsureBufferAllocated() inlined
             {
-                _buffer = GC.AllocateArray<byte>(_bufferSize,
+                _buffer = GC.AllocateUninitializedArray<byte>(_bufferSize,
                     pinned: true); // this allows us to avoid pinning when the buffer is used for the syscalls
             }
         }

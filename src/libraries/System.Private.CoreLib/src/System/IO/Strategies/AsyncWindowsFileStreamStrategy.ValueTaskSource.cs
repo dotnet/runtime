@@ -21,7 +21,7 @@ namespace System.IO.Strategies
             internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
             private readonly AsyncWindowsFileStreamStrategy _strategy;
             private MemoryHandle _handle;
-            private ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
+            internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
             private NativeOverlapped* _overlapped;
             private CancellationTokenRegistration _cancellationRegistration;
             private long _result; // Using long since this needs to be used in Interlocked APIs
@@ -34,14 +34,12 @@ namespace System.IO.Strategies
                 _strategy = strategy;
                 _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, null);
 
-                _source = default;
                 _source.RunContinuationsAsynchronously = true;
             }
 
             internal NativeOverlapped* Configure(ReadOnlyMemory<byte> memory)
             {
                 _result = TaskSourceCodes.NoResult;
-                _source.Reset();
 
                 _handle = memory.Pin();
                 _overlapped = _strategy._fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
@@ -51,8 +49,22 @@ namespace System.IO.Strategies
 
             public ValueTaskSourceStatus GetStatus(short token) => _source.GetStatus(token);
             public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _source.OnCompleted(continuation, state, token, flags);
-            void IValueTaskSource.GetResult(short token) => _source.GetResult(token);
-            int IValueTaskSource<int>.GetResult(short token) => _source.GetResult(token);
+            void IValueTaskSource.GetResult(short token) => GetResultAndRelease(token);
+            int IValueTaskSource<int>.GetResult(short token) => GetResultAndRelease(token);
+
+            private int GetResultAndRelease(short token)
+            {
+                try
+                {
+                    return _source.GetResult(token);
+                }
+                finally
+                {
+                    // The instance is ready to be reused
+                    _strategy.TryToReuse(this);
+                }
+            }
+
             internal short Version => _source.Version;
 
             internal void RegisterForCancellation(CancellationToken cancellationToken)
@@ -170,9 +182,6 @@ namespace System.IO.Strategies
                     Debug.Assert(result == TaskSourceCodes.ResultSuccess, "Unknown result");
                     _source.SetResult((int)(packedResult & uint.MaxValue));
                 }
-
-                // The instance is ready to be reused
-                _strategy.TryToReuse(this);
             }
 
             private void Cancel(CancellationToken token)
