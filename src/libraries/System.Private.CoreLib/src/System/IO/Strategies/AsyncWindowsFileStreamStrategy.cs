@@ -10,7 +10,6 @@ namespace System.IO.Strategies
 {
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
-        private PreAllocatedOverlapped? _preallocatedOverlapped; // optimization for async ops to avoid per-op allocations
         private ValueTaskSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
         internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
@@ -32,7 +31,7 @@ namespace System.IO.Strategies
             ValueTask result = base.DisposeAsync();
             Debug.Assert(result.IsCompleted, "the method must be sync, as it performs no flushing");
 
-            _preallocatedOverlapped?.Dispose();
+            _currentOverlappedOwner?._preallocatedOverlapped?.Dispose();
 
             return result;
         }
@@ -43,7 +42,7 @@ namespace System.IO.Strategies
             // before _preallocatedOverlapped is disposed
             base.Dispose(disposing);
 
-            _preallocatedOverlapped?.Dispose();
+            _currentOverlappedOwner?._preallocatedOverlapped?.Dispose();
         }
 
         protected override void OnInitFromHandle(SafeFileHandle handle)
@@ -106,9 +105,8 @@ namespace System.IO.Strategies
         // called by BufferedFileStreamStrategy
         internal override void OnBufferAllocated(byte[] buffer)
         {
-            Debug.Assert(_preallocatedOverlapped == null);
-
-            _preallocatedOverlapped = new PreAllocatedOverlapped(ValueTaskSource.s_ioCallback, this, buffer);
+            Debug.Assert(_currentOverlappedOwner == null);
+            _currentOverlappedOwner = new ValueTaskSource(this, buffer);
         }
 
         private ValueTaskSource? CompareExchangeCurrentOverlappedOwner(ValueTaskSource? newSource, ValueTaskSource? existingSource)
@@ -137,8 +135,18 @@ namespace System.IO.Strategies
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
-            // Create and store async stream class library specific data in the async result
-            ValueTaskSource valueTaskSource = ValueTaskSource.Create(this, _preallocatedOverlapped, destination);
+            // valueTaskSource is not null when:
+            // - First time calling ReadAsync in buffered mode
+            // - Second+ time calling ReadAsync, both buffered or unbuffered
+            // - On buffered flush, when source memory is also the internal buffer
+            ValueTaskSource? valueTaskSource = Interlocked.Exchange(ref _currentOverlappedOwner, null);
+            // valueTaskSource is null when:
+            // - First time calling ReadAsync in unbuffered mode
+            if (valueTaskSource == null)
+            {
+                valueTaskSource = new ValueTaskSource(this, null);
+            }
+            valueTaskSource.Configure(destination);
             NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
@@ -253,8 +261,18 @@ namespace System.IO.Strategies
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
-            // Create and store async stream class library specific data in the async result
-            ValueTaskSource valueTaskSource = ValueTaskSource.Create(this, _preallocatedOverlapped, source);
+            // valueTaskSource is not null when:
+            // - First time calling WriteAsync in buffered mode
+            // - Second+ time calling WriteAsync, both buffered or unbuffered
+            // - On buffered flush, when source memory is also the internal buffer
+            ValueTaskSource? valueTaskSource = Interlocked.Exchange(ref _currentOverlappedOwner, null);
+            // valueTaskSource is null when:
+            // - First time calling WriteAsync in unbuffered mode
+            if (valueTaskSource == null)
+            {
+                valueTaskSource = new ValueTaskSource(this, null);
+            }
+            valueTaskSource.Configure(source);
             NativeOverlapped* intOverlapped = valueTaskSource.Overlapped;
 
             long positionBefore = _filePosition;
