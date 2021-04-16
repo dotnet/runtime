@@ -33,8 +33,9 @@ namespace Microsoft.NET.HostModel.ComHost
                 new XAttribute("name", $"{assemblyName}.X"),
                 new XAttribute("version", assemblyVersion)));
 
-            manifest.Add(CreateComHostFileElement(clsidMapPath, comHostName, ns));
-            AddTypeLibFileElementsToManifest(typeLibraries, ns, manifest);
+            var fileElement = CreateComHostFileElement(clsidMapPath, comHostName, ns);
+            AddTypeLibFileElementsToManifest(typeLibraries, ns, fileElement);
+            manifest.Add(fileElement);
 
             XDocument manifestDocument = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"), manifest);
             XmlWriterSettings settings = new XmlWriterSettings()
@@ -71,7 +72,7 @@ namespace Microsoft.NET.HostModel.ComHost
             return fileElement;
         }
 
-        private static void AddTypeLibFileElementsToManifest(IReadOnlyDictionary<int, string> typeLibraries, XNamespace ns, XElement manifest)
+        private static void AddTypeLibFileElementsToManifest(IReadOnlyDictionary<int, string> typeLibraries, XNamespace ns, XElement fileElement)
         {
             foreach (var typeLibrary in typeLibraries)
             {
@@ -83,14 +84,15 @@ namespace Microsoft.NET.HostModel.ComHost
                     {
                         throw new InvalidTypeLibraryException(typeLibrary.Value);
                     }
-                    XElement typelibFileElement = new XElement(ns + "file",
-                            new XAttribute("name", Path.GetFileName(typeLibrary.Value)),
-                            new XElement(ns + "typelib",
-                                new XAttribute("tlbid", name.ToString("B")),
-                                new XAttribute("resourceid", typeLibrary.Key),
-                                new XAttribute("version", version),
-                                new XAttribute("helpdir", "")));
-                    manifest.Add(typelibFileElement);
+                    XElement typeLibElement = new XElement(ns + "typelib",
+                        new XAttribute("tlbid", name.ToString("B")),
+                        new XAttribute("resourceid", typeLibrary.Key),
+                        new XAttribute("version", version),
+                        new XAttribute("helpdir", ""));
+                    // XElement typelibFileElement = new XElement(ns + "file",
+                    //         new XAttribute("name", Path.GetFileName(typeLibrary.Value)),
+                    //         );
+                    fileElement.Add(typeLibElement);
                 }
                 catch (FileNotFoundException ex)
                 {

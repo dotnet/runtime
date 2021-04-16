@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
-        public void ActivateClassAndExecuteMethod()
+        public void ActivateClassLocateEmbeddedTlb()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -31,6 +31,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
 
             string [] args = {
+                sharedState.TypeLibId,
                 sharedState.ClsidString
             };
 
@@ -41,13 +42,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.HaveStdOutContaining("New instance of Server created")
-                .And.HaveStdOutContaining("Method MethodCall on Server called")
-                .And.HaveStdOutContaining("Successfully called method on proxy");
+                .And.HaveStdOutContaining("New instance of Server created");
         }
 
         public class SharedTestState : Comhost.SharedTestState
         {
+            public string TypeLibId { get; } = "{20151109-a0e8-46ae-b28e-8ff2c0e72166}";
+
             public string ComSxsPath { get; }
 
             public SharedTestState()
