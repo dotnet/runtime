@@ -191,11 +191,6 @@ namespace Microsoft.NET.HostModel.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
-
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                Directory.Delete(dotnetSymlink);
-            }
         }
 
         [Fact]
