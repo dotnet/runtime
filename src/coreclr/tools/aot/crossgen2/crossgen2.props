@@ -54,6 +54,7 @@
   <PropertyGroup>
     <TargetOSComponent>unix</TargetOSComponent>
     <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
+    <TargetOSComponent Condition="'$(TargetOS)' == 'osx' and '$(TargetArchitecture)' == 'arm64'">unix_osx</TargetOSComponent>
 
     <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' == ''">$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
     <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' != ''">$(CrossHostArch)</TargetArchitectureForSharedLibraries>
