@@ -121,7 +121,7 @@ namespace Internal.Cryptography
 
         public sealed override int HashSizeInBytes => _hashSize;
 
-        public void Reset()
+        public override void Reset()
         {
             if (_reusable && !_running)
                 return;
