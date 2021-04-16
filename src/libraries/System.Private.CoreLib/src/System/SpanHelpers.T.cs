@@ -23,7 +23,7 @@ namespace System
             if (Unsafe.SizeOf<T>() > Vector<byte>.Count) { goto CannotVectorize; }
             if ((Unsafe.SizeOf<T>() & (Unsafe.SizeOf<T>() - 1)) != 0) { goto CannotVectorize; } // power of 2 check
 
-            if (numElements > (uint)(Vector<byte>.Count / Unsafe.SizeOf<T>()))
+            if (numElements >= (uint)(Vector<byte>.Count / Unsafe.SizeOf<T>()))
             {
                 // We have enough data for at least one vectorized write.
 
