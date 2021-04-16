@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using static System.IO.Compression.ZLibNative;
 
 namespace System.Net.WebSockets.Compression
@@ -43,7 +42,7 @@ namespace System.Net.WebSockets.Compression
             }
         }
 
-        public ReadOnlySpan<byte> Deflate(ReadOnlySpan<byte> payload, bool continuation, bool endOfMessage)
+        public ReadOnlySpan<byte> Deflate(ReadOnlySpan<byte> payload, bool endOfMessage)
         {
             Debug.Assert(_buffer is null, "Invalid state, ReleaseBuffer not called.");
 
@@ -60,7 +59,7 @@ namespace System.Net.WebSockets.Compression
 
             while (true)
             {
-                DeflatePrivate(payload, _buffer.AsSpan(position), continuation, endOfMessage,
+                DeflatePrivate(payload, _buffer.AsSpan(position), endOfMessage,
                     out int consumed, out int written, out bool needsMoreOutput);
                 position += written;
 
@@ -82,7 +81,7 @@ namespace System.Net.WebSockets.Compression
             return new ReadOnlySpan<byte>(_buffer, 0, position);
         }
 
-        private void DeflatePrivate(ReadOnlySpan<byte> payload, Span<byte> output, bool continuation, bool endOfMessage,
+        private void DeflatePrivate(ReadOnlySpan<byte> payload, Span<byte> output, bool endOfMessage,
             out int consumed, out int written, out bool needsMoreOutput)
         {
             _stream ??= _streamPool.GetDeflater();
@@ -107,7 +106,6 @@ namespace System.Net.WebSockets.Compression
 
             if (needsMoreOutput)
             {
-                Debug.Assert(written == output.Length);
                 return;
             }
             Debug.Assert(output.Slice(written - WebSocketInflater.FlushMarkerLength, WebSocketInflater.FlushMarkerLength)
@@ -147,7 +145,7 @@ namespace System.Net.WebSockets.Compression
                 consumed = input.Length - (int)_stream.AvailIn;
                 written = output.Length - (int)_stream.AvailOut;
 
-                needsMoreBuffer = errorCode == ErrorCode.BufError;
+                needsMoreBuffer = errorCode == ErrorCode.BufError || _stream.AvailIn > 0;
             }
         }
 
@@ -155,7 +153,6 @@ namespace System.Net.WebSockets.Compression
         {
             Debug.Assert(_stream is not null);
             Debug.Assert(_stream.AvailIn == 0);
-            Debug.Assert(output.Length >= 6, "We need at least 6 bytes to guarantee the completion of the deflate block.");
 
             fixed (byte* fixedOutput = output)
             {
@@ -165,16 +162,27 @@ namespace System.Net.WebSockets.Compression
                 _stream.NextOut = (IntPtr)fixedOutput;
                 _stream.AvailOut = (uint)output.Length;
 
-                // The flush is set to Z_SYNC_FLUSH, all pending output is flushed
-                // to the output buffer and the output is aligned on a byte boundary,
-                // so that the decompressor can get all input data available so far.
-                // This completes the current deflate block and follows it with an empty
-                // stored block that is three bits plus filler bits to the next byte,
-                // followed by four bytes (00 00 ff ff).
-                ErrorCode errorCode = Deflate(_stream, FlushCode.SyncFlush);
+                // We need to use Z_BLOCK_FLUSH to instruct the zlib to flush all outstanding
+                // data but also not to emit a deflate block boundary. After we know that there is no
+                // more data, we can safely proceed to instruct the library to emit the boundary markers.
+                ErrorCode errorCode = Deflate(_stream, FlushCode.Block);
                 Debug.Assert(errorCode is ErrorCode.Ok or ErrorCode.BufError);
 
-                needsMoreBuffer = errorCode == ErrorCode.BufError;
+                // We need at least 6 bytes to guarantee that we can emit a deflate block boundary.
+                needsMoreBuffer = _stream.AvailOut < 6;
+
+                if (!needsMoreBuffer)
+                {
+                    // The flush is set to Z_SYNC_FLUSH, all pending output is flushed
+                    // to the output buffer and the output is aligned on a byte boundary,
+                    // so that the decompressor can get all input data available so far.
+                    // This completes the current deflate block and follows it with an empty
+                    // stored block that is three bits plus filler bits to the next byte,
+                    // followed by four bytes (00 00 ff ff).
+                    errorCode = Deflate(_stream, FlushCode.SyncFlush);
+                    Debug.Assert(errorCode == ErrorCode.Ok);
+                }
+
                 return output.Length - (int)_stream.AvailOut;
             }
         }

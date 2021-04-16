@@ -172,7 +172,7 @@ namespace System.Net.WebSockets.Tests
                 IsServer = true,
                 DangerousDeflateOptions = new()
                 {
-                    ClientContextTakeover = false
+                    ServerContextTakeover = false
                 }
             });
 
@@ -491,6 +491,88 @@ namespace System.Net.WebSockets.Tests
 
             Assert.Equal("The message was compressed using an unsupported compression method.", exception.Message);
             Assert.Equal(WebSocketState.Aborted, client.State);
+        }
+
+        [Fact]
+        public async Task PayloadShouldHaveSimilarSizeWhenSplitIntoSegments()
+        {
+            WebSocketTestStream stream = new();
+            WebSocket client = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
+            });
+
+            // We're using a frame size that is close to the sliding window size for the deflate
+            const int frameSize = 32_000;
+
+            byte[] message = new byte[frameSize * 100];
+            Random random = new(0);
+
+            for (int i = 0; i < message.Length; ++i)
+            {
+                message[i] = (byte)random.Next(maxValue: 10);
+            }
+
+            await client.SendAsync(message, WebSocketMessageType.Binary, true, CancellationToken);
+
+            int payloadLength = stream.Remote.Available;
+            stream.Remote.Clear();
+
+            for (var i = 0; i < message.Length; i += frameSize)
+            {
+                await client.SendAsync(message.AsMemory(i, frameSize), WebSocketMessageType.Binary, i + frameSize == message.Length, CancellationToken);
+            }
+
+            Assert.Equal(0.999, Math.Round(payloadLength * 1.0 / stream.Remote.Available, 3));
+        }
+
+        [Theory]
+        [InlineData(9, 15)]
+        [InlineData(15, 9)]
+        public async Task SendReceiveWithDifferentWindowBits(int clientWindowBits, int serverWindowBits)
+        {
+            WebSocketTestStream stream = new();
+            WebSocket server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                IsServer = true,
+                DangerousDeflateOptions = new()
+                {
+                    ClientContextTakeover = false,
+                    ClientMaxWindowBits = clientWindowBits,
+                    ServerContextTakeover = false,
+                    ServerMaxWindowBits = serverWindowBits
+                }
+            });
+            WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            {
+                DangerousDeflateOptions = new()
+                {
+                    ClientContextTakeover = false,
+                    ClientMaxWindowBits = clientWindowBits,
+                    ServerContextTakeover = false,
+                    ServerMaxWindowBits = serverWindowBits
+                }
+            });
+
+            Memory<byte> data = new byte[64 * 1024];
+            Memory<byte> buffer = new byte[data.Length];
+            new Random(0).NextBytes(data.Span.Slice(0, data.Length / 2));
+
+            await server.SendAsync(data, WebSocketMessageType.Binary, true, CancellationToken);
+            ValueWebSocketReceiveResult result = await client.ReceiveAsync(buffer, CancellationToken);
+
+            Assert.Equal(data.Length, result.Count);
+            Assert.True(result.EndOfMessage);
+            Assert.True(data.Span.SequenceEqual(buffer.Span));
+
+            buffer.Span.Clear();
+
+            await client.SendAsync(data, WebSocketMessageType.Binary, true, CancellationToken);
+            result = await server.ReceiveAsync(buffer, CancellationToken);
+
+            Assert.Equal(data.Length, result.Count);
+            Assert.True(result.EndOfMessage);
+            Assert.True(data.Span.SequenceEqual(buffer.Span));
         }
 
         private ValueTask SendTextAsync(string text, WebSocket websocket, bool disableCompression = false)

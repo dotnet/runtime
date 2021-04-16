@@ -139,9 +139,9 @@
     <value>WebSocket binary type '{0}' not supported.</value>
   </data>
   <data name="net_WebSockets_ServerWindowBitsNegotiationFailure" xml:space="preserve">
-    <value>The WebSocket failed to negotiate max server window bits. The client requested {1} but the server responded with {2}.</value>
+    <value>The WebSocket failed to negotiate max server window bits. The client requested {0} but the server responded with {1}.</value>
   </data>
   <data name="net_WebSockets_ClientWindowBitsNegotiationFailure" xml:space="preserve">
-    <value>The WebSocket failed to negotiate max client window bits. The client requested {1} but the server responded with {2}.</value>
+    <value>The WebSocket failed to negotiate max client window bits. The client requested {0} but the server responded with {1}.</value>
   </data>
 </root>

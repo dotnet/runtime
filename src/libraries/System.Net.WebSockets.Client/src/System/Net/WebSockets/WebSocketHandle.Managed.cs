@@ -338,7 +338,7 @@ namespace System.Net.WebSockets
                     if (options.ClientMaxWindowBits != WebSocketValidate.MaxDeflateWindowBits)
                     {
                         builder.Append(ClientWebSocketDeflateConstants.ClientMaxWindowBits).Append('=')
-                               .Append(options.ClientMaxWindowBits.ToString(CultureInfo.InvariantCulture));
+                           .Append(options.ClientMaxWindowBits.ToString(CultureInfo.InvariantCulture));
                     }
                     else
                     {
@@ -351,17 +351,11 @@ namespace System.Net.WebSockets
                         builder.Append("; ").Append(ClientWebSocketDeflateConstants.ClientNoContextTakeover);
                     }
 
-                    builder.Append("; ");
-
                     if (options.ServerMaxWindowBits != WebSocketValidate.MaxDeflateWindowBits)
                     {
-                        builder.Append(ClientWebSocketDeflateConstants.ServerMaxWindowBits).Append('=')
+                        builder.Append("; ")
+                               .Append(ClientWebSocketDeflateConstants.ServerMaxWindowBits).Append('=')
                                .Append(options.ServerMaxWindowBits.ToString(CultureInfo.InvariantCulture));
-                    }
-                    else
-                    {
-                        // Advertise that we support this option
-                        builder.Append(ClientWebSocketDeflateConstants.ServerMaxWindowBits);
                     }
 
                     if (!options.ServerContextTakeover)

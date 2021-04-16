@@ -16,7 +16,8 @@ namespace System.Net.WebSockets
         private int _serverMaxWindowBits = WebSocketValidate.MaxDeflateWindowBits;
 
         /// <summary>
-        /// This parameter indicates the base-2 logarithm of the LZ77 sliding window size of the client context.
+        /// This parameter indicates the base-2 logarithm for the LZ77 sliding window size used by
+        /// the client to compress messages and by the server to decompress them.
         /// Must be a value between 9 and 15. The default is 15.
         /// </summary>
         /// <remarks>https://tools.ietf.org/html/rfc7692#section-7.1.2.2</remarks>
@@ -42,7 +43,8 @@ namespace System.Net.WebSockets
         public bool ClientContextTakeover { get; set; } = true;
 
         /// <summary>
-        /// This parameter indicates the base-2 logarithm of the LZ77 sliding window size of the server context.
+        /// This parameter indicates the base-2 logarithm for the LZ77 sliding window size used by
+        /// the server to compress messages and by the client to decompress them.
         /// Must be a value between 9 and 15. The default is 15.
         /// </summary>
         /// <remarks>https://tools.ietf.org/html/rfc7692#section-7.1.2.1</remarks>

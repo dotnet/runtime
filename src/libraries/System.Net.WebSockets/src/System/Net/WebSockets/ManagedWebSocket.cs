@@ -218,13 +218,16 @@ namespace System.Net.WebSockets
 
             if (deflateOptions is not null)
             {
-                _deflater = options.IsServer ?
-                    new WebSocketDeflater(deflateOptions.ClientMaxWindowBits, deflateOptions.ClientContextTakeover) :
-                    new WebSocketDeflater(deflateOptions.ServerMaxWindowBits, deflateOptions.ServerContextTakeover);
-
-                _inflater = options.IsServer ?
-                        new WebSocketInflater(deflateOptions.ServerMaxWindowBits, deflateOptions.ServerContextTakeover) :
-                        new WebSocketInflater(deflateOptions.ClientMaxWindowBits, deflateOptions.ClientContextTakeover);
+                if (options.IsServer)
+                {
+                    _inflater = new WebSocketInflater(deflateOptions.ClientMaxWindowBits, deflateOptions.ClientContextTakeover);
+                    _deflater = new WebSocketDeflater(deflateOptions.ServerMaxWindowBits, deflateOptions.ServerContextTakeover);
+                }
+                else
+                {
+                    _inflater = new WebSocketInflater(deflateOptions.ServerMaxWindowBits, deflateOptions.ServerContextTakeover);
+                    _deflater = new WebSocketDeflater(deflateOptions.ClientMaxWindowBits, deflateOptions.ClientContextTakeover);
+                }
             }
         }
 
@@ -561,9 +564,9 @@ namespace System.Net.WebSockets
         /// <summary>Writes a frame into the send buffer, which can then be sent over the network.</summary>
         private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlySpan<byte> payloadBuffer)
         {
-            if (_deflater is not null && payloadBuffer.Length > 0 && !disableCompression)
+            if (_deflater is not null && !disableCompression)
             {
-                payloadBuffer = _deflater.Deflate(payloadBuffer, opcode == MessageOpcode.Continuation, endOfMessage);
+                payloadBuffer = _deflater.Deflate(payloadBuffer, endOfMessage);
             }
             int payloadLength = payloadBuffer.Length;
 
@@ -776,6 +779,14 @@ namespace System.Net.WebSockets
                             await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, headerErrorMessage).ConfigureAwait(false);
                         }
                         _receivedMaskOffsetOffset = 0;
+
+                        if (header.PayloadLength == 0 && header.Compressed)
+                        {
+                            // In the rare case where we receive a compressed message with no payload
+                            // we need to tell the inflater about it, because the receive code bellow will
+                            // not try to do anything when PayloadLength == 0.
+                            _inflater!.AddBytes(0, endOfMessage: header.Fin);
+                        }
                     }
 
                     // If the header represents a ping or a pong, it's a control message meant
@@ -865,15 +876,18 @@ namespace System.Net.WebSockets
                         }
 
                         header.PayloadLength -= totalBytesReceived;
+
+                        if (header.Compressed)
+                        {
+                            _inflater!.AddBytes(totalBytesReceived, endOfMessage: header.Fin && header.PayloadLength == 0);
+                        }
                     }
 
                     if (header.Compressed)
                     {
                         // In case of compression totalBytesReceived should actually represent how much we've
                         // inflated, rather than how much we've read from the stream.
-                        _inflater!.Inflate(totalBytesReceived, payloadBuffer.Span,
-                            flush: header.Fin && header.PayloadLength == 0, out totalBytesReceived);
-                        header.Processed = _inflater.Finished && header.PayloadLength == 0;
+                        header.Processed = _inflater!.Inflate(payloadBuffer.Span, out totalBytesReceived) && header.PayloadLength == 0;
                     }
                     else
                     {
@@ -1204,6 +1218,10 @@ namespace System.Net.WebSockets
                         resultHeader = default;
                         return SR.net_Websockets_PerMessageCompressedFlagInContinuation;
                     }
+
+                    // Set the compressed flag from the previous header so the receive procedure can use it
+                    // directly without needing to check the previous header in case of continuations.
+                    header.Compressed = _lastReceiveHeader.Compressed;
                     break;
 
                 case MessageOpcode.Binary:

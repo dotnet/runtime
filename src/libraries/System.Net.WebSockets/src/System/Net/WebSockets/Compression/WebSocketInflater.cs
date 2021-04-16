@@ -29,10 +29,10 @@ namespace System.Net.WebSockets.Compression
         private byte? _remainingByte;
 
         /// <summary>
-        /// When the inflater is persisted we need to manually append the flush marker
-        /// before finishing the decoding.
+        /// The last added bytes to the inflater were part of the final
+        /// payload for the message being sent.
         /// </summary>
-        private bool _needsFlushMarker;
+        private bool _endOfMessage;
 
         private byte[]? _buffer;
 
@@ -51,11 +51,6 @@ namespace System.Net.WebSockets.Compression
             _streamPool = ZLibStreamPool.GetOrCreate(windowBits);
             _persisted = persisted;
         }
-
-        /// <summary>
-        /// Indicates that there is nothing left for inflating.
-        /// </summary>
-        public bool Finished { get; private set; } = true;
 
         public Memory<byte> Memory => _buffer.AsMemory(_position + _available);
 
@@ -94,17 +89,45 @@ namespace System.Net.WebSockets.Compression
             }
         }
 
+        public void AddBytes(int totalBytesReceived, bool endOfMessage)
+        {
+            Debug.Assert(totalBytesReceived == 0 || _buffer is not null, "Prepare must be called.");
+
+            _available += totalBytesReceived;
+            _endOfMessage = endOfMessage;
+
+            if (endOfMessage)
+            {
+                if (_buffer is null)
+                {
+                    Debug.Assert(_available == 0);
+
+                    _buffer = ArrayPool<byte>.Shared.Rent(FlushMarkerLength);
+                    _available = FlushMarkerLength;
+                    FlushMarker.CopyTo(_buffer);
+                }
+                else
+                {
+                    if (_buffer.Length < _available + FlushMarkerLength)
+                    {
+                        byte[] newBuffer = ArrayPool<byte>.Shared.Rent(_available + FlushMarkerLength);
+                        _buffer.AsSpan(0, _available).CopyTo(newBuffer);
+                        ArrayPool<byte>.Shared.Return(_buffer);
+
+                        _buffer = newBuffer;
+                    }
+
+                    FlushMarker.CopyTo(_buffer.AsSpan(_available));
+                    _available += FlushMarkerLength;
+                }
+            }
+        }
+
         /// <summary>
         /// Inflates the last receive payload into the provided buffer.
         /// </summary>
-        public unsafe void Inflate(int totalBytesReceived, Span<byte> output, bool flush, out int written)
+        public unsafe bool Inflate(Span<byte> output, out int written)
         {
-            if (totalBytesReceived > 0)
-            {
-                Debug.Assert(_buffer is not null, "Prepare must be called.");
-                _available += totalBytesReceived;
-            }
-
             _stream ??= _streamPool.GetInflater();
 
             if (_available > 0 && output.Length > 0)
@@ -116,13 +139,12 @@ namespace System.Net.WebSockets.Compression
                     _stream.NextIn = (IntPtr)(bufferPtr + _position);
                     _stream.AvailIn = (uint)_available;
 
-                    written = Inflate(_stream, output);
+                    written = Inflate(_stream, output, FlushCode.NoFlush);
                     consumed = _available - (int)_stream.AvailIn;
                 }
 
                 _position += consumed;
                 _available -= consumed;
-                _needsFlushMarker = _persisted;
             }
             else
             {
@@ -132,34 +154,20 @@ namespace System.Net.WebSockets.Compression
             if (_available == 0)
             {
                 ReleaseBuffer();
-                Finished = flush ? Flush(output, ref written) : true;
+                return _endOfMessage ? Finish(output, ref written) : true;
             }
-            else
-            {
-                Finished = false;
-            }
+
+            return false;
         }
 
         /// <summary>
         /// Finishes the decoding by flushing any outstanding data to the output.
         /// </summary>
         /// <returns>true if the flush completed, false to indicate that there is more outstanding data.</returns>
-        private unsafe bool Flush(Span<byte> output, ref int written)
+        private unsafe bool Finish(Span<byte> output, ref int written)
         {
-            Debug.Assert(_stream is not null);
+            Debug.Assert(_stream is not null && _stream.AvailIn == 0);
             Debug.Assert(_available == 0);
-
-            if (_needsFlushMarker)
-            {
-                _needsFlushMarker = false;
-
-                // It's OK to use the flush marker like this, because it's pointer is unmovable.
-                fixed (byte* flushMarkerPtr = FlushMarker)
-                {
-                    _stream.NextIn = (IntPtr)flushMarkerPtr;
-                    _stream.AvailIn = FlushMarkerLength;
-                }
-            }
 
             if (_remainingByte is not null)
             {
@@ -175,7 +183,7 @@ namespace System.Net.WebSockets.Compression
             // If we have more space in the output, try to inflate
             if (output.Length > written)
             {
-                written += Inflate(_stream, output[written..]);
+                written += Inflate(_stream, output[written..], FlushCode.SyncFlush);
             }
 
             // After inflate, if we have more space in the output then it means that we
@@ -209,7 +217,7 @@ namespace System.Net.WebSockets.Compression
             // There is no other way to make sure that we'e consumed all data
             // but to try to inflate again with at least one byte of output buffer.
             byte b;
-            if (Inflate(stream, new Span<byte>(&b, 1)) == 0)
+            if (Inflate(stream, new Span<byte>(&b, 1), FlushCode.SyncFlush) == 0)
             {
                 remainingByte = null;
                 return true;
@@ -219,7 +227,7 @@ namespace System.Net.WebSockets.Compression
             return false;
         }
 
-        private static unsafe int Inflate(ZLibStreamHandle stream, Span<byte> destination)
+        private static unsafe int Inflate(ZLibStreamHandle stream, Span<byte> destination, FlushCode flushCode)
         {
             Debug.Assert(destination.Length > 0);
             ErrorCode errorCode;
@@ -229,7 +237,7 @@ namespace System.Net.WebSockets.Compression
                 stream.NextOut = (IntPtr)bufPtr;
                 stream.AvailOut = (uint)destination.Length;
 
-                errorCode = stream.Inflate(FlushCode.NoFlush);
+                errorCode = stream.Inflate(flushCode);
 
                 if (errorCode is ErrorCode.Ok or ErrorCode.StreamEnd or ErrorCode.BufError)
                 {
