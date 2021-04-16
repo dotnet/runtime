@@ -428,7 +428,7 @@ namespace System.Collections.Generic
             if ((uint)newcapacity > Array.MaxLength) newcapacity = Array.MaxLength;
 
             // If the computed capacity is still less than specified, set to the original argument.
-            // Capacities exceeding MaxArrayLength will be surfaced as OutOfMemoryException by Array.Resize.
+            // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
             if (newcapacity < capacity) newcapacity = capacity;
 
             Capacity = newcapacity;

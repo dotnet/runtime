@@ -4325,12 +4325,7 @@ namespace System.Tests
         [Fact]
         public static void MaxSizes()
         {
-            Assert.Equal(0x7FFFFFC7, Array.GetMaxLength<byte>());
-            Assert.Equal(0x7FFFFFC7, Array.GetMaxLength<SByteEnum>());
-
-            Assert.Equal(0X7FEFFFFF, Array.GetMaxLength<int>());
-            Assert.Equal(0X7FEFFFFF, Array.GetMaxLength<object>());
-            Assert.Equal(0X7FEFFFFF, Array.GetMaxLength<string>());
+            Assert.Equal(0x7FFFFFC7, Array.MaxLength);
         }
 
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)

@@ -305,6 +305,7 @@ namespace System
         public bool IsSynchronized { get { throw null; } }
         public int Length { get { throw null; } }
         public long LongLength { get { throw null; } }
+        public static int MaxLength { get { throw null; } }
         public int Rank { get { throw null; } }
         public object SyncRoot { get { throw null; } }
         int System.Collections.ICollection.Count { get { throw null; } }
@@ -352,7 +353,6 @@ namespace System
         public int GetLength(int dimension) { throw null; }
         public long GetLongLength(int dimension) { throw null; }
         public int GetLowerBound(int dimension) { throw null; }
-        public static int GetMaxLength<T>() { throw null; }
         public int GetUpperBound(int dimension) { throw null; }
         public object? GetValue(int index) { throw null; }
         public object? GetValue(int index1, int index2) { throw null; }

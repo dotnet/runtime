@@ -166,7 +166,7 @@ namespace System.Linq.Expressions.Tests
             {
                 Assert.Throws<OverflowException>(() => func());
             }
-            else if (size > Array.GetMaxLength<object>())
+            else if (size > Array.MaxLength)
             {
                 Assert.Throws<OutOfMemoryException>(() => func());
             }

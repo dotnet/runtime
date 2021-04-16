@@ -155,11 +155,11 @@ namespace System.IO
                     newCapacity = _capacity * 2;
                 }
 
-                // We want to expand the array up to Array.GetMaxLength<byte>()
+                // We want to expand the array up to Array.MaxLength.
                 // And we want to give the user the value that they asked for
-                if ((uint)(_capacity * 2) > Array.GetMaxLength<byte>())
+                if ((uint)(_capacity * 2) > Array.MaxLength)
                 {
-                    newCapacity = Math.Max(value, Array.GetMaxLength<byte>());
+                    newCapacity = Math.Max(value, Array.MaxLength);
                 }
 
                 Capacity = newCapacity;

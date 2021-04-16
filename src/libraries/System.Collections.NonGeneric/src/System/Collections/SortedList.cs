@@ -375,7 +375,7 @@ namespace System.Collections
             int newCapacity = keys.Length == 0 ? 16 : keys.Length * 2;
             // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-            if ((uint)newCapacity > Array.GetMaxLength<object>()) newCapacity = Array.GetMaxLength<object>();
+            if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
             if (newCapacity < min) newCapacity = min;
             Capacity = newCapacity;
         }

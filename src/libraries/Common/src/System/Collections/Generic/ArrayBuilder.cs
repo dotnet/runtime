@@ -143,9 +143,9 @@ namespace System.Collections.Generic
             int capacity = Capacity;
             int nextCapacity = capacity == 0 ? DefaultCapacity : 2 * capacity;
 
-            if ((uint)nextCapacity > (uint)Array.GetMaxLength<T>())
+            if ((uint)nextCapacity > (uint)Array.MaxLength)
             {
-                nextCapacity = Math.Max(capacity + 1, Array.GetMaxLength<T>());
+                nextCapacity = Math.Max(capacity + 1, Array.MaxLength);
             }
 
             nextCapacity = Math.Max(nextCapacity, minimum);

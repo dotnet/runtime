@@ -18,15 +18,6 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
-        // We impose limits on maximum array length in each dimension to allow efficient
-        // implementation of advanced range check elimination in future.
-        // Keep in sync with vm\gchelpers.cpp and HashHelpers.MaxPrimeArrayLength.
-        // The constants are defined in this method: inline SIZE_T MaxArrayLength(SIZE_T componentSize) from gchelpers
-        // We have different max sizes for arrays with elements of size 1 for backwards compatibility
-        // Wrapped by GetMaxLength<T>()
-        private const int MaxArrayLength = 0X7FEFFFFF;
-        private const int MaxByteArrayLength = 0x7FFFFFC7;
-
         // This is the threshold where Introspective sort switches to Insertion sort.
         // Empirically, 16 seems to speed up most cases without slowing down others, at least for integers.
         // Large value types may benefit from a smaller number.
@@ -1873,19 +1864,16 @@ namespace System
             return true;
         }
 
-        /// <summary>
-        /// Gets the maximum number of elements that may be contained in an array of the specified type.
-        /// </summary>
-        /// <typeparam name="T">The type of array element.</typeparam>
-        /// <returns>The maximum count of elements allowed of array of the given type.</returns>
+        /// <summary>Gets the maximum number of elements that may be contained in an array.</summary>
+        /// <returns>The maximum count of elements allowed in any array.</returns>
         /// <remarks>
-        /// This methods returns runtime limitation.
-        /// The limitation is counted in elements, not bytes.
-        /// There's no guarantee that allocation under the size would succeed.
+        /// This property represents a runtime limitation, the maximum number of elements (not bytes)
+        /// the runtime will allow in an array. There is no guarantee that an allocation under this length
+        /// will succeed, but all attempts to allocate a larger array will fail.
         /// </remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetMaxLength<T>() =>
-            Unsafe.SizeOf<T>() == 1 ? MaxByteArrayLength : MaxArrayLength;
+        public static int MaxLength =>
+            // Keep in sync with `inline SIZE_T MaxArrayLength()` from gchelpers and HashHelpers.MaxPrimeArrayLength.
+            0X7FFFFFC7;
 
         // Private value type used by the Sort methods.
         private readonly struct SorterObjectArray
