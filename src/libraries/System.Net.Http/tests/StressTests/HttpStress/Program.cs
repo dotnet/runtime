@@ -110,11 +110,7 @@ public static class Program
 
     private static async Task<ExitCode> Run(Configuration config)
     {
-        (string name, Func<RequestContext, Task> op)[] clientOperations =
-            ClientOperations.Operations
-                // annotate the operation name with its index
-                .Select((op, i) => ($"{i.ToString().PadLeft(2)}: {op.name}", op.operation))
-                .ToArray();
+        ClientOperation[] clientOperations = ClientOperations.Operations;
 
         if ((config.RunMode & RunMode.both) == 0)
         {
@@ -132,13 +128,13 @@ public static class Program
         {
             for (int i = 0; i < clientOperations.Length; i++)
             {
-                Console.WriteLine(clientOperations[i].name);
+                Console.WriteLine(clientOperations[i].Name);
             }
             return ExitCode.Success;
         }
 
         // derive client operations based on arguments
-        (string name, Func<RequestContext, Task> op)[] usedClientOperations = (config.OpIndices, config.ExcludedOpIndices) switch
+        ClientOperation[] usedClientOperations = (config.OpIndices, config.ExcludedOpIndices) switch
         {
             (null, null) => clientOperations,
             (int[] incl, null) => incl.Select(i => clientOperations[i]).ToArray(),
@@ -164,7 +160,7 @@ public static class Program
         Console.WriteLine("  Content Length: " + config.MaxContentLength);
         Console.WriteLine("    HTTP Version: " + config.HttpVersion);
         Console.WriteLine("        Lifetime: " + (config.ConnectionLifetime.HasValue ? $"{config.ConnectionLifetime.Value.TotalMilliseconds}ms" : "(infinite)"));
-        Console.WriteLine("      Operations: " + string.Join(", ", usedClientOperations.Select(o => o.name)));
+        Console.WriteLine("      Operations: " + string.Join(", ", usedClientOperations.Select(o => o.Name)));
         Console.WriteLine("     Random Seed: " + config.RandomSeed);
         Console.WriteLine("    Cancellation: " + 100 * config.CancellationProbability + "%");
         Console.WriteLine("Max Content Size: " + config.MaxContentLength);

@@ -19,7 +19,7 @@ namespace HttpStress
 {
     public class StressClient : IDisposable
     {
-        private readonly (string name, Func<RequestContext, Task> operation)[] _clientOperations;
+        private readonly ClientOperation[] _clientOperations;
         private readonly Uri _baseAddress;
         private readonly Configuration _config;
         private readonly StressResultAggregator _aggregator;
@@ -30,7 +30,7 @@ namespace HttpStress
 
         public long TotalErrorCount => _aggregator.TotalErrorCount;
 
-        public StressClient((string name, Func<RequestContext, Task> operation)[] clientOperations, Configuration configuration)
+        public StressClient(ClientOperation[] clientOperations, Configuration configuration)
         {
             _clientOperations = clientOperations;
             _config = configuration;
@@ -196,12 +196,15 @@ namespace HttpStress
                         break;
 
                     int opIndex = (int)(i % _clientOperations.Length);
-                    (string operation, Func<RequestContext, Task> func) = _clientOperations[opIndex];
+                    ClientOperation operation = _clientOperations[opIndex];
+                    if (!operation.ShouldRun(random))
+                        continue;
+
                     var requestContext = new RequestContext(_config, client, random, _cts.Token, taskNum);
                     stopwatch.Restart();
                     try
                     {
-                        await func(requestContext);
+                        await operation.OperationFunc(requestContext);
 
                         _aggregator.RecordSuccess(opIndex, stopwatch.Elapsed);
                     }
@@ -255,9 +258,9 @@ namespace HttpStress
 
             public long TotalErrorCount => _failures.Sum();
 
-            public StressResultAggregator((string name, Func<RequestContext, Task>)[] operations)
+            public StressResultAggregator(ClientOperation[] operations)
             {
-                _operationNames = operations.Select(x => x.name).ToArray();
+                _operationNames = operations.Select(x => x.Name).ToArray();
                 _successes = new long[operations.Length];
                 _cancellations = new long[operations.Length];
                 _failures = new long[operations.Length];

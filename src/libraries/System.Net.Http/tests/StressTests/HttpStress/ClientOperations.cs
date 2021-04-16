@@ -174,14 +174,34 @@ namespace HttpStress
         public int GetRandomInt32(int minValueInclusive, int maxValueExclusive) => _random.Next(minValueInclusive, maxValueExclusive);
     }
 
+    public class ClientOperation
+    {
+        public string ShortName { get; }
+        public Func<RequestContext, Task> OperationFunc { get; }
+        public int Index { get; }
+
+        public string Name { get; }
+
+        public ClientOperation(string name, Func<RequestContext, Task> operationFunc, int index)
+        {
+            ShortName = name;
+            OperationFunc = operationFunc;
+            Index = index;
+            // annotate the operation name with its index
+            Name = $"{Index.ToString().PadLeft(2)}: {ShortName}";
+        }
+
+        internal bool ShouldRun(Random random) => Name != "GET Aborted" || random.NextDouble() < 0.2;
+    }
+
     public static class ClientOperations
     {
         // Set of operations that the client can select from to run.  Each item is a tuple of the operation's name
         // and the delegate to invoke for it, provided with the HttpClient instance on which to make the call and
         // returning asynchronously the retrieved response string from the server.  Individual operations can be
         // commented out from here to turn them off, or additional ones can be added.
-        public static (string name, Func<RequestContext, Task> operation)[] Operations =>
-            new (string, Func<RequestContext, Task>)[]
+        public static ClientOperation[] Operations =>
+            new (string name, Func<RequestContext, Task> operation)[]
             {
                 ("GET",
                 async ctx =>
@@ -275,50 +295,50 @@ namespace HttpStress
                     ValidateContent(expectedResponse, await m.Content.ReadAsStringAsync(), $"Uri: {uri}");
                 }),
 
-                //("GET Aborted",
-                //async ctx =>
-                //{
-                //    try
-                //    {
-                //        using var req = new HttpRequestMessage(HttpMethod.Get, "/abort");
-                //        ctx.SetExpectedResponseContentLengthHeader(req.Headers, minLength: 2);
+                ("GET Aborted",
+                async ctx =>
+                {
+                    try
+                    {
+                        using var req = new HttpRequestMessage(HttpMethod.Get, "/abort");
+                        ctx.SetExpectedResponseContentLengthHeader(req.Headers, minLength: 2);
 
-                //        await ctx.SendAsync(req);
+                        await ctx.SendAsync(req);
 
-                //        throw new Exception("Completed unexpectedly");
-                //    }
-                //    catch (Exception e)
-                //    {
-                //        if (e is HttpRequestException hre && hre.InnerException is IOException)
-                //        {
-                //            e = hre.InnerException;
-                //        }
+                        throw new Exception("Completed unexpectedly");
+                    }
+                    catch (Exception e)
+                    {
+                        if (e is HttpRequestException hre && hre.InnerException is IOException)
+                        {
+                            e = hre.InnerException;
+                        }
 
-                //        if (e is IOException ioe)
-                //        {
-                //            if (ctx.HttpVersion < HttpVersion.Version20)
-                //            {
-                //                return;
-                //            }
+                        if (e is IOException ioe)
+                        {
+                            if (ctx.HttpVersion < HttpVersion.Version20)
+                            {
+                                return;
+                            }
 
-                //            string? name = e.InnerException?.GetType().Name;
-                //            switch (name)
-                //            {
-                //                case "Http2ProtocolException":
-                //                case "Http2ConnectionException":
-                //                case "Http2StreamException":
-                //                    if ((e.InnerException?.Message?.Contains("INTERNAL_ERROR") ?? false) || // UseKestrel (https://github.com/dotnet/aspnetcore/issues/12256)
-                //                        (e.InnerException?.Message?.Contains("CANCEL") ?? false)) // UseHttpSys
-                //                    {
-                //                        return;
-                //                    }
-                //                    break;
-                //            }
-                //        }
+                            string? name = e.InnerException?.GetType().Name;
+                            switch (name)
+                            {
+                                case "Http2ProtocolException":
+                                case "Http2ConnectionException":
+                                case "Http2StreamException":
+                                    if ((e.InnerException?.Message?.Contains("INTERNAL_ERROR") ?? false) || // UseKestrel (https://github.com/dotnet/aspnetcore/issues/12256)
+                                        (e.InnerException?.Message?.Contains("CANCEL") ?? false)) // UseHttpSys
+                                    {
+                                        return;
+                                    }
+                                    break;
+                            }
+                        }
 
-                //        throw;
-                //    }
-                //}),
+                        throw;
+                    }
+                }),
 
                 ("POST",
                 async ctx =>
@@ -476,7 +496,9 @@ namespace HttpStress
                     ValidateStatusCode(m);
                     ValidateServerContent(await m.Content.ReadAsStringAsync(), expectedLength);
                 }),
-            };
+            }
+            .Select((op, i) => new ClientOperation(op.name, op.operation, i))
+            .ToArray();
 
         private static void ValidateStatusCode(HttpResponseMessage m, HttpStatusCode expectedStatus = HttpStatusCode.OK)
         {
