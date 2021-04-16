@@ -70,4 +70,4 @@ Re-initializes a digest context to an initial state.
 
 Returns 1 on success, 0 on failure, any other value on invalid inputs/state.
 */
-PALEXPORT int32_t AppleCryptoNative_DigestReset(const DigestCtx* ctx);
+PALEXPORT int32_t AppleCryptoNative_DigestReset(DigestCtx* ctx);
